@@ -48,17 +48,20 @@ import { Skeleton } from "../components/Skeleton";
 import { usePersistedValue, nsKey, writeJSON } from "../utils/persistence";
 import { useAuth } from "../contexts/AuthContext";
 import { cn } from "../utils/cn";
-import { PageContainer, Card, Kpi, KpiGrid } from "@/shared/ui";
+import { PageContainer, Card, Kpi, KpiGrid, SelectPicker } from "@/shared/ui";
+import { useIsNarrow } from "../hooks/useIsNarrow";
+import { formatMoney } from "@/shared/currency";
+import { SeasonalEquity } from "../components/seasonality/SeasonalEquity";
 
 interface SeasonalityProps {
   trades: Trade[];
   tradesLoading?: boolean;
 }
 
-export default function Seasonality(_props: SeasonalityProps) {
+export default function Seasonality({ trades }: SeasonalityProps) {
   return (
     <PageContainer>
-      <AssetSeasonality />
+      <AssetSeasonality trades={trades} />
     </PageContainer>
   );
 }
@@ -67,7 +70,7 @@ export default function Seasonality(_props: SeasonalityProps) {
  * Asset seasonal tendencies (curated historical dataset)
  * ============================================================ */
 
-function AssetSeasonality() {
+function AssetSeasonality({ trades }: { trades: Trade[] }) {
   const { t, lang } = useT();
   const { user } = useAuth();
   const catKey = nsKey(user?.id, "seasonality.cat");
@@ -87,6 +90,7 @@ function AssetSeasonality() {
   const asset: SeasonalAsset = inCategory.find((a) => a.symbol === savedSym) ?? inCategory[0];
 
   const currentMonth = new Date().getMonth();
+  const monthRows = useMonthRows();
   const monthLabel = (m: number) =>
     new Date(2026, m, 1).toLocaleDateString(lang, { month: "long" });
 
@@ -111,8 +115,33 @@ function AssetSeasonality() {
 
   return (
     <div className="animate-fade-in">
+      {/* SUR TÉLÉPHONE, deux sélecteurs côte à côte au lieu de rangées de
+          pastilles empilées : catégorie · actif, sur une seule ligne. */}
+      <div className="mb-5 grid grid-cols-2 gap-2 sm:hidden">
+        <SelectPicker
+          variant="field"
+          label={t("seasonality.category")}
+          value={category}
+          onChange={(v) => setCategory(v as AssetCategory)}
+          className="h-10 text-[13px]"
+          options={(Object.keys(CATEGORY_LABELS) as AssetCategory[]).map((c) => ({
+            value: c,
+            label: CATEGORY_LABELS[c],
+          }))}
+        />
+        <SelectPicker
+          variant="field"
+          label={t("seasonality.asset")}
+          value={asset.symbol}
+          onChange={setSymbol}
+          className="h-10 text-[13px]"
+          searchLabel={t("picker.search")}
+          options={inCategory.map((a) => ({ value: a.symbol, label: a.symbol, hint: a.name }))}
+        />
+      </div>
+
       {/* Category filter */}
-      <div className="flex flex-wrap gap-1.5 mb-3">
+      <div className="hidden sm:flex flex-wrap gap-1.5 mb-3">
         {(Object.keys(CATEGORY_LABELS) as AssetCategory[]).map((c) => (
           <button
             key={c}
@@ -130,7 +159,7 @@ function AssetSeasonality() {
       </div>
 
       {/* Asset selector */}
-      <div className="flex flex-wrap gap-1.5 mb-5">
+      <div className="hidden sm:flex flex-wrap gap-1.5 mb-5">
         {inCategory.map((a) => (
           <button
             key={a.symbol}
@@ -259,6 +288,15 @@ function AssetSeasonality() {
         </div>
       </div>
 
+      {/* Les courbes : la saison composée de l'actif, et l'equity réelle du
+          trader sur ce même actif. */}
+      <SeasonalEquity
+        asset={asset}
+        peers={inCategory}
+        currentMonth={currentMonth}
+        trades={trades}
+      />
+
       {/* Category heatmap */}
       <div className="glass rounded-3xl p-4 md:p-5 card-premium">
         <div className="flex items-center gap-2 mb-4">
@@ -270,22 +308,23 @@ function AssetSeasonality() {
             <p className="tv-hint">{t("seasonality.heatmapAllSub")}</p>
           </div>
         </div>
-        <div className="overflow-x-auto -mx-1 px-1">
-          <div className="min-w-[620px]">
+        <div className="space-y-3">
+          {monthRows.map((months) => (
             <div
+              key={months[0]}
               className="grid gap-1"
-              style={{ gridTemplateColumns: "5rem repeat(12, minmax(0,1fr))" }}
+              style={{ gridTemplateColumns: `4.2rem repeat(${months.length}, minmax(0,1fr))` }}
             >
               <div />
-              {MONTHS_SHORT.map((m, i) => (
+              {months.map((i) => (
                 <div
-                  key={m}
+                  key={i}
                   className={cn(
                     "tv-label text-center pb-1",
                     i === currentMonth ? "text-cyan-300" : "text-slate-500",
                   )}
                 >
-                  {m}
+                  {MONTHS_SHORT[i]}
                 </div>
               ))}
               {inCategory.map((a) => (
@@ -295,10 +334,11 @@ function AssetSeasonality() {
                   currentMonth={currentMonth}
                   selected={a.symbol === asset.symbol}
                   onSelect={() => setSymbol(a.symbol)}
+                  months={months}
                 />
               ))}
             </div>
-          </div>
+          ))}
         </div>
       </div>
 
@@ -313,16 +353,30 @@ function AssetSeasonality() {
   );
 }
 
+/**
+ * LES MOIS PAR RANGÉE. Douze colonnes tiennent sur une tablette ; sur un
+ * téléphone elles imposaient une largeur minimale de 560–620px et faisaient
+ * glisser la page de côté. Sous 640px, l'année se lit en deux semestres de
+ * six colonnes, l'un sous l'autre — toutes les cases restent lisibles.
+ */
+const ALL_MONTHS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+function useMonthRows(): number[][] {
+  const narrow = useIsNarrow("(max-width: 639px)");
+  return narrow ? [ALL_MONTHS.slice(0, 6), ALL_MONTHS.slice(6)] : [ALL_MONTHS];
+}
+
 function AssetHeatRow({
   asset,
   currentMonth,
   selected,
   onSelect,
+  months,
 }: {
   asset: SeasonalAsset;
   currentMonth: number;
   selected: boolean;
   onSelect: () => void;
+  months: number[];
 }) {
   const max = Math.max(...asset.monthlyAvg.map(Math.abs), 0.1);
   return (
@@ -336,7 +390,8 @@ function AssetHeatRow({
       >
         {asset.symbol}
       </button>
-      {asset.monthlyAvg.map((v, i) => {
+      {months.map((i) => {
+        const v = asset.monthlyAvg[i];
         const intensity = Math.min(Math.abs(v) / max, 1);
         const bg =
           v >= 0
@@ -382,6 +437,7 @@ const MONTH_KEYS = [
 
 function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
   const { t, lang } = useT();
+  const monthRows = useMonthRows();
 
   const monthLabel = (m: number) =>
     new Date(2026, m, 1).toLocaleDateString(lang, { month: "short" });
@@ -554,7 +610,7 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
                 {...tooltipStyle}
                 formatter={
                   ((value: unknown) => [
-                    `$${Number(value).toFixed(2)}`,
+                    formatMoney(Number(value)),
                     t("journal.colPnl" as never),
                   ]) as never
                 }
@@ -584,23 +640,24 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
       <div className="glass rounded-3xl p-4 md:p-5 card-premium mb-5">
         <h3 className="tv-title mb-0.5">{t("seasonality.heatmap")}</h3>
         <p className="tv-hint mb-4">{t("seasonality.heatmapSub")}</p>
-        <div className="overflow-x-auto -mx-1 px-1">
-          <div className="min-w-[560px]">
+        <div className="space-y-3">
+          {monthRows.map((months) => (
             <div
+              key={months[0]}
               className="grid gap-1"
-              style={{ gridTemplateColumns: "3.2rem repeat(12, minmax(0,1fr))" }}
+              style={{ gridTemplateColumns: `3.2rem repeat(${months.length}, minmax(0,1fr))` }}
             >
               <div />
-              {monthly.map((m) => (
-                <div key={m.key} className="tv-label text-center text-slate-500 pb-1">
-                  {m.month}
+              {months.map((i) => (
+                <div key={monthly[i].key} className="tv-label text-center text-slate-500 pb-1">
+                  {monthly[i].month}
                 </div>
               ))}
               {years.map(([year, arr]) => (
-                <YearRow key={year} year={year} values={arr} heatMax={heatMax} />
+                <YearRow key={year} year={year} values={arr} heatMax={heatMax} months={months} />
               ))}
             </div>
-          </div>
+          ))}
         </div>
       </div>
 
@@ -618,7 +675,7 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
                   {...tooltipStyle}
                   formatter={
                     ((value: unknown) => [
-                      `$${Number(value).toFixed(2)}`,
+                      formatMoney(Number(value)),
                       t("journal.colPnl" as never),
                     ]) as never
                   }
@@ -647,7 +704,7 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
                   {...tooltipStyle}
                   formatter={
                     ((value: unknown) => [
-                      `$${Number(value).toFixed(2)}`,
+                      formatMoney(Number(value)),
                       t("journal.colPnl" as never),
                     ]) as never
                   }
@@ -667,11 +724,22 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
   );
 }
 
-function YearRow({ year, values, heatMax }: { year: number; values: number[]; heatMax: number }) {
+function YearRow({
+  year,
+  values,
+  heatMax,
+  months,
+}: {
+  year: number;
+  values: number[];
+  heatMax: number;
+  months: number[];
+}) {
   return (
     <>
       <div className="tv-figure flex items-center text-[10px] text-slate-400">{year}</div>
-      {values.map((v, i) => {
+      {months.map((i) => {
+        const v = values[i] ?? 0;
         const intensity = Math.min(Math.abs(v) / heatMax, 1);
         const bg =
           v === 0
@@ -682,7 +750,7 @@ function YearRow({ year, values, heatMax }: { year: number; values: number[]; he
         return (
           <div
             key={i}
-            title={v === 0 ? "—" : `$${v.toFixed(2)}`}
+            title={v === 0 ? "—" : formatMoney(v)}
             className="tv-figure h-9 rounded-lg flex items-center justify-center text-[11px] transition-transform hover:scale-[1.06] cursor-default"
             style={{ background: bg, color: v === 0 ? "#475569" : "#f1f5f9" }}
           >

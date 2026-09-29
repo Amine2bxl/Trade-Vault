@@ -80,19 +80,24 @@ export function categoryOf(
  * a push for this key was already sent today (i.e. it should be suppressed).
  */
 const PUSH_LOG_KEY = "tv.notif.pushed";
+/** Même journal, pour la boîte de réception : une entrée par clé et par jour. */
+const PERSIST_LOG_KEY = "tv.notif.persisted";
 function alreadyPushedToday(dedupKey: string): boolean {
+  return seenToday(PUSH_LOG_KEY, dedupKey);
+}
+function seenToday(logKey: string, dedupKey: string): boolean {
   if (typeof window === "undefined") return false;
   try {
     const today = todayLocalDate();
-    const raw = localStorage.getItem(PUSH_LOG_KEY);
+    const raw = localStorage.getItem(logKey);
     const log = raw ? (JSON.parse(raw) as { date: string; keys: string[] }) : null;
     if (!log || log.date !== today) {
-      localStorage.setItem(PUSH_LOG_KEY, JSON.stringify({ date: today, keys: [dedupKey] }));
+      localStorage.setItem(logKey, JSON.stringify({ date: today, keys: [dedupKey] }));
       return false;
     }
     if (log.keys.includes(dedupKey)) return true;
     log.keys.push(dedupKey);
-    localStorage.setItem(PUSH_LOG_KEY, JSON.stringify(log));
+    localStorage.setItem(logKey, JSON.stringify(log));
     return false;
   } catch {
     return false; // storage unavailable — fail open, never block a push
@@ -121,7 +126,9 @@ export const NotificationEngine = {
       category: input.category ?? categoryOf(input.kind, input.severity ?? "info"),
       createdAt: new Date().toISOString(),
       readAt: null,
-      data: input.data,
+      // La clé voyage avec la notification : elle permet de dédupliquer
+      // depuis la BASE (tous appareils), pas seulement depuis ce navigateur.
+      data: input.dedupKey ? { ...(input.data ?? {}), dedupKey: input.dedupKey } : input.data,
     };
 
     if (notification.channels.includes("toast")) {
@@ -134,7 +141,15 @@ export const NotificationEngine = {
         .push?.({ title: notification.title, body: notification.body, url: notification.url })
         .catch(() => {});
     }
-    if (!input.ephemeral && notification.channels.includes("dashboard")) {
+    /* LA BOÎTE NE REÇOIT UNE MÊME ALERTE QU'UNE FOIS PAR JOUR.
+       Un rappel de règle part à chaque trade qui s'en approche : le toast est
+       le bon retour immédiat (le trader vient d'agir), mais dix exemplaires
+       identiques dans la boîte de réception n'apprennent rien de plus et
+       gonflaient le compteur. Les règles codées passent leur propre clé
+       d'événement (voir `rules.ts`) et ne sont pas concernées ici. */
+    const persistDedup = input.dedupKey && !input.data?.codedRule;
+    const suppressPersist = persistDedup ? seenToday(PERSIST_LOG_KEY, input.dedupKey!) : false;
+    if (!input.ephemeral && !suppressPersist && notification.channels.includes("dashboard")) {
       await adapters.persist?.(notification).catch((e) => {
         console.error("[notifications] persist failed", e);
       });

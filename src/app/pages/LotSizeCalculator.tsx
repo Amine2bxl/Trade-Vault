@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Copy,
   Check,
@@ -6,8 +6,9 @@ import {
   Crosshair,
   Plus,
   AlertTriangle,
-  CalendarDays,
   Gauge,
+  TrendingUp,
+  BarChart3,
   Layers,
 } from "lucide-react";
 import { POINT_VALUES, FOREX_PAIRS, calcContracts, calcForexLots } from "../utils/positionCalc";
@@ -15,8 +16,9 @@ import { useAccounts } from "../contexts/AccountContext";
 import { useT } from "../i18n/LanguageContext";
 import { cn } from "../utils/cn";
 import { FIELD_BASE, Button } from "@/shared/ui";
-import { usePageActions } from "../contexts/PageActionsContext";
 import type { Page } from "../types";
+import { useAuth } from "../contexts/AuthContext";
+import { loadUserPref, saveUserPref } from "../utils/userPrefs";
 
 interface LotSizeCalculatorProps {
   onAddTrade: () => void;
@@ -52,8 +54,9 @@ function readPersisted(): Partial<PersistedState> {
   }
 }
 
-export default function LotSizeCalculator({ onAddTrade, setPage }: LotSizeCalculatorProps) {
+export default function LotSizeCalculator({ onAddTrade }: LotSizeCalculatorProps) {
   const { t } = useT();
+  const { user } = useAuth();
   const { activeAccount } = useAccounts();
   const persisted = useMemo(readPersisted, []);
 
@@ -70,14 +73,46 @@ export default function LotSizeCalculator({ onAddTrade, setPage }: LotSizeCalcul
   const [pointValue, setPointValue] = useState(persisted.pointValue ?? "20");
   const [copied, setCopied] = useState(false);
 
-  // Persist the setup so the tool remembers you between sessions.
+  /* LA PERSISTANCE, EN DEUX ÉTAGES.
+     `localStorage` rend la configuration instantanément au montage ; le
+     COMPTE (`user_preferences`) en est la source durable : il suit le trader
+     d'un appareil à l'autre et survit à la déconnexion, qui purge volontairement
+     le stockage local. À l'ouverture, la version du compte remplace le cache —
+     sauf si le trader a déjà touché un réglage entre-temps. */
+  const touched = useRef(false);
+  useEffect(() => {
+    if (!user?.id) return;
+    let alive = true;
+    void loadUserPref<Partial<PersistedState>>(user.id, "lotCalc")
+      .then((p) => {
+        if (!alive || !p || touched.current) return;
+        if (p.mode) setMode(p.mode === "futures" ? "futures" : "forex");
+        if (p.riskPct !== undefined) setRiskPct(p.riskPct);
+        if (p.stopPips !== undefined) setStopPips(p.stopPips);
+        if (p.pairIdx !== undefined) setPairIdx(Math.min(p.pairIdx, FOREX_PAIRS.length - 1));
+        if (p.stopPoints !== undefined) setStopPoints(p.stopPoints);
+        if (p.pointValue !== undefined) setPointValue(p.pointValue);
+        try {
+          localStorage.setItem(PERSIST_KEY, JSON.stringify({ ...readPersisted(), ...p }));
+        } catch {
+          /* cache best-effort */
+        }
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [user?.id]);
+
   const persist = (patch: Partial<PersistedState>) => {
+    touched.current = true;
+    const next = { ...readPersisted(), ...patch };
     try {
-      const prev = readPersisted();
-      localStorage.setItem(PERSIST_KEY, JSON.stringify({ ...prev, ...patch }));
+      localStorage.setItem(PERSIST_KEY, JSON.stringify(next));
     } catch {
-      // storage may be unavailable (private mode) — persistence is best-effort
+      // stockage indisponible (navigation privée) — le compte garde la trace
     }
+    if (user?.id) saveUserPref(user.id, "lotCalc", next);
   };
   const setModePersisted = (m: Mode) => {
     setMode(m);
@@ -149,51 +184,56 @@ export default function LotSizeCalculator({ onAddTrade, setPage }: LotSizeCalcul
   const fiveLossDrawdown = `${Math.min(100, riskPctNum * 5).toFixed(0)}%`;
   const gaugePct = Math.max(0, Math.min(100, (riskPctNum / RECOMMENDED_RISK_PCT) * 100));
 
-  const headerActions = useMemo(
-    () => (
-      <div className="flex items-center gap-2 shrink-0">
-        <Button
-          variant="subtle"
-          size="sm"
-          onClick={() => setPage("news")}
-          title={t("calc.economicCalendar")}
-        >
-          <CalendarDays className="w-4 h-4" />
-          <span className="hidden sm:inline">{t("calc.economicCalendar")}</span>
-        </Button>
-        <div className="inline-flex p-1 rounded-xl bg-black/30 border border-white/[0.08]">
-          {(["forex", "futures"] as const).map((m) => (
-            <button
-              key={m}
-              onClick={() => setModePersisted(m)}
-              className={cn(
-                "h-8 px-4 rounded-lg text-xs font-bold transition",
-                mode === m
-                  ? "bg-gradient-to-r from-cyan-500 to-teal-500 text-white"
-                  : "text-slate-500 hover:text-slate-300",
-              )}
-            >
-              {t(m === "forex" ? "calc.forex" : "calc.futures")}
-            </button>
-          ))}
-        </div>
-      </div>
-    ),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [mode, setPage, t],
-  );
-  usePageActions(headerActions);
-
   return (
     <div className="p-4 md:p-5 max-w-[1400px] mx-auto">
-      <div className="grid md:grid-cols-[1fr_320px] gap-4 md:gap-5 items-start">
-        {/* ══ Colonne gauche : capital → risque → instrument ══ */}
+      {/* Deux colonnes à partir de `lg`, et une piste `minmax(0, 1fr)`. Un `1fr`
+          nu ne descend jamais sous la largeur minimale de son contenu : sur
+          tablette (768px, dont ~230 pour le rail), `1fr + 320px` débordait de
+          la fenêtre de 85px. */}
+      <div className="grid gap-4 md:gap-5 lg:grid-cols-[minmax(0,1fr)_320px] items-start">
+        {/* ══ Colonne gauche : marché → capital → risque → instrument ══ */}
         <div className="space-y-4">
+          {/* LE MARCHÉ — le premier choix, dans la page, pas un interrupteur
+              perdu dans l'en-tête. Deux options décrites (ce qu'on dimensionne,
+              dans quelle unité), un indicateur qui GLISSE de l'une à l'autre,
+              et le reste de la page qui se recompose. */}
+          <div
+            role="radiogroup"
+            aria-label={t("calc.market")}
+            className="calc-market animate-fade-in-up"
+            data-mode={mode}
+          >
+            <span aria-hidden className="calc-market-thumb" />
+            {(["forex", "futures"] as const).map((m) => {
+              const Icon = m === "forex" ? TrendingUp : BarChart3;
+              return (
+                <button
+                  key={m}
+                  type="button"
+                  role="radio"
+                  aria-checked={mode === m}
+                  onClick={() => setModePersisted(m)}
+                  className={cn("calc-market-opt", mode === m && "is-on")}
+                >
+                  <Icon className="h-4 w-4 shrink-0" />
+                  <span className="min-w-0 text-left">
+                    <span className="block text-sm font-bold">
+                      {t(m === "forex" ? "calc.forex" : "calc.futures")}
+                    </span>
+                    <span className="block truncate text-[11px] font-medium opacity-70">
+                      {t(m === "forex" ? "calc.forexHint" : "calc.futuresHint")}
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
           {/* ── Capital — verrouillé, prérempli depuis le compte sélectionné ── */}
           <div className="glass-strong rounded-3xl p-4 md:p-5 animate-fade-in-up stagger-1">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2.5">
-                <Lock className="w-4 h-4 text-cyan-300 shrink-0" />
+                <Lock className="w-4 h-4 text-[var(--tv-highlight)] shrink-0" />
                 <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
                   {t("calc.capital")}
                 </span>
@@ -214,7 +254,7 @@ export default function LotSizeCalculator({ onAddTrade, setPage }: LotSizeCalcul
           <div className="glass-strong rounded-3xl p-4 md:p-5 animate-fade-in-up stagger-2">
             <div className="flex items-center justify-between gap-3 mb-3">
               <div className="flex items-center gap-2.5">
-                <Gauge className="w-4 h-4 text-cyan-300 shrink-0" />
+                <Gauge className="w-4 h-4 text-[var(--tv-highlight)] shrink-0" />
                 <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
                   {t("calc.riskPresets")}
                 </span>
@@ -222,7 +262,7 @@ export default function LotSizeCalculator({ onAddTrade, setPage }: LotSizeCalcul
               <span
                 className={cn(
                   "tv-figure text-sm",
-                  riskTooHigh ? "text-amber-300" : "text-cyan-300",
+                  riskTooHigh ? "text-amber-300" : "text-[var(--tv-highlight)]",
                 )}
               >
                 ${riskDollar.toFixed(2)}
@@ -245,7 +285,7 @@ export default function LotSizeCalculator({ onAddTrade, setPage }: LotSizeCalcul
                     className={cn(
                       "rounded-xl border px-2 py-2.5 text-center transition",
                       active
-                        ? "border-cyan-500/40 bg-cyan-500/15 text-cyan-300"
+                        ? "border-[var(--tv-border-accent)] bg-[rgb(var(--tv-accent-rgb)/0.14)] text-[var(--tv-highlight)]"
                         : "border-white/[0.06] bg-white/[0.03] text-slate-400 hover:text-white hover:border-white/[0.12]",
                     )}
                   >
@@ -253,7 +293,7 @@ export default function LotSizeCalculator({ onAddTrade, setPage }: LotSizeCalcul
                     <span
                       className={cn(
                         "tv-figure mt-0.5 block text-[10px] font-medium",
-                        active ? "text-cyan-300" : "text-slate-500",
+                        active ? "text-[var(--tv-highlight)]" : "text-slate-500",
                       )}
                     >
                       ${dollar}
@@ -275,9 +315,7 @@ export default function LotSizeCalculator({ onAddTrade, setPage }: LotSizeCalcul
                 <div
                   className={cn(
                     "h-full rounded-full transition-[width] duration-250",
-                    riskTooHigh
-                      ? "bg-gradient-to-r from-amber-500 to-red-500"
-                      : "bg-gradient-to-r from-cyan-500 to-teal-400",
+                    riskTooHigh ? "bg-amber-400" : "bg-[var(--tv-accent)]",
                   )}
                   style={{ width: `${gaugePct}%` }}
                 />
@@ -300,14 +338,14 @@ export default function LotSizeCalculator({ onAddTrade, setPage }: LotSizeCalcul
           {/* ── Instrument — une seule saisie : la distance de stop ── */}
           <div className="glass-strong rounded-3xl p-4 md:p-5 animate-fade-in-up stagger-3">
             <div className="flex items-center gap-2.5 mb-3">
-              <Layers className="w-4 h-4 text-cyan-300 shrink-0" />
+              <Layers className="w-4 h-4 text-[var(--tv-highlight)] shrink-0" />
               <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
                 {t("calc.sectionInstrument")}
               </span>
             </div>
 
             {mode === "forex" ? (
-              <div className="space-y-3">
+              <div key="forex" className="space-y-3 animate-fade-in-up">
                 <div className="flex flex-wrap gap-1.5">
                   {FOREX_PAIRS.map((p, i) => (
                     <button
@@ -317,7 +355,7 @@ export default function LotSizeCalculator({ onAddTrade, setPage }: LotSizeCalcul
                       className={cn(
                         "h-9 px-3 rounded-xl border text-xs font-bold transition",
                         i === pairIdx
-                          ? "bg-cyan-500/15 border-cyan-500/25 text-cyan-300"
+                          ? "border-[var(--tv-border-accent)] bg-[rgb(var(--tv-accent-rgb)/0.14)] text-[var(--tv-highlight)]"
                           : "bg-white/[0.03] border-white/[0.06] text-slate-500 hover:text-slate-300",
                       )}
                     >
@@ -343,7 +381,7 @@ export default function LotSizeCalculator({ onAddTrade, setPage }: LotSizeCalcul
                 </div>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div key="futures" className="space-y-3 animate-fade-in-up">
                 <div className="flex flex-wrap gap-1.5">
                   {POINT_VALUES.map((p) => (
                     <button
@@ -353,7 +391,7 @@ export default function LotSizeCalculator({ onAddTrade, setPage }: LotSizeCalcul
                       className={cn(
                         "h-9 px-3 rounded-xl border text-xs font-bold transition",
                         pointValue === String(p.value)
-                          ? "bg-cyan-500/15 border-cyan-500/25 text-cyan-300"
+                          ? "border-[var(--tv-border-accent)] bg-[rgb(var(--tv-accent-rgb)/0.14)] text-[var(--tv-highlight)]"
                           : "bg-white/[0.03] border-white/[0.06] text-slate-500 hover:text-slate-300",
                       )}
                     >
@@ -386,11 +424,11 @@ export default function LotSizeCalculator({ onAddTrade, setPage }: LotSizeCalcul
         <div
           className={cn(
             "relative overflow-hidden glass-strong rounded-3xl p-4 md:p-5 animate-fade-in-up stagger-4 border transition-colors md:sticky md:top-4",
-            hasResult ? "border-cyan-500/25" : "border-transparent",
+            hasResult ? "border-[var(--tv-border-accent)]" : "border-transparent",
           )}
         >
           <div className="flex items-center gap-2 mb-3">
-            <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-gradient-to-br from-cyan-500 to-teal-600">
+            <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md tv-accent-fill">
               <Gauge className="w-3 h-3 text-white" />
             </span>
             <div>
@@ -416,7 +454,7 @@ export default function LotSizeCalculator({ onAddTrade, setPage }: LotSizeCalcul
                 <div className="tv-figure relative inline-block font-display text-6xl text-white">
                   {forex.lots.toFixed(2)}
                 </div>
-                <div className="tv-label-wide relative mt-1 text-cyan-400">
+                <div className="tv-label-wide relative mt-1 text-[var(--tv-highlight)]">
                   {t("calc.standardLots")} · {pair.label}
                 </div>
               </div>
@@ -439,7 +477,7 @@ export default function LotSizeCalculator({ onAddTrade, setPage }: LotSizeCalcul
                 <div className="tv-figure relative inline-block font-display text-6xl text-white">
                   {futures.contracts}
                 </div>
-                <div className="tv-label-wide relative mt-1 text-cyan-400">
+                <div className="tv-label-wide relative mt-1 text-[var(--tv-highlight)]">
                   {t("calc.contracts")}
                 </div>
               </div>
@@ -459,7 +497,7 @@ export default function LotSizeCalculator({ onAddTrade, setPage }: LotSizeCalcul
                 <span className="text-[10px] text-slate-500 uppercase tracking-wider">
                   {t("calc.riskBudget")}
                 </span>
-                <span className="tv-figure text-xs text-cyan-300">
+                <span className="tv-figure text-xs text-[var(--tv-highlight)]">
                   ${riskDollar.toFixed(2)} · {riskPctNum || 0}% {t("calc.riskOfAccount")}
                 </span>
               </div>
@@ -489,7 +527,12 @@ function ResultRow({ label, value, accent }: { label: string; value: string; acc
   return (
     <div className="flex items-center justify-between h-9 px-3 rounded-xl odd:bg-white/[0.02]">
       <span className="text-[11px] text-slate-500">{label}</span>
-      <span className={cn("tv-figure text-sm", accent ? "text-cyan-300" : "text-slate-200")}>
+      <span
+        className={cn(
+          "tv-figure text-sm",
+          accent ? "text-[var(--tv-highlight)]" : "text-slate-200",
+        )}
+      >
         {value}
       </span>
     </div>

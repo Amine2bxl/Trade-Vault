@@ -1,3 +1,5 @@
+import { formatMoney } from "@/shared/currency";
+import { AI_LIMITS } from "@/domain/ai-limits";
 import { Trade, TradeStats, isBreakEven } from "../types";
 
 export function computeStats(trades: Trade[]): TradeStats {
@@ -157,13 +159,9 @@ export function withPnlFromRiskAndR(trade: Trade, patch: Partial<Trade>): Trade 
   return { ...next, pnl: Math.round(next.riskAmount * next.rMultiple * 100) / 100 };
 }
 
+/** P&L signé dans la devise du trader : « +$1,234.50 », « -€80.00 », « +¥1,235 ». */
 export function formatPnl(value: number): string {
-  if (Math.abs(value) < 0.005) return "$0.00";
-  const prefix = value >= 0 ? "+$" : "-$";
-  return (
-    prefix +
-    Math.abs(value).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-  );
+  return formatMoney(value, { signed: true });
 }
 
 export function formatPct(value: number): string {
@@ -172,18 +170,27 @@ export function formatPct(value: number): string {
 
 // Shared shape sent to the AI coach (Insights page + floating AI Assistant) —
 // caps volume and trims fields so both callers stay in sync with the backend schema.
+/**
+ * La copie d'un trade envoyée à l'IA, bornée aux limites du schéma serveur
+ * (`AI_LIMITS`). Sans ces bornes, UNE note de plus de 1 500 caractères
+ * faisait rejeter tout le contexte : Jarvis répondait alors sans journal.
+ * Le trade complet reste intact en base et dans le journal.
+ */
 export function toInsightTradesPayload(trades: Trade[]) {
+  const cut = (v: string | undefined | null, max: number) => (v ?? "").slice(0, max);
+  const tags = (list: string[] | undefined, max: number) =>
+    (list ?? []).slice(0, max).map((x) => cut(x, AI_LIMITS.tradeTag));
   return trades.slice(0, 200).map((t) => ({
     date: t.date,
-    symbol: t.symbol,
-    direction: t.direction,
+    symbol: cut(t.symbol, AI_LIMITS.tradeSymbol),
+    direction: cut(t.direction, AI_LIMITS.tradeDirection),
     pnl: t.pnl,
     rMultiple: t.rMultiple,
-    strategy: t.strategy,
-    mistakes: t.mistakes,
+    strategy: cut(t.strategy, AI_LIMITS.tradeStrategy),
+    mistakes: tags(t.mistakes, AI_LIMITS.tradeMistakes),
     setupQuality: t.setupQuality,
-    confluences: t.confluences,
-    notes: t.notes,
+    confluences: tags(t.confluences, AI_LIMITS.tradeConfluences),
+    ...(t.notes ? { notes: t.notes.slice(0, AI_LIMITS.tradeNote) } : {}),
   }));
 }
 

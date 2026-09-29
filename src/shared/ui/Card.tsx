@@ -12,6 +12,10 @@ import { density } from "./tokens";
  *   inset                 → plaque 2 — un bloc DANS une carte
  *   glass-strong          → plaque 2 + ombre — ce qui flotte (modale, menu)
  *
+ * Toutes portent le RELIEF (`--tv-relief-*` dans styles.css) : filet de
+ * lumière sur l'arête haute et contact sombre dessous pour une carte, bloc
+ * creusé pour `inset`.
+ *
  * `hover` ajoute `.card-premium` : la carte s'ÉCLAIRCIT au survol, elle ne se
  * soulève plus et ne s'allume plus.
  */
@@ -21,9 +25,9 @@ export type CardVariant = "glass" | "glass-strong" | "plain" | "solid" | "inset"
 const VARIANT: Record<CardVariant, string> = {
   glass: "glass rounded-2xl",
   "glass-strong": "glass-strong rounded-2xl",
-  plain: "rounded-2xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)]",
+  plain: "tv-relief rounded-2xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)]",
   solid: "stat-card",
-  inset: "bg-[var(--tv-plate-2)] border border-[var(--tv-border)] rounded-xl",
+  inset: "tv-relief-inset border border-[var(--tv-border)] rounded-xl",
 };
 
 /** Inner padding steps, straight from the density scale. */

@@ -1,10 +1,11 @@
-import { Bell, Bot, Settings } from "lucide-react";
+import { Bell, Settings } from "lucide-react";
 import type { Page } from "../types";
 import { preloadPage } from "../pageModules";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
 import { useAuth } from "../contexts/AuthContext";
 import { useUnreadCount } from "../hooks/useUnreadCount";
+import { badgeLabel } from "@/modules/notifications";
 
 interface MobileActionsProps {
   page: Page;
@@ -51,17 +52,19 @@ export default function MobileActions({ page, setPage }: MobileActionsProps) {
       className={cn(
         "relative grid h-9 w-9 place-items-center rounded-xl",
         "transition-colors duration-200",
-        active ? "bg-cyan-500/10 text-cyan-300" : "text-slate-400 hover:bg-white/[0.04]",
+        active
+          ? "bg-white/[0.06] text-[var(--tv-highlight)]"
+          : "text-slate-400 hover:bg-white/[0.04]",
       )}
     >
       {icon}
       {badge !== undefined && badge > 0 && (
         <span
-          className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-cyan-500 px-1 text-[10px] font-bold leading-none text-white"
+          className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--tv-accent)] px-1 text-[10px] font-bold leading-none text-white"
           role="status"
           aria-label={`${badge} ${badge > 1 ? t("inbox.unreadPlural") : t("inbox.unread")}`}
         >
-          {badge > 99 ? "99+" : badge}
+          {badgeLabel(badge)}
         </span>
       )}
     </button>
@@ -69,12 +72,6 @@ export default function MobileActions({ page, setPage }: MobileActionsProps) {
 
   return (
     <div className="flex items-center gap-1 md:hidden">
-      {action(
-        "insights",
-        t("nav.jarvis"),
-        <Bot className="h-[19px] w-[19px]" strokeWidth={1.9} />,
-        page === "insights",
-      )}
       {action(
         "inbox",
         t("nav.inbox"),

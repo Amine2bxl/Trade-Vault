@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { Page, SectionId } from "../types";
 import { Check, ChevronDown, Lock } from "lucide-react";
 import { PAGE_META, pagesOfSection } from "../navigation";
@@ -8,7 +9,6 @@ import { preloadPage } from "../pageModules";
 import { pathForPage } from "../utils/pageUrl";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
-import { Modal } from "@/shared/ui";
 
 interface SectionTabsProps {
   section: SectionId;
@@ -49,6 +49,55 @@ export default function SectionTabs({ section, page, setPage }: SectionTabsProps
   const { tier, loading: subLoading } = useSubscription();
   const tabRefs = useRef<(HTMLAnchorElement | null)[]>([]);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const pickerRef = useRef<HTMLDivElement | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  /* LE MENU EST PORTÉ AU NIVEAU DU DOCUMENT, en position fixe.
+     Posé en absolu DANS la barre d'en-tête, il héritait de deux choses qui
+     dépendent de la page : sa LARGEUR (celle du bouton, que les actions de la
+     page — nombreuses sur le Journal — rétrécissaient) et sa COUCHE (le
+     contexte d'empilement de <main>, sous lequel le contenu d'une page qui crée
+     sa propre couche, comme le calculateur de lots, repassait par-dessus : le
+     menu paraissait vide ou transparent). En portail, calé sur le bouton, avec
+     une largeur fixe et la couche des feuilles : identique sur toutes les
+     pages, et toujours au-dessus. */
+  const [menuPos, setMenuPos] = useState<{ left: number; top: number; width: number } | null>(null);
+  useLayoutEffect(() => {
+    if (!pickerOpen) return;
+    const place = () => {
+      const r = pickerRef.current?.getBoundingClientRect();
+      if (!r) return;
+      const width = Math.min(280, window.innerWidth - 24);
+      const left = Math.min(Math.max(12, r.left), window.innerWidth - width - 12);
+      setMenuPos({ left, top: r.bottom + 6, width });
+    };
+    place();
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
+    return () => {
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place, true);
+    };
+  }, [pickerOpen]);
+
+  // Le menu se ferme au clic à côté, à Échap, et quand la vue change.
+  useEffect(() => {
+    if (!pickerOpen) return;
+    const outside = (e: PointerEvent) => {
+      const t = e.target as Node;
+      if (pickerRef.current?.contains(t) || menuRef.current?.contains(t)) return;
+      setPickerOpen(false);
+    };
+    const esc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setPickerOpen(false);
+    };
+    document.addEventListener("pointerdown", outside);
+    document.addEventListener("keydown", esc);
+    return () => {
+      document.removeEventListener("pointerdown", outside);
+      document.removeEventListener("keydown", esc);
+    };
+  }, [pickerOpen]);
+  useEffect(() => setPickerOpen(false), [page]);
 
   const activeIndex = Math.max(
     0,
@@ -116,58 +165,76 @@ export default function SectionTabs({ section, page, setPage }: SectionTabsProps
           faire défiler jusqu'à lui. Le sélecteur dit OÙ L'ON EST, en toutes
           lettres, et ouvre la liste complète — noms compris — d'un seul appui
           sur une cible de 44px. */}
-      <button
-        type="button"
-        onClick={() => setPickerOpen(true)}
-        aria-haspopup="dialog"
-        aria-label={t(activeLabelKey)}
-        className="section-picker"
-      >
-        <ActiveIcon className="h-4 w-4 shrink-0 text-[var(--tv-accent)]" strokeWidth={2.1} />
-        <span className="min-w-0 flex-1 truncate text-left">{t(activeLabelKey)}</span>
-        <ChevronDown className="h-4 w-4 shrink-0 text-slate-500" />
-      </button>
+      {/* ── MOBILE : UN SÉLECTEUR ET SON MENU ──
+          Le sélecteur dit où l'on est ; il ouvre un MENU ancré juste dessous
+          (plus de fenêtre qui surgit du bas de l'écran) avec toutes les vues
+          de la section, nommées. Échap, un appui à côté ou un choix le
+          referment. */}
+      <div ref={pickerRef} className="relative lg:hidden">
+        <button
+          type="button"
+          onClick={() => setPickerOpen((o) => !o)}
+          aria-haspopup="menu"
+          aria-expanded={pickerOpen}
+          aria-label={`${t("nav.sectionViews")} — ${t(activeLabelKey)}`}
+          className={cn("section-picker", pickerOpen && "section-picker-open")}
+        >
+          <ActiveIcon className="h-4 w-4 shrink-0 text-[var(--tv-accent)]" strokeWidth={2.1} />
+          <span className="min-w-0 flex-1 truncate text-left">{t(activeLabelKey)}</span>
+          <span className="section-picker-count">
+            {activeIndex + 1}/{pages.length}
+          </span>
+          <ChevronDown
+            className={cn(
+              "h-4 w-4 shrink-0 text-slate-500 transition-transform duration-200",
+              pickerOpen && "rotate-180",
+            )}
+          />
+        </button>
 
-      <Modal
-        open={pickerOpen}
-        onClose={() => setPickerOpen(false)}
-        wrapperClassName="z-[var(--tv-z-modal)] md:hidden"
-        className="md:max-w-sm"
-      >
-        <div className="px-5 pb-2 pt-4">
-          <h2 className="tv-title">{t("nav.sectionViews")}</h2>
-        </div>
-        <div className="space-y-1 p-3 pt-1">
-          {pages.map((p) => {
-            const { labelKey, icon: Icon } = PAGE_META[p];
-            const active = p === page;
-            const locked = !subLoading && !canAccessPage(tier, p);
-            return (
-              <button
-                key={p}
-                type="button"
-                onClick={() => {
-                  setPickerOpen(false);
-                  setPage(p);
-                }}
-                onTouchStart={() => preloadPage(p)}
-                className={cn("section-picker-row", active && "section-picker-row-active")}
-              >
-                <Icon
-                  className={cn(
-                    "h-[18px] w-[18px] shrink-0",
-                    active ? "text-[var(--tv-accent)]" : "text-slate-500",
-                  )}
-                  strokeWidth={active ? 2.1 : 1.9}
-                />
-                <span className="min-w-0 flex-1 truncate text-left">{t(labelKey)}</span>
-                {locked && <Lock className="h-3.5 w-3.5 shrink-0 text-slate-500" aria-hidden />}
-                {active && <Check className="h-4 w-4 shrink-0 text-[var(--tv-accent)]" />}
-              </button>
-            );
-          })}
-        </div>
-      </Modal>
+        {pickerOpen &&
+          menuPos &&
+          typeof document !== "undefined" &&
+          createPortal(
+            <div
+              ref={menuRef}
+              role="menu"
+              className="section-menu"
+              style={{ left: menuPos.left, top: menuPos.top, width: menuPos.width }}
+            >
+              {pages.map((p) => {
+                const { labelKey, icon: Icon } = PAGE_META[p];
+                const active = p === page;
+                const locked = !subLoading && !canAccessPage(tier, p);
+                return (
+                  <button
+                    key={p}
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setPickerOpen(false);
+                      setPage(p);
+                    }}
+                    onTouchStart={() => preloadPage(p)}
+                    className={cn("section-picker-row", active && "section-picker-row-active")}
+                  >
+                    <Icon
+                      className={cn(
+                        "h-[18px] w-[18px] shrink-0",
+                        active ? "text-[var(--tv-accent)]" : "text-slate-500",
+                      )}
+                      strokeWidth={active ? 2.1 : 1.9}
+                    />
+                    <span className="min-w-0 flex-1 truncate text-left">{t(labelKey)}</span>
+                    {locked && <Lock className="h-3.5 w-3.5 shrink-0 text-slate-500" aria-hidden />}
+                    {active && <Check className="h-4 w-4 shrink-0 text-[var(--tv-accent)]" />}
+                  </button>
+                );
+              })}
+            </div>,
+            document.body,
+          )}
+      </div>
 
       {/* ── DESKTOP : le contrôle segmenté, inchangé ── */}
       <div

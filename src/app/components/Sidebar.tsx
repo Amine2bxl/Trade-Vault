@@ -17,6 +17,7 @@ import { useSidebarCollapsed } from "../hooks/useSidebarCollapsed";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
 import { useUnreadCount } from "../hooks/useUnreadCount";
+import { badgeLabel } from "@/modules/notifications";
 import logoSrc from "@/assets/tradevault-logo-128.png";
 import { Modal, BrandWord } from "@/shared/ui";
 import AccountSwitcher from "./AccountSwitcher";
@@ -231,7 +232,7 @@ export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
                     className="absolute -right-2 -top-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[var(--tv-danger)] px-[3px] text-[10px] font-bold leading-none text-white"
                     role="status"
                   >
-                    {unread > 99 ? "99+" : unread}
+                    {badgeLabel(unread)}
                   </span>
                 ) : undefined,
             })}

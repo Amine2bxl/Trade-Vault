@@ -4,7 +4,7 @@ import { Trade } from "../types";
 import { formatPnl } from "../utils/tradeCalcs";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
-import { Button, Modal } from "@/shared/ui";
+import { Button, Modal, SelectPicker } from "@/shared/ui";
 import {
   FIELDS,
   REQUIRED,
@@ -319,23 +319,26 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
                                           : t("trade.notes")}
                       {REQUIRED.includes(f) && <span className="text-red-400"> *</span>}
                     </label>
-                    <select
-                      value={mapping[f] ?? ""}
-                      onChange={(e) =>
+                    <SelectPicker
+                      variant="field"
+                      label={f}
+                      value={mapping[f] === undefined ? "" : String(mapping[f])}
+                      onChange={(v) =>
                         setMapping((m) => ({
                           ...m,
-                          [f]: e.target.value === "" ? undefined : Number(e.target.value),
+                          [f]: v === "" ? undefined : Number(v),
                         }))
                       }
                       className={selectClass}
-                    >
-                      <option value="">—</option>
-                      {parsed.headers.map((h, i) => (
-                        <option key={i} value={i}>
-                          {h || `(col ${i + 1})`}
-                        </option>
-                      ))}
-                    </select>
+                      searchLabel={t("picker.search")}
+                      options={[
+                        { value: "", label: "—" },
+                        ...parsed.headers.map((h, i) => ({
+                          value: String(i),
+                          label: h || `(col ${i + 1})`,
+                        })),
+                      ]}
+                    />
                   </div>
                 ))}
               </div>

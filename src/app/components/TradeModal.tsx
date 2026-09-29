@@ -31,6 +31,7 @@ import {
 import { useAuth } from "../contexts/AuthContext";
 import { useT } from "../i18n/LanguageContext";
 import { cn } from "../utils/cn";
+import { useConfirm } from "../contexts/ConfirmContext";
 import { compressImageToFile } from "../utils/image";
 import { useScreenshotUrls, invalidateScreenshot } from "../hooks/useScreenshotUrls";
 import { useDraftAutosave } from "../hooks/useDraftAutosave";
@@ -45,6 +46,7 @@ import {
   CHIP_ROW,
   DateField,
   TimeField,
+  SelectPicker,
 } from "@/shared/ui";
 import { intlLocale } from "../i18n/locale";
 import { tradeDraftKey, nsKey, readJSON, removeKey, type TradeDraft } from "../utils/persistence";
@@ -61,6 +63,7 @@ import {
   loadTradeReflection,
 } from "../store/tradeIntel";
 import { EMOTIONAL_STATES, type EmotionalState } from "../utils/readiness";
+import { currencySymbol, formatMoney } from "@/shared/currency";
 
 interface TradeModalProps {
   trade: Trade | null;
@@ -189,7 +192,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
 
   // Couleur de la jauge de confiance = celle du badge de statut (cohérence).
   const confidenceColor = useMemo(() => {
-    if (form.confidence >= 75) return { from: "#34d399", to: "#10b981", text: "text-emerald-400" };
+    if (form.confidence >= 75) return { from: "#5bf0ab", to: "#22e08a", text: "text-emerald-400" };
     if (form.confidence >= 50) return { from: "#fbbf24", to: "#f59e0b", text: "text-amber-400" };
     return { from: "#f87171", to: "#ef4444", text: "text-red-400" };
   }, [form.confidence]);
@@ -358,7 +361,17 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
     if (dirty) setDraftRestored(true);
   }, [dirty]);
 
-  const discardDraft = () => {
+  const confirm = useConfirm();
+  /* SUPPRIMER UN BROUILLON SE CONFIRME. Un clic sur le badge effaçait tout ce
+     qui avait été saisi, sans retour possible — et le badge est posé à côté du
+     titre, là où le pouce passe. */
+  const discardDraft = async () => {
+    const ok = await confirm(t("trade.discardDraftConfirm"), {
+      danger: true,
+      detail: t("common.irreversible"),
+      confirmLabel: t("trade.discardDraft"),
+    });
+    if (!ok) return;
     removeKey(draftKey);
     setDraftRestored(false);
     setForm({ ...defaultForm });
@@ -473,9 +486,17 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
     );
   };
 
+  /* Une sortie AVANT l'entrée est une donnée impossible pour un trade du jour
+     (le modèle n'a qu'une date par trade : pas de trade de nuit à préserver).
+     Même minute = autorisé : un scalp tient souvent dans la minute. Les heures
+     sont normalisées (« 9:05 » importé d'un CSV → « 09:05 ») avant comparaison. */
+  const hhmm = (v: string) => {
+    const m = /^(\d{1,2}):(\d{2})/.exec(v ?? "");
+    return m ? `${m[1].padStart(2, "0")}:${m[2]}` : "";
+  };
   const timeError =
-    form.entryTime && form.exitTime && form.entryTime >= form.exitTime
-      ? "L'heure d'entrée doit être antérieure à l'heure de sortie."
+    form.entryTime && form.exitTime && hhmm(form.exitTime) < hhmm(form.entryTime)
+      ? t("trade.error.exitBeforeEntry")
       : null;
   const rMultipleError =
     form.direction !== "be" && form.rMultiple !== "" && isNaN(parseFloat(form.rMultiple))
@@ -494,9 +515,10 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
   // and select inputs line up pixel-perfect across every row; `textareaClass`
   // reuses the same skin but stays auto-height for multiline notes.
   const fieldBase = FIELD_BASE;
-  // Mobile: compact 36px controls so every top field matches the confluence
-  // chip height (equal, symmetric bubbles). Desktop keeps the roomier 44px.
-  const inputClass = cn(fieldBase, "h-9 sm:h-11 text-xs sm:text-sm");
+  // UNE ÉCHELLE, CELLE DES CHAMPS DATE/HEURE : 40 px et 13 px sur téléphone,
+  // 44 px et 14 px au-delà. Chaque champ, chaque sélecteur, chaque puce du
+  // formulaire s'aligne dessus — rien de plus petit que 11 px nulle part.
+  const inputClass = cn(fieldBase, "h-10 sm:h-11 text-[13px] sm:text-sm");
   const textareaClass = cn(fieldBase, "py-2.5");
   const labelClass = "tv-label block text-slate-400 mb-1.5";
 
@@ -563,7 +585,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
             </div>
             {!trade && draftRestored && (
               <button
-                onClick={discardDraft}
+                onClick={() => void discardDraft()}
                 title={t("trade.discardDraft")}
                 className="tv-label group flex items-center gap-1.5 px-2 py-1 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-400 transition hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-400"
               >
@@ -660,7 +682,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
               <div className="flex gap-1.5">
                 <div className="relative flex-1">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">
-                    {form.riskType === "dollar" ? "$" : ""}
+                    {form.riskType === "dollar" ? currencySymbol() : ""}
                   </span>
                   <input
                     type="number"
@@ -668,7 +690,13 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                     value={form.riskAmount}
                     onChange={(e) => setForm((f) => ({ ...f, riskAmount: e.target.value }))}
                     placeholder={form.riskType === "dollar" ? "0.00" : "1.0"}
-                    className={cn(inputClass, "pl-7")}
+                    className={inputClass}
+                    style={{
+                      paddingLeft:
+                        form.riskType === "dollar"
+                          ? `${1.1 + currencySymbol().length * 0.55}rem`
+                          : undefined,
+                    }}
                   />
                   {form.riskType === "percent" && (
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">
@@ -685,7 +713,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                   }
                   className="px-3 rounded-xl border border-white/[0.08] text-xs font-bold text-slate-400 hover:text-white hover:bg-white/5 transition shrink-0"
                 >
-                  {form.riskType === "dollar" ? "$" : "%"}
+                  {form.riskType === "dollar" ? currencySymbol() : "%"}
                 </button>
               </div>
             </div>
@@ -699,7 +727,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                 placeholder="2.0"
                 className={inputClass}
               />
-              <div className="text-[10px] text-slate-600 mt-1">{t("trade.rrHint")}</div>
+              <div className="text-[11px] text-slate-600 mt-1">{t("trade.rrHint")}</div>
             </div>
             <div>
               <label className={labelClass}>{t("trade.estPnl")}</label>
@@ -735,7 +763,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                 className="flex-1 bg-transparent text-sm text-white focus:outline-none"
               />
               <span className="text-xs text-slate-600">
-                → ${riskDollar.toFixed(2)} {t("dashboard.riskSuffix")}
+                → {formatMoney(riskDollar)} {t("dashboard.riskSuffix")}
               </span>
             </div>
           )}
@@ -764,7 +792,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                       type="button"
                       onClick={() => setPointValue(String(p.value))}
                       className={cn(
-                        "px-2.5 py-1 rounded-lg text-[10px] font-bold transition border",
+                        "px-2.5 py-1 rounded-lg text-[11px] font-bold transition border",
                         pointValue === String(p.value)
                           ? "bg-cyan-500/15 border-cyan-500/25 text-cyan-300"
                           : "bg-white/[0.03] border-white/[0.06] text-slate-500 hover:text-slate-300",
@@ -813,7 +841,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                         {calcContracts.contracts} {t("trade.contracts")}
                       </span>
                       <span className="text-slate-400">
-                        {t("trade.effectiveRisk")}: ${calcContracts.effectiveRisk.toFixed(2)}
+                        {t("trade.effectiveRisk")}: {formatMoney(calcContracts.effectiveRisk)}
                       </span>
                     </>
                   ) : (
@@ -833,6 +861,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                 onChange={(v) => setForm((f) => ({ ...f, entryTime: v }))}
                 locale={intlLocale(lang)}
                 aria-label={t("trade.entryTime")}
+                doneLabel={t("common.done")}
                 className={inputClass}
               />
             </div>
@@ -843,22 +872,29 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                 onChange={(v) => setForm((f) => ({ ...f, exitTime: v }))}
                 locale={intlLocale(lang)}
                 aria-label={t("trade.exitTime")}
-                className={inputClass}
+                doneLabel={t("common.done")}
+                className={cn(inputClass, timeError && "border-red-500/50")}
               />
+              {/* L'erreur se lit SOUS le champ fautif, pas seulement en pied. */}
+              {timeError && (
+                <p role="alert" className="mt-1 text-[11px] text-red-400">
+                  {timeError}
+                </p>
+              )}
             </div>
             <div>
               <label className={labelClass}>{t("trade.strategy")}</label>
-              <select
+              <SelectPicker
+                variant="field"
+                label={t("trade.strategy")}
                 value={form.strategy}
-                onChange={(e) => setForm((f) => ({ ...f, strategy: e.target.value }))}
-                className={cn(inputClass, "cursor-pointer appearance-none")}
-              >
-                {STRATEGIES.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
+                onChange={(v) => setForm((f) => ({ ...f, strategy: v }))}
+                className={inputClass}
+                searchLabel={t("picker.search")}
+                options={Array.from(new Set([...STRATEGIES, form.strategy]))
+                  .filter(Boolean)
+                  .map((s) => ({ value: s, label: s }))}
+              />
             </div>
           </div>
 
@@ -875,7 +911,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                 key={p.t}
                 type="button"
                 onClick={() => setForm((f) => ({ ...f, entryTime: p.t, exitTime: p.v }))}
-                className="h-8 px-2.5 rounded-lg text-[11px] font-bold border transition bg-white/[0.03] border-white/[0.06] text-slate-500 hover:text-slate-300 hover:border-cyan-500/30"
+                className="h-8 px-2.5 rounded-lg text-[11px] font-bold border transition bg-white/[0.03] border-white/[0.06] text-slate-500 hover:text-slate-300 hover:border-[var(--tv-border-accent)]"
               >
                 {p.t} → {p.v}
               </button>
@@ -1253,7 +1289,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <label className={labelClass + " mb-0"}>{t("trade.screenshots")}</label>
-              <span className="text-[10px] text-slate-600 flex items-center gap-1">
+              <span className="text-[11px] text-slate-600 flex items-center gap-1">
                 {t("common.pasteHint")}
               </span>
             </div>
@@ -1297,7 +1333,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                     )}
                   </button>
                   {/* Rang + flèches de réordonnancement (tactile). */}
-                  <span className="absolute top-1 left-1 grid h-5 w-5 place-items-center rounded-md bg-black/70 text-[10px] font-bold text-white">
+                  <span className="absolute top-1 left-1 grid h-5 w-5 place-items-center rounded-md bg-black/70 text-[11px] font-bold text-white">
                     {i + 1}
                   </span>
                   {form.screenshots.length > 1 && (
@@ -1332,13 +1368,13 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                 </div>
               ))}
               {form.screenshots.length < 3 && (
-                <label className="w-24 h-24 rounded-xl border-2 border-dashed border-white/[0.08] flex flex-col items-center justify-center cursor-pointer hover:border-cyan-500/30 hover:bg-cyan-500/[0.03] transition">
+                <label className="w-24 h-24 rounded-xl border-2 border-dashed border-white/[0.08] flex flex-col items-center justify-center cursor-pointer hover:border-[var(--tv-border-accent)] hover:bg-cyan-500/[0.03] transition">
                   {uploading ? (
                     <div className="w-5 h-5 border-2 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin" />
                   ) : (
                     <>
                       <ImagePlus className="w-5 h-5 text-slate-600" />
-                      <span className="text-[10px] text-slate-600 mt-1">{t("trade.upload")}</span>
+                      <span className="text-[11px] text-slate-600 mt-1">{t("trade.upload")}</span>
                     </>
                   )}
                   <input
@@ -1371,7 +1407,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
             {showAdvanced && (
               <div className="px-3 pb-3 grid grid-cols-3 gap-2">
                 <div>
-                  <label className={labelClass}>MAE ($)</label>
+                  <label className={labelClass}>MAE ({currencySymbol()})</label>
                   <input
                     type="number"
                     step="0.01"
@@ -1383,7 +1419,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                   <div className="text-[11px] text-slate-600 mt-1">{t("trade.maeHint")}</div>
                 </div>
                 <div>
-                  <label className={labelClass}>MFE ($)</label>
+                  <label className={labelClass}>MFE ({currencySymbol()})</label>
                   <input
                     type="number"
                     step="0.01"
@@ -1395,7 +1431,9 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                   <div className="text-[11px] text-slate-600 mt-1">{t("trade.mfeHint")}</div>
                 </div>
                 <div>
-                  <label className={labelClass}>{t("trade.slippage")} ($)</label>
+                  <label className={labelClass}>
+                    {t("trade.slippage")} ({currencySymbol()})
+                  </label>
                   <input
                     type="number"
                     step="0.01"
@@ -1446,9 +1484,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                         : "text-red-400",
                   )}
                 >
-                  {form.direction === "be"
-                    ? "BE"
-                    : `${calculatedPnl >= 0 ? "+" : ""}$${Math.abs(calculatedPnl).toFixed(2)}`}
+                  {form.direction === "be" ? "BE" : formatMoney(calculatedPnl, { signed: true })}
                 </span>
               </>
             ) : (

@@ -82,9 +82,20 @@ export type { StreakPeriod } from "./StreakCalendar";
 export { BrandWord } from "./Brand";
 export { JarvisMark } from "./JarvisMark";
 export { JarvisOrb } from "./JarvisOrb";
+export { CursorOrb } from "./CursorOrb";
 export type { JarvisOrbState } from "./JarvisOrb";
 export { DateField } from "./DateField";
 export type { DateFieldProps } from "./DateField";
 export { TimeField } from "./TimeField";
 export type { TimeFieldProps } from "./TimeField";
 export { usePopPlacement } from "./usePopPlacement";
+export { SelectPicker, MultiPicker, RangePicker, summarizeSelection, rangeBounds } from "./Picker";
+export { ColorPicker } from "./ColorPicker";
+export type { ColorFamily, ColorPickerLabels } from "./ColorPicker";
+export type {
+  PickerOption,
+  SelectPickerProps,
+  MultiPickerProps,
+  RangePickerProps,
+  RangeValue,
+} from "./Picker";

@@ -122,7 +122,7 @@
   --color-surface: #16191c;
   --color-surface-light: #1d2125;
   --color-surface-lighter: #23282d;
-  --color-profit: #10b981;
+  --color-profit: #22e08a;
   --color-loss: #ef4444;
 
   /* ----------------------------------------------------------------
@@ -140,7 +140,19 @@
    * les tokens qu'elles suivent, elles ne bougent avec AUCUN thème : la donnée
    * garde ses couleurs quand l'interface change les siennes.
    * ---------------------------------------------------------------- */
+  /* Toute la rampe émeraude suit le vert du CTA « Get Started » : aucune
+     teinte de l'ancien vert ne peut plus s'afficher par une classe oubliée. */
+  --color-emerald-50: #ecfdf5;
+  --color-emerald-100: #d3fbe7;
+  --color-emerald-200: #a6f7cf;
+  --color-emerald-300: #5bf0ab;
   --color-emerald-400: var(--tv-chart-green);
+  --color-emerald-500: #12b981;
+  --color-emerald-600: #0e9f6e;
+  --color-emerald-700: #0b7f58;
+  --color-emerald-800: #0a6247;
+  --color-emerald-900: #084a37;
+  --color-emerald-950: #042a1f;
   --color-red-400: var(--tv-chart-red);
 
   /* ----------------------------------------------------------------
@@ -160,9 +172,15 @@
    *     soit le thème choisi — y compris un thème clair ou pastel, où l'accent
    *     seul aurait rendu le bouton illisible.
    * ---------------------------------------------------------------- */
-  --tv-cta: oklch(0.52 calc(0.16 * var(--tv-primary-c)) var(--tv-primary-h));
-  --tv-cta-hover: oklch(0.58 calc(0.16 * var(--tv-primary-c)) var(--tv-primary-h));
-  --tv-cta-active: oklch(0.46 calc(0.16 * var(--tv-primary-c)) var(--tv-primary-h));
+  /* LE BOUTON D'ACTION EST CELUI DE LA VITRINE. Il était l'accent assombri
+     (un vert sourd, « bizarre » à côté du « Get Started ») : l'application et
+     la landing semblaient deux produits. Il prend maintenant l'accent du
+     thème lui-même — #22e08a sur le thème par défaut — et le texte blanc est
+     porté par une ombre courte (`.tv-accent-fill`), exactement comme sur la
+     vitrine. */
+  --tv-cta: var(--tv-accent);
+  --tv-cta-hover: var(--tv-highlight);
+  --tv-cta-active: var(--tv-accent-2);
 
   /* ----------------------------------------------------------------
    * Themeable accent ramps.
@@ -406,8 +424,10 @@
    * unique de la courbe, de son dégradé, de sa légende et de ses pastilles.
    * `--tv-chart-red` en est le pendant pour la perte et pour le repère de
    * plancher. */
-  --tv-chart-green: #34d399;
-  --tv-chart-green-rgb: 52 211 153;
+  /* Le vert du gain EST le vert de la vitrine (#22e08a, le « Get Started ») :
+     un seul vert dans tout le produit, de la landing à la courbe. */
+  --tv-chart-green: #22e08a;
+  --tv-chart-green-rgb: 34 224 138;
   --tv-chart-red: #f87171;
   --tv-chart-red-rgb: 248 113 113;
 
@@ -515,7 +535,7 @@
   --tv-text-muted: #8f959b;
 
   /* L5 data emphasis / L6 risk / L7 discipline */
-  --tv-success: #10b981;
+  --tv-success: #22e08a;
   --tv-warning: #f59e0b;
   --tv-danger: #ef4444;
   --tv-success-rgb: 16 185 129;
@@ -531,6 +551,18 @@
    * menus, docks), et `--tv-glow-accent` ne vaut plus rien du tout :
    * l'accent est une couleur, pas une source de lumière. */
   --tv-elev-1: none;
+  /* LE RELIEF DES CARTES — trois gestes, jamais de dégradé ni de halo.
+   *   edge : un filet de lumière d'un pixel sur l'arête haute (la plaque
+   *          accroche la lumière du dessus, elle n'en émet pas) ;
+   *   lift : un contact sombre serré + une ombre longue très diffuse, qui
+   *          décolle la carte du fond sans la faire flotter ;
+   *   sink : l'inverse, pour un bloc CREUSÉ dans une carte.
+   * Les plaques plates « carrés gris » se lisaient toutes au même plan ; le
+   * relief rend la hiérarchie fond → carte → bloc visible sans ajouter de
+   * couleur. Le Calendrier reste plat (`.tv-flat`). */
+  --tv-relief-edge: inset 0 1px 0 rgb(255 255 255 / 0.055);
+  --tv-relief-lift: 0 1px 1px rgb(0 0 0 / 0.45), 0 14px 30px -18px rgb(0 0 0 / 0.9);
+  --tv-relief-sink: inset 0 1px 2px rgb(0 0 0 / 0.38), inset 0 0 0 1px rgb(0 0 0 / 0.12);
   --tv-elev-2: 0 8px 24px -14px rgb(0 0 0 / 0.75);
   --tv-elev-3: 0 24px 60px -28px rgb(0 0 0 / 0.85);
   --tv-glow-accent: none;
@@ -936,19 +968,61 @@ body {
   padding: 1.5rem;
   background: var(--tv-bg);
 }
-.err-nappe {
+.err-grille {
   position: fixed;
-  inset: -30% -10% auto;
-  height: 70vh;
+  inset: 0;
   pointer-events: none;
-  background: radial-gradient(55% 50% at 50% 0%, rgb(var(--tv-accent-rgb) / 0.1), transparent 70%);
-  filter: blur(60px);
+  background-image:
+    linear-gradient(rgb(255 255 255 / 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 0.035) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 45%, #000 30%, transparent 85%);
+}
+.err-nappe,
+.err-nappe-2 {
+  position: fixed;
+  width: 70vmax;
+  height: 70vmax;
+  pointer-events: none;
+  border-radius: 50%;
+}
+.err-nappe {
+  top: -38vmax;
+  right: -30vmax;
+  background: radial-gradient(closest-side, rgb(var(--tv-accent-rgb) / 0.16), transparent);
+}
+.err-nappe-2 {
+  bottom: -40vmax;
+  left: -32vmax;
+  background: radial-gradient(closest-side, rgb(var(--tv-accent-2-rgb) / 0.11), transparent);
+}
+/* La carte : même plaque que les modales de l'application — valeur de
+   surface et liseré, un seul halo d'accent très court sous le bord haut. */
+.err-carte {
+  position: relative;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  border-radius: 20px;
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.035), rgb(255 255 255 / 0.012));
+  padding: 2.25rem 1.5rem 2rem;
+  backdrop-filter: blur(6px);
+}
+.err-carte::before {
+  content: "";
+  position: absolute;
+  inset: -1px 18% auto;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgb(var(--tv-accent-rgb) / 0.7), transparent);
+}
+@media (min-width: 640px) {
+  .err-carte {
+    padding: 2.75rem 2.5rem 2.5rem;
+  }
 }
 .err-bloc {
   position: relative;
   z-index: 1;
   width: 100%;
-  max-width: 30rem;
+  max-width: 32rem;
   text-align: center;
   animation: err-monte 0.55s cubic-bezier(0.19, 1, 0.22, 1) both;
 }
@@ -1092,8 +1166,15 @@ body {
   /* UN SEUL À-PLAT. Le fond portait deux ellipses colorées « d'ambiance » :
      elles teintaient chaque carte posée dessus, faisaient respirer l'écran
      sans qu'il se passe rien, et coûtaient un dégradé plein écran à chaque
-     repeint. Un poste de travail a un fond, pas une scène. */
-  background: var(--tv-bg);
+     repeint. Un poste de travail a un fond, pas une scène.
+
+     TRANSPARENT, et c'est ce qui rend le fond du site visible. La grille et
+     la lumière (`body::before` / `::after`, plus bas) sont en `z-index: -1`
+     dans le contexte racine : elles se peignent APRÈS le canevas (le fond de
+     `html`, qui porte déjà `--tv-bg`) mais AVANT le fond de `body`. Un fond
+     opaque ici les recouvrait entièrement — le fond « comme la vitrine »
+     existait dans le code et ne s'est jamais vu. */
+  background: transparent;
   color: var(--tv-text);
   min-height: 100vh;
   min-height: 100dvh;
@@ -1134,9 +1215,11 @@ body {
        ajouter du contenu garde TOUJOURS le même espace, rien n'est jamais
        masqué. */
     padding-bottom: calc(140px + env(safe-area-inset-bottom, 0px));
-    /* Clamp the scroll container to the viewport so no child can drag the
-       whole page sideways on Analytics/tables. */
-    overflow-x: hidden;
+    /* PLUS DE `overflow-x: hidden` ICI. Il MASQUAIT les débordements au lieu
+       de les empêcher : un élément trop large était coupé net, sans que rien
+       ne le signale, et la cause restait en place. Chaque page est désormais
+       tenue à sa largeur à la source (grilles `minmax(0, …)`, `min-w-0`,
+       troncatures), et la QA mesure `scrollWidth` page par page. */
     max-width: 100vw;
   }
 }
@@ -1330,10 +1413,11 @@ input[type="number"] {
   }
 }
 
-/* Les cartes ne portent AUCUNE ombre. L'ombre est réservée à ce qui flotte
-   vraiment : modales, menus, docks — et elle est déclarée là où ça flotte. */
+/* Les cartes portent le RELIEF (filet haut + contact sombre), pas une ombre
+   de flottement : l'ombre longue et marquée reste réservée à ce qui flotte
+   vraiment — modales, menus, docks. */
 .glass {
-  box-shadow: none;
+  box-shadow: var(--tv-relief-edge), var(--tv-relief-lift);
 }
 .glass-strong {
   box-shadow: var(--tv-elev-3);
@@ -1349,7 +1433,22 @@ input[type="number"] {
 .panel {
   background: var(--tv-plate-1);
   border: 1px solid var(--tv-border);
-  box-shadow: none;
+  box-shadow: var(--tv-relief-edge), var(--tv-relief-lift);
+}
+/* Un bloc posé DANS une carte : un cran plus clair et creusé, pour que la
+   carte et son contenu ne se lisent plus au même plan. */
+.tv-relief-inset {
+  background: var(--tv-plate-2);
+  box-shadow: var(--tv-relief-sink);
+}
+/* Une surface en relief hors des classes de carte (sections de modale…). */
+.tv-relief {
+  box-shadow: var(--tv-relief-edge), var(--tv-relief-lift);
+}
+/* Le Calendrier garde sa sobriété : aucune ombre, la grille seule. */
+.tv-flat,
+.tv-flat .tv-kpi {
+  box-shadow: none !important;
 }
 /* Seules les deux classes de KPI imposent leur rayon : `.panel` est posé sur
    des éléments qui portent déjà le leur (`rounded-2xl` / `rounded-3xl`). */
@@ -1641,8 +1740,15 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
      au-dessus du contenu qui défile dessous — l'un des trois seuls endroits
      du produit où une ombre a un sens. */
   background: linear-gradient(180deg, var(--tv-rail-mid) 0%, var(--tv-rail-bot) 100%);
+  /* LA SÉPARATION. Sur un contenu sombre, la capsule se fondait dans la page :
+     un dégradé presque noir sur un fond presque noir. Elle reçoit un liseré
+     (la même valeur que les plaques fortes) et une arête haute éclairée à la
+     couleur du thème — une lueur d'un pixel, pas un halo. Aucun flou, aucune
+     barre opaque pleine largeur : elle reste une pièce qui flotte. */
+  border: 1px solid var(--tv-border-strong);
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.09),
+    inset 0 1px 0 rgb(var(--tv-accent-rgb) / 0.22),
+    0 -1px 0 rgb(var(--tv-accent-rgb) / 0.06),
     var(--tv-elev-3);
   overflow: visible;
 }
@@ -1659,87 +1765,56 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
 .bottom-nav-item {
   position: relative;
   min-width: 44px;
-  min-height: 50px;
+  min-height: 52px;
   width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 4px;
-  border-radius: 16px;
+  border-radius: 14px;
   transition:
-    color 0.2s,
-    transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+    color var(--tv-dur-2) var(--tv-ease),
+    transform var(--tv-dur-1) var(--tv-ease);
   -webkit-tap-highlight-color: transparent;
 }
 .bottom-nav-item:active {
-  transform: scale(0.9);
+  transform: scale(0.94);
 }
-
-/* Le trait lumineux qui s'allumait sous l'onglet actif a été supprimé : il
-   disait la même chose que la pastille, une deuxième fois. Les deux classes
-   restent inertes le temps que les derniers appels disparaissent. */
-.bottom-nav-bar,
-.bottom-nav-bar-active {
-  display: none;
+.bottom-nav-item:focus-visible {
+  outline: 2px solid rgb(var(--tv-accent-rgb) / 0.7);
+  outline-offset: -2px;
 }
-
-/* L'icône est posée sur une pastille. Active, la pastille devient BLANCHE
-   pleine et l'icône passe en vert très foncé — exactement la pilule du rail. */
-.bottom-nav-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 30px;
+/* L'ONGLET ACTIF — un trait d'accent sous le libellé, rien d'autre. La
+   pastille pleine découpée dans la barre était un aplat lourd, difficile à
+   lire comme « tu es ici ». */
+.bottom-nav-dot {
+  height: 3px;
+  width: 14px;
   border-radius: 9999px;
-  transition: background-color var(--tv-dur-2) var(--tv-ease);
+  background: transparent;
+  transform: scaleX(0.4);
+  transition:
+    background-color var(--tv-dur-2) var(--tv-ease),
+    transform var(--tv-dur-2) var(--tv-ease);
 }
-/* L'ONGLET ACTIF, MOBILE — la même grammaire que le rail de bureau.
-   C'était une pastille BLANCHE PLEINE : le seul aplat blanc du produit, posé
-   au milieu d'une barre verte, et une deuxième façon de dire « actif » alors
-   que le rail en a déjà une. Elle prend maintenant la couleur de la FENÊTRE DE
-   CONTENU avec l'icône à l'accent, exactement comme `.rail-item-active` : sur
-   les deux écrans, l'onglet actif est un morceau de la page découpé dans la
-   navigation. */
-.bottom-nav-icon-active {
-  background: var(--tv-plate-0);
-  color: var(--tv-accent);
-  box-shadow: inset 0 0 0 1px var(--tv-border);
+.bottom-nav-dot-on {
+  background: var(--tv-accent);
+  transform: scaleX(1);
 }
 
-/* The "add trade" FAB.
- *
- * It used to breathe forever (`fabBreathe`, a 3.2s infinite box-shadow pulse).
- * Two problems, both real: an animated box-shadow is a paint on every frame,
- * for the entire session, on the device least able to afford it; and a control
- * that pulses without anything having happened is decoration pretending to be
- * feedback. The button is already the largest, brightest, most central element
- * on the bar — it does not need to wave. Static now; the press response is
- * where the motion belongs. */
-.fab-button {
-  width: 54px;
-  height: 54px;
-  border-radius: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  /* Un à-plat vert, un chiffre de contraste maximal dessus. Le bouton était
-     un dégradé cerclé d'un liseré clair et posé sur un halo de 22px : trois
-     effets pour dire « appuie ici », là où la taille, la position centrale et
-     la seule couleur saturée de l'écran le disaient déjà. */
-  /* La teinte d'ACTION, comme tout bouton plein du produit : le « + » est
-     l'action principale de l'écran mobile, il doit porter exactement le même
-     vert et le même blanc que le bouton principal du bureau. */
-  background: var(--tv-cta);
-  color: #ffffff;
-  border: none;
-  transition: transform var(--tv-dur-2) var(--tv-ease);
-}
-.fab-button:active {
-  /* La rotation de 90° était une cabriole : le bouton ouvre un formulaire,
-     il ne se transforme pas. Reste l'enfoncement, qui est un vrai retour. */
-  transform: scale(0.92);
+/* LA TUILE D'AJOUT — l'accent de la barre, à l'échelle d'une icône. Elle
+   remplace le « + » de 52px surélevé : même hauteur que les autres onglets,
+   un aplat d'accent teinté et un liseré, jamais d'ombre ni d'anneau. */
+.bottom-nav-add {
+  display: grid;
+  height: 26px;
+  width: 38px;
+  place-items: center;
+  border-radius: 9px;
+  border: 1px solid rgb(var(--tv-accent-rgb) / 0.45);
+  background: rgb(var(--tv-accent-rgb) / 0.16);
+  color: var(--tv-highlight);
 }
 
 /* Setup-quality stars — soft amber glow + spring pop on select */
@@ -1991,12 +2066,24 @@ svg.lucide {
      thème. Il suit désormais l'accent. */
   background: var(--tv-cta);
   color: #ffffff;
+  /* Le relief du « Get Started » de la vitrine : arête haute éclairée et une
+     ombre portée dans l'accent, diffuse — pas de halo. */
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.2),
+    0 1px 2px rgb(0 0 0 / 0.4),
+    0 8px 24px -12px rgb(var(--tv-accent-rgb) / 0.55);
   transition:
     background-color 0.16s ease,
+    box-shadow 0.16s ease,
+    transform 0.16s cubic-bezier(0.16, 1, 0.3, 1),
     opacity 0.16s ease;
 }
 .btn-primary:hover {
   background: var(--tv-cta-hover);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.24),
+    0 1px 2px rgb(0 0 0 / 0.4),
+    0 12px 30px -12px rgb(var(--tv-accent-rgb) / 0.7);
 }
 .btn-primary:active {
   background: var(--tv-cta-active);
@@ -2564,9 +2651,11 @@ a:focus-visible,
            pourcentage, la lumière s'étirerait sur toute la hauteur de la
            fenêtre — sur une page longue, un bandeau clair de 300px en haut,
            qu'on lit comme un en-tête et non comme un éclairage. */
+    /* La plaque laisse passer le fond du site (grille + lumières) : légèrement
+       translucide, pour que la fenêtre et la page soient une seule scène. */
     background:
       linear-gradient(180deg, rgb(255 255 255 / 0.03) 0px, rgb(255 255 255 / 0) 150px),
-      var(--tv-plate-0);
+      color-mix(in srgb, var(--tv-plate-0) 82%, transparent);
     border: 0;
     border-radius: var(--tv-shell-radius);
     /* Le liseré devient un liseré INTERNE, comme celui du rail, avec le même
@@ -2799,9 +2888,8 @@ a:focus-visible,
    ombre courte sous les lettres les ancre sans assombrir l'aplat. La vitrine
    le faisait déjà sur `.btn-primary` ; tout ce qui est plein sur ces
    surfaces le mérite pour la même raison. */
-.landing-root .tv-accent-fill,
-.err-ecran .tv-accent-fill,
-.tv-public .tv-accent-fill {
+.tv-accent-fill,
+.btn-primary {
   font-weight: 700;
   text-shadow: 0 1px 2px rgb(4 18 11 / 0.55);
 }
@@ -2890,7 +2978,15 @@ a:focus-visible,
      comme un mouvement, seulement comme un scintillement — elle coûtait donc
      son prix sans rien rendre. Assez longue pour être lue, assez courte pour
      ne jamais se mettre entre le trader et sa donnée. */
-  animation: pageIn var(--tv-dur-3) var(--tv-ease-out) both;
+  /* `backwards`, PAS `both`. Avec `both`, l'état final restait appliqué :
+     `transform: translate3d(0,0,0)` pour toujours. Or TOUT `transform`
+     (même nul) fait de l'élément le bloc conteneur de ses descendants
+     `position: fixed`. Chaque couche plein écran d'une page (le fond de la
+     Checklist, une modale rendue dans la page…) se calait alors sur la page
+     et non sur la fenêtre : décalée de la largeur du rail, et la fenêtre de
+     contenu débordait de 249px. `backwards` applique l'état de départ avant
+     l'animation et ne laisse RIEN après elle. */
+  animation: pageIn var(--tv-dur-3) var(--tv-ease-out) backwards;
 }
 @media (prefers-reduced-motion: reduce) {
   .page-in {
@@ -2969,6 +3065,10 @@ a:focus-visible,
    en utilitaire : `display` déclaré dans une règle non calquée bat un
    `hidden` de Tailwind, qui vit dans une couche — la rangée restait donc
    visible sous le sélecteur. */
+/* Les onglets de section apparaissent à `lg`, pas à `md`. Sur tablette le
+   rail prend déjà ~230px : les cinq onglets de Préparation demandaient 249px
+   de plus que la fenêtre. En dessous, c'est le sélecteur compact (le même
+   menu que sur téléphone) qui porte la navigation. */
 .section-tabs {
   display: none;
   max-width: 100%;
@@ -2978,12 +3078,16 @@ a:focus-visible,
   border: 1px solid var(--tv-border);
   box-shadow: none;
 }
-@media (min-width: 768px) {
+@media (min-width: 1024px) {
   .section-tabs {
     display: inline-flex;
   }
 }
 .section-tabs-row {
+  /* `min-width: 0` : sans lui, la rangée (élément flex) ne descend jamais
+     sous la largeur de ses onglets — son défilement interne ne s'enclenchait
+     pas, et c'est la fenêtre de contenu entière qui débordait. */
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 0.25rem;
@@ -3132,7 +3236,9 @@ a:focus-visible,
   display: flex;
   align-items: center;
   gap: 0.625rem;
-  width: 100%;
+  /* Largeur FIXE (plafonnée) : le sélecteur ne rétrécit plus quand la page
+     pose ses actions à droite — même taille sur toutes les pages. */
+  width: min(100%, 17.5rem);
   height: 2.75rem;
   padding: 0 0.875rem;
   border-radius: var(--radius-xl);
@@ -3272,6 +3378,18 @@ a:focus-visible,
   }
 }
 .rp-section + .rp-section {
+  border-top: 1px solid var(--tv-border);
+}
+/* `.rp-duo` groupe deux sections courtes que le PDF pose côte à côte. À
+   l'écran il s'efface (`display: contents`) : ses sections restent dans la
+   colonne, et leurs filets de séparation sont repris ici, puisque le
+   regroupement coupe la relation de fratrie que `+` utilise. */
+.rp-duo {
+  display: contents;
+}
+.rp-section + .rp-duo > .rp-section:first-child,
+.rp-duo + .rp-duo > .rp-section:first-child,
+.rp-duo + .rp-section {
   border-top: 1px solid var(--tv-border);
 }
 
@@ -3461,18 +3579,143 @@ a:focus-visible,
       découpe le document à la première page. Les ancêtres redeviennent donc
       de simples blocs sans hauteur, sans débordement et sans décor.
 
-   3. « Le papier est blanc. »
-      L'interface est sombre ; un aplat sombre sur une page A4 est illisible
-      et impubliable. La feuille repasse en encre noire sur fond blanc, et
-      seules les couleurs PORTEUSES DE SENS survivent — le vert du gain, le
-      rouge de la perte — avec `print-color-adjust: exact` pour que le
-      navigateur ne les efface pas au nom de l'économie d'encre.
+   3. « Le papier est un rapport TradeVault. »
+      Le PDF garde l'identité du produit : fond sombre, nappes d'accent très
+      diffuses, émeraude du CTA pour ce qui gagne, rouge pour ce qui perd.
+      `print-color-adjust: exact` sur la racine et la feuille empêche le
+      navigateur d'effacer les fonds au nom de l'économie d'encre — sans
+      lui, on retrouverait du texte clair sur du blanc. Une couverture ouvre
+      le document ; chaque section reste d'un seul tenant sur sa page.
    ────────────────────────────────────────────────────────────────────────── */
 
+.rp-switch {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  max-width: 26rem;
+}
+.rp-switch-btn {
+  display: grid;
+  place-items: center;
+  height: 2.5rem;
+  width: 2.5rem;
+  flex-shrink: 0;
+  border: 1px solid var(--tv-border);
+  border-radius: 0.75rem;
+  background: var(--tv-plate-2);
+  color: var(--tv-text-secondary);
+  transition:
+    background-color 150ms ease,
+    color 150ms ease,
+    border-color 150ms ease;
+}
+.rp-switch-btn:hover:not(:disabled) {
+  background: var(--tv-plate-3);
+  color: var(--tv-text-primary);
+}
+.rp-switch-btn:disabled {
+  opacity: 0.35;
+}
+.rp-switch-label {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 0.5rem;
+  height: 2.5rem;
+  padding: 0 0.85rem;
+  border: 1px solid var(--tv-border);
+  border-radius: 0.75rem;
+  background: var(--tv-plate-2);
+  color: var(--tv-text-primary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.rp-switch-label:focus-visible,
+.rp-switch-label[aria-expanded="true"] {
+  border-color: var(--tv-border-accent);
+  outline: none;
+}
+.rp-switch-live,
+.rp-pill-live {
+  color: #fbbf24;
+  border-color: rgb(251 191 36 / 0.35);
+  background: rgb(251 191 36 / 0.1);
+}
+.rp-switch-live {
+  margin-left: auto;
+  padding: 0.1rem 0.4rem;
+  border: 1px solid rgb(251 191 36 / 0.35);
+  border-radius: 999px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.rp-progress {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.6rem;
+}
+.rp-progress-track {
+  display: block;
+  height: 0.3rem;
+  width: 7rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--tv-plate-3);
+}
+.rp-progress-track > span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: #fbbf24;
+}
+.rp-provisional {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  color: #fcd34d;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  background: rgb(251 191 36 / 0.05);
+}
+.rp-takeaways {
+  display: grid;
+  gap: 0.45rem;
+}
+.rp-takeaways li {
+  position: relative;
+  padding-left: 1rem;
+  font-size: 0.85rem;
+  line-height: 1.55;
+  color: var(--tv-text-secondary);
+}
+.rp-takeaways li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.55em;
+  height: 0.35rem;
+  width: 0.35rem;
+  border-radius: 999px;
+  background: var(--tv-chart-green);
+}
+
 @media print {
+  /* Le FOND DE PAGE vit ici, pas sur `html` : Chromium ne peint jamais le
+     fond de la racine dans la marge de page — mesuré, les quatre bords du PDF
+     sortaient blancs autour d'une feuille sombre. `@page { background }` est
+     le seul fond qui couvre la page entière, marges comprises, et il est
+     imprimé même quand « graphiques d'arrière-plan » est décoché. */
   @page {
     size: A4 portrait;
-    margin: 14mm 12mm;
+    margin: 12mm 12mm 14mm;
+    background: #0a0b0d;
   }
 
   /* 1 — l'élagage récursif */
@@ -3499,22 +3742,30 @@ a:focus-visible,
     backdrop-filter: none !important;
   }
 
-  /* 3 — le papier */
-  html,
-  body {
-    background: #fff !important;
+  /* 3 — le papier TradeVault : `@page` porte le fond des marges, la racine
+     celui de la zone de contenu, la feuille ses nappes d'accent. Le sélecteur
+     porte `:has()` pour peser plus lourd que l'élagage (2), qui remettait
+     sinon `background: none` sur `html` et `body`. */
+  html:has(.tv-print-sheet),
+  body:has(.tv-print-sheet) {
+    background: #0a0b0d !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
   .tv-print-sheet {
-    /* Les jetons de couleur repassent en encre : tout ce qui les lit —
-       jusqu'aux graduations des graphes recharts, qui reçoivent
-       `fill: var(--tv-text-muted)` — suit sans une règle de plus. */
-    --tv-bg: #ffffff;
-    --tv-text-primary: #0f172a;
-    --tv-text-secondary: #475569;
-    --tv-text-muted: #475569;
-    --tv-border: rgba(15, 23, 42, 0.15);
-    --tv-border-strong: rgba(15, 23, 42, 0.28);
+    --tv-bg: #0a0b0d;
+    --tv-plate-2: #13151a;
+    --tv-plate-3: #1a1d23;
+    --tv-text-primary: #f4f6f8;
+    --tv-text-secondary: #b8c0cc;
+    --tv-text-muted: #7c8594;
+    --tv-border: rgba(255, 255, 255, 0.08);
+    --tv-border-strong: rgba(255, 255, 255, 0.16);
+    --tv-chart-green: #22e08a;
+    --tv-chart-green-rgb: 34 224 138;
+    --tv-accent: #22e08a;
+    --tv-accent-rgb: 34 224 138;
 
     display: block !important;
     width: 100% !important;
@@ -3522,20 +3773,21 @@ a:focus-visible,
     margin: 0 !important;
     border: 0 !important;
     border-radius: 0 !important;
-    background: #fff !important;
+    /* UNE seule lueur, en haut à droite — la signature de la vitrine. La
+       seconde, en bas à gauche, en faisait une nappe décorative. */
+    background:
+      radial-gradient(55% 22% at 100% 0%, rgba(34, 224, 138, 0.09), transparent 72%), #0a0b0d !important;
     box-shadow: none !important;
     backdrop-filter: none !important;
-    color: #0f172a !important;
+    color: #f4f6f8 !important;
   }
 
   .tv-print-sheet,
   .tv-print-sheet * {
-    color: #0f172a !important;
-    border-color: rgba(15, 23, 42, 0.16) !important;
     box-shadow: none !important;
     text-shadow: none !important;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
   /* Aucune animation ne doit être surprise à mi-course par l'impression.
@@ -3552,106 +3804,144 @@ a:focus-visible,
     transform: none !important;
   }
 
-  /* Le gris des libellés secondaires — sinon tout le document est en noir
-     plein et la hiérarchie de lecture disparaît. */
-  .tv-print-sheet .tv-label,
-  .tv-print-sheet .tv-row-label,
-  .tv-print-sheet .tv-hint,
-  .tv-print-sheet .text-slate-500,
-  .tv-print-sheet .text-slate-600,
-  .tv-print-sheet .text-slate-700 {
-    color: #64748b !important;
-  }
-
-  /* LES COULEURS QUI RESTENT — celles qui disent quelque chose. Assombries
-     par rapport à l'écran : le vert et le rouge du thème sombre sont trop
-     clairs pour tenir sur du blanc. */
-  .tv-print-sheet .rp-pos {
-    color: #047857 !important;
-  }
-  .tv-print-sheet .rp-neg {
-    color: #b91c1c !important;
-  }
-  .tv-print-sheet .rp-warn {
-    color: #b45309 !important;
-  }
-  .tv-print-sheet .rp-fill-pos {
-    background: #059669 !important;
-  }
-  .tv-print-sheet .rp-fill-neg {
-    background: #dc2626 !important;
-  }
-  .tv-print-sheet .rp-fill-flat {
-    background: #94a3b8 !important;
-  }
-  .tv-print-sheet .rp-mix,
-  .tv-print-sheet .rp-bartrack {
-    background: #e2e8f0 !important;
-  }
-  .tv-print-sheet .rp-pill-pos {
-    color: #047857 !important;
-    background: #ecfdf5 !important;
-    border-color: #a7f3d0 !important;
-  }
-  .tv-print-sheet .rp-pill-neg {
-    color: #b91c1c !important;
-    background: #fef2f2 !important;
-    border-color: #fecaca !important;
-  }
-  .tv-print-sheet .rp-rule {
-    background: rgba(15, 23, 42, 0.16) !important;
-  }
   .tv-print-sheet .tv-kpi,
   .tv-print-sheet .rp-momcell,
   .tv-print-sheet .rp-weekcell {
-    background: #fff !important;
-  }
-  .tv-print-sheet .rp-debrief {
-    border-left-color: #94a3b8 !important;
+    background: #13151a !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
   }
   .tv-print-sheet .recharts-cartesian-grid line {
-    stroke: rgba(15, 23, 42, 0.12) !important;
+    stroke: rgba(255, 255, 255, 0.06) !important;
   }
 
-  /* L'en-tête et le pied de la feuille n'existent que sur le papier — et le
-     sourcil « rapport mensuel » disparaît, puisque l'en-tête le porte déjà. */
+  /* ── LA DENSITÉ DU PAPIER ──
+     La feuille imprimée fait ~700px de large : les points de rupture `md`
+     n'y jouent jamais, et tout retombe sur la mise en page du téléphone.
+     La taille de base descend à 13px — tout ce qui est en rem suit d'un
+     seul geste — et les grilles du papier sont fixées ici. */
+  html:has(.tv-print-sheet) {
+    font-size: 13px !important;
+  }
   .rp-print-only {
     display: flex !important;
   }
+  .rp-screen-only,
   .rp-eyebrow {
     display: none !important;
   }
-  .rp-paper-head {
-    align-items: baseline;
-    gap: 0.6rem;
-    padding-bottom: 0.5rem;
-    margin-bottom: 0.4rem;
-    border-bottom: 1.5px solid #0f172a !important;
-    font-size: 9pt;
-    color: #475569 !important;
+  .tv-print-sheet .rp-kpis {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+  .tv-print-sheet .rp-curve {
+    height: 132px !important;
+  }
+  .tv-print-sheet .rp-setups {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+  .tv-print-sheet .rp-duo {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 1.4rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .tv-print-sheet .rp-duo:empty {
+    display: none !important;
+  }
+  .tv-print-sheet .rp-duo > .rp-section {
+    border-top: 0 !important;
+  }
+  .tv-print-sheet .rp-debrief {
+    font-size: 0.92em;
+  }
+
+  /* ── LE BANDEAU DE TÊTE (à la place de la couverture) ── */
+  .rp-masthead {
+    flex-direction: column;
+    gap: 0.55rem;
+    padding: 0.2rem 0.2rem 0.75rem;
+    border-bottom: 1px solid rgba(34, 224, 138, 0.3);
+  }
+  .rp-mast-row {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+  }
+  .rp-mast-doc {
+    margin-left: auto;
+    font-size: 8pt;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: #22e08a;
+  }
+  .rp-mast-meta {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, auto));
+    justify-content: start;
+    gap: 0 1.6rem;
+    margin: 0;
+  }
+  .rp-mast-meta dt {
+    font-size: 6.5pt;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #7c8594;
+  }
+  .rp-mast-meta dd {
+    margin: 0.1rem 0 0;
+    font-size: 8.5pt;
+    font-weight: 600;
+    color: #f4f6f8;
+  }
+  .rp-cover-status {
+    display: inline-block;
+    padding: 0.15rem 0.55rem;
+    border: 1px solid rgba(34, 224, 138, 0.4);
+    border-radius: 999px;
+    background: rgba(34, 224, 138, 0.08);
+    font-size: 7pt;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #22e08a;
+  }
+  .rp-cover-status-live {
+    border-color: rgba(251, 191, 36, 0.45);
+    background: rgba(251, 191, 36, 0.08);
+    color: #fbbf24;
   }
   .rp-paper-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 12pt;
     font-weight: 800;
-    letter-spacing: -0.01em;
-    color: #0f172a !important;
-  }
-  .rp-paper-date {
-    margin-left: auto;
+    letter-spacing: -0.02em;
+    color: #f4f6f8 !important;
   }
   .rp-paper-foot {
-    justify-content: center;
+    justify-content: space-between;
+    align-items: center;
     padding-top: 0.5rem;
     margin-top: 0.4rem;
-    border-top: 1px solid rgba(15, 23, 42, 0.16) !important;
-    font-size: 8pt;
-    color: #64748b !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+    font-size: 7.5pt;
+    color: #7c8594 !important;
+  }
+  .rp-paper-domain {
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: #22e08a;
   }
 
   /* Une section ne se coupe pas en deux entre deux pages tant qu'elle tient
      sur une. Le titre reste avec ce qu'il annonce. */
   .tv-print-sheet .rp-section {
-    padding: 0.7rem 0 !important;
-    border-top-color: rgba(15, 23, 42, 0.14) !important;
+    padding: 0.55rem 0.2rem !important;
+    border-top-color: rgba(255, 255, 255, 0.07) !important;
     break-inside: avoid;
     page-break-inside: avoid;
   }
@@ -3733,6 +4023,233 @@ a:focus-visible,
   box-shadow: var(--tv-elev-3);
 }
 
+/* ══ LES SÉLECTEURS (`shared/ui/Picker.tsx`) ══════════════════════════════
+   La même plaque que le calendrier et la roue d'heure (`.tv-pop`) : on
+   reconnaît un sélecteur TradeVault à sa surface, pas à sa place. */
+.tv-pick-in {
+  animation: tv-pick-in var(--tv-dur-2) var(--tv-ease) both;
+}
+@keyframes tv-pick-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.985);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tv-pick-in {
+    animation: none;
+  }
+}
+.tv-pick-veil {
+  background: rgb(0 0 0 / 0.55);
+}
+
+/* Le déclencheur « pastille » : le NOM du filtre, puis sa valeur. */
+.tv-pick-pill {
+  display: inline-flex;
+  height: 2.25rem;
+  max-width: 100%;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--tv-border);
+  background: var(--tv-plate-2);
+  padding: 0 0.7rem;
+  transition-property: background-color, border-color;
+  transition-duration: var(--tv-dur-1);
+}
+.tv-pick-pill:hover:not(:disabled) {
+  border-color: var(--tv-border-strong);
+}
+.tv-pick-pill-open {
+  border-color: var(--tv-border-strong);
+  background: var(--tv-plate-3);
+}
+.tv-pick-pill-value {
+  max-width: 9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--tv-text-secondary);
+}
+.tv-pick-pill-on {
+  border-color: var(--tv-border-accent);
+  background: rgb(var(--tv-accent-rgb) / 0.08);
+}
+.tv-pick-pill-on .tv-pick-pill-value {
+  color: var(--tv-highlight);
+}
+
+/* La recherche, en tête de longue liste. */
+.tv-pick-search {
+  display: flex;
+  height: 2.25rem;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 0.7rem;
+  border: 1px solid var(--tv-border);
+  background: var(--tv-plate-2);
+  padding: 0 0.65rem;
+}
+.tv-pick-search:focus-within {
+  border-color: var(--tv-border-accent);
+}
+.tv-pick-search:focus {
+  border-color: var(--tv-border-accent);
+}
+
+/* ── Le sélecteur de couleur : même famille que les autres sélecteurs ──
+   Le déclencheur est une rangée en relief (pastille + nom + famille), les
+   pastilles de la palette sont des plaques colorées avec un liseré interne
+   pour qu'un ton sombre ne se perde pas sur le panneau. */
+.tv-color-trigger {
+  border: 1px solid var(--tv-border);
+  border-radius: 0.875rem;
+  background: var(--tv-plate-2);
+  padding: 0.55rem 0.75rem 0.55rem 0.55rem;
+  box-shadow: var(--tv-relief-edge);
+  transition: border-color var(--tv-dur-1) var(--tv-ease);
+}
+.tv-color-trigger:hover {
+  border-color: var(--tv-border-strong);
+}
+.tv-color-trigger.is-open {
+  border-color: var(--tv-border-accent);
+}
+.tv-color-chip {
+  border-radius: 0.625rem;
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.14),
+    0 1px 2px rgb(0 0 0 / 0.45);
+}
+.tv-color-swatch {
+  display: grid;
+  place-items: center;
+  border-radius: 0.625rem;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.1);
+  transition:
+    transform var(--tv-dur-1) var(--tv-ease),
+    box-shadow var(--tv-dur-1) var(--tv-ease);
+}
+@media (hover: hover) {
+  .tv-color-swatch:hover {
+    transform: scale(1.06);
+  }
+}
+.tv-color-swatch.is-on {
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.2),
+    0 0 0 2px var(--tv-plate-2),
+    0 0 0 3.5px var(--tv-text-primary, #f4f6f8);
+}
+
+/* Une option : la case (ou le point), le libellé, le compte. */
+.tv-pick-opt {
+  display: flex;
+  width: 100%;
+  min-height: 2.25rem;
+  align-items: center;
+  gap: 0.6rem;
+  border-radius: 0.6rem;
+  padding: 0.35rem 0.6rem;
+  text-align: left;
+  font-size: 0.8125rem;
+  color: var(--tv-text-secondary);
+  transition-property: background-color, color;
+  transition-duration: var(--tv-dur-1);
+}
+.tv-pick-opt:hover,
+.tv-pick-opt:focus-visible {
+  outline: none;
+  background: rgb(255 255 255 / 0.06);
+  color: var(--tv-text-primary);
+}
+.tv-pick-opt-on {
+  color: var(--tv-text-primary);
+}
+.tv-pick-box,
+.tv-pick-dot {
+  display: grid;
+  height: 1.05rem;
+  width: 1.05rem;
+  flex-shrink: 0;
+  place-items: center;
+  border: 1px solid var(--tv-border-strong);
+  background: var(--tv-plate-1);
+  color: #04120b;
+  transition-property: background-color, border-color;
+  transition-duration: var(--tv-dur-1);
+}
+.tv-pick-box {
+  border-radius: 0.3rem;
+}
+.tv-pick-dot {
+  border-radius: 999px;
+}
+.tv-pick-box.is-on,
+.tv-pick-dot.is-on {
+  border-color: var(--tv-accent);
+  background: var(--tv-accent);
+}
+
+/* Les pastilles à plat : raccourcis de période, filtres d'une feuille. */
+.tv-pick-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+.tv-pick-chip {
+  display: inline-flex;
+  height: 2rem;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 0.6rem;
+  border: 1px solid var(--tv-border);
+  background: var(--tv-plate-2);
+  padding: 0 0.7rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--tv-text-secondary);
+  transition-property: background-color, border-color, color;
+  transition-duration: var(--tv-dur-1);
+}
+.tv-pick-chip:hover {
+  border-color: var(--tv-border-strong);
+  color: var(--tv-text-primary);
+}
+.tv-pick-chip-on,
+.tv-pick-chip-on:hover {
+  border-color: var(--tv-border-accent);
+  background: rgb(var(--tv-accent-rgb) / 0.12);
+  color: var(--tv-highlight);
+}
+
+/* Le pied d'un panneau : effacer, valider. */
+.tv-pick-foot {
+  display: inline-flex;
+  height: 2rem;
+  align-items: center;
+  border-radius: 0.6rem;
+  padding: 0 0.8rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--tv-text-secondary);
+  transition-property: background-color, color;
+  transition-duration: var(--tv-dur-1);
+}
+.tv-pick-foot:hover:not(:disabled) {
+  background: rgb(255 255 255 / 0.05);
+  color: var(--tv-text-primary);
+}
+.tv-pick-foot-main,
+.tv-pick-foot-main:hover:not(:disabled) {
+  background: var(--tv-accent);
+  color: #04120b;
+}
+
 .tv-pop-nav {
   display: grid;
   place-items: center;
@@ -3799,38 +4316,88 @@ a:focus-visible,
 }
 
 /* Les colonnes du sélecteur d'heure. */
-.tv-pop-col {
-  max-height: 11rem;
-  overflow-y: auto;
-  scrollbar-width: thin;
+/* ── LA ROUE D'HEURE (`TimeField`) ─────────────────────────────────────────
+   Deux roues aimantées : la valeur s'arrête au centre, sous la bande. Pas de
+   barre de défilement, un fondu en haut et en bas pour dire « ça continue ». */
+.tv-wheel {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+}
+.tv-wheel-band {
+  position: absolute;
+  inset-inline: 0;
+  top: 50%;
+  height: 2rem;
+  transform: translateY(-50%);
+  border: 1px solid var(--tv-border);
   border-radius: 0.6rem;
-  background: rgb(0 0 0 / 0.2);
-  padding: 0.2rem;
+  background: rgb(255 255 255 / 0.05);
+  pointer-events: none;
+  transition: border-color 140ms ease;
 }
-.tv-pop-cell {
-  display: block;
-  width: 100%;
-  padding: 0.3rem 0;
-  border-radius: 0.45rem;
-  font-size: 0.78rem;
-  font-weight: 600;
+.tv-wheel:focus-within .tv-wheel-band {
+  border-color: var(--tv-border-accent);
+}
+.tv-wheel-sep {
+  position: relative;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--tv-text-muted);
+}
+.tv-wheel-col {
+  position: relative;
+  height: 10rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+  padding-block: 4rem;
+  outline: none;
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 32%, #000 68%, transparent);
+  mask-image: linear-gradient(to bottom, transparent, #000 32%, #000 68%, transparent);
+}
+.tv-wheel-col::-webkit-scrollbar {
+  display: none;
+}
+.tv-wheel-item {
+  display: flex;
+  height: 2rem;
+  align-items: center;
+  justify-content: center;
+  scroll-snap-align: center;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 400;
   font-variant-numeric: tabular-nums;
-  color: var(--tv-text-secondary);
+  letter-spacing: 0.01em;
+  color: var(--tv-text-muted);
   transition:
-    background 140ms ease,
-    color 140ms ease;
+    color 140ms ease,
+    font-size 140ms ease;
 }
-.tv-pop-cell:hover {
-  background: rgb(255 255 255 / 0.07);
+.tv-wheel-item:hover {
+  color: var(--tv-text-secondary);
+}
+.tv-wheel-item[aria-selected="true"] {
+  font-size: 1rem;
+  font-weight: 500;
   color: var(--tv-text-primary);
 }
-.tv-pop-cell-on {
-  background: var(--tv-accent);
-  color: #fff;
+.tv-wheel-done {
+  margin-top: 0.5rem;
+  width: 100%;
+  min-height: 2.25rem;
+  border-radius: 0.6rem;
+  background: rgb(255 255 255 / 0.06);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--tv-text-primary);
+  transition: background-color 140ms ease;
 }
-.tv-pop-cell-on:hover {
-  background: var(--tv-accent);
-  color: #fff;
+.tv-wheel-done:hover {
+  background: rgb(255 255 255 / 0.1);
 }
 
 /* ══ UN RÉGLAGE MONTE-CARLO = UNE SEULE LIGNE ══
@@ -3992,6 +4559,9 @@ a:focus-visible,
   border: 1px solid var(--tv-border);
   border-radius: 0.75rem;
   background: var(--tv-plate-1);
+  box-shadow:
+    var(--tv-relief-edge),
+    0 1px 1px rgb(0 0 0 / 0.4);
 }
 @media (min-width: 768px) {
   .tv-kpi {
@@ -4002,6 +4572,7 @@ a:focus-visible,
 /* La variante CREUSE — la même case, posée DANS une carte. */
 .tv-kpi-inset {
   background: var(--tv-plate-2);
+  box-shadow: var(--tv-relief-sink);
 }
 /* Le chiffre d'une case. Un cran sous `.tv-figure` de tuile héros : une case
    compacte porte un chiffre compact, sinon la compacité est reprise par la
@@ -4080,6 +4651,20 @@ a:focus-visible,
 }
 .tv-subnav::-webkit-scrollbar {
   display: none;
+}
+/* Sur téléphone, les onglets PASSENT À LA LIGNE au lieu de défiler : six
+   parties d'un plan dans 306px en cachaient trois hors du cadre, sans rien
+   qui dise qu'il fallait glisser. Deux rangées se lisent d'un coup d'œil. */
+@media (max-width: 639px) {
+  .tv-subnav {
+    flex-wrap: wrap;
+    overflow: visible;
+    border-radius: 1rem;
+  }
+  .tv-subnav > .tv-subnav-item {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
 }
 .tv-subnav-item {
   scroll-snap-align: start;
@@ -4770,6 +5355,34 @@ a:focus-visible,
     0 0 30px -2px rgb(var(--tv-accent-rgb) / 0.9);
   transform: translateY(-1px);
 }
+.jarvis-error {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border: 1px solid rgb(var(--tv-chart-red-rgb, 244 63 63) / 0.25);
+  border-radius: 0.875rem;
+  background: rgb(var(--tv-chart-red-rgb, 244 63 63) / 0.08);
+  padding: 0.625rem 0.75rem 0.625rem 0.875rem;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--tv-text-primary);
+}
+.jarvis-error-retry {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 2rem;
+  border: 1px solid rgb(255 255 255 / 0.14);
+  border-radius: 0.625rem;
+  padding: 0.25rem 0.7rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  transition: background-color 0.15s ease;
+}
+.jarvis-error-retry:hover {
+  background: rgb(255 255 255 / 0.06);
+}
 .jarvis-quota {
   display: flex;
   align-items: flex-start;
@@ -4828,9 +5441,8 @@ a:focus-visible,
    point qui clignote dit « notification en attente », ce qui serait un
    mensonge au repos. Elle tourne, donc elle dit « ça tourne ».
 
-   Douze secondes par tour : assez lent pour qu'on ne le remarque qu'en
-   s'arrêtant dessus, assez présent pour que le bouton ne soit jamais tout à
-   fait inerte. `prefers-reduced-motion` l'immobilise sans rien supprimer.
+   Au repos l'anneau est immobile ; il tourne au survol (six secondes par
+   tour). `prefers-reduced-motion` l'immobilise sans rien supprimer.
    ═══════════════════════════════════════════════════════════════════════════ */
 .tv-jarvis-mark {
   position: relative;
@@ -4860,14 +5472,20 @@ a:focus-visible,
     transparent calc(100% - 1.5px),
     #000 calc(100% - 1.5px)
   );
-  animation: tv-jarvis-orbit 12s linear infinite;
   opacity: 0.75;
   transition: opacity var(--tv-dur-2) var(--tv-ease);
 }
-@media (hover: hover) {
+/* L'orbite ne tourne QU'AU SURVOL. Elle tournait en boucle, sur chaque page :
+   une animation infinie sur un pseudo-élément masqué, logé dans une bulle
+   fixe en `backdrop-filter`. Mesuré au défilement mobile : un recalcul de
+   style à chaque trame (~60/s) sur toutes les pages, et sur iOS le verre de
+   la bulle se recompose à chaque trame par-dessus le contenu qui défile —
+   du travail GPU permanent pour un ornement. Au repos, l'anneau ouvert
+   reste dessiné : le bouton garde sa signature sans rien faire tourner. */
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
   .tv-jarvis-dock:hover .tv-jarvis-mark::after {
     opacity: 1;
-    animation-duration: 6s;
+    animation: tv-jarvis-orbit 6s linear infinite;
   }
 }
 /* Ouvert, l'orbite s'efface : la fenêtre est là, le bouton n'a plus à faire
@@ -4879,11 +5497,6 @@ a:focus-visible,
 @keyframes tv-jarvis-orbit {
   to {
     transform: rotate(360deg);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .tv-jarvis-mark::after {
-    animation: none;
   }
 }
 
@@ -5118,4 +5731,899 @@ thead .plan-cmp-col.is-pro {
 .plan-cmp-check.is-muted {
   background: rgb(255 255 255 / 0.06);
   color: var(--tv-text-secondary, #94a3b8);
+}
+
+/* SUR TÉLÉPHONE, LE TABLEAU TIENT DANS L'ÉCRAN. Il imposait 520px de large
+   dans une carte de 304 : trois offres sur quatre défilaient à l'horizontale,
+   et la colonne Pro — celle qu'on vient comparer — sortait du cadre. Les
+   colonnes se resserrent (le libellé passe à la ligne, le prix perd sa
+   taille d'affiche, l'annuel s'enroule) au lieu de pousser le tableau. */
+@media (max-width: 639px) {
+  .plan-cmp-table {
+    min-width: 0;
+    table-layout: fixed;
+  }
+  .plan-cmp-label {
+    padding-right: 0.5rem;
+    font-size: 0.75rem;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+  .plan-cmp-col {
+    width: 4.5rem;
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
+  }
+  .plan-cmp-head {
+    padding-top: 1.5rem;
+  }
+  .plan-cmp-name {
+    font-size: 0.6875rem;
+    letter-spacing: 0.02em;
+  }
+  .plan-cmp-price {
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    font-size: 1.125rem;
+  }
+  .plan-cmp-yearly {
+    white-space: normal;
+    text-align: center;
+    font-size: 0.625rem;
+    line-height: 1.3;
+  }
+  .plan-cmp-ribbon {
+    padding: 0.15rem 0.45rem;
+    font-size: 0.625rem;
+  }
+  .plan-cmp-cta,
+  .plan-cmp-current {
+    font-size: 0.6875rem;
+    padding: 0 0.25rem;
+    text-align: center;
+  }
+}
+
+/* ── Les trois portes du tableau de bord (Journal · Jarvis · Analyse) ──
+   Des boutons de 44 px, pas des cartes : l'action se lit sans se déguiser en
+   tuile de données. */
+.dash-action {
+  display: inline-flex;
+  min-height: 2.75rem;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 1px solid var(--tv-border);
+  border-radius: 0.875rem;
+  background: var(--tv-plate-2);
+  padding: 0 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--tv-text-secondary);
+  transition-property: color, border-color, background-color;
+  transition-duration: var(--tv-dur-1);
+  transition-timing-function: var(--tv-ease);
+}
+.dash-action:hover {
+  border-color: var(--tv-border-strong);
+  color: var(--tv-text-primary);
+}
+.dash-action:focus-visible {
+  outline: 2px solid rgb(var(--tv-accent-rgb) / 0.7);
+  outline-offset: 2px;
+}
+.dash-action svg {
+  color: var(--tv-highlight);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LE FOND DU SITE — celui de la vitrine, partout
+   ═══════════════════════════════════════════════════════════════════════════
+   Une grille fine qui s'efface vers le centre, une lumière en haut à droite
+   et une en bas à gauche. Les deux teintes viennent du THÈME (`--tv-accent`
+   et `--tv-accent-2`) : le studio de thèmes repeint le fond avec le reste.
+   Posé en `fixed` derrière tout : il ne défile pas, il ne coûte aucun
+   repeint au scroll. Aucune animation. */
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+/* La lumière vient d'EN HAUT À DROITE, comme sur la vitrine ; celle du bas à
+   gauche n'est plus qu'un reflet, pour que la scène ait une direction. */
+body::before {
+  background:
+    radial-gradient(52rem 34rem at 100% 0%, rgb(var(--tv-accent-rgb) / 0.13), transparent 65%),
+    radial-gradient(
+      44rem 28rem at 0% 100%,
+      rgb(var(--tv-accent-2-rgb, var(--tv-accent-rgb)) / 0.04),
+      transparent 65%
+    );
+}
+body::after {
+  background-image:
+    linear-gradient(rgb(255 255 255 / 0.028) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 0.028) 1px, transparent 1px);
+  background-size: 48px 48px;
+  -webkit-mask-image: radial-gradient(ellipse 90% 80% at 50% 40%, #000 25%, transparent 85%);
+  mask-image: radial-gradient(ellipse 90% 80% at 50% 40%, #000 25%, transparent 85%);
+}
+@media print {
+  body::before,
+  body::after {
+    display: none;
+  }
+}
+
+/* ── L'ORBE DU CURSEUR — vitrine et produit ──
+ *
+ * 300px de diamètre pour une lueur à 7 % au centre : à cette taille elle ne se
+ * voit pas comme un cercle, elle se voit comme un éclairage qui suit la main.
+ * Un disque net, même discret, distrait — on le suit du regard au lieu de lire.
+ *
+ * Sur la vitrine, `z-index: 0` sous la barre de navigation. Dans le produit,
+ * elle vit DANS la fenêtre de contenu (contexte d'empilement propre) à
+ * `z-index: -1` : au-dessus de la plaque, sous les cartes et le texte.
+ *
+ * Elle n'existe que pour un pointeur fin, sur un écran de bureau, et sans
+ * `prefers-reduced-motion` — le composant ne monte rien dans les autres cas,
+ * et ces requêtes média sont la seconde ceinture. */
+.cursor-orb {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  width: 300px;
+  height: 300px;
+  border-radius: 9999px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.45s ease;
+  background: radial-gradient(
+    closest-side,
+    rgb(var(--tv-accent-rgb) / 0.07),
+    rgb(var(--tv-accent-rgb) / 0.03) 45%,
+    transparent 72%
+  );
+}
+.app-main > .cursor-orb {
+  z-index: -1;
+  background: radial-gradient(
+    closest-side,
+    rgb(var(--tv-accent-rgb) / 0.09),
+    rgb(var(--tv-accent-rgb) / 0.035) 45%,
+    transparent 72%
+  );
+}
+@media (pointer: coarse), (prefers-reduced-motion: reduce), (max-width: 767px) {
+  .cursor-orb {
+    display: none;
+  }
+}
+@media print {
+  .cursor-orb {
+    display: none;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LE DIALOGUE — une seule famille pour toutes les modales et popups
+   ═══════════════════════════════════════════════════════════════════════════
+   Carte centrée partout (plus de feuille qui jaillit du bas sur mobile),
+   marge d'écran constante et safe areas respectées, rayon unique, voile
+   sombre à peine flouté, entrée courte : fondu + 8 px + 2 % d'échelle. */
+.tv-dialog-wrap {
+  padding: max(12px, env(safe-area-inset-top, 0px)) 12px max(12px, env(safe-area-inset-bottom, 0px));
+}
+@media (min-width: 768px) {
+  .tv-dialog-wrap {
+    padding: 24px;
+  }
+}
+.tv-dialog-backdrop {
+  background: rgb(3 4 6 / 0.62);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+}
+.tv-dialog {
+  max-height: calc(
+    100dvh - 24px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)
+  );
+  border-radius: 20px;
+  border-color: rgb(255 255 255 / 0.08);
+  background:
+    linear-gradient(180deg, rgb(var(--tv-accent-rgb) / 0.035), transparent 140px), var(--tv-plate-2);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.06),
+    0 30px 80px -24px rgb(0 0 0 / 0.85);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .tv-dialog {
+    animation: tv-dialog-in 200ms var(--tv-ease) both;
+  }
+  .tv-dialog-backdrop {
+    animation: fade-in 160ms ease-out both;
+  }
+}
+@keyframes tv-dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+/* La fenêtre de Jarvis garde sa lumière propre par-dessus le dialogue commun. */
+.tv-dialog.jarvis-stage {
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.06),
+    0 0 0 1px rgb(var(--tv-accent-rgb) / 0.08),
+    0 40px 120px -30px rgb(0 0 0 / 0.75),
+    0 0 90px -40px rgb(var(--tv-accent-rgb) / 0.35);
+}
+/* La feuille (`Sheet`) : carte centrée sur téléphone, panneau latéral sur
+   bureau — le même langage que `.tv-dialog`. */
+.tv-sheet-wrap {
+  padding: max(12px, env(safe-area-inset-top, 0px)) 12px max(12px, env(safe-area-inset-bottom, 0px));
+}
+.tv-sheet-panel {
+  max-height: calc(
+    100dvh - 24px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)
+  );
+  border-radius: 20px;
+  background:
+    linear-gradient(180deg, rgb(var(--tv-accent-rgb) / 0.035), transparent 140px), var(--tv-plate-2);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.06),
+    0 30px 80px -24px rgb(0 0 0 / 0.85);
+}
+@media (min-width: 640px) {
+  .tv-sheet-wrap {
+    padding: 0;
+  }
+  .tv-sheet-panel {
+    max-height: none;
+    border-radius: 20px 0 0 20px;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .tv-sheet-panel {
+    animation: tv-dialog-in 200ms var(--tv-ease) both;
+  }
+  @media (min-width: 640px) {
+    .tv-sheet-panel {
+      animation: tv-sheet-right 240ms var(--tv-ease) both;
+    }
+  }
+}
+
+/* ── LE MENU DES VUES D'UNE SECTION (mobile) ──
+   Ancré sous le sélecteur, même plaque que les dialogues, entrée courte. */
+.section-picker-open {
+  border-color: rgb(var(--tv-accent-rgb) / 0.35);
+  background: var(--tv-plate-2);
+}
+.section-picker-count {
+  flex-shrink: 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--tv-text-muted);
+}
+.section-menu {
+  /* Portail + position fixe : ni la largeur ni la couche ne dépendent plus
+     de la page (voir SectionTabs). Plaque OPAQUE — rien derrière ne transparaît. */
+  position: fixed;
+  z-index: var(--tv-z-sheet);
+  max-height: calc(100dvh - 120px);
+  overflow-y: auto;
+  display: grid;
+  gap: 2px;
+  padding: 6px;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  border-radius: 16px;
+  background:
+    linear-gradient(180deg, rgb(var(--tv-accent-rgb) / 0.03), transparent 120px), var(--tv-plate-2);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.05),
+    0 24px 60px -20px rgb(0 0 0 / 0.85);
+  transform-origin: top center;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .section-menu {
+    animation: tv-menu-in 160ms var(--tv-ease) both;
+  }
+}
+@keyframes tv-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ── LES KPI ── compacts sur téléphone : quatre chiffres lisibles d'un coup
+   d'œil sans occuper l'écran. Même plaque que la courbe d'équité. */
+@media (max-width: 639px) {
+  .metric-tile {
+    padding: 0.75rem 0.875rem;
+    border-radius: 14px;
+  }
+  .metric-tile .tv-figure {
+    font-size: 1.25rem;
+    line-height: 1.15;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LES BULLES FLOTTANTES — sous-comptes et Jarvis, une seule famille
+   ═══════════════════════════════════════════════════════════════════════════
+   Elles appartiennent à la navigation : même verre que la barre du bas
+   (plaque translucide + flou), même liseré fin qui accroche l'accent en haut,
+   même ombre portée courte. Plus d'aplat opaque posé sur la page. */
+.float-shell,
+.tv-jarvis-dock {
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.05), rgb(255 255 255 / 0) 60%),
+    color-mix(in srgb, var(--tv-plate-2) 78%, transparent);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  backdrop-filter: blur(14px) saturate(140%);
+  border: 1px solid rgb(255 255 255 / 0.1);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.08),
+    0 10px 30px -12px rgb(0 0 0 / 0.8),
+    0 0 0 1px rgb(var(--tv-accent-rgb) / 0.06);
+  transition:
+    transform var(--tv-dur-2) var(--tv-ease),
+    border-color var(--tv-dur-2) var(--tv-ease),
+    box-shadow var(--tv-dur-2) var(--tv-ease);
+}
+.float-shell:active,
+.tv-jarvis-dock:active {
+  transform: scale(0.96);
+}
+@media (hover: hover) {
+  .float-shell:hover,
+  .tv-jarvis-dock:hover {
+    border-color: rgb(var(--tv-accent-rgb) / 0.3);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.1),
+      0 12px 34px -12px rgb(0 0 0 / 0.85),
+      0 0 24px -8px rgb(var(--tv-accent-rgb) / 0.35);
+  }
+}
+.tv-jarvis-dock-active,
+.tv-jarvis-dock-active:hover {
+  border-color: rgb(var(--tv-accent-rgb) / 0.45);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .float-shell,
+  .tv-jarvis-dock {
+    animation: fade-in-up 260ms var(--tv-ease) both;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LE CALENDRIER DU JOURNAL — d'après la référence visuelle fournie
+   ══════════════════════════════════════════════════════════════════════════
+   Des jours SÉPARÉS : chaque case est une plaque, chaque en-tête de jour
+   aussi. Le résultat se lit d'abord dans la teinte et le liseré, ensuite
+   dans le montant. */
+.cal-nav-btn {
+  display: grid;
+  place-items: center;
+  height: 2.25rem;
+  width: 2.25rem;
+  flex-shrink: 0;
+  border: 1px solid var(--tv-border);
+  border-radius: 0.65rem;
+  background: var(--tv-plate-2);
+  color: var(--tv-text-secondary);
+  transition:
+    background-color 150ms ease,
+    color 150ms ease,
+    transform 120ms ease;
+}
+.cal-nav-btn:hover {
+  background: var(--tv-plate-3);
+  color: var(--tv-text-primary);
+}
+.cal-nav-btn:active {
+  transform: scale(0.94);
+}
+.cal-dow {
+  padding: 0.4rem 0;
+  border-radius: 0.5rem;
+  background: var(--tv-plate-2);
+  text-align: center;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--tv-text-muted);
+}
+.cal-dow-weekend {
+  opacity: 0.6;
+}
+@media (min-width: 768px) {
+  .cal-dow {
+    padding: 0.55rem 0;
+    font-size: 0.68rem;
+  }
+}
+.cal-cell-empty {
+  border-color: rgb(255 255 255 / 0.03);
+  background: var(--tv-plate-2);
+}
+/* UN JOUR D'UN MOIS VOISIN — daté, lisible, mais en retrait : pas de plaque,
+   un liseré pointillé, le numéro éteint. On comprend d'un coup d'œil « ce
+   jour est là pour compléter la semaine, il n'appartient pas au mois ». */
+.cal-cell-out {
+  border-style: dashed;
+  border-color: rgb(255 255 255 / 0.06);
+  background: transparent;
+}
+/* La case de semaine (bureau) et sa ligne (téléphone) : même plaque que les
+   jours, un cran plus sombre — c'est un total, pas une journée. */
+.cal-week {
+  border: 1px solid var(--tv-border);
+  background: var(--tv-plate-1);
+  transition-property: background-color, border-color;
+  transition-duration: var(--tv-dur-1);
+}
+.cal-week:not(:disabled):hover {
+  background: var(--tv-plate-2);
+  border-color: var(--tv-border-strong);
+}
+/* La grille du TÉLÉPHONE : cinq jours ouvrés, puis (si le mois en compte)
+   le week-end fusionné, puis le total de la semaine. Le total est un peu plus
+   large : il porte un montant signé. */
+.cal-m-grid-6 {
+  grid-template-columns: repeat(5, minmax(0, 1fr)) minmax(0, 1.12fr);
+}
+.cal-m-grid-7 {
+  grid-template-columns: repeat(5, minmax(0, 1fr)) minmax(0, 0.82fr) minmax(0, 1.12fr);
+}
+.cal-week-m {
+  background: var(--tv-plate-2);
+}
+.cal-week-m:not(:disabled):active {
+  border-color: var(--tv-border-strong);
+}
+.cal-dow-week {
+  color: var(--tv-text-secondary);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LA CARTE D'ADHÉSION (page Abonnement)
+   ══════════════════════════════════════════════════════════════════════════
+   Une carte de membre, pas une pile de blocs : la profondeur vient d'une
+   plaque un cran plus claire que la page, d'un filet de lumière sur le bord
+   haut et d'une ombre courte — jamais d'un dégradé de remplissage. L'état se
+   lit dans le liseré (et la pastille), la couleur reste rare. */
+.sub-hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.5rem;
+  border: 1px solid var(--tv-border);
+  background: var(--tv-plate-2);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.06),
+    0 18px 40px -28px rgb(0 0 0 / 0.9);
+  padding: 1.25rem;
+}
+@media (min-width: 640px) {
+  .sub-hero {
+    padding: 1.6rem 1.75rem 1.4rem;
+  }
+}
+/* Le filet d'état, en haut : une ligne, pas une nappe. */
+.sub-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 2px;
+  background: var(--sub-hero-line, var(--tv-border-strong));
+  opacity: 0.9;
+}
+.sub-hero-active,
+.sub-hero-lifetime {
+  --sub-hero-line: rgb(var(--tv-accent-rgb) / 0.7);
+}
+.sub-hero-trialing {
+  --sub-hero-line: rgb(var(--tv-accent-rgb) / 0.5);
+}
+.sub-hero-cancelling {
+  --sub-hero-line: rgb(251 191 36 / 0.7);
+  border-color: rgb(251 191 36 / 0.25);
+}
+.sub-hero-pastDue {
+  --sub-hero-line: rgb(248 113 113 / 0.75);
+  border-color: rgb(248 113 113 / 0.25);
+}
+.sub-hero-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.25rem 2rem;
+}
+.sub-hero-title {
+  margin-top: 0.35rem;
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+  color: var(--tv-text-primary);
+}
+@media (min-width: 768px) {
+  .sub-hero-title {
+    font-size: 2rem;
+  }
+}
+.sub-hero-tier {
+  color: var(--tv-highlight);
+}
+.sub-hero-price {
+  text-align: left;
+}
+@media (min-width: 640px) {
+  .sub-hero-price {
+    text-align: right;
+  }
+}
+.sub-hero-facts {
+  margin-top: 1.25rem;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+@media (min-width: 640px) {
+  .sub-hero-facts {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+.sub-hero-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
+  margin-top: 1.1rem;
+}
+/* L'échelle du prix : même plaque que la carte d'adhésion, un cran plus
+   discrète — c'est un argument, pas un état. */
+.sub-scale {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  border-radius: 1.25rem;
+  border: 1px solid var(--tv-border);
+  background: var(--tv-plate-1);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
+  padding: 1.1rem 1.25rem;
+}
+@media (min-width: 640px) {
+  .sub-scale {
+    flex-direction: row;
+    align-items: center;
+    gap: 2rem;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   MONTE-CARLO — l'outil quantitatif
+   ══════════════════════════════════════════════════════════════════════════
+   Une barre de pilotage (ce que ça fait, les réglages en une ligne,
+   relancer), puis des cartes à profondeur maîtrisée : plaque + filet de
+   lumière + ombre courte, jamais de dégradé de remplissage. */
+.mc-run {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.9rem 1.25rem;
+  border-radius: 1.25rem;
+  border: 1px solid var(--tv-border);
+  background: var(--tv-plate-1);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05);
+  padding: 0.9rem 1rem;
+}
+@media (min-width: 640px) {
+  .mc-run {
+    padding: 1rem 1.25rem;
+  }
+}
+.mc-run-icon {
+  display: grid;
+  height: 2.25rem;
+  width: 2.25rem;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 0.75rem;
+  border: 1px solid var(--tv-border-accent);
+  background: rgb(var(--tv-accent-rgb) / 0.1);
+  color: var(--tv-highlight);
+}
+.mc-summary {
+  display: inline-flex;
+  min-width: 0;
+  max-width: 100%;
+  height: 2.25rem;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--tv-border);
+  background: var(--tv-plate-2);
+  padding: 0 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--tv-text-secondary);
+  transition-property: border-color, background-color;
+  transition-duration: var(--tv-dur-1);
+}
+.mc-summary:hover {
+  border-color: var(--tv-border-strong);
+  background: var(--tv-plate-3);
+}
+/* Sur bureau, les réglages sont dans la colonne : le résumé reste lisible
+   mais n'est plus la seule porte d'entrée. */
+.mc-rerun,
+.mc-alt {
+  display: inline-flex;
+  height: 2.25rem;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.45rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--tv-border-strong);
+  background: var(--tv-plate-3);
+  padding: 0 0.85rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--tv-text-primary);
+  transition-property: border-color, background-color, opacity;
+  transition-duration: var(--tv-dur-1);
+}
+.mc-rerun:hover:not(:disabled),
+.mc-alt:hover {
+  border-color: var(--tv-border-accent);
+}
+.mc-rerun:disabled {
+  opacity: 0.6;
+}
+.mc-launch {
+  margin-top: 0.75rem;
+  border-radius: 1.5rem;
+  border: 1px solid var(--tv-border);
+  background: var(--tv-plate-2);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.06),
+    0 18px 40px -28px rgb(0 0 0 / 0.9);
+  padding: 1.25rem;
+}
+@media (min-width: 640px) {
+  .mc-launch {
+    padding: 1.75rem;
+  }
+}
+.mc-steps {
+  display: grid;
+  gap: 0.75rem;
+}
+@media (min-width: 768px) {
+  .mc-steps {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.25rem;
+  }
+}
+.mc-steps li {
+  display: flex;
+  gap: 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--tv-text-secondary);
+}
+.mc-step-n {
+  display: grid;
+  height: 1.6rem;
+  width: 1.6rem;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 999px;
+  border: 1px solid var(--tv-border-strong);
+  background: var(--tv-plate-3);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--tv-text-primary);
+}
+.mc-card {
+  border-radius: 1.25rem;
+  border: 1px solid var(--tv-border);
+  background: var(--tv-plate-1);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.045),
+    0 14px 32px -26px rgb(0 0 0 / 0.9);
+  padding: 1rem;
+}
+@media (min-width: 640px) {
+  .mc-card {
+    padding: 1.1rem 1.25rem;
+  }
+}
+.mc-verdict {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+@media (min-width: 768px) {
+  .mc-verdict {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* ── MONTE-CARLO : LES DONNÉES UTILISÉES, LA LECTURE ── */
+.mc-data {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem 0.75rem;
+  min-width: 0;
+  padding: 0.6rem 0.85rem;
+  border: 1px solid var(--tv-border);
+  border-radius: 0.9rem;
+  background: var(--tv-plate-1);
+}
+.mc-data-src {
+  flex-shrink: 0;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid var(--tv-border-strong);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--tv-text-primary);
+}
+.mc-data-facts {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 16rem;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.9rem;
+  font-size: 12px;
+  color: var(--tv-text-secondary);
+}
+.mc-data-edit {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.35rem;
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tv-highlight);
+}
+.mc-read {
+  display: grid;
+  gap: 0.55rem;
+}
+.mc-read li {
+  position: relative;
+  padding-left: 0.95rem;
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: var(--tv-text-secondary);
+}
+.mc-read li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.62em;
+  height: 0.3rem;
+  width: 0.3rem;
+  border-radius: 999px;
+  background: var(--tv-text-muted);
+}
+.mc-read li.mc-read-neg {
+  color: var(--tv-text-primary);
+}
+.mc-read li.mc-read-neg::before {
+  background: var(--tv-chart-red);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   CALCULATEUR — LE CHOIX DU MARCHÉ
+   ══════════════════════════════════════════════════════════════════════════
+   Deux options décrites et un indicateur qui GLISSE (transform seul) de l'une
+   à l'autre : la bascule se voit, se comprend, et ne recalcule aucune mise en
+   page. */
+.calc-market {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--tv-border);
+  border-radius: 18px;
+  background: var(--tv-plate-1);
+  box-shadow: var(--tv-relief-edge), var(--tv-relief-lift);
+}
+.calc-market-thumb {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  width: calc(50% - 6px);
+  border-radius: 14px;
+  border: 1px solid var(--tv-border-accent);
+  background: var(--tv-plate-3);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.06),
+    0 8px 20px -12px rgb(var(--tv-accent-rgb) / 0.55);
+  transition: transform var(--tv-dur-3) var(--tv-ease);
+}
+.calc-market[data-mode="futures"] .calc-market-thumb {
+  transform: translateX(calc(100% + 4px));
+}
+.calc-market-opt {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  color: var(--tv-text-muted);
+  transition: color var(--tv-dur-2) var(--tv-ease);
+}
+.calc-market-opt.is-on {
+  color: var(--tv-text-primary);
+}
+.calc-market-opt.is-on svg {
+  color: var(--tv-highlight);
+}
+@media (prefers-reduced-motion: reduce) {
+  .calc-market-thumb {
+    transition: none;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   ERREURS — LE TABLEAU DE SCORE (téléphone)
+   ══════════════════════════════════════════════════════════════════════════
+   Trois comptes côte à côte qui sont aussi la navigation entre les voies du
+   plan. L'onglet actif monte d'une plaque, comme partout ailleurs : la couleur
+   de la voie reste portée par le chiffre et l'icône, jamais par un fond. */
+.mst-lane-tab {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.4rem;
+  padding: 0.6rem 0.65rem;
+  border-radius: 0.8rem;
+  background: var(--tv-plate-1);
+  border: 1px solid var(--tv-border);
+  color: var(--tv-text-muted);
+  text-align: left;
+  transition-property: color, background-color, border-color;
+  transition-duration: var(--tv-dur-1);
+  transition-timing-function: var(--tv-ease);
+}
+.mst-lane-tab[aria-selected="true"] {
+  background: var(--tv-plate-3);
+  border-color: var(--tv-border-strong);
+  color: var(--tv-text-primary);
+}
+.mst-lane-tab:focus-visible {
+  outline: 2px solid rgb(var(--tv-accent-rgb) / 0.7);
+  outline-offset: 1px;
 }

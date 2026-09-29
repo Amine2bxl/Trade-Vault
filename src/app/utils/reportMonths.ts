@@ -16,11 +16,17 @@
  * partielle et croirait, un mois plus tard, que c'est le bilan complet.
  */
 
+import { localMonthOf } from "@/shared/calendar-date";
+
 const MONTH_RE = /^\d{4}-\d{2}$/;
 
-/** Mois courant au format `YYYY-MM`, en UTC (même base que les dates de trade). */
+/**
+ * Mois courant au format `YYYY-MM`, en date LOCALE — la même base que les
+ * dates de trade, qui sont des dates civiles du trader. En UTC, un trader à
+ * Auckland voyait le 1er du mois encore compté dans le mois précédent.
+ */
 export function currentMonth(now: Date = new Date()): string {
-  return now.toISOString().slice(0, 7);
+  return localMonthOf(now);
 }
 
 /**

@@ -5,6 +5,7 @@ import type { RuleAdherence } from "../../../../utils/ruleAdherence";
 import { sampleVerdict, MIN_SAMPLE } from "@/modules/coaching";
 import { formatMoney } from "../copy/templates";
 import type { BriefEvidence, BriefSection, DailyBrief } from "./types";
+import { formatMoney as money } from "@/shared/currency";
 
 /**
  * Daily Brief (Step 6A) — le résumé contextualisé que Jarvis affiche à
@@ -39,7 +40,7 @@ const GOAL_LABELS: Record<string, { fr: string; en: string }> = {
 };
 
 const GOAL_UNIT: Record<string, string> = {
-  capital: "$",
+  capital: "", // montant : écrit par `formatMoney`, dans la devise du trader
   win_rate: "%",
   max_drawdown: "%",
   discipline: "%",
@@ -67,9 +68,11 @@ function objectiveSection(input: DailyBriefInput): BriefSection | null {
   if (goal) {
     const label = GOAL_LABELS[goal.kind] ?? { fr: goal.kind, en: goal.kind };
     const unit = GOAL_UNIT[goal.kind] ?? "";
+    const v = (n: number) =>
+      goal.kind === "capital" ? money(n, { whole: true }) : `${round(n)}${unit}`;
     lines.push({
-      fr: `Objectif « ${label.fr} » : ${round(goal.current)}${unit} / ${round(goal.target)}${unit}.`,
-      en: `Goal "${label.en}": ${round(goal.current)}${unit} / ${round(goal.target)}${unit}.`,
+      fr: `Objectif « ${label.fr} » : ${v(goal.current)} / ${v(goal.target)}.`,
+      en: `Goal "${label.en}": ${v(goal.current)} / ${v(goal.target)}.`,
     });
   }
   if (input.rule?.leak) {

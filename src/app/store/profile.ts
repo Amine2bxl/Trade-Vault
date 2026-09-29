@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { DEFAULT_CONFLUENCES } from "../types";
 import { getActiveAccountId } from "./accounts";
 import { loadTradingPlan } from "../utils/tradingPlan";
+import { parseCurrency, type CurrencyCode } from "@/shared/currency";
 
 // ── Confluences (stored on profile) ──
 export async function loadConfluences(userId: string): Promise<string[]> {
@@ -398,4 +399,25 @@ export async function loadChecklistConfig(userId: string): Promise<unknown> {
     console.error("[checklist-config] DB read skipped", e);
     return null;
   }
+}
+
+// ── Devise globale (stockée sur le profil) ──
+// `select("*")` : la colonne `currency` est récente — le code déployé avant la
+// migration doit continuer de fonctionner (retour à la devise par défaut).
+export async function loadCurrency(userId: string): Promise<CurrencyCode> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", userId)
+    .maybeSingle();
+  if (error) throw error;
+  return parseCurrency((data as { currency?: unknown } | null)?.currency);
+}
+
+export async function saveCurrency(userId: string, currency: CurrencyCode): Promise<void> {
+  const { error } = await supabase
+    .from("profiles")
+    .update({ currency } as never)
+    .eq("id", userId);
+  if (error) throw error;
 }

@@ -1,4 +1,5 @@
 import { useCallback, useState, type ReactNode } from "react";
+import { SelectPicker } from "@/shared/ui";
 import {
   ArrowLeft,
   ArrowRight,
@@ -20,16 +21,25 @@ import {
   Wallet,
   Palette,
   Plus,
+  Coins,
 } from "lucide-react";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { usePushNotifications } from "../hooks/usePushNotifications";
 import { LANG_NAMES, type Lang } from "../i18n/translations";
-import { saveOnboarding, saveAccountBalance, type OnboardingData } from "../store";
+import { saveOnboarding, saveAccountBalance, saveCurrency, type OnboardingData } from "../store";
 import ThemeSettings from "../components/ThemeSettings";
 import { oc } from "./onboardingCopy";
 import logoSrc from "@/assets/tradevault-logo-128.png";
+import {
+  CURRENCIES,
+  currencySymbol,
+  getCurrency,
+  parseCurrency,
+  setCurrency,
+  type CurrencyCode,
+} from "@/shared/currency";
 
 /** What the user picked on the quick-start step — App.tsx acts on it. */
 export type OnboardingAction = "import" | "demo" | null;
@@ -222,6 +232,8 @@ export default function Onboarding({
   const [usesIct, setUsesIct] = useState(false);
   // Taille du compte — Jarvis calibre le risque réel. Apparence — thème de l'app.
   const [accountSize, setAccountSize] = useState("");
+  // Devise du journal — étiquette de chaque montant de l'app.
+  const [currency, setCurrencyChoice] = useState<CurrencyCode>(() => getCurrency());
 
   const steps: StepKey[] = [
     "identity",
@@ -277,6 +289,9 @@ export default function Onboarding({
           },
           { skipped: false, firstName },
         );
+        // Devise globale : enregistrée sur le profil, appliquée tout de suite.
+        await saveCurrency(userId, currency).catch(() => {});
+        setCurrency(currency);
         // Taille du compte — alimente le calibreur de risque (best-effort).
         const size = parseFloat(accountSize.replace(/\s/g, ""));
         if (Number.isFinite(size) && size > 0) {
@@ -302,6 +317,7 @@ export default function Onboarding({
       usesIct,
       firstName,
       accountSize,
+      currency,
     ],
   );
 
@@ -601,6 +617,26 @@ export default function Onboarding({
                   de la présence donnée à ce qui n'en demande pas. Deux champs
                   étiquetés, sur une rangée, et l'étape entière remonte de
                   ~80px — ce qui compte sur un écran qui ne défile pas. */}
+              {/* LA DEVISE — avant le capital, qui s'écrit dedans. */}
+              <div className="onb-in mx-auto mb-3 block max-w-md text-left">
+                <span className="tv-label mb-1 flex items-center gap-1.5 text-slate-400">
+                  <Coins className="h-3.5 w-3.5" />
+                  {t("settings.currency")}
+                </span>
+                <SelectPicker
+                  variant="field"
+                  label={t("settings.currency")}
+                  value={currency}
+                  onChange={(v) => setCurrencyChoice(parseCurrency(v))}
+                  className="rounded-xl text-[14px]"
+                  searchLabel={t("picker.search")}
+                  options={CURRENCIES.map((cur) => ({
+                    value: cur.code,
+                    label: `${cur.code} · ${currencySymbol(cur.code)}`,
+                    hint: cur.name,
+                  }))}
+                />
+              </div>
               <div className="onb-in mx-auto mb-5 grid max-w-md grid-cols-2 gap-3">
                 <label className="text-left">
                   <span className="tv-label mb-1 flex items-center gap-1.5 text-slate-400">
@@ -631,7 +667,7 @@ export default function Onboarding({
                   </span>
                   <span className="relative block">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">
-                      $
+                      {currencySymbol(currency)}
                     </span>
                     <input
                       type="number"
@@ -640,7 +676,8 @@ export default function Onboarding({
                       value={accountSize}
                       onChange={(e) => setAccountSize(e.target.value)}
                       placeholder="25000"
-                      className="tv-figure h-11 w-full rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-2)] pl-7 pr-3 text-center text-lg text-white outline-none transition placeholder:text-slate-600 focus:border-[var(--tv-border-accent)]"
+                      className="tv-figure h-11 w-full rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-2)] pr-3 text-center text-lg text-white outline-none transition placeholder:text-slate-600 focus:border-[var(--tv-border-accent)]"
+                      style={{ paddingLeft: `${1.1 + currencySymbol(currency).length * 0.55}rem` }}
                     />
                   </span>
                 </label>

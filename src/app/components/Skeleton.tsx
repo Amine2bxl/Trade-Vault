@@ -324,7 +324,7 @@ export function CalculatorSkeleton() {
   return (
     <Shell width="max-w-[860px]" pad="p-4 md:p-8">
       <Skeleton className="h-11 w-56 rounded-2xl mb-5" />
-      <div className="grid md:grid-cols-[1fr_320px] gap-5 items-start">
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px] items-start">
         <div className="glass-strong rounded-3xl p-5 md:p-6 space-y-4">
           <Skeleton className="h-2.5 w-40 rounded" />
           <div className="grid grid-cols-2 gap-3">

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import {
+  ArrowRight,
   Bell,
   BellOff,
   Check,
@@ -11,17 +12,24 @@ import {
   Calendar,
   ShieldAlert,
   Clock,
+  Sparkles,
 } from "lucide-react";
-import { loadNotifications, markNotificationRead } from "@/modules/notifications";
+import {
+  loadNotifications,
+  markAllNotificationsRead,
+  markNotificationRead,
+  markNotificationsRead,
+} from "@/modules/notifications";
 import type { AppNotification, NotificationCategory } from "@/modules/notifications/types";
+import { events } from "@/modules/events";
 import { useAuth } from "../contexts/AuthContext";
 import { useT } from "../i18n/LanguageContext";
 import type { TKey } from "../i18n/translations";
 import { usePageActions, usePageLead } from "../contexts/PageActionsContext";
 import { Button } from "@/shared/ui";
 import { useAvailableHeight } from "../hooks/useAvailableHeight";
-import { todayLocalDate } from "@/shared/calendar-date";
 import { cn } from "../utils/cn";
+import { CATEGORY_LABEL, notificationTarget, WHY_KEY } from "../utils/notificationMeta";
 
 /** « Toutes », « non lues », ou une catégorie. */
 type FilterKind = NotificationCategory | "all" | "unread";
@@ -36,44 +44,36 @@ const CATEGORY_ICON: Record<NotificationCategory, typeof Bell> = {
   system: Bell,
 };
 
-/** Le libellé de chaque catégorie — le mot que la ligne portait pas. */
-const CATEGORY_LABEL: Record<NotificationCategory, TKey> = {
-  discipline: "inbox.filterDiscipline",
-  goals: "inbox.filterGoals",
-  risk: "inbox.filterRisk",
-  jarvis: "inbox.filterJarvis",
-  economic: "inbox.filterEconomic",
-  activity: "inbox.filterActivity",
-  system: "inbox.filterAll",
-};
-
 /**
  * LA COULEUR DIT L'URGENCE, PAS LE SUJET.
  *
- * Chacune des sept catégories avait sa teinte — cyan, émeraude, rouge, violet,
- * ambre, ardoise. Six couleurs dans une liste verticale, c'est un confetti :
- * l'œil trie des teintes au lieu de lire des lignes, et le rouge de « risque »
- * hurlait aussi fort pour une notification anodine que pour une vraie alerte.
- *
- * La couleur suit maintenant la SÉVÉRITÉ, qui est le seul axe sur lequel une
- * notification demande une action différente. Le sujet, lui, est écrit : la
- * ligne porte son nom de catégorie en toutes lettres — ce qu'aucune pastille
- * colorée n'a jamais réussi à dire.
+ * La couleur suit la SÉVÉRITÉ, le seul axe sur lequel une notification demande
+ * une action différente. Le sujet, lui, est écrit.
  */
-const SEVERITY: Record<AppNotification["severity"], { rail: string; icon: string }> = {
-  info: { rail: "bg-white/20", icon: "text-slate-300 bg-white/[0.06]" },
-  success: {
-    rail: "bg-[var(--tv-chart-green)]",
-    icon: "text-[var(--tv-chart-green)] bg-[rgb(var(--tv-chart-green-rgb)/0.1)]",
+const SEVERITY: Record<AppNotification["severity"], { dot: string; icon: string; ring: string }> = {
+  info: {
+    dot: "bg-[var(--tv-highlight)]",
+    icon: "text-slate-300 bg-[var(--tv-plate-3)]",
+    ring: "",
   },
-  warning: { rail: "bg-amber-400", icon: "text-amber-300 bg-amber-500/10" },
+  success: {
+    dot: "bg-[var(--tv-chart-green)]",
+    icon: "text-[var(--tv-chart-green)] bg-[rgb(var(--tv-chart-green-rgb)/0.1)]",
+    ring: "",
+  },
+  warning: {
+    dot: "bg-amber-400",
+    icon: "text-amber-300 bg-amber-500/10",
+    ring: "border-amber-500/20",
+  },
   error: {
-    rail: "bg-[var(--tv-chart-red)]",
+    dot: "bg-[var(--tv-chart-red)]",
     icon: "text-[var(--tv-chart-red)] bg-[rgb(var(--tv-chart-red-rgb)/0.1)]",
+    ring: "border-[rgb(var(--tv-chart-red-rgb)/0.28)]",
   },
 };
 
-/** Les cinq tranches de temps, dans l'ordre où elles s'affichent. */
+/** Les tranches de temps, dans l'ordre où elles s'affichent. */
 const GROUPS = [
   { key: "today", max: 0, label: "inbox.groupToday" },
   { key: "yesterday", max: 1, label: "inbox.groupYesterday" },
@@ -82,75 +82,85 @@ const GROUPS = [
   { key: "older", max: Infinity, label: "inbox.groupOlder" },
 ] as const satisfies readonly { key: string; max: number; label: TKey }[];
 
-/** Le groupe d'une date — un index dans `GROUPS`, plus une chaîne française. */
-function groupIndex(date: Date): number {
+function daysAgo(date: Date): number {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const target = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  const jours = Math.floor((today.getTime() - target.getTime()) / 86_400_000);
-  return GROUPS.findIndex((g) => jours <= g.max);
+  return Math.floor((today.getTime() - target.getTime()) / 86_400_000);
 }
 
-/** Premier passage du jour : `localStorage` garde la date de dernière visite. */
-function useFirstLoginToday(): boolean {
-  return useMemo(() => {
-    try {
-      const today = todayLocalDate();
-      const last = localStorage.getItem("tv.lastInboxVisit");
-      if (last !== today) {
-        localStorage.setItem("tv.lastInboxVisit", today);
-        return true;
-      }
-      return false;
-    } catch {
-      return false;
-    }
-  }, []);
+function groupIndex(date: Date): number {
+  const d = daysAgo(date);
+  return GROUPS.findIndex((g) => d <= g.max);
 }
+
+/** « il y a 12 min », « hier, 14:05 », « 3 sept. » — lisible d'un coup d'œil. */
+function whenLabel(iso: string, lang: string): string {
+  const d = new Date(iso);
+  const diff = Date.now() - d.getTime();
+  const rtf = new Intl.RelativeTimeFormat(lang, { numeric: "auto", style: "short" });
+  if (diff < 60_000) return rtf.format(0, "minute");
+  if (diff < 3_600_000) return rtf.format(-Math.round(diff / 60_000), "minute");
+  const days = daysAgo(d);
+  const time = d.toLocaleTimeString(lang, { hour: "2-digit", minute: "2-digit" });
+  if (days === 0) return time;
+  if (days === 1) return `${rtf.format(-1, "day")}, ${time}`;
+  if (days < 7) return d.toLocaleDateString(lang, { weekday: "short" }) + ` ${time}`;
+  return d.toLocaleDateString(lang, { day: "numeric", month: "short" });
+}
+
+/** Une alerte qui demande quelque chose : non lue ET avertissement ou plus. */
+const needsAttention = (n: AppNotification) =>
+  !n.readAt && (n.severity === "error" || n.severity === "warning");
 
 /**
- * LE CENTRE DE NOTIFICATIONS.
+ * LA BOÎTE DE RÉCEPTION.
  *
- * Trois choses le rendaient illisible, et aucune ne tenait au moteur — qui
- * produit huit règles nourries par les vraies données du trader (série de
- * pertes, fuite la plus coûteuse, cinq jours sans session, revue de la
- * semaine, bilan de la veille, fuite qui recule, règle qui échappe, discipline
- * armée). C'était la PAGE qui ne les servait pas.
+ * Ce qu'elle doit donner envie de faire : l'ouvrir, parce qu'il y a peu de
+ * choses et que chacune compte. La stratégie qui la nourrit est dans
+ * `modules/notifications` (cadence par événement, déduplication en base,
+ * expiration, popups en contexte seulement) ; la page, elle :
  *
- *   1. LE SUJET N'ÉTAIT NULLE PART ÉCRIT. Une notification n'avait qu'une
- *      pastille colorée pour dire de quoi elle parlait. Chaque ligne porte
- *      maintenant le nom de sa catégorie.
- *   2. SEPT FILTRES, TOUJOURS LES SEPT. Ils s'affichaient même vides — une
- *      barre de boutons à zéro. Seules les catégories PRÉSENTES paraissent, et
- *      un filtre « non lues » les précède, parce que c'est la seule question
- *      qu'on se pose vraiment en ouvrant sa boîte.
- *   3. DU FRANÇAIS EN DUR dans une application traduite en douze langues :
- *      les cinq intitulés de période, la bannière du premier passage et
- *      l'infobulle du bouton « lu ».
- *
- * Et le bouton « marquer comme lu » n'apparaissait qu'AU SURVOL : sur un
- * téléphone, il n'existait pas.
+ *   1. MET EN TÊTE CE QUI DEMANDE UNE ACTION — les alertes non lues
+ *      d'avertissement ou plus, en cartes pleines avec leur plan d'action et
+ *      le bouton qui mène au bon endroit ;
+ *   2. DIT POURQUOI chaque notification existe (« Pourquoi : 3 pertes
+ *      d'affilée ») — on ne se demande plus d'où elle sort ;
+ *   3. RANGE LE RESTE PAR JOUR, lu en gris, non lu marqué d'un point ;
+ *   4. COMPTE JUSTE : toutes les non lues sont chargées, le chiffre de la
+ *      page est celui du badge, et « tout marquer comme lu » vide les deux.
  */
 export default function Inbox() {
-  const { t } = useT();
+  const { t, lang } = useT();
   const { user } = useAuth();
   const { boxRef, height } = useAvailableHeight();
   const [notifs, setNotifs] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<FilterKind>("all");
 
-  const isFirstVisitToday = useFirstLoginToday();
-
-  useEffect(() => {
+  const reload = useCallback(() => {
     if (!user?.id) return;
-    setLoading(true);
     loadNotifications(user.id)
       .then(setNotifs)
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [user?.id]);
 
-  const unreadTotal = notifs.filter((n) => !n.readAt).length;
+  useEffect(() => {
+    setLoading(true);
+    reload();
+  }, [reload]);
+
+  // En direct : une notification émise pendant qu'on regarde la boîte y entre.
+  useEffect(() => {
+    if (!user?.id) return;
+    return events.on("NotificationCreated", ({ userId, notification }) => {
+      if (userId !== user.id || !notification.channels.includes("dashboard")) return;
+      setTimeout(reload, 400);
+    });
+  }, [user?.id, reload]);
+
+  const unreadTotal = useMemo(() => notifs.filter((n) => !n.readAt).length, [notifs]);
 
   const filtered = useMemo(() => {
     if (filter === "all") return notifs;
@@ -158,11 +168,13 @@ export default function Inbox() {
     return notifs.filter((n) => n.category === filter);
   }, [notifs, filter]);
 
+  const attention = useMemo(() => filtered.filter(needsAttention), [filtered]);
+  const rest = useMemo(() => filtered.filter((n) => !needsAttention(n)), [filtered]);
   const hasUnreadFiltered = filtered.some((n) => !n.readAt);
 
-  /* LES FILTRES SONT DÉRIVÉS DE CE QU'IL Y A. Une catégorie sans notification
-     n'a pas de bouton : la barre ne montre jamais un chemin qui ne mène nulle
-     part. */
+  /* LES FILTRES SONT DÉRIVÉS DE CE QU'IL Y A : une catégorie vide n'a pas de
+     bouton. Le chiffre de chaque filtre est celui des NON LUES quand il y en
+     a — c'est la question qu'on se pose — sinon le total, en gris. */
   const filtres = useMemo(() => {
     const parCategorie = new Map<NotificationCategory, { total: number; nonLues: number }>();
     for (const n of notifs) {
@@ -179,7 +191,7 @@ export default function Inbox() {
         kind: "unread",
         label: t("inbox.filterUnread"),
         total: unreadTotal,
-        nonLues: 0,
+        nonLues: unreadTotal,
       });
     }
     for (const [cat, e] of parCategorie) {
@@ -188,38 +200,53 @@ export default function Inbox() {
     return list;
   }, [notifs, unreadTotal, t]);
 
+  const markLocal = (ids: Set<string> | "all") => {
+    const now = new Date().toISOString();
+    setNotifs((prev) =>
+      prev.map((n) => (!n.readAt && (ids === "all" || ids.has(n.id)) ? { ...n, readAt: now } : n)),
+    );
+  };
+
   const handleMarkRead = useCallback(
     async (id: string) => {
       if (!user?.id) return;
-      await markNotificationRead(user.id, id);
-      setNotifs((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, readAt: new Date().toISOString() } : n)),
-      );
+      markLocal(new Set([id]));
+      await markNotificationRead(user.id, id).catch(() => {});
       window.dispatchEvent(new CustomEvent("tv:notif-updated"));
     },
     [user?.id],
   );
 
+  /* UNE REQUÊTE, PAS N. En vue « toutes » ou « non lues », on marque TOUTES
+     les non lues du compte en base — pas seulement celles affichées. */
   const markAllRead = useCallback(async () => {
     if (!user?.id) return;
-    const unread = filtered.filter((n) => !n.readAt);
-    for (const n of unread) {
-      await markNotificationRead(user.id, n.id);
-      setNotifs((prev) =>
-        prev.map((x) => (x.id === n.id ? { ...x, readAt: new Date().toISOString() } : x)),
-      );
+    if (filter === "all" || filter === "unread") {
+      markLocal("all");
+      await markAllNotificationsRead(user.id).catch(() => {});
+    } else {
+      const ids = filtered.filter((n) => !n.readAt).map((n) => n.id);
+      markLocal(new Set(ids));
+      await markNotificationsRead(user.id, ids).catch(() => {});
     }
     window.dispatchEvent(new CustomEvent("tv:notif-updated"));
-  }, [user?.id, filtered]);
+  }, [user?.id, filter, filtered]);
 
   const openNotification = useCallback((n: AppNotification) => {
     window.dispatchEvent(new CustomEvent("tv:open-notification", { detail: { notification: n } }));
   }, []);
 
-  /* L'EN-TÊTE DE PAGE MONTE DANS LA BARRE DE TÊTE. La boîte de réception
-     n'appartient à aucune section : la moitié gauche de la barre est vide, et
-     un bandeau de titre en pleine page sous une barre vide, c'est deux fois la
-     même chose et cent pixels de moins pour les notifications. */
+  /* L'action directe, sans passer par le popup : la notification est lue, et
+     on part là où elle mène (avec son filtre, ex. « ce trade »). */
+  const act = useCallback(
+    (n: AppNotification) => {
+      void handleMarkRead(n.id);
+      const target = notificationTarget(n);
+      window.dispatchEvent(new CustomEvent("tv:navigate", { detail: target }));
+    },
+    [handleMarkRead],
+  );
+
   const lead = useMemo(
     () => (
       <div className="flex min-w-0 items-center gap-2.5">
@@ -229,7 +256,7 @@ export default function Inbox() {
         <span
           className={cn(
             "tv-row-label truncate",
-            unreadTotal > 0 && "text-[var(--tv-highlight)] font-semibold",
+            unreadTotal > 0 && "font-semibold text-[var(--tv-highlight)]",
           )}
         >
           {unreadTotal > 0
@@ -256,14 +283,14 @@ export default function Inbox() {
 
   const groupes = useMemo(() => {
     const buckets = new Map<number, AppNotification[]>();
-    for (const n of filtered) {
+    for (const n of rest) {
       const i = groupIndex(new Date(n.createdAt));
       (buckets.get(i) ?? buckets.set(i, []).get(i)!).push(n);
     }
     return [...buckets.entries()]
       .sort((a, b) => a[0] - b[0])
       .map(([i, items]) => ({ label: t(GROUPS[i].label), key: GROUPS[i].key, items }));
-  }, [filtered, t]);
+  }, [rest, t]);
 
   return (
     <div
@@ -271,78 +298,69 @@ export default function Inbox() {
       style={height ? { height } : undefined}
       className="mx-auto flex h-full max-w-3xl flex-col overflow-hidden px-3 py-2 md:px-5 md:py-3"
     >
-      {/* ── LES FILTRES ───────────────────────────────────────────────────
-          Une rangée qui DÉFILE, jamais qui passe à la ligne. Elle est fixe en
-          tête de l'écran : huit pastilles ne tiennent pas sur une ligne de
-          téléphone, et on change de filtre sans remonter. La liste, elle,
-          défile dessous — comme un écran de notifications d'app. */}
+      {/* ── LES FILTRES — fixes en tête, la liste défile dessous. */}
       {notifs.length > 0 && (
-        <div className="animate-fade-in-up shrink-0 pb-2">
-          <div className="tv-scroll-x">
-            <div className="flex w-max items-center gap-1.5">
-              {filtres.map((f) => (
-                <button
-                  key={f.kind}
-                  onClick={() => setFilter(f.kind)}
-                  aria-pressed={filter === f.kind}
-                  className={cn("rp-chip shrink-0", filter === f.kind && "rp-chip-active")}
-                >
-                  <span>{f.label}</span>
-                  <span
-                    className={cn(
-                      "tv-figure text-[10px]",
-                      f.nonLues > 0 ? "text-[var(--tv-highlight)]" : "text-slate-600",
-                    )}
-                  >
-                    {f.total}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
+        <div className="animate-fade-in-up flex shrink-0 flex-wrap items-center gap-1.5 pb-3">
+          {filtres.map((f) => (
+            <button
+              key={f.kind}
+              onClick={() => setFilter(f.kind)}
+              aria-pressed={filter === f.kind}
+              className={cn("rp-chip shrink-0", filter === f.kind && "rp-chip-active")}
+            >
+              <span>{f.label}</span>
+              <span
+                className={cn(
+                  "tv-figure text-[10px]",
+                  f.nonLues > 0 ? "text-[var(--tv-highlight)]" : "text-slate-600",
+                )}
+              >
+                {f.nonLues > 0 ? f.nonLues : f.total}
+              </span>
+            </button>
+          ))}
         </div>
       )}
 
-      {/* ── LA BANNIÈRE DU PREMIER PASSAGE ──────────────────────────────── */}
-      {isFirstVisitToday && unreadTotal > 0 && (
-        <div className="animate-fade-in-up mb-2 flex shrink-0 items-center gap-2.5 rounded-xl border border-[var(--tv-border-accent)] bg-[rgb(var(--tv-accent-rgb)/0.07)] px-3.5 py-2">
-          <span aria-hidden className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--tv-accent)]" />
-          <span className="text-xs font-medium text-[var(--tv-highlight)]">
-            {t("inbox.newSinceLastVisit").replace("{n}", String(unreadTotal))}
-          </span>
-        </div>
-      )}
-
-      {/* ── LA LISTE — le seul endroit qui défile, dans l'écran ─────────── */}
       <div className="min-h-0 flex-1 overflow-y-auto">
         {loading ? (
           <div className="flex items-center justify-center py-16">
             <Loader2 className="h-6 w-6 animate-spin text-slate-500" />
           </div>
         ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <BellOff className="mb-3 h-10 w-10 text-slate-600" />
-            <p className="max-w-sm text-sm text-slate-500">
-              {filter === "all" ? t("inbox.empty") : t("inbox.emptyFiltered")}
-            </p>
-          </div>
+          <EmptyState filtered={filter !== "all"} />
         ) : (
-          <div className="space-y-4 pb-2">
+          <div className="space-y-5 pb-3">
+            {/* ── À TRAITER ─────────────────────────────────────────────── */}
+            {attention.length > 0 && (
+              <section>
+                <SectionTitle label={t("inbox.attention")} count={attention.length} accent />
+                <div className="space-y-2">
+                  {attention.map((n) => (
+                    <AttentionCard
+                      key={n.id}
+                      n={n}
+                      lang={lang}
+                      onOpen={() => openNotification(n)}
+                      onAct={() => act(n)}
+                      onRead={() => handleMarkRead(n.id)}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* ── LE RESTE, PAR JOUR ────────────────────────────────────── */}
             {groupes.map(({ label, key, items }) => (
               <section key={key}>
-                <div className="mb-2 flex items-center gap-2">
-                  <span className="tv-label shrink-0 text-slate-500">{label}</span>
-                  <span aria-hidden className="rp-rule h-px flex-1" />
-                  <span className="tv-figure shrink-0 text-[10px] text-slate-600">
-                    {items.length}
-                  </span>
-                </div>
-                <div className="overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02]">
-                  <div className="divide-y divide-white/[0.04]">
+                <SectionTitle label={label} count={items.length} />
+                <div className="tv-relief overflow-hidden rounded-2xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)]">
+                  <div className="divide-y divide-[var(--tv-border)]">
                     {items.map((n) => (
-                      <Ligne
+                      <Row
                         key={n.id}
                         n={n}
+                        lang={lang}
                         onOpen={() => openNotification(n)}
                         onRead={() => handleMarkRead(n.id)}
                       />
@@ -358,20 +376,137 @@ export default function Inbox() {
   );
 }
 
+function SectionTitle({
+  label,
+  count,
+  accent,
+}: {
+  label: string;
+  count: number;
+  accent?: boolean;
+}) {
+  return (
+    <div className="mb-2 flex items-center gap-2">
+      <span
+        className={cn(
+          "tv-label shrink-0",
+          accent ? "text-[var(--tv-highlight)]" : "text-slate-500",
+        )}
+      >
+        {label}
+      </span>
+      <span aria-hidden className="rp-rule h-px flex-1" />
+      <span className="tv-figure shrink-0 text-[10px] text-slate-600">{count}</span>
+    </div>
+  );
+}
+
+/** « Pourquoi : … » — la raison d'être de la notification, en une ligne. */
+function Why({ n }: { n: AppNotification }) {
+  const { t } = useT();
+  const key = WHY_KEY[n.kind];
+  if (!key) return null;
+  return (
+    <p className="mt-1.5 truncate text-[11px] text-slate-500">
+      <span className="font-semibold text-slate-400">{t("inbox.why")}</span> {t(key)}
+    </p>
+  );
+}
+
 /**
- * UNE LIGNE DE NOTIFICATION.
- *
- * Trois signaux disaient « non lue » en même temps — une pastille en haut à
- * droite, un fond teinté et une bordure teintée. Il n'en reste qu'UN, mais il
- * est structurel : un liseré vertical à gauche, à la couleur de la sévérité.
- * Le titre en blanc gras contre gris fait le reste.
+ * LA CARTE « À TRAITER » — une alerte qui demande une action. Pleine, en
+ * relief, avec le plan d'action et le bouton qui y mène : on peut agir
+ * depuis la boîte, sans ouvrir le détail.
  */
-function Ligne({
+function AttentionCard({
   n,
+  lang,
+  onOpen,
+  onAct,
+  onRead,
+}: {
+  n: AppNotification;
+  lang: string;
+  onOpen: () => void;
+  onAct: () => void;
+  onRead: () => void;
+}) {
+  const { t } = useT();
+  const Icon = CATEGORY_ICON[n.category] ?? Bell;
+  const ton = SEVERITY[n.severity] ?? SEVERITY.info;
+  const plan = n.data?.plan as string | undefined;
+  const ctaLabel = (n.data?.ctaLabel as string | undefined) ?? t("inbox.ctaDefault");
+
+  return (
+    <article
+      className={cn(
+        "tv-relief animate-fade-in-up rounded-2xl border bg-[var(--tv-plate-1)] p-3.5 md:p-4",
+        ton.ring || "border-[var(--tv-border)]",
+      )}
+    >
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={onOpen}
+        onKeyDown={(e) => e.key === "Enter" && onOpen()}
+        className="flex cursor-pointer items-start gap-3"
+      >
+        <span className={cn("grid h-9 w-9 shrink-0 place-items-center rounded-xl", ton.icon)}>
+          <Icon className="h-4 w-4" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-2">
+            <p className="text-sm font-semibold leading-snug text-white">{n.title}</p>
+            <span className="tv-figure shrink-0 pt-0.5 text-[10px] text-slate-500">
+              {whenLabel(n.createdAt, lang)}
+            </span>
+          </div>
+          <p className="tv-prose mt-1 text-slate-300">{n.body}</p>
+          <Why n={n} />
+        </div>
+      </div>
+
+      {plan && (
+        <div className="tv-relief-inset mt-3 flex items-start gap-2 rounded-xl px-3 py-2.5">
+          <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--tv-highlight)]" />
+          <p className="text-[12.5px] leading-relaxed text-slate-300">{plan}</p>
+        </div>
+      )}
+
+      <div className="mt-3 flex items-center justify-end gap-2">
+        <button
+          type="button"
+          onClick={onRead}
+          className="inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold text-slate-400 transition-colors hover:bg-white/[0.05] hover:text-white"
+        >
+          <Check className="h-3.5 w-3.5" />
+          {t("inbox.markRead")}
+        </button>
+        <button
+          type="button"
+          onClick={onAct}
+          className="tv-accent-fill inline-flex h-9 items-center gap-1.5 rounded-lg px-3.5 text-xs font-bold"
+        >
+          {ctaLabel}
+          <ArrowRight className="h-3.5 w-3.5" />
+        </button>
+      </div>
+    </article>
+  );
+}
+
+/**
+ * UNE LIGNE — information, bilan, progrès, ou alerte déjà lue. Non lue : un
+ * point à la couleur de la sévérité et le titre en blanc. Lue : tout en gris.
+ */
+function Row({
+  n,
+  lang,
   onOpen,
   onRead,
 }: {
   n: AppNotification;
+  lang: string;
   onOpen: () => void;
   onRead: () => void;
 }) {
@@ -379,10 +514,6 @@ function Ligne({
   const Icon = CATEGORY_ICON[n.category] ?? Bell;
   const nonLue = !n.readAt;
   const ton = SEVERITY[n.severity] ?? SEVERITY.info;
-  const heure = new Date(n.createdAt).toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
 
   return (
     <div
@@ -390,55 +521,79 @@ function Ligne({
       tabIndex={0}
       onClick={onOpen}
       onKeyDown={(e) => e.key === "Enter" && onOpen()}
-      className="group relative flex w-full cursor-pointer items-start gap-3 py-3 pl-4 pr-3 text-left transition hover:bg-white/[0.03]"
+      className="group relative flex w-full cursor-pointer items-start gap-3 px-3.5 py-3 text-left transition-colors hover:bg-[var(--tv-plate-2)]"
     >
-      {/* Le liseré — l'unique marque de « non lue ». */}
-      {nonLue && (
-        <span aria-hidden className={cn("absolute inset-y-2 left-0 w-[3px] rounded-r", ton.rail)} />
-      )}
-
-      <span className={cn("mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-lg", ton.icon)}>
+      <span
+        className={cn(
+          "mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg",
+          nonLue ? ton.icon : "bg-[var(--tv-plate-2)] text-slate-500",
+        )}
+      >
         <Icon className="h-3.5 w-3.5" />
       </span>
 
       <div className="min-w-0 flex-1">
-        <p
-          className={cn(
-            "text-sm leading-snug",
-            nonLue ? "font-semibold text-white" : "text-slate-400",
-          )}
-        >
-          {n.title}
-        </p>
-        {/* LE SUJET ET L'HEURE, SUR LA MÊME LIGNE. Le sujet occupait sa propre
-            ligne sous le titre pendant que l'heure vivait à droite du titre :
-            deux méta-informations, deux lignes, dix-huit pixels de plus par
-            notification. Ce sont deux mentions du même rang — elles se lisent
-            ensemble, séparées d'un point médian. */}
-        <div className="tv-row-label mt-0.5 flex items-center gap-1.5">
-          <span className="tv-label truncate text-slate-600">{t(CATEGORY_LABEL[n.category])}</span>
-          <span aria-hidden className="text-slate-700">
-            ·
+        <div className="flex items-start justify-between gap-2">
+          <p
+            className={cn(
+              "text-sm leading-snug",
+              nonLue ? "font-semibold text-white" : "text-slate-400",
+            )}
+          >
+            {n.title}
+          </p>
+          <span className="tv-figure shrink-0 pt-0.5 text-[10px] text-slate-600">
+            {whenLabel(n.createdAt, lang)}
           </span>
-          <span className="tv-figure shrink-0 text-[10px] text-slate-600">{heure}</span>
         </div>
-        {n.body && <p className="tv-prose mt-1 line-clamp-2 text-slate-500">{n.body}</p>}
+        {n.body && (
+          <p
+            className={cn(
+              "tv-prose mt-0.5 line-clamp-2",
+              nonLue ? "text-slate-400" : "text-slate-500",
+            )}
+          >
+            {n.body}
+          </p>
+        )}
+        <div className="mt-1 flex items-center gap-1.5">
+          <span className="tv-label truncate text-slate-600">{t(CATEGORY_LABEL[n.category])}</span>
+        </div>
       </div>
 
       {nonLue && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onRead();
-          }}
-          title={t("inbox.markRead")}
-          aria-label={t("inbox.markRead")}
-          /* TOUJOURS VISIBLE. Il n'apparaissait qu'au survol : sur un écran
-             tactile, il n'existait pas. */
-          className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-slate-500 opacity-70 transition hover:bg-white/[0.08] hover:text-white group-hover:opacity-100"
-        >
-          <Check className="h-3.5 w-3.5" />
-        </button>
+        <div className="flex shrink-0 flex-col items-center gap-1.5">
+          <span aria-hidden className={cn("mt-1.5 h-2 w-2 rounded-full", ton.dot)} />
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onRead();
+            }}
+            title={t("inbox.markRead")}
+            aria-label={t("inbox.markRead")}
+            className="grid h-8 w-8 place-items-center rounded-lg text-slate-500 transition hover:bg-white/[0.08] hover:text-white"
+          >
+            <Check className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Rien à lire — et ce qui fera apparaître quelque chose ici. */
+function EmptyState({ filtered }: { filtered: boolean }) {
+  const { t } = useT();
+  return (
+    <div className="flex flex-col items-center justify-center px-4 py-16 text-center">
+      <span className="tv-relief mb-4 grid h-12 w-12 place-items-center rounded-2xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)]">
+        <BellOff className="h-5 w-5 text-slate-500" />
+      </span>
+      <p className="text-sm font-semibold text-slate-200">
+        {filtered ? t("inbox.emptyFiltered") : t("inbox.caughtUpTitle")}
+      </p>
+      {!filtered && (
+        <p className="tv-hint mt-1.5 max-w-sm leading-relaxed">{t("inbox.caughtUpBody")}</p>
       )}
     </div>
   );

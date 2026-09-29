@@ -24,7 +24,17 @@ import { useToast } from "../contexts/ToastContext";
 import { loadScenarios, saveScenario, type SavedScenario } from "../store/simulations";
 import { cn } from "../utils/cn";
 import { assessDataset } from "../utils/datasetQuality";
-import { Button, Card, CardBody, FIELD_BASE, PageHeader, Badge, Kpi, KpiGrid } from "@/shared/ui";
+import {
+  Button,
+  Card,
+  CardBody,
+  FIELD_BASE,
+  PageHeader,
+  Badge,
+  Kpi,
+  KpiGrid,
+  SelectPicker,
+} from "@/shared/ui";
 import { buildDataset } from "@/modules/probability/dataset";
 import { buildScenario, type Horizon } from "@/modules/probability/scenario";
 import { runSimulation } from "@/modules/probability/engine";
@@ -239,18 +249,22 @@ export default function Simulator({ trades }: { trades: Trade[] }) {
             <Row label={t("sim.target")} value={target} onChange={setTarget} optional />
             <Row label={t("sim.maxDd")} value={maxDd} onChange={setMaxDd} optional />
 
-            <label className="block">
+            <div className="block">
               <span className="text-[11px] text-slate-400">{t("sim.ddType")}</span>
-              <select
-                className={cn(FIELD_BASE, "mt-1")}
-                value={ddType}
-                onChange={(e) => setDdType(e.target.value as DrawdownType)}
-              >
-                <option value="static">{t("sim.dd.static")}</option>
-                <option value="trailing">{t("sim.dd.trailing")}</option>
-                <option value="trailingEod">{t("sim.dd.trailingEod")}</option>
-              </select>
-            </label>
+              <div className="mt-1">
+                <SelectPicker
+                  variant="field"
+                  label={t("sim.ddType")}
+                  value={ddType}
+                  onChange={setDdType}
+                  options={[
+                    { value: "static" as DrawdownType, label: t("sim.dd.static") },
+                    { value: "trailing" as DrawdownType, label: t("sim.dd.trailing") },
+                    { value: "trailingEod" as DrawdownType, label: t("sim.dd.trailingEod") },
+                  ]}
+                />
+              </div>
+            </div>
 
             <Row label={t("sim.dailyLoss")} value={dailyLoss} onChange={setDailyLoss} optional />
             <Row label={t("sim.minDays")} value={minDays} onChange={setMinDays} optional />

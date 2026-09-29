@@ -1,4 +1,5 @@
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { lazyPage } from "@/shared/lazy-page";
+import { Suspense, useEffect, useRef, useState } from "react";
 // Les cinq logos de réseaux sociaux ont quitté cet import avec les liens morts
 // qu'ils portaient : voir le pied de page plus bas.
 import { Check } from "lucide-react";
@@ -18,12 +19,16 @@ import { ShotOuVisuel } from "./landing/ProductShot";
  * chargement ici ferait clignoter la page pour quelques dizaines de
  * millisecondes.
  */
-const AuthModal = lazy(() => import("./landing/AuthModal").then((m) => ({ default: m.AuthModal })));
-const DemoModal = lazy(() => import("./landing/DemoModal").then((m) => ({ default: m.DemoModal })));
+const AuthModal = lazyPage(() =>
+  import("./landing/AuthModal").then((m) => ({ default: m.AuthModal })),
+);
+const DemoModal = lazyPage(() =>
+  import("./landing/DemoModal").then((m) => ({ default: m.DemoModal })),
+);
 import { TrustStrip } from "./landing/Showcase";
 import { TRUSTPILOT_URL } from "@/shared/site";
 import { TourProduit } from "./landing/Tour";
-import { CursorOrb } from "./landing/CursorOrb";
+import { CursorOrb } from "@/shared/ui/CursorOrb";
 import { LIENS_NAV } from "./landing/nav";
 import MegaNav from "./landing/MegaNav";
 import { LangMenuPied } from "./landing/LangMenu";

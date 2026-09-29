@@ -107,6 +107,32 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
     [user?.id],
   );
 
+  /* UNE CONVERSATION EXISTE DÈS L'OUVERTURE. Sans elle, la première question
+     posée depuis la bulle partait sans fil : rien n'était enregistré, et
+     fermer la fenêtre pendant l'analyse perdait question ET réponse. On
+     reprend une discussion vide s'il y en a une (pas de doublons vides dans
+     l'historique), sinon on en crée une. */
+  useEffect(() => {
+    if (!open || !user?.id || conversationId) return;
+    let active = true;
+    const store = jarvisConversationStore(user.id);
+    void (async () => {
+      const recent = (await store.list()).slice(0, 5);
+      for (const meta of recent) {
+        const conv = await store.get(meta.id);
+        if (conv && conv.messages.length === 0) {
+          if (active && !conversationIdRef.current) setConversationId(conv.id);
+          return;
+        }
+      }
+      const conv = await store.create();
+      if (active && !conversationIdRef.current) setConversationId(conv.id);
+    })().catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [open, user?.id, conversationId]);
+
   // Le dock ouvre directement sur la Conversation : on ouvre Jarvis pour lui
   // parler, pas pour lire un tableau avant d'avoir le droit d'écrire.
   const toggleOpen = () => {
@@ -163,10 +189,12 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
   // The workspace consumes `pendingPrompt` at mount (initialPrompt). Clear it
   // right after so a re-open without a new event never re-asks the old prompt.
   useEffect(() => {
-    if (!open || !pendingPrompt) return;
+    // Pas avant que le fil existe : la conversation ne pose la question
+    // qu'une fois son fil créé et chargé.
+    if (!open || !pendingPrompt || !conversationId) return;
     const id = requestAnimationFrame(() => setPendingPrompt(undefined));
     return () => cancelAnimationFrame(id);
-  }, [open, pendingPrompt]);
+  }, [open, pendingPrompt, conversationId]);
 
   // Contexte agrégé transmis au Shell → workspace (jamais des props métier).
   const context: JarvisContext = useMemo(

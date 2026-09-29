@@ -1,3 +1,4 @@
+import { lazyPage } from "@/shared/lazy-page";
 import { createFileRoute, ClientOnly, redirect, notFound } from "@tanstack/react-router";
 import App from "@/app/App";
 import PublicShell from "@/app/pages/PublicShell";
@@ -53,7 +54,7 @@ function AppPage() {
   // Le repli SSR n'est PLUS la landing complète. Elle était importée ici en
   // statique, ce que le build disait noir sur blanc : « Landing.tsx is
   // dynamically imported by App.tsx but also statically imported by
-  // $page.tsx » — autrement dit le `lazy()` d'`App.tsx` ne déplaçait rien et
+  // $page.tsx » — autrement dit le `lazyPage()` d'`App.tsx` ne déplaçait rien et
   // 279 Ko de page de vente partaient dans le chargement initial de chaque
   // trader connecté ouvrant `/journal` ou `/settings`.
   //

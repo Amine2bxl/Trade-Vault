@@ -1,3 +1,4 @@
+import { getCurrency } from "@/shared/currency";
 import { Trade } from "../types";
 import { todayLocalDate } from "@/shared/calendar-date";
 
@@ -12,8 +13,10 @@ export function exportTradesCSV(trades: Trade[]) {
     "Date",
     "Symbol",
     "Direction",
-    "P&L",
-    "Risk",
+    // La devise du journal dans l'en-tête : un CSV ouvert ailleurs ne dit
+    // pas sinon dans quelle monnaie sont ses montants.
+    `P&L (${getCurrency()})`,
+    `Risk (${getCurrency()})`,
     "R Multiple",
     "Strategy",
     "Setup Quality",

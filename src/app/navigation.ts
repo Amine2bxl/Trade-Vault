@@ -109,9 +109,9 @@ export function defaultPageOfSection(id: SectionId): Page {
 }
 
 /**
- * Sections promues dans la barre du bas mobile (ordre = gauche→droite autour
- * du bouton d'ajout). Quatre + le bouton = cinq colonnes : Jarvis, Réglages et
- * l'inbox vivent dans l'en-tête mobile, à portée de pouce eux aussi.
+ * Sections de la barre du bas mobile, autour du bouton d'ajout :
+ * Accueil · Préparation · [+] · Journal · Analyse. Pas de menu « Plus » : les
+ * sous-pages d'une section se parcourent par ses onglets, dans la page.
  */
 export const MOBILE_SECTIONS: SectionId[] = ["dashboard", "preparation", "journal", "analysis"];
 

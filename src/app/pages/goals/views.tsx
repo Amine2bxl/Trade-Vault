@@ -35,6 +35,7 @@ import {
   tasksForMonth,
 } from "../../utils/goalPlan";
 import type { GoalForecast } from "@/modules/probability/goals";
+import { formatMoney } from "@/shared/currency";
 
 const KIND_META: Record<
   GoalKind,
@@ -118,7 +119,9 @@ const fmtVal = (g: GoalDef, v: number): string => {
   const unit = g.kind === "custom" ? (g.unit ?? "") : meta.unit;
   const decimals = g.kind === "capital" ? 0 : v >= 100 ? 0 : 2;
   const s = v.toFixed(decimals);
-  return unit === "$" ? `$${s}` : `${s}${unit ? unit : ""}`;
+  // « $ » est ici le MARQUEUR d'un objectif monétaire, pas le symbole
+  // affiché : le montant s'écrit dans la devise du trader.
+  return unit === "$" ? formatMoney(v, { whole: decimals === 0 }) : `${s}${unit ? unit : ""}`;
 };
 
 interface Draft {
@@ -249,9 +252,10 @@ export function GoalPicker({
                       <>
                         {" · "}
                         <span className="tv-figure text-slate-300">
-                          {tr("actuel", "current")}: {m.unit === "$" ? "$" : ""}
-                          {cur.toFixed(k === "capital" ? 0 : 2)}
-                          {m.unit && m.unit !== "$" ? m.unit : ""}
+                          {tr("actuel", "current")}:{" "}
+                          {m.unit === "$"
+                            ? formatMoney(cur, { whole: k === "capital" })
+                            : `${cur.toFixed(k === "capital" ? 0 : 2)}${m.unit ?? ""}`}
                         </span>
                       </>
                     )}

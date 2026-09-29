@@ -2,7 +2,25 @@ import { supabase } from "@/integrations/supabase/client";
 import { planLimitFromDbError } from "../utils/planLimits";
 
 // ── Sub-accounts ──
-export type AccountType = "personal" | "prop" | "demo" | "live";
+export const ACCOUNT_TYPES = ["personal", "prop", "demo", "live"] as const;
+export type AccountType = (typeof ACCOUNT_TYPES)[number];
+
+/**
+ * LE TYPE D'UN COMPTE LU EN BASE EST VALIDÉ, PAS SUPPOSÉ.
+ *
+ * La colonne `type` est un `text` libre. Des comptes y portent des valeurs
+ * qu'aucun écran ne sait afficher (`futures`, `replay`…, écrites hors de
+ * l'application). L'ancien `r.type as AccountType` les laissait passer : le
+ * sélecteur de comptes cherchait alors une icône et un libellé qui
+ * n'existaient pas, React plantait au rendu — la bulle « sous-compte »
+ * disparaissait, ou toute l'app tombait sur la page 500.
+ *
+ * Une valeur inconnue devient le type par défaut de la colonne (`personal`),
+ * exactement comme un compte créé sans type.
+ */
+export function parseAccountType(raw: unknown): AccountType {
+  return (ACCOUNT_TYPES as readonly unknown[]).includes(raw) ? (raw as AccountType) : "personal";
+}
 export interface Account {
   id: string;
   name: string;
@@ -52,7 +70,7 @@ function rowToAccount(r: AccountRow): Account {
   return {
     id: r.id,
     name: r.name,
-    type: (r.type as AccountType) ?? "personal",
+    type: parseAccountType(r.type),
     startingBalance: Number(r.starting_balance),
     currency: r.currency ?? "USD",
     color: r.color ?? "#22d3ee",

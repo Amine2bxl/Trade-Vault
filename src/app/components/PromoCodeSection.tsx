@@ -3,7 +3,7 @@ import { Tag, Plus, Trash2, ShieldCheck, Users, Power, ChevronDown } from "lucid
 import { supabase } from "@/integrations/supabase/client";
 import { useT } from "../i18n/LanguageContext";
 import { useToast } from "../contexts/ToastContext";
-import { Button, Input, Select } from "@/shared/ui";
+import { Button, DateField, Input, SelectPicker } from "@/shared/ui";
 import { PAID_TIERS, TIER_BY_ID, planId, type PaidPlan } from "../utils/pricing";
 
 /**
@@ -189,13 +189,18 @@ export default function PromoCodeSection() {
           autoComplete="off"
           className="uppercase"
         />
-        <Select value={plan} onChange={(e) => setPlan(e.target.value as PaidPlan)}>
-          {PAID_TIERS.map((t) => (
-            <option key={t} value={planId(t, "yearly")}>
-              {TIER_BY_ID[t].name[fr ? "fr" : "en"]}
-            </option>
-          ))}
-        </Select>
+        <SelectPicker
+          variant="field"
+          label={fr ? "Offre" : "Plan"}
+          value={plan}
+          onChange={(v) => setPlan(v as PaidPlan)}
+          className="h-10"
+          width="12rem"
+          options={PAID_TIERS.map((t) => ({
+            value: planId(t, "yearly"),
+            label: TIER_BY_ID[t].name[fr ? "fr" : "en"],
+          }))}
+        />
       </div>
 
       <div className="grid gap-2 sm:grid-cols-2">
@@ -223,7 +228,8 @@ export default function PromoCodeSection() {
           onChange={(e) => setMaxUses(e.target.value)}
           placeholder={fr ? "Usages max (vide = ∞)" : "Max uses (blank = ∞)"}
         />
-        <Input type="date" value={expires} onChange={(e) => setExpires(e.target.value)} />
+        {/* Le sélecteur de date de la famille, pas le calendrier blanc du système. */}
+        <DateField value={expires} onChange={setExpires} aria-label="Expires" />
         <Button onClick={add} disabled={busy}>
           <Plus className="h-4 w-4" />
           {fr ? "Créer" : "Create"}

@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireProAccess } from "@/backend/require-pro";
+import { requireJarvisSideAccess } from "@/backend/require-pro";
 import { runMemoryExtraction } from "@/modules/ai/agents/memory.agent";
 import { shouldAttemptExtraction, type MemoryCandidate } from "@/modules/ai/memory-extract";
 import { recordAgentRun } from "./telemetry.server";
@@ -36,7 +36,7 @@ function isEnabled(): boolean {
 }
 
 export const extractMemory = createServerFn({ method: "POST" })
-  .middleware([requireProAccess])
+  .middleware([requireJarvisSideAccess])
   .inputValidator((input: unknown) => ExtractInput.parse(input))
   .handler(async ({ data, context }): Promise<ExtractionResponse> => {
     if (!isEnabled()) return { candidates: [], skipped: "disabled" };

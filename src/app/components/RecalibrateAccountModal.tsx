@@ -13,6 +13,7 @@ import {
   previewCalibration,
   type CalibrationPreviewRow,
 } from "../utils/accountCalibration";
+import { formatMoney } from "@/shared/currency";
 
 /**
  * Recalibrage d'échelle — l'écran de décision.
@@ -239,8 +240,7 @@ function PreviewLine({
 }
 
 function money(n: number): string {
-  const sign = n < 0 ? "-" : "";
-  return `${sign}$${Math.abs(n).toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
+  return formatMoney(n);
 }
 
 /** `2×`, `0.5×`, `1.25×` — jamais `2.00×`, qui donne l'air d'un arrondi. */

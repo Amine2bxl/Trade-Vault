@@ -464,11 +464,11 @@ export default function ChecklistWizard({
 
   return (
     <div
-      className="fixed inset-0 z-[var(--tv-z-overlay)] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in"
+      className="tv-dialog-wrap tv-dialog-backdrop fixed inset-0 z-[var(--tv-z-overlay)] flex items-center justify-center"
       onClick={construction ? undefined : onClose}
     >
       <div
-        className="glass-strong rounded-3xl w-full max-w-lg max-h-[90dvh] overflow-y-auto p-5 animate-slide-in"
+        className="tv-dialog glass-strong w-full max-w-lg overflow-y-auto p-5"
         onClick={(e) => e.stopPropagation()}
       >
         {/* ══ EN-TÊTE ═══════════════════════════════════════════════════════
@@ -673,6 +673,7 @@ export default function ChecklistWizard({
                     value={time.startTime}
                     onChange={(v) => v && setTime((t) => ({ ...t, startTime: v }))}
                     locale={intlLocale(lang)}
+                    doneLabel={tr("Valider", "Done")}
                     aria-label={tr("Heure perso", "Custom time")}
                     className="h-9 w-[9.5rem] px-2.5 text-sm"
                   />

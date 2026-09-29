@@ -27,6 +27,7 @@ import {
 import { useScreenshotUrls, invalidateScreenshot } from "../hooks/useScreenshotUrls";
 import Lightbox from "./Lightbox";
 import { Modal } from "@/shared/ui";
+import { formatMoney } from "@/shared/currency";
 
 interface TradeDetailModalProps {
   trades: Trade[];
@@ -366,7 +367,9 @@ export default function TradeDetailModal({
                 <div className="flex flex-wrap gap-3 md:gap-4 text-xs">
                   <div className="bg-white/[0.03] rounded-lg px-3 py-2">
                     <span className="text-slate-500">{t("tradeDetail.risk")}: </span>
-                    <span className="text-white font-semibold">${trade.riskAmount.toFixed(2)}</span>
+                    <span className="text-white font-semibold">
+                      {formatMoney(trade.riskAmount)}
+                    </span>
                   </div>
                   {trade.riskAmount > 0 && (
                     <div className="bg-white/[0.03] rounded-lg px-3 py-2">
@@ -385,7 +388,7 @@ export default function TradeDetailModal({
                     <div className="bg-white/[0.03] rounded-lg px-3 py-2">
                       <span className="text-slate-500">MAE: </span>
                       <span className="text-red-400 font-semibold">
-                        -${Math.abs(trade.mae).toFixed(2)}
+                        {formatMoney(-Math.abs(trade.mae))}
                       </span>
                     </div>
                   )}
@@ -393,7 +396,7 @@ export default function TradeDetailModal({
                     <div className="bg-white/[0.03] rounded-lg px-3 py-2">
                       <span className="text-slate-500">MFE: </span>
                       <span className="text-emerald-400 font-semibold">
-                        +${Math.abs(trade.mfe).toFixed(2)}
+                        {formatMoney(Math.abs(trade.mfe), { signed: true })}
                       </span>
                     </div>
                   )}
@@ -401,7 +404,7 @@ export default function TradeDetailModal({
                     <div className="bg-white/[0.03] rounded-lg px-3 py-2">
                       <span className="text-slate-500">{t("trade.slippage")}: </span>
                       <span className="text-slate-300 font-semibold">
-                        ${trade.slippage.toFixed(2)}
+                        {formatMoney(trade.slippage)}
                       </span>
                     </div>
                   )}
@@ -522,7 +525,7 @@ export default function TradeDetailModal({
                               <div className="flex justify-between gap-2">
                                 <dt className="text-slate-500">{t("tradeDetail.intentRisk")}</dt>
                                 <dd className="text-right text-white">
-                                  ${intent.plannedRisk.toFixed(2)}
+                                  {formatMoney(intent.plannedRisk)}
                                 </dd>
                               </div>
                             )}

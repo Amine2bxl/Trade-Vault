@@ -57,7 +57,7 @@ import {
   todayKey,
   hydrateConfig,
 } from "./checklist/helpers";
-import { Button, PageToolbar, TimeField } from "@/shared/ui";
+import { Button, PageToolbar, TimeField, SelectPicker } from "@/shared/ui";
 import { intlLocale } from "../i18n/locale";
 
 /* ════════════════════════════════════════════════════════════════
@@ -1553,21 +1553,21 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
                     value={config.startTime}
                     onChange={(v) => v && patch({ startTime: v })}
                     locale={intlLocale(lang)}
+                    doneLabel={t("common.done")}
                     aria-label={t("chk.cfgStart")}
                     className="h-9 w-[9.5rem] px-2.5 text-sm"
                   />
                   <label>{t("chk.cfgTz")}</label>
-                  <select
-                    className="bg-white/[0.04] border border-white/[0.08] rounded-lg px-2 py-1.5 text-sm text-white focus:outline-none focus:border-[rgb(var(--tv-accent-rgb)/0.40)]"
+                  <SelectPicker
+                    variant="field"
+                    label={t("chk.cfgTz")}
                     value={config.timeZone}
-                    onChange={(e) => patch({ timeZone: e.target.value })}
-                  >
-                    {tzOptions.map((z) => (
-                      <option key={z} value={z} className="bg-[var(--tv-plate-2)]">
-                        {z}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(v) => patch({ timeZone: v })}
+                    className="h-9 w-[12rem] rounded-lg px-2.5 text-sm"
+                    width="16rem"
+                    searchLabel={t("picker.search")}
+                    options={tzOptions.map((z) => ({ value: z, label: z.replace(/_/g, " ") }))}
+                  />
                   <label>{t("chk.cfgCd")}</label>
                   <input
                     type="number"
@@ -2118,8 +2118,8 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
 
       {/* ══ COUNTDOWN OVERLAY ══ */}
       {countdownVal !== null && (
-        <div className="fixed inset-0 z-[var(--tv-z-modal-nested)] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
-          <div className="glass-strong rounded-3xl p-8 max-w-sm w-full text-center animate-slide-in">
+        <div className="tv-dialog-wrap tv-dialog-backdrop fixed inset-0 z-[var(--tv-z-modal-nested)] flex items-center justify-center">
+          <div className="tv-dialog glass-strong p-8 max-w-sm w-full text-center">
             <div className="text-sm font-bold text-white">{t("chk.cdTitle")}</div>
             <div className="text-xs text-slate-400 mb-5">{t("chk.cdSub")}</div>
             <div className="relative w-40 h-40 mx-auto mb-5">
@@ -2168,8 +2168,8 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
 
       {/* ══ EDGE LOCKED OVERLAY ══ */}
       {lockOverlay && (
-        <div className="fixed inset-0 z-[var(--tv-z-modal-nested)] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="glass-strong rounded-3xl p-8 max-w-sm w-full text-center animate-slide-in border border-[rgb(var(--tv-accent-rgb)/0.20)]">
+        <div className="tv-dialog-wrap tv-dialog-backdrop fixed inset-0 z-[var(--tv-z-modal-nested)] flex items-center justify-center">
+          <div className="tv-dialog glass-strong p-8 max-w-sm w-full text-center">
             <div className="relative w-20 h-20 mx-auto mb-4">
               <div className="w-20 h-20 rounded-full tv-accent-fill flex items-center justify-center">
                 <Lock className="w-8 h-8" />

@@ -1,5 +1,8 @@
 import { expect, test } from "bun:test";
-import { parseForexFactoryFeed } from "../src/modules/economic-calendar/forex-factory";
+import {
+  forexFactoryProvider,
+  parseForexFactoryFeed,
+} from "../src/modules/economic-calendar/forex-factory";
 
 // Le parser est la seule pièce qui casse quand la source change de forme.
 // Il est donc testé sur fixture, sans réseau : ces tests doivent tourner en CI.
@@ -112,4 +115,58 @@ test("une importance inconnue retombe sur low, jamais sur high", () => {
 
 test("déduplique les événements répétés entre deux semaines", () => {
   expect(parseForexFactoryFeed([FEED[0], FEED[0]])).toHaveLength(1);
+});
+
+// ── Nouvel essai : seulement pour un incident passager ──────────────────────
+// Un seul échec réseau suffisait à marquer la synchro en échec (et à allumer le
+// bandeau « en retard »). Un second essai rattrape le hoquet — mais jamais sur
+// un 4xx : insister sur un 429 ferait bloquer TradeVault par la source.
+
+async function withFetch(
+  responses: Array<() => Response | Promise<Response>>,
+  run: () => Promise<void>,
+) {
+  const original = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = (async () => {
+    const next = responses[Math.min(calls, responses.length - 1)];
+    calls += 1;
+    return next();
+  }) as unknown as typeof fetch;
+  try {
+    await run();
+  } finally {
+    globalThis.fetch = original;
+  }
+  return calls;
+}
+
+test("un incident réseau passager est rattrapé par un second essai", async () => {
+  const calls = await withFetch(
+    [
+      () => {
+        throw new TypeError("fetch failed");
+      },
+      () => new Response(JSON.stringify(FEED), { status: 200 }),
+    ],
+    async () => {
+      const events = await forexFactoryProvider.fetchEvents();
+      expect(events.length).toBeGreaterThan(0);
+    },
+  );
+  expect(calls).toBe(2);
+});
+
+test("une 5xx est retentée une fois, pas davantage", async () => {
+  const calls = await withFetch([() => new Response("", { status: 503 })], async () => {
+    await expect(forexFactoryProvider.fetchEvents()).rejects.toThrow("503");
+  });
+  expect(calls).toBe(2);
+});
+
+test("un 429 n'est jamais retenté : le plafond de la source est respecté", async () => {
+  const calls = await withFetch([() => new Response("", { status: 429 })], async () => {
+    await expect(forexFactoryProvider.fetchEvents()).rejects.toThrow("429");
+  });
+  expect(calls).toBe(1);
 });

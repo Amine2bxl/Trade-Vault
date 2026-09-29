@@ -14,16 +14,15 @@ interface MobileNavProps {
 }
 
 /**
- * Barre du bas — QUATRE sections + le bouton d'ajout, en cinq colonnes :
- * Tableau de bord · Préparation · [+] · Journal · Analyse.
+ * LA BARRE DU BAS — Accueil · Préparation · [+] · Journal · Analyse.
  *
- * Le menu « Plus » a disparu. Il existait pour loger vingt-et-une entrées dans
- * une barre qui n'en montre que quelques-unes ; avec six sections il n'a plus
- * rien à porter. Sa recherche faisait double emploi avec la palette de
- * commandes (⌘K), qui reste. Sa cloche est passée dans l'en-tête mobile, et
- * son sélecteur de compte dans la section Réglages.
+ * Pas de menu « Plus » : une section s'ouvre ici, et ses sous-pages se
+ * parcourent par les onglets en haut de la page. Les sous-comptes et Jarvis
+ * restent en bulles flottantes au-dessus de la barre.
  *
- * Les pages d'une section s'atteignent par la barre d'onglets, dans la page.
+ * L'onglet actif est l'icône et le libellé en blanc, plus un trait d'accent
+ * de 3 px sous le libellé — plus de pastille pleine découpée dans la barre.
+ * L'ajout est un onglet comme les autres, marqué par une tuile d'accent.
  */
 export default function MobileNav({ page, setPage, onAddTrade }: MobileNavProps) {
   const { t } = useT();
@@ -34,21 +33,17 @@ export default function MobileNav({ page, setPage, onAddTrade }: MobileNavProps)
 
   const items = MOBILE_SECTIONS.map((id) => {
     const { labelKey, icon } = SECTION_META[id];
-    const target = defaultPageOfSection(id);
     return {
       id,
-      target,
+      target: defaultPageOfSection(id),
       icon,
-      // L'onglet du tableau de bord lit « Accueil » sur mobile — libellé plus
-      // court, plus proche du geste du pouce.
+      // L'onglet du tableau de bord lit « Accueil » sur mobile — plus court.
       label: id === "dashboard" ? t("nav.home") : t(labelKey),
       active: activeSection === id,
     };
   });
-  const leftItems = items.slice(0, 2);
-  const rightItems = items.slice(2);
 
-  const renderItem = ({
+  const tab = ({
     id,
     target,
     label,
@@ -63,51 +58,52 @@ export default function MobileNav({ page, setPage, onAddTrade }: MobileNavProps)
   }) => (
     <button
       key={id}
+      type="button"
       onClick={() => setPage(target)}
       // Le doigt touche l'écran avant que le clic ne se déclenche : le chunk
-      // part dès ce premier contact, ce qui suffit souvent à le rendre prêt.
+      // part dès ce premier contact.
       onTouchStart={() => preloadPage(target)}
       aria-current={active ? "page" : undefined}
-      // Même grammaire que le rail : l'onglet actif est une PASTILLE BLANCHE
-      // pleine, tout le reste est un blanc voilé. Plus de trait lumineux, plus
-      // de pastille teintée — le contraste seul porte l'état.
-      className={cn("bottom-nav-item", active ? "text-white" : "text-white/55")}
+      className={cn("bottom-nav-item", active ? "text-white" : "text-white/50")}
     >
-      <span className={cn("bottom-nav-icon", active && "bottom-nav-icon-active")}>
-        <Icon className="w-[21px] h-[21px]" strokeWidth={active ? 2.3 : 2} />
-      </span>
-      <span
-        className={cn(
-          "text-[10px] leading-none transition",
-          active ? "font-bold" : "font-semibold",
-        )}
-      >
+      <Icon className="h-[22px] w-[22px]" strokeWidth={active ? 2.2 : 1.9} aria-hidden />
+      <span className={cn("text-[10px] leading-none", active ? "font-semibold" : "font-medium")}>
         {label}
       </span>
+      <span className={cn("bottom-nav-dot", active && "bottom-nav-dot-on")} aria-hidden />
     </button>
   );
 
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 z-[var(--tv-z-float)] bottom-nav">
+    <nav className="bottom-nav fixed bottom-0 left-0 right-0 z-[var(--tv-z-float)] md:hidden">
       <div className="bottom-nav-shell">
-        {/* 2 + bouton d'ajout + 2 = cinq enfants, cinq colonnes. */}
-        <div className="grid grid-cols-5 items-end px-2 pt-2 pb-2 gap-1">
-          {leftItems.map(renderItem)}
-          <div className="flex justify-center items-center">
-            <button
-              onClick={onAddTrade}
-              aria-label={hasDraft ? t("trade.draftBadge") : t("common.addTrade")}
-              className="fab-button relative -mt-7"
-            >
-              <Plus className="w-6 h-6" strokeWidth={2.5} />
+        {/* 2 + bouton d'ajout + 2 = cinq colonnes. */}
+        <div className="grid grid-cols-5 items-center gap-1 px-2 py-1.5">
+          {items.slice(0, 2).map(tab)}
+          {/* L'AJOUT — un onglet parmi les autres, pas un bloc posé dessus.
+              C'était un carré plein de 52px, surélevé de 18px, cerclé d'un
+              anneau et d'une lueur : la pièce la plus lourde de l'écran, qui
+              mordait sur le contenu. Il garde sa place au centre et la seule
+              touche d'accent de la barre, mais à la même hauteur et avec la
+              même anatomie (icône + libellé) que ses voisins. */}
+          <button
+            type="button"
+            onClick={onAddTrade}
+            aria-label={hasDraft ? t("trade.draftBadge") : t("common.addTrade")}
+            className="bottom-nav-item text-[var(--tv-highlight)]"
+          >
+            <span className="bottom-nav-add relative">
+              <Plus className="h-[18px] w-[18px]" strokeWidth={2.4} aria-hidden />
               {hasDraft && (
-                <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-amber-400 border-2 border-[var(--tv-bg)]" />
+                <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full border-2 border-[var(--tv-rail-bot)] bg-amber-400" />
               )}
-            </button>
-          </div>
-          {rightItems.map(renderItem)}
+            </span>
+            <span className="text-[10px] font-semibold leading-none">{t("common.add")}</span>
+            <span className="bottom-nav-dot" aria-hidden />
+          </button>
+          {items.slice(2).map(tab)}
         </div>
       </div>
-    </div>
+    </nav>
   );
 }

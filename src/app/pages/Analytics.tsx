@@ -1,4 +1,5 @@
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { Info, TrendingUp, TrendingDown, CalendarDays, Clock, Sparkles } from "lucide-react";
 import { Trade, isBreakEven } from "../types";
 import { computeStats, formatPnl, formatPct, formatShortDate } from "../utils/tradeCalcs";
@@ -31,7 +32,17 @@ import {
   CartesianGrid,
 } from "recharts";
 import { useT } from "../i18n/LanguageContext";
-import { EmptyState, PageContainer, Card, Kpi, KpiGrid } from "@/shared/ui";
+import {
+  EmptyState,
+  PageContainer,
+  Card,
+  Kpi,
+  KpiGrid,
+  RangePicker,
+  MultiPicker,
+  rangeBounds,
+  type RangeValue,
+} from "@/shared/ui";
 import {
   CHART_GREEN,
   CHART_RED,
@@ -48,8 +59,10 @@ import {
   moneyAxisProps,
   tooltipStyle,
   glowActiveDot,
+  formatAxisMoney,
 } from "../utils/chartTheme";
 import EquityChart from "../components/EquityChart";
+import { formatMoney } from "@/shared/currency";
 
 interface AnalyticsProps {
   trades: Trade[];
@@ -70,20 +83,27 @@ const LOCALE_MAP: Record<string, string> = {
 };
 
 type AnalyticsPeriod = "all" | "7d" | "30d" | "90d" | "1y";
+const PERIOD_DAYS: Record<AnalyticsPeriod, number | null> = {
+  all: null,
+  "7d": 7,
+  "30d": 30,
+  "90d": 90,
+  "1y": 365,
+};
 
-/* La même grammaire de pilules que la rangée de filtres du Journal — une
-   seule apparence de filtre dans le produit. */
-const FILTER_PILL =
-  "appearance-none rounded-xl border border-white/[0.06] bg-white/[0.03] px-3 py-1.5 text-xs font-semibold text-slate-400 outline-none transition-colors hover:text-slate-200";
-const FILTER_PILL_ACTIVE =
-  "border-[color:var(--tv-accent)]/40 bg-[color:var(--tv-accent)]/10 text-[color:var(--tv-accent)]";
+/** Le jour d'un trade — midi local : `new Date("YYYY-MM-DD")` est minuit UTC,
+ *  donc LA VEILLE à New York. Le lundi d'un trader de Chicago tombait dimanche. */
+const weekdayOf = (date: string) => new Date(`${date}T12:00:00`).getDay();
 
 export default function Analytics({ trades }: AnalyticsProps) {
   const { t, lang } = useT();
   const { user } = useAuth();
   const { activeId } = useAccounts();
   const locale = LOCALE_MAP[lang] || "en-US";
-  const [analyticsPeriod, setAnalyticsPeriod] = useState<AnalyticsPeriod>("all");
+  const [period, setPeriod] = useState<RangeValue<AnalyticsPeriod>>({
+    kind: "preset",
+    preset: "all",
+  });
   /* LE JOUR DE LA SEMAINE — la deuxième moitié de la question.
      La page ne savait filtrer qu'une DURÉE : « les trente derniers jours ».
      Or la question qu'un trader se pose sur ses statistiques est presque
@@ -92,39 +112,38 @@ export default function Analytics({ trades }: AnalyticsProps) {
      trader un jour donné. Le filtre s'applique EN AMONT de tous les calculs de
      la page : chaque chiffre, chaque graphe répond alors à la question posée,
      et pas seulement l'un d'entre eux. */
-  const [dayFilter, setDayFilter] = useState<string>("all");
+  /** Jours retenus (1 = lundi … 5 = vendredi) — vide : tous. */
+  const [days, setDays] = useState<string[]>([]);
   const [activePieIndex, setActivePieIndex] = useState<number | null>(null);
   const [startingBalance, setStartingBalance] = useState(0);
 
-  /** Premier axe : la DURÉE. */
+  /** Premier axe : la PÉRIODE — un raccourci, ou des bornes choisies. Les
+   *  bornes sont des dates CIVILES comparées en chaînes : aucun décalage de
+   *  fuseau ne fait entrer ou sortir un jour. */
   const dureeTrades = useMemo(() => {
-    if (analyticsPeriod === "all") return trades;
-    const cutoff = new Date();
-    if (analyticsPeriod === "7d") cutoff.setDate(cutoff.getDate() - 7);
-    else if (analyticsPeriod === "30d") cutoff.setDate(cutoff.getDate() - 30);
-    else if (analyticsPeriod === "90d") cutoff.setDate(cutoff.getDate() - 90);
-    else if (analyticsPeriod === "1y") cutoff.setFullYear(cutoff.getFullYear() - 1);
-    return trades.filter((t) => new Date(t.date) >= cutoff);
-  }, [trades, analyticsPeriod]);
+    const bounds = rangeBounds(period, PERIOD_DAYS);
+    if (!bounds) return trades;
+    return trades.filter((t) => t.date >= bounds.from && t.date <= bounds.to);
+  }, [trades, period]);
 
-  /* Second axe : le JOUR. Le croisement porte le nom `cutoffTrades` — celui
-     que toute la page consomme déjà —, donc chaque chiffre et chaque graphe
-     répond à la question posée, et pas seulement l'un d'entre eux.
-     `getDay()` rend 0 pour dimanche, comme les libellés : une convention. */
+  /* Second axe : les JOURS — un, plusieurs, ou tous. Le croisement porte le
+     nom `cutoffTrades` — celui que toute la page consomme déjà —, donc chaque
+     chiffre et chaque graphe (profit factor compris) répond à la question
+     posée, et pas seulement l'un d'entre eux. */
   const cutoffTrades = useMemo(
     () =>
-      dayFilter === "all"
+      days.length === 0
         ? dureeTrades
-        : dureeTrades.filter((tr) => String(new Date(tr.date).getDay()) === dayFilter),
-    [dureeTrades, dayFilter],
+        : dureeTrades.filter((tr) => days.includes(String(weekdayOf(tr.date)))),
+    [dureeTrades, days],
   );
 
   /** Combien de trades chaque jour porte DANS LA PÉRIODE — le compteur des
-   *  pastilles, et ce qui permet de griser un jour sans données. */
+   *  options de jour. */
   const periodDayCount = useMemo(() => {
     const acc: Record<number, number> = {};
     for (const tr of dureeTrades) {
-      const d = new Date(tr.date).getDay();
+      const d = weekdayOf(tr.date);
       acc[d] = (acc[d] ?? 0) + 1;
     }
     return acc;
@@ -206,14 +225,15 @@ export default function Analytics({ trades }: AnalyticsProps) {
     return arr;
   }, [stats.wins, stats.losses, stats.breakEven, t]);
   const pnlDistribution = useMemo(() => {
+    const m = (v: number) => formatMoney(v, { whole: true });
     const b = [
-      { range: "< -$500", count: 0, fill: CHART_RED },
-      { range: "-$500~-$200", count: 0, fill: CHART_RED },
-      { range: "-$200~$0", count: 0, fill: "#fca5a5" },
+      { range: `< ${m(-500)}`, count: 0, fill: CHART_RED },
+      { range: `${m(-500)}~${m(-200)}`, count: 0, fill: CHART_RED },
+      { range: `${m(-200)}~${m(0)}`, count: 0, fill: "#fca5a5" },
       { range: t("common.be"), count: 0, fill: "#f59e0b" },
-      { range: "$0~$200", count: 0, fill: "#86efac" },
-      { range: "$200~$500", count: 0, fill: "#4ade80" },
-      { range: "> $500", count: 0, fill: "#10b981" },
+      { range: `${m(0)}~${m(200)}`, count: 0, fill: "#86efac" },
+      { range: `${m(200)}~${m(500)}`, count: 0, fill: "#5bf0ab" },
+      { range: `> ${m(500)}`, count: 0, fill: "#22e08a" },
     ];
     for (const trade of cutoffTrades) {
       if (trade.direction === "be") b[3].count++;
@@ -378,75 +398,66 @@ export default function Analytics({ trades }: AnalyticsProps) {
           question qu'on pouvait poser à cette page ; c'est pourtant celle qui
           décide si on arrête de trader un jour. Le jour s'ajoute donc en
           second axe, et il s'applique en amont de tous les calculs. */}
-      <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2">
-        <div className="flex items-center gap-1.5">
-          {(["all", "7d", "30d", "90d", "1y"] as AnalyticsPeriod[]).map((p) => (
-            <button
-              key={p}
-              onClick={() => setAnalyticsPeriod(p)}
-              className={cn(
-                "tv-label " + FILTER_PILL + " px-3",
-                analyticsPeriod === p && FILTER_PILL_ACTIVE,
-              )}
-            >
-              {p === "all" ? t("common.all") : t(`common.${p}`)}
-            </button>
-          ))}
-        </div>
-
-        <span aria-hidden className="hidden h-4 w-px bg-white/[0.1] sm:block" />
-
-        {/* Pas de marge negative ici : elle fait deborder la rangee de 4px
-            de son conteneur (mesure). Le voile de defilement de
-            `tv-scroll-x` se suffit a lui-meme. */}
-        <div className="tv-scroll-x min-w-0 flex-1 rounded-xl">
-          <div className="flex w-max items-center gap-1.5 py-0.5">
-            <span className="tv-label shrink-0 pr-1 text-slate-500">{t("journal.filterDay")}</span>
-            <button
-              onClick={() => setDayFilter("all")}
-              aria-pressed={dayFilter === "all"}
-              className={cn(
-                "tv-label " + FILTER_PILL + " px-3",
-                dayFilter === "all" && FILTER_PILL_ACTIVE,
-              )}
-            >
-              {t("common.all")}
-            </button>
-            {/* Lundi à vendredi : les marchés que ce produit journalise ne
-                s'échangent pas le week-end, et deux pastilles toujours vides
-                ne sont pas un filtre. */}
-            {[1, 2, 3, 4, 5].map((d) => {
-              const n = periodDayCount[d] ?? 0;
-              return (
-                <button
-                  key={d}
-                  onClick={() => setDayFilter(String(d))}
-                  aria-pressed={dayFilter === String(d)}
-                  disabled={n === 0 && dayFilter !== String(d)}
-                  className={cn(
-                    "tv-label " + FILTER_PILL + " px-3 disabled:opacity-35",
-                    dayFilter === String(d) && FILTER_PILL_ACTIVE,
-                  )}
-                >
-                  <span className="capitalize">{jours[d]}</span>
-                  <span className="tv-figure text-[10px] text-slate-600">{n}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {dayFilter !== "all" && (
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <RangePicker
+          label={t("common.period")}
+          value={period}
+          onChange={setPeriod}
+          neutralPreset="all"
+          presets={[
+            { value: "all", label: t("common.all") },
+            { value: "7d", label: t("common.7d") },
+            { value: "30d", label: t("common.30d") },
+            { value: "90d", label: t("common.90d") },
+            { value: "1y", label: t("common.1y") },
+          ]}
+          customLabel={t("picker.custom")}
+          fromLabel={t("picker.from")}
+          toLabel={t("picker.to")}
+          applyLabel={t("picker.apply")}
+          todayLabel={t("calendar.today")}
+          locale={locale}
+        />
+        {/* Lundi à vendredi : les marchés que ce produit journalise ne
+            s'échangent pas le week-end. Un jour, plusieurs, ou tous. */}
+        <MultiPicker
+          label={t("journal.filterDay")}
+          values={days}
+          onChange={setDays}
+          options={[1, 2, 3, 4, 5].map((d) => ({
+            value: String(d),
+            label: jours[d].charAt(0).toUpperCase() + jours[d].slice(1),
+            count: periodDayCount[d] ?? 0,
+          }))}
+          allLabel={t("common.all")}
+          clearLabel={t("common.clear")}
+          doneLabel={t("common.done")}
+          countLabel={t("picker.nSelected")}
+        />
+        {(days.length > 0 || period.kind === "custom" || period.preset !== "all") && (
           <button
-            onClick={() => setDayFilter("all")}
-            className="inline-flex h-8 shrink-0 items-center rounded-lg px-2.5 text-xs font-semibold text-slate-500 transition-colors hover:bg-white/[0.04] hover:text-white"
+            onClick={() => {
+              setDays([]);
+              setPeriod({ kind: "preset", preset: "all" });
+            }}
+            className="inline-flex h-9 shrink-0 items-center rounded-lg px-2.5 text-xs font-semibold text-slate-500 transition-colors hover:bg-white/[0.04] hover:text-white"
           >
             {t("common.reset")}
           </button>
         )}
+        <span className="tv-figure ml-auto text-[11px] text-slate-500">
+          {cutoffTrades.length} {t("common.trades")}
+        </span>
       </div>
 
-      <div className="space-y-4 md:space-y-6">
+      {/* L'ORDRE DE LECTURE SUR TÉLÉPHONE.
+          Sur bureau, la courbe d'équité se voit dès l'ouverture, à côté du
+          reste. Sur téléphone, elle arrivait après le tableau des setups, la
+          carte de chaleur et le graphe horaire — quatre écrans de défilement
+          avant la seule image qui dise si le compte monte. Une colonne flex
+          (`gap`, pas `space-y` : l'espacement ne dépend plus de l'ordre du
+          DOM) la remonte juste sous les mesures, sans rien changer au bureau. */}
+      <div className="flex flex-col gap-4 md:gap-6">
         {/* ══ LE PROFIT FACTOR — UNE BANDE, PLUS UNE CARTE HÉROS ══════════
             Il occupait une carte de 108px sur desktop (titre, sous-titre,
             trois colonnes centrées, un badge, une barre) et se DÉDOUBLAIT sur
@@ -461,7 +472,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
             de l'écran pour le dire. */}
         <div
           className={cn(
-            "glass animate-fade-in-up stagger-1 rounded-2xl border px-3.5 py-3 md:px-4",
+            "glass animate-fade-in-up stagger-1 rounded-2xl border px-3.5 py-3 max-md:order-[-3] md:px-4",
             profitFactorData.isProfitable ? "border-emerald-500/15" : "border-red-500/15",
           )}
         >
@@ -522,7 +533,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
             pourtant le rembourrage d'une carte pleine et son survol — 86px de
             haut sur un téléphone, soit deux rangées de 172px avant le premier
             graphe. En case compacte, la même information tient en 54px. */}
-        <KpiGrid className="animate-fade-in-up stagger-1">
+        <KpiGrid className="animate-fade-in-up stagger-1 max-md:order-[-2]">
           {[
             {
               label: t("dashboard.avgRR"),
@@ -609,8 +620,11 @@ export default function Analytics({ trades }: AnalyticsProps) {
           <div className="px-4 md:px-5 py-3 border-b border-white/[0.06]">
             <h3 className="tv-title">{t("analytics.setupTable")}</h3>
           </div>
-          <div className="tv-scroll-x">
-            <table className="w-full min-w-[640px]">
+          {/* Sur téléphone, le tableau garde ses quatre colonnes essentielles
+              (setup, trades, win rate, P&L) au lieu d'imposer 640px de large
+              et de faire défiler la carte de côté. */}
+          <div>
+            <table className="w-full sm:min-w-[640px]">
               <thead>
                 <tr className="border-b border-white/[0.06]">
                   {[
@@ -625,8 +639,9 @@ export default function Analytics({ trades }: AnalyticsProps) {
                     <th
                       key={i}
                       className={cn(
-                        "tv-label px-4 py-2.5 text-slate-500",
+                        "tv-label px-3 sm:px-4 py-2.5 text-slate-500",
                         i === 0 ? "text-left" : "text-right",
+                        i >= 3 && i <= 5 && "hidden sm:table-cell",
                       )}
                     >
                       {h}
@@ -637,7 +652,18 @@ export default function Analytics({ trades }: AnalyticsProps) {
               <tbody className="divide-y divide-white/[0.04]">
                 {setupTable.map((row) => (
                   <tr key={row.strategy} className="hover:bg-white/[0.02] transition-colors">
-                    <td className="px-4 py-2.5 text-xs font-bold text-white">{row.strategy}</td>
+                    {/* Un nom de setup long élargissait le tableau au-delà de
+                        l'écran : il se tronque, le nom complet reste au survol. */}
+                    <td
+                      title={row.strategy}
+                      className="px-3 py-2.5 text-xs font-bold text-white sm:px-4"
+                    >
+                      {/* `max-width` n'est pas tenu sur une cellule de tableau :
+                          la borne vit sur un bloc intérieur. */}
+                      <span className="block max-w-[9.5rem] truncate sm:max-w-none">
+                        {row.strategy}
+                      </span>
+                    </td>
                     <td className="tv-figure px-4 py-2.5 text-xs text-slate-400 text-right">
                       {row.count}
                     </td>
@@ -655,7 +681,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                         {row.winRate === null ? "—" : formatPct(row.winRate)}
                       </span>
                     </td>
-                    <td className="tv-figure px-4 py-2.5 text-xs text-right">
+                    <td className="tv-figure hidden px-4 py-2.5 text-xs text-right sm:table-cell">
                       <span
                         className={cn(
                           "font-semibold",
@@ -665,7 +691,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                         {formatPnl(row.expectancy)}
                       </span>
                     </td>
-                    <td className="tv-figure px-4 py-2.5 text-xs text-right text-slate-300">
+                    <td className="tv-figure hidden px-4 py-2.5 text-xs text-right text-slate-300 sm:table-cell">
                       {/* « — » sous l'échantillon minimum : ne rien affirmer vaut
                           mieux qu'affirmer sur trois trades. */}
                       {row.profitFactor === null
@@ -674,7 +700,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                           ? "99+"
                           : row.profitFactor.toFixed(2)}
                     </td>
-                    <td className="tv-figure px-4 py-2.5 text-xs text-right">
+                    <td className="tv-figure hidden px-4 py-2.5 text-xs text-right sm:table-cell">
                       {row.avgR === null ? (
                         <span className="text-slate-600">—</span>
                       ) : (
@@ -740,7 +766,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                             ? {
                                 background:
                                   cell.pnl >= 0
-                                    ? `rgba(16,185,129,${0.08 + intensity * 0.45})`
+                                    ? `rgb(var(--tv-chart-green-rgb) / ${0.08 + intensity * 0.45})`
                                     : `rgba(239,68,68,${0.08 + intensity * 0.45})`,
                               }
                             : undefined
@@ -748,8 +774,21 @@ export default function Analytics({ trades }: AnalyticsProps) {
                       >
                         {cell && (
                           <>
-                            <span className={cell.pnl >= 0 ? "text-emerald-300" : "text-red-300"}>
-                              {cell.pnl >= 0 ? "+" : "-"}${Math.abs(Math.round(cell.pnl))}
+                            {/* Une case fait ~50px sur téléphone : « +$1,234 » en
+                                gras y débordait. Le montant compact (« +$1.2k »)
+                                tient, le détail exact reste dans l'infobulle. */}
+                            <span
+                              className={cn(
+                                "max-w-full truncate px-0.5",
+                                cell.pnl >= 0 ? "text-emerald-300" : "text-red-300",
+                              )}
+                            >
+                              <span className="md:hidden">
+                                {formatMoney(cell.pnl, { signed: true, compact: true })}
+                              </span>
+                              <span className="hidden md:inline">
+                                {formatMoney(cell.pnl, { signed: true, whole: true })}
+                              </span>
                             </span>
                             <span className="text-slate-400 font-medium">{cell.count}</span>
                           </>
@@ -784,7 +823,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                     <Tooltip
                       {...tooltipStyle}
                       formatter={(value: any, name: any) => [
-                        name === "winRate" ? `${value}%` : `$${Number(value).toFixed(2)}`,
+                        name === "winRate" ? `${value}%` : formatMoney(Number(value)),
                         name === "winRate" ? t("analytics.winRateLabel") : t("journal.colPnl"),
                       ]}
                     />
@@ -814,8 +853,8 @@ export default function Analytics({ trades }: AnalyticsProps) {
           </Card>
         </div>
 
-        {/* Equity + Pie */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Equity + Pie — remontée sous les mesures sur téléphone. */}
+        <div className="grid grid-cols-1 gap-4 max-md:order-[-1] md:grid-cols-3">
           <div className="relative md:col-span-2 glass rounded-3xl p-4 md:p-5 card-premium animate-fade-in-up stagger-2 overflow-hidden">
             <h3 className="tv-title mb-4">{t("analytics.equityCurve")}</h3>
             <div className="h-56 md:h-80 chart-draw">
@@ -899,7 +938,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                     formatter={(value: any, name: any) => {
                       if (name === "winRate") return [`${value}%`, t("analytics.winRateLabel")];
                       if (name === "avgRR") return [`${value}R`, t("dashboard.avgRR")];
-                      return [`$${Number(value).toFixed(2)}`, t("journal.colPnl")];
+                      return [formatMoney(Number(value)), t("journal.colPnl")];
                     }}
                   />
                   <Bar yAxisId="left" dataKey="pnl" radius={BAR_RADIUS} {...CHART_ANIMATION}>
@@ -981,7 +1020,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                   <Tooltip
                     {...tooltipStyle}
                     formatter={(value: any, name: any) => [
-                      name === "winRate" ? `${value}%` : `$${Number(value).toFixed(2)}`,
+                      name === "winRate" ? `${value}%` : formatMoney(Number(value)),
                       name === "winRate" ? t("analytics.winRateLabel") : t("journal.colPnl"),
                     ]}
                   />
@@ -1012,7 +1051,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                   <XAxis
                     type="number"
                     tick={AXIS_TICK}
-                    tickFormatter={(v) => `$${v}`}
+                    tickFormatter={(v) => formatAxisMoney(Number(v))}
                     axisLine={false}
                     tickLine={false}
                   />
@@ -1026,10 +1065,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                   />
                   <Tooltip
                     {...tooltipStyle}
-                    formatter={(value: any) => [
-                      `$${Number(value).toFixed(2)}`,
-                      t("journal.colPnl"),
-                    ]}
+                    formatter={(value: any) => [formatMoney(Number(value)), t("journal.colPnl")]}
                   />
                   <Bar dataKey="pnl" radius={BAR_RADIUS_H} {...CHART_ANIMATION}>
                     {strategyData.map((e, i) => (
@@ -1215,7 +1251,9 @@ function SeasonalitySection({ trades }: { trades: Trade[] }) {
                           key={i}
                           className="tv-figure h-7 rounded flex items-center justify-center text-[10px]"
                           style={{
-                            background: isWin ? `rgba(16,185,129,${a})` : `rgba(239,68,68,${a})`,
+                            background: isWin
+                              ? `rgb(var(--tv-chart-green-rgb) / ${a})`
+                              : `rgb(var(--tv-chart-red-rgb) / ${a})`,
                             color: mag > 0.1 ? (isWin ? "#6ee7b7" : "#fca5a5") : "#64748b",
                           }}
                         >
@@ -1237,21 +1275,46 @@ function SeasonalitySection({ trades }: { trades: Trade[] }) {
 }
 
 /** Small info affordance: a hoverable/focusable icon that reveals a plain-language
- *  explanation of a metric. Native `title` covers touch / no-hover as a fallback. */
+ *  explanation of a metric. Native `title` covers touch / no-hover as a fallback.
+ *
+ *  L'INFOBULLE N'EXISTE QUE QUAND ELLE EST AFFICHÉE, et en position fixe bornée à
+ *  l'écran. Montée en permanence (opacité 0) et centrée sur l'icône, celle d'une
+ *  case en bord droit dépassait de 71px de la colonne sur téléphone : invisible,
+ *  mais rognée au survol et comptée dans la largeur de la page. */
 function InfoTip({ text }: { text: string }) {
+  const ref = useRef<HTMLSpanElement | null>(null);
+  const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
+  const show = () => {
+    const r = ref.current?.getBoundingClientRect();
+    if (!r) return;
+    const w = 208;
+    const left = Math.min(Math.max(8, r.left + r.width / 2 - w / 2), window.innerWidth - w - 8);
+    setPos({ left, top: r.top - 8 });
+  };
+  const hide = () => setPos(null);
   return (
     <span
-      className="relative inline-flex shrink-0 group/tip align-middle"
+      ref={ref}
+      className="relative inline-flex shrink-0 align-middle"
       tabIndex={0}
       title={text}
+      onMouseEnter={show}
+      onMouseLeave={hide}
+      onFocus={show}
+      onBlur={hide}
     >
       <Info className="w-3 h-3 text-slate-600 hover:text-slate-300 focus:text-slate-300 transition-colors cursor-help" />
-      <span
-        role="tooltip"
-        className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-2 w-52 -translate-x-1/2 rounded-xl border border-white/10 bg-[#0c1220] px-3 py-2 text-[11px] font-normal normal-case leading-snug tracking-normal text-slate-300 opacity-0 shadow-xl shadow-black/50 transition-opacity duration-200 group-hover/tip:opacity-100 group-focus/tip:opacity-100"
-      >
-        {text}
-      </span>
+      {pos &&
+        createPortal(
+          <span
+            role="tooltip"
+            style={{ left: pos.left, top: pos.top }}
+            className="animate-fade-in pointer-events-none fixed z-[var(--tv-z-modal-top)] w-52 -translate-y-full rounded-xl border border-[var(--tv-border-strong)] bg-[var(--tv-plate-2)] px-3 py-2 text-[11px] font-normal normal-case leading-snug tracking-normal text-slate-300 shadow-[var(--tv-elev-2)]"
+          >
+            {text}
+          </span>,
+          document.body,
+        )}
     </span>
   );
 }

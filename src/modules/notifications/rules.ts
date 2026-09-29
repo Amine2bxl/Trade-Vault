@@ -15,6 +15,7 @@ import type { NotificationInput } from "./types";
 import { localDateOf, todayLocalDate } from "@/shared/calendar-date";
 import type { CalendarEvent } from "../economic-calendar/types";
 import { reglesEconomiques } from "./economic";
+import { formatMoney } from "@/shared/currency";
 
 export interface RuleContext {
   trades: Array<{ date: string; pnl: number; mistakes: string[] }>;
@@ -129,7 +130,6 @@ function jarvis(partial: NotificationInput): NotificationInput {
 export function evaluateNotificationRules(ctx: RuleContext): CodedRule[] {
   const fr = isFr();
   const rules: CodedRule[] = [];
-  const today = todayLocalDate();
 
   /* ── ÉCONOMIE — la seule alerte DATÉE du produit ────────────────────────
      Elle passe en tête parce qu'elle est la seule à avoir une heure limite :
@@ -141,6 +141,19 @@ export function evaluateNotificationRules(ctx: RuleContext): CodedRule[] {
   }
 
   const sorted = [...ctx.trades].sort((a, b) => b.date.localeCompare(a.date));
+  /* LA CADENCE D'UNE OBSERVATION DURABLE EST LA SEMAINE, PAS LE JOUR.
+     Les clés portaient `today` : la même fuite, la même règle qui échappe,
+     le même progrès revenaient CHAQUE jour, mot pour mot — le bruit qui
+     gonflait la boîte et le compteur. Une observation qui ne change pas se
+     rappelle au plus une fois par semaine ; si son sujet change (une autre
+     erreur devient la plus coûteuse), la clé change et elle part aussitôt. */
+  const now = new Date();
+  const lundi = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate() - ((now.getDay() + 6) % 7),
+  );
+  const semaine = localDateOf(lundi);
 
   // ── RISK — série de pertes (3 consécutives) ─────────────────────────────
   let streak = 0;
@@ -191,13 +204,13 @@ export function evaluateNotificationRules(ctx: RuleContext): CodedRule[] {
     .sort((a, b) => a.totalPnl - b.totalPnl)[0];
   if (worst) {
     rules.push({
-      key: `risk_leak:${worst.name}:${today}`,
+      key: `risk_leak:${worst.name}:${semaine}`,
       input: jarvis({
         kind: "risk_max_loss",
         title: fr ? "La fuite qui te coûte le plus" : "Your most expensive leak",
         body: fr
-          ? `« ${worst.name} » t'a coûté ${Math.abs(Math.round(worst.totalPnl))} $ en ${worst.count} fois. C'est le premier truc à corriger.`
-          : `"${worst.name}" cost you $${Math.abs(Math.round(worst.totalPnl))} across ${worst.count} trades. Fix this first.`,
+          ? `« ${worst.name} » t'a coûté ${formatMoney(Math.abs(Math.round(worst.totalPnl)))} en ${worst.count} fois. C'est le premier truc à corriger.`
+          : `"${worst.name}" cost you ${formatMoney(Math.abs(Math.round(worst.totalPnl)))} across ${worst.count} trades. Fix this first.`,
         severity: "warning",
         url: "/mistakes",
         category: "risk",
@@ -265,7 +278,10 @@ export function evaluateNotificationRules(ctx: RuleContext): CodedRule[] {
   const last = sorted[0]?.date;
   if (last && daysAgo(last) >= 5) {
     rules.push({
-      key: `activity_lull:${today}`,
+      // Une fois par PÉRIODE d'inactivité (clé = dernier jour tradé), pas une
+      // fois par jour tant qu'elle dure.
+      once: true,
+      key: `activity_lull:${last}`,
       input: jarvis({
         kind: "activity_lull",
         title: fr ? "Cinq jours sans session" : "Five days without a session",
@@ -298,8 +314,8 @@ export function evaluateNotificationRules(ctx: RuleContext): CodedRule[] {
         kind: "weekly_review",
         title: fr ? "Ta revue de la semaine" : "Your weekly review",
         body: fr
-          ? `${ctx.stats.tradeCount} trades, ${Math.round((ctx.stats.winRate ?? 0) * 100)}% gagnés, ${Math.round(ctx.stats.totalPnl)} $ au total.`
-          : `${ctx.stats.tradeCount} trades, ${Math.round((ctx.stats.winRate ?? 0) * 100)}% win rate, $${Math.round(ctx.stats.totalPnl)} net.`,
+          ? `${ctx.stats.tradeCount} trades, ${Math.round((ctx.stats.winRate ?? 0) * 100)}% gagnés, ${formatMoney(Math.round(ctx.stats.totalPnl), { signed: true })} au total.`
+          : `${ctx.stats.tradeCount} trades, ${Math.round((ctx.stats.winRate ?? 0) * 100)}% win rate, ${formatMoney(Math.round(ctx.stats.totalPnl), { signed: true })} net.`,
         severity: "info",
         url: "/reports",
         category: "jarvis",
@@ -324,11 +340,12 @@ export function evaluateNotificationRules(ctx: RuleContext): CodedRule[] {
     const counts = new Map<string, number>();
     for (const t of dayTrades) for (const m of t.mistakes) counts.set(m, (counts.get(m) ?? 0) + 1);
     const top = [...counts.entries()].sort((a, b) => b[1] - a[1])[0];
-    const sign = dayPnl >= 0 ? "+" : "";
+    const money = formatMoney(Math.round(dayPnl), { signed: true });
     const body = fr
-      ? `${dayTrades.length} trade(s), ${sign}${Math.round(dayPnl)} $.${top ? ` Point à corriger : « ${top[0]} » (${top[1]}×).` : ""}`
-      : `${dayTrades.length} trade(s), ${sign}$${Math.round(dayPnl)}.${top ? ` Fix this: "${top[0]}" (${top[1]}×).` : ""}`;
+      ? `${dayTrades.length} trade(s), ${money}.${top ? ` Point à corriger : « ${top[0]} » (${top[1]}×).` : ""}`
+      : `${dayTrades.length} trade(s), ${money}.${top ? ` Fix this: "${top[0]}" (${top[1]}×).` : ""}`;
     rules.push({
+      once: true,
       key: `daily_review:${last}`,
       input: jarvis({
         kind: "daily_review",
@@ -362,7 +379,7 @@ export function evaluateNotificationRules(ctx: RuleContext): CodedRule[] {
   if (improving) {
     const pct = Math.abs(improving.deltaPct);
     rules.push({
-      key: `pattern_improving:${improving.mistake}:${today}`,
+      key: `pattern_improving:${improving.mistake}:${semaine}`,
       input: jarvis({
         kind: "pattern_detected",
         title: fr ? "Une de tes fuites recule" : "One of your leaks is receding",
@@ -392,7 +409,7 @@ export function evaluateNotificationRules(ctx: RuleContext): CodedRule[] {
     .sort((a, b) => a.ratePct - b.ratePct)[0];
   if (slipping) {
     rules.push({
-      key: `adherence_low:${slipping.text.slice(0, 40)}:${today}`,
+      key: `adherence_low:${slipping.text.slice(0, 40)}:${semaine}`,
       input: jarvis({
         kind: "discipline_warning",
         title: fr ? "Une règle t'échappe" : "A rule is slipping",
@@ -414,9 +431,14 @@ export function evaluateNotificationRules(ctx: RuleContext): CodedRule[] {
   }
 
   // ── DISCIPLINE — règle(s) armée(s) : Jarvis veille ─────────────────────
+  // Elle partait CHAQUE JOUR (« ta discipline est armée ») : une confirmation
+  // d'état sans rien de nouveau, la notification la plus répétée de la boîte.
+  // Elle ne part plus que quand le nombre de règles armées CHANGE — le moment
+  // où la confirmation a un sens.
   if (ctx.rulesEnabled > 0) {
     rules.push({
-      key: `discipline_armed:${today}`,
+      once: true,
+      key: `discipline_armed:${ctx.rulesEnabled}`,
       input: jarvis({
         kind: "discipline_success",
         title: fr ? "Ta discipline est armée" : "Your discipline is armed",
@@ -471,6 +493,8 @@ export async function dispatchCodedNotifications(
   userId: string,
   ctx: RuleContext,
   notify: (userId: string, input: NotificationInput) => Promise<unknown>,
+  /** Clés déjà émises par ce compte, lues en base (tous appareils). */
+  existingKeys?: Set<string>,
 ): Promise<number> {
   const candidates = evaluateNotificationRules(ctx);
   if (candidates.length === 0) return 0;
@@ -490,8 +514,17 @@ export async function dispatchCodedNotifications(
   for (const rule of candidates) {
     const journal = rule.once ? once : log.keys;
     if (journal.includes(rule.key)) continue;
+    // Déjà émise depuis un autre appareil (ou avant une purge du stockage).
+    if (existingKeys?.has(rule.key)) {
+      journal.push(rule.key);
+      continue;
+    }
     try {
-      await notify(userId, rule.input);
+      await notify(userId, {
+        ...rule.input,
+        dedupKey: rule.key,
+        data: { ...(rule.input.data ?? {}), codedRule: true },
+      });
       journal.push(rule.key);
       sent += 1;
     } catch (e) {

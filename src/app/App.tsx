@@ -1,10 +1,11 @@
+import { lazyPage } from "@/shared/lazy-page";
+import { CursorOrb } from "@/shared/ui/CursorOrb";
 import {
   useState,
   useCallback,
   useEffect,
   useMemo,
   useRef,
-  lazy,
   Suspense,
   startTransition,
 } from "react";
@@ -13,6 +14,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import Sidebar from "./components/Sidebar";
 import ChartDefs from "./components/ChartDefs";
 import MobileNav from "./components/MobileNav";
+import AccountSwitcher from "./components/AccountSwitcher";
 import MobileActions from "./components/MobileActions";
 import SectionTabs from "./components/SectionTabs";
 import { pagesOfSection, sectionForPage } from "./navigation";
@@ -46,19 +48,19 @@ import {
   LIKELY_NEXT_PAGES,
 } from "./pageModules";
 import LoadingScreen from "./components/LoadingScreen";
-const AiAssistant = lazy(() => import("./components/AiAssistant"));
-const Onboarding = lazy(() => import("./onboarding/Onboarding"));
-const CommandPalette = lazy(() => import("./components/CommandPalette"));
-const ImportCsvModal = lazy(() => import("./components/ImportCsvModal"));
+const AiAssistant = lazyPage(() => import("./components/AiAssistant"));
+const Onboarding = lazyPage(() => import("./onboarding/Onboarding"));
+const CommandPalette = lazyPage(() => import("./components/CommandPalette"));
+const ImportCsvModal = lazyPage(() => import("./components/ImportCsvModal"));
 // Les modales ne sont montées que sur action : formulaire de trade (47 Ko de
 // source à elle seule), détail d'un trade, détail d'une notification. Elles
 // étaient importées en STATIQUE, donc payées au premier octet par un trader
 // qui ouvre son tableau de bord et ne clique sur rien. Elles sont préchargées
 // dès que le navigateur est libre (voir `preloadModals` plus bas) : au clic,
 // le chunk est déjà là.
-const TradeModal = lazy(() => import("./components/TradeModal"));
-const TradeDetailModal = lazy(() => import("./components/TradeDetailModal"));
-const NotificationDetailModal = lazy(() => import("./components/NotificationDetailModal"));
+const TradeModal = lazyPage(() => import("./components/TradeModal"));
+const TradeDetailModal = lazyPage(() => import("./components/TradeDetailModal"));
+const NotificationDetailModal = lazyPage(() => import("./components/NotificationDetailModal"));
 import TrustpilotPrompt from "./components/TrustpilotPrompt";
 import { Trade, isPage, type Page } from "./types";
 import { resolveLocation, buildPageUrl, DEFAULT_PAGE } from "./utils/pageUrl";
@@ -70,6 +72,7 @@ import {
   loadOnboarding,
   loadStartingBalance,
   loadMonthlyReports,
+  loadCurrency,
   attachTradeToSession,
   saveTradeIntent,
   saveTradeReflection,
@@ -91,9 +94,14 @@ import {
   initNotificationListeners,
   dispatchCodedNotifications,
   markNotificationRead,
+  loadRecentDedupKeys,
+  maintainNotifications,
+  noteTradeAction,
+  shouldInterrupt,
 } from "@/modules/notifications";
 import type { AppNotification } from "@/modules/notifications/types";
 import { buildDemoTrades } from "./utils/demoTrades";
+import { todayLocalDate } from "@/shared/calendar-date";
 import { previewTrades } from "./utils/previewTrades";
 import { canLogTrade, isPlanLimitError } from "./utils/planLimits";
 import { computeBehavioral } from "./utils/behavioral";
@@ -102,10 +110,10 @@ import { startOfWeek } from "./utils/economicEvents";
 import { computeRuleAdherence } from "./utils/ruleAdherence";
 import type { OnboardingAction } from "./onboarding/Onboarding";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { clearCurrencyCache, setCurrency, useCurrency } from "@/shared/currency";
 import { AccountProvider, useAccounts } from "./contexts/AccountContext";
 import { PageActionsProvider } from "./contexts/PageActionsContext";
-const Landing = lazy(() => import("./pages/Landing"));
-import AccountSwitcher from "./components/AccountSwitcher";
+const Landing = lazyPage(() => import("./pages/Landing"));
 import FirstSessionWelcome from "./components/FirstSessionWelcome";
 import { SkeletonForPage } from "./components/Skeleton";
 import { DeferredFallback, PageTransition } from "./components/PageTransition";
@@ -130,6 +138,27 @@ function AppContent() {
   // convertit les lignes une fois en base, pas une lentille appliquée à
   // chaque lecture (voir `utils/accountCalibration.ts`).
   const { trades, tradesLoading } = useTrades(user?.id, activeId, accountsReady);
+  /* LA DEVISE DU TRADER — chargée du profil à la connexion, oubliée à la
+     déconnexion. La page est remontée quand elle change : chaque montant,
+     y compris ceux calculés une fois dans un `useMemo`, se réécrit. */
+  const currency = useCurrency();
+  useEffect(() => {
+    if (!user?.id) {
+      clearCurrencyCache();
+      return;
+    }
+    let active = true;
+    loadCurrency(user.id)
+      .then((c) => {
+        if (active) setCurrency(c);
+      })
+      .catch(() => {
+        /* la préférence locale reste en place ; rien ne bloque l'app */
+      });
+    return () => {
+      active = false;
+    };
+  }, [user?.id]);
   // Multi-appareils : ce qui est encodé/modifié/supprimé ailleurs arrive ici
   // instantanément, sans rafraîchissement (voir `useRealtimeTrades`).
   useRealtimeTrades(user?.id, activeId);
@@ -420,8 +449,13 @@ function AppContent() {
            toute seule.
 
            SEULEMENT `error`. Étendre aux avertissements ferait un popup par
-           séance, et le popup ne voudrait plus rien dire. */
-        if (n.severity === "error") {
+           séance, et le popup ne voudrait plus rien dire.
+
+           ET SEULEMENT EN CONTEXTE (`shouldInterrupt`) : l'alerte doit
+           répondre à un trade enregistré à l'instant. Recalculée au
+           chargement de l'application, la même alerte va dans la boîte sans
+           interrompre — c'était le popup « à un moment aléatoire ». */
+        if (shouldInterrupt(n)) {
           window.dispatchEvent(
             new CustomEvent("tv:open-notification", { detail: { notification: n } }),
           );
@@ -473,10 +507,42 @@ function AppContent() {
      donc aucun état « en pause » à gérer ici. */
   const { events: economicEvents } = useEconomicCalendar(semaineCourante);
 
+  /* L'ENTRETIEN DE LA BOÎTE — une fois par jour et par appareil : les non
+     lues expirées et les doublons sont archivés, l'historique lu de plus de
+     90 jours est purgé. Voir `modules/notifications/policy.ts`. */
+  useEffect(() => {
+    if (!user?.id) return;
+    const uid = user.id;
+    const key = `tv.notif.maint.${uid}`;
+    try {
+      if (localStorage.getItem(key) === todayLocalDate()) return;
+    } catch {
+      /* stockage indisponible : on entretient quand même */
+    }
+    void maintainNotifications(uid)
+      .then(() => {
+        try {
+          localStorage.setItem(key, todayLocalDate());
+        } catch {
+          /* best-effort */
+        }
+        window.dispatchEvent(new CustomEvent("tv:notif-updated"));
+      })
+      .catch(() => {});
+  }, [user?.id]);
+
+  /* Les clés déjà émises par ce compte, lues en base : la déduplication vaut
+     pour tous ses appareils. Relue au plus toutes les dix minutes. */
+  const dedupRef = useRef<{ at: number; keys: Set<string> } | null>(null);
+
   useEffect(() => {
     if (!user?.id || !accountsReady || tradesLoading) return;
     const uid = user.id;
     const evaluer = async () => {
+      if (!dedupRef.current || Date.now() - dedupRef.current.at > 10 * 60_000) {
+        const keys = await loadRecentDedupKeys(uid).catch(() => null);
+        if (keys) dedupRef.current = { at: Date.now(), keys };
+      }
       // Le solde est nécessaire aux règles de risque en % ; il est chargé une
       // fois ici plutôt qu'à chaque évaluation.
       const balance =
@@ -511,7 +577,11 @@ function AppContent() {
             ratePct: a.ratePct,
           })),
         },
-        (id, input) => NotificationEngine.notify(id, input),
+        (id, input) => {
+          if (input.dedupKey) dedupRef.current?.keys.add(input.dedupKey);
+          return NotificationEngine.notify(id, input);
+        },
+        dedupRef.current?.keys,
       );
     };
 
@@ -536,6 +606,9 @@ function AppContent() {
   const handleSave = useCallback(
     async (trade: Trade, meta?: TradeJournalMeta) => {
       if (!user) return;
+      // Le contexte « le trader vient d'agir » : seules les alertes graves
+      // nées dans les deux minutes qui suivent ouvrent un popup.
+      noteTradeAction();
       // Quota mensuel d'encodage. Il porte sur les CRÉATIONS : corriger un
       // trade déjà saisi reste possible quel que soit le palier — bloquer une
       // correction serait punitif et sans rapport avec l'offre.
@@ -806,6 +879,9 @@ function AppContent() {
           du produit. Sur mobile le cadre disparaît : l'écran est trop étroit
           pour s'offrir une marge, le contenu va d'un bord à l'autre. */}
       <main className="app-main app-frame relative z-0 my-0 mr-0 flex-1 overflow-y-auto md:my-3 md:mr-3 md:ml-2">
+        {/* La lueur qui suit le pointeur — le geste de la vitrine, repris tel
+            quel. Bureau et pointeur fin uniquement ; derrière les cartes. */}
+        <CursorOrb />
         {/* Onglets de la section courante à gauche, actions mobiles à droite —
             une seule ligne, dans le flux de la page. L'ancienne barre fixe
             répétait le titre que chaque page affiche déjà juste en dessous :
@@ -840,7 +916,7 @@ function AppContent() {
         </div>
         <PageActionsProvider setActions={setHeaderSlot}>
           {accountsReady && gateResolved ? (
-            <PageErrorBoundary resetKey={page}>
+            <PageErrorBoundary key={currency} resetKey={page}>
               {/* Squelette CONTEXTUEL et DIFFÉRÉ. Le squelette imite la page de
               destination — mais il n'apparaît qu'au-delà de 320 ms d'attente.
               En dessous, le chunk est déjà en mémoire (préchargement au survol
@@ -937,17 +1013,25 @@ function AppContent() {
           )}
         </PageActionsProvider>
       </main>
-      {/* Mobile quick account switcher — FAB, bottom-left mirror of the AI Coach. Balance = starting + total P&L. */}
-      <AccountSwitcher
-        variant="fab"
-        balance={(activeAccount?.startingBalance ?? 0) + stats.totalPnl}
-      />
       {/* Discreet review nudge — self-gating, never during an active flow */}
       <TrustpilotPrompt tradeCount={trades.length} page={page} modalOpen={modalOpen} />
+      {/* Mobile : la pastille des sous-comptes flotte en bas à gauche, en miroir
+          de la bulle Jarvis. Solde = départ + P&L. */}
+      {/* Chaque widget flottant a son propre filet : une erreur dans la bulle
+          des sous-comptes ne doit jamais faire tomber toute l'application sur
+          l'écran 500 — elle s'efface, se signale, et se relance. */}
+      <PageErrorBoundary resetKey={`fab-${page}`}>
+        <AccountSwitcher
+          variant="fab"
+          balance={(activeAccount?.startingBalance ?? 0) + stats.totalPnl}
+        />
+      </PageErrorBoundary>
       <MobileNav page={page} setPage={setPage} onAddTrade={handleAdd} />
-      <Suspense fallback={null}>
-        <AiAssistant trades={trades} page={page} />
-      </Suspense>
+      <PageErrorBoundary resetKey={`jarvis-${page}`}>
+        <Suspense fallback={null}>
+          <AiAssistant trades={trades} page={page} />
+        </Suspense>
+      </PageErrorBoundary>
       <Suspense fallback={null}>
         {modalOpen && (
           <TradeModal trade={editingTrade} onClose={handleCloseModal} onSave={handleSave} />

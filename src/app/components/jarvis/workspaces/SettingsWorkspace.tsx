@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { SelectPicker } from "@/shared/ui";
 import { User, Brain, SlidersHorizontal, Pencil, Trash2, X } from "lucide-react";
 import { useT } from "../../../i18n/LanguageContext";
 import { useAuth } from "../../../contexts/AuthContext";
@@ -147,26 +148,30 @@ export default function SettingsWorkspace({ context }: JarvisWorkspaceProps) {
             <h3 className="tv-title">{t("jarvisSettings.prefTitle")}</h3>
           </header>
 
-          <label className="jarvis-pref">
+          <div className="jarvis-pref">
             <span className="min-w-0 flex-1">
               <span className="block text-sm text-slate-200">
                 {t("jarvisSettings.responseLang")}
               </span>
             </span>
-            <select
-              value={respLang}
-              onChange={(e) => {
-                const v = e.target.value as JarvisResponseLang;
-                setRespLang(v);
-                writeResponseLang(v);
-              }}
-              className="jarvis-select"
-            >
-              <option value="auto">{t("jarvisSettings.langAuto")}</option>
-              <option value="fr">{t("jarvisSettings.langFr")}</option>
-              <option value="en">{t("jarvisSettings.langEn")}</option>
-            </select>
-          </label>
+            <div className="w-[11rem] shrink-0">
+              <SelectPicker
+                variant="field"
+                label={t("jarvisSettings.responseLang")}
+                value={respLang}
+                onChange={(v: JarvisResponseLang) => {
+                  setRespLang(v);
+                  writeResponseLang(v);
+                }}
+                className="h-9 text-[13px]"
+                options={[
+                  { value: "auto" as JarvisResponseLang, label: t("jarvisSettings.langAuto") },
+                  { value: "fr" as JarvisResponseLang, label: t("jarvisSettings.langFr") },
+                  { value: "en" as JarvisResponseLang, label: t("jarvisSettings.langEn") },
+                ]}
+              />
+            </div>
+          </div>
 
           <label className="jarvis-pref">
             <span className="min-w-0 flex-1">

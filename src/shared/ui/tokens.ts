@@ -58,9 +58,9 @@ export const color = {
 
 /** Brand accent CSS variables (themeable at runtime by the ThemeProvider). */
 export const accentVar = {
-  accent: "var(--tv-accent)", // #10b981 par défaut
-  accentAlt: "var(--tv-accent-2)", // #059669 par défaut
-  highlight: "var(--tv-highlight)", // #34d399 par défaut
+  accent: "var(--tv-accent)", // #22e08a par défaut
+  accentAlt: "var(--tv-accent-2)", // #12b981 par défaut
+  highlight: "var(--tv-highlight)", // #5bf0ab par défaut
 } as const;
 
 /** Surfaces — les plaques opaques partagées par la landing et le produit. */

@@ -6,6 +6,7 @@ import { computeStats } from "../../../../utils/tradeCalcs";
 import { sampleVerdict } from "@/modules/coaching";
 import { formatMoney } from "../copy/templates";
 import type { DailyReview } from "./types";
+import { formatMoney as money } from "@/shared/currency";
 
 /**
  * Daily Review (Step 6C) — le bilan de fin de journée.
@@ -132,8 +133,8 @@ export function buildDailyReview(input: DailyReviewInput): DailyReview {
   } else if (riskBreach) {
     const i = input.intents![riskBreach.id]!;
     wrong = {
-      fr: `Risque prévu : ${i.plannedRisk!.toFixed(2)} $, risque réel : ${riskBreach.riskAmount.toFixed(2)} $ — tu as dépassé ton plan.`,
-      en: `Planned risk: $${i.plannedRisk!.toFixed(2)}, actual risk: $${riskBreach.riskAmount.toFixed(2)} — you exceeded your plan.`,
+      fr: `Risque prévu : ${money(i.plannedRisk!)}, risque réel : ${money(riskBreach.riskAmount)} — tu as dépassé ton plan.`,
+      en: `Planned risk: ${money(i.plannedRisk!)}, actual risk: ${money(riskBreach.riskAmount)} — you exceeded your plan.`,
     };
     tomorrow = {
       fr: "Demain : risque fixe, exactement comme prévu, quoi qu'il arrive.",

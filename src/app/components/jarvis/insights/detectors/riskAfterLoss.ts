@@ -1,5 +1,6 @@
 import { confidenceFrom } from "../confidence";
 import type { Detector } from "./types";
+import { currencySymbol } from "@/shared/currency";
 
 /**
  * risk_after_loss — le risque augmente après une perte.
@@ -34,7 +35,11 @@ export const riskAfterLossDetector: Detector = (data) => {
     // crédibilité du coach auprès du seul public qui paie : celui qui compte.
     impact:
       ral.pnlAfterLoss < 0
-        ? { label: "Coût estimé après perte", amount: Math.abs(ral.pnlAfterLoss), unit: "$" }
+        ? {
+            label: "Coût estimé après perte",
+            amount: Math.abs(ral.pnlAfterLoss),
+            unit: currencySymbol(),
+          }
         : null,
     mission: ["pause_after_loss", "keep_size_after_loss"],
     affectedTrades: ral.afterLossTradeIds,

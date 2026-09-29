@@ -5,7 +5,6 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
-  SlidersHorizontal,
   AlertTriangle,
   Radio,
   Clock,
@@ -14,7 +13,7 @@ import {
 } from "lucide-react";
 import { useT } from "../i18n/LanguageContext";
 import { cn } from "../utils/cn";
-import { Card } from "@/shared/ui";
+import { Card, MultiPicker } from "@/shared/ui";
 import { usePageActions } from "../contexts/PageActionsContext";
 import { useEconomicCalendar } from "../hooks/useEconomicCalendar";
 import type { CalendarEvent, EventImpact } from "@/modules/economic-calendar";
@@ -169,7 +168,6 @@ export default function EconomicNews() {
   const [dayPreset, setDayPreset] = useState<DayNavPreset>("week");
   const [customDayFilter, setCustomDayFilter] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
-  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const { events, loading, isFallback, lastSuccessAt, stale } = useEconomicCalendar(weekStart);
   const todayRef = useRef<HTMLDivElement>(null);
@@ -186,14 +184,6 @@ export default function EconomicNews() {
   const todayIso = isoDate(new Date());
   const tomorrowIso = isoDate(addDays(new Date(), 1));
   const isThisWeek = isoDate(weekStart) === isoDate(startOfWeek(new Date()));
-
-  const toggle = <T,>(set: (fn: (prev: Set<T>) => Set<T>) => void, value: T) =>
-    set((prev) => {
-      const next = new Set(prev);
-      if (next.has(value)) next.delete(value);
-      else next.add(value);
-      return next;
-    });
 
   const clearFilters = () => {
     setCurrencyFilter(new Set());
@@ -322,10 +312,7 @@ export default function EconomicNews() {
         )}
       >
         {liveActive && (
-          <span className="relative flex w-1.5 h-1.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
-            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400" />
-          </span>
+          <span className="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
         )}
         {t("news.live")}
       </span>
@@ -339,7 +326,11 @@ export default function EconomicNews() {
       {(isFallback || stale) && !loading && (
         <div className="mb-4 flex items-start gap-2 rounded-xl border border-amber-500/25 bg-amber-500/[0.07] px-3 py-2.5 text-xs text-amber-200/90">
           <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-          <span>{isFallback ? t("news.fallbackWarning") : t("news.staleWarning")}</span>
+          <span>
+            {isFallback
+              ? t("news.fallbackWarning")
+              : t("news.staleWarning").replace("{value}", freshness ?? "—")}
+          </span>
         </div>
       )}
 
@@ -393,27 +384,11 @@ export default function EconomicNews() {
             </button>
           )}
         </div>
-        <button
-          onClick={() => setFiltersOpen((v) => !v)}
-          className={cn(
-            "relative h-10 px-3 rounded-xl flex items-center gap-1.5 text-xs font-semibold border transition shrink-0",
-            filtersOpen || activeFilterCount > 0
-              ? "bg-cyan-500/15 border-cyan-500/30 text-cyan-300"
-              : "bg-white/[0.03] border-white/[0.07] text-slate-300 hover:bg-white/[0.06]",
-          )}
-        >
-          <SlidersHorizontal className="w-3.5 h-3.5" />
-          {activeFilterCount > 0 && (
-            <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-cyan-500 text-[10px] font-bold text-white flex items-center justify-center">
-              {activeFilterCount}
-            </span>
-          )}
-        </button>
       </div>
 
       {/* Day navigation bar — modern minimal preset-based */}
       {!loading && events.length > 0 && (
-        <div className="flex items-center gap-1 mb-4 overflow-x-auto pb-1">
+        <div className="flex flex-wrap items-center gap-1 mb-4">
           {[
             {
               preset: "today" as DayNavPreset,
@@ -470,34 +445,48 @@ export default function EconomicNews() {
               </button>
             );
           })}
-          {/* Quick impact toggles */}
-          <div className="w-px h-5 bg-white/[0.08] mx-1 shrink-0" />
-          {IMPACTS.map((i) => {
-            const on = impactFilter.has(i);
-            const st = IMPACT_STYLE[i];
-            return (
-              <button
-                key={i}
-                onClick={() => toggle(setImpactFilter, i)}
-                className={cn(
-                  "shrink-0 h-9 px-2.5 rounded-xl border text-[11px] font-semibold transition flex items-center gap-1.5",
-                  on
-                    ? cn(st.bg, st.ring, st.text)
-                    : "bg-white/[0.02] border-white/[0.06] text-slate-500 hover:text-slate-300",
-                )}
-              >
-                <span className={cn("w-1.5 h-1.5 rounded-full", st.dot)} />
-                {t(IMPACT_KEYS[i as keyof typeof IMPACT_KEYS])}
-                <span className="tv-figure text-[10px] opacity-60">{weekCounts[i]}</span>
-              </button>
-            );
-          })}
+          {/* Impact et devises : le même sélecteur que partout ailleurs —
+              plusieurs choix, « tout » pour lever le filtre. */}
+          <div className="mx-1 h-5 w-px shrink-0 bg-white/[0.08]" />
+          <MultiPicker
+            label={t("news.impact")}
+            values={Array.from(impactFilter)}
+            onChange={(v) => setImpactFilter(new Set(v as EventImpact[]))}
+            options={IMPACTS.map((i) => ({
+              value: i,
+              label: t(IMPACT_KEYS[i as keyof typeof IMPACT_KEYS]),
+              count: weekCounts[i],
+            }))}
+            allLabel={t("common.all")}
+            clearLabel={t("common.clear")}
+            doneLabel={t("common.done")}
+            countLabel={t("picker.nSelected")}
+          />
+          <MultiPicker
+            label={t("news.currencies")}
+            values={Array.from(currencyFilter)}
+            onChange={(v) => setCurrencyFilter(new Set(v))}
+            options={availableCurrencies.map((c) => ({ value: c, label: `${flagOf(c)} ${c}` }))}
+            allLabel={t("common.all")}
+            clearLabel={t("common.clear")}
+            doneLabel={t("common.done")}
+            countLabel={t("picker.nSelected")}
+            searchLabel={t("picker.search")}
+          />
+          {activeFilterCount > 0 && (
+            <button
+              onClick={clearFilters}
+              className="inline-flex h-9 shrink-0 items-center rounded-lg px-2.5 text-xs font-semibold text-slate-500 transition-colors hover:bg-white/[0.04] hover:text-white"
+            >
+              {t("common.reset")}
+            </button>
+          )}
         </div>
       )}
 
       {/* "All" mode: day picker chips for each day of the week */}
       {dayPreset === "all" && (
-        <div className="flex gap-1.5 mb-4 overflow-x-auto pb-1">
+        <div className="flex flex-wrap gap-1.5 mb-4">
           {days.map(({ iso, date, all }) => {
             const on = customDayFilter === iso;
             const isToday = iso === todayIso;
@@ -522,37 +511,6 @@ export default function EconomicNews() {
             );
           })}
         </div>
-      )}
-
-      {filtersOpen && (
-        <Card className="p-3 mb-4 flex flex-wrap items-center gap-2">
-          <span className="tv-label text-slate-500 mr-1">Devises</span>
-          {availableCurrencies.map((c) => {
-            const on = currencyFilter.has(c);
-            return (
-              <button
-                key={c}
-                onClick={() => toggle(setCurrencyFilter, c)}
-                className={cn(
-                  "h-7 px-2.5 rounded-lg flex items-center gap-1 text-[11px] font-bold border transition",
-                  on
-                    ? "bg-cyan-500/15 border-cyan-500/30 text-cyan-200"
-                    : "bg-white/[0.03] border-white/[0.07] text-slate-400 hover:bg-white/[0.06]",
-                )}
-              >
-                {flagOf(c)} {c}
-              </button>
-            );
-          })}
-          {activeFilterCount > 0 && (
-            <button
-              onClick={clearFilters}
-              className="ml-auto text-[11px] font-semibold text-slate-400 hover:text-white transition"
-            >
-              Effacer
-            </button>
-          )}
-        </Card>
       )}
 
       {/* Next event — compact countdown, only this week */}
@@ -734,9 +692,11 @@ export default function EconomicNews() {
       )}
 
       <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-1 px-1 text-[11px] text-slate-600">
-        <span>Fuseau : {timeZone}</span>
+        <span>{t("news.timezone").replace("{zone}", timeZone)}</span>
         <span>·</span>
-        <span>{freshness ? `Mis à jour ${freshness}` : t("news.updatedNever")}</span>
+        <span>
+          {freshness ? t("news.updated").replace("{value}", freshness) : t("news.updatedNever")}
+        </span>
         {isFallback && (
           <>
             <span>·</span>

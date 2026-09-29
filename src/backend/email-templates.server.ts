@@ -1,6 +1,8 @@
 // Lifecycle email templates — self-contained HTML (inline styles only, email
-// clients strip <style> support unevenly). Dark charte identical to the
-// landing: #060d16 background, cyan #22d3ee accents, white headings.
+// clients strip <style> support unevenly). Charte identique au produit : fond
+// #0a0b0d, plaque #13151a, émeraude #22e08a du bouton « Get Started », logo
+// réel en tête (l'ancienne charte cyan était la dernière trace de l'identité
+// d'avant, avec un mot-symbole en texte à la place du logo).
 //
 // Every builder returns { subject, html }. Copy is French — the product's
 // voice — and personalized from the onboarding profile where it exists.
@@ -15,9 +17,9 @@ export interface OnboardingProfile {
   pain?: string | null;
 }
 
-const ACCENT = "#22d3ee";
-const BG = "#060d16";
-const CARD = "#0b1727";
+const ACCENT = "#22e08a";
+const BG = "#0a0b0d";
+const CARD = "#13151a";
 const BORDER = "rgba(255,255,255,0.08)";
 const TEXT = "#cbd5e1";
 const MUTED = "#64748b";
@@ -31,7 +33,8 @@ function layout(inner: string, siteUrl: string): string {
     <tr><td align="center">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
         <tr><td style="padding-bottom:28px;text-align:center;">
-          <span style="font-size:22px;font-weight:800;letter-spacing:-0.5px;color:#ffffff;">Trade<span style="color:${ACCENT};">Vault</span></span>
+          <img src="${siteUrl}/icon-192.png" width="44" height="44" alt="" style="display:block;margin:0 auto 10px;border-radius:12px;">
+          <span style="font-size:20px;font-weight:800;letter-spacing:-0.5px;color:#ffffff;">TradeVault</span>
         </td></tr>
         <tr><td style="background:${CARD};border:1px solid ${BORDER};border-radius:16px;padding:36px 32px;">
           ${inner}
@@ -55,7 +58,7 @@ function layout(inner: string, siteUrl: string): string {
 
 function cta(label: string, url: string, primary = true): string {
   return primary
-    ? `<a href="${url}" style="display:inline-block;background:linear-gradient(90deg,#06b6d4,#14b8a6);color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;padding:14px 28px;border-radius:12px;">${label} →</a>`
+    ? `<a href="${url}" style="display:inline-block;background:${ACCENT};color:#04120b;font-size:14px;font-weight:700;text-decoration:none;padding:14px 28px;border-radius:12px;">${label} →</a>`
     : `<a href="${url}" style="display:inline-block;background:rgba(255,255,255,0.05);border:1px solid ${BORDER};color:${TEXT};font-size:14px;font-weight:600;text-decoration:none;padding:13px 26px;border-radius:12px;">${label}</a>`;
 }
 

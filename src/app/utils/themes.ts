@@ -141,6 +141,74 @@ export function harmonize(hex: string): string {
   return oklchToHex(L, C, (H + 32) % 360);
 }
 
+/** Nudge a hex toward black — the deeper tone of an accent. */
+export function darken(hex: string, amt = 0.18): string {
+  const [r, g, b] = hexToRgb(hex);
+  const mix = (c: number) => Math.round(c * (1 - amt));
+  return "#" + [mix(r), mix(g), mix(b)].map((c) => c.toString(16).padStart(2, "0")).join("");
+}
+
+/**
+ * LES DEUX ACCENTS QUI SUIVENT LE PRINCIPAL.
+ *
+ * Le studio demandait trois couleurs (« principale », « secondaire »,
+ * « éclat ») sans dire ce que faisaient les deux dernières — des réglages de
+ * développeur. Les thèmes intégrés montrent la règle : le secondaire est le
+ * même ton plus profond, l'éclat le même ton plus clair. Le studio les dérive
+ * donc du principal ; les régler à la main reste possible, en option.
+ */
+export function deriveAccents(primary: string): { secondary: string; highlight: string } {
+  return { secondary: darken(primary, 0.2), highlight: lighten(primary, 0.28) };
+}
+
+/** Une famille de la palette : un nom, et ses tons du plus profond au plus doux. */
+export interface PaletteFamily {
+  name: string;
+  tones: string[];
+}
+
+/**
+ * LA PALETTE TRADEVAULT — des accents choisis pour tenir sur un fond presque
+ * noir : ni fluo, ni pastel délavé. Quatre tons par famille (profond, base,
+ * vif, doux). Les verts Lucid/Émeraude sont ceux des thèmes intégrés.
+ */
+export const ACCENT_PALETTE: PaletteFamily[] = [
+  { name: "Lucid", tones: ["#12b981", "#22e08a", "#5bf0ab", "#a7f5cf"] },
+  { name: "Emerald", tones: ["#047857", "#10b981", "#34d399", "#a7f3d0"] },
+  { name: "Teal", tones: ["#0f766e", "#14b8a6", "#2dd4bf", "#99f6e4"] },
+  { name: "Cyan", tones: ["#0e7490", "#06b6d4", "#22d3ee", "#a5f3fc"] },
+  { name: "Sky", tones: ["#0369a1", "#0ea5e9", "#38bdf8", "#bae6fd"] },
+  { name: "Steel", tones: ["#1d4ed8", "#3b82f6", "#60a5fa", "#bfdbfe"] },
+  { name: "Lavender", tones: ["#4550b8", "#5e6ad2", "#8b93e6", "#c7cbf5"] },
+  { name: "Violet", tones: ["#6d28d9", "#8b5cf6", "#a78bfa", "#ddd6fe"] },
+  { name: "Rose", tones: ["#be123c", "#f43f5e", "#fb7185", "#fecdd3"] },
+  { name: "Amber", tones: ["#b45309", "#f59e0b", "#fbbf24", "#fde68a"] },
+  { name: "Lime", tones: ["#4d7c0f", "#84cc16", "#a3e635", "#d9f99d"] },
+  { name: "Graphite", tones: ["#475569", "#64748b", "#94a3b8", "#cbd5e1"] },
+];
+
+/** Les fonds : des noirs teintés, jamais un gris moyen qui ferait perdre le contraste. */
+export const SURFACE_PALETTE: PaletteFamily[] = [
+  { name: "Onyx", tones: ["#07080a"] },
+  { name: "Carbon", tones: ["#0a0b0d"] },
+  { name: "Ink", tones: ["#0b0d12"] },
+  { name: "Midnight", tones: ["#0a0f1a"] },
+  { name: "Forest", tones: ["#070d0a"] },
+  { name: "Plum", tones: ["#0e0a12"] },
+  { name: "Slate", tones: ["#0f1216"] },
+  { name: "Mocha", tones: ["#100d0a"] },
+];
+
+/** Les textes : des blancs de lecture, du plus froid au plus chaud. */
+export const TEXT_PALETTE: PaletteFamily[] = [
+  { name: "Snow", tones: ["#f4f6f8"] },
+  { name: "Paper", tones: ["#e6e8ea"] },
+  { name: "Mist", tones: ["#cbd5e1"] },
+  { name: "Ice", tones: ["#e0f2fe"] },
+  { name: "Mint", tones: ["#e7fbf2"] },
+  { name: "Sand", tones: ["#ece6da"] },
+];
+
 // OKLCH → sRGB hex (needed to synthesise harmonised swatches in the editor).
 function oklchToHex(L: number, C: number, H: number): string {
   const h = (H * Math.PI) / 180;

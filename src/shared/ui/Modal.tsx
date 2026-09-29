@@ -7,11 +7,11 @@ import { cn } from "./cn";
  * `fixed inset-0` avec un z-index deviné overlays scattered across the app, each of which
  * re-implemented (or skipped) the accessibility plumbing.
  *
- * Defaults reproduce the app's house modal style exactly: a bottom-sheet on
- * mobile (`items-end`) that centers on desktop, a dimmed blurred backdrop, and
- * a `glass-strong` rounded panel with the standard slide-in animation. Callers
- * pass only what's distinctive (max width/height, overflow) via `className`,
- * and can override the backdrop or wrapper when a modal differs.
+ * UN SEUL LANGAGE DE DIALOGUE (`.tv-dialog*` dans styles.css) : la même
+ * carte centrée sur mobile comme sur bureau — plus de feuille qui surgit du
+ * bas —, le même rayon, la même marge d'écran (safe areas comprises), le même
+ * voile, la même entrée (fondu + léger glissement, 200 ms). Les appelants ne
+ * passent que ce qui les distingue (largeur, hauteur, mise en page).
  *
  * Adds what the hand-rolled copies lacked: `Esc` to close, background
  * scroll-lock, `role="dialog"` + `aria-modal`, and a focusable panel. Renders
@@ -92,12 +92,12 @@ export function Modal({
   return createPortal(
     <div
       className={cn(
-        "fixed inset-0 z-[var(--tv-z-nav)] flex items-end justify-center p-0 md:items-center md:p-4",
+        "tv-dialog-wrap fixed inset-0 z-[var(--tv-z-nav)] flex items-center justify-center",
         wrapperClassName,
       )}
     >
       <div
-        className={cn("absolute inset-0 bg-black/60 backdrop-blur-sm", backdropClassName)}
+        className={cn("tv-dialog-backdrop absolute inset-0", backdropClassName)}
         onClick={closeOnBackdrop ? onClose : undefined}
       />
       <div
@@ -107,8 +107,7 @@ export function Modal({
         aria-labelledby={labelledBy}
         tabIndex={-1}
         className={cn(
-          "glass-strong relative w-full rounded-t-3xl outline-none shadow-2xl shadow-black/50",
-          "animate-slide-up md:rounded-3xl md:animate-slide-in",
+          "tv-dialog glass-strong relative w-full outline-none",
           size && SIZE[size],
           className,
         )}

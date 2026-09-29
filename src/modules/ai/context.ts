@@ -161,8 +161,12 @@ export function contextBlocks(ctx: AIUserContext): string {
   }
   if (ctx.mistakes?.length) {
     blocks.push(
-      `RECURRING MISTAKES (name · times · net P&L — trust these numbers):\n${ctx.mistakes
-        .map((m) => `- ${m.name}: ${m.count}×, net ${m.totalPnl}`)
+      // Le signe dit en toutes lettres : un net POSITIF n'est pas un coût.
+      `RECURRING MISTAKES (name · times · net P&L — trust these numbers; a negative net is a cost, a positive net means those trades were net profitable):\n${ctx.mistakes
+        .map(
+          (m) =>
+            `- ${m.name}: ${m.count}×, net ${m.totalPnl} (${m.totalPnl < 0 ? "cost" : m.totalPnl > 0 ? "net gain" : "flat"})`,
+        )
         .join("\n")}`,
     );
   }

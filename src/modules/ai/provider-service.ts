@@ -24,6 +24,7 @@ import {
   toolCallsToAssistantMessage,
 } from "./tools/runtime";
 import { routeCompletion } from "./runtime/router";
+import { circuit } from "./runtime/circuit";
 
 export interface UsageEvent {
   provider: string;
@@ -69,7 +70,15 @@ export interface ToolLoopOptions extends GenerateOptions {
  * tool-free call forces a text answer). Provider-agnostic.
  */
 export async function runWithTools(req: AIRequest, opts: ToolLoopOptions): Promise<AIResponse> {
-  const candidates = opts.provider ? [opts.provider] : resolveToolCapableProviders();
+  const all = opts.provider ? [opts.provider] : resolveToolCapableProviders();
+  /* Les fournisseurs dont le circuit est ouvert passent en DERNIER, pas nulle
+     part : chacun est appelé avec un fournisseur imposé, qui court-circuite le
+     tri du routeur — sans ce classement, la boucle réessayait d'abord celui qui
+     venait de tomber. */
+  const candidates = [
+    ...all.filter((p) => !circuit.isCoolingDown(p.id)),
+    ...all.filter((p) => circuit.isCoolingDown(p.id)),
+  ];
   if (candidates.length === 0) {
     throw new Error(
       "No tool-capable AI provider is configured. Set GEMINI_API_KEY, OPENAI_API_KEY or ANTHROPIC_API_KEY.",

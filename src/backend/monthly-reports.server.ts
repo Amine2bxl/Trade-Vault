@@ -8,6 +8,7 @@ import {
   type MonthlyReportData,
 } from "@/app/utils/monthlyReport";
 import { sendWebPush, type PushSubRow } from "./push-crypto.server";
+import { currencySymbol, formatMoney, parseCurrency, type CurrencyCode } from "@/shared/currency";
 
 // Monthly report generation core — used by the Vercel cron (service role,
 // all active users) and by the on-demand server function (RLS client, self).
@@ -99,13 +100,15 @@ const LANG_NAMES: Record<string, string> = {
 async function generateAiSummary(
   report: MonthlyReportData,
   language: string,
+  currency: CurrencyCode,
 ): Promise<string | null> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey || report.trades === 0) return null;
 
   const targetLanguage = LANG_NAMES[language] || "English";
   const systemPrompt = `You are a quantitative trading performance coach. You receive one month of aggregated journal metrics (JSON). Write a SHORT monthly debrief in ${targetLanguage} using GitHub-flavored Markdown:
-- 3 to 5 bullet points max, each citing real numbers from the data ($, %, R).
+- 3 to 5 bullet points max, each citing real numbers from the data (money, %, R).
+- Every amount of money is in ${currency}: write it with the ${currencySymbol(currency)} symbol, exactly like ${formatMoney(-1234.5, { currency })} — never with another currency.
 - One bullet on the biggest strength, one on the costliest leak (use the mistakes list), one concrete action for next month.
 - No headers, no intro, no outro — bullets only. Never invent numbers.`;
 
@@ -153,16 +156,21 @@ export async function generateReportForUser(
   const [monthTrades, prevTrades, profileRes] = await Promise.all([
     loadTradesBetween(sb, userId, start, end),
     loadTradesBetween(sb, userId, prevRange.start, prevRange.end),
-    sb.from("profiles").select("starting_balance, language").eq("id", userId).maybeSingle(),
+    // `*` : la colonne `currency` est récente ; un schéma sans elle ne doit pas
+    // faire échouer la génération du rapport.
+    sb.from("profiles").select("*").eq("id", userId).maybeSingle(),
   ]);
   if (monthTrades.length === 0) return null;
 
   const startingBalance = Number(profileRes.data?.starting_balance ?? 0) || 0;
   const language = (profileRes.data?.language as string | undefined) || "en";
+  // La devise du trader : le débrief écrit par Gemini cite ses montants dans
+  // CETTE devise, et non en dollars par défaut.
+  const currency = parseCurrency((profileRes.data as { currency?: unknown } | null)?.currency);
 
   const report = buildMonthlyReport(month, monthTrades, prevTrades, startingBalance);
   if (opts.withAi !== false) {
-    report.aiSummary = await generateAiSummary(report, language);
+    report.aiSummary = await generateAiSummary(report, language, currency);
   }
 
   const { error } = await sb

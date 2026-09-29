@@ -24,6 +24,8 @@ export interface RuntimeError {
   userMessage: string;
   /** Message technique — logs et page de diagnostic uniquement. */
   technicalMessage: string;
+  /** Pour un quota : délai demandé par le fournisseur avant de réessayer. */
+  retryAfterMs?: number;
 }
 
 /** Ces types justifient un retry sur le même provider (ou la bascule suivante). */
@@ -58,12 +60,31 @@ export function normalizeError(err: unknown, provider: string): RuntimeError {
   const technical = (s: string) => redactSecrets(s.slice(0, 300));
 
   if (typeof status === "number") {
-    if (status === 429)
+    if (status === 429) {
+      const retryAfterMs = (err as { retryAfterMs?: number })?.retryAfterMs;
       return {
         type: "quota",
         provider,
         userMessage: "Quota atteint — réessaie dans un instant.",
         technicalMessage: technical(`HTTP 429: ${msg}`),
+        ...(typeof retryAfterMs === "number" ? { retryAfterMs } : {}),
+      };
+    }
+    if (status === 402)
+      return {
+        type: "quota",
+        provider,
+        userMessage: "Crédits IA épuisés.",
+        technicalMessage: technical(`HTTP 402: ${msg}`),
+      };
+    // Un 403 qui refuse LE MODÈLE (réservé, retiré, plus gratuit) n'est pas une
+    // clé invalide : le classer « auth » faisait croire à une session expirée.
+    if (status === 403 && /refused|unavailable|agentic|not available|model/i.test(msg))
+      return {
+        type: "provider_unavailable",
+        provider,
+        userMessage: "Ce modèle n'est pas disponible pour le moment.",
+        technicalMessage: technical(`HTTP 403: ${msg}`),
       };
     if (status === 401 || status === 403)
       return {

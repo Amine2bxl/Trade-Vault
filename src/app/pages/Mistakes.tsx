@@ -136,6 +136,23 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
   );
   const maxSessionCount = Math.max(...sessionData.map((s) => s.count), 1);
 
+  /* ── SUR TÉLÉPHONE, UNE VOIE À LA FOIS ──────────────────────────────────
+     Les trois colonnes du bureau, empilées dans 375px, faisaient un rouleau
+     de trois écrans où la voie « arrêtées » — la seule qui récompense — se
+     trouvait tout en bas. Le téléphone reçoit un TABLEAU DE SCORE : les trois
+     comptes côte à côte, lisibles d'un coup d'œil, et chacun ouvre sa voie.
+     Par défaut, la plus urgente qui ait quelque chose à dire. Sur bureau,
+     rien ne change : les trois colonnes restent visibles ensemble. */
+  const [voieChoisie, setVoie] = useState<VoieId | null>(null);
+  const voieDefaut: VoieId =
+    plan.banish.length > 0 ? "banish" : plan.work.length > 0 ? "work" : "stopped";
+  const voie = voieChoisie ?? voieDefaut;
+  const voies: { id: VoieId; label: string; n: number }[] = [
+    { id: "banish", label: t("mistakes.tabBanish"), n: plan.banish.length },
+    { id: "work", label: t("mistakes.tabWork"), n: plan.work.length },
+    { id: "stopped", label: t("mistakes.tabStopped"), n: plan.stopped.length },
+  ];
+
   if (trades.length === 0) {
     if (embedded) return null;
     return (
@@ -191,12 +208,51 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
             </p>
           </header>
 
-          {/* Trois colonnes séparées par un filet, empilées sous 768px. Chacune
-              se lit seule : son titre dit ce qu'elle demande, et son vide dit
-              qu'il n'y a rien — jamais un espace blanc muet. */}
-          <div className="grid divide-y divide-white/[0.05] md:grid-cols-3 md:divide-x md:divide-y-0">
+          {/* Le tableau de score — téléphone uniquement. */}
+          <div
+            role="tablist"
+            aria-label={t("mistakes.planTitle")}
+            className="grid grid-cols-3 gap-1.5 px-3 pt-3 md:hidden"
+          >
+            {voies.map((v) => {
+              const { Icone, texte } = TON_VOIE[v.id];
+              const actif = v.id === voie;
+              return (
+                <button
+                  key={v.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={actif}
+                  onClick={() => setVoie(v.id)}
+                  className="mst-lane-tab"
+                >
+                  <span className="flex w-full items-center justify-between gap-1">
+                    <span
+                      className={cn(
+                        "tv-figure text-[22px] leading-none",
+                        v.n > 0 ? texte : "text-slate-600",
+                      )}
+                    >
+                      {v.n}
+                    </span>
+                    <Icone
+                      className={cn("h-3.5 w-3.5 shrink-0", actif ? texte : "text-slate-600")}
+                    />
+                  </span>
+                  <span className="w-full truncate text-[11px] font-semibold">{v.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Trois colonnes séparées par un filet sur bureau ; une seule voie,
+              celle du tableau de score, sur téléphone. Chacune se lit seule :
+              son titre dit ce qu'elle demande, et son vide dit qu'il n'y a
+              rien — jamais un espace blanc muet. */}
+          <div className="grid md:grid-cols-3 md:divide-x md:divide-white/[0.05]">
             <Voie
               ton="banish"
+              masqueMobile={voie !== "banish"}
               titre={t("mistakes.laneBanish")}
               sous={t("mistakes.laneBanishSub")}
               items={plan.banish}
@@ -209,6 +265,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
             />
             <Voie
               ton="work"
+              masqueMobile={voie !== "work"}
               titre={t("mistakes.laneWork")}
               sous={t("mistakes.laneWorkSub")}
               items={plan.work}
@@ -219,6 +276,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
             />
             <Voie
               ton="stopped"
+              masqueMobile={voie !== "stopped"}
               titre={t("mistakes.laneStopped")}
               sous={t("mistakes.laneStoppedSub").replace("{n}", String(plan.windowDays))}
               items={plan.stopped}
@@ -288,12 +346,14 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
             <p className="tv-row-label">{t("mistakes.declared")}</p>
           </div>
 
-          <div className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-[auto_auto_minmax(0,1fr)] lg:gap-8">
+          {/* Deux chiffres côte à côte dès le téléphone : empilés, ils prenaient
+              chacun une rangée entière pour un nombre de deux caractères. */}
+          <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-5 lg:grid-cols-[auto_auto_minmax(0,1fr)] lg:gap-8">
             <div className="min-w-0">
               <div className="tv-label text-slate-500">{t("mistakes.streak")}</div>
               <div
                 className={cn(
-                  "tv-figure mt-1.5 text-[40px] leading-none",
+                  "tv-figure mt-1.5 text-[32px] leading-none md:text-[40px]",
                   streak.current > 0 ? "rp-pos" : "text-slate-500",
                 )}
               >
@@ -309,7 +369,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
               <div className="tv-label text-slate-500">{t("mistakes.ratePerTrade")}</div>
               {rate.recent ? (
                 <>
-                  <div className="tv-figure mt-1.5 text-[40px] leading-none text-white">
+                  <div className="tv-figure mt-1.5 text-[32px] leading-none text-white md:text-[40px]">
                     {(rate.recent.incidents / rate.recent.trades).toFixed(2)}
                   </div>
                   {rate.deltaPct === null ? (
@@ -505,11 +565,13 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
  * qu'on lui demande, et c'est la raison pour laquelle « arrêtées » est en vert
  * plein alors que rien d'autre sur cette page ne l'est.
  */
+type VoieId = "banish" | "work" | "stopped";
+
 const TON_VOIE = {
   banish: { Icone: Ban, texte: "text-red-400", pastille: "bg-red-400" },
   work: { Icone: Wrench, texte: "text-amber-400", pastille: "bg-amber-400" },
   stopped: { Icone: CheckCircle2, texte: "text-emerald-400", pastille: "bg-emerald-400" },
-} as const;
+} as const satisfies Record<VoieId, unknown>;
 
 /**
  * UNE COLONNE DU PLAN.
@@ -528,8 +590,9 @@ function Voie({
   tipDe,
   semainesDe,
   ouvrirPremier = false,
+  masqueMobile = false,
 }: {
-  ton: keyof typeof TON_VOIE;
+  ton: VoieId;
   titre: string;
   sous: string;
   items: PlanItem[];
@@ -538,18 +601,24 @@ function Voie({
   /** La série hebdomadaire d'une erreur, sur l'axe commun à la page. */
   semainesDe: (mistake: string) => number[];
   ouvrirPremier?: boolean;
+  /** Sur téléphone, seule la voie choisie au tableau de score est montrée. */
+  masqueMobile?: boolean;
 }) {
   const { Icone, texte, pastille } = TON_VOIE[ton];
   return (
-    <div className="min-w-0 px-4 py-4 sm:px-5">
-      <div className="flex items-center gap-2">
+    <div
+      role="tabpanel"
+      className={cn("min-w-0 px-4 py-4 sm:px-5", masqueMobile && "max-md:hidden")}
+    >
+      {/* Le titre est déjà sur l'onglet du tableau de score, sur téléphone. */}
+      <div className="hidden items-center gap-2 md:flex">
         <Icone className={cn("h-4 w-4 shrink-0", texte)} />
         <h3 className={cn("text-sm font-bold", texte)}>{titre}</h3>
         {items.length > 0 && (
           <span className="tv-figure ml-auto shrink-0 text-xs text-slate-500">{items.length}</span>
         )}
       </div>
-      <p className="tv-row-label mt-0.5">{sous}</p>
+      <p className="tv-row-label md:mt-0.5">{sous}</p>
 
       {items.length === 0 ? (
         <p className="tv-prose mt-3 text-slate-500">{vide}</p>

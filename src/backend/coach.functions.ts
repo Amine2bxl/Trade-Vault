@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireProAccess } from "@/backend/require-pro";
+import { requireJarvisAccess } from "@/backend/require-pro";
 import { runCoach } from "@/modules/ai/agents/coach.agent";
 import { ensureJarvisTools } from "@/backend/ai-tools";
 import { recordAgentRun } from "./telemetry.server";
@@ -17,7 +17,7 @@ import { AI_LIMITS } from "@/domain/ai-limits";
 /**
  * AI Coach V1 — server function. Validates the trader's real data (Zod, with
  * size caps), runs the coach agent (grounded prompt → provider), returns the
- * Markdown answer. Auth + rate-limit come from `requireProAccess`; secrets stay
+ * Markdown answer. Auth + quota come from `requireJarvisAccess`; secrets stay
  * server-side. No memory, no proactivity, no other agents — the V1 surface.
  */
 
@@ -26,6 +26,13 @@ import { AI_LIMITS } from "@/domain/ai-limits";
 const CoachAskShape = z.object({
   question: z.string().min(1).max(AI_LIMITS.question),
   language: z.string().min(2).max(8).optional(),
+  /** Devise du journal (ISO 4217) — Jarvis écrit ses montants dans celle-ci. */
+  currency: z.string().length(3).optional(),
+  /** La date civile LOCALE du trader (YYYY-MM-DD) : « aujourd'hui », « ce mois-ci ». */
+  today: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
   /**
    * Le sous-compte que le trader regarde. Il ne sert PAS à filtrer le contexte
    * poussé (le client l'a déjà filtré) : il cloisonne les OUTILS, qui lisent la
@@ -137,6 +144,52 @@ const CoachAskShape = z.object({
  */
 const CoachAsk = withGlobalByteCeiling(CoachAskShape);
 
+/**
+ * LA QUESTION PASSE TOUJOURS.
+ *
+ * Le contexte poussé par le client est un BONUS : Jarvis lit le journal
+ * lui-même par ses outils. Or une seule borne dépassée — une réponse précédente
+ * trop longue dans l'historique, un souvenir de trop — faisait rejeter TOUTE
+ * la requête par le validateur, et le trader voyait « vérifie ta connexion »
+ * sans que le serveur n'ait jamais parlé au modèle. Quand le contexte complet
+ * ne passe pas, on garde la question, la langue, le compte et la fin de la
+ * conversation (bornée), et on journalise les champs fautifs.
+ */
+function parseCoachAsk(input: unknown) {
+  const full = CoachAsk.safeParse(input);
+  if (full.success) return full.data;
+  console.warn(
+    "[coach] context rejected, answering from the question alone",
+    full.error.issues.slice(0, 8).map((i) => `${i.path.join(".")}: ${i.message}`),
+  );
+  const raw = (input ?? {}) as Record<string, unknown>;
+  const str = (v: unknown, max: number) => (typeof v === "string" ? v.slice(0, max) : undefined);
+  const turns = Array.isArray(raw.conversation) ? raw.conversation : [];
+  const conversation = turns
+    .filter(
+      (t): t is { role: "user" | "assistant"; content: string } =>
+        !!t &&
+        typeof t === "object" &&
+        ((t as { role?: unknown }).role === "user" ||
+          (t as { role?: unknown }).role === "assistant") &&
+        typeof (t as { content?: unknown }).content === "string",
+    )
+    .slice(-6)
+    .map((t) => ({ role: t.role, content: t.content.slice(0, AI_LIMITS.conversationContent) }));
+  return CoachAsk.parse({
+    question: str(raw.question, AI_LIMITS.question) || "…",
+    language: str(raw.language, 8),
+    currency:
+      typeof raw.currency === "string" && raw.currency.length === 3 ? raw.currency : undefined,
+    today:
+      typeof raw.today === "string" && /^\d{4}-\d{2}-\d{2}$/.test(raw.today)
+        ? raw.today
+        : undefined,
+    accountId: str(raw.accountId, 64),
+    conversation,
+  });
+}
+
 function sanitizePrompt(text: string): string {
   return text
     .replace(/ignore\s+all\s+(previous|prior)\s+(instructions|directives|commands)/gi, "[redacted]")
@@ -167,8 +220,8 @@ function indisponible(language?: string) {
 }
 
 export const askCoach = createServerFn({ method: "POST" })
-  .middleware([requireProAccess])
-  .inputValidator((input: unknown) => CoachAsk.parse(input))
+  .middleware([requireJarvisAccess])
+  .inputValidator(parseCoachAsk)
   .handler(async ({ data, context }) => {
     data.question = sanitizePrompt(data.question);
     // Télémétrie : `onUsage` est le point d'accroche prévu par
@@ -247,13 +300,27 @@ export const askCoach = createServerFn({ method: "POST" })
       }
       console.warn("[coach] provider answered but text was empty", res);
       track("fallback", "empty response");
-      return { answer: indisponible(data.language), source: "unavailable" as const };
-    } catch (err) {
-      console.warn("[coach] provider unavailable", err);
-      track("error", err instanceof Error ? err.message : String(err));
       return {
         answer: indisponible(data.language),
         source: "unavailable" as const,
+        reason: "outage" as const,
+      };
+    } catch (err) {
+      console.warn("[coach] provider unavailable", err);
+      // Une `RuntimeError` est un objet simple, pas un `Error` : `String(err)`
+      // écrivait « [object Object] » dans `ai_agent_runs`, et la vraie cause
+      // (quota Gemini, modèle retiré chez OpenRouter) restait invisible.
+      const runtime = err as { type?: string; technicalMessage?: string };
+      track(
+        "error",
+        runtime?.technicalMessage ?? (err instanceof Error ? err.message : String(err)),
+      );
+      return {
+        answer: indisponible(data.language),
+        source: "unavailable" as const,
+        // Le client en fait une erreur HONNÊTE — « le fournisseur est saturé »
+        // n'appelle pas la même attente que « le service est en panne ».
+        reason: runtime?.type === "quota" ? ("busy" as const) : ("outage" as const),
       };
     }
   });

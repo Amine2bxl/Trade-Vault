@@ -63,11 +63,16 @@ export function renderErrorPage(status = 500, title?: string, message?: string):
       }
       /* UNE nappe, fixe. Les deux orbes dérivantes faisaient bouger le fond
          d'une page qu'on n'atteint que lorsque quelque chose a déjà lâché. */
-      .nappe {
-        position:fixed; inset:-30% -10% auto; height:70vh; pointer-events:none;
-        background:radial-gradient(55% 50% at 50% 0%, rgba(34,224,138,.10), transparent 70%);
-        filter:blur(60px);
-      }
+      /* Le fond de la vitrine : grille fine, nappe en haut à droite, nappe
+         en bas à gauche. Même valeur que .err-grille / .err-nappe(-2). */
+      .grille { position:fixed; inset:0; pointer-events:none;
+        background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);
+        background-size:48px 48px;
+        -webkit-mask-image:radial-gradient(ellipse 70% 60% at 50% 45%,#000 30%,transparent 85%);
+        mask-image:radial-gradient(ellipse 70% 60% at 50% 45%,#000 30%,transparent 85%); }
+      .nappe,.nappe2 { position:fixed; width:70vmax; height:70vmax; border-radius:50%; pointer-events:none; }
+      .nappe { top:-38vmax; right:-30vmax; background:radial-gradient(closest-side,rgba(34,224,138,.16),transparent); }
+      .nappe2 { bottom:-40vmax; left:-32vmax; background:radial-gradient(closest-side,rgba(18,185,129,.11),transparent); }
       .card { position:relative; z-index:1; text-align:center; max-width:30rem; width:100%;
         animation:rise .55s cubic-bezier(.19,1,.22,1) both; }
       @keyframes rise { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
@@ -114,7 +119,7 @@ export function renderErrorPage(status = 500, title?: string, message?: string):
     </style>
   </head>
   <body>
-    <div class="nappe"></div>
+    <div class="grille"></div><div class="nappe"></div><div class="nappe2"></div>
     <div class="card">
       <div class="brand"><span class="dot"></span><span>TradeVault</span></div>
       <div class="code">Error ${code}</div>

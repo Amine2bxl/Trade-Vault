@@ -85,10 +85,12 @@ function Section({
   return (
     <div
       className={cn(
-        "relative rounded-2xl border overflow-hidden transition",
+        // Une plaque pleine en relief (et non un voile teinté à 4 % qui se
+        // lisait comme un carré gris) ; la teinte vit dans le rail, l'icône
+        // et un liseré — la section « Leçon » garde son fond d'accent.
+        "tv-relief relative overflow-hidden rounded-2xl border bg-[var(--tv-plate-2)] transition",
         s.border,
-        s.bg,
-        big && !empty && "shadow-[0_4px_24px_-4px_rgba(6,182,212,0.18)]",
+        tone === "blue" && s.bg,
         empty && "opacity-50",
       )}
     >
@@ -143,7 +145,7 @@ export default function MissedSetupDetailModal({ missed, onClose }: MissedSetupD
       <div className="w-10 h-1 rounded-full bg-slate-700 mx-auto mt-2 md:hidden shrink-0" />
 
       {/* Header */}
-      <div className="relative px-4 md:px-7 pt-3 md:pt-6 pb-3.5 md:pb-5 border-b border-white/[0.06] bg-gradient-to-b from-amber-500/[0.06] to-transparent overflow-hidden shrink-0">
+      <div className="relative px-4 md:px-7 pt-3 md:pt-6 pb-3.5 md:pb-5 border-b border-white/[0.06] bg-amber-500/[0.035] overflow-hidden shrink-0">
         <div className="relative flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 md:gap-3.5 min-w-0">
             <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl border border-amber-500/20 bg-amber-500/15 flex items-center justify-center shrink-0">

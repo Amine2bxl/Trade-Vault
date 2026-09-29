@@ -1,3 +1,4 @@
+import { reloadForStaleChunk } from "@/shared/lazy-page";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
@@ -123,7 +124,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         href: appCss,
       },
       { rel: "manifest", href: "/manifest.webmanifest" },
-      { rel: "icon", type: "image/x-icon", href: "/favicon.ico" },
+      // LE LOGO VERT, SANS CARRÉ DE FOND. Les icônes portaient une plaque
+      // sombre arrondie : sur un onglet clair, un pavé noir. Elles sont
+      // transparentes, avec un contour vert profond d'un pixel qui dessine la
+      // forme sur fond clair et disparaît sur fond sombre. Seules les icônes
+      // `maskable` du manifeste gardent un fond plein : le système les découpe
+      // à sa propre forme, et un fond transparent y deviendrait noir.
+      { rel: "icon", type: "image/x-icon", href: "/favicon.ico", sizes: "any" },
+      { rel: "icon", type: "image/png", sizes: "32x32", href: "/favicon-32.png" },
       { rel: "icon", type: "image/png", sizes: "192x192", href: "/icon-192.png" },
       { rel: "icon", type: "image/png", sizes: "512x512", href: "/icon-512.png" },
       { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
@@ -245,12 +253,10 @@ function RootComponent() {
   // missing chunk can't loop) to pull the fresh manifest instead of crashing.
   useEffect(() => {
     const onPreloadError = (e: Event) => {
-      e.preventDefault();
-      const KEY = "tv-chunk-reload-at";
-      const last = Number(sessionStorage.getItem(KEY) || 0);
-      if (Date.now() - last > 10_000) {
-        sessionStorage.setItem(KEY, String(Date.now()));
-        window.location.reload();
+      // Rechargement unique partagé avec `lazyPage` (même clé, même garde) :
+      // les chargements différés reconnaissent l'import annulé et patientent.
+      if (reloadForStaleChunk()) {
+        e.preventDefault();
       } else {
         // Reloading didn't fix it — let the error boundary show, don't loop.
         reportAppError(e, { boundary: "vite_preload_error_persistent" });

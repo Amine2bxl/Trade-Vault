@@ -1,5 +1,6 @@
 import { confidenceFrom } from "../confidence";
 import type { Detector } from "./types";
+import { currencySymbol } from "@/shared/currency";
 
 /**
  * costliest_mistake — l'erreur qui coûte le plus.
@@ -27,7 +28,11 @@ export const costliestMistakeDetector: Detector = (data) => {
     confidence: confidenceFrom(worst.count, effect),
     sampleSize: worst.count,
     evidence: { mistake: worst.name, count: worst.count, totalPnl: worst.totalPnl },
-    impact: { label: "Coût de cette erreur", amount: Math.abs(worst.totalPnl), unit: "$" },
+    impact: {
+      label: "Coût de cette erreur",
+      amount: Math.abs(worst.totalPnl),
+      unit: currencySymbol(),
+    },
     mission: ["eliminate_mistake", "log_mistake"],
     affectedTrades: [],
   };

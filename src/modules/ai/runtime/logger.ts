@@ -17,6 +17,11 @@ export interface RuntimeLogEntry {
   fallbackReason?: string;
   httpStatus?: number;
   errorType?: string;
+  /** Raison technique de l'échec (déjà expurgée des secrets par `normalizeError`) :
+   *  sans elle, un repli mort ne laissait que « provider_unavailable ». */
+  errorReason?: string;
+  /** Attente consentie sur un 429 avant de réessayer le même fournisseur. */
+  quotaWaitMs?: number;
   totalMs: number;
 }
 
@@ -27,11 +32,11 @@ function redact(value: unknown, key: string): unknown {
   if (
     typeof value === "string" &&
     SECRET_PATTERN.test(key) &&
-    !/reason|type|model|provider/.test(key)
+    !/reason|type|model|provider/i.test(key)
   ) {
     return "[redacted]";
   }
-  if (typeof value === "string" && value.length > 64 && !/reason|type|model/.test(key)) {
+  if (typeof value === "string" && value.length > 64 && !/reason|type|model/i.test(key)) {
     return `${value.slice(0, 32)}…`;
   }
   return value;

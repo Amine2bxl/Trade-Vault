@@ -71,17 +71,17 @@ function frOvertrading(insight: JarvisInsight, mode: JarvisVoiceMode): HeroLineS
   if (mode === "beginner") {
     lines.push({
       kind: "observation",
-      text: `Sur tes journées chargées, tu perds ${formatMoney(Math.abs(busy), "fr")} par trade, contre ${calm >= 0 ? "+" : ""}${Math.round(calm)}$ les jours calmes. Une journée chargée, c'est une journée où tu prends beaucoup de trades.`,
+      text: `Sur tes journées chargées, tu perds ${formatMoney(Math.abs(busy), "fr")} par trade, contre ${calm >= 0 ? "+" : "-"}${formatMoney(Math.abs(calm), "fr")} les jours calmes. Une journée chargée, c'est une journée où tu prends beaucoup de trades.`,
     });
   } else if (mode === "advanced") {
     lines.push({
       kind: "observation",
-      text: `Journées chargées : ${busy}$/trade vs ${calm >= 0 ? "+" : ""}${Math.round(calm)}$ les jours calmes.`,
+      text: `Journées chargées : ${busy < 0 ? "-" : "+"}${formatMoney(Math.abs(busy), "fr")}/trade vs ${calm >= 0 ? "+" : "-"}${formatMoney(Math.abs(calm), "fr")} les jours calmes.`,
     });
   } else {
     lines.push({
       kind: "observation",
-      text: `Sur les journées chargées, tu perds ${formatMoney(Math.abs(busy), "fr")} par trade, contre ${calm >= 0 ? "+" : ""}${Math.round(calm)}$ les jours calmes.`,
+      text: `Sur les journées chargées, tu perds ${formatMoney(Math.abs(busy), "fr")} par trade, contre ${calm >= 0 ? "+" : "-"}${formatMoney(Math.abs(calm), "fr")} les jours calmes.`,
     });
   }
   if (insight.impact) {

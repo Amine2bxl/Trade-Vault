@@ -1,5 +1,15 @@
-import { useEffect, useMemo, useState, lazy, Suspense } from "react";
-import { Plus, BarChart3, ArrowUpRight, ArrowDownRight, Minus, LineChart } from "lucide-react";
+import { lazyPage } from "@/shared/lazy-page";
+import { useEffect, useMemo, useState, Suspense } from "react";
+import {
+  Plus,
+  BarChart3,
+  ArrowUpRight,
+  ArrowDownRight,
+  Minus,
+  LineChart,
+  BookOpen,
+  Sparkles,
+} from "lucide-react";
 import { Trade, isBreakEven } from "../types";
 import {
   computeStats,
@@ -9,7 +19,6 @@ import {
   directionLabel,
   directionBadgeClass,
 } from "../utils/tradeCalcs";
-import { computeQuantStats } from "../utils/quantStats";
 import { CHART_GREEN, CHART_RED } from "../utils/chartTheme";
 import { loadOnboarding } from "../store/profile";
 import { deriveDailyRule } from "../utils/edgeScore";
@@ -34,11 +43,13 @@ import { DeferredFallback } from "../components/PageTransition";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
 import { computeChecklistStreakStats, recentChecklistPeriods } from "../utils/checklistStreak";
+import { newestFirst } from "../utils/tradeOrder";
+import { formatMoney } from "@/shared/currency";
 
 // recharts (~150-200 KB) is loaded on demand: the Dashboard shell is eager
 // (landing page), but the equity chart — below the fold — is code-split so it
 // no longer weighs on the initial bundle.
-const EquityChart = lazy(() => import("../components/EquityChart"));
+const EquityChart = lazyPage(() => import("../components/EquityChart"));
 
 interface DashboardProps {
   trades: Trade[];
@@ -153,60 +164,13 @@ export default function Dashboard({
   }, [trades, cutoff]);
 
   const stats = useMemo(() => computeStats(filtered), [filtered]);
-  const quant = useMemo(
-    () => computeQuantStats(filtered, startingBalance),
-    [filtered, startingBalance],
-  );
-  const recentTrades = useMemo(
-    () => [...filtered].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 4),
+  const recentTrades = useMemo(() => [...filtered].sort(newestFirst).slice(0, 4), [filtered]);
+
+  // Le résultat de la période en R — la mesure qui ne dépend pas de la taille.
+  const netR = useMemo(
+    () => filtered.reduce((sum, tr) => sum + (Number.isFinite(tr.rMultiple) ? tr.rMultiple : 0), 0),
     [filtered],
   );
-
-  // Extra at-a-glance context for the period: how many days actually traded,
-  // average per trading day, and the long/short lean of the sample.
-  const insight = useMemo(() => {
-    const tradingDays = Object.keys(stats.dailyPnl).length;
-    const avgPerDay = tradingDays > 0 ? stats.totalPnl / tradingDays : 0;
-    const directional = filtered.filter((tr) => tr.direction !== "be");
-    const longs = directional.filter((tr) => tr.direction === "long").length;
-    const longShare = directional.length > 0 ? longs / directional.length : null;
-    return { tradingDays, avgPerDay, longShare, longs, shorts: directional.length - longs };
-  }, [stats.dailyPnl, stats.totalPnl, filtered]);
-
-  /* ── LA BANDE DE LA COURBE ────────────────────────────────────────────────
-     Entre le P&L de tête et le sélecteur de période, la carte laissait
-     SEPT CENTS PIXELS de vide sur une largeur de bureau. Pas un espace de
-     respiration : un trou, au-dessus de la pièce maîtresse de la page.
-
-     Ce qui vient s'y poser doit obéir à deux règles, sinon on ne fait que
-     remplir : chaque chiffre décrit LA PÉRIODE AFFICHÉE PAR LA COURBE (il
-     change donc quand on bascule 7D / 30D / YTD), et aucun n'existe déjà
-     ailleurs sur la page — ni dans le hero (P&L, %), ni dans les quatre
-     tuiles en dessous (win rate, profit factor, R:R, drawdown max).
-
-     Restent trois faits que la courbe MONTRE sans les dire : son plus haut,
-     la part de journées vertes, et l'écart entre le meilleur et le pire jour. */
-  const bande = useMemo(() => {
-    const jours = Object.entries(stats.dailyPnl);
-    if (jours.length === 0) return null;
-    let meilleur = jours[0];
-    let pire = jours[0];
-    let verts = 0;
-    for (const j of jours) {
-      if (j[1] > meilleur[1]) meilleur = j;
-      if (j[1] < pire[1]) pire = j;
-      if (j[1] > 0) verts++;
-    }
-    const sommet = stats.equityCurve.reduce((m, p) => Math.max(m, p.equity), 0);
-    return {
-      sommet,
-      partVerte: verts / jours.length,
-      verts,
-      jours: jours.length,
-      meilleur: meilleur[1],
-      pire: pire[1],
-    };
-  }, [stats.dailyPnl, stats.equityCurve]);
 
   // % variation of the period relative to the equity at its start
   // (starting balance + PnL accumulated before the period).
@@ -497,10 +461,12 @@ export default function Dashboard({
                       <span className="text-[10px] text-slate-600">Silver Bullet</span>
                     </div>
                     <div className="text-[10px] text-slate-600">
-                      10:03 · 2R · $150 {t("dashboard.riskSuffix")}
+                      10:03 · 2R · {formatMoney(150, { whole: true })} {t("dashboard.riskSuffix")}
                     </div>
                   </div>
-                  <div className="text-sm font-bold text-emerald-400">+$300.00</div>
+                  <div className="text-sm font-bold text-emerald-400">
+                    {formatMoney(300, { signed: true })}
+                  </div>
                 </div>
               </div>
             </div>
@@ -540,30 +506,6 @@ export default function Dashboard({
                         )}
                       </div>
                     </div>
-                    {/* La bande de faits, entre le chiffre et le sélecteur.
-                        Elle ne paraît qu'à partir de `lg` : en dessous, la
-                        largeur qu'elle occuperait est celle dont le P&L et le
-                        sélecteur ont besoin, et trois chiffres tassés contre
-                        deux blocs ne se lisent pas. */}
-                    {bande && (
-                      <div className="ml-auto hidden shrink-0 items-stretch gap-5 pr-5 lg:flex">
-                        <FaitDeBande
-                          label={t("dashboard.periodPeak")}
-                          value={formatPnl(bande.sommet)}
-                        />
-                        <FaitDeBande
-                          label={t("dashboard.greenDays")}
-                          value={`${Math.round(bande.partVerte * 100)}%`}
-                          hint={`${bande.verts}/${bande.jours}`}
-                        />
-                        <FaitDeBande
-                          label={t("dashboard.bestWorstDay")}
-                          value={formatPnl(bande.meilleur)}
-                          hint={formatPnl(bande.pire)}
-                          hintTone="neg"
-                        />
-                      </div>
-                    )}
                     {/* Le sélecteur de période emprunte le contrôle segmenté du
                         produit (`.section-tabs`) au lieu de re-dériver le sien :
                         une seule grammaire pour « je choisis UNE vue parmi N »,
@@ -637,6 +579,13 @@ export default function Dashboard({
                 )}
               >
                 <Metric
+                  title={t("dashboard.netR")}
+                  value={`${netR >= 0 ? "+" : "−"}${Math.abs(netR).toFixed(1)}R`}
+                  valueClass={netR >= 0 ? "text-emerald-400" : "text-red-400"}
+                  delay={0}
+                />
+                <Metric title={t("stats.trades")} value={String(stats.totalTrades)} delay={40} />
+                <Metric
                   title={t("stats.winRate")}
                   value={formatPct(stats.winRate)}
                   valueClass={stats.winRate >= 0.5 ? "text-emerald-400" : "text-red-400"}
@@ -646,7 +595,7 @@ export default function Dashboard({
                     color: stats.winRate >= 0.5 ? CHART_GREEN : CHART_RED,
                     center: `${stats.wins}/${stats.losses}`,
                   }}
-                  delay={0}
+                  delay={80}
                 />
                 <Metric
                   title={t("dashboard.profitFactor")}
@@ -663,23 +612,6 @@ export default function Dashboard({
                     pct: Math.min(stats.profitFactor / 3, 1),
                     color: stats.profitFactor >= 1 ? CHART_GREEN : CHART_RED,
                   }}
-                  delay={40}
-                />
-                <Metric
-                  title={t("dashboard.avgRR")}
-                  value={stats.avgRR.toFixed(2)}
-                  valueClass={stats.avgRR >= 1 ? "text-emerald-400" : undefined}
-                  visual={{
-                    kind: "bar",
-                    pct: Math.min(stats.avgRR / 3, 1),
-                    color: stats.avgRR >= 1 ? CHART_GREEN : CHART_RED,
-                  }}
-                  delay={80}
-                />
-                <Metric
-                  title={t("dashboard.maxDrawdown")}
-                  value={formatPnl(-stats.maxDrawdown)}
-                  valueClass="text-red-400"
                   delay={120}
                 />
               </div>
@@ -687,7 +619,7 @@ export default function Dashboard({
               {/* ── 3. LA DISCIPLINE ── */}
               {/* Copilot block + série de checklist — le focus du jour + la discipline
                 dans la durée, côte à côte. */}
-              <div className="grid grid-cols-1 lg:grid-cols-[1.35fr_0.65fr] gap-4 md:gap-5 mb-4 md:mb-6">
+              <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,0.65fr)] gap-4 md:gap-5 mb-4 md:mb-6">
                 <CopilotBlock
                   edge={edge}
                   edgeDelta={edgeDelta}
@@ -716,56 +648,49 @@ export default function Dashboard({
                     t("streak.howItWorks.i2"),
                     t("streak.howItWorks.i3"),
                   ]}
-                  className="animate-fade-in-up stagger-1"
+                  // La série vit aussi sur la page Checklist : sur téléphone, le
+                  // tableau de bord garde le focus du jour et laisse la série.
+                  className="animate-fade-in-up stagger-1 hidden lg:flex"
                 />
               </div>
 
-              {/* ── 4. LE DÉTAIL ── */}
-              <div className="grid grid-cols-1 gap-4 md:gap-5 lg:grid-cols-[0.9fr_1.1fr]">
-                {/* Statistics */}
-                <div className="stat-card overflow-hidden">
-                  <div className="px-4 md:px-5 py-3 md:py-4 border-b border-[var(--tv-border)] flex items-center gap-2">
-                    <BarChart3 className="w-4 h-4 text-slate-500" />
-                    <h3 className="tv-title">{t("stats.performance")}</h3>
-                  </div>
-                  <div className="p-3 md:p-4 grid grid-cols-2 gap-x-4 gap-y-3">
-                    {/* Win rate, profit factor, R:R et drawdown max ne sont plus
-                        ici : ils ont leur tuile, en haut. Une statistique
-                        affichée deux fois sur le même écran n'est pas
-                        « rassurante », elle fait douter qu'il s'agisse de la
-                        même. La grille garde ce qui est réellement secondaire. */}
-                    <StatRow
-                      label={t("quant.expectancy")}
-                      value={formatPnl(quant.expectancy)}
-                      valueClass={quant.expectancy >= 0 ? "text-emerald-400" : "text-red-400"}
-                    />
-                    <StatRow
-                      label={t("quant.cleanTrades")}
-                      value={formatPct(quant.cleanTrades)}
-                      valueClass={quant.cleanTrades >= 0.8 ? "text-emerald-400" : "text-amber-400"}
-                    />
-                    <StatRow
-                      label={t("stats.trades")}
-                      value={String(stats.totalTrades)}
-                      sub={`${insight.tradingDays} ${t("dashboard.tradingDays").toLowerCase()}`}
-                    />
-                    <StatRow
-                      label={t("dashboard.bestWorst")}
-                      value={stats.bestTrade ? formatPnl(stats.bestTrade.pnl) : "—"}
-                      sub={stats.worstTrade ? formatPnl(stats.worstTrade.pnl) : "—"}
-                      valueClass="text-emerald-400"
-                    />
-                    <StatRow
-                      label={t("dashboard.longShort")}
-                      value={
-                        insight.longShare !== null
-                          ? `${Math.round(insight.longShare * 100)}% L`
-                          : "—"
-                      }
-                      sub={`${insight.longs}L · ${insight.shorts}S`}
-                    />
-                  </div>
-                </div>
+              {/* ── 4. AGIR ──
+                  Trois portes, pas un tableau de plus : revoir ses trades,
+                  demander à Jarvis, creuser l'analyse. La grille « Performance »
+                  (espérance, trades propres, long/short…) redisait l'Analyse en
+                  plus petit — elle y reste. */}
+              <div className="mb-4 grid grid-cols-3 gap-2 md:mb-6 md:gap-3">
+                {[
+                  {
+                    key: "journal",
+                    label: t("nav.journal"),
+                    Icon: BookOpen,
+                    onClick: () => onOpenJournal?.(),
+                  },
+                  {
+                    key: "jarvis",
+                    label: t("dashboard.askJarvis"),
+                    Icon: Sparkles,
+                    onClick: () => window.dispatchEvent(new CustomEvent("tv:open-jarvis")),
+                  },
+                  {
+                    key: "analytics",
+                    label: t("nav.analytics"),
+                    Icon: BarChart3,
+                    onClick: () =>
+                      window.dispatchEvent(
+                        new CustomEvent("tv:navigate", { detail: { page: "analytics" } }),
+                      ),
+                  },
+                ].map(({ key, label, Icon, onClick }) => (
+                  <button key={key} type="button" onClick={onClick} className="dash-action">
+                    <Icon className="h-4 w-4 shrink-0" aria-hidden />
+                    <span className="truncate">{label}</span>
+                  </button>
+                ))}
+              </div>
+
+              <div>
                 {/* Recent Trades */}
                 <Card variant="solid" hover className="overflow-hidden">
                   <div className="px-4 md:px-5 py-3 md:py-4 border-b border-[var(--tv-border)] flex items-center justify-between gap-3">
@@ -858,7 +783,8 @@ export default function Dashboard({
                                 {formatPnl(trade.pnl)}
                               </div>
                               <div className="text-[10px] text-slate-500">
-                                ${trade.riskAmount.toFixed(0)} {t("dashboard.riskSuffix")}
+                                {formatMoney(trade.riskAmount, { whole: true })}{" "}
+                                {t("dashboard.riskSuffix")}
                               </div>
                             </div>
                           </RowTag>
@@ -873,64 +799,5 @@ export default function Dashboard({
         </>
       )}
     </PageContainer>
-  );
-}
-
-function StatRow({
-  label,
-  value,
-  sub,
-  valueClass = "text-white",
-}: {
-  label: string;
-  value: string;
-  sub?: string;
-  valueClass?: string;
-}) {
-  return (
-    <div className="min-w-0">
-      <div className="tv-label text-slate-500 truncate">{label}</div>
-      <div className={cn("tv-figure text-sm md:text-base truncate mt-0.5", valueClass)}>
-        {value}
-      </div>
-      {sub && <div className="tv-figure text-[10px] text-slate-600 truncate">{sub}</div>}
-    </div>
-  );
-}
-
-/**
- * UN FAIT DE LA BANDE — le motif de la ligne posée au-dessus de la courbe.
- *
- * Trois lignes serrées, alignées sur la même grille, séparées par un filet
- * vertical plutôt que par une carte : ce sont des ANNOTATIONS de la courbe,
- * pas des tuiles. Leur en donner la boîte les mettrait au même rang que les
- * quatre métriques du dessous, qui, elles, sont le sujet de leur section.
- */
-function FaitDeBande({
-  label,
-  value,
-  hint,
-  hintTone,
-}: {
-  label: string;
-  value: string;
-  hint?: string;
-  hintTone?: "neg";
-}) {
-  return (
-    <div className="min-w-0 border-l border-white/[0.07] pl-5 first:border-l-0 first:pl-0">
-      <div className="tv-label truncate text-slate-500">{label}</div>
-      <div className="tv-figure mt-1 truncate text-sm leading-none text-white">{value}</div>
-      {hint && (
-        <div
-          className={cn(
-            "tv-figure mt-1 truncate text-[10px] leading-none",
-            hintTone === "neg" ? "text-red-400/70" : "text-slate-600",
-          )}
-        >
-          {hint}
-        </div>
-      )}
-    </div>
   );
 }

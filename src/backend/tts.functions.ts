@@ -110,15 +110,9 @@ export const ttsSpeak = createServerFn({ method: "POST" })
           body: JSON.stringify({
             text: data.text,
             model_id: JARVIS_VOICE.hostedModelId,
-            // Lecture de voix off publicitaire : assez stable pour rester
-            // posée, assez de style pour porter l'intention — et le renfort de
-            // présence qui donne le grain « studio ».
-            voice_settings: {
-              stability: 0.4,
-              similarity_boost: 0.8,
-              style: 0.45,
-              use_speaker_boost: true,
-            },
+            // Les réglages d'origine de la voix de Jarvis : un coach posé,
+            // stable, avec juste assez de style pour rester humain.
+            voice_settings: { stability: 0.45, similarity_boost: 0.75, style: 0.3 },
           }),
         },
       );

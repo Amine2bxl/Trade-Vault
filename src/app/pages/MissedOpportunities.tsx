@@ -468,7 +468,7 @@ function Field({
     emerald: "text-emerald-400 border-emerald-500/15",
   };
   return (
-    <div className={cn("rounded-lg bg-white/[0.02] border px-2.5 py-2", tones[tone])}>
+    <div className={cn("tv-relief-inset rounded-lg border px-2.5 py-2", tones[tone])}>
       <div className="tv-label mb-0.5 opacity-80">{label}</div>
       <div className="text-slate-200 text-xs md:text-sm whitespace-pre-wrap">
         {value || <span className="text-slate-600 italic">—</span>}

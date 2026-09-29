@@ -6,11 +6,17 @@ import { useAuth } from "../contexts/AuthContext";
 import { useAccounts } from "../contexts/AccountContext";
 
 import { cn } from "../utils/cn";
+import { dayTone, dayToneBorder, dayToneFill, dayToneSegments } from "../utils/calendarTone";
+import { monthGrid, weekTotals as weekTotalsOf, type GridDay } from "../utils/calendarGrid";
+import WeekDetailModal from "../components/calendar/WeekDetailModal";
+import { useIsNarrow } from "../hooks/useIsNarrow";
+import { todayLocalDate } from "@/shared/calendar-date";
 import TradeDetailModal from "../components/TradeDetailModal";
 import MissedSetupDetailModal from "../components/MissedSetupDetailModal";
 import { useT } from "../i18n/LanguageContext";
 import { Kpi, KpiGrid } from "@/shared/ui";
 import { useAvailableHeight } from "../hooks/useAvailableHeight";
+import { formatMoney } from "@/shared/currency";
 
 interface CalendarPageProps {
   trades: Trade[];
@@ -56,6 +62,10 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
   const [year, setYear] = useState(new Date().getFullYear());
   const [month, setMonth] = useState(new Date().getMonth());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  /** La semaine ouverte (index de ligne), et la semaine d'où l'on est parti
+   *  vers une journée : fermer la journée y ramène. */
+  const [openWeek, setOpenWeek] = useState<number | null>(null);
+  const [returnWeek, setReturnWeek] = useState<number | null>(null);
   const [selectedMissed, setSelectedMissed] = useState<MissedOpportunity | null>(null);
   const [missed, setMissed] = useState<MissedOpportunity[]>([]);
 
@@ -121,16 +131,8 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
     return map;
   }, [trades]);
 
-  const calendarDays = useMemo(() => {
-    const firstDay = new Date(year, month, 1).getDay();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const mondayOffset = firstDay === 0 ? 6 : firstDay - 1;
-    const days: (number | null)[] = [];
-    for (let i = 0; i < mondayOffset; i++) days.push(null);
-    for (let d = 1; d <= daysInMonth; d++) days.push(d);
-    while (days.length % 7 !== 0) days.push(null);
-    return days;
-  }, [year, month]);
+  // La grille complète : jours du mois voisins inclus (voir `monthGrid`).
+  const calendarRows = useMemo(() => monthGrid(year, month), [year, month]);
 
   const prevMonth = () => {
     if (month === 0) {
@@ -193,15 +195,13 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
   }, [year, month, dailyData]);
 
   const selectedTrades = selectedDate ? dailyData[selectedDate]?.trades || [] : [];
-  const calendarRows = useMemo(() => {
-    const rows: (number | null)[][] = [];
-    for (let i = 0; i < calendarDays.length; i += 7) rows.push(calendarDays.slice(i, i + 7));
-    return rows;
-  }, [calendarDays]);
 
   // Heatmap scale — the deepest tint maps to the month's single biggest |P&L|
   // day, so cell intensity reads as relative magnitude (Topstep/Lucid style),
   // not just win/loss binary.
+  // Sur téléphone, un montant à quatre chiffres ne tient pas dans une case de
+  // 50px : il passe en forme courte (« €1.2k »), jamais tronqué.
+  const narrow = useIsNarrow();
   const maxAbsDay = useMemo(() => {
     let m = 0;
     for (let d = 1; d <= new Date(year, month + 1, 0).getDate(); d++) {
@@ -212,24 +212,141 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [year, month, dailyData]);
 
-  // Per-week aggregates for the right-hand summary column.
+  // Totaux de semaine : le mois affiché seulement — les jours voisins sont
+  // visibles dans la grille, jamais additionnés (voir `weekTotals`).
   const weekTotals = useMemo(
-    () =>
-      calendarRows.map((row) => {
-        let pnl = 0;
-        let days = 0;
-        for (const day of row) {
-          if (day === null) continue;
-          const data = dailyData[getDateStr(day)];
-          if (data && data.count > 0) {
-            pnl += data.pnl;
-            days += 1;
-          }
-        }
-        return { pnl, days };
-      }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [calendarRows, dailyData, year, month],
+    () => calendarRows.map((row) => weekTotalsOf(row, dailyData)),
+    [calendarRows, dailyData],
+  );
+
+  /* UNE CASE DU MOIS — partagée par la grille de bureau et celle du
+     téléphone : le même jour se dessine de la même façon partout. */
+  const renderDay = (cell: GridDay, colIdx: number) => {
+    const dateStr = cell.date;
+    const data = dailyData[dateStr];
+    const out = !cell.inMonth;
+    const tone = data ? dayTone(data.trades) : null;
+    const isToday = dateStr === todayLocalDate();
+    const isWeekend = colIdx >= 5;
+    const dayMissed = missedByDate[dateStr] || [];
+    const missedCount = dayMissed.length;
+
+    const isAllBE = data && data.count > 0 && data.count === data.breakEven;
+    const isWin = data && !isAllBE && data.pnl > 0;
+    const isLoss = data && !isAllBE && data.pnl < 0;
+
+    /* LA CASE. Une teinte SOLIDE du résultat net, à peine posée,
+                       plus soutenue pour une grosse journée du mois ; un liseré
+                       de la même couleur ; un filet en aplats pour une journée
+                       mixte. Aucun dégradé. Un jour d'un mois voisin garde sa
+                       date et ses trades, mais en retrait : contexte, pas
+                       résultat du mois. */
+    const mag = data && !out && maxAbsDay > 0 ? Math.min(1, Math.abs(data.pnl) / maxAbsDay) : 0;
+    const cellStyle: CSSProperties | undefined =
+      tone && !out
+        ? { background: dayToneFill(tone, mag), borderColor: dayToneBorder(tone) }
+        : undefined;
+    const segments = tone && !out ? dayToneSegments(tone) : null;
+    const summary = `${new Date(`${dateStr}T12:00:00`).toLocaleDateString(locale, {
+      day: "numeric",
+      month: "long",
+    })}${
+      data
+        ? ` · ${formatMoney(data.pnl, { signed: true })} · ${data.count} ${
+            data.count === 1 ? t("calendar.trade") : t("calendar.trades")
+          }`
+        : ""
+    }${out ? ` · ${t("calendar.outsideMonth")}` : ""}`;
+
+    return (
+      <button
+        key={dateStr}
+        onClick={() => {
+          if (data) setSelectedDate(dateStr);
+          else if (dayMissed.length > 0) setSelectedMissed(dayMissed[0]);
+        }}
+        disabled={!data && missedCount === 0}
+        style={cellStyle}
+        aria-label={summary}
+        className={cn(
+          "cal-cell relative flex min-h-[52px] flex-col items-center justify-center gap-0.5 overflow-hidden rounded-lg border px-0.5 text-center transition-[filter,transform] duration-200 md:min-h-[84px] md:gap-1 md:rounded-xl",
+          out ? "cal-cell-out" : !cellStyle && "cal-cell-empty",
+          !cellStyle && !out && missedCount > 0 && "border-amber-500/25",
+          isToday && "ring-1 ring-inset ring-[var(--tv-border-accent)]",
+          (data || missedCount > 0) && "cursor-pointer hover:brightness-125 active:scale-[0.97]",
+        )}
+      >
+        {missedCount > 0 && (
+          <span
+            className={cn(
+              "absolute right-1 top-1 flex items-center gap-0.5 text-[10px] font-bold text-amber-300 md:right-1.5 md:top-1.5",
+              out && "opacity-60",
+            )}
+            title={`${missedCount} ${t("missed.title")}`}
+          >
+            <Target className="h-2.5 w-2.5" />
+            <span className="hidden md:inline">{missedCount}</span>
+          </span>
+        )}
+        <span
+          className={cn(
+            "tv-figure text-[13px] font-bold leading-none md:text-base",
+            out
+              ? "text-slate-600"
+              : isToday
+                ? "text-[var(--tv-highlight)]"
+                : data
+                  ? "text-white"
+                  : isWeekend
+                    ? "text-slate-500"
+                    : "text-slate-300",
+          )}
+        >
+          {cell.day}
+        </span>
+        {data && (
+          <span
+            className={cn(
+              "tv-figure max-w-full truncate text-[10px] font-bold leading-none sm:text-[11px] md:text-[14px]",
+              out && "opacity-70",
+              isAllBE
+                ? "text-slate-400"
+                : isWin
+                  ? "text-[var(--tv-chart-green)]"
+                  : isLoss
+                    ? "text-[var(--tv-chart-red)]"
+                    : "text-slate-200",
+            )}
+          >
+            {isAllBE
+              ? t("common.be")
+              : narrow
+                ? formatMoney(data.pnl, {
+                    compact: Math.abs(data.pnl) >= 1000,
+                    whole: true,
+                  })
+                : formatMoney(data.pnl)}
+          </span>
+        )}
+        {segments && (
+          <span
+            aria-hidden
+            className="absolute inset-x-2 bottom-1 flex h-[2px] gap-px overflow-hidden rounded-full md:inset-x-3 md:bottom-1.5"
+          >
+            {segments.map((sg, i) => (
+              <span key={i} style={{ flexGrow: sg.share, background: sg.color }} />
+            ))}
+          </span>
+        )}
+      </button>
+    );
+  };
+
+  /* Des trades le week-end ce mois-ci ? Sur téléphone, la colonne W-E
+     n'existe que dans ce cas : sans trade le samedi ni le dimanche, deux
+     colonnes vides prenaient la place qui revient au total de la semaine. */
+  const hasWeekendTrades = calendarRows.some((row) =>
+    row.slice(5).some((c) => dailyData[c.date]?.count),
   );
 
   return (
@@ -253,15 +370,12 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
       className="mx-auto flex h-full max-w-[1400px] flex-col overflow-y-auto px-3 py-2 md:px-5 md:py-3"
     >
       {/* Summary Cards */}
-      <KpiGrid className="shrink-0">
+      <KpiGrid className="tv-flat shrink-0">
         {(
           [
             {
               label: t("calendar.monthlyPnl"),
-              value:
-                monthlySummary.tradingDays === 0
-                  ? "$0.00"
-                  : `${monthlySummary.total >= 0 ? "" : "-"}$${Math.abs(monthlySummary.total).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+              value: formatMoney(monthlySummary.tradingDays === 0 ? 0 : monthlySummary.total),
               tone:
                 monthlySummary.tradingDays === 0
                   ? "neutral"
@@ -346,235 +460,199 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
           suffi à réécraser la grille, quel que soit le plancher des cellules.
           `overflow-hidden` reste — il sert les coins arrondis, plus à rogner
           un débordement. */}
-      <div className="stat-card-elevated mt-2 flex flex-1 flex-col overflow-hidden animate-fade-in-up stagger-5 md:mt-3">
-        <div className="flex shrink-0 items-center justify-between px-4 py-2.5 md:px-6 md:py-3 border-b border-white/[0.06]">
-          <button
-            onClick={prevMonth}
-            aria-label={t("common.previous")}
-            className="w-11 h-11 md:w-9 md:h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 transition active:scale-90"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <div className="flex items-center gap-2">
-            <h3 className="tv-title tracking-tight">
-              {MONTHS[month]} '{String(year).slice(-2)}
-            </h3>
-            <button
-              onClick={goToday}
-              className="flex h-9 items-center rounded-lg px-3 text-xs font-semibold text-cyan-400 transition hover:bg-cyan-500/10 hover:text-cyan-300 active:scale-95"
-            >
-              {t("calendar.today")}
+      <div className="stat-card-elevated tv-flat mt-2 flex flex-1 flex-col overflow-hidden animate-fade-in-up stagger-5 md:mt-3">
+        {/* L'EN-TÊTE DE LA RÉFÉRENCE : le titre à gauche, le mois entre deux
+            boutons encadrés, « aujourd'hui » à côté. */}
+        <div className="flex shrink-0 items-center justify-between gap-2 px-3 py-2.5 md:px-5 md:py-3">
+          <h3 className="tv-title hidden tracking-tight sm:block">{t("calendar.title")}</h3>
+          <div className="flex min-w-0 flex-1 items-center justify-center gap-2 sm:flex-none">
+            <button onClick={prevMonth} aria-label={t("common.previous")} className="cal-nav-btn">
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <span className="tv-title min-w-[8.5rem] text-center tracking-tight">
+              {MONTHS[month]} {year}
+            </span>
+            <button onClick={nextMonth} aria-label={t("common.next")} className="cal-nav-btn">
+              <ChevronRight className="h-4 w-4" />
             </button>
           </div>
           <button
-            onClick={nextMonth}
-            aria-label={t("common.next")}
-            className="w-11 h-11 md:w-9 md:h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 transition active:scale-90"
+            onClick={goToday}
+            className="flex h-9 shrink-0 items-center rounded-lg px-3 text-xs font-semibold text-[var(--tv-highlight)] transition hover:bg-[rgb(var(--tv-accent-rgb)/0.1)] active:scale-95"
           >
-            <ChevronRight className="w-5 h-5" />
+            {t("calendar.today")}
           </button>
         </div>
         {/* Tout tient sur une page : 7 colonnes de jours sur mobile (la
             colonne semaine est masquée), 8 sur desktop. Pas de scroll. */}
-        <div className="grid shrink-0 grid-cols-7 md:grid-cols-8 border-b border-white/[0.06]">
+        <div className="hidden shrink-0 grid-cols-8 gap-1.5 px-2 md:grid">
           {DAYS.map((d, i) => (
-            <div
-              key={d + i}
-              className={cn(
-                "tv-label py-1.5 md:py-2.5 text-center md:text-xs",
-                i >= 5 ? "text-slate-700" : "text-slate-500",
-              )}
-            >
+            <div key={d + i} className={cn("cal-dow", i >= 5 && "cal-dow-weekend")}>
               {d}
             </div>
           ))}
-          <div className="tv-label hidden md:block py-3 text-center text-slate-600 border-l border-white/[0.06]">
-            {t("calendar.week")}
-          </div>
+          <div className="cal-dow">{t("calendar.week")}</div>
         </div>
-        <div className="flex flex-1 flex-col p-1 md:p-2 space-y-0.5 md:space-y-1.5">
+        <div className="hidden flex-1 flex-col space-y-1.5 p-2 md:flex">
           {calendarRows.map((row, rowIdx) => {
             const week = weekTotals[rowIdx];
+            const weekHasTrades = week.trades + week.outsideTrades > 0;
+            const weekLabel = `${t("calendar.week")} ${rowIdx + 1}`;
+            const weekValue =
+              week.trades === 0 ? "—" : formatMoney(week.pnl, { signed: true, whole: true });
+            const weekTone =
+              week.trades === 0
+                ? "text-slate-600"
+                : week.pnl > 0
+                  ? "text-[var(--tv-chart-green)]"
+                  : week.pnl < 0
+                    ? "text-[var(--tv-chart-red)]"
+                    : "text-slate-300";
+            const weekCount = `${week.trades} ${week.trades === 1 ? t("calendar.trade") : t("calendar.trades")}`;
             return (
-              // PAS de `min-h-0` ici — c'était la moitié du problème.
-              //
-              // `min-height: 0` sur un élément flex l'autorise EXPLICITEMENT à
-              // rétrécir sous la taille de son contenu. Combiné à `flex-1`
-              // (`flex: 1 1 0%`) dans un cadre de hauteur fixe, la ligne
-              // pouvait tomber à quelques pixels pendant que ses cellules,
-              // elles, gardaient leur hauteur : elles débordaient de leur
-              // propre ligne et se chevauchaient. C'est exactement ce que l'œil
-              // lit comme « le calendrier s'écrase sur lui-même ».
-              //
-              // Sans lui, `min-height` vaut `auto` : la ligne ne descend jamais
-              // sous le plancher de ses cellules, et `flex-1` continue de
-              // l'étirer dès qu'il y a de la place.
+              // PAS de `min-h-0` : la ligne ne descend jamais sous le plancher
+              // de ses cellules, et `flex-1` l'étire dès qu'il y a la place.
+              <div key={row[0].date} className="flex flex-1 flex-col gap-0.5">
+                <div className="grid flex-1 grid-cols-8 gap-1.5">
+                  {row.map((cell, colIdx) => renderDay(cell, colIdx))}
+
+                  {/* LA SEMAINE (bureau) — une case qui s'ouvre sur ses trades. */}
+                  <button
+                    type="button"
+                    onClick={() => weekHasTrades && setOpenWeek(rowIdx)}
+                    disabled={!weekHasTrades}
+                    aria-label={`${weekLabel} · ${weekValue} · ${weekCount}`}
+                    className={cn(
+                      "cal-week flex flex-col items-center justify-center rounded-xl p-2 text-center",
+                      weekHasTrades ? "cursor-pointer" : "opacity-45",
+                    )}
+                  >
+                    <span className="tv-label mb-0.5 text-slate-500">{weekLabel}</span>
+                    <span className={cn("tv-figure text-sm leading-none", weekTone)}>
+                      {weekValue}
+                    </span>
+                    {week.trades > 0 && (
+                      <span className="tv-figure mt-1 text-[10px] text-slate-500">{weekCount}</span>
+                    )}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        {/* ── LA GRILLE DU TÉLÉPHONE ─────────────────────────────────────
+            Lun → ven, puis la SEMAINE en colonne. L'ancienne version posait
+            une bande « Week N » sous chaque rangée : six lignes de plus, la
+            page s'allongeait d'environ 150px pour un total. Ici le total vit
+            dans la rangée, à côté des jours qu'il additionne, et s'ouvre sur
+            la semaine. Samedi et dimanche ne prennent une colonne (fusionnée,
+            W-E) que si le mois compte des trades le week-end. */}
+        <div
+          className={cn(
+            "grid shrink-0 gap-0.5 px-1 md:hidden",
+            hasWeekendTrades ? "cal-m-grid-7" : "cal-m-grid-6",
+          )}
+        >
+          {DAYS.slice(0, 5).map((d) => (
+            <div key={d} className="cal-dow">
+              {d}
+            </div>
+          ))}
+          {hasWeekendTrades && (
+            <div className="cal-dow cal-dow-weekend">{t("calendar.weekendShort")}</div>
+          )}
+          <div className="cal-dow cal-dow-week">{t("calendar.weekShort")}</div>
+        </div>
+        <div className="flex flex-1 flex-col gap-0.5 p-1 md:hidden">
+          {calendarRows.map((row, rowIdx) => {
+            const week = weekTotals[rowIdx];
+            const weekHasTrades = week.trades + week.outsideTrades > 0;
+            const sat = row[5];
+            const sun = row[6];
+            const weDays = [sat, sun].filter((c) => dailyData[c.date]?.count);
+            const wePnl = weDays.reduce((sum, c) => sum + dailyData[c.date].pnl, 0);
+            return (
               <div
-                key={rowIdx}
-                className="grid flex-1 grid-cols-7 md:grid-cols-8 gap-0.5 md:gap-1.5"
+                key={row[0].date}
+                className={cn(
+                  "grid flex-1 gap-0.5",
+                  hasWeekendTrades ? "cal-m-grid-7" : "cal-m-grid-6",
+                )}
               >
-                {row.map((day, colIdx) => {
-                  if (day === null)
-                    return (
-                      <div key={`e-${rowIdx}-${colIdx}`} className="min-h-[52px] md:min-h-[88px]" />
-                    );
-                  const dateStr = getDateStr(day);
-                  const data = dailyData[dateStr];
-                  const isAllBE = data && data.count > 0 && data.count === data.breakEven;
-                  const isWin = data && !isAllBE && data.pnl > 0;
-                  const isLoss = data && !isAllBE && data.pnl < 0;
-                  const isToday = dateStr === new Date().toISOString().split("T")[0];
-                  const isWeekend = colIdx >= 5;
-                  const dayMissed = missedByDate[dateStr] || [];
-                  const missedCount = dayMissed.length;
-
-                  // Heatmap intensity: 0 → the day with the largest |P&L| this month.
-                  const mag =
-                    data && maxAbsDay > 0 ? Math.min(1, Math.abs(data.pnl) / maxAbsDay) : 0;
-                  const a = 0.08 + 0.34 * mag; // fill alpha
-                  const b = 0.18 + 0.24 * mag; // border alpha
-                  let cellStyle: CSSProperties | undefined;
-                  if (isWin)
-                    cellStyle = {
-                      background: `linear-gradient(155deg, rgba(16,185,129,${a}), rgba(16,185,129,${a * 0.35}))`,
-                      borderColor: `rgba(16,185,129,${b})`,
-                    };
-                  else if (isLoss)
-                    cellStyle = {
-                      background: `linear-gradient(155deg, rgba(244,63,63,${a}), rgba(244,63,63,${a * 0.35}))`,
-                      borderColor: `rgba(244,63,63,${b})`,
-                    };
-                  else if (isAllBE)
-                    cellStyle = {
-                      background: "rgba(148,163,184,0.10)",
-                      borderColor: "rgba(148,163,184,0.22)",
-                    };
-
-                  return (
-                    <button
-                      key={dateStr}
-                      onClick={() => {
-                        if (data) setSelectedDate(dateStr);
-                        else if (dayMissed.length > 0) setSelectedMissed(dayMissed[0]);
-                      }}
-                      disabled={!data && missedCount === 0}
-                      style={cellStyle}
-                      className={cn(
-                        // LE PLANCHER DE LA CELLULE — ce qui empêche la grille
-                        // de s'écraser. Il valait `md:min-h-[0]` : combiné au
-                        // `flex-1` de la ligne et à la hauteur fixe du cadre,
-                        // une cellule pouvait descendre à quelques pixels et
-                        // laminer son contenu. 88px tient la date, le P&L et le
-                        // nombre de trades ; au-delà, `flex-1` étire toujours.
-                        "min-h-[52px] md:min-h-[88px] md:p-2 p-1 rounded-lg md:rounded-xl text-left transition duration-200 relative overflow-hidden border flex flex-col",
-                        !cellStyle && !missedCount && "border-white/[0.04] bg-white/[0.02]",
-                        !cellStyle && isWeekend && "bg-white/[0.03]",
-                        !cellStyle && missedCount > 0 && "bg-amber-500/[0.06] border-amber-500/20",
-                        isToday && "ring-1 ring-inset ring-cyan-400/60",
-                        (data || missedCount > 0) &&
-                          "cursor-pointer hover:brightness-125 active:scale-[0.97]",
-                      )}
-                    >
-                      {/* Day number */}
-                      <div className="flex items-center justify-between">
-                        <span
-                          className={cn(
-                            "tv-figure text-xs md:text-sm",
-                            isToday
-                              ? "text-cyan-300"
-                              : data
-                                ? "text-slate-300"
-                                : isWeekend
-                                  ? "text-slate-600"
-                                  : "text-slate-500",
-                          )}
-                        >
-                          {day}
-                        </span>
-                        {missedCount > 0 && (
-                          <span
-                            className="flex items-center gap-0.5 text-amber-300 text-[11px] font-bold"
-                            title={`${missedCount} ${t("missed.title")}`}
-                          >
-                            <Target className="w-2.5 h-2.5" />
-                            {missedCount}
-                          </span>
+                {row.slice(0, 5).map((cell, colIdx) => renderDay(cell, colIdx))}
+                {hasWeekendTrades && (
+                  <button
+                    type="button"
+                    disabled={weDays.length === 0}
+                    onClick={() =>
+                      weDays.length === 1 ? setSelectedDate(weDays[0].date) : setOpenWeek(rowIdx)
+                    }
+                    aria-label={`${t("calendar.weekendShort")} ${sat.day}–${sun.day}`}
+                    className={cn(
+                      "cal-cell cal-cell-empty flex min-h-[52px] flex-col items-center justify-center gap-0.5 rounded-lg border text-center",
+                      weDays.length === 0 && "opacity-60",
+                    )}
+                  >
+                    <span className="tv-figure text-[10px] leading-none text-slate-500">
+                      {sat.day}·{sun.day}
+                    </span>
+                    {weDays.length > 0 && (
+                      <span
+                        className={cn(
+                          "tv-figure text-[10px] font-bold leading-none",
+                          wePnl > 0
+                            ? "text-[var(--tv-chart-green)]"
+                            : wePnl < 0
+                              ? "text-[var(--tv-chart-red)]"
+                              : "text-slate-400",
                         )}
-                      </div>
-
-                      {/* P&L — the hero number, centered in the cell */}
-                      {data && (
-                        <div className="flex-1 flex flex-col justify-center">
-                          <div
-                            className={cn(
-                              "tv-figure text-sm md:text-lg leading-none",
-                              isAllBE
-                                ? "text-slate-300"
-                                : isWin
-                                  ? "text-emerald-300"
-                                  : isLoss
-                                    ? "text-red-300"
-                                    : "text-slate-400",
-                            )}
-                          >
-                            {isAllBE
-                              ? t("common.be")
-                              : `${data.pnl >= 0 ? "+" : "−"}${Math.abs(data.pnl).toFixed(0)}`}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Footer: trade count + RR */}
-                      {data && (
-                        <div className="tv-figure flex items-center gap-1.5 text-[11px]">
-                          <span className="text-slate-400">
-                            {data.count}{" "}
-                            {data.count === 1 ? t("calendar.trade") : t("calendar.trades")}
-                          </span>
-                          {data.avgRR > 0 && (
-                            <span className="text-cyan-400/80 hidden md:inline">
-                              {data.avgRR.toFixed(1)}R
-                            </span>
-                          )}
-                        </div>
-                      )}
-                    </button>
-                  );
-                })}
-
-                {/* Weekly summary column — masquée sur mobile (tout tient
-                    sur une page), visible en desktop. */}
-                <div
+                      >
+                        {formatMoney(wePnl, { compact: Math.abs(wePnl) >= 1000, whole: true })}
+                      </span>
+                    )}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => weekHasTrades && setOpenWeek(rowIdx)}
+                  disabled={!weekHasTrades}
+                  aria-label={`${t("calendar.week")} ${rowIdx + 1} · ${
+                    week.trades === 0 ? "—" : formatMoney(week.pnl, { signed: true })
+                  }`}
                   className={cn(
-                    "hidden md:flex h-[112px] rounded-xl p-2.5 flex-col justify-center border border-white/[0.04] bg-white/[0.015]",
-                    week.days === 0 && "opacity-40",
+                    "cal-week cal-week-m flex min-h-[52px] flex-col items-center justify-center gap-0.5 rounded-lg px-0.5 text-center",
+                    !weekHasTrades && "opacity-45",
                   )}
                 >
-                  <div className="tv-label text-slate-600 mb-0.5">
-                    {t("calendar.week")} {rowIdx + 1}
-                  </div>
-                  <div
+                  <span className="tv-label text-[9px] leading-none text-slate-500">
+                    {t("calendar.weekNum").replace("{n}", String(rowIdx + 1))}
+                  </span>
+                  <span
                     className={cn(
-                      "tv-figure text-[13px] md:text-sm leading-none",
-                      week.days === 0
+                      "tv-figure max-w-full truncate text-[10.5px] font-bold leading-none",
+                      week.trades === 0
                         ? "text-slate-600"
                         : week.pnl > 0
-                          ? "text-emerald-400"
+                          ? "text-[var(--tv-chart-green)]"
                           : week.pnl < 0
-                            ? "text-red-400"
+                            ? "text-[var(--tv-chart-red)]"
                             : "text-slate-300",
                     )}
                   >
-                    {week.days === 0
+                    {week.trades === 0
                       ? "—"
-                      : `${week.pnl >= 0 ? "+" : "−"}${Math.abs(week.pnl).toFixed(0)}`}
-                  </div>
-                  {week.days > 0 && (
-                    <div className="tv-figure text-[11px] md:text-[10px] text-slate-500 mt-0.5">
-                      {week.days} {week.days === 1 ? t("calendar.day") : t("calendar.days")}
-                    </div>
+                      : formatMoney(week.pnl, {
+                          signed: true,
+                          compact: Math.abs(week.pnl) >= 1000,
+                          whole: true,
+                        })}
+                  </span>
+                  {week.trades > 0 && (
+                    <span className="tv-figure text-[9px] leading-none text-slate-500">
+                      {week.trades} {t("calendar.tradesShort")}
+                    </span>
                   )}
-                </div>
+                </button>
               </div>
             );
           })}
@@ -583,31 +661,55 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
 
       <div className="hidden shrink-0 md:flex items-center justify-center gap-6 mt-2 px-2 flex-wrap">
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded-lg bg-gradient-to-br from-emerald-500/20 to-emerald-600/5 border border-emerald-500/20" />
+          <div
+            className="w-4 h-4 rounded-md border"
+            style={{
+              background: "rgb(var(--tv-chart-green-rgb) / 0.12)",
+              borderColor: "rgb(var(--tv-chart-green-rgb) / 0.38)",
+            }}
+          />
           <span className="text-[10px] text-slate-500">{t("calendar.legendWinningDay")}</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded-lg bg-gradient-to-br from-red-500/15 to-red-600/5 border border-red-500/15" />
+          <div
+            className="w-4 h-4 rounded-md border"
+            style={{
+              background: "rgb(var(--tv-chart-red-rgb) / 0.12)",
+              borderColor: "rgb(var(--tv-chart-red-rgb) / 0.38)",
+            }}
+          />
           <span className="text-[10px] text-slate-500">{t("calendar.legendLosingDay")}</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded-lg bg-gradient-to-br from-slate-500/20 to-slate-600/5 border border-slate-500/25" />
+          <div
+            className="w-4 h-4 rounded-md border"
+            style={{
+              background: "rgb(148 163 184 / 0.12)",
+              borderColor: "rgb(148 163 184 / 0.32)",
+            }}
+          />
           <span className="text-[10px] text-slate-500">{t("calendar.legendBreakEvenDay")}</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded-lg ring-1 ring-cyan-500/40" />
+          <div className="w-4 h-4 rounded-md ring-1 ring-[var(--tv-border-accent)]" />
           <span className="text-[10px] text-slate-500">{t("calendar.legendToday")}</span>
         </div>
-        {/* Heatmap intensity scale — deeper tint = bigger day. */}
+        {/* L'intensité : trois aplats, du plus petit au plus gros jour. */}
         <div className="flex items-center gap-2">
-          <div
-            className="w-16 h-3 rounded"
-            style={{
-              background:
-                "linear-gradient(90deg, rgba(244,63,63,0.42), rgba(244,63,63,0.08), rgba(16,185,129,0.08), rgba(16,185,129,0.42))",
-            }}
-          />
+          <div className="flex gap-0.5">
+            {[0, 0.5, 1].map((k) => (
+              <div
+                key={k}
+                className="h-3 w-3 rounded-[3px]"
+                style={{ background: `rgb(var(--tv-chart-green-rgb) / ${0.06 + 0.1 * k})` }}
+              />
+            ))}
+          </div>
           <span className="text-[10px] text-slate-500">{t("calendar.legendHeat")}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="cal-cell-out h-4 w-4 rounded-md border" />
+          <span className="text-[10px] text-slate-500">{t("calendar.legendOutside")}</span>
         </div>
       </div>
 
@@ -615,12 +717,34 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
         <TradeDetailModal
           trades={selectedTrades}
           date={selectedDate}
-          onClose={() => setSelectedDate(null)}
+          onClose={() => {
+            setSelectedDate(null);
+            if (returnWeek !== null) {
+              setOpenWeek(returnWeek);
+              setReturnWeek(null);
+            }
+          }}
           onDelete={onDelete}
           missed={missedByDate[selectedDate] || []}
           onOpenMissed={(m) => {
             setSelectedDate(null);
             setSelectedMissed(m);
+          }}
+        />
+      )}
+
+      {openWeek !== null && calendarRows[openWeek] && (
+        <WeekDetailModal
+          days={calendarRows[openWeek]}
+          weekIndex={openWeek}
+          monthLabel={`${MONTHS[month]} ${year}`}
+          byDate={dailyData}
+          locale={locale}
+          onClose={() => setOpenWeek(null)}
+          onOpenDay={(date) => {
+            setReturnWeek(openWeek);
+            setOpenWeek(null);
+            setSelectedDate(date);
           }}
         />
       )}

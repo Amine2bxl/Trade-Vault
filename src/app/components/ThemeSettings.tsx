@@ -209,7 +209,7 @@ export default function ThemeSettings() {
           ))}
           <button
             onClick={startNew}
-            className="rounded-2xl border-2 border-dashed border-white/[0.10] hover:border-cyan-500/40 hover:bg-cyan-500/[0.03] transition flex flex-col items-center justify-center gap-1.5 min-h-[136px] text-slate-500 hover:text-cyan-300"
+            className="rounded-2xl border-2 border-dashed border-white/[0.10] hover:border-[var(--tv-border-accent)] hover:bg-[rgb(var(--tv-accent-rgb)/0.04)] transition flex flex-col items-center justify-center gap-1.5 min-h-[136px] text-slate-500 hover:text-[var(--tv-highlight)]"
           >
             <Plus className="w-5 h-5" />
             <span className="text-[11px] font-semibold">{t("appearance.new")}</span>

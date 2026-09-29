@@ -1,4 +1,5 @@
-import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { lazyPage } from "@/shared/lazy-page";
+import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Eraser } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { useAccounts } from "../contexts/AccountContext";
@@ -15,8 +16,9 @@ import ProposalsPanel from "../components/jarvis/components/ProposalsPanel";
 import { JarvisOrb } from "@/shared/ui";
 import { useJarvisActivity } from "../components/jarvis/activity";
 import { usePageActions, usePageLead } from "../contexts/PageActionsContext";
+import { stableViewportHeight, topAtRest } from "../hooks/useAvailableHeight";
 
-const ConversationWorkspace = lazy(
+const ConversationWorkspace = lazyPage(
   () => import("../components/jarvis/workspaces/ConversationWorkspace"),
 );
 
@@ -126,9 +128,10 @@ export default function Jarvis() {
     const el = boxRef.current;
     if (!el) return;
     const mesurer = () => {
-      const haut = el.getBoundingClientRect().top;
+      // Mesure indépendante du défilement : voir `topAtRest`.
+      const haut = topAtRest(el);
       const basse = window.innerWidth < 768 ? 84 : 16;
-      setHauteur(Math.max(420, Math.round(window.innerHeight - haut - basse)));
+      setHauteur(Math.max(420, Math.round(stableViewportHeight() - haut - basse)));
     };
     /* TROIS MESURES, ET C'EST NÉCESSAIRE.
        La première tombe trop tôt : `usePageLead` et `usePageActions` posent

@@ -85,7 +85,11 @@ const StreakCard = React.forwardRef<HTMLDivElement, StreakCardProps>(function St
     <section
       ref={ref}
       aria-label="Streak summary card"
-      className={cn("stat-card rounded-2xl p-4 md:p-5", className)}
+      /* `flex-col` porté par la carte elle-même : l'appelant ne décide que de
+         l'AFFICHAGE (`hidden lg:flex`). Sans lui, `lg:flex` rangeait en-tête,
+         chiffre, calendrier et stats CÔTE À CÔTE, et la largeur min-content de
+         cette rangée (≈ 600px) écrasait la colonne voisine du tableau de bord. */
+      className={cn("stat-card flex min-w-0 flex-col rounded-2xl p-4 md:p-5", className)}
       {...props}
     >
       <header className="mb-3">
@@ -115,7 +119,7 @@ const StreakCard = React.forwardRef<HTMLDivElement, StreakCardProps>(function St
       <StreakCalendar streak={streak} />
 
       <div
-        className="mt-4 grid grid-cols-2 gap-4 border-t border-white/[0.06] pt-4"
+        className="mt-4 mb-4 grid grid-cols-2 gap-4 border-t border-white/[0.06] pt-4"
         aria-label="Streak stats"
       >
         <div>
@@ -131,7 +135,7 @@ const StreakCard = React.forwardRef<HTMLDivElement, StreakCardProps>(function St
         </div>
       </div>
 
-      <div className="mt-4 border-t border-white/[0.06] pt-3">
+      <div className="mt-auto border-t border-white/[0.06] pt-3">
         <button
           type="button"
           className="flex w-full items-center justify-between rounded-xl bg-white/[0.03] px-3.5 py-2.5 text-left transition-colors hover:bg-white/[0.05]"

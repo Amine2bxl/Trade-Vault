@@ -1,5 +1,6 @@
 import { confidenceFrom } from "../confidence";
 import type { Detector } from "./types";
+import { currencySymbol } from "@/shared/currency";
 
 /**
  * overtrading — les journées chargées coûtent de l'argent.
@@ -33,7 +34,11 @@ export const overtradingDetector: Detector = (data) => {
       medianTradesPerDay: ot.medianTradesPerDay,
       busyDayThreshold: ot.busyDayThreshold,
     },
-    impact: { label: "Coût des journées chargées", amount: Math.abs(ot.pnlOnBusyDays), unit: "$" },
+    impact: {
+      label: "Coût des journées chargées",
+      amount: Math.abs(ot.pnlOnBusyDays),
+      unit: currencySymbol(),
+    },
     mission: ["day_trade_cap", "only_verified_setups"],
     affectedTrades: [],
   };

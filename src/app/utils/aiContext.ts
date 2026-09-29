@@ -3,6 +3,7 @@ import { computeStats, toInsightTradesPayload } from "./tradeCalcs";
 import { computeBehaviorSignals } from "./behaviorSignals";
 import type { TradingRule } from "./tradingRules";
 import { remember } from "@/modules/ai/memory";
+import { AI_LIMITS } from "@/domain/ai-limits";
 import { selectMemories, type MemoryLike } from "@/modules/ai/memory-select";
 import { slimSignals } from "./signalContext";
 import { loadOnboarding, loadJarvisProfile, type OnboardingData } from "../store";
@@ -312,10 +313,9 @@ export function buildCoachV1Payload(opts: {
     // et ferait exploser la latence sans rien améliorer.
     memory:
       memory?.length && question
-        ? selectMemories(memory, question).selected.map((m) => ({
-            kind: m.kind,
-            content: m.content,
-          }))
+        ? selectMemories(memory, question)
+            .selected.slice(0, 12)
+            .map((m) => ({ kind: m.kind.slice(0, 20), content: m.content.slice(0, 300) }))
         : undefined,
     mistakes: mistakes.length ? mistakes : undefined,
     goals: goals?.length ? goals.slice(0, 10) : undefined,
@@ -333,10 +333,15 @@ export function buildCoachV1Payload(opts: {
           .slice(0, 30)
           .map((r) => ({ kind: r.kind, text: r.text.slice(0, 300), enabled: r.enabled }))
       : undefined,
-    conversation: conversation
-      .slice(-maxTurns)
-      .map((turn) => ({ role: turn.role, content: turn.content.slice(0, 8000) })),
-    profile: describeProfile(onboarding, jarvisProfile),
+    // LES BORNES DU SERVEUR, PAS D'AUTRES. L'historique était coupé à 8 000
+    // caractères quand le serveur en refuse plus de 4 000 par tour : la
+    // première longue réponse de Jarvis faisait ensuite rejeter TOUTE question
+    // de la conversation. Mêmes constantes des deux côtés (`AI_LIMITS`).
+    conversation: conversation.slice(-Math.min(maxTurns, AI_LIMITS.conversation)).map((turn) => ({
+      role: turn.role,
+      content: turn.content.slice(0, AI_LIMITS.conversationContent),
+    })),
+    profile: describeProfile(onboarding, jarvisProfile)?.slice(0, 600),
     // Omise quand l'échelle est d'origine : ne pas encombrer le prompt d'un
     // bloc qui, dans ce cas, ne dit rien.
     calibration: calibration && calibration.scale !== 1 ? calibration : undefined,

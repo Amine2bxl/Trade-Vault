@@ -86,14 +86,10 @@ describe("l'inventaire de ce qui reste en dur", () => {
     const DELIBERATE: Record<string, string> = {
       "utils/themes.ts":
         "la définition des thèmes intégrés — c'est la SOURCE des variables, elle ne peut pas s'y référer",
-      "components/ThemeStudioModal.tsx":
-        "les valeurs de repli des trois sélecteurs de couleur : leur rôle est précisément d'être un littéral",
       "onboarding/Onboarding.tsx":
         "les couleurs de départ d'un thème que le trader va créer — un thème neuf part du thème par défaut",
       "store/accounts.ts":
         "la couleur par défaut d'un COMPTE, écrite en base : une donnée, pas un style",
-      "components/UpgradeSuccessOverlay.tsx":
-        "la palette des confettis : décorative et multicolore, la réduire à l'accent l'appauvrirait",
     };
 
     const found: string[] = [];

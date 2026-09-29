@@ -21,12 +21,22 @@ import {
   History,
   CheckCircle2,
   Printer,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+  Clock3,
 } from "lucide-react";
+import logoSrc from "@/assets/tradevault-logo-128.png";
+import { SITE_URL } from "@/shared/site";
 import { useAuth } from "../contexts/AuthContext";
 import { useToast } from "../contexts/ToastContext";
 import { useT } from "../i18n/LanguageContext";
 import { loadMonthlyReports, type MonthlyReportRow } from "../store";
-import { type MonthlyReportData } from "../utils/monthlyReport";
+import { buildMonthlyReport, prevMonthOf, type MonthlyReportData } from "../utils/monthlyReport";
+import { useAccounts } from "../contexts/AccountContext";
+import { localMonthOf, todayLocalDate } from "@/shared/calendar-date";
+import { statsBySession, MIN_BUCKET_SAMPLE } from "../utils/quantStats";
+import { currencySymbol, useCurrency } from "@/shared/currency";
 import { missingReportMonths } from "../utils/reportMonths";
 import { generateMyMonthlyReport } from "@/backend/reports.functions";
 import { formatPnl, formatPct } from "../utils/tradeCalcs";
@@ -45,7 +55,7 @@ import EquityChart from "../components/EquityChart";
 import MarkdownAnswer from "../components/MarkdownAnswer";
 import { cn } from "../utils/cn";
 import type { Trade } from "../types";
-import { Button, Kpi } from "@/shared/ui";
+import { Button, Kpi, SelectPicker } from "@/shared/ui";
 import { usePageActions } from "../contexts/PageActionsContext";
 
 const LOCALE_MAP: Record<string, string> = {
@@ -64,17 +74,12 @@ const LOCALE_MAP: Record<string, string> = {
 };
 
 /** "2026-06" → "June 2026" in the app language. */
+/** Le domaine imprimé au pied du PDF (`tradevault.be`, sans protocole). */
+const SITE_HOST = SITE_URL.replace(/^https?:\/\//, "");
+
 function monthLabel(month: string, locale: string): string {
   const [y, m] = month.split("-").map(Number);
   return new Intl.DateTimeFormat(locale, { month: "long", year: "numeric" }).format(
-    new Date(Date.UTC(y, m - 1, 1)),
-  );
-}
-
-/** "2026-06" → "Jun 26" — la pastille du sélecteur, qui doit rester courte. */
-function monthChip(month: string, locale: string): string {
-  const [y, m] = month.split("-").map(Number);
-  return new Intl.DateTimeFormat(locale, { month: "short", year: "2-digit" }).format(
     new Date(Date.UTC(y, m - 1, 1)),
   );
 }
@@ -99,8 +104,34 @@ function monthChip(month: string, locale: string): string {
  * PDF A4 sur fond blanc via « Enregistrer au format PDF » du navigateur.
  * Zéro dépendance ajoutée, et le PDF contient le vrai texte — pas une image.
  */
+/**
+ * LE MOIS EN COURS — construit à la volée, jamais archivé.
+ *
+ * Les rapports stockés ne couvrent que des mois TERMINÉS (règle de
+ * `reportMonths`). Le mois courant est calculé ici, depuis les trades du
+ * compte, par le même `buildMonthlyReport` que le serveur : mêmes chiffres,
+ * mêmes définitions. Il est marqué « en cours » partout où il s'affiche, pour
+ * qu'on ne le prenne jamais pour un bilan définitif.
+ */
+function useLiveMonthRow(trades: Trade[], startingBalance: number): MonthlyReportRow | null {
+  return useMemo(() => {
+    if (trades.length === 0) return null;
+    const month = localMonthOf(new Date());
+    const prev = prevMonthOf(month);
+    const monthTrades = trades.filter((tr) => tr.date.slice(0, 7) === month);
+    const prevTrades = trades.filter((tr) => tr.date.slice(0, 7) === prev);
+    return {
+      id: `live-${month}`,
+      month,
+      report: buildMonthlyReport(month, monthTrades, prevTrades, startingBalance),
+      createdAt: new Date().toISOString(),
+    };
+  }, [trades, startingBalance]);
+}
+
 export default function Reports({ trades }: { trades: Trade[] }) {
   const { user } = useAuth();
+  const { activeAccount } = useAccounts();
   const { t, lang } = useT();
   const { toast } = useToast();
   const locale = LOCALE_MAP[lang] || "en-US";
@@ -188,17 +219,25 @@ export default function Reports({ trades }: { trades: Trade[] }) {
     [generating, refresh, t, toast],
   );
 
+  const liveRow = useLiveMonthRow(trades, activeAccount?.startingBalance ?? 0);
+  /** Les rapports affichables : le mois en cours d'abord, puis les archivés. */
+  const allRows = useMemo(
+    () => (liveRow && !rows.some((r) => r.month === liveRow.month) ? [liveRow, ...rows] : rows),
+    [liveRow, rows],
+  );
+
   // Le mois affiché : celui qu'on a choisi s'il existe encore, sinon le plus
   // récent. Un seul rapport est monté à la fois — c'est ce qui permet à
   // l'impression de n'avoir qu'une feuille à sortir.
   const current = useMemo(
-    () => rows.find((r) => r.month === selected) ?? rows[0] ?? null,
-    [rows, selected],
+    () => allRows.find((r) => r.month === selected) ?? allRows[0] ?? null,
+    [allRows, selected],
   );
+  const currentIsLive = !!current && current.id.startsWith("live-");
 
   // Étape 7: consulter un rapport positif arme la sollicitation d'avis.
   useEffect(() => {
-    if (current && current.report.totalPnl > 0) {
+    if (current && !current.id.startsWith("live-") && current.report.totalPnl > 0) {
       window.dispatchEvent(new CustomEvent("tv:trustpilot-nudge"));
     }
   }, [current]);
@@ -297,7 +336,7 @@ export default function Reports({ trades }: { trades: Trade[] }) {
             </section>
           )}
 
-          {rows.length === 0 || !current ? (
+          {allRows.length === 0 || !current ? (
             <div className="glass animate-fade-in-up stagger-2 rounded-3xl p-10 text-center md:p-14">
               <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-cyan-500/20 bg-cyan-500/10">
                 <FileText className="h-6 w-6 text-cyan-400" />
@@ -307,34 +346,21 @@ export default function Reports({ trades }: { trades: Trade[] }) {
             </div>
           ) : (
             <>
-              {/* LE SÉLECTEUR DE PÉRIODE — une rangée, pas une pile. */}
-              {rows.length > 1 && (
-                <div className="animate-fade-in-up flex items-center gap-2.5">
-                  <span className="tv-label shrink-0 text-slate-500">{t("common.period")}</span>
-                  <div className="tv-scroll-x -mx-1 min-w-0 flex-1 rounded-xl px-1">
-                    <div className="flex w-max gap-1.5 py-0.5">
-                      {rows.map((r) => (
-                        <button
-                          key={r.id}
-                          onClick={() => setSelected(r.month)}
-                          aria-pressed={r.month === current.month}
-                          className={cn("rp-chip", r.month === current.month && "rp-chip-active")}
-                        >
-                          <span className="capitalize">{monthChip(r.month, locale)}</span>
-                          <span
-                            aria-hidden
-                            className={cn(
-                              "h-1.5 w-1.5 shrink-0 rounded-full",
-                              r.report.totalPnl >= 0
-                                ? "bg-[var(--tv-chart-green)]"
-                                : "bg-[var(--tv-chart-red)]",
-                            )}
-                          />
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
+              {/* LE SÉLECTEUR DE PÉRIODE — précédent · mois · suivant.
+                  C'était une rangée de pastilles qui défilait à l'horizontale :
+                  sur téléphone, douze mois faisaient glisser toute la page de
+                  côté. Un seul contrôle compact, de la même largeur partout. */}
+              {allRows.length > 1 && (
+                <MonthSwitcher
+                  months={allRows.map((r) => ({
+                    month: r.month,
+                    live: r.id.startsWith("live-"),
+                    pnl: r.report.totalPnl,
+                  }))}
+                  value={current.month}
+                  onChange={setSelected}
+                  locale={locale}
+                />
               )}
 
               <ReportSheet
@@ -343,6 +369,8 @@ export default function Reports({ trades }: { trades: Trade[] }) {
                 locale={locale}
                 trades={trades}
                 generatedAt={current.createdAt}
+                inProgress={currentIsLive}
+                accountName={activeAccount?.name ?? null}
               />
 
               {missing.length === 0 && (
@@ -368,15 +396,90 @@ function ReportSheet({
   locale,
   trades,
   generatedAt,
+  inProgress,
+  accountName,
 }: {
   row: MonthlyReportRow;
   locale: string;
   trades: Trade[];
   generatedAt: string;
+  inProgress: boolean;
+  accountName: string | null;
 }) {
   const { t } = useT();
+  const currency = useCurrency();
   const r = row.report;
   const gain = r.totalPnl >= 0;
+
+  /* OÙ EN EST LE MOIS. Pour le mois en cours : le jour atteint sur le nombre de
+     jours du mois, et la date jusqu'à laquelle les données vont. */
+  const progress = useMemo(() => {
+    if (!inProgress) return null;
+    const today = todayLocalDate();
+    const [y, m] = row.month.split("-").map(Number);
+    const daysInMonth = new Date(y, m, 0).getDate();
+    const day = Number(today.slice(8, 10));
+    const through = new Intl.DateTimeFormat(locale, { day: "numeric", month: "long" }).format(
+      new Date(`${today}T12:00:00`),
+    );
+    return { day, daysInMonth, through };
+  }, [inProgress, row.month, locale]);
+
+  /** La période couverte, en toutes lettres — pour la couverture du PDF. */
+  const period = useMemo(() => {
+    const [y, m] = row.month.split("-").map(Number);
+    const fmt = new Intl.DateTimeFormat(locale, { day: "numeric", month: "long", year: "numeric" });
+    const start = fmt.format(new Date(y, m - 1, 1, 12));
+    const endDate = inProgress ? new Date(`${todayLocalDate()}T12:00:00`) : new Date(y, m, 0, 12);
+    return `${start} – ${fmt.format(endDate)}`;
+  }, [row.month, locale, inProgress]);
+
+  /* LES SESSIONS DU MOIS — seulement celles qui ont assez de trades pour dire
+     quelque chose (même plancher que les setups). */
+  const sessions = useMemo(() => {
+    const monthTrades = trades.filter((tr) => tr.date.slice(0, 7) === row.month);
+    const by = statsBySession(monthTrades);
+    return (Object.keys(by) as (keyof typeof by)[])
+      .map((k) => ({ key: k, ...by[k] }))
+      .filter((b) => b.count >= MIN_BUCKET_SAMPLE)
+      .sort((a, b) => b.pnl - a.pnl);
+  }, [trades, row.month]);
+
+  /* LES CONSTATS — tirés des chiffres du rapport, jamais inventés. Une ligne
+     n'apparaît que si la donnée qui la fonde existe. */
+  const takeaways = useMemo(() => {
+    const out: string[] = [];
+    const bestWeek = [...r.weekly].sort((a, b) => b.pnl - a.pnl)[0];
+    if (bestWeek && r.weekly.length > 1)
+      out.push(
+        t("reports.tkBestWeek")
+          .replace("{week}", String(bestWeek.week))
+          .replace("{pnl}", formatPnl(bestWeek.pnl)),
+      );
+    if (r.bestSetups[0])
+      out.push(
+        t("reports.tkBestSetup")
+          .replace("{setup}", r.bestSetups[0].strategy)
+          .replace("{pnl}", formatPnl(r.bestSetups[0].pnl)),
+      );
+    if (r.mistakes[0] && r.mistakes[0].cost < 0)
+      out.push(
+        t("reports.tkMistake")
+          .replace("{mistake}", r.mistakes[0].name)
+          .replace("{n}", String(r.mistakes[0].count))
+          .replace("{pnl}", formatPnl(r.mistakes[0].cost)),
+      );
+    if (r.prev)
+      out.push(
+        t(r.totalPnl >= r.prev.totalPnl ? "reports.tkMomUp" : "reports.tkMomDown").replace(
+          "{pnl}",
+          formatPnl(Math.abs(r.totalPnl - r.prev.totalPnl)),
+        ),
+      );
+    return out;
+    // `currency` : les montants des constats se réécrivent avec la devise.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [r, t, currency]);
 
   // LA COURBE DU MOIS — le cumul jour par jour, reconstruit depuis les trades
   // du compte affiché. Le rapport stocké ne garde que des paquets
@@ -412,12 +515,48 @@ function ReportSheet({
 
   return (
     <article className="tv-print-sheet glass animate-fade-in-up overflow-hidden rounded-3xl">
-      {/* L'EN-TÊTE DE PAPIER — invisible à l'écran (la page a déjà son titre),
-          il n'apparaît que sur le PDF, où la feuille arrive seule. */}
-      <div className="rp-print-only rp-paper-head">
-        <span className="rp-paper-brand">TradeVault</span>
-        <span>{t("reports.docLabel")}</span>
-        <span className="rp-paper-date">{printedOn}</span>
+      {/* LE BANDEAU DE TÊTE DU PDF — invisible à l'écran (la page a déjà son
+          titre et son sélecteur).
+
+          Il remplace une COUVERTURE pleine page : un logo, un titre et quatre
+          métadonnées sur une feuille A4 entière, soit un tiers du document pour
+          ne rien dire que ces quatre lignes ne disent pas. Le rapport visait
+          trois ou quatre pages ; il en vise désormais une, deux au plus, et
+          tout ce que la couverture annonçait — marque, nature du document,
+          statut, compte, période, devise, date — tient ici sur deux lignes. */}
+      <div className="rp-print-only rp-masthead">
+        <div className="rp-mast-row">
+          <span className="rp-paper-brand">
+            <img src={logoSrc} alt="" width={22} height={22} />
+            TradeVault
+          </span>
+          <span className="rp-mast-doc">{t("reports.docLabel")}</span>
+          <span className={cn("rp-cover-status", inProgress && "rp-cover-status-live")}>
+            {inProgress ? t("reports.inProgress") : t("reports.final")}
+          </span>
+        </div>
+        <dl className="rp-mast-meta">
+          {accountName && (
+            <div>
+              <dt>{t("reports.coverAccount")}</dt>
+              <dd>{accountName}</dd>
+            </div>
+          )}
+          <div>
+            <dt>{t("reports.coverPeriod")}</dt>
+            <dd>{period}</dd>
+          </div>
+          <div>
+            <dt>{t("reports.coverCurrency")}</dt>
+            <dd>
+              {currency} · {currencySymbol(currency)}
+            </dd>
+          </div>
+          <div>
+            <dt>{t("reports.coverGenerated")}</dt>
+            <dd>{printedOn}</dd>
+          </div>
+        </dl>
       </div>
 
       {/* ── LE VERDICT ─────────────────────────────────────────────────── */}
@@ -425,7 +564,15 @@ function ReportSheet({
         <div className="min-w-0">
           {/* Sur le papier, l'en-tête de feuille porte déjà « rapport
               mensuel » : le sourcil ne le répéterait que pour rien. */}
-          <div className="rp-eyebrow tv-label text-slate-500">{t("reports.docLabel")}</div>
+          <div className="rp-eyebrow tv-label flex items-center gap-2 text-slate-500">
+            {inProgress ? t("reports.currentMonth") : t("reports.docLabel")}
+            {inProgress && (
+              <span className="rp-pill rp-pill-live">
+                <Clock3 className="h-3 w-3" />
+                {t("reports.inProgress")}
+              </span>
+            )}
+          </div>
           <h2 className="font-display mt-0.5 text-xl font-bold capitalize leading-tight text-white md:text-2xl">
             {monthLabel(row.month, locale)}
           </h2>
@@ -442,6 +589,19 @@ function ReportSheet({
               {r.wins}W / {r.losses}L{r.breakEven ? ` / ${r.breakEven}BE` : ""}
             </span>
           </p>
+          {progress && (
+            <p className="rp-progress mt-2">
+              <span className="rp-progress-track" aria-hidden>
+                <span style={{ width: `${(progress.day / progress.daysInMonth) * 100}%` }} />
+              </span>
+              <span className="tv-row-label">
+                {t("reports.progressDays")
+                  .replace("{d}", String(progress.day))
+                  .replace("{n}", String(progress.daysInMonth))
+                  .replace("{date}", progress.through)}
+              </span>
+            </p>
+          )}
         </div>
 
         <div className="rp-verdict">
@@ -454,10 +614,14 @@ function ReportSheet({
             {formatPnl(r.totalPnl)}
           </div>
           <div className="mt-2 flex items-center justify-end gap-2">
-            <span className={cn("rp-pill", gain ? "rp-pill-pos" : "rp-pill-neg")}>
-              {gain ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-              {gain ? t("reports.positive") : t("reports.negative")}
-            </span>
+            {/* Un mois en cours n'a pas encore de verdict : « mois positif »
+                sur un 12 du mois serait une conclusion prématurée. */}
+            {!inProgress && (
+              <span className={cn("rp-pill", gain ? "rp-pill-pos" : "rp-pill-neg")}>
+                {gain ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                {gain ? t("reports.positive") : t("reports.negative")}
+              </span>
+            )}
             {momDelta !== null && (
               <span className={cn("tv-figure text-[11px]", momDelta >= 0 ? "rp-pos" : "rp-neg")}>
                 {momDelta >= 0 ? "▲" : "▼"} {formatPnl(Math.abs(momDelta))}
@@ -466,6 +630,13 @@ function ReportSheet({
           </div>
         </div>
       </header>
+
+      {inProgress && (
+        <div className="rp-section rp-provisional">
+          <Clock3 className="h-3.5 w-3.5 shrink-0" />
+          <span>{t("reports.provisionalNote")}</span>
+        </div>
+      )}
 
       {/* ── LES CHIFFRES DE TÊTE ───────────────────────────────────────── */}
       <div className="rp-section rp-kpis">
@@ -500,7 +671,7 @@ function ReportSheet({
       {curve.length > 1 && (
         <section className="rp-section">
           <SectionTitle sub={t("reports.curveSub")}>{t("reports.curve")}</SectionTitle>
-          <div className="h-[240px] md:h-[280px]">
+          <div className="rp-curve h-[240px] md:h-[280px]">
             <EquityChart data={curve} />
           </div>
         </section>
@@ -510,7 +681,9 @@ function ReportSheet({
       {weekly.length > 0 && (
         <section className="rp-section">
           <SectionTitle sub={t("reports.weeklySub")}>{t("reports.weekly")}</SectionTitle>
-          <div className="h-[190px]">
+          {/* Sur le papier, le graphe s'efface devant la table qui le suit :
+              mêmes montants, cinq fois moins de hauteur. */}
+          <div className="rp-screen-only h-[190px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={weekly} margin={{ top: 8, right: 4, bottom: 0, left: 0 }}>
                 <CartesianGrid {...EQUITY_GRID} />
@@ -557,42 +730,76 @@ function ReportSheet({
         </section>
       )}
 
-      {/* ── LA COMPOSITION ─────────────────────────────────────────────── */}
-      {r.trades > 0 && (
-        <section className="rp-section">
-          <SectionTitle sub={t("reports.mixSub")}>{t("reports.mix")}</SectionTitle>
-          <MixBar wins={r.wins} losses={r.losses} breakEven={r.breakEven} total={r.trades} />
-        </section>
-      )}
+      {/* Composition et sessions : l'une sous l'autre à l'écran, côte à côte
+          sur le papier (`.rp-duo`) — deux blocs courts qui prenaient chacun
+          toute la largeur d'une A4. */}
+      <div className="rp-duo">
+        {/* ── LA COMPOSITION ─────────────────────────────────────────────── */}
+        {r.trades > 0 && (
+          <section className="rp-section">
+            <SectionTitle sub={t("reports.mixSub")}>{t("reports.mix")}</SectionTitle>
+            <MixBar wins={r.wins} losses={r.losses} breakEven={r.breakEven} total={r.trades} />
+          </section>
+        )}
 
-      {/* ── LA COMPARAISON ─────────────────────────────────────────────── */}
-      {r.prev && (
-        <section className="rp-section">
-          <SectionTitle>{t("reports.mom")}</SectionTitle>
-          <div className="rp-momgrid">
-            <MomCell
-              label={t("stats.totalPnl")}
-              prev={formatPnl(r.prev.totalPnl)}
-              now={formatPnl(r.totalPnl)}
-              up={r.totalPnl >= r.prev.totalPnl}
+        {/* ── LES SESSIONS ───────────────────────────────────────────────── */}
+        {sessions.length > 0 && (
+          <section className="rp-section">
+            <SectionTitle sub={t("reports.sessionsSub")}>{t("reports.sessions")}</SectionTitle>
+            <BarList
+              rows={sessions.map((b) => ({
+                key: b.key,
+                label: t(`session.${b.key}` as never),
+                meta: `×${b.count}`,
+                value: Math.round(b.pnl * 100) / 100,
+              }))}
             />
-            <MomCell
-              label={t("stats.winRate")}
-              prev={formatPct(r.prev.winRate)}
-              now={formatPct(r.winRate)}
-              up={r.winRate >= r.prev.winRate}
-            />
-            <MomCell
-              label={t("stats.trades")}
-              prev={String(r.prev.trades)}
-              now={String(r.trades)}
-              up={r.trades >= r.prev.trades}
-              neutral
-            />
-          </div>
-          <p className="tv-row-label mt-2 capitalize">{monthLabel(r.prev.month, locale)}</p>
-        </section>
-      )}
+          </section>
+        )}
+      </div>
+
+      <div className="rp-duo">
+        {/* ── LA COMPARAISON ─────────────────────────────────────────────── */}
+        {r.prev && (
+          <section className="rp-section">
+            <SectionTitle>{t("reports.mom")}</SectionTitle>
+            <div className="rp-momgrid">
+              <MomCell
+                label={t("stats.totalPnl")}
+                prev={formatPnl(r.prev.totalPnl)}
+                now={formatPnl(r.totalPnl)}
+                up={r.totalPnl >= r.prev.totalPnl}
+              />
+              <MomCell
+                label={t("stats.winRate")}
+                prev={formatPct(r.prev.winRate)}
+                now={formatPct(r.winRate)}
+                up={r.winRate >= r.prev.winRate}
+              />
+              <MomCell
+                label={t("stats.trades")}
+                prev={String(r.prev.trades)}
+                now={String(r.trades)}
+                up={r.trades >= r.prev.trades}
+                neutral
+              />
+            </div>
+            <p className="tv-row-label mt-2 capitalize">{monthLabel(r.prev.month, locale)}</p>
+          </section>
+        )}
+
+        {/* ── LES CONSTATS ───────────────────────────────────────────────── */}
+        {takeaways.length > 0 && (
+          <section className="rp-section">
+            <SectionTitle>{t("reports.takeaways")}</SectionTitle>
+            <ul className="rp-takeaways">
+              {takeaways.map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ul>
+          </section>
+        )}
+      </div>
 
       {/* ── LE DÉBRIEF DE JARVIS ───────────────────────────────────────── */}
       {r.aiSummary && (
@@ -609,7 +816,7 @@ function ReportSheet({
       {/* ── LES SETUPS ─────────────────────────────────────────────────── */}
       {(r.bestSetups.length > 0 || r.worstSetups.length > 0) && (
         <section className="rp-section">
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="rp-setups grid gap-4 md:grid-cols-2">
             {r.bestSetups.length > 0 && (
               <SetupList title={t("reports.bestSetups")} setups={r.bestSetups} positive />
             )}
@@ -637,8 +844,14 @@ function ReportSheet({
         </section>
       )}
 
+      {/* LE PIED — le domaine d'abord : c'est l'adresse où l'on retrouve le
+          produit quand le PDF circule hors de l'application. */}
       <div className="rp-print-only rp-paper-foot">
-        TradeVault · {monthLabel(row.month, locale)} · {printedOn}
+        <span className="rp-paper-domain">{SITE_HOST}</span>
+        <span>
+          TradeVault · <span className="capitalize">{monthLabel(row.month, locale)}</span> ·{" "}
+          {inProgress ? t("reports.inProgress") : printedOn}
+        </span>
       </div>
     </article>
   );
@@ -868,6 +1081,98 @@ function SetupList({
           value: s.pnl,
         }))}
       />
+    </div>
+  );
+}
+
+/**
+ * LE SÉLECTEUR DE MOIS — précédent · mois · suivant, et la liste complète au
+ * toucher du libellé : le sélecteur de la famille TradeVault, pas la liste
+ * système, et rien à faire défiler de côté.
+ */
+function MonthSwitcher({
+  months,
+  value,
+  onChange,
+  locale,
+}: {
+  months: { month: string; live: boolean; pnl: number }[];
+  value: string;
+  onChange: (m: string) => void;
+  locale: string;
+}) {
+  const { t } = useT();
+  // `months` va du plus récent au plus ancien.
+  const idx = Math.max(
+    0,
+    months.findIndex((m) => m.month === value),
+  );
+  const cur = months[idx];
+  const older = months[idx + 1];
+  const newer = idx > 0 ? months[idx - 1] : undefined;
+  return (
+    <div className="rp-switch animate-fade-in-up">
+      <button
+        type="button"
+        className="rp-switch-btn"
+        onClick={() => older && onChange(older.month)}
+        disabled={!older}
+        aria-label={t("reports.prevMonth")}
+      >
+        <ChevronLeft className="h-4 w-4" />
+      </button>
+      <SelectPicker
+        label={t("reports.pickMonth")}
+        value={value}
+        onChange={onChange}
+        width="16rem"
+        className="min-w-0 flex-1"
+        options={months.map((m) => ({
+          value: m.month,
+          label: monthLabel(m.month, locale),
+          hint: m.live ? t("reports.inProgress") : undefined,
+        }))}
+        renderTrigger={({ open, toggle, controls }) => (
+          <button
+            type="button"
+            onClick={toggle}
+            aria-haspopup="listbox"
+            aria-expanded={open}
+            aria-controls={controls}
+            aria-label={t("reports.pickMonth")}
+            className="rp-switch-label w-full"
+          >
+            <span
+              aria-hidden
+              className={cn(
+                "h-1.5 w-1.5 shrink-0 rounded-full",
+                cur.live
+                  ? "bg-amber-400"
+                  : cur.pnl >= 0
+                    ? "bg-[var(--tv-chart-green)]"
+                    : "bg-[var(--tv-chart-red)]",
+              )}
+            />
+            <span className="truncate capitalize">{monthLabel(cur.month, locale)}</span>
+            {cur.live && <span className="rp-switch-live">{t("reports.inProgress")}</span>}
+            <ChevronDown
+              className={cn(
+                "h-3.5 w-3.5 shrink-0 text-slate-500 transition-transform",
+                open && "rotate-180",
+              )}
+            />
+          </button>
+        )}
+      />
+      <button
+        type="button"
+        className="rp-switch-btn"
+        onClick={() => newer && onChange(newer.month)}
+        disabled={!newer}
+        aria-label={t("reports.nextMonth")}
+      >
+        <ChevronRight className="h-4 w-4" />
+      </button>
     </div>
   );
 }

@@ -31,14 +31,14 @@ export function maxContextBytes(): number {
  */
 export const TradeSummarySchema = z.object({
   date: z.string().max(10),
-  symbol: z.string().max(20),
-  direction: z.string().max(10),
+  symbol: z.string().max(AI_LIMITS.tradeSymbol),
+  direction: z.string().max(AI_LIMITS.tradeDirection),
   pnl: z.number(),
   rMultiple: z.number(),
-  strategy: z.string().max(50),
-  mistakes: z.array(z.string().max(100)).max(20),
+  strategy: z.string().max(AI_LIMITS.tradeStrategy),
+  mistakes: z.array(z.string().max(AI_LIMITS.tradeTag)).max(AI_LIMITS.tradeMistakes),
   setupQuality: z.number(),
-  confluences: z.array(z.string().max(100)).max(30),
+  confluences: z.array(z.string().max(AI_LIMITS.tradeTag)).max(AI_LIMITS.tradeConfluences),
   notes: z.string().max(AI_LIMITS.tradeNote).optional(),
 });
 

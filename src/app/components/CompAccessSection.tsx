@@ -3,7 +3,7 @@ import { Gift, Plus, Trash2, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useT } from "../i18n/LanguageContext";
 import { useToast } from "../contexts/ToastContext";
-import { Button, Input, Select } from "@/shared/ui";
+import { Button, Input, SelectPicker } from "@/shared/ui";
 import { PAID_TIERS, TIER_BY_ID, planId, type PaidPlan } from "../utils/pricing";
 
 /**
@@ -120,8 +120,8 @@ export default function CompAccessSection() {
   return (
     <div className="glass-strong space-y-4 rounded-3xl p-5">
       <div className="flex items-center gap-2.5">
-        <span className="grid h-8 w-8 place-items-center rounded-lg bg-violet-500">
-          <Gift className="h-4 w-4 text-white" />
+        <span className="grid h-8 w-8 place-items-center rounded-lg tv-accent-fill">
+          <Gift className="h-4 w-4" />
         </span>
         <div className="min-w-0">
           <h2 className="tv-title">{fr ? "Accès offert" : "Complimentary access"}</h2>
@@ -141,13 +141,18 @@ export default function CompAccessSection() {
           placeholder="influenceur@exemple.com"
           autoComplete="off"
         />
-        <Select value={plan} onChange={(e) => setPlan(e.target.value as PaidPlan)}>
-          {PAID_TIERS.map((t) => (
-            <option key={t} value={planId(t, "yearly")}>
-              {TIER_BY_ID[t].name[fr ? "fr" : "en"]}
-            </option>
-          ))}
-        </Select>
+        <SelectPicker
+          variant="field"
+          label={fr ? "Offre" : "Plan"}
+          value={plan}
+          onChange={(v) => setPlan(v as PaidPlan)}
+          className="h-10"
+          width="12rem"
+          options={PAID_TIERS.map((t) => ({
+            value: planId(t, "yearly"),
+            label: TIER_BY_ID[t].name[fr ? "fr" : "en"],
+          }))}
+        />
         <Button onClick={add} disabled={busy}>
           <Plus className="h-4 w-4" />
           {fr ? "Ajouter" : "Add"}
@@ -171,7 +176,7 @@ export default function CompAccessSection() {
               key={g.email}
               className="flex items-center gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3.5 py-2.5"
             >
-              <ShieldCheck className="h-4 w-4 shrink-0 text-violet-400" />
+              <ShieldCheck className="h-4 w-4 shrink-0 text-[var(--tv-highlight)]" />
               <div className="min-w-0 flex-1">
                 <div className="truncate text-[13px] font-semibold text-white">{g.email}</div>
                 <div className="truncate text-[11px] text-slate-500">

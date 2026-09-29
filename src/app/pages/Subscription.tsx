@@ -7,7 +7,6 @@ import {
   Bitcoin,
   CalendarClock,
   RefreshCw,
-  Receipt,
   Download,
   Lock,
   Loader2,
@@ -141,155 +140,158 @@ export default function Subscription({ trades = [] }: { trades?: Trade[] } = {})
 
   return (
     <div className="mx-auto max-w-[1000px] space-y-3 p-4 md:p-5">
-      {/* ══ 1 · OÙ J'EN SUIS ═══════════════════════════════════════════════
-          Une bande d'état, teintée par l'état lui-même. C'est elle qui rend
-          une annulation IMPOSSIBLE à manquer : elle change de couleur, de
-          titre, de phrase et d'action d'un seul coup. */}
+      {/* ══ 1 · MON ADHÉSION — UNE SEULE CARTE ══════════════════════════════
+          Quatre blocs disaient la même chose en quatre surfaces : une bande
+          d'état, une grille de quatre cases d'un mot chacune, une carte de
+          facturation qui répétait le bouton « Gérer », et un bloc d'échelle
+          posé à part. Ils deviennent UNE carte, lue de haut en bas comme une
+          carte de membre : l'offre et son état, le prix, les faits sur une
+          ligne, l'action. La couleur de l'état reste celle qui ne se rate pas
+          — une annulation se voit toujours au premier regard. */}
       <section
-        className={cn("animate-fade-in-up rounded-3xl border px-4 py-4 sm:px-5", meta.surface)}
+        className={cn("sub-hero animate-fade-in-up", `sub-hero-${etat}`)}
+        aria-busy={loading || undefined}
       >
-        <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
-          <div className="flex min-w-0 flex-1 basis-[280px] items-start gap-3">
-            <span
-              className={cn(
-                "grid h-9 w-9 shrink-0 place-items-center rounded-xl border",
-                meta.badge,
+        <div className="sub-hero-top">
+          <div className="min-w-0 flex-1">
+            <p className="tv-label text-slate-500">{t("sub.yourPlan")}</p>
+            <h1 className="sub-hero-title">
+              {loading ? (
+                <span className="inline-block h-7 w-48 animate-pulse rounded-lg bg-white/[0.06]" />
+              ) : paid ? (
+                <>
+                  TradeVault{" "}
+                  <span className="sub-hero-tier">
+                    {TIER_BY_ID[currentTier].name[fr ? "fr" : "en"]}
+                  </span>
+                </>
+              ) : (
+                t("billing.planFree")
               )}
-            >
-              <meta.icon className="h-4 w-4" />
-            </span>
-            <div className="min-w-0">
-              <h2 className={cn("tv-title", meta.titleClass)}>{meta.title(tr, planLabel)}</h2>
-              <p className="tv-prose mt-1 text-slate-400">
-                {loading
-                  ? tr("Chargement de ton statut…", "Loading your status…")
-                  : meta.body(tr, fin)}
-              </p>
-            </div>
+            </h1>
+            {!loading && (
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                {sub && <Pastille etat={etat} tr={tr} t={t} />}
+                {paid && (
+                  <span className="tv-row-label">
+                    {intervalOf(sub?.plan ?? "free") === "yearly"
+                      ? t("sub.billedYearly")
+                      : t("sub.billedMonthly")}
+                  </span>
+                )}
+              </div>
+            )}
+            <p className="tv-prose mt-3 max-w-xl text-slate-400">
+              {loading ? t("sub.loading") : meta.body(tr, fin)}
+            </p>
           </div>
 
           {!loading && (
-            <div className="flex shrink-0 items-end gap-4">
-              <div className="text-right">
-                <div
-                  className={cn(
-                    "tv-figure text-2xl leading-none",
-                    etat === "active" || etat === "lifetime" ? "rp-pos" : "text-white",
-                  )}
-                >
-                  {paid && sub ? eur(planPrice(sub.plan as PaidPlan), lang) : eur(0, lang)}
-                </div>
-                <div className="tv-row-label mt-1">
-                  {paid
-                    ? intervalOf(sub?.plan ?? "free") === "yearly"
-                      ? `${t("billing.perYear")} · ${eur(
-                          Math.round(yearlyPerMonth(currentTier) * 100) / 100,
-                          lang,
-                        )}${t("billing.perMonth")}`
-                      : t("billing.perMonth")
-                    : tr("/ toujours", "/ forever")}
-                </div>
+            <div className="sub-hero-price">
+              <div className="tv-figure text-3xl leading-none text-white md:text-4xl">
+                {paid && sub ? eur(planPrice(sub.plan as PaidPlan), lang) : eur(0, lang)}
+              </div>
+              <div className="tv-row-label mt-1.5">
+                {paid
+                  ? intervalOf(sub?.plan ?? "free") === "yearly"
+                    ? `${t("billing.perYear")} · ${eur(
+                        Math.round(yearlyPerMonth(currentTier) * 100) / 100,
+                        lang,
+                      )}${t("billing.perMonth")}`
+                    : t("billing.perMonth")
+                  : t("sub.forever")}
               </div>
             </div>
           )}
         </div>
 
+        {/* LES FAITS — sur une ligne, séparés par des filets : ils se lisent
+            comme les mentions d'une carte, pas comme quatre tableaux de bord. */}
+        {!loading && sub && paid && (
+          <KpiGrid className="sub-hero-facts">
+            <Kpi
+              inset
+              label={sub.cancelAtPeriodEnd ? t("billing.accessUntil") : t("sub.nextBilling")}
+              value={fin ?? "—"}
+              tone={sub.cancelAtPeriodEnd ? "warn" : "neutral"}
+              adornment={<CalendarClock className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
+            />
+            <Kpi
+              inset
+              label={t("sub.payment")}
+              value={
+                sub.source === "crypto"
+                  ? t("sub.payCrypto")
+                  : sub.source === "stripe"
+                    ? t("sub.payCard")
+                    : t("sub.payComp")
+              }
+              adornment={
+                sub.source === "crypto" ? (
+                  <Bitcoin className="h-3.5 w-3.5 shrink-0 text-slate-500" />
+                ) : (
+                  <CreditCard className="h-3.5 w-3.5 shrink-0 text-slate-500" />
+                )
+              }
+            />
+            <Kpi
+              inset
+              label={t("sub.renewal")}
+              value={
+                sub.cancelAtPeriodEnd
+                  ? t("sub.renewStopped")
+                  : sub.source === "crypto"
+                    ? t("sub.renewManual")
+                    : sub.source === "stripe"
+                      ? t("sub.renewAuto")
+                      : "—"
+              }
+              tone={sub.cancelAtPeriodEnd ? "warn" : "neutral"}
+              adornment={<RefreshCw className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
+            />
+          </KpiGrid>
+        )}
+
         {/* L'ACTION DE L'ÉTAT — reprendre, mettre à jour, gérer. Un seul
-            bouton, celui qui correspond à la situation. */}
+            bouton, celui qui correspond à la situation, et ce qu'il ouvre. */}
         {!loading && actionDisponible && (
-          <button
-            onClick={() => void agir()}
-            disabled={busy}
-            className={cn(
-              "mt-3.5 flex w-full items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold transition sm:w-auto",
-              "h-10 disabled:opacity-60",
-              meta.actionStrong
-                ? "tv-accent-fill"
-                : "border border-[var(--tv-border)] bg-[var(--tv-plate-2)] text-slate-200 hover:bg-[var(--tv-plate-3)]",
+          <div className="sub-hero-foot">
+            <button
+              onClick={() => void agir()}
+              disabled={busy}
+              className={cn(
+                "flex h-10 w-full items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold transition disabled:opacity-60 sm:w-auto",
+                meta.actionStrong
+                  ? "tv-accent-fill"
+                  : "border border-[var(--tv-border-strong)] bg-[var(--tv-plate-3)] text-slate-100 hover:border-[var(--tv-border-accent)]",
+              )}
+            >
+              {busy ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <meta.actionIcon className="h-4 w-4" />
+              )}
+              {meta.action!(tr)}
+              {!busy && <ExternalLink className="h-3.5 w-3.5 opacity-60" />}
+            </button>
+            {sub?.hasStripeCustomer && (
+              <p className="tv-row-label max-w-md">{t("billing.portalHint")}</p>
             )}
-          >
-            {busy ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <meta.actionIcon className="h-4 w-4" />
-            )}
-            {meta.action!(tr)}
-            {!busy && <ExternalLink className="h-3.5 w-3.5 opacity-60" />}
-          </button>
+          </div>
         )}
       </section>
 
-      {/* ══ 2 · LES FAITS ══════════════════════════════════════════════════
-          Quatre cases compactes, et seulement quand il y a un abonnement à
-          décrire. Elles portaient le rembourrage d'une carte pour afficher un
-          mot chacune. */}
-      {!loading && sub && paid && (
-        <KpiGrid cols={4} className="animate-fade-in-up stagger-1">
-          <Kpi
-            label={tr("Formule", "Plan")}
-            value={planLabel}
-            adornment={<Receipt className="h-3 w-3 shrink-0 text-slate-500" />}
-          />
-          <Kpi
-            label={
-              sub.cancelAtPeriodEnd
-                ? tr("Accès jusqu'au", "Access until")
-                : tr("Prochaine échéance", "Next billing")
-            }
-            value={fin ?? "—"}
-            tone={sub.cancelAtPeriodEnd ? "warn" : "neutral"}
-            adornment={<CalendarClock className="h-3 w-3 shrink-0 text-slate-500" />}
-          />
-          <Kpi
-            label={tr("Paiement", "Payment")}
-            value={
-              sub.source === "crypto"
-                ? tr("Crypto", "Crypto")
-                : sub.source === "stripe"
-                  ? tr("Carte", "Card")
-                  : tr("Aucun", "None")
-            }
-            adornment={
-              sub.source === "crypto" ? (
-                <Bitcoin className="h-3 w-3 shrink-0 text-slate-500" />
-              ) : (
-                <CreditCard className="h-3 w-3 shrink-0 text-slate-500" />
-              )
-            }
-          />
-          <Kpi
-            label={tr("Renouvellement", "Renewal")}
-            value={
-              sub.cancelAtPeriodEnd
-                ? tr("Arrêté", "Stopped")
-                : sub.source === "crypto"
-                  ? tr("Manuel", "Manual")
-                  : tr("Automatique", "Automatic")
-            }
-            tone={sub.cancelAtPeriodEnd ? "warn" : "neutral"}
-            adornment={<RefreshCw className="h-3 w-3 shrink-0 text-slate-500" />}
-          />
-        </KpiGrid>
-      )}
+      {/* ══ 2 · CHOISIR / RENOUVELER ══════════════════════════════════════
+          La grille tarifaire (offre gratuite, essai) ou le renouvellement
+          crypto. Le bouton « Gérer » n'y est plus répété quand la carte
+          d'adhésion le porte déjà. */}
+      <SubscriptionSection showPortal={!actionDisponible} />
 
-      {/* ══ 3 · CE QUE JE PEUX FAIRE MAINTENANT ════════════════════════════
-          La grille tarifaire et le paiement. Elle arrivait en QUATRIÈME
-          position, après la matrice de fonctionnalités : le visiteur qui
-          voulait souscrire devait faire défiler une page de comparaison pour
-          trouver un bouton. C'est le bloc de facturation existant, inchangé
-          dans sa logique — seule sa place dans la lecture change. */}
-      <div className="animate-fade-in-up stagger-2">
-        <SubscriptionSection />
-      </div>
-
-      {/* ══ 3 bis · LE PRIX, À L'ÉCHELLE DE SON JOURNAL ═══════════════════
-          Juste après le prix, avant le détail des offres : c'est là que la
-          question « quinze euros, c'est cher ? » se pose. Le bloc n'y répond
-          pas par une promesse de gain — le produit n'exécute aucun trade — mais
-          en posant le montant dans l'échelle que le trader utilise déjà. Il ne
-          s'affiche pas tant que son journal ne porte pas assez de pertes pour
-          que la moyenne en soit une. */}
-      <PlanScaleBlock trades={trades} />
+      {/* ══ 3 · LE PRIX, À L'ÉCHELLE DE SON JOURNAL ═══════════════════════
+          Seulement pour qui décide encore : à un abonné, l'argument ne sert
+          plus à rien. Il ne s'affiche pas tant que le journal ne porte pas
+          assez de pertes pour que la moyenne en soit une. */}
+      {!loading && !paid && <PlanScaleBlock trades={trades} />}
 
       {/* ══ 4 · CE QUE ÇA CONTIENT ═════════════════════════════════════════
           Une matrice, pas une liste : chaque fonctionnalité n'apparaît qu'une
