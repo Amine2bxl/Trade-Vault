@@ -5823,3 +5823,31 @@ body::after {
   border-color: rgb(255 255 255 / 0.03);
   background: var(--tv-plate-2);
 }
+/* UN JOUR D'UN MOIS VOISIN — daté, lisible, mais en retrait : pas de plaque,
+   un liseré pointillé, le numéro éteint. On comprend d'un coup d'œil « ce
+   jour est là pour compléter la semaine, il n'appartient pas au mois ». */
+.cal-cell-out {
+  border-style: dashed;
+  border-color: rgb(255 255 255 / 0.06);
+  background: transparent;
+}
+/* La case de semaine (bureau) et sa ligne (téléphone) : même plaque que les
+   jours, un cran plus sombre — c'est un total, pas une journée. */
+.cal-week {
+  border: 1px solid var(--tv-border);
+  background: var(--tv-plate-1);
+  transition-property: background-color, border-color;
+  transition-duration: var(--tv-dur-1);
+}
+.cal-week:not(:disabled):hover {
+  background: var(--tv-plate-2);
+  border-color: var(--tv-border-strong);
+}
+.cal-week-strip {
+  background: var(--tv-plate-1);
+  border: 1px solid transparent;
+}
+.cal-week-strip:not(:disabled):active {
+  background: var(--tv-plate-2);
+  border-color: var(--tv-border);
+}

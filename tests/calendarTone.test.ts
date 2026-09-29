@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { dayTone, dayToneBackground } from "../src/app/utils/calendarTone";
+import { dayTone, dayToneFill, dayToneSegments } from "../src/app/utils/calendarTone";
 import type { Trade } from "../src/app/types";
 
 const trade = (pnl: number, rMultiple: number, direction: Trade["direction"] = "long") =>
@@ -26,28 +26,30 @@ describe("teinte d'une journée du calendrier", () => {
     expect(tone.positiveShare).toBeCloseTo(0.75, 5);
   });
 
-  test("journée neutre : break-even seulement → aucune teinte", () => {
+  test("journée neutre : break-even seulement → gris discret, aucun filet", () => {
     const tone = dayTone([trade(0, 0, "be")]);
     expect(tone.kind).toBe("flat");
-    expect(dayToneBackground(tone, 1)).toBeUndefined();
+    expect(dayToneFill(tone, 1)).toContain("148 163 184");
+    expect(dayToneSegments(tone)).toBeNull();
   });
 
-  test("le dégradé ne contient AUCUN texte ni pourcentage lisible — seulement des couleurs du thème", () => {
-    const bg = dayToneBackground(dayTone([trade(200, 2), trade(-100, -1)]), 0.5)!;
-    expect(bg).toContain("--tv-chart-green-rgb");
-    expect(bg).toContain("--tv-chart-red-rgb");
-    // La frontière est posée vers 67 %, adoucie de part et d'autre.
-    expect(bg).toContain(" 60%");
-    expect(bg).toContain(" 74%");
+  test("AUCUN dégradé : le fond est une teinte solide du résultat net", () => {
+    const mixed = dayTone([trade(200, 2), trade(-100, -1)]);
+    const fill = dayToneFill(mixed, 0.5);
+    expect(fill).not.toContain("gradient");
+    expect(fill).toContain("--tv-chart-green-rgb");
+    expect(dayToneFill(dayTone([trade(-300, -3)]), 1)).toContain("--tv-chart-red-rgb");
+    // L'intensité suit l'ampleur, dans une fourchette discrète.
+    expect(dayToneFill(mixed, 0)).toContain("0.060");
+    expect(dayToneFill(mixed, 1)).toContain("0.160");
   });
 
-  test("un break-even se voit : une bande grise entre le vert et le rouge", () => {
+  test("la composition d'une journée mixte se lit dans un filet en aplats", () => {
     const tone = dayTone([trade(200, 2), trade(0, 0, "be"), trade(-100, -1)]);
-    expect(tone.neutralShare).toBeGreaterThan(0);
-    expect(tone.positiveShare).toBeGreaterThan(0.5);
-    const bg = dayToneBackground(tone, 0.5)!;
-    expect(bg).toContain("148 163 184");
-    expect(bg).toContain("--tv-chart-red-rgb");
+    const seg = dayToneSegments(tone)!;
+    expect(seg).toHaveLength(3);
+    expect(seg.reduce((s, x) => s + x.share, 0)).toBeCloseTo(1, 5);
+    expect(dayToneSegments(dayTone([trade(200, 2)]))).toBeNull();
   });
 });
 

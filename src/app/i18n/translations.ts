@@ -820,6 +820,11 @@ const en = {
   "calendar.legendLosingDay": "Losing Day",
   "calendar.legendBreakEvenDay": "Break Even Day",
   "calendar.legendToday": "Today",
+  "calendar.weekPnl": "Week P&L",
+  "calendar.weekTrades": "Trades",
+  "calendar.outsideMonth": "outside this month",
+  "calendar.outsideMonthNote": "Neighbouring month — shown for context, not counted in this month.",
+  "calendar.legendOutside": "Other month (not counted)",
 
   // Analytics
   "analytics.title": "Analytics",

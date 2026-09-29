@@ -75,39 +75,39 @@ export function dayTone(trades: Trade[]): DayTone {
 }
 
 /**
- * Le fond d'une case : un dégradé diagonal vert → rouge dont la frontière se
- * pose à la part positive. Couleurs de performance du thème (`--tv-chart-*`),
- * jamais d'arc-en-ciel : deux teintes, une transition douce, une intensité
- * qui suit l'ampleur de la journée dans le mois (`intensity` de 0 à 1).
+ * LE FOND D'UNE CASE — une teinte SOLIDE, jamais un dégradé.
+ *
+ * Le dégradé vert → gris → rouge, qui composait la journée dans la case, se
+ * lisait comme un bonbon : trop de couleur, trop de mouvement pour une grille
+ * qu'on parcourt d'un regard. La case porte désormais UNE teinte à peine
+ * posée, celle du résultat net ; son intensité suit l'ampleur de la journée
+ * dans le mois (`intensity` de 0 à 1). La composition d'une journée mixte se
+ * lit dans un filet discret (`dayToneSegments`), pas dans le fond.
  */
-export function dayToneBackground(tone: DayTone, intensity: number): string | undefined {
-  if (tone.kind === "flat") return undefined;
-  const a = (0.1 + 0.3 * Math.min(1, Math.max(0, intensity))).toFixed(3);
-  const soft = (Number(a) * 0.45).toFixed(3);
-  const green = (alpha: string) => `rgb(var(--tv-chart-green-rgb) / ${alpha})`;
-  const red = (alpha: string) => `rgb(var(--tv-chart-red-rgb) / ${alpha})`;
-  const grey = `rgb(148 163 184 / ${(Number(a) * 0.6).toFixed(3)})`;
-  // Composition : vert (gains) → gris (équilibre) → rouge (pertes), chaque
-  // frontière adoucie sur ±7 %. Une journée pure garde un seul ton qui s'éteint.
-  const g = Math.round(tone.positiveShare * 100);
-  const n = Math.round((tone.positiveShare + tone.neutralShare) * 100);
-  const soften = (x: number, d: number) => Math.min(100, Math.max(0, x + d));
-  if (tone.kind === "win" && tone.neutralShare === 0)
-    return `linear-gradient(155deg, ${green(a)}, ${green(soft)})`;
-  if (tone.kind === "loss" && tone.neutralShare === 0)
-    return `linear-gradient(155deg, ${red(a)}, ${red(soft)})`;
-  const stops = [`${green(a)} 0%`];
-  if (g > 0) stops.push(`${green(a)} ${soften(g, -7)}%`);
-  if (tone.neutralShare > 0) {
-    stops.push(`${grey} ${soften(g, 7)}%`, `${grey} ${soften(n, -7)}%`);
-  }
-  if (tone.kind === "win") {
-    stops.push(`${green(soft)} 100%`);
-  } else {
-    stops.push(`${red(a)} ${soften(n, 7)}%`, `${red(soft)} 100%`);
-  }
-  if (g === 0) stops[0] = `${red(a)} 0%`;
-  return `linear-gradient(155deg, ${stops.join(", ")})`;
+export function dayToneFill(tone: DayTone, intensity: number): string {
+  const k = Math.min(1, Math.max(0, intensity));
+  const alpha = (0.06 + 0.1 * k).toFixed(3);
+  const sign = tone.kind === "win" ? 1 : tone.kind === "loss" ? -1 : Math.sign(tone.net);
+  if (tone.kind === "flat" || sign === 0) return "rgb(148 163 184 / 0.07)";
+  return sign > 0
+    ? `rgb(var(--tv-chart-green-rgb) / ${alpha})`
+    : `rgb(var(--tv-chart-red-rgb) / ${alpha})`;
+}
+
+/**
+ * LA COMPOSITION D'UNE JOURNÉE MIXTE — un filet de deux pixels, en aplats.
+ * Gains, break-even, pertes, chacun à sa part. `null` pour une journée pure :
+ * sa teinte dit déjà tout.
+ */
+export function dayToneSegments(tone: DayTone): { color: string; share: number }[] | null {
+  if (tone.kind !== "mixed" && tone.neutralShare === 0) return null;
+  if (tone.kind === "flat") return null;
+  const negative = Math.max(0, 1 - tone.positiveShare - tone.neutralShare);
+  return [
+    { color: "rgb(var(--tv-chart-green-rgb) / 0.75)", share: tone.positiveShare },
+    { color: "rgb(148 163 184 / 0.6)", share: tone.neutralShare },
+    { color: "rgb(var(--tv-chart-red-rgb) / 0.75)", share: negative },
+  ].filter((s) => s.share > 0.001);
 }
 
 /**
