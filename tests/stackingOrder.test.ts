@@ -118,8 +118,8 @@ describe("plus personne ne devine un nombre", () => {
         if (value >= 30) offenders.push(`${relative(src, file)} → ${match}`);
       }
     }
-    // `Analytics.tsx` garde un `z-30` : une infobulle `absolute` positionnée
-    // dans sa carte, pas une couche de l'application.
-    expect(offenders).toEqual(["app/pages/Analytics.tsx → z-30"]);
+    // La dernière exception (l'infobulle `z-30` d'Analytics) passe désormais
+    // par l'échelle : portée au niveau du document, elle est une couche.
+    expect(offenders).toEqual([]);
   });
 });
