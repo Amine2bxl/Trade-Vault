@@ -3,7 +3,7 @@ import { Tag, Plus, Trash2, ShieldCheck, Users, Power, ChevronDown } from "lucid
 import { supabase } from "@/integrations/supabase/client";
 import { useT } from "../i18n/LanguageContext";
 import { useToast } from "../contexts/ToastContext";
-import { Button, Input, SelectPicker } from "@/shared/ui";
+import { Button, DateField, Input, SelectPicker } from "@/shared/ui";
 import { PAID_TIERS, TIER_BY_ID, planId, type PaidPlan } from "../utils/pricing";
 
 /**
@@ -228,7 +228,8 @@ export default function PromoCodeSection() {
           onChange={(e) => setMaxUses(e.target.value)}
           placeholder={fr ? "Usages max (vide = ∞)" : "Max uses (blank = ∞)"}
         />
-        <Input type="date" value={expires} onChange={(e) => setExpires(e.target.value)} />
+        {/* Le sélecteur de date de la famille, pas le calendrier blanc du système. */}
+        <DateField value={expires} onChange={setExpires} aria-label="Expires" />
         <Button onClick={add} disabled={busy}>
           <Plus className="h-4 w-4" />
           {fr ? "Créer" : "Create"}

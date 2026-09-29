@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Palette } from "lucide-react";
 import { useT } from "../i18n/LanguageContext";
 import { useTheme } from "../contexts/ThemeContext";
@@ -8,9 +8,7 @@ import { Button } from "@/shared/ui";
 import { usePageActions, usePageLead } from "../contexts/PageActionsContext";
 
 export default function Appearance() {
-  const { t, lang } = useT();
-  const fr = lang === "fr";
-  const tr = useCallback((f: string, e: string) => (fr ? f : e), [fr]);
+  const { t } = useT();
   const { createTheme, active } = useTheme();
 
   const [studioId, setStudioId] = useState<string | null>(null);
@@ -24,7 +22,7 @@ export default function Appearance() {
    */
   const handleCreateTheme = () => {
     const id = createTheme({
-      name: tr("Mon thème", "My theme"),
+      name: t("studio.defaultName"),
       primary: active.primary,
       secondary: active.secondary,
       highlight: active.highlight,
@@ -54,11 +52,11 @@ export default function Appearance() {
     () => (
       <Button variant="accent" size="sm" onClick={handleCreateTheme} className="shrink-0">
         <Palette className="h-3.5 w-3.5" />
-        <span className="hidden sm:inline">{tr("Créer un thème", "Create theme")}</span>
+        <span className="hidden sm:inline">{t("studio.create")}</span>
       </Button>
     ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [tr],
+    [t],
   );
   usePageActions(actions);
 

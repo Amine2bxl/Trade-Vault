@@ -88,13 +88,9 @@ export type { DateFieldProps } from "./DateField";
 export { TimeField } from "./TimeField";
 export type { TimeFieldProps } from "./TimeField";
 export { usePopPlacement } from "./usePopPlacement";
-export {
-  SelectPicker,
-  MultiPicker,
-  RangePicker,
-  summarizeSelection,
-  rangeBounds,
-} from "./Picker";
+export { SelectPicker, MultiPicker, RangePicker, summarizeSelection, rangeBounds } from "./Picker";
+export { ColorPicker } from "./ColorPicker";
+export type { ColorFamily, ColorPickerLabels } from "./ColorPicker";
 export type {
   PickerOption,
   SelectPickerProps,

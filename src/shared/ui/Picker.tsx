@@ -66,8 +66,9 @@ function useNarrow(): boolean {
   );
 }
 
-/* ── Le panneau : ancré (bureau) ou centré (téléphone) ── */
-function PickerPanel({
+/* ── Le panneau : ancré (bureau) ou centré (téléphone) ──
+   Exporté pour les autres membres de la famille (sélecteur de couleur). */
+export function PickerPanel({
   open,
   onClose,
   anchorRef,

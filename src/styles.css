@@ -4061,6 +4061,54 @@ a:focus-visible,
 .tv-pick-search:focus-within {
   border-color: var(--tv-border-accent);
 }
+.tv-pick-search:focus {
+  border-color: var(--tv-border-accent);
+}
+
+/* ── Le sélecteur de couleur : même famille que les autres sélecteurs ──
+   Le déclencheur est une rangée en relief (pastille + nom + famille), les
+   pastilles de la palette sont des plaques colorées avec un liseré interne
+   pour qu'un ton sombre ne se perde pas sur le panneau. */
+.tv-color-trigger {
+  border: 1px solid var(--tv-border);
+  border-radius: 0.875rem;
+  background: var(--tv-plate-2);
+  padding: 0.55rem 0.75rem 0.55rem 0.55rem;
+  box-shadow: var(--tv-relief-edge);
+  transition: border-color var(--tv-dur-1) var(--tv-ease);
+}
+.tv-color-trigger:hover {
+  border-color: var(--tv-border-strong);
+}
+.tv-color-trigger.is-open {
+  border-color: var(--tv-border-accent);
+}
+.tv-color-chip {
+  border-radius: 0.625rem;
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.14),
+    0 1px 2px rgb(0 0 0 / 0.45);
+}
+.tv-color-swatch {
+  display: grid;
+  place-items: center;
+  border-radius: 0.625rem;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.1);
+  transition:
+    transform var(--tv-dur-1) var(--tv-ease),
+    box-shadow var(--tv-dur-1) var(--tv-ease);
+}
+@media (hover: hover) {
+  .tv-color-swatch:hover {
+    transform: scale(1.06);
+  }
+}
+.tv-color-swatch.is-on {
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.2),
+    0 0 0 2px var(--tv-plate-2),
+    0 0 0 3.5px var(--tv-text-primary, #f4f6f8);
+}
 
 /* Une option : la case (ou le point), le libellé, le compte. */
 .tv-pick-opt {
