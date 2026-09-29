@@ -31,7 +31,20 @@ import { intlLocale } from "../i18n/locale";
 import { useTradeFilter } from "../hooks/useTradeFilter";
 import { useAvailableHeight } from "../hooks/useAvailableHeight";
 import TradeDetailModal from "../components/TradeDetailModal";
-import { PageContainer, Button, EmptyState, Card, Modal, Kpi, KpiGrid } from "@/shared/ui";
+import {
+  PageContainer,
+  Button,
+  EmptyState,
+  Card,
+  Modal,
+  Kpi,
+  KpiGrid,
+  SelectPicker,
+  MultiPicker,
+  RangePicker,
+  rangeBounds,
+  type RangeValue,
+} from "@/shared/ui";
 import { usePageActions } from "../contexts/PageActionsContext";
 import { compareChronological } from "../utils/tradeOrder";
 import { currencySymbol } from "@/shared/currency";
@@ -46,8 +59,22 @@ interface JournalProps {
   onAdd: () => void;
   onOpenMissed: () => void;
 }
-const SELECT_PILL =
-  "appearance-none rounded-xl border border-white/[0.06] bg-white/[0.03] px-2.5 py-1.5 text-xs font-semibold text-slate-400 outline-none transition-colors hover:text-slate-200 md:text-sm";
+type PeriodPreset = "all" | "7d" | "30d" | "90d" | "1y";
+const PERIOD_DAYS: Record<PeriodPreset, number | null> = {
+  all: null,
+  "7d": 7,
+  "30d": 30,
+  "90d": 90,
+  "1y": 365,
+};
+/** Le tri, en une seule liste lisible (le tableau garde ses en-têtes cliquables). */
+type SortChoice =
+  | "date-desc"
+  | "date-asc"
+  | "pnl-desc"
+  | "pnl-asc"
+  | "rMultiple-desc"
+  | "symbol-asc";
 
 type SortKey = "date" | "symbol" | "pnl" | "strategy" | "rMultiple";
 type SortDir = "asc" | "desc";
@@ -67,17 +94,36 @@ function dayNames(locale: string): string[] {
 }
 
 interface StoredFilters {
-  strategyFilter: string;
+  /** Setups retenus — vide : tous. (Anciennement une chaîne unique.) */
+  strategies: string[];
   resultFilter: ResultFilter;
   sortKey: SortKey;
   sortDir: SortDir;
-  dayFilter: string;
+  /** Jours retenus (0 = dimanche, comme `getDay()`) — vide : tous. */
+  days: string[];
+}
+
+/** Lit les filtres enregistrés, y compris l'ancien format à valeur unique. */
+function migrateStored(raw: Record<string, unknown>): Partial<StoredFilters> {
+  const arr = (v: unknown, legacy: unknown): string[] =>
+    Array.isArray(v)
+      ? v.filter((x): x is string => typeof x === "string")
+      : typeof legacy === "string" && legacy !== "all"
+        ? [legacy]
+        : [];
+  return {
+    strategies: arr(raw.strategies, raw.strategyFilter),
+    days: arr(raw.days, raw.dayFilter),
+    resultFilter: raw.resultFilter as ResultFilter | undefined,
+    sortKey: raw.sortKey as SortKey | undefined,
+    sortDir: raw.sortDir as SortDir | undefined,
+  };
 }
 
 function loadStoredFilters(): Partial<StoredFilters> {
   try {
     const raw = localStorage.getItem(FILTERS_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : {};
+    return raw ? migrateStored(JSON.parse(raw)) : {};
   } catch {
     return {};
   }
@@ -101,12 +147,12 @@ export default function Journal({
     setFilter: setDeepFilter,
   } = useTradeFilter(trades);
   const [searchQuery, setSearchQuery] = useState("");
-  const [periodFilter, setPeriodFilter] = useState<string>("all");
-  const [strategyFilter, setStrategyFilter] = useState(stored.strategyFilter ?? "all");
+  const [period, setPeriod] = useState<RangeValue<PeriodPreset>>({ kind: "preset", preset: "all" });
+  const [strategies, setStrategies] = useState<string[]>(stored.strategies ?? []);
   const [resultFilter, setResultFilter] = useState<ResultFilter>(stored.resultFilter ?? "all");
   const [sortKey, setSortKey] = useState<SortKey>(stored.sortKey ?? "date");
   const [sortDir, setSortDir] = useState<SortDir>(stored.sortDir ?? "desc");
-  const [dayFilter, setDayFilter] = useState<string>(stored.dayFilter ?? "all");
+  const [days, setDays] = useState<string[]>(stored.days ?? []);
   const [viewingIdx, setViewingIdx] = useState<number | null>(null);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
@@ -115,21 +161,21 @@ export default function Journal({
       localStorage.setItem(
         FILTERS_STORAGE_KEY,
         JSON.stringify({
-          strategyFilter,
+          strategies,
           resultFilter,
           sortKey,
           sortDir,
-          dayFilter,
+          days,
         } satisfies StoredFilters),
       );
     } catch {
       /* best-effort persistence */
     }
-  }, [strategyFilter, resultFilter, sortKey, sortDir, dayFilter]);
+  }, [strategies, resultFilter, sortKey, sortDir, days]);
 
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
-  }, [strategyFilter, resultFilter, dayFilter]);
+  }, [strategies, resultFilter, days, period]);
 
   const filtered = useMemo(() => {
     let list = [...deepLinked];
@@ -144,20 +190,16 @@ export default function Journal({
       );
     }
 
-    if (periodFilter !== "all") {
-      const cutoff = new Date();
-      if (periodFilter === "7d") cutoff.setDate(cutoff.getDate() - 7);
-      else if (periodFilter === "30d") cutoff.setDate(cutoff.getDate() - 30);
-      else if (periodFilter === "90d") cutoff.setDate(cutoff.getDate() - 90);
-      else if (periodFilter === "1y") cutoff.setFullYear(cutoff.getFullYear() - 1);
-      list = list.filter((t) => new Date(t.date) >= cutoff);
-    }
+    // Bornes CIVILES comparées en chaînes : `new Date("YYYY-MM-DD")` est minuit
+    // UTC, la veille à New York — la période perdait ou gagnait un jour.
+    const bounds = rangeBounds(period, PERIOD_DAYS);
+    if (bounds) list = list.filter((t) => t.date >= bounds.from && t.date <= bounds.to);
 
-    if (strategyFilter !== "all") list = list.filter((t) => t.strategy === strategyFilter);
+    if (strategies.length > 0) list = list.filter((t) => strategies.includes(t.strategy));
 
-    if (dayFilter !== "all") {
+    if (days.length > 0) {
       // Midi local : `new Date("YYYY-MM-DD")` est minuit UTC, donc la veille à New York.
-      list = list.filter((t) => new Date(`${t.date}T12:00:00`).getDay().toString() === dayFilter);
+      list = list.filter((t) => days.includes(String(new Date(`${t.date}T12:00:00`).getDay())));
     }
 
     if (resultFilter === "win") list = list.filter((t) => !isBreakEven(t) && t.pnl > 0);
@@ -175,28 +217,18 @@ export default function Journal({
       return sortDir === "desc" ? -cmp : cmp;
     });
     return list;
-  }, [
-    trades,
-    deepLinked,
-    searchQuery,
-    periodFilter,
-    strategyFilter,
-    resultFilter,
-    sortKey,
-    sortDir,
-    dayFilter,
-  ]);
+  }, [trades, deepLinked, searchQuery, period, strategies, resultFilter, sortKey, sortDir, days]);
 
   const counts = useMemo(() => {
     const base =
-      strategyFilter === "all" ? trades : trades.filter((t) => t.strategy === strategyFilter);
+      strategies.length === 0 ? trades : trades.filter((t) => strategies.includes(t.strategy));
     return {
       all: base.length,
       win: base.filter((t) => !isBreakEven(t) && t.pnl > 0).length,
       loss: base.filter((t) => !isBreakEven(t) && t.pnl < 0).length,
       be: base.filter(isBreakEven).length,
     } as Record<ResultFilter, number>;
-  }, [trades, strategyFilter]);
+  }, [trades, strategies]);
 
   const summary = useMemo(() => computeStats(filtered), [filtered]);
 
@@ -227,23 +259,68 @@ export default function Journal({
      feuille. La recherche et le segment Résultat restent visibles à l'écran :
      les compter donnerait un badge qui s'allume pour un filtre qu'on a sous
      les yeux. */
+  const periodActive = period.kind === "custom" || period.preset !== "all";
   const sheetFilterCount =
-    (periodFilter !== "all" ? 1 : 0) +
-    (strategyFilter !== "all" ? 1 : 0) +
-    (dayFilter !== "all" ? 1 : 0);
+    (periodActive ? 1 : 0) + (strategies.length > 0 ? 1 : 0) + (days.length > 0 ? 1 : 0);
 
   const resetFilters = () => {
-    setPeriodFilter("all");
-    setStrategyFilter("all");
-    setDayFilter("all");
+    setPeriod({ kind: "preset", preset: "all" });
+    setStrategies([]);
+    setDays([]);
   };
 
   const activeFilterCount =
-    (periodFilter !== "all" ? 1 : 0) +
-    (strategyFilter !== "all" ? 1 : 0) +
-    (dayFilter !== "all" ? 1 : 0) +
-    (resultFilter !== "all" ? 1 : 0) +
-    (searchQuery.trim() ? 1 : 0);
+    sheetFilterCount + (resultFilter !== "all" ? 1 : 0) + (searchQuery.trim() ? 1 : 0);
+
+  /* Les options de setup : la liste du produit PLUS ceux que le trader a
+     réellement journalisés — un setup à lui ne doit pas être infiltrable. */
+  const strategyOptions = useMemo(() => {
+    const count = new Map<string, number>();
+    for (const tr of trades) count.set(tr.strategy, (count.get(tr.strategy) ?? 0) + 1);
+    const names = Array.from(new Set([...STRATEGIES, ...count.keys()])).filter(Boolean);
+    return names.map((n) => ({ value: n, label: n, count: count.get(n) ?? 0 }));
+  }, [trades]);
+  // Lundi d'abord : c'est l'ordre d'une semaine de trading.
+  const dayOptions = useMemo(
+    () => [1, 2, 3, 4, 5, 6, 0].map((i) => ({ value: String(i), label: jours[i] })),
+    [jours],
+  );
+  const periodPresets: { value: PeriodPreset; label: string }[] = [
+    { value: "all", label: t("common.all") },
+    { value: "7d", label: t("common.7d") },
+    { value: "30d", label: t("common.30d") },
+    { value: "90d", label: t("common.90d") },
+    { value: "1y", label: t("common.1y") },
+  ];
+  const pickerText = {
+    allLabel: t("common.all"),
+    clearLabel: t("common.clear"),
+    doneLabel: t("common.done"),
+    countLabel: t("picker.nSelected"),
+    searchLabel: t("picker.search"),
+  };
+  const rangeText = {
+    customLabel: t("picker.custom"),
+    fromLabel: t("picker.from"),
+    toLabel: t("picker.to"),
+    applyLabel: t("picker.apply"),
+    todayLabel: t("calendar.today"),
+    locale: intlLocale(lang),
+  };
+  const sortChoice = `${sortKey}-${sortDir}` as SortChoice;
+  const sortOptions: { value: SortChoice; label: string }[] = [
+    { value: "date-desc", label: t("sort.newest") },
+    { value: "date-asc", label: t("sort.oldest") },
+    { value: "pnl-desc", label: t("sort.bestPnl") },
+    { value: "pnl-asc", label: t("sort.worstPnl") },
+    { value: "rMultiple-desc", label: t("sort.highestR") },
+    { value: "symbol-asc", label: t("sort.symbol") },
+  ];
+  const pickSort = (v: SortChoice) => {
+    const [k, d] = v.split("-") as [SortKey, SortDir];
+    setSortKey(k);
+    setSortDir(d);
+  };
 
   // La rangée d'onglets « List / Calendar / Missed » vivait ICI, en état
   // local : elle rendait `CalendarPage` et `MissedOpportunities` sans changer
@@ -397,33 +474,37 @@ export default function Journal({
             )}
           </button>
 
-          <FiltrePill
-            label={t("common.period")}
-            value={periodFilter}
-            onChange={setPeriodFilter}
-            options={[
-              { v: "all", l: t("common.all") },
-              { v: "7d", l: t("common.7d") },
-              { v: "30d", l: t("common.30d") },
-              { v: "90d", l: t("common.90d") },
-              { v: "1y", l: t("common.1y") },
-            ]}
-          />
-          <FiltrePill
-            label={t("journal.colStrategy")}
-            value={strategyFilter}
-            onChange={setStrategyFilter}
-            options={[{ v: "all", l: t("common.all") }, ...STRATEGIES.map((x) => ({ v: x, l: x }))]}
-          />
-          <FiltrePill
-            label={t("journal.filterDay")}
-            value={dayFilter}
-            onChange={setDayFilter}
-            options={[
-              { v: "all", l: t("common.all") },
-              ...jours.map((n, i) => ({ v: String(i), l: n })),
-            ]}
-          />
+          <div className="hidden items-center gap-1.5 lg:flex">
+            <RangePicker
+              label={t("common.period")}
+              value={period}
+              presets={periodPresets}
+              onChange={setPeriod}
+              neutralPreset="all"
+              {...rangeText}
+            />
+            <MultiPicker
+              label={t("journal.colStrategy")}
+              values={strategies}
+              options={strategyOptions}
+              onChange={setStrategies}
+              {...pickerText}
+            />
+            <MultiPicker
+              label={t("journal.filterDay")}
+              values={days}
+              options={dayOptions}
+              onChange={setDays}
+              {...pickerText}
+            />
+            <SelectPicker
+              label={t("sort.label")}
+              value={sortChoice}
+              options={sortOptions}
+              onChange={pickSort}
+              neutralValue="date-desc"
+            />
+          </div>
 
           {/* Le segment RÉSULTAT — le filtre qu'on touche vraiment, et le seul
             qui porte des compteurs. */}
@@ -500,65 +581,39 @@ export default function Journal({
               </button>
             )}
           </div>
-          <div className="space-y-3 p-4 pt-2">
-            {(
-              [
-                {
-                  k: "period",
-                  label: t("common.period"),
-                  value: periodFilter,
-                  set: setPeriodFilter,
-                  opts: [
-                    { v: "all", l: t("common.all") },
-                    { v: "7d", l: t("common.7d") },
-                    { v: "30d", l: t("common.30d") },
-                    { v: "90d", l: t("common.90d") },
-                    { v: "1y", l: t("common.1y") },
-                  ],
-                },
-                {
-                  k: "strategy",
-                  label: t("journal.colStrategy"),
-                  value: strategyFilter,
-                  set: setStrategyFilter,
-                  opts: [
-                    { v: "all", l: t("common.all") },
-                    ...STRATEGIES.map((x) => ({ v: x, l: x })),
-                  ],
-                },
-                {
-                  k: "day",
-                  label: t("journal.filterDay"),
-                  value: dayFilter,
-                  set: setDayFilter,
-                  opts: [
-                    { v: "all", l: t("common.all") },
-                    ...jours.map((n, i) => ({ v: String(i), l: n })),
-                  ],
-                },
-              ] as {
-                k: string;
-                label: string;
-                value: string;
-                set: (v: string) => void;
-                opts: { v: string; l: string }[];
-              }[]
-            ).map((f) => (
-              <label key={f.k} className="block">
-                <span className="tv-label mb-1.5 block text-slate-500">{f.label}</span>
-                <select
-                  value={f.value}
-                  onChange={(e) => f.set(e.target.value)}
-                  className="h-11 w-full appearance-none rounded-xl border border-white/[0.06] bg-white/[0.03] px-3 text-sm font-semibold text-slate-200 outline-none"
-                >
-                  {f.opts.map((o) => (
-                    <option key={o.v} value={o.v}>
-                      {o.l}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            ))}
+          <div className="max-h-[70dvh] space-y-4 overflow-y-auto p-4 pt-2">
+            <RangePicker
+              inline
+              label={t("common.period")}
+              value={period}
+              presets={periodPresets}
+              onChange={setPeriod}
+              neutralPreset="all"
+              {...rangeText}
+            />
+            <MultiPicker
+              inline
+              label={t("journal.colStrategy")}
+              values={strategies}
+              options={strategyOptions}
+              onChange={setStrategies}
+              {...pickerText}
+            />
+            <MultiPicker
+              inline
+              label={t("journal.filterDay")}
+              values={days}
+              options={dayOptions}
+              onChange={setDays}
+              {...pickerText}
+            />
+            <SelectPicker
+              inline
+              label={t("sort.label")}
+              value={sortChoice}
+              options={sortOptions}
+              onChange={pickSort}
+            />
             <button
               type="button"
               onClick={() => {
@@ -605,8 +660,7 @@ export default function Journal({
                   variant="ghost"
                   onClick={() => {
                     setResultFilter("all");
-                    setStrategyFilter("all");
-                    setDayFilter("all");
+                    resetFilters();
                   }}
                 >
                   {t("common.all")}
@@ -1016,62 +1070,5 @@ function QuickEditCell({
       {value.toFixed(decimals)}
       {suffix}
     </button>
-  );
-}
-
-/**
- * UNE PASTILLE DE FILTRE — son NOM, puis sa valeur.
- *
- * Les listes portaient « All » et rien d'autre : deux pastilles identiques
- * côte à côte, et il fallait les ouvrir pour savoir laquelle était la période
- * et laquelle la stratégie. Le nom est écrit devant, en petit ; la valeur suit,
- * en clair. Le `<select>` reste natif (donc accessible et utilisable au
- * clavier) mais transparent, posé par-dessus la pastille.
- */
-function FiltrePill({
-  label,
-  value,
-  onChange,
-  options,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  options: { v: string; l: string }[];
-}) {
-  const actif = value !== "all";
-  const courant = options.find((o) => o.v === value)?.l ?? value;
-  return (
-    <label
-      className={cn(
-        "relative hidden h-9 shrink-0 items-center gap-1.5 rounded-xl border px-2.5 transition-colors lg:inline-flex",
-        actif
-          ? "border-[var(--tv-border-accent)] bg-[rgb(var(--tv-accent-rgb)/0.08)]"
-          : "border-white/[0.06] bg-white/[0.03] hover:border-white/[0.12]",
-      )}
-    >
-      <span className="tv-label shrink-0 text-slate-500">{label}</span>
-      <span
-        className={cn(
-          "max-w-[7rem] truncate text-xs font-semibold",
-          actif ? "text-[var(--tv-highlight)]" : "text-slate-300",
-        )}
-      >
-        {courant}
-      </span>
-      <ChevronDown className="h-3 w-3 shrink-0 text-slate-600" />
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        aria-label={label}
-        className="absolute inset-0 cursor-pointer opacity-0"
-      >
-        {options.map((o) => (
-          <option key={o.v} value={o.v}>
-            {o.l}
-          </option>
-        ))}
-      </select>
-    </label>
   );
 }

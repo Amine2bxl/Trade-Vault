@@ -48,7 +48,7 @@ import { Skeleton } from "../components/Skeleton";
 import { usePersistedValue, nsKey, writeJSON } from "../utils/persistence";
 import { useAuth } from "../contexts/AuthContext";
 import { cn } from "../utils/cn";
-import { PageContainer, Card, Kpi, KpiGrid, FIELD_BASE } from "@/shared/ui";
+import { PageContainer, Card, Kpi, KpiGrid, SelectPicker } from "@/shared/ui";
 import { useIsNarrow } from "../hooks/useIsNarrow";
 import { formatMoney } from "@/shared/currency";
 
@@ -117,30 +117,26 @@ function AssetSeasonality() {
       {/* SUR TÉLÉPHONE, deux sélecteurs côte à côte au lieu de rangées de
           pastilles empilées : catégorie · actif, sur une seule ligne. */}
       <div className="mb-5 grid grid-cols-2 gap-2 sm:hidden">
-        <select
+        <SelectPicker
+          variant="field"
+          label={t("seasonality.category")}
           value={category}
-          onChange={(e) => setCategory(e.target.value as AssetCategory)}
-          aria-label={t("seasonality.category")}
-          className={cn(FIELD_BASE, "h-10 cursor-pointer appearance-none text-[13px]")}
-        >
-          {(Object.keys(CATEGORY_LABELS) as AssetCategory[]).map((c) => (
-            <option key={c} value={c} className="bg-[var(--tv-plate-2)]">
-              {CATEGORY_LABELS[c]}
-            </option>
-          ))}
-        </select>
-        <select
+          onChange={(v) => setCategory(v as AssetCategory)}
+          className="h-10 text-[13px]"
+          options={(Object.keys(CATEGORY_LABELS) as AssetCategory[]).map((c) => ({
+            value: c,
+            label: CATEGORY_LABELS[c],
+          }))}
+        />
+        <SelectPicker
+          variant="field"
+          label={t("seasonality.asset")}
           value={asset.symbol}
-          onChange={(e) => setSymbol(e.target.value)}
-          aria-label={t("seasonality.asset")}
-          className={cn(FIELD_BASE, "h-10 cursor-pointer appearance-none text-[13px]")}
-        >
-          {inCategory.map((a) => (
-            <option key={a.symbol} value={a.symbol} className="bg-[var(--tv-plate-2)]">
-              {a.symbol} · {a.name}
-            </option>
-          ))}
-        </select>
+          onChange={setSymbol}
+          className="h-10 text-[13px]"
+          searchLabel={t("picker.search")}
+          options={inCategory.map((a) => ({ value: a.symbol, label: a.symbol, hint: a.name }))}
+        />
       </div>
 
       {/* Category filter */}

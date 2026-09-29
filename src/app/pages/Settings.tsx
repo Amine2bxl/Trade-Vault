@@ -34,7 +34,7 @@ import { useT } from "../i18n/LanguageContext";
 import type { TKey } from "../i18n/translations";
 import { PushNotificationSettings } from "../components/PushNotificationSettings";
 import { cn } from "../utils/cn";
-import { Button, Card, FIELD_BASE, Modal, PageContainer } from "@/shared/ui";
+import { Button, Card, FIELD_BASE, Modal, PageContainer, SelectPicker } from "@/shared/ui";
 import AccountSwitcher from "../components/AccountSwitcher";
 import { useAccounts } from "../contexts/AccountContext";
 import { isCalibrated } from "../utils/accountCalibration";
@@ -345,46 +345,44 @@ export default function Settings({
                 title={t("settings.preferences")}
               />
 
-              <label className="block">
+              <div className="block">
                 <span className="tv-label flex items-center justify-between text-slate-500 mb-1.5">
                   <span className="flex items-center gap-1.5">
                     <Globe className="w-3.5 h-3.5" /> {t("profile.language")}
                   </span>
                   {savedFlash === "lang" && <SavedBadge label={t("common.saved")} />}
                 </span>
-                <select
+                <SelectPicker
+                  variant="field"
+                  label={t("profile.language")}
                   value={language}
-                  onChange={(e) => handleLanguage(e.target.value)}
-                  className={cn(FIELD_BASE, "h-11 cursor-pointer appearance-none")}
-                >
-                  {LANGUAGES.map((l) => (
-                    <option key={l.code} value={l.code} className="bg-[var(--tv-plate-2)]">
-                      {l.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                  onChange={handleLanguage}
+                  options={LANGUAGES.map((l) => ({ value: l.code, label: l.label }))}
+                  searchLabel={t("picker.search")}
+                />
+              </div>
 
-              <label className="block">
+              <div className="block">
                 <span className="tv-label flex items-center justify-between text-slate-500 mb-1.5">
                   <span className="flex items-center gap-1.5">
                     <Coins className="w-3.5 h-3.5" /> {t("settings.currency")}
                   </span>
                   {savedFlash === "cur" && <SavedBadge label={t("common.saved")} />}
                 </span>
-                <select
+                <SelectPicker
+                  variant="field"
+                  label={t("settings.currency")}
                   value={currency}
-                  onChange={(e) => handleCurrency(e.target.value)}
-                  className={cn(FIELD_BASE, "h-11 cursor-pointer appearance-none")}
-                >
-                  {CURRENCIES.map((c) => (
-                    <option key={c.code} value={c.code} className="bg-[var(--tv-plate-2)]">
-                      {c.code} · {currencySymbol(c.code)} — {c.name}
-                    </option>
-                  ))}
-                </select>
+                  onChange={handleCurrency}
+                  options={CURRENCIES.map((c) => ({
+                    value: c.code,
+                    label: `${c.code} · ${currencySymbol(c.code)}`,
+                    hint: c.name,
+                  }))}
+                  searchLabel={t("picker.search")}
+                />
                 <p className="tv-hint mt-1.5">{t("settings.currencyHint")}</p>
-              </label>
+              </div>
 
               <label className="block">
                 <span className="tv-label flex items-center justify-between text-slate-500 mb-1.5">

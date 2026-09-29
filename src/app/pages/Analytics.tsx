@@ -31,7 +31,17 @@ import {
   CartesianGrid,
 } from "recharts";
 import { useT } from "../i18n/LanguageContext";
-import { EmptyState, PageContainer, Card, Kpi, KpiGrid } from "@/shared/ui";
+import {
+  EmptyState,
+  PageContainer,
+  Card,
+  Kpi,
+  KpiGrid,
+  RangePicker,
+  MultiPicker,
+  rangeBounds,
+  type RangeValue,
+} from "@/shared/ui";
 import {
   CHART_GREEN,
   CHART_RED,
@@ -72,20 +82,27 @@ const LOCALE_MAP: Record<string, string> = {
 };
 
 type AnalyticsPeriod = "all" | "7d" | "30d" | "90d" | "1y";
+const PERIOD_DAYS: Record<AnalyticsPeriod, number | null> = {
+  all: null,
+  "7d": 7,
+  "30d": 30,
+  "90d": 90,
+  "1y": 365,
+};
 
-/* La même grammaire de pilules que la rangée de filtres du Journal — une
-   seule apparence de filtre dans le produit. */
-const FILTER_PILL =
-  "appearance-none rounded-xl border border-white/[0.06] bg-white/[0.03] px-3 py-1.5 text-xs font-semibold text-slate-400 outline-none transition-colors hover:text-slate-200";
-const FILTER_PILL_ACTIVE =
-  "border-[color:var(--tv-accent)]/40 bg-[color:var(--tv-accent)]/10 text-[color:var(--tv-accent)]";
+/** Le jour d'un trade — midi local : `new Date("YYYY-MM-DD")` est minuit UTC,
+ *  donc LA VEILLE à New York. Le lundi d'un trader de Chicago tombait dimanche. */
+const weekdayOf = (date: string) => new Date(`${date}T12:00:00`).getDay();
 
 export default function Analytics({ trades }: AnalyticsProps) {
   const { t, lang } = useT();
   const { user } = useAuth();
   const { activeId } = useAccounts();
   const locale = LOCALE_MAP[lang] || "en-US";
-  const [analyticsPeriod, setAnalyticsPeriod] = useState<AnalyticsPeriod>("all");
+  const [period, setPeriod] = useState<RangeValue<AnalyticsPeriod>>({
+    kind: "preset",
+    preset: "all",
+  });
   /* LE JOUR DE LA SEMAINE — la deuxième moitié de la question.
      La page ne savait filtrer qu'une DURÉE : « les trente derniers jours ».
      Or la question qu'un trader se pose sur ses statistiques est presque
@@ -94,39 +111,38 @@ export default function Analytics({ trades }: AnalyticsProps) {
      trader un jour donné. Le filtre s'applique EN AMONT de tous les calculs de
      la page : chaque chiffre, chaque graphe répond alors à la question posée,
      et pas seulement l'un d'entre eux. */
-  const [dayFilter, setDayFilter] = useState<string>("all");
+  /** Jours retenus (1 = lundi … 5 = vendredi) — vide : tous. */
+  const [days, setDays] = useState<string[]>([]);
   const [activePieIndex, setActivePieIndex] = useState<number | null>(null);
   const [startingBalance, setStartingBalance] = useState(0);
 
-  /** Premier axe : la DURÉE. */
+  /** Premier axe : la PÉRIODE — un raccourci, ou des bornes choisies. Les
+   *  bornes sont des dates CIVILES comparées en chaînes : aucun décalage de
+   *  fuseau ne fait entrer ou sortir un jour. */
   const dureeTrades = useMemo(() => {
-    if (analyticsPeriod === "all") return trades;
-    const cutoff = new Date();
-    if (analyticsPeriod === "7d") cutoff.setDate(cutoff.getDate() - 7);
-    else if (analyticsPeriod === "30d") cutoff.setDate(cutoff.getDate() - 30);
-    else if (analyticsPeriod === "90d") cutoff.setDate(cutoff.getDate() - 90);
-    else if (analyticsPeriod === "1y") cutoff.setFullYear(cutoff.getFullYear() - 1);
-    return trades.filter((t) => new Date(t.date) >= cutoff);
-  }, [trades, analyticsPeriod]);
+    const bounds = rangeBounds(period, PERIOD_DAYS);
+    if (!bounds) return trades;
+    return trades.filter((t) => t.date >= bounds.from && t.date <= bounds.to);
+  }, [trades, period]);
 
-  /* Second axe : le JOUR. Le croisement porte le nom `cutoffTrades` — celui
-     que toute la page consomme déjà —, donc chaque chiffre et chaque graphe
-     répond à la question posée, et pas seulement l'un d'entre eux.
-     `getDay()` rend 0 pour dimanche, comme les libellés : une convention. */
+  /* Second axe : les JOURS — un, plusieurs, ou tous. Le croisement porte le
+     nom `cutoffTrades` — celui que toute la page consomme déjà —, donc chaque
+     chiffre et chaque graphe (profit factor compris) répond à la question
+     posée, et pas seulement l'un d'entre eux. */
   const cutoffTrades = useMemo(
     () =>
-      dayFilter === "all"
+      days.length === 0
         ? dureeTrades
-        : dureeTrades.filter((tr) => String(new Date(tr.date).getDay()) === dayFilter),
-    [dureeTrades, dayFilter],
+        : dureeTrades.filter((tr) => days.includes(String(weekdayOf(tr.date)))),
+    [dureeTrades, days],
   );
 
   /** Combien de trades chaque jour porte DANS LA PÉRIODE — le compteur des
-   *  pastilles, et ce qui permet de griser un jour sans données. */
+   *  options de jour. */
   const periodDayCount = useMemo(() => {
     const acc: Record<number, number> = {};
     for (const tr of dureeTrades) {
-      const d = new Date(tr.date).getDay();
+      const d = weekdayOf(tr.date);
       acc[d] = (acc[d] ?? 0) + 1;
     }
     return acc;
@@ -381,73 +397,56 @@ export default function Analytics({ trades }: AnalyticsProps) {
           question qu'on pouvait poser à cette page ; c'est pourtant celle qui
           décide si on arrête de trader un jour. Le jour s'ajoute donc en
           second axe, et il s'applique en amont de tous les calculs. */}
-      <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2">
-        <div className="flex items-center gap-1.5">
-          {(["all", "7d", "30d", "90d", "1y"] as AnalyticsPeriod[]).map((p) => (
-            <button
-              key={p}
-              onClick={() => setAnalyticsPeriod(p)}
-              className={cn(
-                "tv-label " + FILTER_PILL + " px-3",
-                analyticsPeriod === p && FILTER_PILL_ACTIVE,
-              )}
-            >
-              {p === "all" ? t("common.all") : t(`common.${p}`)}
-            </button>
-          ))}
-        </div>
-
-        <span aria-hidden className="hidden h-4 w-px bg-white/[0.1] sm:block" />
-
-        {/* Pas de marge negative ici : elle fait deborder la rangee de 4px
-            de son conteneur (mesure). Le voile de defilement de
-            `tv-scroll-x` se suffit a lui-meme. */}
-        <div className="min-w-0 flex-1 rounded-xl">
-          {/* Les pastilles passent à la ligne au lieu de défiler de côté. */}
-          <div className="flex flex-wrap items-center gap-1.5 py-0.5">
-            <span className="tv-label shrink-0 pr-1 text-slate-500">{t("journal.filterDay")}</span>
-            <button
-              onClick={() => setDayFilter("all")}
-              aria-pressed={dayFilter === "all"}
-              className={cn(
-                "tv-label " + FILTER_PILL + " px-3",
-                dayFilter === "all" && FILTER_PILL_ACTIVE,
-              )}
-            >
-              {t("common.all")}
-            </button>
-            {/* Lundi à vendredi : les marchés que ce produit journalise ne
-                s'échangent pas le week-end, et deux pastilles toujours vides
-                ne sont pas un filtre. */}
-            {[1, 2, 3, 4, 5].map((d) => {
-              const n = periodDayCount[d] ?? 0;
-              return (
-                <button
-                  key={d}
-                  onClick={() => setDayFilter(String(d))}
-                  aria-pressed={dayFilter === String(d)}
-                  disabled={n === 0 && dayFilter !== String(d)}
-                  className={cn(
-                    "tv-label " + FILTER_PILL + " px-3 disabled:opacity-35",
-                    dayFilter === String(d) && FILTER_PILL_ACTIVE,
-                  )}
-                >
-                  <span className="capitalize">{jours[d]}</span>
-                  <span className="tv-figure text-[10px] text-slate-600">{n}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {dayFilter !== "all" && (
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <RangePicker
+          label={t("common.period")}
+          value={period}
+          onChange={setPeriod}
+          neutralPreset="all"
+          presets={[
+            { value: "all", label: t("common.all") },
+            { value: "7d", label: t("common.7d") },
+            { value: "30d", label: t("common.30d") },
+            { value: "90d", label: t("common.90d") },
+            { value: "1y", label: t("common.1y") },
+          ]}
+          customLabel={t("picker.custom")}
+          fromLabel={t("picker.from")}
+          toLabel={t("picker.to")}
+          applyLabel={t("picker.apply")}
+          todayLabel={t("calendar.today")}
+          locale={locale}
+        />
+        {/* Lundi à vendredi : les marchés que ce produit journalise ne
+            s'échangent pas le week-end. Un jour, plusieurs, ou tous. */}
+        <MultiPicker
+          label={t("journal.filterDay")}
+          values={days}
+          onChange={setDays}
+          options={[1, 2, 3, 4, 5].map((d) => ({
+            value: String(d),
+            label: jours[d].charAt(0).toUpperCase() + jours[d].slice(1),
+            count: periodDayCount[d] ?? 0,
+          }))}
+          allLabel={t("common.all")}
+          clearLabel={t("common.clear")}
+          doneLabel={t("common.done")}
+          countLabel={t("picker.nSelected")}
+        />
+        {(days.length > 0 || period.kind === "custom" || period.preset !== "all") && (
           <button
-            onClick={() => setDayFilter("all")}
-            className="inline-flex h-8 shrink-0 items-center rounded-lg px-2.5 text-xs font-semibold text-slate-500 transition-colors hover:bg-white/[0.04] hover:text-white"
+            onClick={() => {
+              setDays([]);
+              setPeriod({ kind: "preset", preset: "all" });
+            }}
+            className="inline-flex h-9 shrink-0 items-center rounded-lg px-2.5 text-xs font-semibold text-slate-500 transition-colors hover:bg-white/[0.04] hover:text-white"
           >
             {t("common.reset")}
           </button>
         )}
+        <span className="tv-figure ml-auto text-[11px] text-slate-500">
+          {cutoffTrades.length} {t("common.trades")}
+        </span>
       </div>
 
       <div className="space-y-4 md:space-y-6">

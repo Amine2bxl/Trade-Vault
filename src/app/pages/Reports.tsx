@@ -54,7 +54,7 @@ import EquityChart from "../components/EquityChart";
 import MarkdownAnswer from "../components/MarkdownAnswer";
 import { cn } from "../utils/cn";
 import type { Trade } from "../types";
-import { Button, Kpi } from "@/shared/ui";
+import { Button, Kpi, SelectPicker } from "@/shared/ui";
 import { usePageActions } from "../contexts/PageActionsContext";
 
 const LOCALE_MAP: Record<string, string> = {
@@ -1075,8 +1075,8 @@ function SetupList({
 
 /**
  * LE SÉLECTEUR DE MOIS — précédent · mois · suivant, et la liste complète au
- * toucher du libellé (le `<select>` natif : sur téléphone, c'est la roue du
- * système, sans rien à faire défiler de côté).
+ * toucher du libellé : le sélecteur de la famille TradeVault, pas la liste
+ * système, et rien à faire défiler de côté.
  */
 function MonthSwitcher({
   months,
@@ -1109,34 +1109,49 @@ function MonthSwitcher({
       >
         <ChevronLeft className="h-4 w-4" />
       </button>
-      <label className="rp-switch-label">
-        <span
-          aria-hidden
-          className={cn(
-            "h-1.5 w-1.5 shrink-0 rounded-full",
-            cur.live
-              ? "bg-amber-400"
-              : cur.pnl >= 0
-                ? "bg-[var(--tv-chart-green)]"
-                : "bg-[var(--tv-chart-red)]",
-          )}
-        />
-        <span className="truncate capitalize">{monthLabel(cur.month, locale)}</span>
-        {cur.live && <span className="rp-switch-live">{t("reports.inProgress")}</span>}
-        <ChevronDown className="h-3.5 w-3.5 shrink-0 text-slate-500" />
-        <select
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          aria-label={t("reports.pickMonth")}
-        >
-          {months.map((m) => (
-            <option key={m.month} value={m.month}>
-              {monthLabel(m.month, locale)}
-              {m.live ? ` · ${t("reports.inProgress")}` : ""}
-            </option>
-          ))}
-        </select>
-      </label>
+      <SelectPicker
+        label={t("reports.pickMonth")}
+        value={value}
+        onChange={onChange}
+        width="16rem"
+        className="min-w-0 flex-1"
+        options={months.map((m) => ({
+          value: m.month,
+          label: monthLabel(m.month, locale),
+          hint: m.live ? t("reports.inProgress") : undefined,
+        }))}
+        renderTrigger={({ open, toggle, controls }) => (
+          <button
+            type="button"
+            onClick={toggle}
+            aria-haspopup="listbox"
+            aria-expanded={open}
+            aria-controls={controls}
+            aria-label={t("reports.pickMonth")}
+            className="rp-switch-label w-full"
+          >
+            <span
+              aria-hidden
+              className={cn(
+                "h-1.5 w-1.5 shrink-0 rounded-full",
+                cur.live
+                  ? "bg-amber-400"
+                  : cur.pnl >= 0
+                    ? "bg-[var(--tv-chart-green)]"
+                    : "bg-[var(--tv-chart-red)]",
+              )}
+            />
+            <span className="truncate capitalize">{monthLabel(cur.month, locale)}</span>
+            {cur.live && <span className="rp-switch-live">{t("reports.inProgress")}</span>}
+            <ChevronDown
+              className={cn(
+                "h-3.5 w-3.5 shrink-0 text-slate-500 transition-transform",
+                open && "rotate-180",
+              )}
+            />
+          </button>
+        )}
+      />
       <button
         type="button"
         className="rp-switch-btn"

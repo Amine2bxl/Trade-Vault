@@ -3574,16 +3574,10 @@ a:focus-visible,
   font-weight: 600;
   cursor: pointer;
 }
-.rp-switch-label:focus-within {
+.rp-switch-label:focus-visible,
+.rp-switch-label[aria-expanded="true"] {
   border-color: var(--tv-border-accent);
-}
-/* Le <select> natif couvre le libellé, invisible : au toucher, c'est la roue
-   du système qui s'ouvre. */
-.rp-switch-label select {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  cursor: pointer;
+  outline: none;
 }
 .rp-switch-live,
 .rp-pill-live {
@@ -3963,6 +3957,185 @@ a:focus-visible,
   border: 1px solid var(--tv-border-strong);
   background: var(--tv-plate-3);
   box-shadow: var(--tv-elev-3);
+}
+
+/* ══ LES SÉLECTEURS (`shared/ui/Picker.tsx`) ══════════════════════════════
+   La même plaque que le calendrier et la roue d'heure (`.tv-pop`) : on
+   reconnaît un sélecteur TradeVault à sa surface, pas à sa place. */
+.tv-pick-in {
+  animation: tv-pick-in var(--tv-dur-2) var(--tv-ease) both;
+}
+@keyframes tv-pick-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.985);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tv-pick-in {
+    animation: none;
+  }
+}
+.tv-pick-veil {
+  background: rgb(0 0 0 / 0.55);
+}
+
+/* Le déclencheur « pastille » : le NOM du filtre, puis sa valeur. */
+.tv-pick-pill {
+  display: inline-flex;
+  height: 2.25rem;
+  max-width: 100%;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--tv-border);
+  background: var(--tv-plate-2);
+  padding: 0 0.7rem;
+  transition-property: background-color, border-color;
+  transition-duration: var(--tv-dur-1);
+}
+.tv-pick-pill:hover:not(:disabled) {
+  border-color: var(--tv-border-strong);
+}
+.tv-pick-pill-open {
+  border-color: var(--tv-border-strong);
+  background: var(--tv-plate-3);
+}
+.tv-pick-pill-value {
+  max-width: 9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--tv-text-secondary);
+}
+.tv-pick-pill-on {
+  border-color: var(--tv-border-accent);
+  background: rgb(var(--tv-accent-rgb) / 0.08);
+}
+.tv-pick-pill-on .tv-pick-pill-value {
+  color: var(--tv-highlight);
+}
+
+/* La recherche, en tête de longue liste. */
+.tv-pick-search {
+  display: flex;
+  height: 2.25rem;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 0.7rem;
+  border: 1px solid var(--tv-border);
+  background: var(--tv-plate-2);
+  padding: 0 0.65rem;
+}
+.tv-pick-search:focus-within {
+  border-color: var(--tv-border-accent);
+}
+
+/* Une option : la case (ou le point), le libellé, le compte. */
+.tv-pick-opt {
+  display: flex;
+  width: 100%;
+  min-height: 2.25rem;
+  align-items: center;
+  gap: 0.6rem;
+  border-radius: 0.6rem;
+  padding: 0.35rem 0.6rem;
+  text-align: left;
+  font-size: 0.8125rem;
+  color: var(--tv-text-secondary);
+  transition-property: background-color, color;
+  transition-duration: var(--tv-dur-1);
+}
+.tv-pick-opt:hover,
+.tv-pick-opt:focus-visible {
+  outline: none;
+  background: rgb(255 255 255 / 0.06);
+  color: var(--tv-text-primary);
+}
+.tv-pick-opt-on {
+  color: var(--tv-text-primary);
+}
+.tv-pick-box,
+.tv-pick-dot {
+  display: grid;
+  height: 1.05rem;
+  width: 1.05rem;
+  flex-shrink: 0;
+  place-items: center;
+  border: 1px solid var(--tv-border-strong);
+  background: var(--tv-plate-1);
+  color: #04120b;
+  transition-property: background-color, border-color;
+  transition-duration: var(--tv-dur-1);
+}
+.tv-pick-box {
+  border-radius: 0.3rem;
+}
+.tv-pick-dot {
+  border-radius: 999px;
+}
+.tv-pick-box.is-on,
+.tv-pick-dot.is-on {
+  border-color: var(--tv-accent);
+  background: var(--tv-accent);
+}
+
+/* Les pastilles à plat : raccourcis de période, filtres d'une feuille. */
+.tv-pick-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+.tv-pick-chip {
+  display: inline-flex;
+  height: 2rem;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 0.6rem;
+  border: 1px solid var(--tv-border);
+  background: var(--tv-plate-2);
+  padding: 0 0.7rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--tv-text-secondary);
+  transition-property: background-color, border-color, color;
+  transition-duration: var(--tv-dur-1);
+}
+.tv-pick-chip:hover {
+  border-color: var(--tv-border-strong);
+  color: var(--tv-text-primary);
+}
+.tv-pick-chip-on,
+.tv-pick-chip-on:hover {
+  border-color: var(--tv-border-accent);
+  background: rgb(var(--tv-accent-rgb) / 0.12);
+  color: var(--tv-highlight);
+}
+
+/* Le pied d'un panneau : effacer, valider. */
+.tv-pick-foot {
+  display: inline-flex;
+  height: 2rem;
+  align-items: center;
+  border-radius: 0.6rem;
+  padding: 0 0.8rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--tv-text-secondary);
+  transition-property: background-color, color;
+  transition-duration: var(--tv-dur-1);
+}
+.tv-pick-foot:hover:not(:disabled) {
+  background: rgb(255 255 255 / 0.05);
+  color: var(--tv-text-primary);
+}
+.tv-pick-foot-main,
+.tv-pick-foot-main:hover:not(:disabled) {
+  background: var(--tv-accent);
+  color: #04120b;
 }
 
 .tv-pop-nav {

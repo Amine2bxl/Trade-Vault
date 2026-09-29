@@ -1,4 +1,5 @@
 import { useCallback, useState, type ReactNode } from "react";
+import { SelectPicker } from "@/shared/ui";
 import {
   ArrowLeft,
   ArrowRight,
@@ -617,23 +618,25 @@ export default function Onboarding({
                   étiquetés, sur une rangée, et l'étape entière remonte de
                   ~80px — ce qui compte sur un écran qui ne défile pas. */}
               {/* LA DEVISE — avant le capital, qui s'écrit dedans. */}
-              <label className="onb-in mx-auto mb-3 block max-w-md text-left">
+              <div className="onb-in mx-auto mb-3 block max-w-md text-left">
                 <span className="tv-label mb-1 flex items-center gap-1.5 text-slate-400">
                   <Coins className="h-3.5 w-3.5" />
                   {t("settings.currency")}
                 </span>
-                <select
+                <SelectPicker
+                  variant="field"
+                  label={t("settings.currency")}
                   value={currency}
-                  onChange={(e) => setCurrencyChoice(parseCurrency(e.target.value))}
-                  className="h-11 w-full cursor-pointer appearance-none rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-2)] px-3 text-[14px] text-white outline-none transition focus:border-[var(--tv-border-accent)]"
-                >
-                  {CURRENCIES.map((cur) => (
-                    <option key={cur.code} value={cur.code} className="bg-[var(--tv-plate-2)]">
-                      {cur.code} · {currencySymbol(cur.code)} — {cur.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                  onChange={(v) => setCurrencyChoice(parseCurrency(v))}
+                  className="rounded-xl text-[14px]"
+                  searchLabel={t("picker.search")}
+                  options={CURRENCIES.map((cur) => ({
+                    value: cur.code,
+                    label: `${cur.code} · ${currencySymbol(cur.code)}`,
+                    hint: cur.name,
+                  }))}
+                />
+              </div>
               <div className="onb-in mx-auto mb-5 grid max-w-md grid-cols-2 gap-3">
                 <label className="text-left">
                   <span className="tv-label mb-1 flex items-center gap-1.5 text-slate-400">

@@ -57,7 +57,7 @@ import {
   todayKey,
   hydrateConfig,
 } from "./checklist/helpers";
-import { Button, PageToolbar, TimeField } from "@/shared/ui";
+import { Button, PageToolbar, TimeField, SelectPicker } from "@/shared/ui";
 import { intlLocale } from "../i18n/locale";
 
 /* ════════════════════════════════════════════════════════════════
@@ -1558,17 +1558,16 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
                     className="h-9 w-[9.5rem] px-2.5 text-sm"
                   />
                   <label>{t("chk.cfgTz")}</label>
-                  <select
-                    className="bg-white/[0.04] border border-white/[0.08] rounded-lg px-2 py-1.5 text-sm text-white focus:outline-none focus:border-[rgb(var(--tv-accent-rgb)/0.40)]"
+                  <SelectPicker
+                    variant="field"
+                    label={t("chk.cfgTz")}
                     value={config.timeZone}
-                    onChange={(e) => patch({ timeZone: e.target.value })}
-                  >
-                    {tzOptions.map((z) => (
-                      <option key={z} value={z} className="bg-[var(--tv-plate-2)]">
-                        {z}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(v) => patch({ timeZone: v })}
+                    className="h-9 w-[12rem] rounded-lg px-2.5 text-sm"
+                    width="16rem"
+                    searchLabel={t("picker.search")}
+                    options={tzOptions.map((z) => ({ value: z, label: z.replace(/_/g, " ") }))}
+                  />
                   <label>{t("chk.cfgCd")}</label>
                   <input
                     type="number"

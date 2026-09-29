@@ -46,6 +46,7 @@ import {
   CHIP_ROW,
   DateField,
   TimeField,
+  SelectPicker,
 } from "@/shared/ui";
 import { intlLocale } from "../i18n/locale";
 import { tradeDraftKey, nsKey, readJSON, removeKey, type TradeDraft } from "../utils/persistence";
@@ -883,17 +884,17 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
             </div>
             <div>
               <label className={labelClass}>{t("trade.strategy")}</label>
-              <select
+              <SelectPicker
+                variant="field"
+                label={t("trade.strategy")}
                 value={form.strategy}
-                onChange={(e) => setForm((f) => ({ ...f, strategy: e.target.value }))}
-                className={cn(inputClass, "cursor-pointer appearance-none")}
-              >
-                {STRATEGIES.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
+                onChange={(v) => setForm((f) => ({ ...f, strategy: v }))}
+                className={inputClass}
+                searchLabel={t("picker.search")}
+                options={Array.from(new Set([...STRATEGIES, form.strategy]))
+                  .filter(Boolean)
+                  .map((s) => ({ value: s, label: s }))}
+              />
             </div>
           </div>
 
