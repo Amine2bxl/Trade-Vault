@@ -551,6 +551,18 @@
    * menus, docks), et `--tv-glow-accent` ne vaut plus rien du tout :
    * l'accent est une couleur, pas une source de lumière. */
   --tv-elev-1: none;
+  /* LE RELIEF DES CARTES — trois gestes, jamais de dégradé ni de halo.
+   *   edge : un filet de lumière d'un pixel sur l'arête haute (la plaque
+   *          accroche la lumière du dessus, elle n'en émet pas) ;
+   *   lift : un contact sombre serré + une ombre longue très diffuse, qui
+   *          décolle la carte du fond sans la faire flotter ;
+   *   sink : l'inverse, pour un bloc CREUSÉ dans une carte.
+   * Les plaques plates « carrés gris » se lisaient toutes au même plan ; le
+   * relief rend la hiérarchie fond → carte → bloc visible sans ajouter de
+   * couleur. Le Calendrier reste plat (`.tv-flat`). */
+  --tv-relief-edge: inset 0 1px 0 rgb(255 255 255 / 0.055);
+  --tv-relief-lift: 0 1px 1px rgb(0 0 0 / 0.45), 0 14px 30px -18px rgb(0 0 0 / 0.9);
+  --tv-relief-sink: inset 0 1px 2px rgb(0 0 0 / 0.38), inset 0 0 0 1px rgb(0 0 0 / 0.12);
   --tv-elev-2: 0 8px 24px -14px rgb(0 0 0 / 0.75);
   --tv-elev-3: 0 24px 60px -28px rgb(0 0 0 / 0.85);
   --tv-glow-accent: none;
@@ -1392,10 +1404,11 @@ input[type="number"] {
   }
 }
 
-/* Les cartes ne portent AUCUNE ombre. L'ombre est réservée à ce qui flotte
-   vraiment : modales, menus, docks — et elle est déclarée là où ça flotte. */
+/* Les cartes portent le RELIEF (filet haut + contact sombre), pas une ombre
+   de flottement : l'ombre longue et marquée reste réservée à ce qui flotte
+   vraiment — modales, menus, docks. */
 .glass {
-  box-shadow: none;
+  box-shadow: var(--tv-relief-edge), var(--tv-relief-lift);
 }
 .glass-strong {
   box-shadow: var(--tv-elev-3);
@@ -1411,7 +1424,22 @@ input[type="number"] {
 .panel {
   background: var(--tv-plate-1);
   border: 1px solid var(--tv-border);
-  box-shadow: none;
+  box-shadow: var(--tv-relief-edge), var(--tv-relief-lift);
+}
+/* Un bloc posé DANS une carte : un cran plus clair et creusé, pour que la
+   carte et son contenu ne se lisent plus au même plan. */
+.tv-relief-inset {
+  background: var(--tv-plate-2);
+  box-shadow: var(--tv-relief-sink);
+}
+/* Une surface en relief hors des classes de carte (sections de modale…). */
+.tv-relief {
+  box-shadow: var(--tv-relief-edge), var(--tv-relief-lift);
+}
+/* Le Calendrier garde sa sobriété : aucune ombre, la grille seule. */
+.tv-flat,
+.tv-flat .tv-kpi {
+  box-shadow: none !important;
 }
 /* Seules les deux classes de KPI imposent leur rayon : `.panel` est posé sur
    des éléments qui portent déjà le leur (`rounded-2xl` / `rounded-3xl`). */
@@ -4447,6 +4475,9 @@ a:focus-visible,
   border: 1px solid var(--tv-border);
   border-radius: 0.75rem;
   background: var(--tv-plate-1);
+  box-shadow:
+    var(--tv-relief-edge),
+    0 1px 1px rgb(0 0 0 / 0.4);
 }
 @media (min-width: 768px) {
   .tv-kpi {
@@ -4457,6 +4488,7 @@ a:focus-visible,
 /* La variante CREUSE — la même case, posée DANS une carte. */
 .tv-kpi-inset {
   background: var(--tv-plate-2);
+  box-shadow: var(--tv-relief-sink);
 }
 /* Le chiffre d'une case. Un cran sous `.tv-figure` de tuile héros : une case
    compacte porte un chiffre compact, sinon la compacité est reprise par la

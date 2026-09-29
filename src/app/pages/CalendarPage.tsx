@@ -240,7 +240,7 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
       className="mx-auto flex h-full max-w-[1400px] flex-col overflow-y-auto px-3 py-2 md:px-5 md:py-3"
     >
       {/* Summary Cards */}
-      <KpiGrid className="shrink-0">
+      <KpiGrid className="tv-flat shrink-0">
         {(
           [
             {
@@ -330,7 +330,7 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
           suffi à réécraser la grille, quel que soit le plancher des cellules.
           `overflow-hidden` reste — il sert les coins arrondis, plus à rogner
           un débordement. */}
-      <div className="stat-card-elevated mt-2 flex flex-1 flex-col overflow-hidden animate-fade-in-up stagger-5 md:mt-3">
+      <div className="stat-card-elevated tv-flat mt-2 flex flex-1 flex-col overflow-hidden animate-fade-in-up stagger-5 md:mt-3">
         {/* L'EN-TÊTE DE LA RÉFÉRENCE : le titre à gauche, le mois entre deux
             boutons encadrés, « aujourd'hui » à côté. */}
         <div className="flex shrink-0 items-center justify-between gap-2 px-3 py-2.5 md:px-5 md:py-3">

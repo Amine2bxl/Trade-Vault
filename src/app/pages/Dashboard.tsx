@@ -619,7 +619,7 @@ export default function Dashboard({
               {/* ── 3. LA DISCIPLINE ── */}
               {/* Copilot block + série de checklist — le focus du jour + la discipline
                 dans la durée, côte à côte. */}
-              <div className="grid grid-cols-1 lg:grid-cols-[1.35fr_0.65fr] gap-4 md:gap-5 mb-4 md:mb-6">
+              <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,0.65fr)] gap-4 md:gap-5 mb-4 md:mb-6">
                 <CopilotBlock
                   edge={edge}
                   edgeDelta={edgeDelta}

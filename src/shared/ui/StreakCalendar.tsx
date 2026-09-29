@@ -44,7 +44,7 @@ export function StreakCalendar({
       aria-label="Streak calendar"
     >
       {cells.map((c) => (
-        <div key={c.iso} className="flex flex-1 flex-col items-center gap-1.5">
+        <div key={c.iso} className="flex min-w-0 flex-1 flex-col items-center gap-1.5">
           <span
             className={cn(
               "tv-label",
@@ -55,7 +55,9 @@ export function StreakCalendar({
           </span>
           <span
             className={cn(
-              "grid h-7 w-7 place-items-center rounded-lg border transition-colors",
+              // La case se réduit avec la colonne (colonne étroite du tableau de
+              // bord sur tablette) au lieu de la faire déborder.
+              "grid aspect-square w-full max-w-7 place-items-center rounded-lg border transition-colors",
               c.done
                 ? "border-amber-500/30 bg-amber-500/10 text-amber-300"
                 : "border-white/[0.06] bg-white/[0.02] text-slate-600",
