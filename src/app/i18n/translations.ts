@@ -935,6 +935,10 @@ const en = {
   // Calendar
   "calendar.title": "Calendar",
   "calendar.week": "Week",
+  "calendar.weekendShort": "Wknd",
+  "calendar.weekShort": "Week",
+  "calendar.weekNum": "W{n}",
+  "calendar.tradesShort": "tr",
   "calendar.legendHeat": "Intensity = day size",
   "calendar.trade": "trade",
   "calendar.trades": "trades",

@@ -6098,13 +6098,23 @@ body::after {
   background: var(--tv-plate-2);
   border-color: var(--tv-border-strong);
 }
-.cal-week-strip {
-  background: var(--tv-plate-1);
-  border: 1px solid transparent;
+/* La grille du TÉLÉPHONE : cinq jours ouvrés, puis (si le mois en compte)
+   le week-end fusionné, puis le total de la semaine. Le total est un peu plus
+   large : il porte un montant signé. */
+.cal-m-grid-6 {
+  grid-template-columns: repeat(5, minmax(0, 1fr)) minmax(0, 1.12fr);
 }
-.cal-week-strip:not(:disabled):active {
+.cal-m-grid-7 {
+  grid-template-columns: repeat(5, minmax(0, 1fr)) minmax(0, 0.82fr) minmax(0, 1.12fr);
+}
+.cal-week-m {
   background: var(--tv-plate-2);
-  border-color: var(--tv-border);
+}
+.cal-week-m:not(:disabled):active {
+  border-color: var(--tv-border-strong);
+}
+.cal-dow-week {
+  color: var(--tv-text-secondary);
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
