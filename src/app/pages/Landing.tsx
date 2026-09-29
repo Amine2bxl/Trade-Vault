@@ -28,7 +28,7 @@ const DemoModal = lazyPage(() =>
 import { TrustStrip } from "./landing/Showcase";
 import { TRUSTPILOT_URL } from "@/shared/site";
 import { TourProduit } from "./landing/Tour";
-import { CursorOrb } from "./landing/CursorOrb";
+import { CursorOrb } from "@/shared/ui/CursorOrb";
 import { LIENS_NAV } from "./landing/nav";
 import MegaNav from "./landing/MegaNav";
 import { LangMenuPied } from "./landing/LangMenu";

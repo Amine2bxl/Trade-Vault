@@ -1,4 +1,5 @@
 import { lazyPage } from "@/shared/lazy-page";
+import { CursorOrb } from "@/shared/ui/CursorOrb";
 import {
   useState,
   useCallback,
@@ -878,6 +879,9 @@ function AppContent() {
           du produit. Sur mobile le cadre disparaît : l'écran est trop étroit
           pour s'offrir une marge, le contenu va d'un bord à l'autre. */}
       <main className="app-main app-frame relative z-0 my-0 mr-0 flex-1 overflow-y-auto md:my-3 md:mr-3 md:ml-2">
+        {/* La lueur qui suit le pointeur — le geste de la vitrine, repris tel
+            quel. Bureau et pointeur fin uniquement ; derrière les cartes. */}
+        <CursorOrb />
         {/* Onglets de la section courante à gauche, actions mobiles à droite —
             une seule ligne, dans le flux de la page. L'ancienne barre fixe
             répétait le titre que chaque page affiche déjà juste en dessous :

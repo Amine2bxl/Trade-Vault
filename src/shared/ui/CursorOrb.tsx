@@ -1,7 +1,13 @@
 import { useEffect, useRef } from "react";
 
 /**
- * L'ORBE QUI SUIT LE CURSEUR.
+ * L'ORBE QUI SUIT LE CURSEUR — la même sur la vitrine et dans le produit.
+ *
+ * Née sur la landing, elle vit ici pour que l'application reprenne
+ * EXACTEMENT le même geste (même amorti, même taille, même lueur à la couleur
+ * du thème) au lieu d'en réécrire une variante. Dans le produit, elle est
+ * montée DANS la fenêtre de contenu, derrière les cartes : elle éclaire la
+ * surface, jamais le texte.
  *
  * ── CE QU'ELLE EST, ET CE QU'ELLE N'EST PAS ────────────────────────────────
  *

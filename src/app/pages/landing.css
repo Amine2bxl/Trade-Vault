@@ -894,41 +894,8 @@
  * Sous 1024px, tout s'empile et le TEXTE PASSE DEVANT : sur un téléphone, on
  * lit ce qu'on va regarder, puis on le regarde. L'alternance n'a aucun sens
  * sur une colonne unique, elle disparaît d'elle-même. */
-/* ── L'ORBE DU CURSEUR ──
- *
- * 300px de diamètre pour une lueur à 7 % au centre : à cette taille elle ne se
- * voit pas comme un cercle, elle se voit comme un éclairage qui suit la main.
- * Un disque net, même discret, distrait — on le suit du regard au lieu de lire.
- *
- * `z-index` sous la barre de navigation : la lueur passe DERRIÈRE le contenu
- * fixe, sinon elle voile le texte qu'elle survole.
- *
- * Elle n'existe que pour un pointeur fin et sans `prefers-reduced-motion` —
- * le composant ne monte rien dans les autres cas, et ces requêtes média sont
- * la seconde ceinture. */
-.landing-root .cursor-orb {
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 0;
-  width: 300px;
-  height: 300px;
-  border-radius: 9999px;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.45s ease;
-  background: radial-gradient(
-    closest-side,
-    rgb(var(--tv-accent-rgb) / 0.07),
-    rgb(var(--tv-accent-rgb) / 0.03) 45%,
-    transparent 72%
-  );
-}
-@media (pointer: coarse), (prefers-reduced-motion: reduce) {
-  .landing-root .cursor-orb {
-    display: none;
-  }
-}
+/* ── L'ORBE DU CURSEUR — voir `.cursor-orb` dans styles.css (partagée avec
+   le produit). ── */
 
 /* ══ LE PLANCHER DE LISIBILITÉ SUR TÉLÉPHONE ══
  *
