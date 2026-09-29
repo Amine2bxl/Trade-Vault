@@ -6440,3 +6440,35 @@ body::after {
     transition: none;
   }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   ERREURS — LE TABLEAU DE SCORE (téléphone)
+   ══════════════════════════════════════════════════════════════════════════
+   Trois comptes côte à côte qui sont aussi la navigation entre les voies du
+   plan. L'onglet actif monte d'une plaque, comme partout ailleurs : la couleur
+   de la voie reste portée par le chiffre et l'icône, jamais par un fond. */
+.mst-lane-tab {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.4rem;
+  padding: 0.6rem 0.65rem;
+  border-radius: 0.8rem;
+  background: var(--tv-plate-1);
+  border: 1px solid var(--tv-border);
+  color: var(--tv-text-muted);
+  text-align: left;
+  transition-property: color, background-color, border-color;
+  transition-duration: var(--tv-dur-1);
+  transition-timing-function: var(--tv-ease);
+}
+.mst-lane-tab[aria-selected="true"] {
+  background: var(--tv-plate-3);
+  border-color: var(--tv-border-strong);
+  color: var(--tv-text-primary);
+}
+.mst-lane-tab:focus-visible {
+  outline: 2px solid rgb(var(--tv-accent-rgb) / 0.7);
+  outline-offset: 1px;
+}

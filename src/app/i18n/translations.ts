@@ -1010,6 +1010,9 @@ const en = {
   // what they have already dropped.
   "mistakes.planTitle": "Your correction plan",
   "mistakes.planSub": "Based on the last {n} days of your journal",
+  "mistakes.tabBanish": "Never again",
+  "mistakes.tabWork": "Work on",
+  "mistakes.tabStopped": "Stopped",
   "mistakes.laneBanish": "Never again",
   "mistakes.laneBanishSub": "Serious, and still happening",
   "mistakes.laneWork": "To work on",

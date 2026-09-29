@@ -450,7 +450,14 @@ export default function Analytics({ trades }: AnalyticsProps) {
         </span>
       </div>
 
-      <div className="space-y-4 md:space-y-6">
+      {/* L'ORDRE DE LECTURE SUR TÉLÉPHONE.
+          Sur bureau, la courbe d'équité se voit dès l'ouverture, à côté du
+          reste. Sur téléphone, elle arrivait après le tableau des setups, la
+          carte de chaleur et le graphe horaire — quatre écrans de défilement
+          avant la seule image qui dise si le compte monte. Une colonne flex
+          (`gap`, pas `space-y` : l'espacement ne dépend plus de l'ordre du
+          DOM) la remonte juste sous les mesures, sans rien changer au bureau. */}
+      <div className="flex flex-col gap-4 md:gap-6">
         {/* ══ LE PROFIT FACTOR — UNE BANDE, PLUS UNE CARTE HÉROS ══════════
             Il occupait une carte de 108px sur desktop (titre, sous-titre,
             trois colonnes centrées, un badge, une barre) et se DÉDOUBLAIT sur
@@ -465,7 +472,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
             de l'écran pour le dire. */}
         <div
           className={cn(
-            "glass animate-fade-in-up stagger-1 rounded-2xl border px-3.5 py-3 md:px-4",
+            "glass animate-fade-in-up stagger-1 rounded-2xl border px-3.5 py-3 max-md:order-[-3] md:px-4",
             profitFactorData.isProfitable ? "border-emerald-500/15" : "border-red-500/15",
           )}
         >
@@ -526,7 +533,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
             pourtant le rembourrage d'une carte pleine et son survol — 86px de
             haut sur un téléphone, soit deux rangées de 172px avant le premier
             graphe. En case compacte, la même information tient en 54px. */}
-        <KpiGrid className="animate-fade-in-up stagger-1">
+        <KpiGrid className="animate-fade-in-up stagger-1 max-md:order-[-2]">
           {[
             {
               label: t("dashboard.avgRR"),
@@ -645,7 +652,18 @@ export default function Analytics({ trades }: AnalyticsProps) {
               <tbody className="divide-y divide-white/[0.04]">
                 {setupTable.map((row) => (
                   <tr key={row.strategy} className="hover:bg-white/[0.02] transition-colors">
-                    <td className="px-4 py-2.5 text-xs font-bold text-white">{row.strategy}</td>
+                    {/* Un nom de setup long élargissait le tableau au-delà de
+                        l'écran : il se tronque, le nom complet reste au survol. */}
+                    <td
+                      title={row.strategy}
+                      className="px-3 py-2.5 text-xs font-bold text-white sm:px-4"
+                    >
+                      {/* `max-width` n'est pas tenu sur une cellule de tableau :
+                          la borne vit sur un bloc intérieur. */}
+                      <span className="block max-w-[9.5rem] truncate sm:max-w-none">
+                        {row.strategy}
+                      </span>
+                    </td>
                     <td className="tv-figure px-4 py-2.5 text-xs text-slate-400 text-right">
                       {row.count}
                     </td>
@@ -756,8 +774,21 @@ export default function Analytics({ trades }: AnalyticsProps) {
                       >
                         {cell && (
                           <>
-                            <span className={cell.pnl >= 0 ? "text-emerald-300" : "text-red-300"}>
-                              {formatMoney(cell.pnl, { signed: true, whole: true })}
+                            {/* Une case fait ~50px sur téléphone : « +$1,234 » en
+                                gras y débordait. Le montant compact (« +$1.2k »)
+                                tient, le détail exact reste dans l'infobulle. */}
+                            <span
+                              className={cn(
+                                "max-w-full truncate px-0.5",
+                                cell.pnl >= 0 ? "text-emerald-300" : "text-red-300",
+                              )}
+                            >
+                              <span className="md:hidden">
+                                {formatMoney(cell.pnl, { signed: true, compact: true })}
+                              </span>
+                              <span className="hidden md:inline">
+                                {formatMoney(cell.pnl, { signed: true, whole: true })}
+                              </span>
                             </span>
                             <span className="text-slate-400 font-medium">{cell.count}</span>
                           </>
@@ -822,8 +853,8 @@ export default function Analytics({ trades }: AnalyticsProps) {
           </Card>
         </div>
 
-        {/* Equity + Pie */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Equity + Pie — remontée sous les mesures sur téléphone. */}
+        <div className="grid grid-cols-1 gap-4 max-md:order-[-1] md:grid-cols-3">
           <div className="relative md:col-span-2 glass rounded-3xl p-4 md:p-5 card-premium animate-fade-in-up stagger-2 overflow-hidden">
             <h3 className="tv-title mb-4">{t("analytics.equityCurve")}</h3>
             <div className="h-56 md:h-80 chart-draw">
