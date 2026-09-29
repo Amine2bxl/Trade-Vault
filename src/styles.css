@@ -3057,6 +3057,10 @@ a:focus-visible,
    en utilitaire : `display` déclaré dans une règle non calquée bat un
    `hidden` de Tailwind, qui vit dans une couche — la rangée restait donc
    visible sous le sélecteur. */
+/* Les onglets de section apparaissent à `lg`, pas à `md`. Sur tablette le
+   rail prend déjà ~230px : les cinq onglets de Préparation demandaient 249px
+   de plus que la fenêtre. En dessous, c'est le sélecteur compact (le même
+   menu que sur téléphone) qui porte la navigation. */
 .section-tabs {
   display: none;
   max-width: 100%;
@@ -3066,12 +3070,16 @@ a:focus-visible,
   border: 1px solid var(--tv-border);
   box-shadow: none;
 }
-@media (min-width: 768px) {
+@media (min-width: 1024px) {
   .section-tabs {
     display: inline-flex;
   }
 }
 .section-tabs-row {
+  /* `min-width: 0` : sans lui, la rangée (élément flex) ne descend jamais
+     sous la largeur de ses onglets — son défilement interne ne s'enclenchait
+     pas, et c'est la fenêtre de contenu entière qui débordait. */
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 0.25rem;
@@ -3817,7 +3825,7 @@ a:focus-visible,
     grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
   }
   .tv-print-sheet .rp-curve {
-    height: 150px !important;
+    height: 132px !important;
   }
   .tv-print-sheet .rp-setups {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
@@ -3924,7 +3932,7 @@ a:focus-visible,
   /* Une section ne se coupe pas en deux entre deux pages tant qu'elle tient
      sur une. Le titre reste avec ce qu'il annonce. */
   .tv-print-sheet .rp-section {
-    padding: 0.75rem 0.2rem !important;
+    padding: 0.55rem 0.2rem !important;
     border-top-color: rgba(255, 255, 255, 0.07) !important;
     break-inside: avoid;
     page-break-inside: avoid;

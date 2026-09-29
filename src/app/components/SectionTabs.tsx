@@ -170,7 +170,7 @@ export default function SectionTabs({ section, page, setPage }: SectionTabsProps
           (plus de fenêtre qui surgit du bas de l'écran) avec toutes les vues
           de la section, nommées. Échap, un appui à côté ou un choix le
           referment. */}
-      <div ref={pickerRef} className="relative md:hidden">
+      <div ref={pickerRef} className="relative lg:hidden">
         <button
           type="button"
           onClick={() => setPickerOpen((o) => !o)}

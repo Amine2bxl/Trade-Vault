@@ -186,7 +186,11 @@ export default function LotSizeCalculator({ onAddTrade }: LotSizeCalculatorProps
 
   return (
     <div className="p-4 md:p-5 max-w-[1400px] mx-auto">
-      <div className="grid md:grid-cols-[1fr_320px] gap-4 md:gap-5 items-start">
+      {/* Deux colonnes à partir de `lg`, et une piste `minmax(0, 1fr)`. Un `1fr`
+          nu ne descend jamais sous la largeur minimale de son contenu : sur
+          tablette (768px, dont ~230 pour le rail), `1fr + 320px` débordait de
+          la fenêtre de 85px. */}
+      <div className="grid gap-4 md:gap-5 lg:grid-cols-[minmax(0,1fr)_320px] items-start">
         {/* ══ Colonne gauche : marché → capital → risque → instrument ══ */}
         <div className="space-y-4">
           {/* LE MARCHÉ — le premier choix, dans la page, pas un interrupteur
