@@ -58,44 +58,45 @@ export default function PlanScaleBlock({ trades }: { trades: Trade[] }) {
   const max = Math.max(echelle.perteMoyenne, MONTHLY_EUR);
   const part = (v: number) => `${Math.max(2, (v / max) * 100)}%`;
 
+  /* LA FORME. Le bloc empilait un titre en petites capitales, une ligne
+     d'aide, deux barres et deux paragraphes : cinq niveaux de lecture pour
+     une seule comparaison. Il se lit maintenant en un regard — le chiffre
+     qui répond à la question à gauche, les deux longueurs qui le prouvent à
+     droite, la limite en une ligne dessous. */
   return (
-    <section className="glass animate-fade-in-up stagger-2 rounded-3xl px-4 py-4 sm:px-5">
-      <h3 className="tv-label mb-1 text-slate-400">
-        {fr ? "Ce que ça pèse dans ton trading" : "What it weighs in your trading"}
-      </h3>
-      <p className="tv-row-label mb-4">
-        {fr
-          ? `Mesuré sur tes ${echelle.nLosses} trades perdants.`
-          : `Measured across your ${echelle.nLosses} losing trades.`}
-      </p>
-
-      <div className="space-y-3">
+    <section className="sub-scale animate-fade-in-up stagger-2">
+      <div className="min-w-0 sm:w-[38%]">
+        <p className="tv-label text-slate-500">
+          {fr ? "À l'échelle de ton journal" : "On the scale of your journal"}
+        </p>
+        <p className="mt-2 text-sm leading-snug text-slate-300">
+          <span className="tv-figure mr-1.5 text-3xl font-semibold text-white">
+            {echelle.partDUnePerte}%
+          </span>
+          {fr ? "d'une perte moyenne, pour un mois." : "of one average loss, for a month."}
+        </p>
+      </div>
+      <div className="min-w-0 flex-1 space-y-3">
         <Barre
-          label={fr ? "Ta perte moyenne, sur UN trade" : "Your average loss, on ONE trade"}
+          label={fr ? "Ta perte moyenne, sur un trade" : "Your average loss, on one trade"}
           valeur={euro(echelle.perteMoyenne)}
           largeur={part(echelle.perteMoyenne)}
           ton="neg"
         />
         <Barre
-          label={fr ? "TradeVault Pro, pour un MOIS" : "TradeVault Pro, for a MONTH"}
+          label={fr ? "TradeVault Pro, pour un mois" : "TradeVault Pro, for a month"}
           valeur={euro(MONTHLY_EUR)}
           largeur={part(MONTHLY_EUR)}
           ton="accent"
         />
+        {/* LA LIMITE, ÉCRITE. Sans elle, la comparaison se lirait comme une
+            promesse de rendement — ce qu'elle n'est pas et ne peut pas être. */}
+        <p className="tv-row-label">
+          {fr
+            ? `Mesuré sur tes ${echelle.nLosses} trades perdants. Une mise à l'échelle, pas une promesse : TradeVault n'exécute aucun trade.`
+            : `Measured across your ${echelle.nLosses} losing trades. A scale, not a promise: TradeVault places no trades.`}
+        </p>
       </div>
-
-      <p className="tv-prose mt-4 text-slate-300">
-        {fr
-          ? `Un mois d'abonnement représente ${echelle.partDUnePerte} % de ce que tu perds sur un seul trade moyen.`
-          : `A month of the subscription is ${echelle.partDUnePerte}% of what one average losing trade costs you.`}
-      </p>
-      {/* LA LIMITE, ÉCRITE. Sans elle, la comparaison se lirait comme une
-          promesse de rendement — ce qu'elle n'est pas et ne peut pas être. */}
-      <p className="tv-row-label mt-1.5 max-w-2xl">
-        {fr
-          ? "Une mise à l'échelle, pas une promesse : TradeVault n'exécute aucun trade et ne garantit aucun résultat."
-          : "A scale, not a promise: TradeVault places no trades and guarantees no outcome."}
-      </p>
     </section>
   );
 }
@@ -125,7 +126,7 @@ function Barre({
           {valeur}
         </span>
       </div>
-      <div className="h-2.5 overflow-hidden rounded-full bg-white/[0.05]">
+      <div className="h-1.5 overflow-hidden rounded-full bg-white/[0.05]">
         <div
           className={cn(
             "h-full rounded-full",

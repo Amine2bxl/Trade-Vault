@@ -13,7 +13,10 @@ import { Input } from "@/shared/ui";
 // downgrade, card change and cancellation are each one click. Crypto
 // subscribers see their access end date and renewal buttons.
 
-export default function SubscriptionSection() {
+export default function SubscriptionSection({
+  /** La carte d'adhésion porte déjà le bouton « Gérer » : ne pas le répéter. */
+  showPortal = true,
+}: { showPortal?: boolean } = {}) {
   const { t, lang } = useT();
   const { sub, loading, isPro, checkout, openPortal, cryptoCheckout } = useSubscription();
   const [busy, setBusy] = useState<string | null>(null);
@@ -67,6 +70,11 @@ export default function SubscriptionSection() {
      encaisser. */
   const showPlans = !isPro || sub.status === "trialing";
   const isStripeActive = sub.status === "active" && sub.source === "stripe";
+  const portal =
+    showPortal && (isStripeActive || (sub.hasStripeCustomer && sub.status !== "trialing"));
+  const cryptoRenew = sub.status === "active" && sub.source === "crypto";
+  // Rien à encaisser ni à gérer ici : pas de carte vide avec un seul titre.
+  if (!showPlans && !portal && !cryptoRenew) return null;
 
   return (
     <div className="glass rounded-3xl p-4 space-y-3.5 md:p-5">
@@ -130,7 +138,7 @@ export default function SubscriptionSection() {
 
       {/* Stripe subscribers: everything (card, plan switch, cancel) is one
           click away inside the Billing Portal. */}
-      {(isStripeActive || (sub.hasStripeCustomer && sub.status !== "trialing")) && (
+      {portal && (
         <button
           onClick={() => run("portal", openPortal)}
           disabled={busy !== null}
@@ -143,10 +151,12 @@ export default function SubscriptionSection() {
           <ExternalLink className="w-4 h-4 text-slate-500" />
         </button>
       )}
-      {isStripeActive && <p className="tv-row-label leading-relaxed">{t("billing.portalHint")}</p>}
+      {portal && isStripeActive && (
+        <p className="tv-row-label leading-relaxed">{t("billing.portalHint")}</p>
+      )}
 
       {/* Crypto subscribers renew manually — crypto has no auto-renewal. */}
-      {sub.status === "active" && sub.source === "crypto" && (
+      {cryptoRenew && (
         <div className="flex gap-2.5">
           <button
             onClick={() => run("renew-m", () => cryptoCheckout("pro_monthly"))}

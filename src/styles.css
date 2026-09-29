@@ -6024,3 +6024,269 @@ body::after {
   background: var(--tv-plate-2);
   border-color: var(--tv-border);
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LA CARTE D'ADHÉSION (page Abonnement)
+   ══════════════════════════════════════════════════════════════════════════
+   Une carte de membre, pas une pile de blocs : la profondeur vient d'une
+   plaque un cran plus claire que la page, d'un filet de lumière sur le bord
+   haut et d'une ombre courte — jamais d'un dégradé de remplissage. L'état se
+   lit dans le liseré (et la pastille), la couleur reste rare. */
+.sub-hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.5rem;
+  border: 1px solid var(--tv-border);
+  background: var(--tv-plate-2);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.06),
+    0 18px 40px -28px rgb(0 0 0 / 0.9);
+  padding: 1.25rem;
+}
+@media (min-width: 640px) {
+  .sub-hero {
+    padding: 1.6rem 1.75rem 1.4rem;
+  }
+}
+/* Le filet d'état, en haut : une ligne, pas une nappe. */
+.sub-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 2px;
+  background: var(--sub-hero-line, var(--tv-border-strong));
+  opacity: 0.9;
+}
+.sub-hero-active,
+.sub-hero-lifetime {
+  --sub-hero-line: rgb(var(--tv-accent-rgb) / 0.7);
+}
+.sub-hero-trialing {
+  --sub-hero-line: rgb(var(--tv-accent-rgb) / 0.5);
+}
+.sub-hero-cancelling {
+  --sub-hero-line: rgb(251 191 36 / 0.7);
+  border-color: rgb(251 191 36 / 0.25);
+}
+.sub-hero-pastDue {
+  --sub-hero-line: rgb(248 113 113 / 0.75);
+  border-color: rgb(248 113 113 / 0.25);
+}
+.sub-hero-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.25rem 2rem;
+}
+.sub-hero-title {
+  margin-top: 0.35rem;
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+  color: var(--tv-text-primary);
+}
+@media (min-width: 768px) {
+  .sub-hero-title {
+    font-size: 2rem;
+  }
+}
+.sub-hero-tier {
+  color: var(--tv-highlight);
+}
+.sub-hero-price {
+  text-align: left;
+}
+@media (min-width: 640px) {
+  .sub-hero-price {
+    text-align: right;
+  }
+}
+.sub-hero-facts {
+  margin-top: 1.25rem;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+@media (min-width: 640px) {
+  .sub-hero-facts {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+.sub-hero-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
+  margin-top: 1.1rem;
+}
+/* L'échelle du prix : même plaque que la carte d'adhésion, un cran plus
+   discrète — c'est un argument, pas un état. */
+.sub-scale {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  border-radius: 1.25rem;
+  border: 1px solid var(--tv-border);
+  background: var(--tv-plate-1);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
+  padding: 1.1rem 1.25rem;
+}
+@media (min-width: 640px) {
+  .sub-scale {
+    flex-direction: row;
+    align-items: center;
+    gap: 2rem;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   MONTE-CARLO — l'outil quantitatif
+   ══════════════════════════════════════════════════════════════════════════
+   Une barre de pilotage (ce que ça fait, les réglages en une ligne,
+   relancer), puis des cartes à profondeur maîtrisée : plaque + filet de
+   lumière + ombre courte, jamais de dégradé de remplissage. */
+.mc-run {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.9rem 1.25rem;
+  border-radius: 1.25rem;
+  border: 1px solid var(--tv-border);
+  background: var(--tv-plate-1);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05);
+  padding: 0.9rem 1rem;
+}
+@media (min-width: 640px) {
+  .mc-run {
+    padding: 1rem 1.25rem;
+  }
+}
+.mc-run-icon {
+  display: grid;
+  height: 2.25rem;
+  width: 2.25rem;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 0.75rem;
+  border: 1px solid var(--tv-border-accent);
+  background: rgb(var(--tv-accent-rgb) / 0.1);
+  color: var(--tv-highlight);
+}
+.mc-summary {
+  display: inline-flex;
+  min-width: 0;
+  max-width: 100%;
+  height: 2.25rem;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--tv-border);
+  background: var(--tv-plate-2);
+  padding: 0 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--tv-text-secondary);
+  transition-property: border-color, background-color;
+  transition-duration: var(--tv-dur-1);
+}
+.mc-summary:hover {
+  border-color: var(--tv-border-strong);
+  background: var(--tv-plate-3);
+}
+/* Sur bureau, les réglages sont dans la colonne : le résumé reste lisible
+   mais n'est plus la seule porte d'entrée. */
+.mc-rerun,
+.mc-alt {
+  display: inline-flex;
+  height: 2.25rem;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.45rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--tv-border-strong);
+  background: var(--tv-plate-3);
+  padding: 0 0.85rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--tv-text-primary);
+  transition-property: border-color, background-color, opacity;
+  transition-duration: var(--tv-dur-1);
+}
+.mc-rerun:hover:not(:disabled),
+.mc-alt:hover {
+  border-color: var(--tv-border-accent);
+}
+.mc-rerun:disabled {
+  opacity: 0.6;
+}
+.mc-launch {
+  margin-top: 0.75rem;
+  border-radius: 1.5rem;
+  border: 1px solid var(--tv-border);
+  background: var(--tv-plate-2);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.06),
+    0 18px 40px -28px rgb(0 0 0 / 0.9);
+  padding: 1.25rem;
+}
+@media (min-width: 640px) {
+  .mc-launch {
+    padding: 1.75rem;
+  }
+}
+.mc-steps {
+  display: grid;
+  gap: 0.75rem;
+}
+@media (min-width: 768px) {
+  .mc-steps {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.25rem;
+  }
+}
+.mc-steps li {
+  display: flex;
+  gap: 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--tv-text-secondary);
+}
+.mc-step-n {
+  display: grid;
+  height: 1.6rem;
+  width: 1.6rem;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 999px;
+  border: 1px solid var(--tv-border-strong);
+  background: var(--tv-plate-3);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--tv-text-primary);
+}
+.mc-card {
+  border-radius: 1.25rem;
+  border: 1px solid var(--tv-border);
+  background: var(--tv-plate-1);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.045),
+    0 14px 32px -26px rgb(0 0 0 / 0.9);
+  padding: 1rem;
+}
+@media (min-width: 640px) {
+  .mc-card {
+    padding: 1.1rem 1.25rem;
+  }
+}
+.mc-verdict {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+@media (min-width: 768px) {
+  .mc-verdict {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}

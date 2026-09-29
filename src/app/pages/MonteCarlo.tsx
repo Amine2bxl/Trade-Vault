@@ -9,6 +9,9 @@ import {
   X,
   Minus,
   Plus,
+  Play,
+  Dices,
+  Pencil,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -31,7 +34,17 @@ import { useAccounts } from "../contexts/AccountContext";
 import { cn } from "../utils/cn";
 import { usePageActions } from "../contexts/PageActionsContext";
 import { useAvailableHeight } from "../hooks/useAvailableHeight";
-import { Kpi, KpiGrid } from "@/shared/ui";
+import { Kpi, KpiGrid, Modal } from "@/shared/ui";
+import {
+  pathBands,
+  samplePaths,
+  chartRows,
+  drawdownStats,
+  streakStats,
+  probabilityOfProfit,
+  histogram,
+  rHistogram,
+} from "../utils/monteCarloViz";
 import { splitCleanTrades } from "../utils/mistakePlan";
 import {
   extractRSamples,
@@ -314,6 +327,12 @@ export default function MonteCarloPage({ trades }: Props) {
 
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<MonteCarloResult | null>(null);
+  /* LA GRAINE DU TIRAGE. « Relancer » en change : même journal, mêmes
+     réglages, un autre ordre de tirage — on VOIT que le résultat est un
+     calcul aléatoire répété, et que ses conclusions tiennent d'une relance à
+     l'autre (la marge d'erreur dit de combien elles bougent). */
+  const [seed, setSeed] = useState(() => 1 + Math.floor(Math.random() * 1_000_000));
+  const [editOpen, setEditOpen] = useState(false);
 
   const params: MonteCarloParams = useMemo(
     () => ({
@@ -328,8 +347,9 @@ export default function MonteCarloPage({ trades }: Props) {
       maxTradesPerDay: defauts.parJour,
       riskPerTrade: risque,
       simulations: TIRAGES,
+      seed,
     }),
-    [solde, objectifPct, limitePct, horizon, defauts.parJour, risque],
+    [solde, objectifPct, limitePct, horizon, defauts.parJour, risque, seed],
   );
 
   /* ── ELLE TIRE TOUTE SEULE ────────────────────────────────────────────
@@ -433,104 +453,181 @@ export default function MonteCarloPage({ trades }: Props) {
     />
   );
 
+  /* ══ LES LECTURES DU TIRAGE ═════════════════════════════════════════════
+     Toutes calculées sur les 2 000 tirages (voir `monteCarloViz`) : aucune
+     courbe ni aucun chiffre de la page n'est dessiné à la main. */
+  const lectures = useMemo(() => {
+    if (!result) return null;
+    const bands = pathBands(result, 72);
+    const paths = samplePaths(result, 36);
+    return {
+      rows: chartRows(bands, paths),
+      paths,
+      dd: drawdownStats(result),
+      streak: streakStats(result),
+      profit: probabilityOfProfit(result),
+    };
+  }, [result]);
+
+  const resume = `${formatMoney(solde)} · ${formatMoney(risque)}/${t("mc.tradeWord")} · ${horizon} ${t("mc.days")} · +${objectifPct}% / −${limitePct}%`;
+
   return (
-    // Même correction que la page Calendrier, et même raison. La hauteur
-    // mesurée est une CIBLE (« remplis l'écran »), pas un plafond (« tiens
-    // dans l'écran, quoi qu'il en coûte »).
-    //
-    // Avec `height` + `overflow-hidden`, la barre d'outils, le verdict, le
-    // graphe et la colonne de réglages se disputaient une hauteur fixe : sur un
-    // portable, le verdict écrasait le graphe, et la colonne de réglages —
-    // pourtant `overflow-y-auto` — se retrouvait tronquée sans que rien ne
-    // puisse défiler à l'échelle de la page.
     <div
       ref={boxRef}
       style={height ? { minHeight: height } : undefined}
       className="mx-auto flex h-full max-w-[1400px] flex-col overflow-y-auto p-3 md:p-4"
     >
-      {/* ══ DEUX COLONNES, PAS DEUX ÉCRANS ═══════════════════════════════
-          J'avais empilé les réglages AU-DESSUS du résultat : tout était bien
-          visible, mais plus rien ne tenait dans la fenêtre — il fallait
-          défiler pour voir le graphe, ce qui est exactement le défaut que la
-          page cherchait à corriger.
-          Les réglages retournent donc à CÔTÉ (320px à droite dès 1024px), et
-          ils y restent VISIBLES en permanence : plus de feuille à ouvrir,
-          plus de bouton pour les atteindre. Sous 1024px la colonne passe
-          simplement au-dessus, dans le flux — un téléphone défile de toute
-          façon, autant qu'il défile dans un seul sens. */}
-      <div className="grid flex-1 gap-3 lg:grid-cols-[minmax(0,1fr)_340px]">
-        <div className="order-2 flex min-w-0 flex-col gap-3 lg:order-1">
-          {samples.length < 5 ? (
-            /* Le garde-fou ne barre plus la PAGE, seulement les résultats : sans
-             lui, un trader sans journal ne pouvait pas même atteindre la saisie
-             manuelle — la seule qui lui permette d'éprouver sa stratégie. */
-            /* Le repos, pas une erreur : tant qu'aucune source n'est choisie, la
-             page attend, et le bloc au-dessus dit exactement ce qu'elle
-             attend. */
-            <div className="glass flex h-full min-h-[220px] flex-col items-center justify-center rounded-3xl px-6 py-10 text-center">
-              <Shuffle className="mb-4 h-9 w-9 text-[var(--tv-highlight)] opacity-40" />
-              <h3 className="tv-title mb-1.5">{t("mc.emptyTitle")}</h3>
-              <p className="max-w-sm text-sm text-slate-500">
-                {source === "csv"
-                  ? t("mc.emptyCsv")
-                  : source === "manual"
-                    ? t("mc.emptyManual")
-                    : t("mc.emptyBody")}
-              </p>
-            </div>
-          ) : !result ? (
-            <div className="flex h-full items-center justify-center">
-              <Loader2 className="h-6 w-6 animate-spin text-slate-500" />
-            </div>
-          ) : (
-            <div className={cn("flex flex-col gap-3 transition-opacity", running && "opacity-50")}>
-              <>
-                {/* ══ LE VERDICT — il ouvre la page et ne bouge plus ══════════ */}
-                <section className="glass shrink-0 animate-fade-in-up rounded-3xl px-4 py-4 sm:px-5">
-                  <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
-                    <div className="min-w-0">
-                      <div className="tv-label text-slate-500">{t("mc.verdictLabel")}</div>
-                      <div
-                        className={cn(
-                          "tv-figure mt-1 text-[34px] leading-none md:text-5xl",
-                          result.passRate >= 0.5 ? "rp-pos" : "rp-warn",
-                        )}
-                      >
-                        {(result.passRate * 100).toFixed(0)}%
-                      </div>
-                      <p className="tv-prose mt-2 max-w-md text-slate-400">
-                        {t("mc.verdictBody")
-                          .replace("{target}", `+${objectifPct}%`)
-                          .replace("{limit}", `-${limitePct}%`)
-                          .replace("{days}", String(horizon))}
-                      </p>
-                    </div>
-                    {/* DEUX FAITS, PLUS QUATRE.
-                      « Taux d'échec » et « taux d'expiration » redisaient
-                      exactement ce que la barre d'issues montre juste en
-                      dessous — trois segments proportionnels. Leurs
-                      pourcentages ont rejoint la légende de cette barre, sous
-                      leur propre couleur : l'information est intacte, elle
-                      n'est plus écrite deux fois.
-                      Restent les deux chiffres que la barre ne peut PAS dire :
-                      combien ça coûte en chemin (drawdown médian) et combien
-                      de temps ça prend. */}
-                    <div className="mc-facts">
-                      <Fait
-                        label={t("mc.medianDD")}
-                        value={formatMoney(result.medianMaxDD)}
-                        hint={`${((result.medianMaxDD / solde) * 100).toFixed(1)}%`}
-                      />
-                      <Fait
-                        label={t("mc.daysToPass")}
-                        value={result.avgDaysToPass > 0 ? result.avgDaysToPass.toFixed(0) : "—"}
-                        hint={t("mc.days")}
-                      />
-                    </div>
-                  </div>
+      {/* ══ LE LANCEMENT — CE QUE ÇA FAIT, SUR QUOI, ET LE BOUTON ═════════════
+          La page s'ouvrait sur un formulaire : on ne savait ni ce qu'elle
+          allait calculer, ni sur quelles données, ni comment la lancer. Elle
+          s'ouvre maintenant sur sa promesse en trois temps et UN bouton —
+          « Lancer sur mes N trades ». Une fois lancée, cette bande devient la
+          barre de pilotage : la source, les réglages en une ligne, relancer. */}
+      <section className="mc-run animate-fade-in-up">
+        <div className="flex min-w-0 flex-1 items-start gap-3">
+          <span className="mc-run-icon" aria-hidden>
+            <Dices className="h-4 w-4" />
+          </span>
+          <div className="min-w-0">
+            <h2 className="tv-title">{t("mc.launchTitle")}</h2>
+            <p className="tv-prose mt-0.5 text-slate-400">
+              {t("mc.launchBody").replace(
+                "{n}",
+                String(samples.length >= 5 ? stats.totalSamples : journalSamples.length),
+              )}
+            </p>
+          </div>
+        </div>
+        {samples.length >= 5 && (
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setEditOpen(true)}
+              className="mc-summary"
+              title={t("mc.settings")}
+            >
+              <SlidersHorizontal className="h-3.5 w-3.5 shrink-0 text-slate-500" />
+              <span className="truncate">{resume}</span>
+              <Pencil className="h-3 w-3 shrink-0 text-slate-500" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setSeed((s) => s + 1)}
+              disabled={running}
+              className="mc-rerun"
+            >
+              {running ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Shuffle className="h-3.5 w-3.5" />
+              )}
+              {t("mc.rerun")}
+            </button>
+          </div>
+        )}
+      </section>
 
-                  {/* Les trois issues, dans une barre — pas trois pourcentages
-                    dispersés dans une grille de tuiles. */}
+      {source === null ? (
+        <section className="mc-launch animate-fade-in-up stagger-1">
+          <ol className="mc-steps">
+            {(["mc.step1", "mc.step2", "mc.step3"] as const).map((k, i) => (
+              <li key={k}>
+                <span className="mc-step-n">{i + 1}</span>
+                <span>
+                  {t(k)
+                    .replace("{n}", String(journalSamples.length))
+                    .replace("{runs}", TIRAGES.toLocaleString())}
+                </span>
+              </li>
+            ))}
+          </ol>
+          <div className="mt-5 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setSource("journal")}
+              disabled={journalSamples.length < 5}
+              className="tv-accent-fill inline-flex h-11 items-center gap-2 rounded-xl px-5 text-sm font-semibold disabled:opacity-40"
+            >
+              <Play className="h-4 w-4" />
+              {t("mc.runJournal").replace("{n}", String(journalSamples.length))}
+            </button>
+            <button type="button" onClick={() => setSource("manual")} className="mc-alt">
+              <SlidersHorizontal className="h-3.5 w-3.5" />
+              {t("mc.srcManualHint")}
+            </button>
+            <button type="button" onClick={() => setSource("csv")} className="mc-alt">
+              <Upload className="h-3.5 w-3.5" />
+              {t("mc.srcCsvHint")}
+            </button>
+          </div>
+          {journalSamples.length < 5 && <p className="tv-row-label mt-3">{t("mc.emptyBody")}</p>}
+        </section>
+      ) : (
+        <div className="mt-3 grid flex-1 gap-3 lg:grid-cols-[minmax(0,1fr)_320px]">
+          <div className="flex min-w-0 flex-col gap-3">
+            {samples.length < 5 ? (
+              <div className="glass flex min-h-[220px] flex-col items-center justify-center rounded-3xl px-6 py-10 text-center">
+                <Shuffle className="mb-4 h-9 w-9 text-[var(--tv-highlight)] opacity-40" />
+                <h3 className="tv-title mb-1.5">{t("mc.emptyTitle")}</h3>
+                <p className="max-w-sm text-sm text-slate-500">
+                  {source === "csv"
+                    ? t("mc.emptyCsv")
+                    : source === "manual"
+                      ? t("mc.emptyManual")
+                      : t("mc.emptyBody")}
+                </p>
+                {/* Sur téléphone, les réglages sont derrière la ligne de
+                    résumé ; tant qu'il n'y a pas de résultat, on y mène. */}
+                <button
+                  type="button"
+                  onClick={() => setEditOpen(true)}
+                  className="mc-alt mt-4 lg:hidden"
+                >
+                  <SlidersHorizontal className="h-3.5 w-3.5" />
+                  {t("mc.settings")}
+                </button>
+              </div>
+            ) : !result || !lectures ? (
+              <div className="flex min-h-[320px] items-center justify-center">
+                <Loader2 className="h-6 w-6 animate-spin text-slate-500" />
+              </div>
+            ) : (
+              <div
+                className={cn("flex flex-col gap-3 transition-opacity", running && "opacity-60")}
+              >
+                {/* ══ LES CHIFFRES QUI DÉCIDENT — quatre probabilités et
+                    risques, calculés sur les 2 000 tirages ══════════════ */}
+                <section className="mc-card animate-fade-in-up">
+                  <div className="mc-verdict">
+                    <Fait
+                      label={t("mc.probTarget")}
+                      value={`${(result.passRate * 100).toFixed(0)}%`}
+                      hint={t("mc.margin").replace("{se}", (se * 100).toFixed(1))}
+                      tone={result.passRate >= 0.5 ? "pos" : undefined}
+                      big
+                    />
+                    <Fait
+                      label={t("mc.probLimit")}
+                      value={`${(result.failRate * 100).toFixed(0)}%`}
+                      hint={`${t("mc.timedOut")} ${(result.timeOutRate * 100).toFixed(0)}%`}
+                      tone={result.failRate > 0.3 ? "neg" : undefined}
+                      big
+                    />
+                    <Fait
+                      label={t("mc.probProfit")}
+                      value={`${(lectures.profit * 100).toFixed(0)}%`}
+                      hint={t("mc.probProfitHint").replace("{h}", String(horizon))}
+                      big
+                    />
+                    <Fait
+                      label={t("mc.medianDD")}
+                      value={formatMoney(lectures.dd.amount.p50)}
+                      hint={`${t("mc.worst5")} ${formatMoney(lectures.dd.amount.p95)}`}
+                      tone="neg"
+                      big
+                    />
+                  </div>
+                  {/* Les trois issues des 2 000 comptes, dans une barre. */}
                   <div className="mt-4">
                     <div className="rp-mix" role="img" aria-label={t("mc.outcomes")}>
                       {result.passRate > 0 && (
@@ -569,21 +666,22 @@ export default function MonteCarloPage({ trades }: Props) {
                         value={`${(result.failRate * 100).toFixed(0)}%`}
                       />
                       <span className="tv-hint ml-auto">
-                        {t("mc.margin").replace("{se}", (se * 100).toFixed(1))}
+                        {TIRAGES.toLocaleString()} {t("mc.paths")} · {stats.totalSamples}{" "}
+                        {t("mc.dataTrades").toLowerCase()}
                       </span>
                     </div>
                   </div>
                 </section>
 
-                {/* ══ TOUT LE RÉSULTAT, D'UNE TRAITE ═══════════════════════
-                  Ces trois blocs étaient trois ONGLETS. Deux d'entre eux
-                  étaient donc invisibles à tout instant, et il fallait savoir
-                  qu'ils existaient pour aller les chercher. Ils descendent
-                  simplement les uns sous les autres : le faisceau (où ça va),
-                  la distribution (où ça finit), et les percentiles chiffrés
-                  sous la courbe qu'ils commentent. */}
-                <Faisceau result={result} horizon={horizon} />
-                <Histogramme result={result} />
+                <Trajectoires result={result} lectures={lectures} />
+
+                <div className="grid gap-3 xl:grid-cols-2">
+                  <Histogramme result={result} />
+                  <Profondeur result={result} dd={lectures.dd} streak={lectures.streak} />
+                </div>
+
+                <DonneesRejouees samples={samples} source={source} />
+
                 {resultatPropre && (
                   <SansErreurs
                     complet={result}
@@ -591,23 +689,59 @@ export default function MonteCarloPage({ trades }: Props) {
                     nClean={separation.clean.length}
                   />
                 )}
-              </>
-            </div>
-          )}
-        </div>
+              </div>
+            )}
+          </div>
 
-        {/* La colonne des entrées — toujours à l'écran, jamais derrière un
-            bouton. Elle défile pour elle-même si les réglages dépassent. */}
-        <aside className="glass order-1 flex flex-col overflow-hidden rounded-3xl lg:order-2 lg:max-h-full">
-          <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">{panneau}</div>
-          <div className="flex justify-end border-t border-[var(--tv-border)] px-4 py-2.5 sm:px-5">
+          {/* LES RÉGLAGES — à côté sur bureau (on voit la courbe bouger en les
+              touchant), derrière la ligne de résumé sur téléphone : le
+              résultat passe en premier, les réglages s'ouvrent d'un geste. */}
+          <aside className="glass hidden flex-col overflow-hidden rounded-3xl lg:flex lg:max-h-full">
+            <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">{panneau}</div>
+            <div className="flex justify-end border-t border-[var(--tv-border)] px-4 py-2.5">
+              <button onClick={reinitialiser} className="btn-ghost btn-sm">
+                <RotateCcw className="h-3.5 w-3.5" />
+                {t("mc.reset")}
+              </button>
+            </div>
+          </aside>
+        </div>
+      )}
+
+      <Modal
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        className="max-h-[88dvh] overflow-hidden md:max-w-lg"
+        labelledBy="mc-edit-title"
+      >
+        <div className="flex max-h-[88dvh] flex-col">
+          <div className="flex items-center justify-between border-b border-[var(--tv-border)] px-5 py-4">
+            <h2 id="mc-edit-title" className="tv-title">
+              {t("mc.settings")}
+            </h2>
+            <button
+              onClick={() => setEditOpen(false)}
+              className="tv-pop-nav"
+              aria-label={t("common.close")}
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">{panneau}</div>
+          <div className="flex items-center justify-between gap-2 border-t border-[var(--tv-border)] px-5 py-3">
             <button onClick={reinitialiser} className="btn-ghost btn-sm">
               <RotateCcw className="h-3.5 w-3.5" />
               {t("mc.reset")}
             </button>
+            <button
+              onClick={() => setEditOpen(false)}
+              className="tv-accent-fill inline-flex h-9 items-center rounded-xl px-4 text-sm font-semibold"
+            >
+              {t("common.done")}
+            </button>
           </div>
-        </aside>
-      </div>
+        </div>
+      </Modal>
     </div>
   );
 }
@@ -872,121 +1006,70 @@ function PanneauReglages({
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
-   LE FAISCEAU DE TRAJECTOIRES
+   LES TRAJECTOIRES
    ──────────────────────────────────────────────────────────────────────────*/
 
+type Lectures = {
+  rows: ReturnType<typeof chartRows>;
+  paths: ReturnType<typeof samplePaths>;
+  dd: ReturnType<typeof drawdownStats>;
+  streak: ReturnType<typeof streakStats>;
+  profit: number;
+};
+
+const PATH_COLOR = {
+  passed: "rgb(var(--tv-chart-green-rgb) / 0.32)",
+  failed: "rgb(var(--tv-chart-red-rgb) / 0.32)",
+  timedOut: "rgb(148 163 184 / 0.28)",
+} as const;
+
 /**
- * Le graphe existait déjà, mais il n'avait AUCUN AXE DES ABSCISSES
- * (`tick={false}`) : on voyait une forme monter sans jamais savoir sur combien
- * de temps. Il porte maintenant les jours, et sa légende dit ce que chaque
- * bande veut dire au lieu de nommer des percentiles.
+ * LE GRAPHE PRINCIPAL — DE VRAIES TRAJECTOIRES, ET CE QU'ELLES FONT ENSEMBLE.
+ *
+ * Le faisceau lissé seul se lisait comme une illustration : une forme douce,
+ * sans rien qui rappelle qu'elle résume deux mille comptes. Il porte
+ * maintenant, en fond, TRENTE-SIX TRAJECTOIRES RÉELLEMENT TIRÉES — du pire au
+ * meilleur tirage, teintées par leur issue (cible, limite, temps écoulé) —
+ * et, par-dessus, les percentiles calculés trade par trade sur TOUS les
+ * tirages : la bande où finit la moitié des comptes, celle où finissent neuf
+ * sur dix, la médiane. Une trajectoire qui touche la cible ou la limite
+ * s'ARRÊTE, comme le compte qu'elle représente.
+ *
+ * L'échelle reste ancrée sur les réglages (solde, cible, limite) : relancer
+ * ne déplace pas les repères, deux tirages se comparent à l'œil.
  */
-function Faisceau({ result, horizon }: { result: MonteCarloResult; horizon: number }) {
+function Trajectoires({ result, lectures }: { result: MonteCarloResult; lectures: Lectures }) {
   const { t } = useT();
-  const sampled = result.runs.slice(0, 200);
-  const maxLen = Math.max(...sampled.map((r) => r.equity.length), 1);
-
-  const data = useMemo(() => {
-    /* UN PAS = UN JOUR ENTIER. Soixante pas répartis sur trente jours
-       donnaient des graduations à « J0 J2 J3 J5 J6 J8 J9 J11 » — des sauts
-       irréguliers, parce que deux pas voisins tombaient parfois sur le même
-       jour arrondi. */
-    const steps = Math.max(2, Math.min(60, horizon));
-    const out: {
-      jour: number;
-      p50: number;
-      /* Les bandes sont des COUPLES [bas, haut] : recharts dessine une aire
-         entre deux valeurs quand la clé rend un tableau, au lieu de la
-         remplir depuis la base de l'axe. C'est ce qui fait la différence
-         entre un faisceau et cinq aplats superposés qui se salissent. */
-      bande90: [number, number];
-      bande50: [number, number];
-      p95: number;
-      p5: number;
-    }[] = [];
-    for (let i = 0; i <= steps; i++) {
-      const idx = Math.floor((i / steps) * (maxLen - 1));
-      const vals = sampled
-        .map((r) => r.equity[Math.min(idx, r.equity.length - 1)])
-        .sort((a, b) => a - b);
-      const at = (q: number) => vals[Math.min(vals.length - 1, Math.floor(vals.length * q))];
-      const p5 = at(0.05);
-      const p25 = at(0.25);
-      const p50 = at(0.5);
-      const p75 = at(0.75);
-      const p95 = at(0.95);
-      out.push({
-        jour: Math.round((i / steps) * horizon),
-        p50,
-        bande90: [p5, p95],
-        bande50: [p25, p75],
-        p95,
-        p5,
-      });
-    }
-    return out;
-  }, [sampled, maxLen, horizon]);
-
   const cible = result.params.startingBalance + result.params.profitTarget;
   const plancher = result.params.startingBalance - result.params.maxDrawdown;
-
-  /**
-   * L'ÉCHELLE EST ANCRÉE SUR LES RÉGLAGES, JAMAIS SUR LE TIRAGE.
-   *
-   * Elle valait `["dataMin - 500", "dataMax + 500"]` : elle se recalculait donc
-   * à partir des chemins SIMULÉS. Or Monte-Carlo est stochastique — relancer
-   * sans rien changer donne d'autres extrêmes, donc une autre échelle. Les
-   * deux repères, eux, gardaient la même valeur mais se retrouvaient à une
-   * hauteur différente à l'écran : la ligne de cible SEMBLAIT bouger d'un
-   * scénario à l'autre. Impossible, dans ces conditions, de comparer deux
-   * tirages à l'œil — c'est pourtant tout l'intérêt d'en lancer plusieurs.
-   *
-   * Les trois ancres ci-dessous viennent des paramètres du trader : tant qu'il
-   * n'y touche pas, l'échelle est identique à chaque relance, et les repères
-   * restent cloués au même pixel.
-   *
-   * Aucun risque de rognage : un chemin s'ARRÊTE en touchant la cible ou la
-   * limite (`runMonteCarlo` marque `passed`/`failed` et sort), il ne peut donc
-   * les dépasser que du débordement d'un seul trade — ce que la marge absorbe.
-   */
   const domaineY = useMemo<[number, number]>(() => {
     const solde = result.params.startingBalance;
     const bas = Math.min(plancher, cible, solde);
     const haut = Math.max(plancher, cible, solde);
-    const marge = Math.max(1, (haut - bas) * 0.12);
+    const marge = Math.max(1, (haut - bas) * 0.14);
     return [bas - marge, haut + marge];
   }, [result.params.startingBalance, cible, plancher]);
-
-  const d = result.finalBalanceDistribution;
-  const depart = result.params.startingBalance;
+  const parJour = Math.max(1, result.params.maxTradesPerDay);
 
   return (
-    <section className="glass animate-fade-in-up rounded-3xl px-4 py-4 sm:px-5">
-      <TitreGraphe titre={t("mc.chartPaths")} sous={t("mc.chartPathsSub")} />
+    <section className="mc-card animate-fade-in-up">
+      <TitreGraphe
+        titre={t("mc.chartTraj")}
+        sous={t("mc.chartTrajSub")
+          .replace("{k}", String(lectures.paths.length))
+          .replace("{n}", result.runs.length.toLocaleString())}
+      />
       <div className={H_COURBE}>
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={data} margin={{ top: 12, right: 8, bottom: 0, left: 0 }}>
-            {/* Les deux bandes ne sont pas des à-plats : elles s'éteignent vers
-                le bas, là où les chemins vont vers la limite de perte. La
-                couleur reste donc du côté qui la mérite. */}
-            <defs>
-              <linearGradient id="mcBande90" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={CHART_GREEN} stopOpacity={0.13} />
-                <stop offset="100%" stopColor={CHART_RED} stopOpacity={0.08} />
-              </linearGradient>
-              <linearGradient id="mcBande50" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={CHART_GREEN} stopOpacity={0.3} />
-                <stop offset="100%" stopColor={CHART_GREEN} stopOpacity={0.12} />
-              </linearGradient>
-            </defs>
+          <ComposedChart data={lectures.rows} margin={{ top: 12, right: 8, bottom: 0, left: 0 }}>
             <CartesianGrid {...EQUITY_GRID} />
             <XAxis
-              dataKey="jour"
+              dataKey="step"
               tick={AXIS_TICK}
               axisLine={false}
               tickLine={false}
-              minTickGap={28}
-              tickFormatter={(v) => `${t("mc.dayShort")}${v}`}
+              minTickGap={32}
+              tickFormatter={(v) => `${t("mc.dayShort")}${Math.ceil(Number(v) / parJour)}`}
             />
             <YAxis
               tick={AXIS_TICK}
@@ -996,6 +1079,66 @@ function Faisceau({ result, horizon }: { result: MonteCarloResult; horizon: numb
               width={58}
               domain={domaineY}
               allowDataOverflow
+            />
+            <Area
+              type="linear"
+              dataKey="band90"
+              stroke="none"
+              fill="rgb(var(--tv-chart-green-rgb) / 0.07)"
+              isAnimationActive={false}
+              tooltipType="none"
+            />
+            <Area
+              type="linear"
+              dataKey="band50"
+              stroke="none"
+              fill="rgb(var(--tv-chart-green-rgb) / 0.13)"
+              isAnimationActive={false}
+              tooltipType="none"
+            />
+            {/* Les vraies trajectoires, fines et discrètes : la matière du
+                calcul, pas le sujet. */}
+            {lectures.paths.map((p, i) => (
+              <Line
+                key={i}
+                type="linear"
+                dataKey={`t${i}`}
+                stroke={PATH_COLOR[p.outcome]}
+                strokeWidth={1}
+                dot={false}
+                connectNulls={false}
+                isAnimationActive={false}
+                activeDot={false}
+                tooltipType="none"
+              />
+            ))}
+            <Line
+              type="linear"
+              dataKey="p95"
+              stroke={CHART_GREEN}
+              strokeWidth={1}
+              strokeOpacity={0.5}
+              strokeDasharray="3 3"
+              dot={false}
+              isAnimationActive={false}
+            />
+            <Line
+              type="linear"
+              dataKey="p5"
+              stroke={CHART_RED}
+              strokeWidth={1}
+              strokeOpacity={0.55}
+              strokeDasharray="3 3"
+              dot={false}
+              isAnimationActive={false}
+            />
+            <Line
+              type={EQUITY_CURVE_TYPE}
+              dataKey="p50"
+              stroke={CHART_GREEN}
+              {...EQUITY_LINE}
+              dot={false}
+              isAnimationActive={false}
             />
             <ReferenceLine
               y={cible}
@@ -1021,125 +1164,59 @@ function Faisceau({ result, horizon }: { result: MonteCarloResult; horizon: numb
                 fontSize: 10,
               }}
             />
-            {/* ══ UN FAISCEAU, PAS CINQ TRAITS ════════════════════════════
-                Première version : quatre aplats à 6 % d'opacité empilés depuis
-                le bas de l'axe, plus une ligne. Le meilleur et le pire cas se
-                confondaient avec le fond.
-                Deuxième version : cinq lignes, dont deux pointillées. Tout
-                était visible et rien n'était beau — cinq traits qui se croisent
-                ne se lisent pas, et le pointillé fait bon marché.
-
-                La forme juste pour une projection est le FAISCEAU : deux
-                bandes concentriques autour d'une médiane. La bande sombre est
-                l'intervalle où la moitié des chemins atterrissent, la claire
-                celui où neuf sur dix le font. On lit l'incertitude comme une
-                ÉPAISSEUR — ce qu'elle est — au lieu de la déduire de l'écart
-                entre deux traits.
-
-                Les deux bornes gardent un filet d'un pixel : sans lui, le bord
-                d'un dégradé à faible opacité devient impossible à situer. */}
-            <Area
-              type={EQUITY_CURVE_TYPE}
-              dataKey="bande90"
-              stroke="none"
-              fill="url(#mcBande90)"
-              fillOpacity={1}
-              isAnimationActive={false}
-            />
-            <Area
-              type={EQUITY_CURVE_TYPE}
-              dataKey="bande50"
-              stroke="none"
-              fill="url(#mcBande50)"
-              fillOpacity={1}
-              isAnimationActive={false}
-            />
-            <Line
-              type={EQUITY_CURVE_TYPE}
-              dataKey="p95"
-              stroke={CHART_GREEN}
-              strokeWidth={1}
-              strokeOpacity={0.45}
-              dot={false}
-              isAnimationActive={false}
-            />
-            <Line
-              type={EQUITY_CURVE_TYPE}
-              dataKey="p5"
-              stroke={CHART_RED}
-              strokeWidth={1}
-              strokeOpacity={0.45}
-              dot={false}
-              isAnimationActive={false}
-            />
-            {/* La médiane EST une courbe d'equity — projetée, mais une courbe
-                d'equity. Elle porte donc le trait de la référence du produit. */}
-            <Line
-              type={EQUITY_CURVE_TYPE}
-              dataKey="p50"
-              stroke={CHART_GREEN}
-              {...EQUITY_LINE}
-              dot={false}
-              isAnimationActive={false}
+            <ReferenceLine
+              y={result.params.startingBalance}
+              stroke="var(--tv-border-strong)"
+              strokeDasharray="2 4"
             />
             <Tooltip
               {...tooltipStyle}
-              labelFormatter={(v) => `${t("mc.dayShort")}${v}`}
+              labelFormatter={(v) =>
+                `${t("mc.tradeWord")} ${v} · ${t("mc.dayShort")}${Math.ceil(Number(v) / parJour)}`
+              }
               formatter={(value: number | string, name: string) => {
                 const libelle: Record<string, string> = {
                   p95: t("mc.bandBest"),
-                  p75: t("mc.bandGood"),
                   p50: t("mc.bandMedian"),
-                  p25: t("mc.bandPoor"),
                   p5: t("mc.bandWorst"),
                 };
                 return [formatMoney(Number(value)), libelle[name] ?? name];
               }}
+              itemSorter={(it) => -Number(it.value)}
             />
           </ComposedChart>
         </ResponsiveContainer>
       </div>
 
-      {/* LA LÉGENDE SUIT LA FORME : deux bandes et une médiane, pas cinq
-          percentiles à mémoriser. « La moitié des chemins » et « neuf sur
-          dix » se comprennent sans savoir ce qu'est un P25. */}
-      <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1">
-        <span className="flex items-center gap-1.5">
-          <span
-            aria-hidden
-            className="h-0.5 w-4 shrink-0 rounded-full bg-[var(--tv-chart-green)]"
-          />
-          <span className="tv-row-label">{t("mc.bandMedian")}</span>
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span
-            aria-hidden
-            className="h-2.5 w-4 shrink-0 rounded-sm bg-[rgb(var(--tv-chart-green-rgb)/0.28)]"
-          />
-          <span className="tv-row-label">{t("mc.bandHalf")}</span>
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span
-            aria-hidden
-            className="h-2.5 w-4 shrink-0 rounded-sm bg-[rgb(var(--tv-chart-green-rgb)/0.11)]"
-          />
-          <span className="tv-row-label">{t("mc.bandNine")}</span>
-        </span>
+      <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5">
+        <Legende2 swatch="h-0.5 w-4 bg-[var(--tv-chart-green)]" label={t("mc.bandMedian")} />
+        <Legende2
+          swatch="h-2.5 w-4 bg-[rgb(var(--tv-chart-green-rgb)/0.2)]"
+          label={t("mc.bandHalf")}
+        />
+        <Legende2
+          swatch="h-2.5 w-4 bg-[rgb(var(--tv-chart-green-rgb)/0.08)]"
+          label={t("mc.bandNine")}
+        />
+        <Legende2
+          swatch="h-0.5 w-4 bg-[rgb(var(--tv-chart-green-rgb)/0.5)]"
+          label={t("mc.pathPassed")}
+        />
+        <Legende2
+          swatch="h-0.5 w-4 bg-[rgb(var(--tv-chart-red-rgb)/0.5)]"
+          label={t("mc.pathFailed")}
+        />
+        <Legende2 swatch="h-0.5 w-4 bg-slate-400/50" label={t("mc.pathTimeout")} />
       </div>
 
-      {/* ══ OÙ ÇA FINIT, CHIFFRE PAR CHIFFRE ═════════════════════════════
-          C'était un TROISIÈME onglet (« détail »), donc une lecture qu'il
-          fallait aller chercher. Ces quatre nombres sont la valeur d'arrivée
-          des quatre courbes du graphe ci-dessus : ils appartiennent à ce
-          graphe, pas à un écran séparé. */}
       <div className="mt-4 border-t border-[var(--tv-border)] pt-4">
         <KpiGrid cols={4}>
           {(
             [
-              ["mc.p5", d.p5],
-              ["mc.p25", d.p25],
-              ["mc.p50", d.p50],
-              ["mc.p95", d.p95],
+              ["mc.p5", result.finalBalanceDistribution.p5],
+              ["mc.p25", result.finalBalanceDistribution.p25],
+              ["mc.p50", result.finalBalanceDistribution.p50],
+              ["mc.p95", result.finalBalanceDistribution.p95],
             ] as const
           ).map(([cle, valeur]) => (
             <Kpi
@@ -1147,11 +1224,188 @@ function Faisceau({ result, horizon }: { result: MonteCarloResult; horizon: numb
               inset
               label={t(cle)}
               value={formatMoney(valeur)}
-              tone={valeur >= depart ? "pos" : "neg"}
-              hint={formatPnl(valeur - depart)}
+              tone={valeur >= result.params.startingBalance ? "pos" : "neg"}
+              hint={formatPnl(valeur - result.params.startingBalance)}
             />
           ))}
         </KpiGrid>
+      </div>
+    </section>
+  );
+}
+
+function Legende2({ swatch, label }: { swatch: string; label: string }) {
+  return (
+    <span className="flex items-center gap-1.5">
+      <span aria-hidden className={cn("shrink-0 rounded-full", swatch)} />
+      <span className="tv-row-label">{label}</span>
+    </span>
+  );
+}
+
+/**
+ * LA PROFONDEUR — jusqu'où le compte descend en chemin, et combien de pertes
+ * d'affilée il faut encaisser. C'est le risque VÉCU : une trajectoire qui
+ * finit bien a pu passer par −18 %.
+ */
+function Profondeur({
+  result,
+  dd,
+  streak,
+}: {
+  result: MonteCarloResult;
+  dd: Lectures["dd"];
+  streak: Lectures["streak"];
+}) {
+  const { t } = useT();
+  const limite = result.params.maxDrawdown;
+  const bins = useMemo(
+    () => histogram(dd.values, 0, Math.max(limite * 1.15, dd.amount.p95 * 1.1, 1), 22),
+    [dd, limite],
+  );
+  return (
+    <section className="mc-card animate-fade-in-up stagger-3">
+      <TitreGraphe titre={t("mc.chartDD")} sous={t("mc.chartDDSub")} />
+      <div className={H_DISTRIB}>
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={bins} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+            <CartesianGrid {...EQUITY_GRID} />
+            <XAxis
+              dataKey="center"
+              tick={AXIS_TICK}
+              axisLine={false}
+              tickLine={false}
+              minTickGap={40}
+              tickFormatter={(v) => `−${formatMoney(v as number)}`}
+            />
+            <YAxis
+              tick={AXIS_TICK}
+              axisLine={false}
+              tickLine={false}
+              width={34}
+              allowDecimals={false}
+            />
+            <ReferenceLine
+              x={
+                bins[
+                  Math.min(
+                    bins.length - 1,
+                    Math.floor((limite / (bins[bins.length - 1].to || 1)) * bins.length),
+                  )
+                ]?.center
+              }
+              stroke={CHART_RED}
+              strokeDasharray="4 4"
+            />
+            <Tooltip
+              {...tooltipStyle}
+              labelFormatter={(v) => `−${formatMoney(Number(v))}`}
+              formatter={(value: number | string) => [
+                `${value} / ${result.runs.length}`,
+                t("mc.paths"),
+              ]}
+            />
+            <Bar dataKey="count" radius={[3, 3, 0, 0]} isAnimationActive={false}>
+              {bins.map((b, i) => (
+                <Cell
+                  key={i}
+                  fill={b.center >= limite ? CHART_RED : "#94a3b8"}
+                  fillOpacity={b.center >= limite ? 0.65 : 0.45}
+                />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+      <div className="mt-3 grid grid-cols-3 gap-3 border-t border-[var(--tv-border)] pt-3">
+        <Fait
+          label={t("mc.ddMedian")}
+          value={formatMoney(dd.amount.p50)}
+          hint={`${(dd.pct.p50 * 100).toFixed(1)}%`}
+        />
+        <Fait
+          label={t("mc.worst5")}
+          value={formatMoney(dd.amount.p95)}
+          hint={`${(dd.pct.p95 * 100).toFixed(1)}%`}
+          tone="neg"
+        />
+        <Fait
+          label={t("mc.streak")}
+          value={`${streak.p50}`}
+          hint={t("mc.streakHint").replace("{p95}", String(streak.p95))}
+        />
+      </div>
+    </section>
+  );
+}
+
+/**
+ * CE QUI EST REJOUÉ — les trades du trader, pas une hypothèse.
+ *
+ * Le calcul tirait dans le journal sans jamais le montrer : on ne sentait pas
+ * que la simulation portait sur SES données. Voici l'échantillon lui-même :
+ * combien de trades, leur taux de réussite, la taille moyenne d'un gain et
+ * d'une perte en R, l'espérance, la dispersion — et la forme exacte de la
+ * distribution des résultats, en R.
+ */
+function DonneesRejouees({ samples, source }: { samples: RMultipleSample[]; source: Source }) {
+  const { t } = useT();
+  const st = useMemo(() => computeStatistics(samples), [samples]);
+  const bins = useMemo(() => rHistogram(samples), [samples]);
+  return (
+    <section className="mc-card animate-fade-in-up stagger-3">
+      <TitreGraphe
+        titre={t("mc.dataTitle")}
+        sous={t(
+          source === "journal"
+            ? "mc.dataSubJournal"
+            : source === "csv"
+              ? "mc.dataSubCsv"
+              : "mc.dataSubManual",
+        ).replace("{n}", String(st.totalSamples))}
+      />
+      <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
+        <div className="grid grid-cols-3 gap-3 self-start">
+          <Fait label={t("mc.dataTrades")} value={String(st.totalSamples)} />
+          <Fait label={t("stats.winRate")} value={`${(st.winRate * 100).toFixed(0)}%`} />
+          <Fait
+            label={t("quant.expectancy")}
+            value={`${st.expectancy >= 0 ? "+" : ""}${st.expectancy.toFixed(2)}R`}
+            tone={st.expectancy < 0 ? "neg" : "pos"}
+          />
+          <Fait label={t("mc.avgWin")} value={`+${st.avgWinR.toFixed(2)}R`} />
+          <Fait label={t("mc.avgLoss")} value={`−${st.avgLossR.toFixed(2)}R`} />
+          <Fait label={t("mc.stdR")} value={`${st.stdDevR.toFixed(2)}R`} />
+        </div>
+        <div className="h-[140px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={bins} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
+              <XAxis
+                dataKey="center"
+                tick={AXIS_TICK}
+                axisLine={false}
+                tickLine={false}
+                interval={1}
+                tickFormatter={(v) => `${Number(v) > 0 ? "+" : ""}${Number(v).toFixed(1)}R`}
+              />
+              <YAxis hide allowDecimals={false} />
+              <Tooltip
+                {...tooltipStyle}
+                labelFormatter={(v) => `${Number(v) > 0 ? "+" : ""}${Number(v).toFixed(2)}R`}
+                formatter={(value: number | string) => [String(value), t("mc.dataTrades")]}
+              />
+              <Bar dataKey="count" radius={[2, 2, 0, 0]} isAnimationActive={false}>
+                {bins.map((b, i) => (
+                  <Cell
+                    key={i}
+                    fill={b.center > 0 ? CHART_GREEN : b.center < 0 ? CHART_RED : "#94a3b8"}
+                    fillOpacity={0.6}
+                  />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       </div>
     </section>
   );
@@ -1210,7 +1464,7 @@ function Histogramme({ result }: { result: MonteCarloResult }) {
   }, [result]);
 
   return (
-    <section className="glass animate-fade-in-up stagger-3 rounded-3xl px-4 py-4 sm:px-5">
+    <section className="mc-card animate-fade-in-up stagger-3">
       <TitreGraphe titre={t("mc.chartDist")} sous={t("mc.chartDistSub")} />
       <div className={H_DISTRIB}>
         <ResponsiveContainer width="100%" height="100%">
@@ -1490,19 +1744,23 @@ function Fait({
   value,
   hint,
   tone,
+  big,
 }: {
   label: string;
   value: string;
   hint?: string;
-  tone?: "neg";
+  tone?: "neg" | "pos";
+  /** Chiffre de décision (le haut de page) : plus grand. */
+  big?: boolean;
 }) {
   return (
     <div className="min-w-0">
       <div className="tv-label truncate text-slate-500">{label}</div>
       <div
         className={cn(
-          "tv-figure mt-1 truncate text-sm leading-none",
-          tone === "neg" ? "rp-neg" : "text-white",
+          "tv-figure mt-1 truncate leading-none",
+          big ? "text-2xl md:text-[28px]" : "text-sm",
+          tone === "neg" ? "rp-neg" : tone === "pos" ? "rp-pos" : "text-white",
         )}
       >
         {value}
@@ -1640,7 +1898,7 @@ function SansErreurs({
   const ecart = Math.round(b - a);
 
   return (
-    <section className="glass animate-fade-in-up stagger-3 rounded-3xl px-4 py-4 sm:px-5">
+    <section className="mc-card animate-fade-in-up stagger-3">
       <TitreGraphe
         titre={t("mc.cleanTitle")}
         sous={t("mc.cleanBody").replace("{n}", String(nClean))}

@@ -132,17 +132,26 @@ describe("les graphes de Monte-Carlo", () => {
     //
     // On vérifie donc les deux bouts de la chaîne : les cinq sont CALCULÉS, et
     // chacun est porté par une `dataKey` du graphe.
-    const faisceau = src.slice(src.indexOf("function Faisceau("));
-    for (const p of ["p5", "p25", "p50", "p75", "p95"]) {
-      expect(faisceau).toContain(`const ${p} = at(`);
+    // Le calcul vit désormais dans `utils/monteCarloViz.ts` (testé à part) ;
+    // le graphe, dans `Trajectoires`.
+    const viz = read("../src/app/utils/monteCarloViz.ts");
+    for (const [p, q] of [
+      ["p5", "0.05"],
+      ["p25", "0.25"],
+      ["p50", "0.5"],
+      ["p75", "0.75"],
+      ["p95", "0.95"],
+    ]) {
+      expect(viz).toContain(`${p}: quantile(vals, ${q})`);
     }
     // p25/p75 et p5/p95 voyagent par couples dans les deux bandes ; la médiane
     // garde sa ligne propre.
-    for (const cle of ["bande90", "bande50", "p50", "p95", "p5"]) {
-      expect(faisceau).toContain(`dataKey="${cle}"`);
+    expect(viz).toContain("band90: [b.p5, b.p95]");
+    expect(viz).toContain("band50: [b.p25, b.p75]");
+    const graphe = src.slice(src.indexOf("function Trajectoires("));
+    for (const cle of ["band90", "band50", "p50", "p95", "p5"]) {
+      expect(graphe).toContain(`dataKey="${cle}"`);
     }
-    expect(faisceau).toContain("bande90: [p5, p95]");
-    expect(faisceau).toContain("bande50: [p25, p75]");
   });
 });
 
