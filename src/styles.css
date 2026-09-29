@@ -6400,6 +6400,74 @@ body::after {
   }
 }
 
+/* ── MONTE-CARLO : LES DONNÉES UTILISÉES, LA LECTURE ── */
+.mc-data {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem 0.75rem;
+  min-width: 0;
+  padding: 0.6rem 0.85rem;
+  border: 1px solid var(--tv-border);
+  border-radius: 0.9rem;
+  background: var(--tv-plate-1);
+}
+.mc-data-src {
+  flex-shrink: 0;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid var(--tv-border-strong);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--tv-text-primary);
+}
+.mc-data-facts {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 16rem;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.9rem;
+  font-size: 12px;
+  color: var(--tv-text-secondary);
+}
+.mc-data-edit {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.35rem;
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tv-highlight);
+}
+.mc-read {
+  display: grid;
+  gap: 0.55rem;
+}
+.mc-read li {
+  position: relative;
+  padding-left: 0.95rem;
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: var(--tv-text-secondary);
+}
+.mc-read li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.62em;
+  height: 0.3rem;
+  width: 0.3rem;
+  border-radius: 999px;
+  background: var(--tv-text-muted);
+}
+.mc-read li.mc-read-neg {
+  color: var(--tv-text-primary);
+}
+.mc-read li.mc-read-neg::before {
+  background: var(--tv-chart-red);
+}
+
 /* ══════════════════════════════════════════════════════════════════════════
    CALCULATEUR — LE CHOIX DU MARCHÉ
    ══════════════════════════════════════════════════════════════════════════

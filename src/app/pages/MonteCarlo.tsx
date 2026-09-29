@@ -71,7 +71,6 @@ import {
   AXIS_TICK,
   CHART_GREEN,
   CHART_RED,
-  EQUITY_CURVE_TYPE,
   EQUITY_GRID,
   EQUITY_LINE,
   tooltipStyle,
@@ -384,6 +383,16 @@ export default function MonteCarloPage({ trades }: Props) {
     return runMonteCarlo(params, echantillon);
   }, [source, separation, params]);
 
+  /* ET SI LE RISQUE ÉTAIT DIVISÉ PAR DEUX ? La même simulation, les mêmes
+     trades, la même graine — seul le risque par trade change. C'est la
+     question que pose toute lecture d'un Monte-Carlo, et la réponse coûte
+     quelques millisecondes : on la calcule au lieu de la suggérer. */
+  const demiRisque = useMemo(() => {
+    if (!result || samples.length < 5 || params.riskPerTrade < 2) return null;
+    const risque = Math.round(params.riskPerTrade / 2);
+    return { risque, result: runMonteCarlo({ ...params, riskPerTrade: risque }, samples) };
+  }, [result, samples, params]);
+
   const reinitialiser = useCallback(() => {
     touche.current = false;
     setSolde(defauts.solde);
@@ -459,7 +468,7 @@ export default function MonteCarloPage({ trades }: Props) {
   const lectures = useMemo(() => {
     if (!result) return null;
     const bands = pathBands(result, 72);
-    const paths = samplePaths(result, 36);
+    const paths = samplePaths(result, 24);
     return {
       rows: chartRows(bands, paths),
       paths,
@@ -498,12 +507,18 @@ export default function MonteCarloPage({ trades }: Props) {
             </p>
           </div>
         </div>
+        {/* LE DÉBORDEMENT HORIZONTAL VENAIT D'ICI. Ce groupe était `shrink-0` :
+            sa largeur valait celle de son contenu, donc le `truncate` du
+            résumé ne s'appliquait jamais, et sur un téléphone ses ~330px
+            sortaient d'une barre qui n'en offre que ~317. Le groupe peut
+            maintenant rétrécir (pleine largeur sous 640px) et le résumé
+            prend la place qui reste — c'est lui qui se tronque. */}
         {samples.length >= 5 && (
-          <div className="flex shrink-0 flex-wrap items-center gap-2">
+          <div className="flex w-full min-w-0 items-center gap-2 sm:w-auto sm:max-w-full">
             <button
               type="button"
               onClick={() => setEditOpen(true)}
-              className="mc-summary"
+              className="mc-summary min-w-0 flex-1 sm:flex-initial"
               title={t("mc.settings")}
             >
               <SlidersHorizontal className="h-3.5 w-3.5 shrink-0 text-slate-500" />
@@ -595,6 +610,17 @@ export default function MonteCarloPage({ trades }: Props) {
               <div
                 className={cn("flex flex-col gap-3 transition-opacity", running && "opacity-60")}
               >
+                {/* ══ LES DONNÉES UTILISÉES — avant le résultat ══════════════
+                    Le résultat n'a de sens qu'une fois dit SUR QUOI il porte.
+                    La carte détaillée reste en bas ; cette ligne-ci se lit
+                    avant les chiffres. */}
+                <DonneesUtilisees
+                  source={source}
+                  stats={stats}
+                  parJour={defauts.parJour}
+                  onEdit={() => setEditOpen(true)}
+                />
+
                 {/* ══ LES CHIFFRES QUI DÉCIDENT — quatre probabilités et
                     risques, calculés sur les 2 000 tirages ══════════════ */}
                 <section className="mc-card animate-fade-in-up">
@@ -672,6 +698,17 @@ export default function MonteCarloPage({ trades }: Props) {
                     </div>
                   </div>
                 </section>
+
+                <Lecture
+                  result={result}
+                  lectures={lectures}
+                  stats={stats}
+                  demiRisque={demiRisque}
+                  objectifPct={objectifPct}
+                  limitePct={limitePct}
+                  horizon={horizon}
+                  onEdit={() => setEditOpen(true)}
+                />
 
                 <Trajectoires result={result} lectures={lectures} />
 
@@ -1017,11 +1054,13 @@ type Lectures = {
   profit: number;
 };
 
-const PATH_COLOR = {
-  passed: "rgb(var(--tv-chart-green-rgb) / 0.32)",
-  failed: "rgb(var(--tv-chart-red-rgb) / 0.32)",
-  timedOut: "rgb(148 163 184 / 0.28)",
-} as const;
+/* LES TRAJECTOIRES TIRÉES — UNE SEULE TEINTE, NEUTRE.
+   Teintées par leur issue (vert, rouge, gris), trente-six lignes faisaient un
+   écheveau multicolore : l'œil lisait un effet, pas une mesure. L'issue est
+   déjà portée par la barre des trois issues et par les deux repères cible /
+   limite ; les trajectoires ne sont que la matière du calcul, en gris fin.
+   La couleur reste réservée à ce qui se lit : la médiane. */
+const PATH_STROKE = "rgb(148 163 184 / 0.16)";
 
 /**
  * LE GRAPHE PRINCIPAL — DE VRAIES TRAJECTOIRES, ET CE QU'ELLES FONT ENSEMBLE.
@@ -1084,7 +1123,7 @@ function Trajectoires({ result, lectures }: { result: MonteCarloResult; lectures
               type="linear"
               dataKey="band90"
               stroke="none"
-              fill="rgb(var(--tv-chart-green-rgb) / 0.07)"
+              fill="rgb(148 163 184 / 0.06)"
               isAnimationActive={false}
               tooltipType="none"
             />
@@ -1092,7 +1131,7 @@ function Trajectoires({ result, lectures }: { result: MonteCarloResult; lectures
               type="linear"
               dataKey="band50"
               stroke="none"
-              fill="rgb(var(--tv-chart-green-rgb) / 0.13)"
+              fill="rgb(148 163 184 / 0.11)"
               isAnimationActive={false}
               tooltipType="none"
             />
@@ -1103,7 +1142,7 @@ function Trajectoires({ result, lectures }: { result: MonteCarloResult; lectures
                 key={i}
                 type="linear"
                 dataKey={`t${i}`}
-                stroke={PATH_COLOR[p.outcome]}
+                stroke={PATH_STROKE}
                 strokeWidth={1}
                 dot={false}
                 connectNulls={false}
@@ -1115,9 +1154,9 @@ function Trajectoires({ result, lectures }: { result: MonteCarloResult; lectures
             <Line
               type="linear"
               dataKey="p95"
-              stroke={CHART_GREEN}
+              stroke="rgb(203 213 225)"
               strokeWidth={1}
-              strokeOpacity={0.5}
+              strokeOpacity={0.45}
               strokeDasharray="3 3"
               dot={false}
               isAnimationActive={false}
@@ -1125,15 +1164,15 @@ function Trajectoires({ result, lectures }: { result: MonteCarloResult; lectures
             <Line
               type="linear"
               dataKey="p5"
-              stroke={CHART_RED}
+              stroke="rgb(203 213 225)"
               strokeWidth={1}
-              strokeOpacity={0.55}
+              strokeOpacity={0.45}
               strokeDasharray="3 3"
               dot={false}
               isAnimationActive={false}
             />
             <Line
-              type={EQUITY_CURVE_TYPE}
+              type="linear"
               dataKey="p50"
               stroke={CHART_GREEN}
               {...EQUITY_LINE}
@@ -1190,23 +1229,10 @@ function Trajectoires({ result, lectures }: { result: MonteCarloResult; lectures
 
       <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5">
         <Legende2 swatch="h-0.5 w-4 bg-[var(--tv-chart-green)]" label={t("mc.bandMedian")} />
-        <Legende2
-          swatch="h-2.5 w-4 bg-[rgb(var(--tv-chart-green-rgb)/0.2)]"
-          label={t("mc.bandHalf")}
-        />
-        <Legende2
-          swatch="h-2.5 w-4 bg-[rgb(var(--tv-chart-green-rgb)/0.08)]"
-          label={t("mc.bandNine")}
-        />
-        <Legende2
-          swatch="h-0.5 w-4 bg-[rgb(var(--tv-chart-green-rgb)/0.5)]"
-          label={t("mc.pathPassed")}
-        />
-        <Legende2
-          swatch="h-0.5 w-4 bg-[rgb(var(--tv-chart-red-rgb)/0.5)]"
-          label={t("mc.pathFailed")}
-        />
-        <Legende2 swatch="h-0.5 w-4 bg-slate-400/50" label={t("mc.pathTimeout")} />
+        <Legende2 swatch="h-2.5 w-4 bg-slate-400/25" label={t("mc.bandHalf")} />
+        <Legende2 swatch="h-2.5 w-4 bg-slate-400/10" label={t("mc.bandNine")} />
+        <Legende2 swatch="h-px w-4 bg-slate-300/50" label={t("mc.bandExtremes")} />
+        <Legende2 swatch="h-px w-4 bg-slate-400/40" label={t("mc.pathSampled")} />
       </div>
 
       <div className="mt-4 border-t border-[var(--tv-border)] pt-4">
@@ -1945,5 +1971,143 @@ function BarreTaux({ label, pct, ton }: { label: string; pct: number; ton: "pos"
         {pct.toFixed(0)}%
       </span>
     </div>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   LES DONNÉES UTILISÉES — une ligne, avant le résultat
+   ──────────────────────────────────────────────────────────────────────────*/
+
+function DonneesUtilisees({
+  source,
+  stats,
+  parJour,
+  onEdit,
+}: {
+  source: Source;
+  stats: ReturnType<typeof computeStatistics>;
+  parJour: number;
+  onEdit: () => void;
+}) {
+  const { t } = useT();
+  const libelleSource = t(
+    source === "journal" ? "mc.srcJournal" : source === "csv" ? "mc.srcCsv" : "mc.srcManual",
+  );
+  const faits = [
+    `${stats.totalSamples} ${t("mc.dataTrades").toLowerCase()}`,
+    `${(stats.winRate * 100).toFixed(0)}% ${t("stats.winRate").toLowerCase()}`,
+    `+${stats.avgWinR.toFixed(2)}R / −${stats.avgLossR.toFixed(2)}R`,
+    `${t("quant.expectancy")} ${stats.expectancy >= 0 ? "+" : ""}${stats.expectancy.toFixed(2)}R`,
+    t("mc.perDay").replace("{n}", String(parJour)),
+  ];
+  return (
+    <div className="mc-data animate-fade-in-up">
+      <span className="tv-label shrink-0 text-slate-500">{t("mc.dataUsed")}</span>
+      <span className="mc-data-src">{libelleSource}</span>
+      <span className="mc-data-facts">
+        {faits.map((f) => (
+          <span key={f} className="tv-figure">
+            {f}
+          </span>
+        ))}
+      </span>
+      {/* Sur bureau, les réglages sont déjà dans la colonne de droite. */}
+      <button type="button" onClick={onEdit} className="mc-data-edit lg:hidden">
+        <Pencil className="h-3 w-3" />
+        {t("mc.adjust")}
+      </button>
+    </div>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   LA LECTURE — ce que le résultat veut dire, en phrases
+   ──────────────────────────────────────────────────────────────────────────*/
+
+/**
+ * LA LECTURE.
+ *
+ * Quatre chiffres et deux graphes ne disent pas quoi en faire. Cette carte les
+ * met en phrases, TOUTES tirées du tirage affiché — rien n'est estimé à côté :
+ *
+ *   1. l'issue : combien de comptes atteignent la cible, combien la limite ;
+ *   2. le chemin : jusqu'où la moitié des comptes descend en route ;
+ *   3. le levier : la même simulation à risque divisé par deux, CALCULÉE —
+ *      c'est la seule manette dont le trader dispose vraiment ;
+ *   4. et, si l'espérance est négative, la seule phrase qui compte : aucun
+ *      réglage de risque ne rend ce système gagnant.
+ */
+function Lecture({
+  result,
+  lectures,
+  stats,
+  demiRisque,
+  objectifPct,
+  limitePct,
+  horizon,
+  onEdit,
+}: {
+  result: MonteCarloResult;
+  lectures: Lectures;
+  stats: ReturnType<typeof computeStatistics>;
+  demiRisque: { risque: number; result: MonteCarloResult } | null;
+  objectifPct: number;
+  limitePct: number;
+  horizon: number;
+  onEdit: () => void;
+}) {
+  const { t } = useT();
+  const pct = (v: number) => `${(v * 100).toFixed(0)}%`;
+  const lignes: { cle: string; texte: string; ton?: "neg" }[] = [
+    {
+      cle: "issue",
+      texte: t("mc.readOutcome")
+        .replace("{runs}", result.runs.length.toLocaleString())
+        .replace("{pass}", pct(result.passRate))
+        .replace("{obj}", String(objectifPct))
+        .replace("{h}", String(horizon))
+        .replace("{fail}", pct(result.failRate))
+        .replace("{lim}", String(limitePct)),
+    },
+    {
+      cle: "chemin",
+      texte: t("mc.readPath")
+        .replace("{dd50}", formatMoney(lectures.dd.amount.p50))
+        .replace("{dd95}", formatMoney(lectures.dd.amount.p95)),
+    },
+  ];
+  if (stats.expectancy < 0) {
+    lignes.push({
+      cle: "edge",
+      texte: t("mc.readNegEdge").replace("{e}", stats.expectancy.toFixed(2)),
+      ton: "neg",
+    });
+  } else if (demiRisque) {
+    lignes.push({
+      cle: "levier",
+      texte: t("mc.readHalfRisk")
+        .replace("{risk}", formatMoney(demiRisque.risque))
+        .replace("{pass}", pct(demiRisque.result.passRate))
+        .replace("{fail}", pct(demiRisque.result.failRate)),
+    });
+  }
+  return (
+    <section className="mc-card animate-fade-in-up stagger-1">
+      <TitreGraphe titre={t("mc.readTitle")} sous={t("mc.readSub")} />
+      <ul className="mc-read">
+        {lignes.map((l) => (
+          <li key={l.cle} className={cn(l.ton === "neg" && "mc-read-neg")}>
+            {l.texte}
+          </li>
+        ))}
+      </ul>
+      <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+        <p className="tv-row-label min-w-0 flex-1">{t("mc.readModify")}</p>
+        <button type="button" onClick={onEdit} className="mc-alt lg:hidden">
+          <SlidersHorizontal className="h-3.5 w-3.5" />
+          {t("mc.adjust")}
+        </button>
+      </div>
+    </section>
   );
 }

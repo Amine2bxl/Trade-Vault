@@ -365,6 +365,23 @@ const fr: Dict = {
   "mc.bandMedian": "Trajectoire du milieu",
   "mc.bandPoor": "Le quart du bas",
   "mc.bandWorst": "Les 5% du bas",
+  "mc.bandExtremes": "Meilleurs / pires 5 %",
+  "mc.pathSampled": "Comptes tirés",
+  "mc.dataUsed": "Données utilisées",
+  "mc.perDay": "{n} trades/jour",
+  "mc.adjust": "Ajuster",
+  "mc.readTitle": "Ce que ça veut dire",
+  "mc.readSub": "Lu dans la simulation ci-dessus — rien n'est estimé à côté",
+  "mc.readOutcome":
+    "Sur {runs} comptes simulés avec tes réglages, {pass} atteignent la cible de +{obj} % en {h} jours et {fail} touchent d'abord la limite de −{lim} %.",
+  "mc.readPath":
+    "En chemin, la moitié des comptes recule d'au moins {dd50} depuis son plus haut ; un sur vingt de plus de {dd95}.",
+  "mc.readNegEdge":
+    "Ton espérance est négative ({e}R par trade) : aucun réglage de risque ne rend ce système gagnant dans la durée — c'est l'avantage qu'il faut changer d'abord.",
+  "mc.readHalfRisk":
+    "Mêmes trades, risque divisé par deux ({risk} par trade) : {pass} atteignent la cible, {fail} touchent la limite.",
+  "mc.readModify":
+    "Modifie n'importe quel réglage — la simulation se relance seule, sur les mêmes trades.",
   "mc.bandHalf": "La moitié des trajectoires",
   "mc.bandNine": "Neuf trajectoires sur dix",
   "mc.p5": "Les 5% du bas",

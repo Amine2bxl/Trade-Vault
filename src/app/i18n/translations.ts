@@ -408,6 +408,22 @@ const en = {
   "mc.bandMedian": "Middle path",
   "mc.bandPoor": "Bottom quarter",
   "mc.bandWorst": "Worst 5%",
+  "mc.bandExtremes": "Best / worst 5%",
+  "mc.pathSampled": "Sampled accounts",
+  "mc.dataUsed": "Data used",
+  "mc.perDay": "{n} trades/day",
+  "mc.adjust": "Adjust",
+  "mc.readTitle": "What this means",
+  "mc.readSub": "Read from the simulation above — nothing estimated on the side",
+  "mc.readOutcome":
+    "Out of {runs} simulated accounts with your settings, {pass} reach the +{obj}% target within {h} days and {fail} hit the −{lim}% limit first.",
+  "mc.readPath":
+    "Along the way, half of the accounts drop at least {dd50} from their peak; one in twenty drops more than {dd95}.",
+  "mc.readNegEdge":
+    "Your expectancy is negative ({e}R per trade): no risk setting makes this system profitable over time — the edge has to change first.",
+  "mc.readHalfRisk":
+    "Same trades at half the risk ({risk} per trade): {pass} reach the target, {fail} hit the limit.",
+  "mc.readModify": "Change any setting — the simulation reruns on its own with the same trades.",
   "mc.bandHalf": "Half of the paths",
   "mc.bandNine": "Nine paths out of ten",
   "mc.p5": "Worst 5%",
