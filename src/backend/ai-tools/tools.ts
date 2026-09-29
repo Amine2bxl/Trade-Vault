@@ -300,10 +300,13 @@ export const getStats: ToolDefinition = {
 export const getMistakes: ToolDefinition = {
   name: "get_mistakes",
   description:
-    "Read the trader's logged mistakes over a window: frequency, net cost, severity, " +
-    "trend vs the previous window, and the week-by-week series (oldest→newest) that shows " +
-    "whether each mistake is receding. Also returns win rate with vs without mistakes. " +
-    "Args: days (default 90).",
+    "Read the trader's logged mistakes over a window: frequency, net P&L, gross losses, " +
+    "severity, trend vs the previous window, and the week-by-week series (oldest→newest) " +
+    "that shows whether each mistake is receding. Also returns win rate with vs without " +
+    "mistakes. SIGN MATTERS: netPnl < 0 means the trades carrying that mistake LOST money " +
+    "(a cost); netPnl > 0 means they were net PROFITABLE — never call a positive netPnl a " +
+    "cost. `costliestByNetPnl` is the mistake that cost the most; `mistakes` is ordered by " +
+    "severity × magnitude, NOT by cost. Args: days (default 90).",
   inputSchema: {
     type: "object",
     properties: { days: { type: "number", description: "Window length in days, default 90." } },
@@ -327,11 +330,28 @@ export const getMistakes: ToolDefinition = {
       /** Score de journalisation propre — ce n'est PAS un score de discipline. */
       cleanJournalScore: b.cleanJournalScore,
       weeks: b.weeklyTrend.map((w) => w.week),
+      /* LE SIGNE, DIT EN TOUTES LETTRES. Les lignes sont rangées par gravité ×
+         AMPLEUR du P&L : une erreur portée par des trades nets GAGNANTS
+         (+2 346) passait devant celle qui coûte vraiment (−243), et le modèle
+         a répondu « FOMO, coût net −2 346 € » (vu en E2E). La plus coûteuse est
+         donc précalculée, et chaque ligne dit si c'est un coût ou un gain. */
+      costliestByNetPnl:
+        [...b.rows]
+          .filter((r) => r.totalPnl < 0)
+          .sort((x, y) => x.totalPnl - y.totalPnl)
+          .map((r) => ({ name: r.mistake, netPnl: arrondi(r.totalPnl), count: r.count }))[0] ??
+        null,
       mistakes: b.rows.slice(0, LIMITES.mistakes).map((r) => ({
         name: r.mistake,
         severity: r.severity,
         count: r.count,
         netPnl: arrondi(r.totalPnl),
+        netEffect: r.totalPnl < 0 ? "cost" : r.totalPnl > 0 ? "net_gain" : "flat",
+        grossLoss: arrondi(
+          trades
+            .filter((t) => t.mistakes.includes(r.mistake) && t.pnl < 0)
+            .reduce((sum, t) => sum + t.pnl, 0),
+        ),
         avgPnl: arrondi(r.avgPnl),
         trend: r.trend,
         weekly: r.weekly,

@@ -157,8 +157,10 @@ export function ColorPicker({
                   aria-pressed={on}
                   onClick={() => {
                     setFamIdx(i);
-                    // Une famille à un seul ton se choisit d'un clic.
-                    if (f.tones.length === 1) onChange(f.tones[0]);
+                    // Un clic sur une famille l'APPLIQUE (son ton de base) :
+                    // on voit la couleur tout de suite, le ton s'affine ensuite.
+                    // Rester dans la famille déjà choisie ne change rien.
+                    if (here?.f !== i) onChange(base);
                   }}
                   className={cn("tv-color-swatch aspect-square", on && "is-on")}
                   style={{ background: base }}
