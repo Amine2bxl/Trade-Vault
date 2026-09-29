@@ -106,6 +106,35 @@ describe("routeur", () => {
     expect(p.calls).toBe(2);
   });
 
+  test("un quota passe d'abord au fournisseur suivant, SANS attendre", async () => {
+    const saturated = fakeProvider([new ProviderHttpError("Rate limit", 429, 18_000), "jamais"]);
+    const backup = fakeProvider(["Réponse du repli"]);
+    (backup as { id: string }).id = "backup";
+    const t0 = Date.now();
+    const res = await routeCompletion(req, { providers: [saturated, backup] });
+    expect(res.text).toBe("Réponse du repli");
+    expect(Date.now() - t0).toBeLessThan(1_000);
+    expect(saturated.calls).toBe(1);
+  });
+
+  test("tous en échec : on attend le plus court délai annoncé, puis on réessaie", async () => {
+    const a = fakeProvider([new ProviderHttpError("Rate limit", 429, 30), "Réponse après attente"]);
+    const b = fakeProvider([new ProviderHttpError("Bad model", 404)]);
+    (b as { id: string }).id = "b";
+    const res = await routeCompletion(req, { providers: [a, b] });
+    expect(res.text).toBe("Réponse après attente");
+    expect(a.calls).toBe(2);
+  });
+
+  test("un quota JOURNALIER écarte le fournisseur au lieu de l'attendre", async () => {
+    const day = fakeProvider([new ProviderHttpError("PerDay", 429, undefined, true)]);
+    (day as { id: string }).id = "daily";
+    const backup = fakeProvider(["ok"]);
+    (backup as { id: string }).id = "backup2";
+    await routeCompletion(req, { providers: [day, backup] });
+    expect(circuit.status("daily").state).toBe("open");
+  });
+
   test("un quota n'ouvre pas le circuit du fournisseur", async () => {
     const p = fakeProvider([new ProviderHttpError("Rate limit", 429)]);
     await routeCompletion(req, { provider: p }).catch(() => {});

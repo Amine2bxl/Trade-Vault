@@ -102,6 +102,8 @@ export class ProviderHttpError extends Error {
     message: string,
     readonly status: number,
     readonly retryAfterMs?: number,
+    /** Quota JOURNALIER épuisé : attendre quelques secondes n'y changera rien. */
+    readonly daily = false,
   ) {
     super(message);
     this.name = "ProviderHttpError";

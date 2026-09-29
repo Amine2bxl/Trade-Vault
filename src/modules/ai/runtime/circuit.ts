@@ -78,6 +78,15 @@ export class CircuitBreaker {
     s.cooldownUntil = Date.now() + this.cooldownMs;
   }
 
+  /** Écarte un fournisseur pour une durée donnée (quota journalier épuisé). */
+  pause(id: string, ms: number): void {
+    const s = this.state(id);
+    s.state = "open";
+    s.failures = this.threshold;
+    s.testing = false;
+    s.cooldownUntil = Date.now() + ms;
+  }
+
   /** État courant, pour la page de diagnostic. */
   status(id: string): CircuitStatus {
     const s = this.state(id);

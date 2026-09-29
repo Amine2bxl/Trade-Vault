@@ -32,11 +32,11 @@ function redact(value: unknown, key: string): unknown {
   if (
     typeof value === "string" &&
     SECRET_PATTERN.test(key) &&
-    !/reason|type|model|provider/.test(key)
+    !/reason|type|model|provider/i.test(key)
   ) {
     return "[redacted]";
   }
-  if (typeof value === "string" && value.length > 64 && !/reason|type|model/.test(key)) {
+  if (typeof value === "string" && value.length > 64 && !/reason|type|model/i.test(key)) {
     return `${value.slice(0, 32)}…`;
   }
   return value;

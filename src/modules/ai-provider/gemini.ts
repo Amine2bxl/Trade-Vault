@@ -236,12 +236,17 @@ export const GeminiProvider: AIProvider = {
     if (!res.ok) {
       const text = await res.text();
       const detail = text.slice(0, 200);
-      if (res.status === 429)
+      if (res.status === 429) {
+        // Quota JOURNALIER (« …PerDay… ») : le délai annoncé ne sert à rien,
+        // la limite ne se relève qu'au jour suivant.
+        const daily = /PerDay/i.test(text);
         throw new ProviderHttpError(
           `Rate limit reached (${model}): ${detail}`,
           429,
-          parseRetryAfterMs(text, res.headers.get("retry-after")),
+          daily ? undefined : parseRetryAfterMs(text, res.headers.get("retry-after")),
+          daily,
         );
+      }
       if (res.status === 403) throw new ProviderHttpError(`AI access denied: ${detail}`, 403);
       if (res.status === 402) throw new ProviderHttpError(`AI credits exhausted: ${detail}`, 402);
       throw new ProviderHttpError(`AI request failed: ${detail}`, res.status);

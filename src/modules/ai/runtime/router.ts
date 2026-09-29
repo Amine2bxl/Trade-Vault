@@ -44,6 +44,8 @@ const PROVIDER_TIMEOUTS: Record<string, number> = {
 export interface RouteOptions {
   /** Override explicite (tests/routage) — ce provider uniquement. */
   provider?: AIProvider;
+  /** Chaîne explicite (tests) — sinon les fournisseurs configurés. */
+  providers?: AIProvider[];
   /** Contexte d'audit pour les logs (jamais de contenu sensible). */
   meta?: { trades?: number };
   /** Télémétrie — une fois par appel provider (compatible UsageEvent). */
@@ -66,18 +68,19 @@ function timeoutMs(provider: AIProvider, req?: AIRequest): number {
 }
 
 /**
- * ATTENDRE UN QUOTA PLUTÔT QUE D'ABANDONNER.
+ * UN QUOTA : D'ABORD UN AUTRE FOURNISSEUR, ENSUITE ATTENDRE.
  *
- * Un 429 de Gemini dit combien de temps attendre (quelques secondes sur
- * l'offre gratuite). Le routeur passait aussitôt au fournisseur suivant — des
- * replis dont les modèles étaient retirés — et Jarvis finissait « hors
- * ligne » alors que Gemini aurait répondu quatre secondes plus tard. Une
- * réponse juste qui arrive un peu plus tard vaut mieux qu'une panne : on
- * attend le délai demandé, dans une limite raisonnable, puis on réessaie le
- * même fournisseur. La fonction serveur a 300 s ; ce budget en prend 30 au
- * plus.
+ * Un 429 dit combien de temps attendre. Tant qu'un autre fournisseur reste à
+ * essayer, on y passe tout de suite : attendre 18 s un Gemini saturé pendant
+ * que Groq répond en 2 s faisait patienter le trader pour rien. Ce n'est
+ * qu'en DERNIER RECOURS — tous ont échoué — qu'on attend le plus court des
+ * délais annoncés, puis qu'on réessaie ce fournisseur : une réponse un peu
+ * plus lente vaut mieux qu'une panne. La fonction serveur a 300 s ; ce budget
+ * en prend 30 au plus.
  */
 const MAX_QUOTA_WAIT_MS = 20_000;
+/** Un quota JOURNALIER épuisé écarte le fournisseur ce temps-là. */
+const DAILY_QUOTA_PAUSE_MS = 30 * 60_000;
 const QUOTA_WAIT_BUDGET_MS = 30_000;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -90,7 +93,7 @@ export async function routeCompletion(
   req: AIRequest,
   opts: RouteOptions = {},
 ): Promise<AIResponse> {
-  const providers = opts.provider ? [opts.provider] : resolveProviders();
+  const providers = opts.provider ? [opts.provider] : (opts.providers ?? resolveProviders());
   const requested = providers[0]?.id ?? "none";
   const started = Date.now();
   const payloadBytes = JSON.stringify(req).length;
@@ -118,25 +121,18 @@ export async function routeCompletion(
     throw err;
   }
 
-  for (const provider of providers) {
-    // Circuit ouvert → provider suivant, sans payer la latence.
-    if (circuit.isOpen(provider.id)) {
-      metrics.recordFallback(provider.id, "circuit_open");
-      logRuntime({
-        requested,
-        used: provider.id,
-        latencyMs: 0,
-        payloadBytes,
-        messages: req.messages.length,
-        trades: opts.meta?.trades,
-        fallbackReason: "circuit_open",
-        totalMs: Date.now() - started,
-      });
-      continue;
-    }
+  /** Les fournisseurs qui ont répondu « quota, réessaie dans N ms ». */
+  const deferred: { provider: AIProvider; wait: number; at: number }[] = [];
 
+  /**
+   * UNE TENTATIVE SUR UN FOURNISSEUR (plus un retry pour une panne réseau/5xx).
+   * Rend la réponse, ou `null` pour passer au suivant.
+   */
+  const tryProvider = async (
+    provider: AIProvider,
+    isLastResort: boolean,
+  ): Promise<AIResponse | null> => {
     let attempts = 0;
-
     while (true) {
       // Un délai par TENTATIVE : une attente de quota ne doit pas consommer le
       // temps de la tentative suivante.
@@ -145,25 +141,21 @@ export async function routeCompletion(
       const attemptStart = Date.now();
       try {
         const res = await provider.complete({ ...req, signal: controller.signal });
+        clearTimeout(timer);
         const latencyMs = Date.now() - attemptStart;
         // Réponse VIDE SANS appels d'outils = échec utile (rien à montrer au
-        // trader) : on ouvre le circuit et on passe au provider suivant. Une
-        // réponse d'outils (texte vide + toolCalls) est valide et conservée.
+        // trader). Une réponse d'outils (texte vide + toolCalls) est valide.
         if (!res.text?.trim() && !res.toolCalls?.length) {
-          clearTimeout(timer);
-          // Une réponse vide tient le plus souvent à LA requête (réflexion qui
-          // mange le budget, filtre de sécurité), pas à la santé du
-          // fournisseur. `trip` ouvrait le circuit au premier cas : Gemini
-          // était écarté une minute pour TOUT le monde, et Jarvis tombait sur
-          // des replis morts. Un échec compté, comme les autres.
+          // Elle tient le plus souvent à LA requête (réflexion qui mange le
+          // budget, filtre de sécurité), pas à la santé du fournisseur : un
+          // échec compté, pas un circuit ouvert d'office pour tout le monde.
           circuit.recordFailure(provider.id);
-          const err: RuntimeError = {
+          lastErr = {
             type: "unknown",
             provider: provider.id,
             userMessage: "Réponse vide du fournisseur.",
             technicalMessage: `empty response from ${provider.id}`,
           };
-          lastErr = err;
           metrics.record(provider.id, res.model || "unknown", latencyMs, false);
           if (provider.id !== requested) metrics.recordFallback(provider.id, "empty_response");
           opts.onUsage?.({
@@ -184,9 +176,8 @@ export async function routeCompletion(
             errorType: "empty_response",
             totalMs: Date.now() - started,
           });
-          break; // provider suivant
+          return null;
         }
-        clearTimeout(timer);
         circuit.recordSuccess(provider.id);
         metrics.record(provider.id, res.model, latencyMs, true);
         opts.onUsage?.({
@@ -218,12 +209,13 @@ export async function routeCompletion(
         if (provider.id !== requested) metrics.recordFallback(provider.id, err.type);
         opts.onUsage?.({ provider: provider.id, model: "unknown", latencyMs, ok: false });
         const httpStatus = (e as { status?: number })?.status;
-        // Quota avec délai annoncé et raisonnable : on attend, puis on réessaie
-        // CE fournisseur (une fois). Un quota n'est pas une panne du fournisseur :
-        // il n'ouvre pas le circuit, qui sinon écarterait Gemini pour tout le
-        // monde pendant une minute.
-        const wait = err.type === "quota" ? err.retryAfterMs : undefined;
-        const canWait =
+        const daily = err.type === "quota" && (e as { daily?: boolean })?.daily === true;
+        const wait = err.type === "quota" && !daily ? err.retryAfterMs : undefined;
+        // Dernier recours seulement : on attend le délai annoncé puis on
+        // réessaie CE fournisseur. Tant qu'un autre fournisseur reste à
+        // essayer, attendre ferait patienter le trader pour rien.
+        const canWaitNow =
+          isLastResort &&
           wait !== undefined &&
           attempts === 1 &&
           wait <= MAX_QUOTA_WAIT_MS &&
@@ -239,22 +231,69 @@ export async function routeCompletion(
           httpStatus,
           errorType: err.type,
           errorReason: err.technicalMessage,
-          ...(canWait ? { quotaWaitMs: wait } : {}),
+          ...(canWaitNow ? { quotaWaitMs: wait } : {}),
           totalMs: Date.now() - started,
         });
-        if (canWait && wait !== undefined) {
+        if (canWaitNow && wait !== undefined) {
           quotaWaited += wait;
           await sleep(wait + 250);
           continue;
         }
+        if (daily) {
+          // Quota JOURNALIER épuisé : inutile de le redemander à chaque
+          // question pendant des heures — le fournisseur est écarté un moment.
+          circuit.pause(provider.id, DAILY_QUOTA_PAUSE_MS);
+        } else if (wait !== undefined && !isLastResort) {
+          deferred.push({ provider, wait, at: Date.now() });
+        }
+        // Un quota n'est pas une panne : il n'ouvre pas le circuit.
         if (err.type !== "quota") circuit.recordFailure(provider.id);
         if (shouldRetrySame(err, attempts - 1)) continue; // 500/réseau → 1 retry même provider
-        break; // timeout/quota/4xx → provider suivant
+        return null; // timeout/quota/4xx → fournisseur suivant
       }
     }
+  };
+
+  const usable = providers.filter((p) => {
+    if (!circuit.isOpen(p.id)) return true;
+    // Circuit ouvert → écarté sans payer la latence.
+    metrics.recordFallback(p.id, "circuit_open");
+    logRuntime({
+      requested,
+      used: p.id,
+      latencyMs: 0,
+      payloadBytes,
+      messages: req.messages.length,
+      trades: opts.meta?.trades,
+      fallbackReason: "circuit_open",
+      totalMs: Date.now() - started,
+    });
+    return false;
+  });
+
+  for (let i = 0; i < usable.length; i += 1) {
+    const res = await tryProvider(usable[i], i === usable.length - 1 && deferred.length === 0);
+    if (res) return res;
   }
 
-  metrics.recordError(lastErr?.type ?? "unknown");
-  if (lastErr) throw lastErr;
+  /* DERNIER RECOURS : tous les fournisseurs ont échoué, mais certains ont dit
+     « quota, réessaie dans N secondes ». On attend le plus court de ces délais
+     (dans le budget) et on retente celui-là — une réponse un peu plus lente
+     vaut mieux qu'une panne. */
+  deferred.sort((x, y) => x.wait - y.wait);
+  for (const d of deferred) {
+    const remaining = Math.max(0, d.wait - (Date.now() - d.at));
+    if (d.wait > MAX_QUOTA_WAIT_MS || quotaWaited + remaining > QUOTA_WAIT_BUDGET_MS) continue;
+    quotaWaited += remaining;
+    if (remaining > 0) await sleep(remaining + 250);
+    const res = await tryProvider(d.provider, false);
+    if (res) return res;
+  }
+
+  // `lastErr` est écrit dans `tryProvider` : TypeScript ne suit pas les
+  // affectations faites dans une fermeture.
+  const finalErr = lastErr as RuntimeError | null;
+  metrics.recordError(finalErr?.type ?? "unknown");
+  if (finalErr) throw finalErr;
   throw new Error("AI coach is not configured yet (no provider available).");
 }
