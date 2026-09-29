@@ -29,10 +29,11 @@ interface OpenAIProviderConfig {
   defaultModel: string;
   defaultBaseUrl: string;
   /**
-   * Choisit un modèle RÉELLEMENT servi dans la liste `/models` du fournisseur,
-   * quand le modèle configuré est refusé. Absent : pas de découverte.
+   * Classe les modèles RÉELLEMENT servis dans la liste `/models` du fournisseur,
+   * du meilleur au moins bon, quand le modèle configuré est refusé. Absent :
+   * pas de découverte.
    */
-  pickModel?: (models: ListedModel[], needsTools: boolean) => string | undefined;
+  pickModels?: (models: ListedModel[], needsTools: boolean) => string[];
 }
 
 /** Une entrée de `GET /models` (format OpenAI, champs OpenRouter en plus). */
@@ -52,6 +53,73 @@ interface ListedModel {
  */
 const discovered = new Map<string, { model: string; until: number }>();
 const DISCOVERY_TTL_MS = 60 * 60_000;
+
+/**
+ * LES MODÈLES REFUSÉS SONT RETENUS, par fournisseur.
+ *
+ * Mesuré en production : la découverte retenait le premier modèle gratuit de
+ * la liste d'OpenRouter, qui répondait 403 (« only available on agentic
+ * harnesses »). Sans mémoire, chaque question redécouvrait le même modèle
+ * mort. Un refus écarte le modèle un moment, et la découverte passe au suivant.
+ */
+const refusedModels = new Map<string, number>();
+const MODEL_REFUSAL_MS = 30 * 60_000;
+/** Candidats essayés au plus par question : au-delà, on laisse la place au
+ *  fournisseur suivant plutôt que d'égrener tout un catalogue. */
+const MAX_DISCOVERY_TRIES = 3;
+
+const refusalKey = (provider: string, model: string) => `${provider}:${model}`;
+function isModelRefused(provider: string, model: string): boolean {
+  const until = refusedModels.get(refusalKey(provider, model));
+  if (!until) return false;
+  if (Date.now() < until) return true;
+  refusedModels.delete(refusalKey(provider, model));
+  return false;
+}
+
+/** Tests uniquement. */
+export function resetOpenAICompatibleMemory(): void {
+  discovered.clear();
+  refusedModels.clear();
+}
+
+/**
+ * UN REFUS QUI TIENT AU MODÈLE — pas à la requête, pas au débit.
+ *
+ * L'ancien test cherchait le mot « model » dans le message d'erreur. Or le 413
+ * de Groq (« Request too large for MODEL… ») le contient aussi : une requête
+ * trop grosse passait pour un modèle retiré, et la découverte partait vers un
+ * modèle… à la limite encore plus basse. Seuls le statut ET le motif décident.
+ */
+export function isModelRefusal(status: number | undefined, body: string): boolean {
+  if (status === 404) return true;
+  if (status === 400 || status === 403)
+    return /unavailable for free|not found|does not exist|decommissioned|deprecated|agentic|not available|no endpoints|invalid model|model_not_found/i.test(
+      body,
+    );
+  return false;
+}
+
+/**
+ * LA LIMITE PAR MINUTE COMPTE LA RÉPONSE DEMANDÉE.
+ *
+ * Groq (offre à la demande) plafonne les tokens PAR MINUTE, et compte
+ * `max_tokens` dans la requête : « Limit 8000, Requested 13725 » pour ~7 600
+ * tokens d'entrée et 6 144 de sortie autorisée. La requête tient si l'on
+ * demande moins de sortie. On lit la limite dans le refus et on recalcule.
+ */
+export function fitMaxTokens(body: string, maxTokens: number): number | undefined {
+  const m = /Limit\s+(\d+),\s*Requested\s+(\d+)/i.exec(body);
+  if (!m) return undefined;
+  const limit = Number(m[1]);
+  const requested = Number(m[2]);
+  const input = requested - maxTokens;
+  // Marge de 5 % : le décompte du fournisseur n'est pas le nôtre au token près.
+  const room = Math.floor(limit * 0.95) - input;
+  // Moins de 700 tokens de réponse : une analyse n'y tient pas. Autant laisser
+  // la place au fournisseur suivant.
+  return room >= 700 && room < maxTokens ? room : undefined;
+}
 
 interface OpenAIToolCall {
   id?: string;
@@ -98,22 +166,17 @@ function createOpenAICompatibleProvider(cfg: OpenAIProviderConfig): AIProvider {
   const getBaseUrl = (): string =>
     (process.env[cfg.baseUrlEnv] || cfg.defaultBaseUrl).replace(/\/$/, "");
 
-  const discoverModel = async (
-    apiKey: string,
-    needsTools: boolean,
-    refused: string,
-  ): Promise<string | undefined> => {
-    if (!cfg.pickModel) return undefined;
+  const discoverModels = async (apiKey: string, needsTools: boolean): Promise<string[]> => {
+    if (!cfg.pickModels) return [];
     try {
       const res = await fetch(`${getBaseUrl()}/models`, {
         headers: { Authorization: `Bearer ${apiKey}` },
       });
-      if (!res.ok) return undefined;
+      if (!res.ok) return [];
       const json = (await res.json()) as { data?: ListedModel[] };
-      const models = (json.data ?? []).filter((m) => m.id !== refused);
-      return cfg.pickModel(models, needsTools);
+      return cfg.pickModels(json.data ?? [], needsTools);
     } catch {
-      return undefined;
+      return [];
     }
   };
 
@@ -129,7 +192,10 @@ function createOpenAICompatibleProvider(cfg: OpenAIProviderConfig): AIProvider {
       const apiKey = process.env[cfg.apiKeyEnv];
       if (!apiKey) throw new Error(`AI is not configured (missing ${cfg.apiKeyEnv}).`);
 
-      const attempt = async (model: string): Promise<AIResponse> => {
+      const attempt = async (
+        model: string,
+        maxTokens = req.maxTokens ?? 4096,
+      ): Promise<AIResponse> => {
         const res = await fetch(`${getBaseUrl()}/chat/completions`, {
           method: "POST",
           headers: {
@@ -139,7 +205,7 @@ function createOpenAICompatibleProvider(cfg: OpenAIProviderConfig): AIProvider {
           },
           body: JSON.stringify({
             model,
-            max_tokens: req.maxTokens ?? 4096,
+            max_tokens: maxTokens,
             ...(req.temperature !== undefined && { temperature: req.temperature }),
             ...(req.json && { response_format: { type: "json_object" } }),
             ...(req.tools?.length && {
@@ -156,7 +222,9 @@ function createOpenAICompatibleProvider(cfg: OpenAIProviderConfig): AIProvider {
 
         if (!res.ok) {
           const text = await res.text();
-          const detail = text.slice(0, 200);
+          // 400 caractères : le 413 de Groq place « Limit N, Requested M » au-delà
+          // du 190e — tronqué à 200, le chiffre utile était coupé.
+          const detail = text.slice(0, 400);
           // Le statut voyage avec l'erreur : les journaux disent enfin POURQUOI
           // un repli a échoué (clé invalide, modèle retiré, débit…).
           if (res.status === 429)
@@ -165,8 +233,10 @@ function createOpenAICompatibleProvider(cfg: OpenAIProviderConfig): AIProvider {
               429,
               parseRetryAfterMs(text, res.headers.get("retry-after")),
             );
-          if (res.status === 402 || res.status === 403)
-            throw new ProviderHttpError(`AI credits exhausted (${model}): ${detail}`, res.status);
+          if (res.status === 402)
+            throw new ProviderHttpError(`AI credits exhausted (${model}): ${detail}`, 402);
+          if (res.status === 403)
+            throw new ProviderHttpError(`AI access refused (${model}): ${detail}`, 403);
           throw new ProviderHttpError(`AI request failed (${model}): ${detail}`, res.status);
         }
 
@@ -195,27 +265,70 @@ function createOpenAICompatibleProvider(cfg: OpenAIProviderConfig): AIProvider {
         };
       };
 
-      const known = discovered.get(cfg.id);
-      const first = known && Date.now() < known.until ? known.model : getModel();
-      try {
-        return await attempt(first);
-      } catch (e) {
-        // Modèle refusé (retiré, plus gratuit, inexistant) → on demande au
-        // fournisseur la liste de ce qu'il sert, et on en prend un.
-        const msg = e instanceof Error ? e.message.toLowerCase() : String(e).toLowerCase();
-        const modelIssue = /model|unavailable for free|not found|decommissioned/i.test(msg);
-        if (!modelIssue) throw e;
-        discovered.delete(cfg.id);
-        const replacement = await discoverModel(apiKey, !!req.tools?.length, first);
-        if (!replacement) {
-          if (first !== cfg.defaultModel) return attempt(cfg.defaultModel);
-          throw e;
+      /** Un appel, avec UNE seconde chance si la limite par minute se lève en
+       *  demandant moins de sortie (413 de Groq). */
+      const fitted = async (model: string): Promise<AIResponse> => {
+        const max = req.maxTokens ?? 4096;
+        try {
+          return await attempt(model, max);
+        } catch (e) {
+          if ((e as { status?: number })?.status !== 413) throw e;
+          const smaller = fitMaxTokens(e instanceof Error ? e.message : String(e), max);
+          if (!smaller) throw e;
+          console.warn(
+            `[ai] ${cfg.id}: ${model} over its per-minute limit — retrying with max_tokens ${smaller}`,
+          );
+          return attempt(model, smaller);
         }
-        console.warn(`[ai] ${cfg.id}: ${first} refused — using ${replacement}`);
-        const res = await attempt(replacement);
-        discovered.set(cfg.id, { model: replacement, until: Date.now() + DISCOVERY_TTL_MS });
-        return res;
+      };
+
+      const known = discovered.get(cfg.id);
+      const configured = getModel();
+      const first =
+        known && Date.now() < known.until && !isModelRefused(cfg.id, known.model)
+          ? known.model
+          : configured;
+      const tried = new Set<string>();
+      let lastErr: unknown;
+      if (!isModelRefused(cfg.id, first)) {
+        tried.add(first);
+        try {
+          return await fitted(first);
+        } catch (e) {
+          const status = (e as { status?: number })?.status;
+          if (!isModelRefusal(status, e instanceof Error ? e.message : String(e))) throw e;
+          refusedModels.set(refusalKey(cfg.id, first), Date.now() + MODEL_REFUSAL_MS);
+          discovered.delete(cfg.id);
+          lastErr = e;
+        }
       }
+
+      // Modèle refusé (retiré, plus gratuit, réservé) → on demande au
+      // fournisseur ce qu'il sert AUJOURD'HUI, et on essaie les meilleurs
+      // candidats l'un après l'autre.
+      const candidates = (await discoverModels(apiKey, !!req.tools?.length)).filter(
+        (m) => !tried.has(m) && !isModelRefused(cfg.id, m),
+      );
+      if (
+        candidates.length === 0 &&
+        configured !== cfg.defaultModel &&
+        !tried.has(cfg.defaultModel)
+      )
+        candidates.push(cfg.defaultModel);
+      for (const model of candidates.slice(0, MAX_DISCOVERY_TRIES)) {
+        try {
+          console.warn(`[ai] ${cfg.id}: ${first} refused — trying ${model}`);
+          const res = await fitted(model);
+          discovered.set(cfg.id, { model, until: Date.now() + DISCOVERY_TTL_MS });
+          return res;
+        } catch (e) {
+          lastErr = e;
+          const status = (e as { status?: number })?.status;
+          if (!isModelRefusal(status, e instanceof Error ? e.message : String(e))) throw e;
+          refusedModels.set(refusalKey(cfg.id, model), Date.now() + MODEL_REFUSAL_MS);
+        }
+      }
+      throw lastErr ?? new ProviderHttpError(`No model available on ${cfg.id}`, 404);
     },
   };
 }
@@ -239,14 +352,23 @@ export const GroqProvider = createOpenAICompatibleProvider({
   defaultBaseUrl: "https://api.groq.com/openai/v1",
   // Groq ne publie pas les capacités par modèle : on préfère les grands
   // modèles généralistes connus pour l'appel de fonctions, dans cet ordre.
-  pickModel: (models) => {
-    const ids = models.map((m) => m.id);
-    const prefer = [/llama-3\.3-70b/, /gpt-oss-120b/, /llama-4/, /qwen/, /gpt-oss/, /llama/];
-    for (const re of prefer) {
-      const hit = ids.find((id) => re.test(id) && !/guard|whisper|tts|embed/i.test(id));
-      if (hit) return hit;
-    }
-    return undefined;
+  pickModels: (models) => {
+    const ids = models
+      .map((m) => m.id)
+      .filter((id) => !/guard|whisper|tts|embed|orpheus|prompt/i.test(id));
+    const prefer = [
+      /llama-3\.3-70b/,
+      /llama-4/,
+      /gpt-oss-120b/,
+      /qwen/,
+      /kimi/,
+      /gpt-oss/,
+      /llama/,
+    ];
+    const out: string[] = [];
+    for (const re of prefer)
+      for (const id of ids) if (re.test(id) && !out.includes(id)) out.push(id);
+    return out;
   },
 });
 
@@ -260,11 +382,29 @@ export const OpenRouterProvider = createOpenAICompatibleProvider({
   modelEnv: "OPENROUTER_MODEL",
   defaultModel: "deepseek/deepseek-chat-v3-0324:free",
   defaultBaseUrl: "https://openrouter.ai/api/v1",
-  // Un modèle GRATUIT (la clé n'a pas de crédits), capable d'outils si la
-  // requête en porte, et au plus grand contexte : le journal y tient.
-  pickModel: (models, needsTools) =>
-    models
+  // Des modèles GRATUITS (la clé n'a pas de crédits), capables d'outils si la
+  // requête en porte. Les grandes familles généralistes passent devant : le
+  // plus grand contexte seul avait élu un modèle réservé à d'autres clients.
+  pickModels: (models, needsTools) => {
+    const family = (id: string) => {
+      const order = [
+        /deepseek/,
+        /llama-3\.3|llama-4/,
+        /qwen/,
+        /gemini|gemma/,
+        /mistral/,
+        /gpt-oss/,
+        /glm|kimi/,
+      ];
+      const i = order.findIndex((re) => re.test(id));
+      return i === -1 ? order.length : i;
+    };
+    return models
       .filter((m) => m.id.endsWith(":free"))
       .filter((m) => !needsTools || (m.supported_parameters ?? []).includes("tools"))
-      .sort((a, b) => (b.context_length ?? 0) - (a.context_length ?? 0))[0]?.id,
+      .sort(
+        (a, b) => family(a.id) - family(b.id) || (b.context_length ?? 0) - (a.context_length ?? 0),
+      )
+      .map((m) => m.id);
+  },
 });

@@ -30,6 +30,15 @@ function getModel(): string {
    on redescend sur Flash, qui répondait sans faute jusque-là. Une clé payante
    garde Pro ; une clé gratuite garde une réponse. */
 const FALLBACK_MODEL = "gemini-2.5-flash";
+/** Le dernier maillon : plus léger, servi sur une capacité distincte. */
+const LITE_MODEL = "gemini-2.5-flash-lite";
+/** Une saturation (503) se résorbe vite : on ne boude le modèle que 2 min. */
+const OVERLOAD_MEMORY_MS = 2 * 60_000;
+
+/** Modèle saturé : 503 « UNAVAILABLE / high demand / overloaded ». */
+function isOverloaded(status: number, body: string): boolean {
+  return status === 503 || (status === 500 && /overloaded|high demand|unavailable/i.test(body));
+}
 
 /**
  * LES MODÈLES REFUSÉS SONT RETENUS.
@@ -213,24 +222,40 @@ export const GeminiProvider: AIProvider = {
         },
       );
 
-    let model = isRefused(getModel()) ? FALLBACK_MODEL : getModel();
+    /* LA CHAÎNE DE MODÈLES. Mesuré en production : 2.5 Pro puis 2.5 Flash
+       répondaient tous deux 503 (« This model is currently experiencing high
+       demand ») — une saturation PAR MODÈLE, pas une panne de Google. Flash-Lite
+       a sa propre capacité : il répond quand les deux autres sont saturés. On
+       descend la chaîne tant que le refus tient au modèle ou à sa charge. */
+    const chain = [getModel(), FALLBACK_MODEL, LITE_MODEL].filter(
+      (m, i, all) => all.indexOf(m) === i,
+    );
+    const usable = chain.filter((m) => !isRefused(m));
+    const order = usable.length > 0 ? usable : [chain[chain.length - 1]];
+    let model = order[0];
     let res = await call(model);
-    if (!res.ok && model !== FALLBACK_MODEL) {
+    for (let i = 1; i < order.length && !res.ok; i++) {
       const refused = await res.clone().text();
-      if (isModelRefusal(res.status, refused)) {
-        // Un 429 de DÉBIT sur Pro se lève vite ; un 404/403 (modèle absent de
-        // l'offre) dure. On retient le refus le temps qui correspond.
-        const retry = parseRetryAfterMs(refused, res.headers.get("retry-after"));
-        refusedUntil.set(
-          model,
-          Date.now() + (res.status === 429 && retry ? retry : REFUSAL_MEMORY_MS),
-        );
-        console.warn(
-          `[ai] gemini: ${model} refused (${res.status}) — falling back to ${FALLBACK_MODEL}`,
-        );
-        model = FALLBACK_MODEL;
-        res = await call(model);
-      }
+      const overloaded = isOverloaded(res.status, refused);
+      if (!overloaded && !isModelRefusal(res.status, refused)) break;
+      // Un 429 de DÉBIT se lève vite ; un 404/403 (modèle absent de l'offre)
+      // dure ; une saturation (503) passe en quelques minutes. On retient le
+      // refus le temps qui correspond.
+      const retry = parseRetryAfterMs(refused, res.headers.get("retry-after"));
+      refusedUntil.set(
+        model,
+        Date.now() +
+          (overloaded
+            ? OVERLOAD_MEMORY_MS
+            : res.status === 429 && retry
+              ? retry
+              : REFUSAL_MEMORY_MS),
+      );
+      console.warn(
+        `[ai] gemini: ${model} ${overloaded ? "overloaded" : "refused"} (${res.status}) — falling back to ${order[i]}`,
+      );
+      model = order[i];
+      res = await call(model);
     }
 
     if (!res.ok) {

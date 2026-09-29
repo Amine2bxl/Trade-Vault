@@ -77,6 +77,15 @@ export function normalizeError(err: unknown, provider: string): RuntimeError {
         userMessage: "Crédits IA épuisés.",
         technicalMessage: technical(`HTTP 402: ${msg}`),
       };
+    // Un 403 qui refuse LE MODÈLE (réservé, retiré, plus gratuit) n'est pas une
+    // clé invalide : le classer « auth » faisait croire à une session expirée.
+    if (status === 403 && /refused|unavailable|agentic|not available|model/i.test(msg))
+      return {
+        type: "provider_unavailable",
+        provider,
+        userMessage: "Ce modèle n'est pas disponible pour le moment.",
+        technicalMessage: technical(`HTTP 403: ${msg}`),
+      };
     if (status === 401 || status === 403)
       return {
         type: "auth",

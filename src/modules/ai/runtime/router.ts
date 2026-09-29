@@ -246,15 +246,19 @@ export async function routeCompletion(
         } else if (wait !== undefined && !isLastResort) {
           deferred.push({ provider, wait, at: Date.now() });
         }
-        // Un quota n'est pas une panne : il n'ouvre pas le circuit.
-        if (err.type !== "quota") circuit.recordFailure(provider.id);
+        // Un quota n'est pas une panne : il n'ouvre pas le circuit. Une requête
+        // refusée pour sa TAILLE (413) ou sa forme (4xx) non plus : elle tient à
+        // CETTE question, pas à la santé du fournisseur — mesuré en production,
+        // deux 413 de Groq fermaient Groq à toutes les questions suivantes.
+        if (err.type !== "quota" && err.type !== "invalid_payload")
+          circuit.recordFailure(provider.id);
         if (shouldRetrySame(err, attempts - 1)) continue; // 500/réseau → 1 retry même provider
         return null; // timeout/quota/4xx → fournisseur suivant
       }
     }
   };
 
-  const usable = providers.filter((p) => {
+  const healthy = providers.filter((p) => {
     if (!circuit.isOpen(p.id)) return true;
     // Circuit ouvert → écarté sans payer la latence.
     metrics.recordFallback(p.id, "circuit_open");
@@ -270,6 +274,13 @@ export async function routeCompletion(
     });
     return false;
   });
+
+  /* TOUS LES CIRCUITS OUVERTS : on essaie quand même. Le disjoncteur sert à
+     ne pas PERDRE de temps sur un fournisseur en panne quand un autre répond ;
+     quand aucun ne reste, sauter tout le monde rendait une erreur en 0 ms
+     (« no provider available ») sans qu'aucune requête ne soit partie — alors
+     qu'une saturation de la minute précédente était souvent déjà levée. */
+  const usable = healthy.length > 0 ? healthy : providers;
 
   for (let i = 0; i < usable.length; i += 1) {
     const res = await tryProvider(usable[i], i === usable.length - 1 && deferred.length === 0);

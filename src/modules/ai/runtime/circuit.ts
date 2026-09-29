@@ -51,6 +51,13 @@ export class CircuitBreaker {
     return true;
   }
 
+  /** Lecture SANS effet : le circuit est-il ouvert et en refroidissement ?
+   *  (`isOpen` fait passer en half-open ; ceci ne fait que regarder.) */
+  isCoolingDown(id: string): boolean {
+    const s = this.states.get(id);
+    return !!s && s.state === "open" && Date.now() < s.cooldownUntil;
+  }
+
   recordSuccess(id: string): void {
     const s = this.state(id);
     s.state = "closed";
