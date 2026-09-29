@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { Page, SectionId } from "../types";
 import { Check, ChevronDown, Lock } from "lucide-react";
 import { PAGE_META, pagesOfSection } from "../navigation";
@@ -49,12 +50,42 @@ export default function SectionTabs({ section, page, setPage }: SectionTabsProps
   const tabRefs = useRef<(HTMLAnchorElement | null)[]>([]);
   const [pickerOpen, setPickerOpen] = useState(false);
   const pickerRef = useRef<HTMLDivElement | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  /* LE MENU EST PORTÉ AU NIVEAU DU DOCUMENT, en position fixe.
+     Posé en absolu DANS la barre d'en-tête, il héritait de deux choses qui
+     dépendent de la page : sa LARGEUR (celle du bouton, que les actions de la
+     page — nombreuses sur le Journal — rétrécissaient) et sa COUCHE (le
+     contexte d'empilement de <main>, sous lequel le contenu d'une page qui crée
+     sa propre couche, comme le calculateur de lots, repassait par-dessus : le
+     menu paraissait vide ou transparent). En portail, calé sur le bouton, avec
+     une largeur fixe et la couche des feuilles : identique sur toutes les
+     pages, et toujours au-dessus. */
+  const [menuPos, setMenuPos] = useState<{ left: number; top: number; width: number } | null>(null);
+  useLayoutEffect(() => {
+    if (!pickerOpen) return;
+    const place = () => {
+      const r = pickerRef.current?.getBoundingClientRect();
+      if (!r) return;
+      const width = Math.min(280, window.innerWidth - 24);
+      const left = Math.min(Math.max(12, r.left), window.innerWidth - width - 12);
+      setMenuPos({ left, top: r.bottom + 6, width });
+    };
+    place();
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
+    return () => {
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place, true);
+    };
+  }, [pickerOpen]);
 
   // Le menu se ferme au clic à côté, à Échap, et quand la vue change.
   useEffect(() => {
     if (!pickerOpen) return;
     const outside = (e: PointerEvent) => {
-      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) setPickerOpen(false);
+      const t = e.target as Node;
+      if (pickerRef.current?.contains(t) || menuRef.current?.contains(t)) return;
+      setPickerOpen(false);
     };
     const esc = (e: KeyboardEvent) => {
       if (e.key === "Escape") setPickerOpen(false);
@@ -161,39 +192,48 @@ export default function SectionTabs({ section, page, setPage }: SectionTabsProps
           />
         </button>
 
-        {pickerOpen && (
-          <div role="menu" className="section-menu">
-            {pages.map((p) => {
-              const { labelKey, icon: Icon } = PAGE_META[p];
-              const active = p === page;
-              const locked = !subLoading && !canAccessPage(tier, p);
-              return (
-                <button
-                  key={p}
-                  type="button"
-                  role="menuitem"
-                  onClick={() => {
-                    setPickerOpen(false);
-                    setPage(p);
-                  }}
-                  onTouchStart={() => preloadPage(p)}
-                  className={cn("section-picker-row", active && "section-picker-row-active")}
-                >
-                  <Icon
-                    className={cn(
-                      "h-[18px] w-[18px] shrink-0",
-                      active ? "text-[var(--tv-accent)]" : "text-slate-500",
-                    )}
-                    strokeWidth={active ? 2.1 : 1.9}
-                  />
-                  <span className="min-w-0 flex-1 truncate text-left">{t(labelKey)}</span>
-                  {locked && <Lock className="h-3.5 w-3.5 shrink-0 text-slate-500" aria-hidden />}
-                  {active && <Check className="h-4 w-4 shrink-0 text-[var(--tv-accent)]" />}
-                </button>
-              );
-            })}
-          </div>
-        )}
+        {pickerOpen &&
+          menuPos &&
+          typeof document !== "undefined" &&
+          createPortal(
+            <div
+              ref={menuRef}
+              role="menu"
+              className="section-menu"
+              style={{ left: menuPos.left, top: menuPos.top, width: menuPos.width }}
+            >
+              {pages.map((p) => {
+                const { labelKey, icon: Icon } = PAGE_META[p];
+                const active = p === page;
+                const locked = !subLoading && !canAccessPage(tier, p);
+                return (
+                  <button
+                    key={p}
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setPickerOpen(false);
+                      setPage(p);
+                    }}
+                    onTouchStart={() => preloadPage(p)}
+                    className={cn("section-picker-row", active && "section-picker-row-active")}
+                  >
+                    <Icon
+                      className={cn(
+                        "h-[18px] w-[18px] shrink-0",
+                        active ? "text-[var(--tv-accent)]" : "text-slate-500",
+                      )}
+                      strokeWidth={active ? 2.1 : 1.9}
+                    />
+                    <span className="min-w-0 flex-1 truncate text-left">{t(labelKey)}</span>
+                    {locked && <Lock className="h-3.5 w-3.5 shrink-0 text-slate-500" aria-hidden />}
+                    {active && <Check className="h-4 w-4 shrink-0 text-[var(--tv-accent)]" />}
+                  </button>
+                );
+              })}
+            </div>,
+            document.body,
+          )}
       </div>
 
       {/* ── DESKTOP : le contrôle segmenté, inchangé ── */}
