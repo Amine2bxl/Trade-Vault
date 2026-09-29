@@ -15,7 +15,7 @@ import {
   Target,
   SlidersHorizontal,
 } from "lucide-react";
-import { Trade, isBreakEven, STRATEGIES } from "../types";
+import { Trade, isBreakEven } from "../types";
 import {
   computeStats,
   formatPct,
@@ -272,19 +272,40 @@ export default function Journal({
   const activeFilterCount =
     sheetFilterCount + (resultFilter !== "all" ? 1 : 0) + (searchQuery.trim() ? 1 : 0);
 
-  /* Les options de setup : la liste du produit PLUS ceux que le trader a
-     réellement journalisés — un setup à lui ne doit pas être infiltrable. */
+  /* LES SETUPS PROPOSÉS — CEUX QU'IL A TRADÉS, LES PLUS FRÉQUENTS D'ABORD.
+     La liste mêlait les presets du produit à ses setups : une quinzaine de
+     choix dont la plupart ne filtraient RIEN (zéro trade), et c'est elle qui
+     faisait défiler la feuille de filtres. Un filtre qui rend une liste vide
+     n'est pas un choix. Un setup déjà sélectionné reste proposé même s'il
+     n'a plus de trade, pour pouvoir le désélectionner. */
   const strategyOptions = useMemo(() => {
     const count = new Map<string, number>();
-    for (const tr of trades) count.set(tr.strategy, (count.get(tr.strategy) ?? 0) + 1);
-    const names = Array.from(new Set([...STRATEGIES, ...count.keys()])).filter(Boolean);
-    return names.map((n) => ({ value: n, label: n, count: count.get(n) ?? 0 }));
-  }, [trades]);
-  // Lundi d'abord : c'est l'ordre d'une semaine de trading.
-  const dayOptions = useMemo(
-    () => [1, 2, 3, 4, 5, 6, 0].map((i) => ({ value: String(i), label: jours[i] })),
-    [jours],
-  );
+    for (const tr of trades) {
+      if (tr.strategy) count.set(tr.strategy, (count.get(tr.strategy) ?? 0) + 1);
+    }
+    for (const s of strategies) if (!count.has(s)) count.set(s, 0);
+    return [...count.entries()]
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .map(([n, c]) => ({ value: n, label: n, count: c }));
+  }, [trades, strategies]);
+  /* Lundi d'abord : c'est l'ordre d'une semaine de trading. Le samedi et le
+     dimanche n'apparaissent que si le journal en contient — sinon ce sont
+     deux filtres qui ne peuvent rien rendre. */
+  const dayOptions = useMemo(() => {
+    const traded = new Set(trades.map((tr) => new Date(`${tr.date}T12:00:00`).getDay()));
+    return [1, 2, 3, 4, 5, 6, 0]
+      .filter((i) => (i >= 1 && i <= 5 ? true : traded.has(i) || days.includes(String(i))))
+      .map((i) => ({ value: String(i), label: jours[i] }));
+  }, [jours, trades, days]);
+  /* Sur téléphone, six setups d'abord ; les autres derrière « +N ». */
+  const [allSetups, setAllSetups] = useState(false);
+  const SETUPS_FIRST = 6;
+  const setupChips =
+    allSetups || strategyOptions.length <= SETUPS_FIRST + 1
+      ? strategyOptions
+      : strategyOptions.slice(0, SETUPS_FIRST);
+  const toggleSetup = (v: string) =>
+    setStrategies(strategies.includes(v) ? strategies.filter((x) => x !== v) : [...strategies, v]);
   const periodPresets: { value: PeriodPreset; label: string }[] = [
     { value: "all", label: t("common.all") },
     { value: "7d", label: t("common.7d") },
@@ -562,14 +583,23 @@ export default function Journal({
           )}
         </div>
 
-        {/* La feuille de filtres — mobile seulement. */}
+        {/* LA FEUILLE DE FILTRES — sous `lg`, là où la barre ne tient pas.
+            Elle était montée sous `md` seulement alors que son bouton existe
+            jusqu'à `lg` : sur une tablette, « Filtres » n'ouvrait rien.
+
+            TOUT TIENT SANS DÉFILER, même sur un iPhone SE. Ce qui la faisait
+            défiler : une quinzaine de setups (presets compris, la plupart sans
+            un seul trade), sept jours dont deux jamais tradés, six pastilles de
+            tri et un lien de navigation (« setups manqués », déjà dans la
+            barre de tête). Restent les setups tradés — six d'abord —, les
+            jours ouvrés, et le tri en une liste compacte dans le pied. */}
         <Modal
           open={filtersOpen}
           onClose={() => setFiltersOpen(false)}
-          wrapperClassName="z-[var(--tv-z-modal)] md:hidden"
-          className="md:max-w-sm"
+          wrapperClassName="z-[var(--tv-z-modal)] lg:hidden"
+          className="md:max-w-md"
         >
-          <div className="flex items-center justify-between px-5 pb-2 pt-4">
+          <div className="flex items-center justify-between px-5 pb-1 pt-4">
             <h2 className="tv-title">{t("common.filters")}</h2>
             {sheetFilterCount > 0 && (
               <button
@@ -581,7 +611,7 @@ export default function Journal({
               </button>
             )}
           </div>
-          <div className="max-h-[70dvh] space-y-4 overflow-y-auto p-4 pt-2">
+          <div className="space-y-3.5 px-4 pb-2 pt-1">
             <RangePicker
               inline
               label={t("common.period")}
@@ -589,16 +619,50 @@ export default function Journal({
               presets={periodPresets}
               onChange={setPeriod}
               neutralPreset="all"
+              className="[&>div]:p-0"
               {...rangeText}
             />
-            <MultiPicker
-              inline
-              label={t("journal.colStrategy")}
-              values={strategies}
-              options={strategyOptions}
-              onChange={setStrategies}
-              {...pickerText}
-            />
+            {strategyOptions.length > 0 && (
+              <div className="tv-pick-inline">
+                <span className="tv-label mb-1.5 block text-slate-500">
+                  {t("journal.colStrategy")}
+                </span>
+                <div className="tv-pick-chips">
+                  <button
+                    type="button"
+                    aria-pressed={strategies.length === 0}
+                    onClick={() => setStrategies([])}
+                    className={cn("tv-pick-chip", strategies.length === 0 && "tv-pick-chip-on")}
+                  >
+                    {t("common.all")}
+                  </button>
+                  {setupChips.map((o) => {
+                    const on = strategies.includes(o.value);
+                    return (
+                      <button
+                        key={o.value}
+                        type="button"
+                        aria-pressed={on}
+                        onClick={() => toggleSetup(o.value)}
+                        className={cn("tv-pick-chip max-w-full", on && "tv-pick-chip-on")}
+                      >
+                        <span className="truncate">{o.label}</span>
+                        <span className="tv-figure opacity-60">{o.count}</span>
+                      </button>
+                    );
+                  })}
+                  {setupChips.length < strategyOptions.length && (
+                    <button
+                      type="button"
+                      onClick={() => setAllSetups(true)}
+                      className="tv-pick-chip border-dashed"
+                    >
+                      +{strategyOptions.length - setupChips.length}
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
             <MultiPicker
               inline
               label={t("journal.filterDay")}
@@ -607,28 +671,21 @@ export default function Journal({
               onChange={setDays}
               {...pickerText}
             />
-            <SelectPicker
-              inline
-              label={t("sort.label")}
-              value={sortChoice}
-              options={sortOptions}
-              onChange={pickSort}
-            />
-            <button
-              type="button"
-              onClick={() => {
-                setFiltersOpen(false);
-                onOpenMissed();
-              }}
-              className="flex h-11 w-full items-center gap-2.5 rounded-xl border border-white/[0.06] bg-white/[0.03] px-3 text-sm font-semibold text-slate-200"
-            >
-              <Target className="h-4 w-4 text-[var(--tv-accent)]" />
-              {t("missed.title")}
-            </button>
+          </div>
+          <div className="flex items-center gap-2 border-t border-[var(--tv-border)] px-4 py-3">
+            <div className="min-w-0 flex-1">
+              <SelectPicker
+                label={t("sort.label")}
+                value={sortChoice}
+                options={sortOptions}
+                onChange={pickSort}
+                neutralValue="date-desc"
+              />
+            </div>
             <button
               type="button"
               onClick={() => setFiltersOpen(false)}
-              className="btn-primary w-full"
+              className="btn-primary shrink-0 px-5"
             >
               {t("common.done")}
             </button>
