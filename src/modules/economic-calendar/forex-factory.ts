@@ -149,6 +149,16 @@ export function parseForexFactoryFeed(raw: unknown): CalendarEvent[] {
   return out;
 }
 
+/** Erreur HTTP de la source, avec son statut — pour décider d'un nouvel essai. */
+class SourceHttpError extends Error {
+  constructor(
+    url: string,
+    readonly status: number,
+  ) {
+    super(`${url} responded ${status}`);
+  }
+}
+
 async function fetchWeek(url: string, signal: AbortSignal): Promise<CalendarEvent[]> {
   const response = await fetch(url, {
     signal,
@@ -160,27 +170,53 @@ async function fetchWeek(url: string, signal: AbortSignal): Promise<CalendarEven
     },
   });
   if (!response.ok) {
-    throw new Error(`${url} responded ${response.status}`);
+    throw new SourceHttpError(url, response.status);
   }
   return parseForexFactoryFeed(await response.json());
+}
+
+/**
+ * Un nouvel essai n'a de sens que pour un incident passager : coupure réseau,
+ * délai dépassé, erreur 5xx. Un 4xx — et surtout un 429, le plafond de la
+ * source — ne se corrige pas en insistant : on laisserait au contraire la
+ * source nous bloquer.
+ */
+export function isTransient(error: unknown): boolean {
+  if (error instanceof SourceHttpError) return error.status >= 500;
+  return true;
+}
+
+/** Délai par essai. Deux essais tiennent dans la minute d'une fonction. */
+const ATTEMPT_TIMEOUT_MS = 8_000;
+const RETRY_DELAY_MS = 1_500;
+
+async function attempt(): Promise<CalendarEvent[]> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), ATTEMPT_TIMEOUT_MS);
+  try {
+    return await fetchWeek(THIS_WEEK, controller.signal);
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 export const forexFactoryProvider: CalendarProvider = {
   id: FOREX_FACTORY_SOURCE,
 
   async fetchEvents() {
-    // 15 s : au-delà, la source est de toute façon considérée en échec et la
-    // tentative suivante reprendra. Une fonction serverless ne doit pas attendre.
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15_000);
+    // UN seul fichier. `nextweek` et `lastweek` répondaient autrefois ; ils
+    // renvoient 404 aujourd'hui (constaté en production, les deux).
+    //
+    // Deux essais au plus : un hoquet réseau ne doit pas coûter dix minutes
+    // de retard (le prochain créneau de synchro). Deux requêtes par synchro,
+    // une synchro par 10 min : on reste sous le plafond de la source (~2
+    // requêtes / 5 min) par construction.
     try {
-      // UNE seule requête. Les fichiers `nextweek` et `lastweek` répondaient
-      // autrefois ; ils renvoient 404 aujourd'hui (constaté en production, les
-      // deux). Continuer à les demander ne ferait que gaspiller le quota de la
-      // source et remplir les logs d'avertissements sans issue.
-      return await fetchWeek(THIS_WEEK, controller.signal);
-    } finally {
-      clearTimeout(timeout);
+      return await attempt();
+    } catch (error) {
+      if (!isTransient(error)) throw error;
+      await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
+      return await attempt();
     }
   },
 };

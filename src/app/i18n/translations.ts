@@ -1677,7 +1677,7 @@ const en = {
   "news.timezone": "Times in {zone}",
   "news.updated": "Updated {value}",
   "news.updatedNever": "Awaiting first sync",
-  "news.staleWarning": "Live sync is failing - showing the last known data.",
+  "news.staleWarning": "The source hasn't answered for a while — showing data last synced {value}.",
   "news.fallbackWarning":
     "Live calendar unavailable — showing the built-in recurring schedule, times are indicative.",
   "news.justNow": "just now",

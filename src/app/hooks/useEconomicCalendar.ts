@@ -77,7 +77,7 @@ export interface EconomicCalendarState {
   isFallback: boolean;
   /** Dernière synchronisation réussie côté serveur. */
   lastSuccessAt: string | null;
-  /** Le serveur sert du cache : la dernière tentative de synchro a échoué. */
+  /** Semaine courante dont la dernière synchro réussie date de plus de 2 h. */
   stale: boolean;
 }
 
@@ -104,6 +104,10 @@ export function useEconomicCalendar(weekStart: Date): EconomicCalendarState {
     placeholderData: (previous) => previous,
     refetchInterval: (query) => refreshInterval(query.state.data?.events ?? [], from, to),
     initialData,
+    // La copie de session sert à peindre tout de suite, pas à tenir lieu de
+    // réponse : sans cette date, React Query la jugeait fraîche une minute et
+    // un ancien « en retard » restait affiché après un rechargement.
+    initialDataUpdatedAt: 0,
   });
 
   // Persist to sessionStorage so the next F5 restores the data instantly.

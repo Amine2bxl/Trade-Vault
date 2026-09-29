@@ -1580,7 +1580,7 @@ const fr: Dict = {
   "news.timezone": "Horaires en {zone}",
   "news.updated": "Mis à jour {value}",
   "news.updatedNever": "En attente de la première synchro",
-  "news.staleWarning": "La synchro échoue - dernières données connues affichées.",
+  "news.staleWarning": "La source ne répond plus depuis un moment — données synchronisées {value}.",
   "news.fallbackWarning":
     "Calendrier live indisponible — calendrier récurrent intégré affiché, horaires indicatifs.",
   "news.justNow": "à l'instant",

@@ -312,10 +312,7 @@ export default function EconomicNews() {
         )}
       >
         {liveActive && (
-          <span className="relative flex w-1.5 h-1.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
-            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400" />
-          </span>
+          <span className="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
         )}
         {t("news.live")}
       </span>
@@ -329,7 +326,11 @@ export default function EconomicNews() {
       {(isFallback || stale) && !loading && (
         <div className="mb-4 flex items-start gap-2 rounded-xl border border-amber-500/25 bg-amber-500/[0.07] px-3 py-2.5 text-xs text-amber-200/90">
           <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-          <span>{isFallback ? t("news.fallbackWarning") : t("news.staleWarning")}</span>
+          <span>
+            {isFallback
+              ? t("news.fallbackWarning")
+              : t("news.staleWarning").replace("{value}", freshness ?? "—")}
+          </span>
         </div>
       )}
 
@@ -691,9 +692,11 @@ export default function EconomicNews() {
       )}
 
       <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-1 px-1 text-[11px] text-slate-600">
-        <span>Fuseau : {timeZone}</span>
+        <span>{t("news.timezone").replace("{zone}", timeZone)}</span>
         <span>·</span>
-        <span>{freshness ? `Mis à jour ${freshness}` : t("news.updatedNever")}</span>
+        <span>
+          {freshness ? t("news.updated").replace("{value}", freshness) : t("news.updatedNever")}
+        </span>
         {isFallback && (
           <>
             <span>·</span>
