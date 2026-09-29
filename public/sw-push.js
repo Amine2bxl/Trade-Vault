@@ -2,9 +2,10 @@
 // (rather than two) because two service workers cannot both control scope "/"
 // at once without one evicting the other's registration.
 
-// v3 : nouvelles icônes (logo émeraude). Changer le nom purge l'ancien cache
-// à l'activation — sans ça, un PWA installé gardait l'ancien logo violet.
-const CACHE_NAME = "tradevault-shell-v3";
+// v4 : icônes sans carré de fond (logo vert transparent). Changer le nom
+// purge l'ancien cache à l'activation — sans ça, un PWA installé gardait les
+// anciennes icônes (v3 : le logo violet avait disparu de la même façon).
+const CACHE_NAME = "tradevault-shell-v4";
 const APP_SHELL = [
   "/",
   "/manifest.webmanifest",
