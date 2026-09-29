@@ -1740,8 +1740,15 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
      au-dessus du contenu qui défile dessous — l'un des trois seuls endroits
      du produit où une ombre a un sens. */
   background: linear-gradient(180deg, var(--tv-rail-mid) 0%, var(--tv-rail-bot) 100%);
+  /* LA SÉPARATION. Sur un contenu sombre, la capsule se fondait dans la page :
+     un dégradé presque noir sur un fond presque noir. Elle reçoit un liseré
+     (la même valeur que les plaques fortes) et une arête haute éclairée à la
+     couleur du thème — une lueur d'un pixel, pas un halo. Aucun flou, aucune
+     barre opaque pleine largeur : elle reste une pièce qui flotte. */
+  border: 1px solid var(--tv-border-strong);
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.09),
+    inset 0 1px 0 rgb(var(--tv-accent-rgb) / 0.22),
+    0 -1px 0 rgb(var(--tv-accent-rgb) / 0.06),
     var(--tv-elev-3);
   overflow: visible;
 }
@@ -1796,32 +1803,18 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
   transform: scaleX(1);
 }
 
-/* LE « + » — l'action principale : la seule surface pleine de la barre,
-   légèrement surélevée pour se détacher sans masquer le contenu. */
-.fab-button {
-  width: 52px;
-  height: 52px;
-  margin-top: -18px;
-  border-radius: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--tv-cta);
-  color: #ffffff;
-  border: none;
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.25),
-    0 8px 20px -8px rgb(var(--tv-accent-rgb) / 0.8),
-    0 0 0 4px var(--tv-bg);
-  transition: transform var(--tv-dur-2) var(--tv-ease);
-  -webkit-tap-highlight-color: transparent;
-}
-.fab-button:active {
-  transform: scale(0.92);
-}
-.fab-button:focus-visible {
-  outline: 2px solid rgb(var(--tv-accent-rgb) / 0.8);
-  outline-offset: 3px;
+/* LA TUILE D'AJOUT — l'accent de la barre, à l'échelle d'une icône. Elle
+   remplace le « + » de 52px surélevé : même hauteur que les autres onglets,
+   un aplat d'accent teinté et un liseré, jamais d'ombre ni d'anneau. */
+.bottom-nav-add {
+  display: grid;
+  height: 26px;
+  width: 38px;
+  place-items: center;
+  border-radius: 9px;
+  border: 1px solid rgb(var(--tv-accent-rgb) / 0.45);
+  background: rgb(var(--tv-accent-rgb) / 0.16);
+  color: var(--tv-highlight);
 }
 
 /* Setup-quality stars — soft amber glow + spring pop on select */
@@ -2896,8 +2889,7 @@ a:focus-visible,
    le faisait déjà sur `.btn-primary` ; tout ce qui est plein sur ces
    surfaces le mérite pour la même raison. */
 .tv-accent-fill,
-.btn-primary,
-.fab-button {
+.btn-primary {
   font-weight: 700;
   text-shadow: 0 1px 2px rgb(4 18 11 / 0.55);
 }

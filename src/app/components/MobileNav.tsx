@@ -22,6 +22,7 @@ interface MobileNavProps {
  *
  * L'onglet actif est l'icône et le libellé en blanc, plus un trait d'accent
  * de 3 px sous le libellé — plus de pastille pleine découpée dans la barre.
+ * L'ajout est un onglet comme les autres, marqué par une tuile d'accent.
  */
 export default function MobileNav({ page, setPage, onAddTrade }: MobileNavProps) {
   const { t } = useT();
@@ -79,19 +80,27 @@ export default function MobileNav({ page, setPage, onAddTrade }: MobileNavProps)
         {/* 2 + bouton d'ajout + 2 = cinq colonnes. */}
         <div className="grid grid-cols-5 items-center gap-1 px-2 py-1.5">
           {items.slice(0, 2).map(tab)}
-          <div className="flex items-center justify-center">
-            <button
-              type="button"
-              onClick={onAddTrade}
-              aria-label={hasDraft ? t("trade.draftBadge") : t("common.addTrade")}
-              className="fab-button relative"
-            >
-              <Plus className="h-6 w-6" strokeWidth={2.4} aria-hidden />
+          {/* L'AJOUT — un onglet parmi les autres, pas un bloc posé dessus.
+              C'était un carré plein de 52px, surélevé de 18px, cerclé d'un
+              anneau et d'une lueur : la pièce la plus lourde de l'écran, qui
+              mordait sur le contenu. Il garde sa place au centre et la seule
+              touche d'accent de la barre, mais à la même hauteur et avec la
+              même anatomie (icône + libellé) que ses voisins. */}
+          <button
+            type="button"
+            onClick={onAddTrade}
+            aria-label={hasDraft ? t("trade.draftBadge") : t("common.addTrade")}
+            className="bottom-nav-item text-[var(--tv-highlight)]"
+          >
+            <span className="bottom-nav-add relative">
+              <Plus className="h-[18px] w-[18px]" strokeWidth={2.4} aria-hidden />
               {hasDraft && (
-                <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-[var(--tv-bg)] bg-amber-400" />
+                <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full border-2 border-[var(--tv-rail-bot)] bg-amber-400" />
               )}
-            </button>
-          </div>
+            </span>
+            <span className="text-[10px] font-semibold leading-none">{t("common.add")}</span>
+            <span className="bottom-nav-dot" aria-hidden />
+          </button>
           {items.slice(2).map(tab)}
         </div>
       </div>
