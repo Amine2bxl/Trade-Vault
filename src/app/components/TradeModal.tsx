@@ -762,7 +762,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                 className="flex-1 bg-transparent text-sm text-white focus:outline-none"
               />
               <span className="text-xs text-slate-600">
-                → ${riskDollar.toFixed(2)} {t("dashboard.riskSuffix")}
+                → {formatMoney(riskDollar)} {t("dashboard.riskSuffix")}
               </span>
             </div>
           )}
@@ -840,7 +840,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                         {calcContracts.contracts} {t("trade.contracts")}
                       </span>
                       <span className="text-slate-400">
-                        {t("trade.effectiveRisk")}: ${calcContracts.effectiveRisk.toFixed(2)}
+                        {t("trade.effectiveRisk")}: {formatMoney(calcContracts.effectiveRisk)}
                       </span>
                     </>
                   ) : (

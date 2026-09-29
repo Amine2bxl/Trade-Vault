@@ -222,11 +222,7 @@ function EquityChart({ data }: { data: EquityPoint[] }) {
                   <div className="glass-strong rounded-2xl px-3 py-2 shadow-[var(--tv-elev-3)]">
                     <p className="tv-label text-slate-500">{formatShortDate(label as string)}</p>
                     <p className="tv-figure mt-0.5 text-sm text-white">
-                      $
-                      {Number(val).toLocaleString("en-US", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
+                      {formatMoney(Number(val))}
                     </p>
                     <p
                       className={

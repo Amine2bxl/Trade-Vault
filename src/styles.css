@@ -3654,9 +3654,15 @@ a:focus-visible,
 }
 
 @media print {
+  /* Le FOND DE PAGE vit ici, pas sur `html` : Chromium ne peint jamais le
+     fond de la racine dans la marge de page — mesuré, les quatre bords du PDF
+     sortaient blancs autour d'une feuille sombre. `@page { background }` est
+     le seul fond qui couvre la page entière, marges comprises, et il est
+     imprimé même quand « graphiques d'arrière-plan » est décoché. */
   @page {
     size: A4 portrait;
     margin: 12mm 12mm 14mm;
+    background: #0a0b0d;
   }
 
   /* 1 — l'élagage récursif */
@@ -3683,10 +3689,12 @@ a:focus-visible,
     backdrop-filter: none !important;
   }
 
-  /* 3 — le papier TradeVault : la racine porte le fond (il couvre aussi les
-     marges de page), la feuille porte les nappes d'accent. */
-  html,
-  body {
+  /* 3 — le papier TradeVault : `@page` porte le fond des marges, la racine
+     celui de la zone de contenu, la feuille ses nappes d'accent. Le sélecteur
+     porte `:has()` pour peser plus lourd que l'élagage (2), qui remettait
+     sinon `background: none` sur `html` et `body`. */
+  html:has(.tv-print-sheet),
+  body:has(.tv-print-sheet) {
     background: #0a0b0d !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
@@ -4354,6 +4362,20 @@ a:focus-visible,
 }
 .tv-subnav::-webkit-scrollbar {
   display: none;
+}
+/* Sur téléphone, les onglets PASSENT À LA LIGNE au lieu de défiler : six
+   parties d'un plan dans 306px en cachaient trois hors du cadre, sans rien
+   qui dise qu'il fallait glisser. Deux rangées se lisent d'un coup d'œil. */
+@media (max-width: 639px) {
+  .tv-subnav {
+    flex-wrap: wrap;
+    overflow: visible;
+    border-radius: 1rem;
+  }
+  .tv-subnav > .tv-subnav-item {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
 }
 .tv-subnav-item {
   scroll-snap-align: start;
@@ -5420,6 +5442,58 @@ thead .plan-cmp-col.is-pro {
 .plan-cmp-check.is-muted {
   background: rgb(255 255 255 / 0.06);
   color: var(--tv-text-secondary, #94a3b8);
+}
+
+/* SUR TÉLÉPHONE, LE TABLEAU TIENT DANS L'ÉCRAN. Il imposait 520px de large
+   dans une carte de 304 : trois offres sur quatre défilaient à l'horizontale,
+   et la colonne Pro — celle qu'on vient comparer — sortait du cadre. Les
+   colonnes se resserrent (le libellé passe à la ligne, le prix perd sa
+   taille d'affiche, l'annuel s'enroule) au lieu de pousser le tableau. */
+@media (max-width: 639px) {
+  .plan-cmp-table {
+    min-width: 0;
+    table-layout: fixed;
+  }
+  .plan-cmp-label {
+    padding-right: 0.5rem;
+    font-size: 0.75rem;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+  .plan-cmp-col {
+    width: 4.5rem;
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
+  }
+  .plan-cmp-head {
+    padding-top: 1.5rem;
+  }
+  .plan-cmp-name {
+    font-size: 0.6875rem;
+    letter-spacing: 0.02em;
+  }
+  .plan-cmp-price {
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    font-size: 1.125rem;
+  }
+  .plan-cmp-yearly {
+    white-space: normal;
+    text-align: center;
+    font-size: 0.625rem;
+    line-height: 1.3;
+  }
+  .plan-cmp-ribbon {
+    padding: 0.15rem 0.45rem;
+    font-size: 0.625rem;
+  }
+  .plan-cmp-cta,
+  .plan-cmp-current {
+    font-size: 0.6875rem;
+    padding: 0 0.25rem;
+    text-align: center;
+  }
 }
 
 /* ── Les trois portes du tableau de bord (Journal · Jarvis · Analyse) ──

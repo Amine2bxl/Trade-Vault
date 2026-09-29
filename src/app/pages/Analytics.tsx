@@ -757,7 +757,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                         {cell && (
                           <>
                             <span className={cell.pnl >= 0 ? "text-emerald-300" : "text-red-300"}>
-                              {cell.pnl >= 0 ? "+" : "-"}${Math.abs(Math.round(cell.pnl))}
+                              {formatMoney(cell.pnl, { signed: true, whole: true })}
                             </span>
                             <span className="text-slate-400 font-medium">{cell.count}</span>
                           </>

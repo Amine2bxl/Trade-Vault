@@ -404,7 +404,7 @@ export default function TradeDetailModal({
                     <div className="bg-white/[0.03] rounded-lg px-3 py-2">
                       <span className="text-slate-500">{t("trade.slippage")}: </span>
                       <span className="text-slate-300 font-semibold">
-                        ${trade.slippage.toFixed(2)}
+                        {formatMoney(trade.slippage)}
                       </span>
                     </div>
                   )}
@@ -525,7 +525,7 @@ export default function TradeDetailModal({
                               <div className="flex justify-between gap-2">
                                 <dt className="text-slate-500">{t("tradeDetail.intentRisk")}</dt>
                                 <dd className="text-right text-white">
-                                  ${intent.plannedRisk.toFixed(2)}
+                                  {formatMoney(intent.plannedRisk)}
                                 </dd>
                               </div>
                             )}

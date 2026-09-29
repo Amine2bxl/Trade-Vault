@@ -783,7 +783,8 @@ export default function Dashboard({
                                 {formatPnl(trade.pnl)}
                               </div>
                               <div className="text-[10px] text-slate-500">
-                                ${trade.riskAmount.toFixed(0)} {t("dashboard.riskSuffix")}
+                                {formatMoney(trade.riskAmount, { whole: true })}{" "}
+                                {t("dashboard.riskSuffix")}
                               </div>
                             </div>
                           </RowTag>
