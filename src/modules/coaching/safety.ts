@@ -1,7 +1,7 @@
 /**
  * Sécurité statistique — le droit de conclure.
  *
- * `docs/PHASE_0_INTELLIGENCE_FOUNDATION.md` §7 en fait une exigence dure : un
+ * `docs/AI.md` §1 en fait une exigence dure : un
  * trader qui change de comportement sur la foi d'un échantillon de 2-3 trades
  * est activement abîmé par le produit. Ce module est la SEULE source du seuil
  * sous lequel Jarvis parle de « signal faible » au lieu d'affirmer.

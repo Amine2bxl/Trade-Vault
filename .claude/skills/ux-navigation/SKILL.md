@@ -7,7 +7,7 @@ description: Règles UX et navigation de TradeVault — source unique `navigatio
 
 ## Source unique
 
-`src/app/navigation.ts` alimente **Sidebar + MobileNav + palette ⌘K**. On
+`src/app/shell/navigation.ts` alimente **Sidebar + MobileNav + palette ⌘K**. On
 n'ajoute jamais une destination dans une seule des trois surfaces : on l'ajoute
 là, et les trois suivent.
 

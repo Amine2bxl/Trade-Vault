@@ -200,7 +200,7 @@ describe("le tableau de bord ne connaît que les deux verts du langage", () => {
   test("le cadran de l'Edge Score ne rayonne pas, et ne calcule plus de halo", () => {
     /* `glow` était produit dans les quatre branches de `scoreTone` et lu nulle
        part. Du code mort, mais pas anodin : il gardait vivante l'idée d'un halo
-       coloré, que `DESIGN.md` comme `LUCID.md` interdisent (« rien ne
+       coloré, que `docs/DESIGN_SYSTEM.md` interdisent (« rien ne
        rayonne »), et le commentaire du cadran en promettait encore l'effet. */
     const code = stripComments(read(join(APP, "features/dashboard/CopilotBlock.tsx")));
     expect(code).not.toContain("glow");

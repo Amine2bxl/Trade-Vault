@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from "react";
  * POURQUOI `localStorage` ICI ALORS QU'IL EST REFUSÉ POUR LE CACHE DE TRADES.
  * La distinction est le contenu, pas le mécanisme : une préférence d'affichage
  * n'apprend rien à qui lirait le disque d'une machine partagée, alors que
- * l'historique de P&L d'un trader, oui (`MOTION_AND_PERF.md` §C3). Un booléen
+ * l'historique de P&L d'un trader, oui (décision de performance, voir `docs/ARCHITECTURE.md`). Un booléen
  * de mise en page peut donc survivre à la déconnexion sans rien coûter.
  *
  * Lecture PARESSEUSE, dans l'initialiseur d'état : `localStorage` n'existe pas

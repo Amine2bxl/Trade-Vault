@@ -14,7 +14,7 @@ import type { Detector } from "./types";
  * message le plus nuisible qu'un journal de trading puisse envoyer : on peut
  * gagner cinq fois d'affilée en sur-dimensionnant et en violant chaque règle.
  * Attribuer un résultat au process est du biais de résultat — précisément ce
- * que ce produit existe pour combattre (cf. `PRODUCT.md` §1 : l'écart entre ce
+ * que ce produit existe pour combattre (cf. `docs/PRODUCT.md`, Promesse : l'écart entre ce
  * que le trader sait et ce qu'il fait).
  *
  * Le renforcement positif est conservé — il fait tenir la discipline dans la

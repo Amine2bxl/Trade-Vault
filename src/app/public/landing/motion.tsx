@@ -364,7 +364,7 @@ export function useApparitions(
 
       /**
        * Les sections sous la ligne de flottaison sont chargées en différé
-       * (`MOTION_AND_PERF.md` §B2) : elles n'existent PAS quand ce hook
+       * (`docs/DESIGN_SYSTEM.md`, motion) : elles n'existent PAS quand ce hook
        * s'exécute. Sans le `MutationObserver` plus bas, trois blocs sur
        * dix-neuf entraient sans un geste — ils se contentaient d'être là,
        * ce qui est précisément la rupture qu'on remarque.

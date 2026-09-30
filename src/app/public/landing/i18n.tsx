@@ -388,7 +388,7 @@ const M: Record<string, Msg> = {
   // L'accroche nommait un journal (« tes trades contiennent la réponse ») sur
   // un marché — journal + analytics — déjà saturé et indifférencié. Elle vend
   // maintenant ce que le produit fait RÉELLEMENT de différent, et ce que
-  // `docs/POSITIONNEMENT.md` désigne comme la douleur centrale de la cible :
+  // `docs/PRODUCT.md` désigne comme la douleur centrale de la cible :
   // « je sais trader, je n'arrive pas à être discipliné quand ça compte ».
   //
   // Le contre-temps du titre est la promesse entière : on ne dit pas au trader
@@ -500,7 +500,7 @@ const M: Record<string, Msg> = {
   // Les trois cartes ne listent plus des STYLES de trading (futures, day, ICT)
   // — le produit les sert tous et ça ne distingue rien. Elles nomment les trois
   // situations où tenir une règle a un coût immédiat et mesurable : c'est le
-  // cœur de cible de `docs/product/PRODUCT.md` §4.
+  // cœur de cible de `docs/PRODUCT.md`, Cible.
   "uses.title.a": { en: "Built for the trader", fr: "Conçu pour le trader" },
   "uses.title.b": { en: "who has rules to hold.", fr: "qui a des règles à tenir." },
   "uses.u1.t": { en: "Prop firm challenge", fr: "Challenge prop firm" },
@@ -788,7 +788,7 @@ const M: Record<string, Msg> = {
    * Quatre puces, pas six : au-delà, une liste cesse d'être lue et devient
    * une texture qu'on saute. Chacune est VÉRIFIABLE dans le produit - aucune
    * ne promet un gain, aucune n'annonce une fonctionnalité non livrée
-   * (`FEATURES_STATUS.md` fait foi). Elles répondent chacune à une objection
+   * (`docs/FEATURES.md` fait foi). Elles répondent chacune à une objection
    * différente : « ça sert à quoi », « comment c'est mesuré », « combien de
    * travail pour moi », « et si je pars ». */
   "v2.bul.title": { en: "What you actually get", fr: "Ce que tu obtiens vraiment" },
@@ -995,7 +995,7 @@ const M: Record<string, Msg> = {
    * concurrent ne peut reprendre sans refaire son architecture : Jarvis reçoit
    * des statistiques PRÉCALCULÉES par des moteurs purs et n'a pas le droit de
    * produire un chiffre qu'il n'a pas reçu (règle `ANTI_HALLUCINATION`,
-   * `docs/product/JARVIS.md` §5).
+   * `docs/PRODUCT.md`, Jarvis).
    *
    * En 2026, « IA » sur une page de vente est un signal de bruit. La preuve
    * qu'on ne raconte pas d'histoires vaut plus que l'annonce qu'on a une IA. */
@@ -1067,7 +1067,7 @@ const M: Record<string, Msg> = {
    *
    * On ne se compare pas aux journaux à 20–30 $/mois : c'est le marché qu'on
    * refuse. On se compare au coût que la cible PAIE DÉJÀ — le challenge qu'elle
-   * repasse (`docs/POSITIONNEMENT.md` §5). Le prix affiché vient du catalogue,
+   * repasse (`docs/PRODUCT.md`, Offres). Le prix affiché vient du catalogue,
    * jamais d'une constante recopiée ici. */
   "anchor.title.a": { en: "Compare us to the right thing.", fr: "Compare-nous à la bonne chose." },
   "anchor.title.b": { en: "Not to a cheaper journal.", fr: "Pas à un journal moins cher." },

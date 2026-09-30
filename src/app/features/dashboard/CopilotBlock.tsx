@@ -54,7 +54,7 @@ interface CopilotBlockProps {
  *    nature de l'objet. Un score moyen n'est ni un gain ni un bouton : il est
  *    NEUTRE, et c'est déjà la règle du primitif `Metric`.
  * 3. `glow` était calculé dans les quatre branches et lu NULLE PART. Du halo
- *    mort — interdit par `DESIGN.md` comme par `LUCID.md` (« rien ne
+ *    mort — interdit par `docs/DESIGN_SYSTEM.md` (« rien ne
  *    rayonne »), et dont le commentaire du cadran promettait encore l'effet.
  */
 function scoreTone(score: number): { ring: string; text: string } {

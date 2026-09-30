@@ -715,7 +715,7 @@ function LandingPage() {
               </div>
 
               {/* LA CAPTURE PASSE DEVANT LE DESSIN.
-                  `DESIGN.md` : « lead EVERY section with a product screenshot ».
+                  `docs/DESIGN_SYSTEM.md` : « lead EVERY section with a product screenshot ».
                   Tant qu'aucun `dashboard.*` n'est déposé dans
                   `src/assets/product/`, le dessin ci-dessous tient la place ;
                   le fichier posé, il s'efface. */}

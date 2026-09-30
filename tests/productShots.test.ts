@@ -6,7 +6,7 @@ import { readSource, stripComments } from "./helpers/source";
  *
  * ── CE QUI EST EN JEU ───────────────────────────────────────────────────────
  *
- * `DESIGN.md` demande deux choses en même temps : que chaque section soit menée
+ * `docs/DESIGN_SYSTEM.md` demande deux choses en même temps : que chaque section soit menée
  * par une capture du produit, et que rien ne soit inventé — « NEVER invent
  * testimonials, user counts, logos, revenue or performance claims ».
  *

@@ -41,7 +41,7 @@ export type Page = (typeof PAGES)[number];
  * URL, le routage ne bouge pas, les liens profonds continuent de fonctionner.
  *
  * La page par défaut d'une section est `pages[0]` — délibérément pas un champ
- * `default` séparé, qui ferait deux sources pour un même fait (`PRODUCT.md`
+ * `default` séparé, qui ferait deux sources pour un même fait (`docs/PRODUCT.md`
  * §2).
  *
  * `inbox` n'appartient à aucune section : c'est une surface de notification

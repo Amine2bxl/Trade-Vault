@@ -1,56 +1,83 @@
 # AGENTS.md
 
-TradeVault — an AI trading-journal/performance workspace. React 19 + TanStack Start/Router (SSR via Nitro), Tailwind v4, Supabase (REST + RLS), Recharts. Landing/marketing copy principles and the full design reference live in [`DESIGN.md`](DESIGN.md) — read it before touching the landing page.
+Instructions pour tout agent IA (et tout contributeur) sur TradeVault — journal
+de trading et espace de performance, avec Jarvis comme coach IA. React 19 +
+TanStack Start/Router (SSR via Nitro, Vercel), Tailwind v4, Supabase
+(REST + RLS), Recharts, Bun.
 
-## Commands
+**Commencer par [`docs/README.md`](docs/README.md)** (carte de la doc et « où
+modifier quoi »), puis [`docs/FEATURES.md`](docs/FEATURES.md) pour localiser une
+feature. Architecture et règles de placement : [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
-- Install: `bun install` (Bun, not npm).
-- Dev server: `bun run dev` → **http://localhost:8080** (the Lovable vite config pins port 8080).
-- Local prod-like preview: `bun run preview` → builds a node bundle and serves **:4173** (`.vercel/output`/`.output`). Good for verifying SSR output without deploying.
-- Build: `bun run build` (vite build; nitro preset `vercel`, output `.vercel/output`). Pushing `main` auto-deploys to Vercel.
-- `bun run typecheck` = `tsc --noEmit`. `bun run lint` = `eslint .` (slow on this repo; can exceed 5 min). 
-- Tests: `bun test` (~1s, ~1060 tests). SQL billing/quota guarantees: `bash scripts/test-sql.sh` (needs a real Postgres 16; CI runs it in a separate job).
-- **CI gate (must pass before pushing to main):** `typecheck` → `lint` → `build` → `test`. CI also re-runs tests under `TZ=America/New_York` and `TZ=Pacific/Auckland` — day-boundary bugs (`toISOString().slice(0,10)`) only surface there. Reproduce locally with `TZ=America/New_York bun test`. For business dates use `todayLocalDate()`/`localDateOf()` from `@/shared/calendar-date`, never UTC slicing for user-facing dates.
+## Où intervenir
 
-## Layout & architecture
+- Écran de l'app connectée → `src/app/features/<feature>/`
+- Cadre, navigation, ⌘K → `src/app/shell/` ; liste des écrans : `PAGES` /
+  `SECTIONS` dans `src/app/types.ts`
+- Landing et pages publiques → `src/app/public/`
+- Code trading partagé côté client → `src/app/trading/`
+- Calcul pur (partagé avec le serveur) → `src/domain/`
+- Moteurs (discipline, motifs, Monte Carlo, notifications, IA…) → `src/modules/`
+- Serveur, crons, paiement → `src/backend/` + `src/server.ts`
+- Schéma → `supabase/migrations/` (additif)
 
-- File-based routes in `src/routes/`; **`src/routeTree.gen.ts` is generated** — a new route file must be regenerated (a `vite build` does it) and the gen file committed.
-- SSR entry is `src/server.ts` (error wrapper). Server-only code lives under `src/backend/`; don't import browser/REST-client-bound modules there. Public indexable routes (`robots.txt`/sitemap) are declared in `PUBLIC_ROUTES` in `src/server.ts` — add new public routes there too.
-- The signed-in app is a SPA behind one route (`/`, authed client-render); public pages (`/privacy`, `/terms`, `/cgu`, `/contact`) render SSR-fully and must stay outside the app tree.
-- Full-viewport (non-scrolling) pages use `src/app/hooks/useAvailableHeight.ts` (reads real available height, like Jarvis). MonteCarlo, Calendar, Inbox use it — a new full-screen page should too.
+Nouveau fichier : le placer selon `docs/ARCHITECTURE.md` §7. Supprimer un
+fichier : uniquement avec la preuve qu'il n'est ni importé (statique,
+dynamique, `lazyPage`, `import.meta.glob`) ni lu en chaîne par un test, un
+script ou la config.
 
-## i18n (three systems — don't mix them)
+## Commandes et portes
 
-1. **App**: `src/app/i18n/` — `LanguageContext` + `useT()`, dicts in `translations.ts` (en source-of-truth) + `locales/*.ts`. **Default is English; language changes ONLY via explicit user choice in Settings — no browser auto-detect.** New keys must be added in both `translations.ts` and the `fr` locale (tests check coverage).
-2. **Landing/marketing**: its OWN provider `LandingLangProvider` + `useLandingT()` + dictionary in `src/app/pages/landing/i18n.tsx` (en/fr per key). Landing has no relation to the app `LanguageContext`.
-3. **SSR/SEO language**: `SSR_LANG` in `src/shared/lang.ts` (currently `"en"`). Four places MUST agree — `<html lang>` (`__root.tsx`), the SSR body, the title/description (`routes/index.tsx`), and `og:locale` (`shared/seo.ts` + `__root.tsx`). `tests/publicSurface.test.ts` asserts `SSR_LANG === "en"`.
+`bun install` · `bun run dev` (:8080) · `bun run preview` (:4173) ·
+`bun run typecheck` · `bun run lint` · `bun run build` · `bun test`.
+**Avant tout push : typecheck → lint → build → test**, tous verts. La CI relance
+les tests sous `TZ=America/New_York` et `TZ=Pacific/Auckland` : pour une date
+métier, `todayLocalDate()` / `localDateOf()` (`src/shared/calendar-date.ts`),
+jamais `toISOString().slice(0, 10)`. Détail : [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md).
 
-The landing stores its explicit choice as `tv.landing.lang`; the app as `tv.lang`.
+Plusieurs tests **lisent les sources** (chemins et contenus) : lancer toute la
+suite ; ne jamais affaiblir une assertion pour passer.
 
-## Theme system & design language
+## Règles non négociables
 
-- Default theme = **graphite** via `DEFAULT_THEME_ID` in `src/app/utils/themes.ts`. Per-device storage keys: `tv-themes-v2` (store) + `tv-theme-vars-v2` (resolved CSS vars); both are purged on logout (`session-purge.ts`).
-- The `:root` palette in `styles.css` is the SSR/no-JS fallback and must match the default theme — keep `--tv-accent*` in sync with graphite when the default changes.
-- Surface grammar (styles.css): `.glass`, `.glass-strong`, `.panel`, `.stat-card*` all render the SAME plate; depth comes from surface VALUE + hairline, **never shadows, halos, blur or `animate-ping`** ("rien ne rayonne, la couleur est rare"). P&L keeps its own green/red (`--tv-chart-green/red`) regardless of theme.
-- Shared UI: `src/shared/ui` (`Kpi`, `KpiGrid`, `SubNav`, `Sheet`, `Button`, `PageToolbar`…) — reuse rather than restyle.
+- **Chiffres** : calculés par les moteurs déterministes (`domain/`, `modules/`) ;
+  Jarvis ne fait que les formuler. Toute statistique affiche son `n` ; aucune
+  formulation causale ; aucun chiffre sous l'échantillon minimum.
+- **Jarvis n'écrit rien directement** : outils en lecture seule ; seule voie
+  d'écriture = une proposition acceptée par le trader. Voir [`docs/AI.md`](docs/AI.md).
+- **Données** : RLS owner-only, secrets uniquement côté serveur, migrations
+  additives. L'app de dev parle à la base Supabase **réelle** : jamais de SQL
+  destructif ; comptes de test `tv*@test.dev` supprimés après usage.
+- **i18n** : trois systèmes à ne pas mélanger (app `useT()`, landing
+  `useLandingT()`, `SSR_LANG`). Anglais par défaut, changement de langue
+  uniquement par choix explicite. Toute clé ajoutée dans `translations.ts` et
+  `fr`. Aucune chaîne visible codée en dur.
+- **Design** : thème par défaut **`lucid`** (accent menthe `#22e08a`) ; le
+  `:root` de `src/styles.css` reste identique au thème par défaut. Rien ne
+  rayonne (ni ombre, ni halo, ni dégradé, ni `animate-ping`) ; le P&L garde ses
+  couleurs fixes. Primitives `src/shared/ui`. Charger les skills de
+  `.claude/skills/` avant tout travail d'interface. Voir [`docs/DESIGN_SYSTEM.md`](docs/DESIGN_SYSTEM.md).
+- **Honnêteté** : jamais de promesse de gain, de faux avis, de chiffre ou de
+  logo inventé. Voir [`docs/PRODUCT.md`](docs/PRODUCT.md).
+- **Surface publique** : toute route indexable dans `PUBLIC_ROUTES`
+  (`src/server.ts`) ; jamais de `public/robots.txt` ni `public/sitemap.xml`.
+  Voir [`docs/SEO.md`](docs/SEO.md).
+- **Généré** : `src/routeTree.gen.ts` (committer après `bun run build`) et
+  `src/integrations/supabase/types.ts` ne s'éditent pas à la main.
 
-## Notifications
+## Manière de travailler
 
-- Engine + rules: `src/modules/notifications/` (`engine.ts`, `rules.ts`). Coded rules are deduped once/day via localStorage `tv.notif.coded`. Severity `error` auto-opens the detail popup. Notifications persist in the Supabase `notifications` table. UI: `src/app/pages/Inbox.tsx` (full-screen list) + bell badge in `Sidebar`/`MobileActions`.
-
-## Testing quirks
-
-- Several tests read **source files and assert content** — changing constants/strings can break them: `tests/publicSurface.test.ts` (SEO/language/robots), `tests/envExample.test.ts` (every server env var the code reads must be documented in `.env.example`), `tests/themeCoverage.test.ts`, `tests/staticCards.test.ts`. Run the full `bun test`, don't assume a unit is isolated.
-
-## Data & env
-
-- `.env` (gitignored) holds real Supabase credentials; `.env.example` is the documented contract. The dev app talks to the LIVE Supabase project — never destructive SQL against real tables; throwaway signups (`tv*@test.dev`) are acceptable for E2E and cleaned up after.
-
-## Conventions
-
-- All comments are in **French**; user-facing strings via `t(...)`/landing dict — never hard-coded `fr ? … : …` in components.
-- Commits are descriptive French; `main` is the deploy branch. Feature work in `claude/*` branches merged into `main` keeps the linear history (prefer rebase/merge like prior work).
-
-## Landing page (high priority)
-
-See `DESIGN.md` for the full Linear-style design reference and product positioning. Non-negotiables: product screenshots are the hero; single scarce accent (lavender `#5e6ad2` on marketing canvas, never as card fill); no gradients/glow/light-mode; honest English copy — never promise profits or invent social proof; structure Hero → Problem → Journal→Analyze→Understand→Improve → Product → Analytics → Jarvis → Mistakes/use cases → Excel/Notion → Pricing → CTA around real product features only.
+- Une feature ne se construit que si elle sert au moins un de : conversion,
+  rétention, valeur perçue, différenciation, réduction du churn, productivité
+  du trader.
+- Avant d'implémenter : raisonner (produit + architecture), choisir, dire les
+  risques. Après : résumer, vérifier que rien n'est cassé, ni performance
+  (pas de N+1, UI optimiste), ni sécurité (RLS, validation, secrets).
+- Étendre par plug-in (événement, listener, step, outil, provider) plutôt que
+  modifier un moteur existant. Une seule source de vérité par information :
+  réutiliser avant de recréer.
+- Commentaires en **français** ; commits descriptifs en français ; travail sur
+  branche, PR, CI verte.
+- Mettre à jour le document propriétaire du sujet dans `docs/` quand un
+  changement le rend faux. Ne pas créer de nouveau document sans nécessité.
+- Réponses concises : aller au fait, recommander plutôt qu'énumérer.

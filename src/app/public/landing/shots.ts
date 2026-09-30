@@ -3,7 +3,7 @@
  *
  * ── LE PROBLÈME QUE CE FICHIER RÈGLE ────────────────────────────────────────
  *
- * `DESIGN.md` est explicite : « lead EVERY section with a product screenshot »,
+ * `docs/DESIGN_SYSTEM.md` est explicite : « lead EVERY section with a product screenshot »,
  * et « NEVER invent testimonials, user counts, logos, revenue or performance
  * claims ». La landing faisait l'inverse : elle DESSINAIT le produit en SVG, et
  * les chiffres de ces dessins — « +$4,218.50 », « +16.9 % », « 64 % de

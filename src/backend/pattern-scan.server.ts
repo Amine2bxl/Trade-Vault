@@ -20,7 +20,7 @@ import {
 } from "@/modules/patterns/persist";
 
 /**
- * Le passage de détection nocturne — `ECOSYSTEM_WIRING.md` Phase 3.
+ * Le passage de détection nocturne — `docs/AI.md` §4.
  *
  * Ce fichier ne contient AUCUNE règle statistique. Les seuils, les planchers
  * d'effet, la règle d'oubli, le tri : tout est dans `src/modules/patterns/`,

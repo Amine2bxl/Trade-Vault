@@ -28,7 +28,7 @@ import { readSource, stripComments } from "./helpers/source";
  * de trafic — quand on les découvre.
  *
  * Chaque test ci-dessous correspond à un défaut RÉEL trouvé dans l'audit
- * (`docs/seo/SEO_AUDIT.md`), et existe pour qu'il ne revienne pas.
+ * (`docs/SEO.md`), et existe pour qu'il ne revienne pas.
  */
 
 const read = (p: string) => readSource(import.meta.dir, p);

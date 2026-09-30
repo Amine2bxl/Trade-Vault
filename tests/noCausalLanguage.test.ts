@@ -3,7 +3,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 
 /**
- * `ECOSYSTEM_WIRING.md` interdit toute formulation CAUSALE dans ce que le
+ * `docs/AI.md` interdit toute formulation CAUSALE dans ce que le
  * produit affirme sur le comportement du trader. Le produit observe une
  * association sur une variable en partie déclarative ; écrire « ton score de
  * préparation améliore ton expectancy » revient à promettre une causalité que

@@ -23,7 +23,7 @@ import type { TKey } from "@/app/i18n/translations";
  * POURQUOI ICI ET PAS SUR UNE PAGE À PART. Une séance s'ouvre au moment où le
  * trader prépare sa journée, c'est-à-dire pendant la checklist. Lui demander
  * d'aller ailleurs pour déclarer qu'il commence produirait exactement ce que
- * `ECOSYSTEM_WIRING.md` cherche à éviter : une donnée que personne ne saisit,
+ * `docs/AI.md` cherche à éviter : une donnée que personne ne saisit,
  * donc des corrélations calculées sur trois séances.
  *
  * AUCUN CURSEUR DE PRÉPARATION. Le score affiché est calculé à partir de la

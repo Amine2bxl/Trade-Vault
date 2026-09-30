@@ -5,7 +5,7 @@
  * préparation de 0 à 100 ». Elle produit une variable morte : l'auto-évaluation
  * s'ancre (le même 70 chaque matin), elle suit l'humeur plutôt que la
  * préparation, et toute corrélation calculée dessus ensuite ne mesure rien.
- * `ECOSYSTEM_WIRING.md` l'interdit explicitement, et c'est la seule raison pour
+ * `docs/AI.md` l'interdit explicitement, et c'est la seule raison pour
  * laquelle ce fichier est un moteur et pas un champ de formulaire.
  *
  * Le score se compose de trois faits OBSERVABLES, dont deux ne dépendent pas du
@@ -20,7 +20,7 @@
  * Le module est PUR : aucune IO, aucun accès réseau, aucune date implicite.
  * Il rend le score ET ses entrées, parce qu'un score dont on ne peut pas
  * reconstituer le calcul six mois plus tard n'est pas auditable — et un chiffre
- * non auditable est exactement ce que `GO-LIVE.md` recense sous « chiffre
+ * non auditable est exactement ce que `docs/ROADMAP.md` recense sous « chiffre
  * juste, interprétation fausse ».
  */
 

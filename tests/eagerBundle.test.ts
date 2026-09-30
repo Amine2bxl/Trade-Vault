@@ -5,7 +5,7 @@ import { dirname, resolve } from "node:path";
 /**
  * Le graphe d'imports STATIQUES du shell, vérifié comme un invariant.
  *
- * `MOTION_AND_PERF.md` demande que recharts (370 Ko) soit absent du chunk
+ * `docs/DESIGN_SYSTEM.md` (motion) demande que recharts (370 Ko) soit absent du chunk
  * initial. Il y était — non pas parce qu'une page le chargeait trop tôt, mais
  * parce que `shared/ui/index.ts` réexportait un `ChartContainer` que PERSONNE
  * n'utilisait : un seul `import { Button } from "@/shared/ui"` suffisait à

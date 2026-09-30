@@ -1,7 +1,7 @@
 /**
  * Les seuils au-dessus desquels le produit a le droit de parler.
  *
- * `ECOSYSTEM_WIRING.md` en fait une exigence dure, et la raison est écrite
+ * `docs/AI.md` en fait une exigence dure, et la raison est écrite
  * noir sur blanc dans le spec : *un trader qui change de comportement à cause
  * d'une corrélation fausse observée sur douze séances est activement abîmé par
  * le produit*. Ces constantes vivent donc dans un fichier à elles, importées

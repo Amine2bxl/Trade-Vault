@@ -39,7 +39,7 @@ import type { TKey } from "../i18n/translations";
  * Les LIBELLÉS DE SECTION réutilisent les clés i18n des anciens groupes
  * (`nav.groupPreparation`, `nav.groupJournal`, `nav.groupAnalysis`) : ce sont
  * exactement les mêmes mots, et dix locales sur douze sont à 26 % de
- * couverture (`GO-LIVE.md` §2.10) — inventer des clés neuves aurait ajouté du
+ * couverture (`docs/ROADMAP.md` (traductions)) — inventer des clés neuves aurait ajouté du
  * texte non traduit là où du texte traduit existait déjà.
  */
 
