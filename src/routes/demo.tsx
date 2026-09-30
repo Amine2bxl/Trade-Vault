@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { pageSeo } from "../shared/seo";
-import { LandingDemo } from "@/app/components/LandingDemo";
+import { LandingDemo } from "@/app/public/LandingDemo";
 
 // /demo — la démo « GIF » : lecture automatique des principales features.
 export const Route = createFileRoute("/demo")({

@@ -7,7 +7,7 @@ import {
   MISTAKE_TO_CLUSTER,
   clusterBreakdown,
   clusterOf,
-} from "../src/app/utils/mistakeClusters";
+} from "../src/app/trading/mistakeClusters";
 
 const MIGRATION = resolve(
   import.meta.dir,

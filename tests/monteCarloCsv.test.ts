@@ -1,12 +1,12 @@
 import { describe, expect, test } from "bun:test";
-import { parseCsv, guessMapping, mapRowsToTrades } from "../src/app/utils/csvImport";
+import { parseCsv, guessMapping, mapRowsToTrades } from "../src/app/features/journal/csvImport";
 import {
   deriveRFromPnl,
   extractRSamples,
   runMonteCarlo,
   computeStatistics,
   type MonteCarloParams,
-} from "../src/app/utils/monteCarlo";
+} from "../src/app/features/monte-carlo/monteCarloEngine";
 
 /**
  * L'IMPORT CSV DE MONTE-CARLO, DE BOUT EN BOUT.

@@ -8,8 +8,8 @@ import { ToastProvider } from "@/app/contexts/ToastContext";
 import { ConfirmProvider } from "@/app/contexts/ConfirmContext";
 import { PageActionsProvider } from "@/app/contexts/PageActionsContext";
 import { previewTrades } from "@/app/utils/previewTrades";
-import { computeStats } from "@/app/utils/tradeCalcs";
-import { computeQuantStats } from "@/app/utils/quantStats";
+import { computeStats } from "@/domain/tradeCalcs";
+import { computeQuantStats } from "@/domain/quantStats";
 import type { Trade } from "@/app/types";
 
 /**
@@ -27,15 +27,15 @@ import type { Trade } from "@/app/types";
  * poignée de lignes.
  */
 
-const MonteCarlo = lazy(() => import("@/app/pages/MonteCarlo"));
-const Analytics = lazy(() => import("@/app/pages/Analytics"));
-const Mistakes = lazy(() => import("@/app/pages/Mistakes"));
-const Goals = lazy(() => import("@/app/pages/Goals"));
-const TradingPlan = lazy(() => import("@/app/pages/TradingPlan"));
-const Subscription = lazy(() => import("@/app/pages/Subscription"));
-const Inbox = lazy(() => import("@/app/pages/Inbox"));
+const MonteCarlo = lazy(() => import("@/app/features/monte-carlo/MonteCarlo"));
+const Analytics = lazy(() => import("@/app/features/analytics/Analytics"));
+const Mistakes = lazy(() => import("@/app/features/mistakes/Mistakes"));
+const Goals = lazy(() => import("@/app/features/goals/Goals"));
+const TradingPlan = lazy(() => import("@/app/features/trading-plan/TradingPlan"));
+const Subscription = lazy(() => import("@/app/features/billing/Subscription"));
+const Inbox = lazy(() => import("@/app/features/inbox/Inbox"));
 const GoalsPlan = lazy(() =>
-  import("@/app/pages/goals/views").then((m) => ({ default: m.PlanView })),
+  import("@/app/features/goals/views").then((m) => ({ default: m.PlanView })),
 );
 
 const IDS = [

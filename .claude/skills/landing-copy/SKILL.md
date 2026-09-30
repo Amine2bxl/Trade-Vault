@@ -107,7 +107,7 @@ Il contient un verbe. Il passe le test de l'inversion : si l'inverse est absurde
 - Prétendre une synchronisation broker : **il n'y a pas d'API**. Les vraies
   portes d'entrée sont import CSV, copier-coller, saisie rapide, trades de démo.
 - Annoncer une fonctionnalité non livrée. Vérifier dans
-  `docs/product/FEATURES_STATUS.md` avant d'écrire une ligne. En particulier :
+  `docs/FEATURES.md` avant d'écrire une ligne. En particulier :
   Daily Brief et Weekly Review automatiques sont ⚪ **prévus, pas livrés**.
 - Un lien de pied de page vers une page qui n'existe pas.
 
@@ -154,7 +154,7 @@ rendu — il ne peut pas diverger. Ne pas recopier les questions dans le JSON-LD
 
 ## Bilinguisme
 
-Toute chaîne passe par le dictionnaire `src/app/pages/landing/i18n.tsx`
+Toute chaîne passe par le dictionnaire `src/app/public/landing/i18n.tsx`
 (`{ en, fr }` par clé). **Jamais** de texte codé en dur dans un composant, ni de
 `lang === "fr" ? … : …`.
 

@@ -21,7 +21,7 @@
  * séance asiatique.
  *
  * Trois définitions d'« aujourd'hui » coexistaient d'ailleurs dans le code :
- * celle-ci (UTC), celle de `utils/aiUsage.ts` (locale) et le fuseau explicite
+ * celle-ci (UTC), celle de `features/jarvis/aiUsage.ts` (locale) et le fuseau explicite
  * choisi par le trader pour sa checklist. Ce module tient la première.
  *
  * ── POURQUOI DANS `shared/` ─────────────────────────────────────────────────
@@ -34,7 +34,7 @@
  *
  * Il n'introduit PAS de fuseau configurable. Le fuseau utilisé est celui du
  * navigateur, ce que le produit considérait déjà comme la bonne réponse
- * (`utils/aiUsage.ts`, `utils/sessionDate.ts`). La checklist, elle, garde son
+ * (`features/jarvis/aiUsage.ts`, `utils/sessionDate.ts`). La checklist, elle, garde son
  * fuseau explicite : c'est un réglage de séance, une autre question.
  */
 

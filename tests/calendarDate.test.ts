@@ -89,19 +89,19 @@ describe("aucune date métier ne repasse par UTC", () => {
     "../src/modules/notifications/rules.ts",
     "../src/modules/notifications/engine.ts",
     "../src/shared/ui/StreakCalendar.tsx",
-    "../src/app/hooks/useEdgeScore.ts",
-    "../src/app/utils/ruleAdherence.ts",
-    "../src/app/utils/tradeFilter.ts",
-    "../src/app/utils/checklistStreak.ts",
-    "../src/app/utils/behavioral.ts",
-    "../src/app/utils/exportCsv.ts",
+    "../src/app/trading/useEdgeScore.ts",
+    "../src/app/trading/ruleAdherence.ts",
+    "../src/app/trading/tradeFilter.ts",
+    "../src/app/features/checklist/checklistStreak.ts",
+    "../src/domain/behavioral.ts",
+    "../src/app/features/journal/exportCsv.ts",
     "../src/app/utils/previewTrades.ts",
-    "../src/app/utils/demoTrades.ts",
-    "../src/app/pages/checklist/helpers.ts",
-    "../src/app/pages/MissedOpportunities.tsx",
-    "../src/app/pages/Goals.tsx",
-    "../src/app/pages/Inbox.tsx",
-    "../src/app/components/jarvis/workspaces/ConversationWorkspace.tsx",
+    "../src/app/shell/demoTrades.ts",
+    "../src/app/features/checklist/helpers.ts",
+    "../src/app/features/missed/MissedOpportunities.tsx",
+    "../src/app/features/goals/Goals.tsx",
+    "../src/app/features/inbox/Inbox.tsx",
+    "../src/app/features/jarvis/workspaces/ConversationWorkspace.tsx",
   ];
 
   for (const file of BUSINESS_DATE_FILES) {
@@ -137,7 +137,7 @@ describe("aucune date métier ne repasse par UTC", () => {
     // Trois définitions d'« aujourd'hui » coexistaient : UTC, locale, et le
     // fuseau explicite de la checklist. Les deux premières sont maintenant la
     // même — c'est ce que ce test verrouille.
-    const aiUsage = readSource(import.meta.dir, "../src/app/utils/aiUsage.ts");
+    const aiUsage = readSource(import.meta.dir, "../src/app/features/jarvis/aiUsage.ts");
     const now = new Date(2026, 7, 29, 23, 30);
     // `aiUsage.todayKey` compose la date de la même façon : mêmes composantes
     // locales, même format.

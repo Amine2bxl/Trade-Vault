@@ -1,4 +1,4 @@
-import { MISTAKE_CLUSTERS, clusterOf, type MistakeClusterId } from "@/app/utils/mistakeClusters";
+import { MISTAKE_CLUSTERS, clusterOf, type MistakeClusterId } from "@/app/trading/mistakeClusters";
 import {
   MIN_GROUP,
   MIN_R_DELTA,
@@ -12,7 +12,7 @@ import {
 /**
  * Détecteurs de motifs — DÉTERMINISTES, purs, sans IA.
  *
- * La règle qui gouverne ce module vient de `ECOSYSTEM_WIRING.md` : **le moteur
+ * La règle qui gouverne ce module vient de `docs/AI.md` : **le moteur
  * trouve les motifs, le LLM ne fait que les formuler**. Rien ici ne demande à
  * un modèle si un motif existe, n'invente un seuil, ni ne produit une phrase.
  * Les fonctions rendent des NOMBRES et leur taille d'échantillon ; la prose

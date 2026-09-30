@@ -9,7 +9,7 @@
  * sait jamais qui reçoit.
  *
  * ÉTAT ACTUEL : la destination est la console. C'est volontairement documenté
- * comme une limite dans `GO-LIVE.md` §2.5 : un plantage en production reste
+ * comme une limite dans `docs/ROADMAP.md` : un plantage en production reste
  * invisible tant qu'aucun fournisseur n'est configuré, et brancher un
  * fournisseur demande une clé, donc une décision qui n'est pas technique.
  */

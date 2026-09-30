@@ -1,7 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { DEFAULT_CONFLUENCES } from "../types";
 import { getActiveAccountId } from "./accounts";
-import { loadTradingPlan } from "../utils/tradingPlan";
+import { loadTradingPlan } from "../trading/tradingPlan";
 import { parseCurrency, type CurrencyCode } from "@/shared/currency";
 
 // ── Confluences (stored on profile) ──

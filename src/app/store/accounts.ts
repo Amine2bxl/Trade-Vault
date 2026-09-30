@@ -31,7 +31,7 @@ export interface Account {
   color: string;
   isDefault: boolean;
   /** Facteur appliqué aux montants historiques à la lecture (1 = aucun
-   *  recalibrage). Voir `utils/accountCalibration.ts`. */
+   *  recalibrage). Voir `app/trading/accountCalibration.ts`. */
   calibrationScale: number;
   /** Capital sur lequel les trades ont RÉELLEMENT été pris — source canonique
    *  du facteur. Égal au solde courant tant qu'aucun recalibrage n'a eu lieu. */

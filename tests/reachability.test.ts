@@ -11,10 +11,10 @@ import { readSource } from "./helpers/source";
  * ne s'exécute jamais. Deux existaient :
  *
  *   • `contexts/TradingRulesContext.tsx` — supplanté par
- *     `hooks/useTradingRules.ts`. Son `useTradingRulesContext` LEVAIT une
+ *     `trading/useTradingRules.ts`. Son `useTradingRulesContext` LEVAIT une
  *     erreur si on l'appelait, puisque son fournisseur n'était monté nulle
  *     part. Supprimé.
- *   • `components/SessionPanel.tsx` — celui-là n'est PAS du code mort, et
+ *   • `features/session/SessionPanel.tsx` — celui-là n'est PAS du code mort, et
  *     c'est plus grave : voir l'exception documentée plus bas.
  */
 
@@ -28,7 +28,7 @@ const SRC = resolve(import.meta.dir, "..", "src");
  * « on a cessé d'en parler ».
  */
 const UNREACHED: Record<string, string> = {
-  "app/components/SessionPanel.tsx": `
+  "app/features/session/SessionPanel.tsx": `
     La séance du jour — ouverture, état émotionnel déclaré, objectif, score de
     préparation, clôture et bilan. Fonctionnalité complète, traduite (28 clés
     "session.*"), adossée à la table \`trading_sessions\`, fusionnée par la PR
@@ -90,10 +90,10 @@ describe("aucun composant n'est écrit pour personne", () => {
   });
 
   test("le contexte mort a bien disparu", () => {
-    // Il dupliquait `hooks/useTradingRules.ts` et son hook levait une erreur
+    // Il dupliquait `trading/useTradingRules.ts` et son hook levait une erreur
     // dès qu'on l'appelait : son fournisseur n'était monté nulle part.
     expect(existsSync(join(SRC, "app/contexts/TradingRulesContext.tsx"))).toBe(false);
-    expect(existsSync(join(SRC, "app/hooks/useTradingRules.ts"))).toBe(true);
+    expect(existsSync(join(SRC, "app/trading/useTradingRules.ts"))).toBe(true);
   });
 
   test("la fonctionnalité « séance » reste bien inatteignable — et on le sait", () => {
@@ -105,6 +105,6 @@ describe("aucun composant n'est écrit pour personne", () => {
       if (f.endsWith("store/sessions.ts") || f.endsWith("store.ts")) return false;
       return /\bopenSession\s*\(/.test(readSource(import.meta.dir, relative(import.meta.dir, f)));
     });
-    expect(callers.map((f) => relative(SRC, f))).toEqual(["app/components/SessionPanel.tsx"]);
+    expect(callers.map((f) => relative(SRC, f))).toEqual(["app/features/session/SessionPanel.tsx"]);
   });
 });

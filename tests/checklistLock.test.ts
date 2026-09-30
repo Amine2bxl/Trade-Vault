@@ -32,7 +32,9 @@ import { readSource, stripComments } from "./helpers/source";
  * sans que la CI le voie.
  */
 
-const SRC = stripComments(readSource(import.meta.dir, "../src/app/pages/Checklist.tsx"));
+const SRC = stripComments(
+  readSource(import.meta.dir, "../src/app/features/checklist/Checklist.tsx"),
+);
 
 describe("corriger sa préparation rouvre le verrou", () => {
   test("la règle existe en UN seul endroit", () => {

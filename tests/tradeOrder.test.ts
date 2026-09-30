@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { newestFirst } from "../src/app/utils/tradeOrder";
+import { newestFirst } from "../src/app/trading/tradeOrder";
 import type { Trade } from "../src/app/types";
 
 const t = (date: string, entryTime: string, exitTime = "23:59") =>

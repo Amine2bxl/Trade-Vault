@@ -27,10 +27,7 @@ describe("type de compte lu en base", () => {
   });
 
   test("le sélecteur a toujours une icône à rendre", () => {
-    const src = readFileSync(
-      join(import.meta.dir, "../src/app/components/AccountSwitcher.tsx"),
-      "utf8",
-    );
+    const src = readFileSync(join(import.meta.dir, "../src/app/shell/AccountSwitcher.tsx"), "utf8");
     expect(src).toContain("TYPE_ICON[a.type] ?? User");
   });
 });

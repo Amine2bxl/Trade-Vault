@@ -95,7 +95,7 @@ if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
 ## Le reveal au scroll (landing)
 
-Tout vit dans `src/app/pages/landing/motion.tsx`, et **nulle part ailleurs** :
+Tout vit dans `src/app/public/landing/motion.tsx`, et **nulle part ailleurs** :
 plus une seule règle CSS ne masque `.reveal`. Le patron en place :
 
 1. Le contenu est **visible par défaut**. Seul GSAP le masque, et seulement

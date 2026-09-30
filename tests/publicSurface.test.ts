@@ -86,7 +86,7 @@ describe("langue du document servi", () => {
     // Le premier rendu reste identique des deux côtés : l'état initial est une
     // valeur connue au SSR (la langue de la route), jamais une lecture de
     // `localStorage`.
-    const landing = read("../src/app/pages/landing/i18n.tsx");
+    const landing = read("../src/app/public/landing/i18n.tsx");
     expect(landing).toContain("useState<LandingLang>(pinned ?? SSR_LANG)");
   });
 
@@ -113,7 +113,7 @@ describe("langue du document servi", () => {
     // C'est la cause exacte de la divergence d'hydratation : lire
     // `localStorage` et `navigator` dans l'initialiseur d'état fait diverger le
     // premier rendu client du rendu serveur.
-    const landing = stripComments(read("../src/app/pages/landing/i18n.tsx"));
+    const landing = stripComments(read("../src/app/public/landing/i18n.tsx"));
     expect(landing.includes("useState<LandingLang>(readInitial)")).toBe(false);
     // La préférence est appliquée dans un effet de MISE EN PAGE : il s'exécute
     // avant la première peinture, donc personne ne voit passer la langue par
@@ -138,7 +138,7 @@ describe("langue du document servi", () => {
 });
 
 describe("modale d'authentification — le point de conversion", () => {
-  const modal = read("../src/app/pages/landing/AuthModal.tsx");
+  const modal = read("../src/app/public/landing/AuthModal.tsx");
 
   test("elle passe par le dictionnaire de la landing", () => {
     // Elle était intégralement en français alors que la landing s'ouvre en
@@ -166,7 +166,7 @@ describe("modale d'authentification — le point de conversion", () => {
   });
 
   test("les deux écrans de chargement de l'application sont traduits", () => {
-    const app = read("../src/app/App.tsx");
+    const app = read("../src/app/shell/App.tsx");
     expect(app).toContain('t("app.checkingAccount")');
     expect(app).toContain('t("app.loadingOnboarding")');
   });

@@ -40,8 +40,8 @@ const read = (p: string) => stripComments(readSource(import.meta.dir, p));
 
 /** Les pages qui montent `useAvailableHeight`. */
 const PAGES = [
-  { nom: "Calendrier", chemin: "../src/app/pages/CalendarPage.tsx" },
-  { nom: "Monte-Carlo", chemin: "../src/app/pages/MonteCarlo.tsx" },
+  { nom: "Calendrier", chemin: "../src/app/features/calendar/CalendarPage.tsx" },
+  { nom: "Monte-Carlo", chemin: "../src/app/features/monte-carlo/MonteCarlo.tsx" },
 ] as const;
 
 describe("les pages plein écran", () => {
@@ -97,7 +97,7 @@ describe("les pages plein écran", () => {
  * On exige donc qu'elle soit là, juste avant chaque conteneur.
  */
 describe("les graphes de Monte-Carlo", () => {
-  const src = read("../src/app/pages/MonteCarlo.tsx");
+  const src = read("../src/app/features/monte-carlo/MonteCarlo.tsx");
 
   test("chaque ResponsiveContainer a un parent de hauteur DÉFINIE", () => {
     const morceaux = src.split("<ResponsiveContainer");
@@ -132,9 +132,9 @@ describe("les graphes de Monte-Carlo", () => {
     //
     // On vérifie donc les deux bouts de la chaîne : les cinq sont CALCULÉS, et
     // chacun est porté par une `dataKey` du graphe.
-    // Le calcul vit désormais dans `utils/monteCarloViz.ts` (testé à part) ;
+    // Le calcul vit désormais dans `features/monte-carlo/monteCarloViz.ts` (testé à part) ;
     // le graphe, dans `Trajectoires`.
-    const viz = read("../src/app/utils/monteCarloViz.ts");
+    const viz = read("../src/app/features/monte-carlo/monteCarloViz.ts");
     for (const [p, q] of [
       ["p5", "0.05"],
       ["p25", "0.25"],
@@ -156,7 +156,7 @@ describe("les graphes de Monte-Carlo", () => {
 });
 
 describe("la grille du calendrier", () => {
-  const src = read("../src/app/pages/CalendarPage.tsx");
+  const src = read("../src/app/features/calendar/CalendarPage.tsx");
 
   test("garde un plancher de hauteur sur ses cellules", () => {
     // Le plancher a existé (`md:min-h-[112px]`), puis a été remplacé par

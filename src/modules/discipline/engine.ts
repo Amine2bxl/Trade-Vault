@@ -1,5 +1,5 @@
 import type { Trade } from "@/domain";
-import { checkTradeAgainstRules } from "@/app/utils/tradingRules";
+import { checkTradeAgainstRules } from "@/domain/ruleCheck";
 // (Trade import used in public method signatures below.)
 import { events } from "@/modules/events";
 import type { DisciplineContext, DisciplineSummary, DisciplineViolation } from "./types";

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import ContactPage from "../app/pages/ContactPage";
+import ContactPage from "../app/public/ContactPage";
 import { pageSeo } from "../shared/seo";
 
 export const Route = createFileRoute("/contact")({

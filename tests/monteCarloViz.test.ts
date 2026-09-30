@@ -1,5 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import { runMonteCarlo, extractRSamples, type MonteCarloParams } from "../src/app/utils/monteCarlo";
+import {
+  runMonteCarlo,
+  extractRSamples,
+  type MonteCarloParams,
+} from "../src/app/features/monte-carlo/monteCarloEngine";
 import {
   pathBands,
   samplePaths,
@@ -9,7 +13,7 @@ import {
   probabilityOfProfit,
   histogram,
   rHistogram,
-} from "../src/app/utils/monteCarloViz";
+} from "../src/app/features/monte-carlo/monteCarloViz";
 
 const trades = [
   ...Array.from({ length: 30 }, () => ({ pnl: 200, rMultiple: 2, direction: "long" as const })),

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import Landing from "@/app/pages/Landing";
+import Landing from "@/app/public/landing/Landing";
 import { LANDING_ALTERNATES, pageSeo } from "../shared/seo";
 
 /**

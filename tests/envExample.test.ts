@@ -155,7 +155,7 @@ describe("les variables retirées ne reviennent pas", () => {
     }
     // Et la documentation ne les réclame plus non plus : elle les donnait pour
     // nécessaires dans son tableau des variables Supabase.
-    const backend = readSource(import.meta.dir, "../docs/development/BACKEND.md");
+    const backend = readSource(import.meta.dir, "../docs/BACKEND.md");
     expect(backend).not.toContain("SUPABASE_PROJECT_ID");
   });
 });

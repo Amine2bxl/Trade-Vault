@@ -4,7 +4,7 @@ import { ProviderHttpError, parseRetryAfterMs } from "../src/modules/ai-provider
 import type { AIProvider, AIRequest } from "../src/modules/ai-provider/types";
 import { routeCompletion } from "../src/modules/ai/runtime/router";
 import { circuit } from "../src/modules/ai/runtime/circuit";
-import { toInsightTradesPayload } from "../src/app/utils/tradeCalcs";
+import { toInsightTradesPayload } from "../src/domain/tradeCalcs";
 import { TradesSchema } from "../src/backend/ai-payload";
 import type { Trade } from "../src/app/types";
 

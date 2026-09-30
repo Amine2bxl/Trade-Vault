@@ -173,12 +173,12 @@ describe("la liste de ce qui survit ne rouille pas", () => {
     // pire le souvenir d'une clé renommée — dont le nouveau nom, lui, n'est
     // plus protégé.
     const sources = [
-      "../src/app/pages/landing/CookieConsent.tsx",
+      "../src/app/public/landing/CookieConsent.tsx",
       "../src/app/i18n/LanguageContext.tsx",
-      "../src/app/pages/usePersistedLang.ts",
-      "../src/app/pages/landing/i18n.tsx",
-      "../src/app/components/jarvis/prefs.ts",
-      "../src/app/hooks/useSidebarCollapsed.ts",
+      "../src/app/public/usePersistedLang.ts",
+      "../src/app/public/landing/i18n.tsx",
+      "../src/app/features/jarvis/prefs.ts",
+      "../src/app/shell/useSidebarCollapsed.ts",
       "../src/app/utils/themes.ts",
       "../src/routes/__root.tsx",
       "../src/shared/lazy-page.ts",

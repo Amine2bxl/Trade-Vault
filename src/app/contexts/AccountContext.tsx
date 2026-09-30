@@ -24,8 +24,8 @@ import {
 import { ACCOUNT_LIMIT } from "@/domain/plans";
 import { useSubscription } from "../hooks/useSubscription";
 import { PlanLimitError } from "../utils/planLimits";
-import { factorFor } from "../utils/accountCalibration";
-import { clearTradesCache } from "../hooks/useTrades";
+import { factorFor } from "../trading/accountCalibration";
+import { clearTradesCache } from "../trading/useTrades";
 
 interface Ctx {
   accounts: Account[];

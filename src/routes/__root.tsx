@@ -31,7 +31,7 @@ const GOOGLE_FONTS_URL =
   "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Mono:wght@400;500;600;700&display=swap";
 
 import { lockZoom } from "../shared/lock-zoom";
-import ErrorScreen from "../app/components/ErrorScreen";
+import ErrorScreen from "../app/shell/ErrorScreen";
 import { SSR_LANG, langForPath } from "@/shared/lang";
 
 function NotFoundComponent() {

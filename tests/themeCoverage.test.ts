@@ -24,6 +24,8 @@ import { readSource, stripComments } from "./helpers/source";
  */
 
 const APP = resolve(import.meta.dir, "..", "src", "app");
+/** Le noyau `domain/` (ex-`app/utils/`) produit aussi des classes de style : même inventaire. */
+const DOMAIN = resolve(import.meta.dir, "..", "src", "domain");
 
 /** Les trois couleurs par défaut du thème — celles que le studio remplace. */
 const BRAND_HEX = /#(?:22d3ee|06b6d4|14b8a6|2dd4bf)/gi;
@@ -48,9 +50,9 @@ describe("les surfaces réparées suivent le thème", () => {
        ligne — la jauge est une barre pleine, qui n'a donc plus qu'une couleur.
        Ce que ce test protège reste entier : le fichier n'écrit aucun cyan en
        dur, et les couleurs qu'il porte sont celles que le studio repeint. */
-    "components/jarvis/components/CreditsBar.tsx": ["var(--tv-highlight)", "var(--tv-accent)"],
-    "pages/MonteCarlo.tsx": ["var(--tv-highlight)"],
-    "pages/Checklist.tsx": ["var(--tv-highlight)"],
+    "features/jarvis/components/CreditsBar.tsx": ["var(--tv-highlight)", "var(--tv-accent)"],
+    "features/monte-carlo/MonteCarlo.tsx": ["var(--tv-highlight)"],
+    "features/checklist/Checklist.tsx": ["var(--tv-highlight)"],
   };
 
   for (const [file, expected] of Object.entries(FIXED)) {
@@ -80,22 +82,22 @@ describe("l'inventaire de ce qui reste en dur", () => {
     /**
      * Fichier → pourquoi la variable serait FAUSSE ici.
      *
-     * La vitrine (`pages/Landing.tsx`, `pages/landing/`) est hors périmètre :
+     * La vitrine (`public/landing/`) est hors périmètre :
      * elle s'affiche avant toute connexion, donc avant tout thème.
      */
     const DELIBERATE: Record<string, string> = {
       "utils/themes.ts":
         "la définition des thèmes intégrés — c'est la SOURCE des variables, elle ne peut pas s'y référer",
-      "onboarding/Onboarding.tsx":
+      "features/onboarding/Onboarding.tsx":
         "les couleurs de départ d'un thème que le trader va créer — un thème neuf part du thème par défaut",
       "store/accounts.ts":
         "la couleur par défaut d'un COMPTE, écrite en base : une donnée, pas un style",
     };
 
     const found: string[] = [];
-    for (const file of filesUnder(APP)) {
+    for (const file of [...filesUnder(APP), ...filesUnder(DOMAIN)]) {
       const rel = relative(APP, file);
-      if (rel === "pages/Landing.tsx" || rel.startsWith("pages/landing/")) continue;
+      if (rel.startsWith("public/landing/")) continue;
       if (stripComments(read(file)).match(BRAND_HEX)) found.push(rel);
     }
 
@@ -124,9 +126,9 @@ describe("l'inventaire de ce qui reste en dur", () => {
 describe("les écrans d'accueil portent le thème du trader", () => {
   /** Les surfaces où un cyan en dur est une régression, pas un choix. */
   const SURFACES = [
-    "../src/app/onboarding/Onboarding.tsx",
-    "../src/app/pages/Checklist.tsx",
-    "../src/app/pages/ChecklistWizard.tsx",
+    "../src/app/features/onboarding/Onboarding.tsx",
+    "../src/app/features/checklist/Checklist.tsx",
+    "../src/app/features/checklist/ChecklistWizard.tsx",
   ];
 
   /** `bg-cyan-500/15`, `text-cyan-300`, `hover:border-cyan-400/50`, `accent-cyan-500`… */
@@ -175,9 +177,9 @@ describe("le tableau de bord ne connaît que les deux verts du langage", () => {
   const FAUX_PL = /#(?:10b981|ef4444)/gi;
 
   const SURFACE = [
-    "pages/Dashboard.tsx",
-    "pages/dashboard/CopilotBlock.tsx",
-    "components/EquityChart.tsx",
+    "features/dashboard/Dashboard.tsx",
+    "features/dashboard/CopilotBlock.tsx",
+    "trading/EquityChart.tsx",
   ];
 
   for (const file of SURFACE) {
@@ -200,9 +202,9 @@ describe("le tableau de bord ne connaît que les deux verts du langage", () => {
   test("le cadran de l'Edge Score ne rayonne pas, et ne calcule plus de halo", () => {
     /* `glow` était produit dans les quatre branches de `scoreTone` et lu nulle
        part. Du code mort, mais pas anodin : il gardait vivante l'idée d'un halo
-       coloré, que `DESIGN.md` comme `LUCID.md` interdisent (« rien ne
+       coloré, que `docs/DESIGN_SYSTEM.md` interdisent (« rien ne
        rayonne »), et le commentaire du cadran en promettait encore l'effet. */
-    const code = stripComments(read(join(APP, "pages/dashboard/CopilotBlock.tsx")));
+    const code = stripComments(read(join(APP, "features/dashboard/CopilotBlock.tsx")));
     expect(code).not.toContain("glow");
     expect(code).not.toContain("rgba(16,185,129");
   });

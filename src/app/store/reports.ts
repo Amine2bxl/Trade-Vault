@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import type { MonthlyReportData } from "../utils/monthlyReport";
+import type { MonthlyReportData } from "@/domain/monthlyReport";
 
 // ── Monthly reports ──
 export interface MonthlyReportRow {

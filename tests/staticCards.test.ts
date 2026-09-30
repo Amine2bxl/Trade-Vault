@@ -38,16 +38,16 @@ const APP = resolve(import.meta.dir, "..", "src", "app");
  * test à contourner.
  */
 const PORTENT_KPI = [
-  "pages/Analytics.tsx",
-  "pages/CalendarPage.tsx",
-  "pages/Journal.tsx",
-  "pages/MissedOpportunities.tsx",
-  "pages/MonteCarlo.tsx",
-  "pages/Reports.tsx",
-  "pages/Seasonality.tsx",
-  "pages/Simulator.tsx",
-  "pages/Subscription.tsx",
-  "components/jarvis/BlockRenderer.tsx",
+  "features/analytics/Analytics.tsx",
+  "features/calendar/CalendarPage.tsx",
+  "features/journal/Journal.tsx",
+  "features/missed/MissedOpportunities.tsx",
+  "features/monte-carlo/MonteCarlo.tsx",
+  "features/reports/Reports.tsx",
+  "features/seasonality/Seasonality.tsx",
+  "features/simulator/Simulator.tsx",
+  "features/billing/Subscription.tsx",
+  "features/jarvis/BlockRenderer.tsx",
 ];
 
 function filesUnder(dir: string): string[] {

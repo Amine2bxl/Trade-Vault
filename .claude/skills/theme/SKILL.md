@@ -10,7 +10,7 @@ description: Loi de la couleur et des surfaces de TradeVault — tokens `--tv-*`
 > **« Rien ne rayonne. La profondeur vient de la VALEUR et du LISERÉ, jamais de
 > la lumière. »**
 
-Sur fond `#07090a`, une lueur est un défaut de rendu. Une carte n'est pas « au
+Sur fond `#07080a`, une lueur est un défaut de rendu. Une carte n'est pas « au
 dessus » parce qu'elle brille : elle est plus claire d'un cran et porte un
 liseré d'un pixel. C'est tout le vocabulaire de profondeur du produit.
 
@@ -26,12 +26,12 @@ Aucune valeur ci-dessous ne se recopie dans le JSX. On écrit
 
 | Token | Valeur | Rôle |
 | --- | --- | --- |
-| `--tv-bg` | `#07090a` | Fond de page (html + body) |
-| `--tv-plate-0` | `#0c0e10` | Creux : champ, piste de barre, cellule vide |
-| `--tv-plate-1` | `#16191c` | **La carte par défaut** |
-| `--tv-plate-2` | `#1d2125` | Élément posé DANS une carte, carte mise en avant |
-| `--tv-plate-3` | `#23282d` | Troisième niveau — rare, à justifier |
-| `--tv-surface-hover` | `#282d33` | Survol d'une ligne cliquable |
+| `--tv-bg` | `#07080a` | Fond de page (html + body) |
+| `--tv-plate-0` | `#0d0e10` | Creux : champ, piste de barre, cellule vide |
+| `--tv-plate-1` | `#131416` | **La carte par défaut** |
+| `--tv-plate-2` | `#1a1c1e` | Élément posé DANS une carte, carte mise en avant |
+| `--tv-plate-3` | `#212426` | Troisième niveau — rare, à justifier |
+| `--tv-surface-hover` | `#24272a` | Survol d'une ligne cliquable |
 
 On ne saute pas un cran. Une plaque 2 vit dans une plaque 1, pas sur le fond.
 
@@ -39,8 +39,8 @@ On ne saute pas un cran. Une plaque 2 vit dans une plaque 1, pas sur le fond.
 
 | Token | Valeur | Rôle |
 | --- | --- | --- |
-| `--tv-border` | `rgb(255 255 255 / .08)` | Le liseré par défaut |
-| `--tv-border-strong` | `rgb(255 255 255 / .14)` | Survol, séparateur qui compte |
+| `--tv-border` | `rgb(255 255 255 / .05)` | Le liseré par défaut |
+| `--tv-border-strong` | `rgb(255 255 255 / .1)` | Survol, séparateur qui compte |
 | `--tv-border-accent` | `rgb(var(--tv-accent-rgb) / .35)` | Élément sélectionné/actif |
 
 ### Texte
@@ -60,8 +60,8 @@ Tailwind d'origine.
 
 | Token | Valeur | Rôle |
 | --- | --- | --- |
-| `--tv-accent` | `#94a3b8` (graphite par défaut) | Accent de marque, themeable à chaud |
-| `--tv-highlight` | `#cbd5e1` | Le cran clair : mot accentué d'un titre, icône active |
+| `--tv-accent` | `#22e08a` (lucid par défaut) | Accent de marque, themeable à chaud |
+| `--tv-highlight` | `#5bf0ab` | Le cran clair : mot accentué d'un titre, icône active |
 | `--tv-cta` / `-hover` / `-active` | oklch dérivé | **La seule surface pleinement colorée** |
 | `.tv-accent-fill` | `--tv-cta` + texte blanc | Bouton primaire, pastille active, vignette d'icône qui compte |
 
@@ -100,14 +100,14 @@ menu). Une carte ne porte aucune ombre.
 
 ## Le moteur de thème
 
-`src/app/utils/themes.ts` — `DEFAULT_THEME_ID = "graphite"`. Le thème actif
+`src/app/utils/themes.ts` — `DEFAULT_THEME_ID = "lucid"`. Le thème actif
 réécrit `--tv-primary-h/-c` (teinte/chroma oklch) et les rampes en dérivent.
 Conséquences pratiques :
 
 - Une couleur **codée en dur** dans le JSX ignore le thème de l'utilisateur.
   C'est le bug de couleur le plus fréquent du produit.
 - Le `:root` de `styles.css` est le **repli SSR/no-JS** : il doit rester
-  synchrone avec graphite. Changer le thème par défaut = changer les deux.
+  synchrone avec lucid. Changer le thème par défaut = changer les deux.
 - Stockage par appareil : `tv-themes-v2` + `tv-theme-vars-v2`, purgés à la
   déconnexion (`session-purge.ts`).
 
@@ -122,5 +122,5 @@ Trustpilot : `#00b67a` et ses composants. De vrais avis sont en production.
 - [ ] La profondeur vient d'un cran de plaque + un liseré, pas d'une ombre.
 - [ ] L'accent n'apparaît que sur action / focus / état actif / marque.
 - [ ] Le P&L est vert/rouge données, indépendant du thème.
-- [ ] Testé sur au moins deux thèmes (graphite + un coloré) : rien ne « sort ».
+- [ ] Testé sur au moins deux thèmes (lucid + un autre) : rien ne « sort ».
 - [ ] Contraste du texte réel ≥ 4.5:1 sur sa plaque.

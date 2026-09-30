@@ -5,7 +5,7 @@ import { dirname, resolve } from "node:path";
 /**
  * Le graphe d'imports STATIQUES du shell, vérifié comme un invariant.
  *
- * `MOTION_AND_PERF.md` demande que recharts (370 Ko) soit absent du chunk
+ * `docs/DESIGN_SYSTEM.md` (motion) demande que recharts (370 Ko) soit absent du chunk
  * initial. Il y était — non pas parce qu'une page le chargeait trop tôt, mais
  * parce que `shared/ui/index.ts` réexportait un `ChartContainer` que PERSONNE
  * n'utilisait : un seul `import { Button } from "@/shared/ui"` suffisait à
@@ -27,7 +27,7 @@ const ROOT = resolve(import.meta.dir, "..");
  * — celle-ci importe AUSSI la landing en statique (c'est le repli SSR d'un
  * visiteur non connecté), donc elle fait partie du chargement initial réel.
  */
-const ENTRIES = ["src/app/App.tsx", "src/routes/$page.tsx"];
+const ENTRIES = ["src/app/shell/App.tsx", "src/routes/$page.tsx"];
 
 /** Paquets qui n'ont RIEN à faire dans le chargement initial. */
 const MUST_BE_LAZY = ["recharts", "react-markdown"];
@@ -115,7 +115,7 @@ test.each(ENTRIES)("%s reaches no heavy chart or markdown library statically", (
  */
 test("the authenticated route does not statically reach the landing page", () => {
   const files = eagerFiles("src/routes/$page.tsx");
-  const landing = resolve(ROOT, "src/app/pages/Landing.tsx");
+  const landing = resolve(ROOT, "src/app/public/landing/Landing.tsx");
   expect([...files]).not.toContain(landing);
 });
 

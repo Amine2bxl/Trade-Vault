@@ -251,7 +251,7 @@ export const BUILTIN_THEMES: ThemeDef[] = [
     /* LUCID — l'identité par défaut du produit.
        Le vert menthe est l'ACCENT, pas seulement la donnée : bouton, onglet
        actif, pastille, bouton `+`, anneau de focus. C'est le renversement
-       décrit dans `docs/design/LUCID.md` §2, et la raison pour laquelle
+       décrit dans `docs/DESIGN_SYSTEM.md` §1, et la raison pour laquelle
        l'accent est ici plus CLAIR et plus saturé que `--tv-chart-green` : les
        deux verts doivent rester distinguables côte à côte, sans quoi le vert
        ne dit plus ni « gain » ni « action ». */

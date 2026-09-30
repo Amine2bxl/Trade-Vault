@@ -1,11 +1,11 @@
-import type { MistakeClusterId } from "@/app/utils/mistakeClusters";
+import type { MistakeClusterId } from "@/app/trading/mistakeClusters";
 import type { DetectedPattern } from "./detectors";
 import type { ProposalActionType } from "./proposalSchemas";
 
 /**
  * Du motif observé à l'action proposée — DÉTERMINISTE.
  *
- * C'est le point exact où `ECOSYSTEM_WIRING.md` interdit au LLM d'intervenir :
+ * C'est le point exact où `docs/AI.md` interdit au LLM d'intervenir :
  * *« le moteur trouve les motifs, le LLM ne fait que les phraser. Le LLM ne
  * doit jamais décider QU'UN motif existe, ni inventer un seuil, ni proposer une
  * règle que le moteur n'a pas émise. »*
@@ -19,7 +19,7 @@ import type { ProposalActionType } from "./proposalSchemas";
  * Quand une action porte un nombre (« pas plus de N trades par jour »), ce
  * nombre est DÉRIVÉ des données observées, jamais choisi par un modèle ni tiré
  * d'une bonne pratique générique. Un seuil inventé serait exactement le genre
- * de chiffre juste-en-apparence que `GO-LIVE.md` recense.
+ * de chiffre juste-en-apparence que `docs/ROADMAP.md` recense.
  *
  * ── LA JUSTIFICATION NE CONTIENT QUE DES FAITS ─────────────────────────────
  * `rationaleFacts` rend les chiffres bruts — valeur, référence, tailles de

@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Trade } from "../types";
-import { isEmotionalState, type EmotionalState } from "../utils/readiness";
+import { isEmotionalState, type EmotionalState } from "../trading/readiness";
 
 /**
  * Intention & réflexion — Phase 0b, capture LÉGÈRE et OPTIONNELLE.

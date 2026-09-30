@@ -5,7 +5,7 @@ import {
   readSeasonalPath,
   seasonalPath,
   tradeMatchesAsset,
-} from "../src/app/utils/seasonalCurve";
+} from "../src/app/features/seasonality/seasonalCurve";
 import type { Trade } from "../src/app/types";
 
 describe("la courbe saisonnière compose les mois", () => {

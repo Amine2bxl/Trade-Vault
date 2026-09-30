@@ -30,7 +30,7 @@ import { readFileSync } from "node:fs";
  */
 const lire = (p: string) => readFileSync(new URL(p, import.meta.url), "utf-8");
 
-const MODALE = lire("../src/app/pages/landing/AuthModal.tsx");
+const MODALE = lire("../src/app/public/landing/AuthModal.tsx");
 const CONTEXTE = lire("../src/app/contexts/AuthContext.tsx");
 
 describe("la modale d'authentification est montable partout", () => {
@@ -71,8 +71,8 @@ describe("les surfaces publiques qui montent la modale", () => {
   // l'application), et c'est justement pour ça que la modale doit être
   // autonome.
   for (const [nom, chemin] of [
-    ["la vitrine", "../src/app/pages/Landing.tsx"],
-    ["la page des tarifs", "../src/app/pages/PricingPage.tsx"],
+    ["la vitrine", "../src/app/public/landing/Landing.tsx"],
+    ["la page des tarifs", "../src/app/public/PricingPage.tsx"],
   ] as const) {
     test(`${nom} monte la modale sans fournisseur à elle`, () => {
       const src = lire(chemin);

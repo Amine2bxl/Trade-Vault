@@ -5,7 +5,7 @@ import {
   SECTION_META,
   defaultPageOfSection,
   sectionForPage,
-} from "../src/app/navigation";
+} from "../src/app/shell/navigation";
 
 // Le regroupement en sections est une couche de PRÉSENTATION au-dessus de
 // `PAGES`. Rien ne l'oblige, à l'exécution, à rester complet : ajouter une page

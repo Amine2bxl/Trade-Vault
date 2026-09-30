@@ -7,7 +7,7 @@ import {
   computeIncidentRate,
   splitCleanTrades,
   CLEAN_SPLIT_MIN,
-} from "../src/app/utils/mistakePlan";
+} from "../src/app/features/mistakes/mistakePlan";
 
 /**
  * LE PLAN DE CORRECTION.

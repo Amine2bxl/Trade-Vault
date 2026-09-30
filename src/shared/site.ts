@@ -17,7 +17,7 @@
  * single canonical origin (now `tradevault.be`) for every auth redirect.
  *
  * CHANGING THE DOMAIN: set `VITE_SITE_URL` in Vercel and redeploy. Nothing else
- * in the app hardcodes a domain. The matching console changes are in BACKEND.md §12.
+ * in the app hardcodes a domain. The matching console changes are in docs/BACKEND.md §8.
  *
  * CURRENT CANONICAL DOMAIN: `tradevault.be` — connected on Vercel and serving
  * the app (HTTP 200). The old project domain `tradevaultt.vercel.app` now issues

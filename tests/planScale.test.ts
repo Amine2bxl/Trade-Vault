@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { Trade } from "../src/app/types";
-import { planScale, SCALE_MIN_LOSSES } from "../src/app/utils/planScale";
+import { planScale, SCALE_MIN_LOSSES } from "../src/app/features/billing/planScale";
 
 /**
  * LE PRIX MIS À L'ÉCHELLE DU JOURNAL.

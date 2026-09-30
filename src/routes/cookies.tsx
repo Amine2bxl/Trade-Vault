@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import LegalPage from "../app/pages/LegalPage";
-import { getCookiesDoc } from "../app/pages/legal-content";
+import LegalPage from "../app/public/LegalPage";
+import { getCookiesDoc } from "../app/public/legal-content";
 import { pageSeo } from "../shared/seo";
 
 /**

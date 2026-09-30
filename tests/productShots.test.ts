@@ -6,7 +6,7 @@ import { readSource, stripComments } from "./helpers/source";
  *
  * ── CE QUI EST EN JEU ───────────────────────────────────────────────────────
  *
- * `DESIGN.md` demande deux choses en même temps : que chaque section soit menée
+ * `docs/DESIGN_SYSTEM.md` demande deux choses en même temps : que chaque section soit menée
  * par une capture du produit, et que rien ne soit inventé — « NEVER invent
  * testimonials, user counts, logos, revenue or performance claims ».
  *
@@ -33,13 +33,13 @@ import { readSource, stripComments } from "./helpers/source";
  */
 
 const read = (p: string) => stripComments(readSource(import.meta.dir, p));
-const LANDING = read("../src/app/pages/Landing.tsx");
+const LANDING = read("../src/app/public/landing/Landing.tsx");
 const README = readSource(import.meta.dir, "../src/assets/product/README.md");
 /* Lu BRUT, sans retirer les commentaires : le motif du glob contient
    `product/*.{png,…}`, dont le `/*` ouvre un commentaire de bloc aux yeux d'un
    nettoyeur naïf — qui avale alors l'appel entier. */
-const SHOTS = readSource(import.meta.dir, "../src/app/pages/landing/shots.ts");
-const I18N = read("../src/app/pages/landing/i18n.tsx");
+const SHOTS = readSource(import.meta.dir, "../src/app/public/landing/shots.ts");
+const I18N = read("../src/app/public/landing/i18n.tsx");
 
 /** Les captures que la landing sait afficher, dans l'ordre où elle les monte. */
 const NOMS = [...LANDING.matchAll(/<ShotOuVisuel\s[^>]*?nom="([^"]+)"/gs)].map((m) => m[1]);

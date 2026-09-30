@@ -30,12 +30,12 @@ Une tâche d'interface sérieuse en charge **au moins trois**.
 2. **Dire le problème en une phrase.** « Le héros promet une courbe qui monte
    alors que le produit vend la discipline » est un problème. « Moderniser le
    design » n'en est pas un.
-3. **Vérifier la vérité produit.** `docs/product/FEATURES_STATUS.md` avant de
-   promettre quoi que ce soit ; `docs/POSITIONNEMENT.md` avant de choisir un
+3. **Vérifier la vérité produit.** `docs/FEATURES.md` avant de
+   promettre quoi que ce soit ; `docs/PRODUCT.md` avant de choisir un
    angle.
 4. **Proposer, puis trancher.** Deux ou trois approches avec leurs compromis,
    une recommandation, les risques. En quelques lignes — pas un rapport.
-5. **Vérifier le go/no-go** (`docs/CLAUDE.md`) : le changement sert-il la
+5. **Vérifier le go/no-go** (`AGENTS.md`) : le changement sert-il la
    conversion, la rétention, la valeur perçue, la différenciation, la réduction
    du churn ou la productivité du trader ? Sinon : le dire, et ne pas coder.
 

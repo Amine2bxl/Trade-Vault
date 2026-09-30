@@ -14,7 +14,7 @@ import {
 } from "../src/shared/seo";
 import { TIERS } from "../src/domain/plans";
 import { langForPath, SSR_LANG } from "../src/shared/lang";
-import { tr } from "../src/app/pages/landing/i18n";
+import { tr } from "../src/app/public/landing/i18n";
 import { readSource, stripComments } from "./helpers/source";
 
 /**
@@ -28,7 +28,7 @@ import { readSource, stripComments } from "./helpers/source";
  * de trafic — quand on les découvre.
  *
  * Chaque test ci-dessous correspond à un défaut RÉEL trouvé dans l'audit
- * (`docs/seo/SEO_AUDIT.md`), et existe pour qu'il ne revienne pas.
+ * (`docs/SEO.md`), et existe pour qu'il ne revienne pas.
  */
 
 const read = (p: string) => readSource(import.meta.dir, p);
@@ -125,7 +125,7 @@ describe("les balisages dérivés du contenu visible", () => {
     // C'est tout l'intérêt : une seconde liste déclarée à côté aurait pu dériver
     // de la première sans que rien ne le signale, et un `FAQPage` qui décrit des
     // questions absentes de la page est précisément ce qu'un moteur sanctionne.
-    const landing = stripComments(read("../src/app/pages/Landing.tsx"));
+    const landing = stripComments(read("../src/app/public/landing/Landing.tsx"));
     expect(landing).toContain("faqPageJsonLd(faqs)");
     expect(landing).toContain("faqs.map(");
   });
@@ -142,8 +142,8 @@ describe("les balisages dérivés du contenu visible", () => {
     for (const route of ["privacy", "terms", "cgu"]) {
       expect(read(`../src/routes/${route}.tsx`), route).toContain(`path="/${route}"`);
     }
-    expect(read("../src/app/pages/LegalPage.tsx")).toContain("breadcrumbJsonLd(doc.title, path)");
-    expect(read("../src/app/pages/ContactPage.tsx")).toContain(
+    expect(read("../src/app/public/LegalPage.tsx")).toContain("breadcrumbJsonLd(doc.title, path)");
+    expect(read("../src/app/public/ContactPage.tsx")).toContain(
       'breadcrumbJsonLd(doc.title, "/contact")',
     );
   });
@@ -309,7 +309,7 @@ describe("indexabilité", () => {
 });
 
 describe("maillage interne", () => {
-  const landing = stripComments(read("../src/app/pages/Landing.tsx"));
+  const landing = stripComments(read("../src/app/public/landing/Landing.tsx"));
 
   test("le pied de page ne contient plus un seul lien mort", () => {
     // Il en portait TREIZE — quatre « Produit », quatre « Ressources », cinq
@@ -346,7 +346,7 @@ describe("maillage interne", () => {
     // d'avoir déjà adhéré à la philosophie du produit pour ne pas sonner
     // comme un reproche, et qui arrivait avant qu'on ait montré quoi que ce
     // soit. Le fichier n'avait plus aucun appelant.
-    const sources = landing + stripComments(read("../src/app/pages/landing/Tour.tsx"));
+    const sources = landing + stripComments(read("../src/app/public/landing/Tour.tsx"));
     const sectionIds = [...sources.matchAll(/<section id="([^"]+)"/g)].map((m) => m[1]);
     const routes = [
       "/demo",
@@ -393,11 +393,11 @@ describe("maillage interne", () => {
      * aucun composant qui réécrit l'adresse dans son coin. */
     const site = read("../src/shared/site.ts");
     expect(site).toContain("export const TRUSTPILOT_URL");
-    for (const f of ["AuthModal.tsx", "../Landing.tsx"]) {
-      const src = read(`../src/app/pages/landing/${f}`);
+    for (const f of ["AuthModal.tsx", "Landing.tsx"]) {
+      const src = read(`../src/app/public/landing/${f}`);
       expect(src, f).not.toContain("trustpilot.com/review/");
     }
-    const modal = read("../src/app/pages/landing/AuthModal.tsx");
+    const modal = read("../src/app/public/landing/AuthModal.tsx");
     expect(modal).toContain("href={TRUSTPILOT_URL}");
   });
 });

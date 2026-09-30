@@ -23,8 +23,8 @@ import { readFileSync } from "node:fs";
  */
 const lire = (p: string) => readFileSync(new URL(p, import.meta.url), "utf-8");
 
-const COMPOSANT = lire("../src/app/components/pricing/PrixAnime.tsx");
-const GRILLE = lire("../src/app/components/pricing/PricingPlans.tsx");
+const COMPOSANT = lire("../src/app/features/billing/PrixAnime.tsx");
+const GRILLE = lire("../src/app/features/billing/PricingPlans.tsx");
 const STYLES = lire("../src/styles.css");
 
 describe("le prix s'anime au changement de période", () => {

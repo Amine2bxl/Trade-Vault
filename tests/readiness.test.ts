@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { computeReadiness, EMOTIONAL_STATES, isEmotionalState } from "../src/app/utils/readiness";
+import { computeReadiness, EMOTIONAL_STATES, isEmotionalState } from "../src/app/trading/readiness";
 
 const base = {
   checklistDone: 0,
