@@ -16,20 +16,20 @@ import {
   Wand2,
   Sparkles,
 } from "lucide-react";
-import { useAuth } from "../contexts/AuthContext";
-import { useT } from "../i18n/LanguageContext";
-import { cn } from "../utils/cn";
-import type { Page, Trade } from "../types";
+import { useAuth } from "@/app/contexts/AuthContext";
+import { useT } from "@/app/i18n/LanguageContext";
+import { cn } from "@/app/utils/cn";
+import type { Page, Trade } from "@/app/types";
 import {
   loadOnboarding,
   loadChecklistConfig,
   saveChecklistConfig,
   type OnboardingData,
-} from "../store";
-import { hostedAudio, hostedAvailable, markHostedDown } from "../utils/hostedVoice";
+} from "@/app/store";
+import { hostedAudio, hostedAvailable, markHostedDown } from "@/app/utils/hostedVoice";
 import { clipFor, loadVoiceClips, refreshVoiceClips } from "@/modules/voice/clips";
-import { pickEnglishMaleVoice } from "../utils/jarvisVoice";
-import { computeChecklistStreak } from "../utils/checklistStreak";
+import { pickEnglishMaleVoice } from "@/app/utils/jarvisVoice";
+import { computeChecklistStreak } from "./checklistStreak";
 import ChecklistWizard, { type WizardResult } from "./ChecklistWizard";
 import {
   type ChkConfig,
@@ -45,8 +45,8 @@ import {
 } from "./checklistDefaults";
 import "./checklist.css";
 
-import { type Tone, TONES, LINES } from "./checklist/voice";
-import { loadTradingRules, saveTradingRules, type TradingRule } from "../utils/tradingRules";
+import { type Tone, TONES, LINES } from "./voice";
+import { loadTradingRules, saveTradingRules, type TradingRule } from "@/app/utils/tradingRules";
 import {
   FOMO_ICONS,
   pad,
@@ -56,9 +56,9 @@ import {
   getTimeZoneOptions,
   todayKey,
   hydrateConfig,
-} from "./checklist/helpers";
+} from "./helpers";
 import { Button, PageToolbar, TimeField, SelectPicker } from "@/shared/ui";
-import { intlLocale } from "../i18n/locale";
+import { intlLocale } from "@/app/i18n/locale";
 
 /* ════════════════════════════════════════════════════════════════
    JARVIS Pre-Market Checklist — follows the app language, offers
@@ -984,7 +984,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
 
   /* ══ Série de complétion ══
      Jours de BOURSE consécutifs avec checklist verrouillée. La logique vit
-     dans `utils/checklistStreak.ts` — module pur et testé (11 tests) — plutôt
+     dans `checklistStreak.ts` — module pur et testé (11 tests) — plutôt
      qu'en ligne ici : les deux règles produit (week-ends neutres, sursis du
      jour courant) sont exactement le genre de détail qui casse en silence.
      Le module expose aussi `atRisk` (série intacte mais jour non validé),

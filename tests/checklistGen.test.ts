@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { generateChecklist } from "../src/app/pages/checklistDefaults";
+import { generateChecklist } from "../src/app/features/checklist/checklistDefaults";
 
 test("generates a short, capped list (<=6 items)", () => {
   const r = generateChecklist(

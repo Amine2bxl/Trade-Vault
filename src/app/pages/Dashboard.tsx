@@ -42,7 +42,10 @@ import CopilotBlock from "./dashboard/CopilotBlock";
 import { DeferredFallback } from "../components/PageTransition";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
-import { computeChecklistStreakStats, recentChecklistPeriods } from "../utils/checklistStreak";
+import {
+  computeChecklistStreakStats,
+  recentChecklistPeriods,
+} from "../features/checklist/checklistStreak";
 import { newestFirst } from "../utils/tradeOrder";
 import { formatMoney } from "@/shared/currency";
 

@@ -9,10 +9,10 @@ import {
   Image as ImageIcon,
   TrendingUp,
 } from "lucide-react";
-import { MissedOpportunity } from "../types";
-import { cn } from "../utils/cn";
-import { ScreenshotsView } from "../pages/MissedOpportunities";
-import { useT } from "../i18n/LanguageContext";
+import { MissedOpportunity } from "@/app/types";
+import { cn } from "@/app/utils/cn";
+import { ScreenshotsView } from "./MissedOpportunities";
+import { useT } from "@/app/i18n/LanguageContext";
 import { Modal } from "@/shared/ui";
 
 interface MissedSetupDetailModalProps {

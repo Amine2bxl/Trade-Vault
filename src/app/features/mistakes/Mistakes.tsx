@@ -1,23 +1,23 @@
 import { useCallback, useMemo, useState } from "react";
-import { useAuth } from "../contexts/AuthContext";
-import { useTradingRules } from "../hooks/useTradingRules";
-import { useGoalProgress } from "../features/goals/useGoalProgress";
-import { computeRuleAdherence, ADHERENCE_WINDOW_DAYS } from "../utils/ruleAdherence";
+import { useAuth } from "@/app/contexts/AuthContext";
+import { useTradingRules } from "@/app/hooks/useTradingRules";
+import { useGoalProgress } from "../goals/useGoalProgress";
+import { computeRuleAdherence, ADHERENCE_WINDOW_DAYS } from "@/app/utils/ruleAdherence";
 import { TrendingDown, CheckCircle2, Ban, Wrench, TrendingUp, ChevronDown } from "lucide-react";
-import { Trade } from "../types";
-import { computeBehavioral } from "../utils/behavioral";
+import { Trade } from "@/app/types";
+import { computeBehavioral } from "@/app/utils/behavioral";
 import {
   buildMistakePlan,
   computeAfterLoss,
   computeCleanStreak,
   computeIncidentRate,
   type PlanItem,
-} from "../utils/mistakePlan";
-import { MISTAKE_CLUSTERS, clusterBreakdown } from "../utils/mistakeClusters";
-import { cn } from "../utils/cn";
+} from "./mistakePlan";
+import { MISTAKE_CLUSTERS, clusterBreakdown } from "@/app/utils/mistakeClusters";
+import { cn } from "@/app/utils/cn";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { useT } from "../i18n/LanguageContext";
-import { AXIS_TICK, BAR_RADIUS, CHART_ANIMATION, tooltipStyle } from "../utils/chartTheme";
+import { useT } from "@/app/i18n/LanguageContext";
+import { AXIS_TICK, BAR_RADIUS, CHART_ANIMATION, tooltipStyle } from "@/app/utils/chartTheme";
 import { EmptyState, Card } from "@/shared/ui";
 
 interface MistakesProps {

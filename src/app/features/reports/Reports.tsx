@@ -28,18 +28,18 @@ import {
 } from "lucide-react";
 import logoSrc from "@/assets/tradevault-logo-128.png";
 import { SITE_URL } from "@/shared/site";
-import { useAuth } from "../contexts/AuthContext";
-import { useToast } from "../contexts/ToastContext";
-import { useT } from "../i18n/LanguageContext";
-import { loadMonthlyReports, type MonthlyReportRow } from "../store";
-import { buildMonthlyReport, prevMonthOf, type MonthlyReportData } from "../utils/monthlyReport";
-import { useAccounts } from "../contexts/AccountContext";
+import { useAuth } from "@/app/contexts/AuthContext";
+import { useToast } from "@/app/contexts/ToastContext";
+import { useT } from "@/app/i18n/LanguageContext";
+import { loadMonthlyReports, type MonthlyReportRow } from "@/app/store";
+import { buildMonthlyReport, prevMonthOf, type MonthlyReportData } from "@/app/utils/monthlyReport";
+import { useAccounts } from "@/app/contexts/AccountContext";
 import { localMonthOf, todayLocalDate } from "@/shared/calendar-date";
-import { statsBySession, MIN_BUCKET_SAMPLE } from "../utils/quantStats";
+import { statsBySession, MIN_BUCKET_SAMPLE } from "@/app/utils/quantStats";
 import { currencySymbol, useCurrency } from "@/shared/currency";
-import { missingReportMonths } from "../utils/reportMonths";
+import { missingReportMonths } from "./reportMonths";
 import { generateMyMonthlyReport } from "@/backend/reports.functions";
-import { formatPnl, formatPct } from "../utils/tradeCalcs";
+import { formatPnl, formatPct } from "@/app/utils/tradeCalcs";
 import {
   AXIS_TICK,
   BAR_FILL_GREEN,
@@ -49,14 +49,14 @@ import {
   EQUITY_GRID,
   moneyAxisProps,
   tooltipStyle,
-} from "../utils/chartTheme";
-import { Skeleton } from "../components/Skeleton";
-import EquityChart from "../components/EquityChart";
-import MarkdownAnswer from "../components/MarkdownAnswer";
-import { cn } from "../utils/cn";
-import type { Trade } from "../types";
+} from "@/app/utils/chartTheme";
+import { Skeleton } from "@/app/components/Skeleton";
+import EquityChart from "@/app/components/EquityChart";
+import MarkdownAnswer from "@/app/components/MarkdownAnswer";
+import { cn } from "@/app/utils/cn";
+import type { Trade } from "@/app/types";
 import { Button, Kpi, SelectPicker } from "@/shared/ui";
-import { usePageActions } from "../contexts/PageActionsContext";
+import { usePageActions } from "@/app/contexts/PageActionsContext";
 
 const LOCALE_MAP: Record<string, string> = {
   en: "en-US",

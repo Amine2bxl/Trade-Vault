@@ -11,7 +11,7 @@
  *
  * Inputs:
  *   - the reference voice sample   (env VOICE_REF, default src/modules/voice/Jarvis.mp3)
- *   - src/app/pages/checklist/voice.ts  the Checklist LINES catalog (single source)
+ *   - src/app/features/checklist/voice.tsthe Checklist LINES catalog (single source)
  *   - src/modules/voice/brief.ts        the Jarvis brief fixed lines (single source)
  *
  * Outputs (committed, served statically):
@@ -27,7 +27,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, writeFileSync, rmSync, readdirSync, readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { LINES } from "../../src/app/pages/checklist/voice";
+import { LINES } from "../../src/app/features/checklist/voice";
 import { briefLines } from "../../src/modules/voice/brief";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../..");

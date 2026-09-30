@@ -45,7 +45,7 @@ import {
   histogram,
   rHistogram,
 } from "./monteCarloViz";
-import { splitCleanTrades } from "@/app/utils/mistakePlan";
+import { splitCleanTrades } from "@/app/features/mistakes/mistakePlan";
 import {
   extractRSamples,
   runMonteCarlo,

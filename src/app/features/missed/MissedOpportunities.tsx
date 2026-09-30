@@ -15,9 +15,9 @@ import {
   ArrowLeft,
   ArrowRight,
 } from "lucide-react";
-import { useAuth } from "../contexts/AuthContext";
-import { useAccounts } from "../contexts/AccountContext";
-import { MissedOpportunity } from "../types";
+import { useAuth } from "@/app/contexts/AuthContext";
+import { useAccounts } from "@/app/contexts/AccountContext";
+import { MissedOpportunity } from "@/app/types";
 import {
   loadMissedOpportunities,
   upsertMissedOpportunity,
@@ -25,19 +25,19 @@ import {
   generateId,
   uploadMissedScreenshot,
   deleteScreenshot,
-} from "../store";
-import { useScreenshotUrls, invalidateScreenshot } from "../hooks/useScreenshotUrls";
-import { formatShortDate } from "../utils/tradeCalcs";
-import { compressImageToFile } from "../utils/image";
-import { cn } from "../utils/cn";
-import { useT } from "../i18n/LanguageContext";
-import { useToast } from "../contexts/ToastContext";
-import { useConfirm } from "../contexts/ConfirmContext";
-import Lightbox from "../components/Lightbox";
-import MissedSetupDetailModal from "../components/MissedSetupDetailModal";
-import { useRealtimeTable } from "../hooks/useRealtimeTable";
-import { usePreviewMode } from "../components/PremiumGate";
-import { previewMissed } from "../utils/previewTrades";
+} from "@/app/store";
+import { useScreenshotUrls, invalidateScreenshot } from "@/app/hooks/useScreenshotUrls";
+import { formatShortDate } from "@/app/utils/tradeCalcs";
+import { compressImageToFile } from "@/app/utils/image";
+import { cn } from "@/app/utils/cn";
+import { useT } from "@/app/i18n/LanguageContext";
+import { useToast } from "@/app/contexts/ToastContext";
+import { useConfirm } from "@/app/contexts/ConfirmContext";
+import Lightbox from "@/app/components/Lightbox";
+import MissedSetupDetailModal from "./MissedSetupDetailModal";
+import { useRealtimeTable } from "@/app/hooks/useRealtimeTable";
+import { usePreviewMode } from "@/app/components/PremiumGate";
+import { previewMissed } from "@/app/utils/previewTrades";
 import {
   Card,
   PageContainer,
@@ -50,10 +50,10 @@ import {
   Kpi,
   KpiGrid,
 } from "@/shared/ui";
-import { intlLocale } from "../i18n/locale";
-import { useDraftAutosave } from "../hooks/useDraftAutosave";
-import { nsKey, readJSON, removeKey } from "../utils/persistence";
-import { usePageActions } from "../contexts/PageActionsContext";
+import { intlLocale } from "@/app/i18n/locale";
+import { useDraftAutosave } from "@/app/hooks/useDraftAutosave";
+import { nsKey, readJSON, removeKey } from "@/app/utils/persistence";
+import { usePageActions } from "@/app/contexts/PageActionsContext";
 import { todayLocalDate } from "@/shared/calendar-date";
 
 function emptyMissed(): MissedOpportunity {

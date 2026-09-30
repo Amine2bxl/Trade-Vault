@@ -11,10 +11,10 @@ import {
   Brain,
   LineChart,
 } from "lucide-react";
-import { cn } from "../utils/cn";
+import { cn } from "@/app/utils/cn";
 import type { ChkItem } from "./checklistDefaults";
 import { Button, TimeField } from "@/shared/ui";
-import { intlLocale } from "../i18n/locale";
+import { intlLocale } from "@/app/i18n/locale";
 
 /* Adaptive setup for the pre-market checklist. A short, visual questionnaire
    whose answers BUILD the checklist — every option carries the exact checks it

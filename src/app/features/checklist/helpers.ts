@@ -1,5 +1,5 @@
 /* Helpers purs de la checklist — extrait de Checklist.tsx (Phase D). */
-import { type ChkConfig, defaultConfigFor, localTimeZone } from "../checklistDefaults";
+import { type ChkConfig, defaultConfigFor, localTimeZone } from "./checklistDefaults";
 import { todayLocalDate } from "@/shared/calendar-date";
 
 export const FOMO_ICONS = ["◎", "◈", "◉", "⬤"];

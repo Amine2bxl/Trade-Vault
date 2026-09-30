@@ -25,7 +25,9 @@ import { readSource, stripComments } from "./helpers/source";
  * trou, et la colonne se rompt exactement là où il y a le moins de données.
  */
 
-const SRC = stripComments(readSource(import.meta.dir, "../src/app/pages/MissedOpportunities.tsx"));
+const SRC = stripComments(
+  readSource(import.meta.dir, "../src/app/features/missed/MissedOpportunities.tsx"),
+);
 
 /**
  * Le fragment de la ligne d'en-tête, de la zone élastique jusqu'aux boutons

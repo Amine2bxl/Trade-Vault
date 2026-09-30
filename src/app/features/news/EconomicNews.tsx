@@ -11,14 +11,14 @@ import {
   ChevronDown,
   Check,
 } from "lucide-react";
-import { useT } from "../i18n/LanguageContext";
-import { cn } from "../utils/cn";
+import { useT } from "@/app/i18n/LanguageContext";
+import { cn } from "@/app/utils/cn";
 import { Card, MultiPicker } from "@/shared/ui";
-import { usePageActions } from "../contexts/PageActionsContext";
-import { useEconomicCalendar } from "../hooks/useEconomicCalendar";
+import { usePageActions } from "@/app/contexts/PageActionsContext";
+import { useEconomicCalendar } from "./useEconomicCalendar";
 import type { CalendarEvent, EventImpact } from "@/modules/economic-calendar";
-import type { TKey } from "../i18n/translations";
-import { startOfWeek, addDays, isoDate } from "../utils/economicEvents";
+import type { TKey } from "@/app/i18n/translations";
+import { startOfWeek, addDays, isoDate } from "./economicEvents";
 
 const CURRENCY_FLAG: Record<string, string> = {
   USD: "🇺🇸",

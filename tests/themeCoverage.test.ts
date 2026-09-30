@@ -50,7 +50,7 @@ describe("les surfaces réparées suivent le thème", () => {
        dur, et les couleurs qu'il porte sont celles que le studio repeint. */
     "components/jarvis/components/CreditsBar.tsx": ["var(--tv-highlight)", "var(--tv-accent)"],
     "features/monte-carlo/MonteCarlo.tsx": ["var(--tv-highlight)"],
-    "pages/Checklist.tsx": ["var(--tv-highlight)"],
+    "features/checklist/Checklist.tsx": ["var(--tv-highlight)"],
   };
 
   for (const [file, expected] of Object.entries(FIXED)) {
@@ -125,8 +125,8 @@ describe("les écrans d'accueil portent le thème du trader", () => {
   /** Les surfaces où un cyan en dur est une régression, pas un choix. */
   const SURFACES = [
     "../src/app/onboarding/Onboarding.tsx",
-    "../src/app/pages/Checklist.tsx",
-    "../src/app/pages/ChecklistWizard.tsx",
+    "../src/app/features/checklist/Checklist.tsx",
+    "../src/app/features/checklist/ChecklistWizard.tsx",
   ];
 
   /** `bg-cyan-500/15`, `text-cyan-300`, `hover:border-cyan-400/50`, `accent-cyan-500`… */

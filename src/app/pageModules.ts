@@ -25,18 +25,18 @@ import type { Page } from "./types";
 // Un import dynamique par page. Le registre de modules ESM déduplique : appeler
 // deux fois le même loader ne télécharge qu'une fois.
 const loadJournal = () => import("./pages/Journal");
-const loadChecklist = () => import("./pages/Checklist");
+const loadChecklist = () => import("./features/checklist/Checklist");
 const loadCalendar = () => import("./features/calendar/CalendarPage");
 const loadAnalytics = () => import("./pages/Analytics");
-const loadMistakes = () => import("./pages/Mistakes");
+const loadMistakes = () => import("./features/mistakes/Mistakes");
 const loadJarvis = () => import("./pages/Jarvis");
 const loadProfile = () => import("./pages/Profile");
-const loadMissed = () => import("./pages/MissedOpportunities");
-const loadNews = () => import("./pages/EconomicNews");
+const loadMissed = () => import("./features/missed/MissedOpportunities");
+const loadNews = () => import("./features/news/EconomicNews");
 const loadSeasonality = () => import("./features/seasonality/Seasonality");
 const loadCalculator = () => import("./pages/LotSizeCalculator");
 const loadSettings = () => import("./pages/Settings");
-const loadReports = () => import("./pages/Reports");
+const loadReports = () => import("./features/reports/Reports");
 const loadGoals = () => import("./features/goals/Goals");
 const loadTradingPlan = () => import("./pages/TradingPlan");
 const loadAppearance = () => import("./pages/Appearance");

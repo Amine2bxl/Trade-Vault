@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchEconomicCalendar } from "@/backend/economic-calendar.functions";
 import type { CalendarEvent } from "@/modules/economic-calendar";
 import { countryForCurrency } from "@/modules/economic-calendar";
-import { addDays, etToInstant, getEventsForWeek, isoDate } from "../utils/economicEvents";
+import { addDays, etToInstant, getEventsForWeek, isoDate } from "./economicEvents";
 
 // ============================================================
 //  Accès UI au calendrier économique.
