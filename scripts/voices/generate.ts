@@ -11,7 +11,7 @@
  *
  * Inputs:
  *   - the reference voice sample   (env VOICE_REF, default src/modules/voice/Jarvis.mp3)
- *   - src/app/features/checklist/voice.tsthe Checklist LINES catalog (single source)
+ *   - src/app/features/checklist/voice.ts the Checklist LINES catalog (single source)
  *   - src/modules/voice/brief.ts        the Jarvis brief fixed lines (single source)
  *
  * Outputs (committed, served statically):

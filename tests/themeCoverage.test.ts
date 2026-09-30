@@ -24,6 +24,8 @@ import { readSource, stripComments } from "./helpers/source";
  */
 
 const APP = resolve(import.meta.dir, "..", "src", "app");
+/** Le noyau `domain/` (ex-`app/utils/`) produit aussi des classes de style : même inventaire. */
+const DOMAIN = resolve(import.meta.dir, "..", "src", "domain");
 
 /** Les trois couleurs par défaut du thème — celles que le studio remplace. */
 const BRAND_HEX = /#(?:22d3ee|06b6d4|14b8a6|2dd4bf)/gi;
@@ -93,7 +95,7 @@ describe("l'inventaire de ce qui reste en dur", () => {
     };
 
     const found: string[] = [];
-    for (const file of filesUnder(APP)) {
+    for (const file of [...filesUnder(APP), ...filesUnder(DOMAIN)]) {
       const rel = relative(APP, file);
       if (rel.startsWith("public/landing/")) continue;
       if (stripComments(read(file)).match(BRAND_HEX)) found.push(rel);
