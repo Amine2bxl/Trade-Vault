@@ -177,7 +177,7 @@ describe("la liste de ce qui survit ne rouille pas", () => {
       "../src/app/i18n/LanguageContext.tsx",
       "../src/app/pages/usePersistedLang.ts",
       "../src/app/pages/landing/i18n.tsx",
-      "../src/app/components/jarvis/prefs.ts",
+      "../src/app/features/jarvis/prefs.ts",
       "../src/app/hooks/useSidebarCollapsed.ts",
       "../src/app/utils/themes.ts",
       "../src/routes/__root.tsx",

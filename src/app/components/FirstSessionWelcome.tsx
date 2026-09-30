@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { useJarvisVoice } from "../utils/jarvisVoice";
+import { useJarvisVoice } from "../features/jarvis/jarvisVoice";
 import { useAuth } from "../contexts/AuthContext";
 import { loadJarvisProfile, loadOnboarding } from "../store";
 

@@ -48,7 +48,7 @@ describe("les surfaces réparées suivent le thème", () => {
        ligne — la jauge est une barre pleine, qui n'a donc plus qu'une couleur.
        Ce que ce test protège reste entier : le fichier n'écrit aucun cyan en
        dur, et les couleurs qu'il porte sont celles que le studio repeint. */
-    "components/jarvis/components/CreditsBar.tsx": ["var(--tv-highlight)", "var(--tv-accent)"],
+    "features/jarvis/components/CreditsBar.tsx": ["var(--tv-highlight)", "var(--tv-accent)"],
     "features/monte-carlo/MonteCarlo.tsx": ["var(--tv-highlight)"],
     "features/checklist/Checklist.tsx": ["var(--tv-highlight)"],
   };

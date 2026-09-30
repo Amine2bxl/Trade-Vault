@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { classifyQuestion } from "../src/app/components/jarvis/intent";
+import { classifyQuestion } from "../src/app/features/jarvis/intent";
 
 describe("la pré-réponse de Jarvis suit la question", () => {
   const cases: [string, string][] = [

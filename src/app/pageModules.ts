@@ -29,7 +29,7 @@ const loadChecklist = () => import("./features/checklist/Checklist");
 const loadCalendar = () => import("./features/calendar/CalendarPage");
 const loadAnalytics = () => import("./features/analytics/Analytics");
 const loadMistakes = () => import("./features/mistakes/Mistakes");
-const loadJarvis = () => import("./pages/Jarvis");
+const loadJarvis = () => import("./features/jarvis/Jarvis");
 const loadProfile = () => import("./pages/Profile");
 const loadMissed = () => import("./features/missed/MissedOpportunities");
 const loadNews = () => import("./features/news/EconomicNews");

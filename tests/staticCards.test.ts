@@ -47,7 +47,7 @@ const PORTENT_KPI = [
   "features/seasonality/Seasonality.tsx",
   "features/simulator/Simulator.tsx",
   "pages/Subscription.tsx",
-  "components/jarvis/BlockRenderer.tsx",
+  "features/jarvis/BlockRenderer.tsx",
 ];
 
 function filesUnder(dir: string): string[] {

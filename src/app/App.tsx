@@ -48,7 +48,7 @@ import {
   LIKELY_NEXT_PAGES,
 } from "./pageModules";
 import LoadingScreen from "./components/LoadingScreen";
-const AiAssistant = lazyPage(() => import("./components/AiAssistant"));
+const AiAssistant = lazyPage(() => import("./features/jarvis/AiAssistant"));
 const Onboarding = lazyPage(() => import("./onboarding/Onboarding"));
 const CommandPalette = lazyPage(() => import("./components/CommandPalette"));
 const ImportCsvModal = lazyPage(() => import("./features/journal/ImportCsvModal"));

@@ -1,5 +1,5 @@
 import { test, expect } from "bun:test";
-import { computeBehaviorSignals } from "../src/app/utils/behaviorSignals";
+import { computeBehaviorSignals } from "../src/app/features/jarvis/behaviorSignals";
 import { buildCoachMessages } from "../src/modules/ai/agents/coach.agent";
 import type { Trade } from "../src/app/types";
 

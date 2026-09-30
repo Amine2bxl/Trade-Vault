@@ -26,9 +26,9 @@ import {
   saveChecklistConfig,
   type OnboardingData,
 } from "@/app/store";
-import { hostedAudio, hostedAvailable, markHostedDown } from "@/app/utils/hostedVoice";
+import { hostedAudio, hostedAvailable, markHostedDown } from "@/app/features/jarvis/hostedVoice";
 import { clipFor, loadVoiceClips, refreshVoiceClips } from "@/modules/voice/clips";
-import { pickEnglishMaleVoice } from "@/app/utils/jarvisVoice";
+import { pickEnglishMaleVoice } from "@/app/features/jarvis/jarvisVoice";
 import { computeChecklistStreak } from "./checklistStreak";
 import ChecklistWizard, { type WizardResult } from "./ChecklistWizard";
 import {

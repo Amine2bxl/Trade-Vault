@@ -7,7 +7,7 @@
  * sous lequel Jarvis parle de « signal faible » au lieu d'affirmer.
  *
  * `MIN_SAMPLE` est aligné sur la validation de confiance de l'Insight Engine
- * (`jarvis/insights/confidence.ts`) : la même notion de « assez de données »
+ * (`app/features/jarvis/insights/confidence.ts`) : la même notion de « assez de données »
  * traverse tout le coaching, sinon deux écrans diraient le contraire sur le
  * même échantillon.
  */

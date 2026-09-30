@@ -101,7 +101,7 @@ describe("aucune date métier ne repasse par UTC", () => {
     "../src/app/features/missed/MissedOpportunities.tsx",
     "../src/app/features/goals/Goals.tsx",
     "../src/app/features/inbox/Inbox.tsx",
-    "../src/app/components/jarvis/workspaces/ConversationWorkspace.tsx",
+    "../src/app/features/jarvis/workspaces/ConversationWorkspace.tsx",
   ];
 
   for (const file of BUSINESS_DATE_FILES) {
@@ -137,7 +137,7 @@ describe("aucune date métier ne repasse par UTC", () => {
     // Trois définitions d'« aujourd'hui » coexistaient : UTC, locale, et le
     // fuseau explicite de la checklist. Les deux premières sont maintenant la
     // même — c'est ce que ce test verrouille.
-    const aiUsage = readSource(import.meta.dir, "../src/app/utils/aiUsage.ts");
+    const aiUsage = readSource(import.meta.dir, "../src/app/features/jarvis/aiUsage.ts");
     const now = new Date(2026, 7, 29, 23, 30);
     // `aiUsage.todayKey` compose la date de la même façon : mêmes composantes
     // locales, même format.
