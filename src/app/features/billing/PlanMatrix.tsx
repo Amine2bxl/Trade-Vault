@@ -1,10 +1,10 @@
 import { Fragment, type ReactNode } from "react";
 import { Check, Crown, Infinity as InfinityIcon, Minus, Sparkles } from "lucide-react";
 import { LIMITS, TIERS, TIER_RANK, yearlyPerMonth, type Tier } from "@/domain/plans";
-import { useT } from "../../i18n/LanguageContext";
-import { useSubscription } from "../../hooks/useSubscription";
-import { eur } from "../../utils/pricing";
-import { cn } from "../../utils/cn";
+import { useT } from "@/app/i18n/LanguageContext";
+import { useSubscription } from "@/app/hooks/useSubscription";
+import { eur } from "@/app/utils/pricing";
+import { cn } from "@/app/utils/cn";
 
 /**
  * LE TABLEAU DE COMPARAISON — un vrai tableau, qui montre la différence.

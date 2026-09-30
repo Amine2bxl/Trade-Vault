@@ -1,18 +1,18 @@
 import { useMemo, useState } from "react";
 import { Scale, Loader2, RotateCcw, ShieldCheck, ArrowRight } from "lucide-react";
 import { Button, Modal } from "@/shared/ui";
-import { useT } from "../i18n/LanguageContext";
-import { useAccounts } from "../contexts/AccountContext";
-import { useToast } from "../contexts/ToastContext";
-import { cn } from "../utils/cn";
-import type { Trade } from "../types";
+import { useT } from "@/app/i18n/LanguageContext";
+import { useAccounts } from "@/app/contexts/AccountContext";
+import { useToast } from "@/app/contexts/ToastContext";
+import { cn } from "@/app/utils/cn";
+import type { Trade } from "@/app/types";
 import {
   factorFor,
   isCalibrated,
   pickPreviewTrade,
   previewCalibration,
   type CalibrationPreviewRow,
-} from "../utils/accountCalibration";
+} from "@/app/utils/accountCalibration";
 import { formatMoney } from "@/shared/currency";
 
 /**

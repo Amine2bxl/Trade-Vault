@@ -15,13 +15,13 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
-import { usePushNotifications } from "../hooks/usePushNotifications";
+import { usePushNotifications } from "@/app/hooks/usePushNotifications";
 import { sendPushToSelf } from "@/backend/push.functions";
-import { useT } from "../i18n/LanguageContext";
-import type { TKey } from "../i18n/translations";
-import { useSubscription } from "../hooks/useSubscription";
-import { tierAtLeast } from "../utils/pricing";
-import { cn } from "../utils/cn";
+import { useT } from "@/app/i18n/LanguageContext";
+import type { TKey } from "@/app/i18n/translations";
+import { useSubscription } from "@/app/hooks/useSubscription";
+import { tierAtLeast } from "@/app/utils/pricing";
+import { cn } from "@/app/utils/cn";
 
 type NotifCategory = "discipline" | "goals" | "risk" | "ai" | "economic";
 

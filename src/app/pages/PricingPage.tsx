@@ -9,7 +9,7 @@ import {
   Unlock,
   XCircle,
 } from "lucide-react";
-import PricingPlans from "../components/pricing/PricingPlans";
+import PricingPlans from "../features/billing/PricingPlans";
 import { AuthModal } from "./landing/AuthModal";
 import { PublicHeader } from "./landing/PublicHeader";
 import { LangMenuPied } from "./landing/LangMenu";

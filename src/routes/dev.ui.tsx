@@ -32,7 +32,7 @@ const Analytics = lazy(() => import("@/app/features/analytics/Analytics"));
 const Mistakes = lazy(() => import("@/app/features/mistakes/Mistakes"));
 const Goals = lazy(() => import("@/app/features/goals/Goals"));
 const TradingPlan = lazy(() => import("@/app/features/trading-plan/TradingPlan"));
-const Subscription = lazy(() => import("@/app/pages/Subscription"));
+const Subscription = lazy(() => import("@/app/features/billing/Subscription"));
 const Inbox = lazy(() => import("@/app/features/inbox/Inbox"));
 const GoalsPlan = lazy(() =>
   import("@/app/features/goals/views").then((m) => ({ default: m.PlanView })),

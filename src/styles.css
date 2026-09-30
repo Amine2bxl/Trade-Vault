@@ -2760,7 +2760,7 @@ a:focus-visible,
 
 /* ══ LE PRIX QUI ROULE ══
  *
- * Voir `src/app/components/pricing/PrixAnime.tsx` pour le pourquoi. Ici, la
+ * Voir `src/app/features/billing/PrixAnime.tsx` pour le pourquoi. Ici, la
  * mécanique : une fenêtre de la hauteur d'une ligne, deux valeurs empilées
  * au même endroit, et un seul geste — `fade-in-up` paramétré en direction.
  *

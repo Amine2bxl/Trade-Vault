@@ -1,8 +1,8 @@
 import { createContext, useContext, type CSSProperties, type ReactNode } from "react";
 import { Lock, ArrowRight, Eye } from "lucide-react";
-import { useT } from "../i18n/LanguageContext";
-import { useSubscription } from "../hooks/useSubscription";
-import { cn } from "../utils/cn";
+import { useT } from "@/app/i18n/LanguageContext";
+import { useSubscription } from "@/app/hooks/useSubscription";
+import { cn } from "@/app/utils/cn";
 import {
   PAGE_TIER,
   PAGE_VALUE,
@@ -12,8 +12,8 @@ import {
   yearlyPerMonth,
   monthsFree,
   type Tier,
-} from "../utils/pricing";
-import type { Page } from "../types";
+} from "@/app/utils/pricing";
+import type { Page } from "@/app/types";
 
 /**
  * « Cet écran est-il rendu derrière le mur d'aperçu ? »

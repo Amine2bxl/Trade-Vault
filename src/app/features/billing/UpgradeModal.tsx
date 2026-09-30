@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { Check, Sparkles, Zap, Lock, ArrowRight, X } from "lucide-react";
 import { Modal } from "@/shared/ui";
-import { cn } from "../utils/cn";
-import { useT } from "../i18n/LanguageContext";
-import { useSubscription } from "../hooks/useSubscription";
+import { cn } from "@/app/utils/cn";
+import { useT } from "@/app/i18n/LanguageContext";
+import { useSubscription } from "@/app/hooks/useSubscription";
 import {
   TIER_BY_ID,
   eur,
@@ -16,7 +16,7 @@ import {
   type PaidPlan,
   type PaidTier,
   type TierDef,
-} from "../utils/pricing";
+} from "@/app/utils/pricing";
 
 /**
  * Passer Pro — la modale unique qui s'ouvre sur chaque « Go Pro ».

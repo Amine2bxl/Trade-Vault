@@ -36,7 +36,7 @@ import { useConfirm } from "@/app/contexts/ConfirmContext";
 import Lightbox from "@/app/components/Lightbox";
 import MissedSetupDetailModal from "./MissedSetupDetailModal";
 import { useRealtimeTable } from "@/app/hooks/useRealtimeTable";
-import { usePreviewMode } from "@/app/components/PremiumGate";
+import { usePreviewMode } from "@/app/features/billing/PremiumGate";
 import { previewMissed } from "@/app/utils/previewTrades";
 import {
   Card,

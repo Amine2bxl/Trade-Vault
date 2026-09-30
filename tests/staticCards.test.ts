@@ -46,7 +46,7 @@ const PORTENT_KPI = [
   "features/reports/Reports.tsx",
   "features/seasonality/Seasonality.tsx",
   "features/simulator/Simulator.tsx",
-  "pages/Subscription.tsx",
+  "features/billing/Subscription.tsx",
   "features/jarvis/BlockRenderer.tsx",
 ];
 

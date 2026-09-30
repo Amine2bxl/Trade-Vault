@@ -9,7 +9,7 @@ import {
   Lock,
   Infinity as Infini,
 } from "lucide-react";
-import { cn } from "../../utils/cn";
+import { cn } from "@/app/utils/cn";
 import PrixAnime from "./PrixAnime";
 import { LIMITS } from "@/domain/plans";
 import {
@@ -27,7 +27,7 @@ import {
   type Plan,
   type Tier,
   type TierDef,
-} from "../../utils/pricing";
+} from "@/app/utils/pricing";
 
 /**
  * La grille tarifaire — un seul composant, la landing et l'application.

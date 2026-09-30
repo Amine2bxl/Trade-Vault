@@ -1,9 +1,9 @@
 import { useMemo } from "react";
-import { useT } from "../../i18n/LanguageContext";
-import { planScale } from "../../utils/planScale";
-import { MONTHLY_EUR } from "../../utils/pricing";
-import { cn } from "../../utils/cn";
-import type { Trade } from "../../types";
+import { useT } from "@/app/i18n/LanguageContext";
+import { planScale } from "./planScale";
+import { MONTHLY_EUR } from "@/app/utils/pricing";
+import { cn } from "@/app/utils/cn";
+import type { Trade } from "@/app/types";
 
 /**
  * « MONTRE QUE C'EST VRAIMENT RENTABLE. »

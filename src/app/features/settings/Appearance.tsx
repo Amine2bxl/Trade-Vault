@@ -1,11 +1,11 @@
 import { useMemo, useState } from "react";
 import { Palette } from "lucide-react";
-import { useT } from "../i18n/LanguageContext";
-import { useTheme } from "../contexts/ThemeContext";
-import ThemeSettings from "../components/ThemeSettings";
-import ThemeStudioModal from "../components/ThemeStudioModal";
+import { useT } from "@/app/i18n/LanguageContext";
+import { useTheme } from "@/app/contexts/ThemeContext";
+import ThemeSettings from "./ThemeSettings";
+import ThemeStudioModal from "./ThemeStudioModal";
 import { Button } from "@/shared/ui";
-import { usePageActions, usePageLead } from "../contexts/PageActionsContext";
+import { usePageActions, usePageLead } from "@/app/contexts/PageActionsContext";
 
 export default function Appearance() {
   const { t } = useT();

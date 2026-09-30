@@ -1,6 +1,6 @@
-import { useAuth } from "../contexts/AuthContext";
-import { Trade, SUPPORT_EMAIL } from "../types";
-import { computeStats, formatPnl, formatPct } from "../utils/tradeCalcs";
+import { useAuth } from "@/app/contexts/AuthContext";
+import { Trade, SUPPORT_EMAIL } from "@/app/types";
+import { computeStats, formatPnl, formatPct } from "@/app/utils/tradeCalcs";
 import {
   LogOut,
   Mail,
@@ -10,8 +10,8 @@ import {
   Lightbulb,
   ChevronRight,
 } from "lucide-react";
-import { useT } from "../i18n/LanguageContext";
-import { cn } from "../utils/cn";
+import { useT } from "@/app/i18n/LanguageContext";
+import { cn } from "@/app/utils/cn";
 
 interface ProfileProps {
   trades: Trade[];

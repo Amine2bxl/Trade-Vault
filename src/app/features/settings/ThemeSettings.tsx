@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Palette, Check, Star, Copy, Pencil, Trash2, Plus, ChevronDown } from "lucide-react";
-import { useTheme } from "../contexts/ThemeContext";
-import { useT } from "../i18n/LanguageContext";
-import { useConfirm } from "../contexts/ConfirmContext";
+import { useTheme } from "@/app/contexts/ThemeContext";
+import { useT } from "@/app/i18n/LanguageContext";
+import { useConfirm } from "@/app/contexts/ConfirmContext";
 import ThemeStudioModal from "./ThemeStudioModal";
-import { ThemeDef } from "../utils/themes";
-import { cn } from "../utils/cn";
+import { ThemeDef } from "@/app/utils/themes";
+import { cn } from "@/app/utils/cn";
 
 // Per-theme preview: a full colour band (primary · secondary · highlight, so
 // every colour of the identity is visible at a glance) above an equity

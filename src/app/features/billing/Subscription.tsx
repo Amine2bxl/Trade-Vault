@@ -14,10 +14,10 @@ import {
   Sparkles,
   ExternalLink,
 } from "lucide-react";
-import { useT } from "../i18n/LanguageContext";
-import type { TKey } from "../i18n/translations";
-import { useSubscription } from "../hooks/useSubscription";
-import { cn } from "../utils/cn";
+import { useT } from "@/app/i18n/LanguageContext";
+import type { TKey } from "@/app/i18n/translations";
+import { useSubscription } from "@/app/hooks/useSubscription";
+import { cn } from "@/app/utils/cn";
 import {
   eur,
   planPrice,
@@ -26,13 +26,13 @@ import {
   yearlyPerMonth,
   TIER_BY_ID,
   type PaidPlan,
-} from "../utils/pricing";
-import { usePageLead } from "../contexts/PageActionsContext";
+} from "@/app/utils/pricing";
+import { usePageLead } from "@/app/contexts/PageActionsContext";
 import { Kpi, KpiGrid } from "@/shared/ui";
-import SubscriptionSection from "../components/SubscriptionSection";
-import PlanMatrix from "../components/pricing/PlanMatrix";
-import PlanScaleBlock from "../components/pricing/PlanScaleBlock";
-import type { Trade } from "../types";
+import SubscriptionSection from "./SubscriptionSection";
+import PlanMatrix from "./PlanMatrix";
+import PlanScaleBlock from "./PlanScaleBlock";
+import type { Trade } from "@/app/types";
 
 type TFn = (k: TKey) => string;
 

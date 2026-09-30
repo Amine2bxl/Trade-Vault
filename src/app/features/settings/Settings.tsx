@@ -20,27 +20,27 @@ import {
   Coins,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { Trade, LANGUAGES } from "../types";
+import { Trade, LANGUAGES } from "@/app/types";
 import {
   loadLanguage,
   saveLanguage,
   loadStartingBalance,
   saveStartingBalance,
   saveCurrency,
-} from "../store";
-import { exportTradesCSV } from "../features/journal/exportCsv";
-import { useAuth } from "../contexts/AuthContext";
-import { useT } from "../i18n/LanguageContext";
-import type { TKey } from "../i18n/translations";
-import { PushNotificationSettings } from "../components/PushNotificationSettings";
-import { cn } from "../utils/cn";
+} from "@/app/store";
+import { exportTradesCSV } from "../journal/exportCsv";
+import { useAuth } from "@/app/contexts/AuthContext";
+import { useT } from "@/app/i18n/LanguageContext";
+import type { TKey } from "@/app/i18n/translations";
+import { PushNotificationSettings } from "./PushNotificationSettings";
+import { cn } from "@/app/utils/cn";
 import { Button, Card, FIELD_BASE, Modal, PageContainer, SelectPicker } from "@/shared/ui";
-import AccountSwitcher from "../components/AccountSwitcher";
-import { useAccounts } from "../contexts/AccountContext";
-import { isCalibrated } from "../utils/accountCalibration";
-import RecalibrateAccountModal from "../components/RecalibrateAccountModal";
-import CompAccessSection, { useIsAdmin } from "../components/CompAccessSection";
-import PromoCodeSection from "../components/PromoCodeSection";
+import AccountSwitcher from "@/app/components/AccountSwitcher";
+import { useAccounts } from "@/app/contexts/AccountContext";
+import { isCalibrated } from "@/app/utils/accountCalibration";
+import RecalibrateAccountModal from "./RecalibrateAccountModal";
+import CompAccessSection, { useIsAdmin } from "../billing/CompAccessSection";
+import PromoCodeSection from "../billing/PromoCodeSection";
 import {
   CURRENCIES,
   currencySymbol,

@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { CheckCircle2, Sparkles, X } from "lucide-react";
-import { useT } from "../i18n/LanguageContext";
+import { useT } from "@/app/i18n/LanguageContext";
 
 /**
  * Confirmation d'abonnement — une arrivée digne d'un trade gagné.

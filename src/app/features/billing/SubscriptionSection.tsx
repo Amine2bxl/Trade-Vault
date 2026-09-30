@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { CreditCard, ExternalLink, X } from "lucide-react";
-import { useT } from "../i18n/LanguageContext";
-import { useSubscription } from "../hooks/useSubscription";
-import PricingPlans from "./pricing/PricingPlans";
+import { useT } from "@/app/i18n/LanguageContext";
+import { useSubscription } from "@/app/hooks/useSubscription";
+import PricingPlans from "./PricingPlans";
 import { Input } from "@/shared/ui";
 
 // "Gestion d'abonnement" card on the profile page.
@@ -66,7 +66,7 @@ export default function SubscriptionSection({
      (`sub.status === "active" ? …`), qui ne connaissait ni l'expiration ni la
      reprise. Deux vérités sur le même écran, dont une fausse : un abonnement
      annulé s'y lisait en vert. L'état est calculé une seule fois, dans
-     `pages/Subscription.tsx` ; ce bloc ne fait plus que ce que son nom dit —
+     `Subscription.tsx` ; ce bloc ne fait plus que ce que son nom dit —
      encaisser. */
   const showPlans = !isPro || sub.status === "trialing";
   const isStripeActive = sub.status === "active" && sub.source === "stripe";

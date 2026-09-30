@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { Gift, Plus, Trash2, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useT } from "../i18n/LanguageContext";
-import { useToast } from "../contexts/ToastContext";
+import { useT } from "@/app/i18n/LanguageContext";
+import { useToast } from "@/app/contexts/ToastContext";
 import { Button, Input, SelectPicker } from "@/shared/ui";
-import { PAID_TIERS, TIER_BY_ID, planId, type PaidPlan } from "../utils/pricing";
+import { PAID_TIERS, TIER_BY_ID, planId, type PaidPlan } from "@/app/utils/pricing";
 
 /**
  * Accès offert — le panneau du propriétaire.

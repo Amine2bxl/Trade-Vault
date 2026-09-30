@@ -4,7 +4,7 @@ import { Eraser } from "lucide-react";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useAccounts } from "@/app/contexts/AccountContext";
 import { useTrades } from "@/app/hooks/useTrades";
-import { usePreviewMode } from "@/app/components/PremiumGate";
+import { usePreviewMode } from "@/app/features/billing/PremiumGate";
 import { previewTrades } from "@/app/utils/previewTrades";
 import { useT } from "@/app/i18n/LanguageContext";
 import { loadJarvisProfile, type JarvisProfile } from "@/app/store";

@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { Tag, Plus, Trash2, ShieldCheck, Users, Power, ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useT } from "../i18n/LanguageContext";
-import { useToast } from "../contexts/ToastContext";
+import { useT } from "@/app/i18n/LanguageContext";
+import { useToast } from "@/app/contexts/ToastContext";
 import { Button, DateField, Input, SelectPicker } from "@/shared/ui";
-import { PAID_TIERS, TIER_BY_ID, planId, type PaidPlan } from "../utils/pricing";
+import { PAID_TIERS, TIER_BY_ID, planId, type PaidPlan } from "@/app/utils/pricing";
 
 /**
  * Codes promo — le panneau du propriétaire.

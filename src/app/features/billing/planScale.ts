@@ -1,4 +1,4 @@
-import type { Trade } from "../types";
+import type { Trade } from "@/app/types";
 
 /**
  * LE PRIX, À L'ÉCHELLE DE CE QUE LE TRADER RISQUE DÉJÀ.

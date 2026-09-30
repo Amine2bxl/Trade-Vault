@@ -29,7 +29,7 @@ import { useTheme } from "../contexts/ThemeContext";
 import { usePushNotifications } from "../hooks/usePushNotifications";
 import { LANG_NAMES, type Lang } from "../i18n/translations";
 import { saveOnboarding, saveAccountBalance, saveCurrency, type OnboardingData } from "../store";
-import ThemeSettings from "../components/ThemeSettings";
+import ThemeSettings from "../features/settings/ThemeSettings";
 import { oc } from "./onboardingCopy";
 import logoSrc from "@/assets/tradevault-logo-128.png";
 import {

@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Palette, RotateCcw, Check, ChevronDown, ArrowLeft, ArrowRight, Link2 } from "lucide-react";
 import { Modal, FIELD_BASE, ColorPicker, type ColorPickerLabels } from "@/shared/ui";
-import { useTheme } from "../contexts/ThemeContext";
-import { useT } from "../i18n/LanguageContext";
+import { useTheme } from "@/app/contexts/ThemeContext";
+import { useT } from "@/app/i18n/LanguageContext";
 import {
   ACCENT_PALETTE,
   BUILTIN_THEMES,
@@ -13,8 +13,8 @@ import {
   deriveAccents,
   hexToRgb,
   type ThemeDef,
-} from "../utils/themes";
-import { cn } from "../utils/cn";
+} from "@/app/utils/themes";
+import { cn } from "@/app/utils/cn";
 
 /**
  * LE CRÉATEUR DE THÈME — trois étapes, aucun réglage de développeur.
