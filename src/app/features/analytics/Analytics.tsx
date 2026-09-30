@@ -1,8 +1,8 @@
 import { createPortal } from "react-dom";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { Info, TrendingUp, TrendingDown, CalendarDays, Clock, Sparkles } from "lucide-react";
-import { Trade, isBreakEven } from "../types";
-import { computeStats, formatPnl, formatPct, formatShortDate } from "../utils/tradeCalcs";
+import { Trade, isBreakEven } from "@/app/types";
+import { computeStats, formatPnl, formatPct, formatShortDate } from "@/app/utils/tradeCalcs";
 import {
   computeQuantStats,
   getSession,
@@ -10,11 +10,11 @@ import {
   winRateOf,
   MIN_BUCKET_SAMPLE,
   TradingSession,
-} from "../utils/quantStats";
-import { loadStartingBalance } from "../store";
-import { useAuth } from "../contexts/AuthContext";
-import { useAccounts } from "../contexts/AccountContext";
-import { cn } from "../utils/cn";
+} from "@/app/utils/quantStats";
+import { loadStartingBalance } from "@/app/store";
+import { useAuth } from "@/app/contexts/AuthContext";
+import { useAccounts } from "@/app/contexts/AccountContext";
+import { cn } from "@/app/utils/cn";
 import {
   BarChart,
   Bar,
@@ -31,7 +31,7 @@ import {
   ReferenceLine,
   CartesianGrid,
 } from "recharts";
-import { useT } from "../i18n/LanguageContext";
+import { useT } from "@/app/i18n/LanguageContext";
 import {
   EmptyState,
   PageContainer,
@@ -60,8 +60,8 @@ import {
   tooltipStyle,
   glowActiveDot,
   formatAxisMoney,
-} from "../utils/chartTheme";
-import EquityChart from "../components/EquityChart";
+} from "@/app/utils/chartTheme";
+import EquityChart from "@/app/components/EquityChart";
 import { formatMoney } from "@/shared/currency";
 
 interface AnalyticsProps {

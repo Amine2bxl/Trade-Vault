@@ -38,7 +38,7 @@ const APP = resolve(import.meta.dir, "..", "src", "app");
  * test à contourner.
  */
 const PORTENT_KPI = [
-  "pages/Analytics.tsx",
+  "features/analytics/Analytics.tsx",
   "features/calendar/CalendarPage.tsx",
   "features/journal/Journal.tsx",
   "features/missed/MissedOpportunities.tsx",

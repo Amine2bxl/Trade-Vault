@@ -1,10 +1,10 @@
 import { memo } from "react";
-import { CHART_GREEN, CHART_RED } from "../../utils/chartTheme";
+import { CHART_GREEN, CHART_RED } from "@/app/utils/chartTheme";
 import { Sparkles, ClipboardCheck, Check, ChevronRight, Target, Flag, Bot } from "lucide-react";
-import { cn } from "../../utils/cn";
-import { formatPnl } from "../../utils/tradeCalcs";
-import { useT } from "../../i18n/LanguageContext";
-import type { EdgeResult, DailyRule } from "../../utils/edgeScore";
+import { cn } from "@/app/utils/cn";
+import { formatPnl } from "@/app/utils/tradeCalcs";
+import { useT } from "@/app/i18n/LanguageContext";
+import type { EdgeResult, DailyRule } from "@/app/utils/edgeScore";
 
 export interface CopilotChecklist {
   locked: boolean;

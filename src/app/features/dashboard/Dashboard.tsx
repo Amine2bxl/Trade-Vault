@@ -10,7 +10,7 @@ import {
   BookOpen,
   Sparkles,
 } from "lucide-react";
-import { Trade, isBreakEven } from "../types";
+import { Trade, isBreakEven } from "@/app/types";
 import {
   computeStats,
   formatPnl,
@@ -18,11 +18,11 @@ import {
   formatShortDate,
   directionLabel,
   directionBadgeClass,
-} from "../utils/tradeCalcs";
-import { CHART_GREEN, CHART_RED } from "../utils/chartTheme";
-import { loadOnboarding } from "../store/profile";
-import { deriveDailyRule } from "../utils/edgeScore";
-import { useEdgeScore } from "../hooks/useEdgeScore";
+} from "@/app/utils/tradeCalcs";
+import { CHART_GREEN, CHART_RED } from "@/app/utils/chartTheme";
+import { loadOnboarding } from "@/app/store/profile";
+import { deriveDailyRule } from "@/app/utils/edgeScore";
+import { useEdgeScore } from "@/app/hooks/useEdgeScore";
 import {
   readHistory,
   writeHistory,
@@ -30,29 +30,26 @@ import {
   dayOverDayDelta,
   trend,
   type EdgePoint,
-} from "../utils/edgeHistory";
-import { useAuth } from "../contexts/AuthContext";
-import { useAccounts } from "../contexts/AccountContext";
-import { useToast } from "../contexts/ToastContext";
-import { useHasTradeDraft } from "../utils/persistence";
+} from "./edgeHistory";
+import { useAuth } from "@/app/contexts/AuthContext";
+import { useAccounts } from "@/app/contexts/AccountContext";
+import { useToast } from "@/app/contexts/ToastContext";
+import { useHasTradeDraft } from "@/app/utils/persistence";
 import { PageContainer, Metric, Card, Button, StreakCard, density } from "@/shared/ui";
 import type { StreakPeriod } from "@/shared/ui";
-import { usePageActions, usePageLead } from "../contexts/PageActionsContext";
-import CopilotBlock from "./dashboard/CopilotBlock";
-import { DeferredFallback } from "../components/PageTransition";
-import { cn } from "../utils/cn";
-import { useT } from "../i18n/LanguageContext";
-import {
-  computeChecklistStreakStats,
-  recentChecklistPeriods,
-} from "../features/checklist/checklistStreak";
-import { newestFirst } from "../utils/tradeOrder";
+import { usePageActions, usePageLead } from "@/app/contexts/PageActionsContext";
+import CopilotBlock from "./CopilotBlock";
+import { DeferredFallback } from "@/app/components/PageTransition";
+import { cn } from "@/app/utils/cn";
+import { useT } from "@/app/i18n/LanguageContext";
+import { computeChecklistStreakStats, recentChecklistPeriods } from "../checklist/checklistStreak";
+import { newestFirst } from "@/app/utils/tradeOrder";
 import { formatMoney } from "@/shared/currency";
 
 // recharts (~150-200 KB) is loaded on demand: the Dashboard shell is eager
 // (landing page), but the equity chart — below the fold — is code-split so it
 // no longer weighs on the initial bundle.
-const EquityChart = lazyPage(() => import("../components/EquityChart"));
+const EquityChart = lazyPage(() => import("@/app/components/EquityChart"));
 
 interface DashboardProps {
   trades: Trade[];
@@ -229,7 +226,7 @@ export default function Dashboard({
   // On conserve un HISTORIQUE borné du score, pas seulement l'instantané de la
   // veille : le delta jour/jour dit « tu as monté depuis hier », il ne dit pas
   // « tu progresses ». La logique vit dans un module pur et testé
-  // (`utils/edgeHistory.ts`), ici on ne fait que la brancher.
+  // (`edgeHistory.ts`), ici on ne fait que la brancher.
   const today = localDateStr(new Date());
   const [edgeHistory, setEdgeHistory] = useState<EdgePoint[]>([]);
 

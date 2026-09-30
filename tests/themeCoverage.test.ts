@@ -175,8 +175,8 @@ describe("le tableau de bord ne connaît que les deux verts du langage", () => {
   const FAUX_PL = /#(?:10b981|ef4444)/gi;
 
   const SURFACE = [
-    "pages/Dashboard.tsx",
-    "pages/dashboard/CopilotBlock.tsx",
+    "features/dashboard/Dashboard.tsx",
+    "features/dashboard/CopilotBlock.tsx",
     "components/EquityChart.tsx",
   ];
 
@@ -202,7 +202,7 @@ describe("le tableau de bord ne connaît que les deux verts du langage", () => {
        part. Du code mort, mais pas anodin : il gardait vivante l'idée d'un halo
        coloré, que `DESIGN.md` comme `LUCID.md` interdisent (« rien ne
        rayonne »), et le commentaire du cadran en promettait encore l'effet. */
-    const code = stripComments(read(join(APP, "pages/dashboard/CopilotBlock.tsx")));
+    const code = stripComments(read(join(APP, "features/dashboard/CopilotBlock.tsx")));
     expect(code).not.toContain("glow");
     expect(code).not.toContain("rgba(16,185,129");
   });

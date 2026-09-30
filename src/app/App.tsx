@@ -21,7 +21,7 @@ import { pagesOfSection, sectionForPage } from "./navigation";
 import { cn } from "./utils/cn";
 // Dashboard is the landing page — keep it in the main chunk. Every other page
 // (and its heavy deps: recharts, react-markdown) loads on demand.
-import Dashboard from "./pages/Dashboard";
+import Dashboard from "./features/dashboard/Dashboard";
 // Les pages différées et leur préchargement vivent dans `pageModules` : un
 // seul endroit déclare quel module correspond à quelle page.
 import {

@@ -27,7 +27,7 @@ import type { Page } from "./types";
 const loadJournal = () => import("./features/journal/Journal");
 const loadChecklist = () => import("./features/checklist/Checklist");
 const loadCalendar = () => import("./features/calendar/CalendarPage");
-const loadAnalytics = () => import("./pages/Analytics");
+const loadAnalytics = () => import("./features/analytics/Analytics");
 const loadMistakes = () => import("./features/mistakes/Mistakes");
 const loadJarvis = () => import("./pages/Jarvis");
 const loadProfile = () => import("./pages/Profile");
