@@ -15,11 +15,11 @@ import {
   ArrowLeft,
   ArrowRight,
 } from "lucide-react";
-import { Trade, STRATEGIES, MISTAKE_OPTIONS } from "../types";
-import { getSession } from "../utils/quantStats";
-import { getDuration } from "../utils/tradeCalcs";
-import { POINT_VALUES, calcContracts as calcContractsFor } from "../utils/positionCalc";
-import { generateId } from "../store";
+import { Trade, STRATEGIES, MISTAKE_OPTIONS } from "@/app/types";
+import { getSession } from "@/app/utils/quantStats";
+import { getDuration } from "@/app/utils/tradeCalcs";
+import { POINT_VALUES, calcContracts as calcContractsFor } from "@/app/utils/positionCalc";
+import { generateId } from "@/app/store";
 import {
   loadConfluences,
   saveConfluences,
@@ -27,15 +27,15 @@ import {
   saveAccountBalance,
   uploadScreenshot,
   deleteScreenshot,
-} from "../store";
-import { useAuth } from "../contexts/AuthContext";
-import { useT } from "../i18n/LanguageContext";
-import { cn } from "../utils/cn";
-import { useConfirm } from "../contexts/ConfirmContext";
-import { compressImageToFile } from "../utils/image";
-import { useScreenshotUrls, invalidateScreenshot } from "../hooks/useScreenshotUrls";
-import { useDraftAutosave } from "../hooks/useDraftAutosave";
-import Lightbox from "./Lightbox";
+} from "@/app/store";
+import { useAuth } from "@/app/contexts/AuthContext";
+import { useT } from "@/app/i18n/LanguageContext";
+import { cn } from "@/app/utils/cn";
+import { useConfirm } from "@/app/contexts/ConfirmContext";
+import { compressImageToFile } from "@/app/utils/image";
+import { useScreenshotUrls, invalidateScreenshot } from "@/app/hooks/useScreenshotUrls";
+import { useDraftAutosave } from "@/app/hooks/useDraftAutosave";
+import Lightbox from "@/app/components/Lightbox";
 import {
   Modal,
   FIELD_BASE,
@@ -48,8 +48,14 @@ import {
   TimeField,
   SelectPicker,
 } from "@/shared/ui";
-import { intlLocale } from "../i18n/locale";
-import { tradeDraftKey, nsKey, readJSON, removeKey, type TradeDraft } from "../utils/persistence";
+import { intlLocale } from "@/app/i18n/locale";
+import {
+  tradeDraftKey,
+  nsKey,
+  readJSON,
+  removeKey,
+  type TradeDraft,
+} from "@/app/utils/persistence";
 import {
   REFLECTION_REASONS,
   isIntentEmpty,
@@ -61,8 +67,8 @@ import {
   type TradeJournalMeta,
   loadTradeIntent,
   loadTradeReflection,
-} from "../store/tradeIntel";
-import { EMOTIONAL_STATES, type EmotionalState } from "../utils/readiness";
+} from "@/app/store/tradeIntel";
+import { EMOTIONAL_STATES, type EmotionalState } from "@/app/utils/readiness";
 import { currencySymbol, formatMoney } from "@/shared/currency";
 
 interface TradeModalProps {

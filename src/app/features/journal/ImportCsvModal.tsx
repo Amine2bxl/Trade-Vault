@@ -1,9 +1,9 @@
 import { useMemo, useRef, useState } from "react";
 import { X, Upload, FileSpreadsheet, Check, Loader2, AlertCircle } from "lucide-react";
-import { Trade } from "../types";
-import { formatPnl } from "../utils/tradeCalcs";
-import { cn } from "../utils/cn";
-import { useT } from "../i18n/LanguageContext";
+import { Trade } from "@/app/types";
+import { formatPnl } from "@/app/utils/tradeCalcs";
+import { cn } from "@/app/utils/cn";
+import { useT } from "@/app/i18n/LanguageContext";
 import { Button, Modal, SelectPicker } from "@/shared/ui";
 import {
   FIELDS,
@@ -16,7 +16,7 @@ import {
   splitDuplicates,
   type Field,
   type FileRejection,
-} from "../utils/csvImport";
+} from "./csvImport";
 
 interface ImportCsvModalProps {
   existing: Trade[];

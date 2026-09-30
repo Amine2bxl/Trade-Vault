@@ -22,14 +22,14 @@ import {
 } from "@/modules/notifications";
 import type { AppNotification, NotificationCategory } from "@/modules/notifications/types";
 import { events } from "@/modules/events";
-import { useAuth } from "../contexts/AuthContext";
-import { useT } from "../i18n/LanguageContext";
-import type { TKey } from "../i18n/translations";
-import { usePageActions, usePageLead } from "../contexts/PageActionsContext";
+import { useAuth } from "@/app/contexts/AuthContext";
+import { useT } from "@/app/i18n/LanguageContext";
+import type { TKey } from "@/app/i18n/translations";
+import { usePageActions, usePageLead } from "@/app/contexts/PageActionsContext";
 import { Button } from "@/shared/ui";
-import { useAvailableHeight } from "../hooks/useAvailableHeight";
-import { cn } from "../utils/cn";
-import { CATEGORY_LABEL, notificationTarget, WHY_KEY } from "../utils/notificationMeta";
+import { useAvailableHeight } from "@/app/hooks/useAvailableHeight";
+import { cn } from "@/app/utils/cn";
+import { CATEGORY_LABEL, notificationTarget, WHY_KEY } from "./notificationMeta";
 
 /** « Toutes », « non lues », ou une catégorie. */
 type FilterKind = NotificationCategory | "all" | "unread";

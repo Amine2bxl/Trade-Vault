@@ -10,15 +10,15 @@ import {
   OctagonX,
   PenLine,
 } from "lucide-react";
-import { useAuth } from "../contexts/AuthContext";
-import { useT } from "../i18n/LanguageContext";
-import { cn } from "../utils/cn";
+import { useAuth } from "@/app/contexts/AuthContext";
+import { useT } from "@/app/i18n/LanguageContext";
+import { cn } from "@/app/utils/cn";
 import {
   type TradingRule,
   type RuleKind,
   loadTradingRules,
   saveTradingRules,
-} from "../utils/tradingRules";
+} from "@/app/utils/tradingRules";
 import { Button } from "@/shared/ui";
 
 // "Mes règles de trading" card on the profile page. The trader writes their

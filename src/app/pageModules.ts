@@ -24,7 +24,7 @@ import type { Page } from "./types";
 
 // Un import dynamique par page. Le registre de modules ESM déduplique : appeler
 // deux fois le même loader ne télécharge qu'une fois.
-const loadJournal = () => import("./pages/Journal");
+const loadJournal = () => import("./features/journal/Journal");
 const loadChecklist = () => import("./features/checklist/Checklist");
 const loadCalendar = () => import("./features/calendar/CalendarPage");
 const loadAnalytics = () => import("./pages/Analytics");
@@ -34,14 +34,14 @@ const loadProfile = () => import("./pages/Profile");
 const loadMissed = () => import("./features/missed/MissedOpportunities");
 const loadNews = () => import("./features/news/EconomicNews");
 const loadSeasonality = () => import("./features/seasonality/Seasonality");
-const loadCalculator = () => import("./pages/LotSizeCalculator");
+const loadCalculator = () => import("./features/calculator/LotSizeCalculator");
 const loadSettings = () => import("./pages/Settings");
 const loadReports = () => import("./features/reports/Reports");
 const loadGoals = () => import("./features/goals/Goals");
-const loadTradingPlan = () => import("./pages/TradingPlan");
+const loadTradingPlan = () => import("./features/trading-plan/TradingPlan");
 const loadAppearance = () => import("./pages/Appearance");
 const loadSubscription = () => import("./pages/Subscription");
-const loadInbox = () => import("./pages/Inbox");
+const loadInbox = () => import("./features/inbox/Inbox");
 const loadMonteCarlo = () => import("./features/monte-carlo/MonteCarlo");
 
 export const Journal = lazyPage(loadJournal);

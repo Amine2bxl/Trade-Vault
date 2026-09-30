@@ -1,5 +1,5 @@
 import { getCurrency } from "@/shared/currency";
-import { Trade } from "../types";
+import { Trade } from "@/app/types";
 import { todayLocalDate } from "@/shared/calendar-date";
 
 function csvEscape(v: unknown): string {

@@ -4,7 +4,7 @@ import { preloadPage } from "../pageModules";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
 import { useAuth } from "../contexts/AuthContext";
-import { useUnreadCount } from "../hooks/useUnreadCount";
+import { useUnreadCount } from "../features/inbox/useUnreadCount";
 import { badgeLabel } from "@/modules/notifications";
 
 interface MobileActionsProps {

@@ -28,7 +28,7 @@ import {
   saveStartingBalance,
   saveCurrency,
 } from "../store";
-import { exportTradesCSV } from "../utils/exportCsv";
+import { exportTradesCSV } from "../features/journal/exportCsv";
 import { useAuth } from "../contexts/AuthContext";
 import { useT } from "../i18n/LanguageContext";
 import type { TKey } from "../i18n/translations";

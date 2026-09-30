@@ -15,11 +15,11 @@ import {
   ChevronRight,
   Scale,
 } from "lucide-react";
-import { useAuth } from "../contexts/AuthContext";
-import { useT } from "../i18n/LanguageContext";
+import { useAuth } from "@/app/contexts/AuthContext";
+import { useT } from "@/app/i18n/LanguageContext";
 import { PageToolbar, SubNav, Textarea, type SubNavItem } from "@/shared/ui";
-import { cn } from "../utils/cn";
-import type { Page } from "../types";
+import { cn } from "@/app/utils/cn";
+import type { Page } from "@/app/types";
 import {
   EMPTY_PLAN,
   loadTradingPlan,
@@ -28,9 +28,9 @@ import {
   saveTradingPlan,
   type PlanSetup,
   type TradingPlanData,
-} from "../utils/tradingPlan";
-import TradingRulesSection from "../components/TradingRulesSection";
-import { usePageActions } from "../contexts/PageActionsContext";
+} from "@/app/utils/tradingPlan";
+import TradingRulesSection from "./TradingRulesSection";
+import { usePageActions } from "@/app/contexts/PageActionsContext";
 
 // Trading Plan — the trader's written constitution. Every field autosaves
 // (debounced) to profiles.trading_plan; the completion ring fills as the

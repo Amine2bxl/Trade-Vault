@@ -65,7 +65,7 @@ import {
   mapRowsToTrades,
   rejectFile,
   MC_REQUIRED,
-} from "@/app/utils/csvImport";
+} from "@/app/features/journal/csvImport";
 import { formatMoney } from "./propFirms";
 import {
   AXIS_TICK,

@@ -16,7 +16,7 @@ import { useAccounts } from "../contexts/AccountContext";
 import { useSidebarCollapsed } from "../hooks/useSidebarCollapsed";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
-import { useUnreadCount } from "../hooks/useUnreadCount";
+import { useUnreadCount } from "../features/inbox/useUnreadCount";
 import { badgeLabel } from "@/modules/notifications";
 import logoSrc from "@/assets/tradevault-logo-128.png";
 import { Modal, BrandWord } from "@/shared/ui";

@@ -40,7 +40,7 @@ const APP = resolve(import.meta.dir, "..", "src", "app");
 const PORTENT_KPI = [
   "pages/Analytics.tsx",
   "features/calendar/CalendarPage.tsx",
-  "pages/Journal.tsx",
+  "features/journal/Journal.tsx",
   "features/missed/MissedOpportunities.tsx",
   "features/monte-carlo/MonteCarlo.tsx",
   "features/reports/Reports.tsx",

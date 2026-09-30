@@ -11,7 +11,7 @@ import { monthGrid, weekTotals as weekTotalsOf, type GridDay } from "./calendarG
 import WeekDetailModal from "./WeekDetailModal";
 import { useIsNarrow } from "@/app/hooks/useIsNarrow";
 import { todayLocalDate } from "@/shared/calendar-date";
-import TradeDetailModal from "@/app/components/TradeDetailModal";
+import TradeDetailModal from "@/app/features/journal/TradeDetailModal";
 import MissedSetupDetailModal from "@/app/features/missed/MissedSetupDetailModal";
 import { useT } from "@/app/i18n/LanguageContext";
 import { Kpi, KpiGrid } from "@/shared/ui";

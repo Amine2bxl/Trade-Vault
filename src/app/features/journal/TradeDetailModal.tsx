@@ -11,21 +11,26 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import { Trade, MissedOpportunity, isBreakEven } from "../types";
-import { formatPnl, getDuration, directionLabel, directionBadgeClass } from "../utils/tradeCalcs";
-import { getSession, getMacroEvents } from "../utils/quantStats";
-import { cn } from "../utils/cn";
+import { Trade, MissedOpportunity, isBreakEven } from "@/app/types";
+import {
+  formatPnl,
+  getDuration,
+  directionLabel,
+  directionBadgeClass,
+} from "@/app/utils/tradeCalcs";
+import { getSession, getMacroEvents } from "@/app/utils/quantStats";
+import { cn } from "@/app/utils/cn";
 import { useEffect, useRef, useState } from "react";
-import { useT } from "../i18n/LanguageContext";
-import { useAuth } from "../contexts/AuthContext";
+import { useT } from "@/app/i18n/LanguageContext";
+import { useAuth } from "@/app/contexts/AuthContext";
 import {
   loadTradeIntents,
   loadTradeReflections,
   type TradeIntent,
   type TradeReflection,
-} from "../store/tradeIntel";
-import { useScreenshotUrls, invalidateScreenshot } from "../hooks/useScreenshotUrls";
-import Lightbox from "./Lightbox";
+} from "@/app/store/tradeIntel";
+import { useScreenshotUrls, invalidateScreenshot } from "@/app/hooks/useScreenshotUrls";
+import Lightbox from "@/app/components/Lightbox";
 import { Modal } from "@/shared/ui";
 import { formatMoney } from "@/shared/currency";
 

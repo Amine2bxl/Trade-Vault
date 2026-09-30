@@ -5,7 +5,7 @@ import {
   guessMapping,
   mapRowsToTrades,
   MC_REQUIRED,
-} from "../src/app/utils/csvImport";
+} from "../src/app/features/journal/csvImport";
 import { deriveRFromPnl, extractRSamples } from "../src/app/features/monte-carlo/monteCarloEngine";
 
 /**

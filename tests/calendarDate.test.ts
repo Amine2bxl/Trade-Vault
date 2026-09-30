@@ -94,13 +94,13 @@ describe("aucune date métier ne repasse par UTC", () => {
     "../src/app/utils/tradeFilter.ts",
     "../src/app/features/checklist/checklistStreak.ts",
     "../src/app/utils/behavioral.ts",
-    "../src/app/utils/exportCsv.ts",
+    "../src/app/features/journal/exportCsv.ts",
     "../src/app/utils/previewTrades.ts",
     "../src/app/utils/demoTrades.ts",
     "../src/app/features/checklist/helpers.ts",
     "../src/app/features/missed/MissedOpportunities.tsx",
     "../src/app/features/goals/Goals.tsx",
-    "../src/app/pages/Inbox.tsx",
+    "../src/app/features/inbox/Inbox.tsx",
     "../src/app/components/jarvis/workspaces/ConversationWorkspace.tsx",
   ];
 

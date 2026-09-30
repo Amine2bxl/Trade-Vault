@@ -15,7 +15,7 @@ import {
   Target,
   SlidersHorizontal,
 } from "lucide-react";
-import { Trade, isBreakEven } from "../types";
+import { Trade, isBreakEven } from "@/app/types";
 import {
   computeStats,
   formatPct,
@@ -23,14 +23,14 @@ import {
   formatShortDate,
   directionLabel,
   directionBadgeClass,
-} from "../utils/tradeCalcs";
-import { exportTradesCSV } from "../utils/exportCsv";
-import { cn } from "../utils/cn";
-import { useT } from "../i18n/LanguageContext";
-import { intlLocale } from "../i18n/locale";
-import { useTradeFilter } from "../hooks/useTradeFilter";
-import { useAvailableHeight } from "../hooks/useAvailableHeight";
-import TradeDetailModal from "../components/TradeDetailModal";
+} from "@/app/utils/tradeCalcs";
+import { exportTradesCSV } from "./exportCsv";
+import { cn } from "@/app/utils/cn";
+import { useT } from "@/app/i18n/LanguageContext";
+import { intlLocale } from "@/app/i18n/locale";
+import { useTradeFilter } from "./useTradeFilter";
+import { useAvailableHeight } from "@/app/hooks/useAvailableHeight";
+import TradeDetailModal from "./TradeDetailModal";
 import {
   PageContainer,
   Button,
@@ -45,8 +45,8 @@ import {
   rangeBounds,
   type RangeValue,
 } from "@/shared/ui";
-import { usePageActions } from "../contexts/PageActionsContext";
-import { compareChronological } from "../utils/tradeOrder";
+import { usePageActions } from "@/app/contexts/PageActionsContext";
+import { compareChronological } from "@/app/utils/tradeOrder";
 import { currencySymbol } from "@/shared/currency";
 
 interface JournalProps {

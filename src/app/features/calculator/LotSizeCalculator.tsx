@@ -11,14 +11,14 @@ import {
   BarChart3,
   Layers,
 } from "lucide-react";
-import { POINT_VALUES, FOREX_PAIRS, calcContracts, calcForexLots } from "../utils/positionCalc";
-import { useAccounts } from "../contexts/AccountContext";
-import { useT } from "../i18n/LanguageContext";
-import { cn } from "../utils/cn";
+import { POINT_VALUES, FOREX_PAIRS, calcContracts, calcForexLots } from "@/app/utils/positionCalc";
+import { useAccounts } from "@/app/contexts/AccountContext";
+import { useT } from "@/app/i18n/LanguageContext";
+import { cn } from "@/app/utils/cn";
 import { FIELD_BASE, Button } from "@/shared/ui";
-import type { Page } from "../types";
-import { useAuth } from "../contexts/AuthContext";
-import { loadUserPref, saveUserPref } from "../utils/userPrefs";
+import type { Page } from "@/app/types";
+import { useAuth } from "@/app/contexts/AuthContext";
+import { loadUserPref, saveUserPref } from "@/app/utils/userPrefs";
 
 interface LotSizeCalculatorProps {
   onAddTrade: () => void;

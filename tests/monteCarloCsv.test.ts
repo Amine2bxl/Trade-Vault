@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { parseCsv, guessMapping, mapRowsToTrades } from "../src/app/utils/csvImport";
+import { parseCsv, guessMapping, mapRowsToTrades } from "../src/app/features/journal/csvImport";
 import {
   deriveRFromPnl,
   extractRSamples,

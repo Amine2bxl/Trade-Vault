@@ -51,16 +51,16 @@ import LoadingScreen from "./components/LoadingScreen";
 const AiAssistant = lazyPage(() => import("./components/AiAssistant"));
 const Onboarding = lazyPage(() => import("./onboarding/Onboarding"));
 const CommandPalette = lazyPage(() => import("./components/CommandPalette"));
-const ImportCsvModal = lazyPage(() => import("./components/ImportCsvModal"));
+const ImportCsvModal = lazyPage(() => import("./features/journal/ImportCsvModal"));
 // Les modales ne sont montées que sur action : formulaire de trade (47 Ko de
 // source à elle seule), détail d'un trade, détail d'une notification. Elles
 // étaient importées en STATIQUE, donc payées au premier octet par un trader
 // qui ouvre son tableau de bord et ne clique sur rien. Elles sont préchargées
 // dès que le navigateur est libre (voir `preloadModals` plus bas) : au clic,
 // le chunk est déjà là.
-const TradeModal = lazyPage(() => import("./components/TradeModal"));
-const TradeDetailModal = lazyPage(() => import("./components/TradeDetailModal"));
-const NotificationDetailModal = lazyPage(() => import("./components/NotificationDetailModal"));
+const TradeModal = lazyPage(() => import("./features/journal/TradeModal"));
+const TradeDetailModal = lazyPage(() => import("./features/journal/TradeDetailModal"));
+const NotificationDetailModal = lazyPage(() => import("./features/inbox/NotificationDetailModal"));
 import TrustpilotPrompt from "./components/TrustpilotPrompt";
 import { Trade, isPage, type Page } from "./types";
 import { resolveLocation, buildPageUrl, DEFAULT_PAGE } from "./utils/pageUrl";
@@ -249,8 +249,8 @@ function AppContent() {
       // Même raisonnement que pour les pages : le coût est retiré du démarrage,
       // pas déplacé sur le clic. Silencieux — un préchargement qui échoue ne
       // doit jamais remonter d'erreur, le chargement au clic réessaiera.
-      void import("./components/TradeModal").catch(() => {});
-      void import("./components/TradeDetailModal").catch(() => {});
+      void import("./features/journal/TradeModal").catch(() => {});
+      void import("./features/journal/TradeDetailModal").catch(() => {});
     };
     const ric = (window as unknown as { requestIdleCallback?: (cb: () => void) => number })
       .requestIdleCallback;

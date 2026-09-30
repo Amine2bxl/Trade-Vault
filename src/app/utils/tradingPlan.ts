@@ -2,7 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 // Written trading plan — the trader's own constitution: mission, markets,
 // risk management, setups, limits, routine. Stored as one jsonb blob on the
-// profile (profiles.trading_plan), autosaved from pages/TradingPlan.tsx.
+// profile (profiles.trading_plan), autosaved from features/trading-plan/TradingPlan.tsx.
 
 export interface PlanSetup {
   id: string;

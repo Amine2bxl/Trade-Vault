@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { Trade } from "../types";
-import { applyFilter, encodeFilter, type UnifiedFilter } from "../utils/tradeFilter";
-import { readFilterParam } from "../utils/deepLink";
+import type { Trade } from "@/app/types";
+import { applyFilter, encodeFilter, type UnifiedFilter } from "@/app/utils/tradeFilter";
+import { readFilterParam } from "./deepLink";
 
 /**
  * Filtre de trades partagé — la SEULE source de filtrage d'une page.

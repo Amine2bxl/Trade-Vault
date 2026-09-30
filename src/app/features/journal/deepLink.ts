@@ -1,6 +1,6 @@
-import type { Page } from "../types";
-import { pathForPage } from "./pageUrl";
-import { decodeFilter, encodeFilter, type UnifiedFilter } from "./tradeFilter";
+import type { Page } from "@/app/types";
+import { pathForPage } from "@/app/utils/pageUrl";
+import { decodeFilter, encodeFilter, type UnifiedFilter } from "@/app/utils/tradeFilter";
 
 /**
  * Deep-links TradeVault — le pont entre « un insight » et « la page filtrée ».

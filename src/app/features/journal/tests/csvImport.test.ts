@@ -10,7 +10,7 @@ import {
   splitDuplicates,
   tradeSignature,
 } from "../csvImport";
-import type { Trade } from "../../types";
+import type { Trade } from "@/app/types";
 
 describe("parseCsv", () => {
   it("détecte le séparateur — virgule, point-virgule ou tabulation", () => {

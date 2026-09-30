@@ -31,9 +31,9 @@ const MonteCarlo = lazy(() => import("@/app/features/monte-carlo/MonteCarlo"));
 const Analytics = lazy(() => import("@/app/pages/Analytics"));
 const Mistakes = lazy(() => import("@/app/features/mistakes/Mistakes"));
 const Goals = lazy(() => import("@/app/features/goals/Goals"));
-const TradingPlan = lazy(() => import("@/app/pages/TradingPlan"));
+const TradingPlan = lazy(() => import("@/app/features/trading-plan/TradingPlan"));
 const Subscription = lazy(() => import("@/app/pages/Subscription"));
-const Inbox = lazy(() => import("@/app/pages/Inbox"));
+const Inbox = lazy(() => import("@/app/features/inbox/Inbox"));
 const GoalsPlan = lazy(() =>
   import("@/app/features/goals/views").then((m) => ({ default: m.PlanView })),
 );

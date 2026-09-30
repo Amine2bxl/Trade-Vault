@@ -4,7 +4,7 @@ import { Plus, Download, Search, Upload } from "lucide-react";
 import { Trade, Page } from "../types";
 import { NAV_ITEMS } from "../navigation";
 import { formatPnl, formatShortDate } from "../utils/tradeCalcs";
-import { exportTradesCSV } from "../utils/exportCsv";
+import { exportTradesCSV } from "../features/journal/exportCsv";
 import { cn } from "../utils/cn";
 import { useT } from "../i18n/LanguageContext";
 import { Modal } from "@/shared/ui";

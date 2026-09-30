@@ -14,7 +14,7 @@
  * changement de comportement, et la modale ne garde que l'affichage.
  */
 
-import type { Trade } from "../types";
+import type { Trade } from "@/app/types";
 // `@/domain` et non `../store` : la façade du store importe le client
 // Supabase, ce qui rendrait ce module impossible à tester hors navigateur —
 // exactement le problème qu'il vient résoudre.
