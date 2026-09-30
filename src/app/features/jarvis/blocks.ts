@@ -11,7 +11,7 @@
  * phases, mais présent dans le type de données dès aujourd'hui.
  */
 
-import type { UnifiedFilter } from "@/app/utils/tradeFilter";
+import type { UnifiedFilter } from "@/app/trading/tradeFilter";
 import type { Page } from "@/app/types";
 
 export type JarvisBlockKind =

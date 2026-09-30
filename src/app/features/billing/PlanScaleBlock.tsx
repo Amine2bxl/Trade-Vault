@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useT } from "@/app/i18n/LanguageContext";
 import { planScale } from "./planScale";
 import { MONTHLY_EUR } from "@/app/utils/pricing";
-import { cn } from "@/app/utils/cn";
+import { cn } from "@/shared/ui/cn";
 import type { Trade } from "@/app/types";
 
 /**

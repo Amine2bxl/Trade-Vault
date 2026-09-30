@@ -166,7 +166,7 @@ describe("modale d'authentification — le point de conversion", () => {
   });
 
   test("les deux écrans de chargement de l'application sont traduits", () => {
-    const app = read("../src/app/App.tsx");
+    const app = read("../src/app/shell/App.tsx");
     expect(app).toContain('t("app.checkingAccount")');
     expect(app).toContain('t("app.loadingOnboarding")');
   });

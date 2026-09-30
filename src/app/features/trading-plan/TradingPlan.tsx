@@ -18,7 +18,7 @@ import {
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useT } from "@/app/i18n/LanguageContext";
 import { PageToolbar, SubNav, Textarea, type SubNavItem } from "@/shared/ui";
-import { cn } from "@/app/utils/cn";
+import { cn } from "@/shared/ui/cn";
 import type { Page } from "@/app/types";
 import {
   EMPTY_PLAN,
@@ -28,7 +28,7 @@ import {
   saveTradingPlan,
   type PlanSetup,
   type TradingPlanData,
-} from "@/app/utils/tradingPlan";
+} from "@/app/trading/tradingPlan";
 import TradingRulesSection from "./TradingRulesSection";
 import { usePageActions } from "@/app/contexts/PageActionsContext";
 

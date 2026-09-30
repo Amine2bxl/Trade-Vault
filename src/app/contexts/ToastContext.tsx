@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { CheckCircle2, XCircle, Info, X } from "lucide-react";
-import { cn } from "../utils/cn";
+import { cn } from "@/shared/ui/cn";
 
 type ToastType = "success" | "error" | "info";
 interface ToastItem {

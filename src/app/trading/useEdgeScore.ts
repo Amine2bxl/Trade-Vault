@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { computeEdgeScore, EDGE_WINDOW_DAYS, type EdgeResult } from "../utils/edgeScore";
 import { loadStartingBalance } from "../store";
-import { loadTradingPlan } from "../utils/tradingPlan";
+import { loadTradingPlan } from "./tradingPlan";
 import type { Trade } from "../types";
 import { localDateOf } from "@/shared/calendar-date";
 

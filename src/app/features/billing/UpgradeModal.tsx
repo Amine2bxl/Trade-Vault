@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Check, Sparkles, Zap, Lock, ArrowRight, X } from "lucide-react";
 import { Modal } from "@/shared/ui";
-import { cn } from "@/app/utils/cn";
+import { cn } from "@/shared/ui/cn";
 import { useT } from "@/app/i18n/LanguageContext";
 import { useSubscription } from "@/app/hooks/useSubscription";
 import {

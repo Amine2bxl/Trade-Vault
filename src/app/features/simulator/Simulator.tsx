@@ -22,7 +22,7 @@ import { useAccounts } from "@/app/contexts/AccountContext";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useToast } from "@/app/contexts/ToastContext";
 import { loadScenarios, saveScenario, type SavedScenario } from "@/app/store/simulations";
-import { cn } from "@/app/utils/cn";
+import { cn } from "@/shared/ui/cn";
 import { assessDataset } from "./datasetQuality";
 import {
   Button,

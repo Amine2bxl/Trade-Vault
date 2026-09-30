@@ -2,12 +2,12 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { createPortal } from "react-dom";
 import type { Page, SectionId } from "../types";
 import { Check, ChevronDown, Lock } from "lucide-react";
-import { PAGE_META, pagesOfSection } from "../navigation";
+import { PAGE_META, pagesOfSection } from "./navigation";
 import { useSubscription } from "../hooks/useSubscription";
 import { canAccessPage } from "../utils/pricing";
-import { preloadPage } from "../pageModules";
+import { preloadPage } from "./pageModules";
 import { pathForPage } from "../utils/pageUrl";
-import { cn } from "../utils/cn";
+import { cn } from "@/shared/ui/cn";
 import { useT } from "../i18n/LanguageContext";
 
 interface SectionTabsProps {

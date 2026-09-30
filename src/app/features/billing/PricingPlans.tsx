@@ -9,7 +9,7 @@ import {
   Lock,
   Infinity as Infini,
 } from "lucide-react";
-import { cn } from "@/app/utils/cn";
+import { cn } from "@/shared/ui/cn";
 import PrixAnime from "./PrixAnime";
 import { LIMITS } from "@/domain/plans";
 import {

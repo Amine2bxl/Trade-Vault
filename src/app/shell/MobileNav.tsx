@@ -1,8 +1,8 @@
 import { LayoutDashboard, Plus } from "lucide-react";
 import type { Page } from "../types";
-import { preloadPage } from "../pageModules";
-import { MOBILE_SECTIONS, SECTION_META, defaultPageOfSection, sectionForPage } from "../navigation";
-import { cn } from "../utils/cn";
+import { preloadPage } from "./pageModules";
+import { MOBILE_SECTIONS, SECTION_META, defaultPageOfSection, sectionForPage } from "./navigation";
+import { cn } from "@/shared/ui/cn";
 import { useT } from "../i18n/LanguageContext";
 import { useAuth } from "../contexts/AuthContext";
 import { useHasTradeDraft } from "../utils/persistence";

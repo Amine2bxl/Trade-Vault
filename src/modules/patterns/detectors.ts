@@ -1,4 +1,4 @@
-import { MISTAKE_CLUSTERS, clusterOf, type MistakeClusterId } from "@/app/utils/mistakeClusters";
+import { MISTAKE_CLUSTERS, clusterOf, type MistakeClusterId } from "@/app/trading/mistakeClusters";
 import {
   MIN_GROUP,
   MIN_R_DELTA,

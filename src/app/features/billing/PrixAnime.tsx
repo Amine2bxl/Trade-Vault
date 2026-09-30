@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { cn } from "@/app/utils/cn";
+import { cn } from "@/shared/ui/cn";
 
 /**
  * UN PRIX QUI CHANGE SOUS LES YEUX.

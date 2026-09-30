@@ -9,12 +9,12 @@ import {
   User,
 } from "lucide-react";
 import { Page, SECTIONS } from "../types";
-import { SECTION_META, defaultPageOfSection, sectionForPage } from "../navigation";
-import { preloadPage } from "../pageModules";
+import { SECTION_META, defaultPageOfSection, sectionForPage } from "./navigation";
+import { preloadPage } from "./pageModules";
 import { useAuth } from "../contexts/AuthContext";
 import { useAccounts } from "../contexts/AccountContext";
-import { useSidebarCollapsed } from "../hooks/useSidebarCollapsed";
-import { cn } from "../utils/cn";
+import { useSidebarCollapsed } from "./useSidebarCollapsed";
+import { cn } from "@/shared/ui/cn";
 import { useT } from "../i18n/LanguageContext";
 import { useUnreadCount } from "../features/inbox/useUnreadCount";
 import { badgeLabel } from "@/modules/notifications";

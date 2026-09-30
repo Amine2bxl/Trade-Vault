@@ -25,7 +25,7 @@ import {
   directionBadgeClass,
 } from "@/app/utils/tradeCalcs";
 import { exportTradesCSV } from "./exportCsv";
-import { cn } from "@/app/utils/cn";
+import { cn } from "@/shared/ui/cn";
 import { useT } from "@/app/i18n/LanguageContext";
 import { intlLocale } from "@/app/i18n/locale";
 import { useTradeFilter } from "./useTradeFilter";
@@ -46,7 +46,7 @@ import {
   type RangeValue,
 } from "@/shared/ui";
 import { usePageActions } from "@/app/contexts/PageActionsContext";
-import { compareChronological } from "@/app/utils/tradeOrder";
+import { compareChronological } from "@/app/trading/tradeOrder";
 import { currencySymbol } from "@/shared/currency";
 
 interface JournalProps {

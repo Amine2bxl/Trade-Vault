@@ -3,7 +3,7 @@ import type { JarvisProfile, OnboardingData } from "@/app/store";
 import type { computeStats } from "@/app/utils/tradeCalcs";
 import type { computeBehaviorSignals } from "../behaviorSignals";
 import type { DailyRule } from "@/app/utils/edgeScore";
-import type { RuleAdherence } from "@/app/utils/ruleAdherence";
+import type { RuleAdherence } from "@/app/trading/ruleAdherence";
 
 /**
  * Contrat interne du module JarvisHome (Phase 1).

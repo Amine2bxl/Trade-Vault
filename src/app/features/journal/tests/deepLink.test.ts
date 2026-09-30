@@ -1,6 +1,6 @@
 import { describe, it, expect } from "bun:test";
 import { filterParam, readFilterParam, insightDeepLink } from "../deepLink";
-import { encodeFilter } from "@/app/utils/tradeFilter";
+import { encodeFilter } from "@/app/trading/tradeFilter";
 
 describe("deepLink — filtre en query param", () => {
   it("round-trip filtre → param → filtre", () => {

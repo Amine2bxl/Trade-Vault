@@ -10,7 +10,7 @@ import {
   previewCalibration,
   roundMoney,
 } from "../accountCalibration";
-import type { Trade } from "../../types";
+import type { Trade } from "@/app/types";
 
 /** Le trade de référence de l'énoncé : compte 25k, risque 1 %, SL 250, TP 500. */
 function trade(over: Partial<Trade> = {}): Trade {

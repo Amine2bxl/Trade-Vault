@@ -12,13 +12,13 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useT } from "@/app/i18n/LanguageContext";
-import { cn } from "@/app/utils/cn";
+import { cn } from "@/shared/ui/cn";
 import {
   type TradingRule,
   type RuleKind,
   loadTradingRules,
   saveTradingRules,
-} from "@/app/utils/tradingRules";
+} from "@/app/trading/tradingRules";
 import { Button } from "@/shared/ui";
 
 // "Mes règles de trading" card on the profile page. The trader writes their

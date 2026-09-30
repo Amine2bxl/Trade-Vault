@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Plus, History, Pin, PinOff, Pencil, Check, X, Trash2, CheckCheck } from "lucide-react";
 import { useT } from "@/app/i18n/LanguageContext";
-import { cn } from "@/app/utils/cn";
-import AccountSwitcher from "@/app/components/AccountSwitcher";
+import { cn } from "@/shared/ui/cn";
+import AccountSwitcher from "@/app/shell/AccountSwitcher";
 import type { ConversationMeta } from "../conversations";
 
 /**

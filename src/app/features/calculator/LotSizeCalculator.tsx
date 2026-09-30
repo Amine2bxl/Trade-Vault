@@ -11,10 +11,15 @@ import {
   BarChart3,
   Layers,
 } from "lucide-react";
-import { POINT_VALUES, FOREX_PAIRS, calcContracts, calcForexLots } from "@/app/utils/positionCalc";
+import {
+  POINT_VALUES,
+  FOREX_PAIRS,
+  calcContracts,
+  calcForexLots,
+} from "@/app/trading/positionCalc";
 import { useAccounts } from "@/app/contexts/AccountContext";
 import { useT } from "@/app/i18n/LanguageContext";
-import { cn } from "@/app/utils/cn";
+import { cn } from "@/shared/ui/cn";
 import { FIELD_BASE, Button } from "@/shared/ui";
 import type { Page } from "@/app/types";
 import { useAuth } from "@/app/contexts/AuthContext";

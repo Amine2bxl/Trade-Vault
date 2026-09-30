@@ -1,7 +1,7 @@
 import { Bell, Settings } from "lucide-react";
 import type { Page } from "../types";
-import { preloadPage } from "../pageModules";
-import { cn } from "../utils/cn";
+import { preloadPage } from "./pageModules";
+import { cn } from "@/shared/ui/cn";
 import { useT } from "../i18n/LanguageContext";
 import { useAuth } from "../contexts/AuthContext";
 import { useUnreadCount } from "../features/inbox/useUnreadCount";

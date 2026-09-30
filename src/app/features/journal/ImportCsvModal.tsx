@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from "react";
 import { X, Upload, FileSpreadsheet, Check, Loader2, AlertCircle } from "lucide-react";
 import { Trade } from "@/app/types";
 import { formatPnl } from "@/app/utils/tradeCalcs";
-import { cn } from "@/app/utils/cn";
+import { cn } from "@/shared/ui/cn";
 import { useT } from "@/app/i18n/LanguageContext";
 import { Button, Modal, SelectPicker } from "@/shared/ui";
 import {

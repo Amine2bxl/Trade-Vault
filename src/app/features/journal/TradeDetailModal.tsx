@@ -19,7 +19,7 @@ import {
   directionBadgeClass,
 } from "@/app/utils/tradeCalcs";
 import { getSession, getMacroEvents } from "@/app/utils/quantStats";
-import { cn } from "@/app/utils/cn";
+import { cn } from "@/shared/ui/cn";
 import { useEffect, useRef, useState } from "react";
 import { useT } from "@/app/i18n/LanguageContext";
 import { useAuth } from "@/app/contexts/AuthContext";

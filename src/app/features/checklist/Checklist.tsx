@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useT } from "@/app/i18n/LanguageContext";
-import { cn } from "@/app/utils/cn";
+import { cn } from "@/shared/ui/cn";
 import type { Page, Trade } from "@/app/types";
 import {
   loadOnboarding,
@@ -46,7 +46,7 @@ import {
 import "./checklist.css";
 
 import { type Tone, TONES, LINES } from "./voice";
-import { loadTradingRules, saveTradingRules, type TradingRule } from "@/app/utils/tradingRules";
+import { loadTradingRules, saveTradingRules, type TradingRule } from "@/app/trading/tradingRules";
 import {
   FOMO_ICONS,
   pad,

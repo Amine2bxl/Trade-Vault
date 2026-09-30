@@ -4,7 +4,7 @@ import { Button, Modal } from "@/shared/ui";
 import { useT } from "@/app/i18n/LanguageContext";
 import { useAccounts } from "@/app/contexts/AccountContext";
 import { useToast } from "@/app/contexts/ToastContext";
-import { cn } from "@/app/utils/cn";
+import { cn } from "@/shared/ui/cn";
 import type { Trade } from "@/app/types";
 import {
   factorFor,
@@ -12,7 +12,7 @@ import {
   pickPreviewTrade,
   previewCalibration,
   type CalibrationPreviewRow,
-} from "@/app/utils/accountCalibration";
+} from "@/app/trading/accountCalibration";
 import { formatMoney } from "@/shared/currency";
 
 /**

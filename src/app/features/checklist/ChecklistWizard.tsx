@@ -11,7 +11,7 @@ import {
   Brain,
   LineChart,
 } from "lucide-react";
-import { cn } from "@/app/utils/cn";
+import { cn } from "@/shared/ui/cn";
 import type { ChkItem } from "./checklistDefaults";
 import { Button, TimeField } from "@/shared/ui";
 import { intlLocale } from "@/app/i18n/locale";

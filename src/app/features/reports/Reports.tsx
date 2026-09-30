@@ -49,11 +49,11 @@ import {
   EQUITY_GRID,
   moneyAxisProps,
   tooltipStyle,
-} from "@/app/utils/chartTheme";
+} from "@/app/trading/chartTheme";
 import { Skeleton } from "@/app/components/Skeleton";
-import EquityChart from "@/app/components/EquityChart";
+import EquityChart from "@/app/trading/EquityChart";
 import MarkdownAnswer from "@/app/components/MarkdownAnswer";
-import { cn } from "@/app/utils/cn";
+import { cn } from "@/shared/ui/cn";
 import type { Trade } from "@/app/types";
 import { Button, Kpi, SelectPicker } from "@/shared/ui";
 import { usePageActions } from "@/app/contexts/PageActionsContext";

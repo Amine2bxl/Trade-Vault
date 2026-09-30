@@ -5,7 +5,7 @@ import { useT } from "@/app/i18n/LanguageContext";
 import { useConfirm } from "@/app/contexts/ConfirmContext";
 import ThemeStudioModal from "./ThemeStudioModal";
 import { ThemeDef } from "@/app/utils/themes";
-import { cn } from "@/app/utils/cn";
+import { cn } from "@/shared/ui/cn";
 
 // Per-theme preview: a full colour band (primary · secondary · highlight, so
 // every colour of the identity is visible at a glance) above an equity

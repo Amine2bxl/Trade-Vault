@@ -14,7 +14,7 @@ import {
 import { loadStartingBalance } from "@/app/store";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useAccounts } from "@/app/contexts/AccountContext";
-import { cn } from "@/app/utils/cn";
+import { cn } from "@/shared/ui/cn";
 import {
   BarChart,
   Bar,
@@ -60,8 +60,8 @@ import {
   tooltipStyle,
   glowActiveDot,
   formatAxisMoney,
-} from "@/app/utils/chartTheme";
-import EquityChart from "@/app/components/EquityChart";
+} from "@/app/trading/chartTheme";
+import EquityChart from "@/app/trading/EquityChart";
 import { formatMoney } from "@/shared/currency";
 
 interface AnalyticsProps {

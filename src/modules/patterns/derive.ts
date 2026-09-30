@@ -1,4 +1,4 @@
-import type { MistakeClusterId } from "@/app/utils/mistakeClusters";
+import type { MistakeClusterId } from "@/app/trading/mistakeClusters";
 import type { DetectedPattern } from "./detectors";
 import type { ProposalActionType } from "./proposalSchemas";
 

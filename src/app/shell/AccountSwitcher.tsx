@@ -30,7 +30,7 @@ import { useT } from "../i18n/LanguageContext";
 import { useToast } from "../contexts/ToastContext";
 import { useSubscription } from "../hooks/useSubscription";
 import { isPlanLimitError } from "../utils/planLimits";
-import { cn } from "../utils/cn";
+import { cn } from "@/shared/ui/cn";
 import type { Account, AccountType } from "../store";
 import { Modal, FIELD_BASE, Chip, CHIP_ROW } from "@/shared/ui";
 import { currencySymbol, formatMoney, useCurrency } from "@/shared/currency";

@@ -12,7 +12,7 @@ import type { Trade } from "@/app/types";
  * pour « celui qui est connecté », notion qui n'existe pas côté serveur.
  *
  * RIEN N'EST RECALIBRÉ À LA LECTURE. Le recalibrage d'échelle de compte est un
- * ÉVÉNEMENT SQL unique (voir l'en-tête de `utils/accountCalibration.ts`) : les
+ * ÉVÉNEMENT SQL unique (voir l'en-tête de `app/trading/accountCalibration.ts`) : les
  * montants stockés sont déjà à l'échelle courante. Les convertir ici les
  * multiplierait une seconde fois.
  */

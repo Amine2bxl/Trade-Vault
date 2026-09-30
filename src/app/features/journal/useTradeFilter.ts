@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Trade } from "@/app/types";
-import { applyFilter, encodeFilter, type UnifiedFilter } from "@/app/utils/tradeFilter";
+import { applyFilter, encodeFilter, type UnifiedFilter } from "@/app/trading/tradeFilter";
 import { readFilterParam } from "./deepLink";
 
 /**

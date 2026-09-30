@@ -4,7 +4,7 @@ import { useT } from "@/app/i18n/LanguageContext";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { AI_USAGE_EVENT, aiUsageToday, jarvisDailyLimit } from "../aiUsage";
 import { useSubscription } from "@/app/hooks/useSubscription";
-import { cn } from "@/app/utils/cn";
+import { cn } from "@/shared/ui/cn";
 
 /**
  * Le pied de Jarvis — il dépend de l'abonnement, et il ne vend qu'à qui peut

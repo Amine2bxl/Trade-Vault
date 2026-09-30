@@ -1,6 +1,6 @@
 import type { Trade, TradeStats } from "@/app/types";
 import type { BehaviorSignals } from "@/app/features/jarvis/behaviorSignals";
-import type { RuleAdherence } from "@/app/utils/ruleAdherence";
+import type { RuleAdherence } from "@/app/trading/ruleAdherence";
 import type { TradeIntent, TradeReflection } from "@/app/store/tradeIntel";
 import { computeStats } from "@/app/utils/tradeCalcs";
 import { sampleVerdict } from "@/modules/coaching";

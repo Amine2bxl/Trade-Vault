@@ -2,7 +2,7 @@ import { createContext, useContext, type CSSProperties, type ReactNode } from "r
 import { Lock, ArrowRight, Eye } from "lucide-react";
 import { useT } from "@/app/i18n/LanguageContext";
 import { useSubscription } from "@/app/hooks/useSubscription";
-import { cn } from "@/app/utils/cn";
+import { cn } from "@/shared/ui/cn";
 import {
   PAGE_TIER,
   PAGE_VALUE,

@@ -9,7 +9,7 @@ import {
   type TrustpilotState,
 } from "../store";
 import { TRUSTPILOT_REVIEW_URL, type Page } from "../types";
-import { cn } from "../utils/cn";
+import { cn } from "@/shared/ui/cn";
 
 const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000;
 const TRADE_THRESHOLD = 20;

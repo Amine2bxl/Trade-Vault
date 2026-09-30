@@ -1,7 +1,7 @@
 import type { Trade, TradeStats } from "@/app/types";
 import type { BehaviorSignals } from "@/app/features/jarvis/behaviorSignals";
 import type { DailyRule } from "@/app/utils/edgeScore";
-import type { RuleAdherence } from "@/app/utils/ruleAdherence";
+import type { RuleAdherence } from "@/app/trading/ruleAdherence";
 import { sampleVerdict, MIN_SAMPLE } from "@/modules/coaching";
 import { formatMoney } from "../copy/templates";
 import type { BriefEvidence, BriefSection, DailyBrief } from "./types";

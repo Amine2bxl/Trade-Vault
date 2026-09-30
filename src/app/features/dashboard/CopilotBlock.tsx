@@ -1,7 +1,7 @@
 import { memo } from "react";
-import { CHART_GREEN, CHART_RED } from "@/app/utils/chartTheme";
+import { CHART_GREEN, CHART_RED } from "@/app/trading/chartTheme";
 import { Sparkles, ClipboardCheck, Check, ChevronRight, Target, Flag, Bot } from "lucide-react";
-import { cn } from "@/app/utils/cn";
+import { cn } from "@/shared/ui/cn";
 import { formatPnl } from "@/app/utils/tradeCalcs";
 import { useT } from "@/app/i18n/LanguageContext";
 import type { EdgeResult, DailyRule } from "@/app/utils/edgeScore";

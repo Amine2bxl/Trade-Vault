@@ -31,7 +31,7 @@ import { Trade } from "@/app/types";
 import { formatPnl } from "@/app/utils/tradeCalcs";
 import { useT } from "@/app/i18n/LanguageContext";
 import { useAccounts } from "@/app/contexts/AccountContext";
-import { cn } from "@/app/utils/cn";
+import { cn } from "@/shared/ui/cn";
 import { usePageActions } from "@/app/contexts/PageActionsContext";
 import { useAvailableHeight } from "@/app/hooks/useAvailableHeight";
 import { Kpi, KpiGrid, Modal } from "@/shared/ui";
@@ -74,7 +74,7 @@ import {
   EQUITY_GRID,
   EQUITY_LINE,
   tooltipStyle,
-} from "@/app/utils/chartTheme";
+} from "@/app/trading/chartTheme";
 import { currencySymbol } from "@/shared/currency";
 
 interface Props {

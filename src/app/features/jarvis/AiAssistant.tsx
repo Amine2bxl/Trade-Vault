@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { Trade, Page } from "@/app/types";
-import { cn } from "@/app/utils/cn";
+import { cn } from "@/shared/ui/cn";
 import { useT } from "@/app/i18n/LanguageContext";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { loadJarvisProfile, type JarvisProfile } from "@/app/store";
@@ -13,7 +13,7 @@ import type { JarvisWorkspaceId } from "./workspaces";
 import { migrateLegacyChat, jarvisConversationStore, useConversations } from "./conversations";
 import JarvisSidebar from "./components/JarvisSidebar";
 import CreditsBar from "./components/CreditsBar";
-import AccountSwitcher from "@/app/components/AccountSwitcher";
+import AccountSwitcher from "@/app/shell/AccountSwitcher";
 
 interface AiAssistantProps {
   trades: Trade[];

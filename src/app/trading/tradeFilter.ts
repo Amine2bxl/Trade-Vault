@@ -1,5 +1,5 @@
 import { isBreakEven, type Trade } from "../types";
-import { getSession, type TradingSession } from "./quantStats";
+import { getSession, type TradingSession } from "../utils/quantStats";
 import { localDateOf } from "@/shared/calendar-date";
 
 /**

@@ -20,29 +20,29 @@
  */
 
 import { lazyPage } from "@/shared/lazy-page";
-import type { Page } from "./types";
+import type { Page } from "../types";
 
 // Un import dynamique par page. Le registre de modules ESM déduplique : appeler
 // deux fois le même loader ne télécharge qu'une fois.
-const loadJournal = () => import("./features/journal/Journal");
-const loadChecklist = () => import("./features/checklist/Checklist");
-const loadCalendar = () => import("./features/calendar/CalendarPage");
-const loadAnalytics = () => import("./features/analytics/Analytics");
-const loadMistakes = () => import("./features/mistakes/Mistakes");
-const loadJarvis = () => import("./features/jarvis/Jarvis");
-const loadProfile = () => import("./features/settings/Profile");
-const loadMissed = () => import("./features/missed/MissedOpportunities");
-const loadNews = () => import("./features/news/EconomicNews");
-const loadSeasonality = () => import("./features/seasonality/Seasonality");
-const loadCalculator = () => import("./features/calculator/LotSizeCalculator");
-const loadSettings = () => import("./features/settings/Settings");
-const loadReports = () => import("./features/reports/Reports");
-const loadGoals = () => import("./features/goals/Goals");
-const loadTradingPlan = () => import("./features/trading-plan/TradingPlan");
-const loadAppearance = () => import("./features/settings/Appearance");
-const loadSubscription = () => import("./features/billing/Subscription");
-const loadInbox = () => import("./features/inbox/Inbox");
-const loadMonteCarlo = () => import("./features/monte-carlo/MonteCarlo");
+const loadJournal = () => import("../features/journal/Journal");
+const loadChecklist = () => import("../features/checklist/Checklist");
+const loadCalendar = () => import("../features/calendar/CalendarPage");
+const loadAnalytics = () => import("../features/analytics/Analytics");
+const loadMistakes = () => import("../features/mistakes/Mistakes");
+const loadJarvis = () => import("../features/jarvis/Jarvis");
+const loadProfile = () => import("../features/settings/Profile");
+const loadMissed = () => import("../features/missed/MissedOpportunities");
+const loadNews = () => import("../features/news/EconomicNews");
+const loadSeasonality = () => import("../features/seasonality/Seasonality");
+const loadCalculator = () => import("../features/calculator/LotSizeCalculator");
+const loadSettings = () => import("../features/settings/Settings");
+const loadReports = () => import("../features/reports/Reports");
+const loadGoals = () => import("../features/goals/Goals");
+const loadTradingPlan = () => import("../features/trading-plan/TradingPlan");
+const loadAppearance = () => import("../features/settings/Appearance");
+const loadSubscription = () => import("../features/billing/Subscription");
+const loadInbox = () => import("../features/inbox/Inbox");
+const loadMonteCarlo = () => import("../features/monte-carlo/MonteCarlo");
 
 export const Journal = lazyPage(loadJournal);
 export const Checklist = lazyPage(loadChecklist);

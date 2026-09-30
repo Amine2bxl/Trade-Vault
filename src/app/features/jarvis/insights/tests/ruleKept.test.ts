@@ -2,7 +2,7 @@ import { describe, it, expect } from "bun:test";
 import { ruleKeptDetector } from "../detectors/ruleKept";
 import { buildHomeData } from "./fixtures";
 import type { JarvisHomeData } from "../types";
-import type { RuleAdherence } from "@/app/utils/ruleAdherence";
+import type { RuleAdherence } from "@/app/trading/ruleAdherence";
 
 /**
  * `rule_kept` produit « tu l'as tenue 11 fois sur 12 » — la phrase que la

@@ -221,7 +221,7 @@ describe("invariants d'écriture", () => {
 });
 
 describe("miroir de session", () => {
-  const SOURCE = readSource(import.meta.dir, "../src/app/hooks/useTrades.ts");
+  const SOURCE = readSource(import.meta.dir, "../src/app/trading/useTrades.ts");
 
   test("jamais de miroir PARTIEL", () => {
     // Le miroir sert d'`initialData` : il est peint tel quel, et tout ce que le

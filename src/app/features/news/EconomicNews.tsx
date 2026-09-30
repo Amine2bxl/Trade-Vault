@@ -12,7 +12,7 @@ import {
   Check,
 } from "lucide-react";
 import { useT } from "@/app/i18n/LanguageContext";
-import { cn } from "@/app/utils/cn";
+import { cn } from "@/shared/ui/cn";
 import { Card, MultiPicker } from "@/shared/ui";
 import { usePageActions } from "@/app/contexts/PageActionsContext";
 import { useEconomicCalendar } from "./useEconomicCalendar";

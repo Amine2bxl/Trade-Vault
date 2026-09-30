@@ -11,17 +11,17 @@ import {
 } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
-import Sidebar from "./components/Sidebar";
-import ChartDefs from "./components/ChartDefs";
-import MobileNav from "./components/MobileNav";
-import AccountSwitcher from "./components/AccountSwitcher";
-import MobileActions from "./components/MobileActions";
-import SectionTabs from "./components/SectionTabs";
+import Sidebar from "./Sidebar";
+import ChartDefs from "../trading/ChartDefs";
+import MobileNav from "./MobileNav";
+import AccountSwitcher from "./AccountSwitcher";
+import MobileActions from "./MobileActions";
+import SectionTabs from "./SectionTabs";
 import { pagesOfSection, sectionForPage } from "./navigation";
-import { cn } from "./utils/cn";
+import { cn } from "@/shared/ui/cn";
 // Dashboard is the landing page — keep it in the main chunk. Every other page
 // (and its heavy deps: recharts, react-markdown) loads on demand.
-import Dashboard from "./features/dashboard/Dashboard";
+import Dashboard from "../features/dashboard/Dashboard";
 // Les pages différées et leur préchargement vivent dans `pageModules` : un
 // seul endroit déclare quel module correspond à quelle page.
 import {
@@ -47,23 +47,23 @@ import {
   preloadPage,
   LIKELY_NEXT_PAGES,
 } from "./pageModules";
-import LoadingScreen from "./components/LoadingScreen";
-const AiAssistant = lazyPage(() => import("./features/jarvis/AiAssistant"));
-const Onboarding = lazyPage(() => import("./onboarding/Onboarding"));
-const CommandPalette = lazyPage(() => import("./components/CommandPalette"));
-const ImportCsvModal = lazyPage(() => import("./features/journal/ImportCsvModal"));
+import LoadingScreen from "./LoadingScreen";
+const AiAssistant = lazyPage(() => import("../features/jarvis/AiAssistant"));
+const Onboarding = lazyPage(() => import("../features/onboarding/Onboarding"));
+const CommandPalette = lazyPage(() => import("./CommandPalette"));
+const ImportCsvModal = lazyPage(() => import("../features/journal/ImportCsvModal"));
 // Les modales ne sont montées que sur action : formulaire de trade (47 Ko de
 // source à elle seule), détail d'un trade, détail d'une notification. Elles
 // étaient importées en STATIQUE, donc payées au premier octet par un trader
 // qui ouvre son tableau de bord et ne clique sur rien. Elles sont préchargées
 // dès que le navigateur est libre (voir `preloadModals` plus bas) : au clic,
 // le chunk est déjà là.
-const TradeModal = lazyPage(() => import("./features/journal/TradeModal"));
-const TradeDetailModal = lazyPage(() => import("./features/journal/TradeDetailModal"));
-const NotificationDetailModal = lazyPage(() => import("./features/inbox/NotificationDetailModal"));
-import TrustpilotPrompt from "./components/TrustpilotPrompt";
-import { Trade, isPage, type Page } from "./types";
-import { resolveLocation, buildPageUrl, DEFAULT_PAGE } from "./utils/pageUrl";
+const TradeModal = lazyPage(() => import("../features/journal/TradeModal"));
+const TradeDetailModal = lazyPage(() => import("../features/journal/TradeDetailModal"));
+const NotificationDetailModal = lazyPage(() => import("../features/inbox/NotificationDetailModal"));
+import TrustpilotPrompt from "./TrustpilotPrompt";
+import { Trade, isPage, type Page } from "../types";
+import { resolveLocation, buildPageUrl, DEFAULT_PAGE } from "../utils/pageUrl";
 import {
   upsertTrade,
   importTrades,
@@ -77,15 +77,15 @@ import {
   saveTradeIntent,
   saveTradeReflection,
   type TradeJournalMeta,
-} from "./store";
-import { useTrades, tradesQueryKey } from "./hooks/useTrades";
-import { useRealtimeTrades } from "./hooks/useRealtimeTrades";
-import { useSubscription } from "./hooks/useSubscription";
+} from "../store";
+import { useTrades, tradesQueryKey } from "../trading/useTrades";
+import { useRealtimeTrades } from "../trading/useRealtimeTrades";
+import { useSubscription } from "../hooks/useSubscription";
 import { generateMyMonthlyReport } from "@/backend/reports.functions";
-import { missingReportMonths } from "./features/reports/reportMonths";
-import { withPnlFromRiskAndR } from "./utils/tradeCalcs";
-import { useTradeStats } from "./hooks/useTradeStats";
-import { loadTradingRules, type TradingRule } from "./utils/tradingRules";
+import { missingReportMonths } from "../features/reports/reportMonths";
+import { withPnlFromRiskAndR } from "../utils/tradeCalcs";
+import { useTradeStats } from "../trading/useTradeStats";
+import { loadTradingRules, type TradingRule } from "../trading/tradingRules";
 import { sendPushToSelf } from "@/backend/push.functions";
 import { AutomationEngine, initAutomationListeners } from "@/modules/automation";
 import {
@@ -100,31 +100,31 @@ import {
   shouldInterrupt,
 } from "@/modules/notifications";
 import type { AppNotification } from "@/modules/notifications/types";
-import { buildDemoTrades } from "./utils/demoTrades";
+import { buildDemoTrades } from "./demoTrades";
 import { todayLocalDate } from "@/shared/calendar-date";
-import { previewTrades } from "./utils/previewTrades";
-import { canLogTrade, isPlanLimitError } from "./utils/planLimits";
-import { computeBehavioral } from "./utils/behavioral";
-import { useEconomicCalendar } from "./features/news/useEconomicCalendar";
-import { startOfWeek } from "./features/news/economicEvents";
-import { computeRuleAdherence } from "./utils/ruleAdherence";
-import type { OnboardingAction } from "./onboarding/Onboarding";
-import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { previewTrades } from "../utils/previewTrades";
+import { canLogTrade, isPlanLimitError } from "../utils/planLimits";
+import { computeBehavioral } from "../utils/behavioral";
+import { useEconomicCalendar } from "../features/news/useEconomicCalendar";
+import { startOfWeek } from "../features/news/economicEvents";
+import { computeRuleAdherence } from "../trading/ruleAdherence";
+import type { OnboardingAction } from "../features/onboarding/Onboarding";
+import { AuthProvider, useAuth } from "../contexts/AuthContext";
 import { clearCurrencyCache, setCurrency, useCurrency } from "@/shared/currency";
-import { AccountProvider, useAccounts } from "./contexts/AccountContext";
-import { PageActionsProvider } from "./contexts/PageActionsContext";
-const Landing = lazyPage(() => import("./public/landing/Landing"));
-import FirstSessionWelcome from "./components/FirstSessionWelcome";
-import { SkeletonForPage } from "./components/Skeleton";
-import { DeferredFallback, PageTransition } from "./components/PageTransition";
-import PageErrorBoundary from "./components/PageErrorBoundary";
-import { PageGate, usePageLockState } from "./features/billing/PremiumGate";
-import UpgradeModal from "./features/billing/UpgradeModal";
-import UpgradeSuccessOverlay from "./features/billing/UpgradeSuccessOverlay";
-import { LanguageProvider, useT } from "./i18n/LanguageContext";
-import { ToastProvider, useToast } from "./contexts/ToastContext";
-import { ConfirmProvider, useConfirm } from "./contexts/ConfirmContext";
-import { ThemeProvider } from "./contexts/ThemeContext";
+import { AccountProvider, useAccounts } from "../contexts/AccountContext";
+import { PageActionsProvider } from "../contexts/PageActionsContext";
+const Landing = lazyPage(() => import("../public/landing/Landing"));
+import FirstSessionWelcome from "./FirstSessionWelcome";
+import { SkeletonForPage } from "../components/Skeleton";
+import { DeferredFallback, PageTransition } from "./PageTransition";
+import PageErrorBoundary from "./PageErrorBoundary";
+import { PageGate, usePageLockState } from "../features/billing/PremiumGate";
+import UpgradeModal from "../features/billing/UpgradeModal";
+import UpgradeSuccessOverlay from "../features/billing/UpgradeSuccessOverlay";
+import { LanguageProvider, useT } from "../i18n/LanguageContext";
+import { ToastProvider, useToast } from "../contexts/ToastContext";
+import { ConfirmProvider, useConfirm } from "../contexts/ConfirmContext";
+import { ThemeProvider } from "../contexts/ThemeContext";
 
 function AppContent() {
   const { user, isAuthenticated, loading } = useAuth();
@@ -136,7 +136,7 @@ function AppContent() {
   // Trades now live in the React Query cache (keyed by user + active account).
   // Aucune conversion d'échelle ici : le recalibrage est un ÉVÉNEMENT qui
   // convertit les lignes une fois en base, pas une lentille appliquée à
-  // chaque lecture (voir `utils/accountCalibration.ts`).
+  // chaque lecture (voir `app/trading/accountCalibration.ts`).
   const { trades, tradesLoading } = useTrades(user?.id, activeId, accountsReady);
   /* LA DEVISE DU TRADER — chargée du profil à la connexion, oubliée à la
      déconnexion. La page est remontée quand elle change : chaque montant,
@@ -249,8 +249,8 @@ function AppContent() {
       // Même raisonnement que pour les pages : le coût est retiré du démarrage,
       // pas déplacé sur le clic. Silencieux — un préchargement qui échoue ne
       // doit jamais remonter d'erreur, le chargement au clic réessaiera.
-      void import("./features/journal/TradeModal").catch(() => {});
-      void import("./features/journal/TradeDetailModal").catch(() => {});
+      void import("../features/journal/TradeModal").catch(() => {});
+      void import("../features/journal/TradeDetailModal").catch(() => {});
     };
     const ric = (window as unknown as { requestIdleCallback?: (cb: () => void) => number })
       .requestIdleCallback;

@@ -11,7 +11,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { useT } from "@/app/i18n/LanguageContext";
-import { cn } from "@/app/utils/cn";
+import { cn } from "@/shared/ui/cn";
 
 interface ProfileProps {
   trades: Trade[];

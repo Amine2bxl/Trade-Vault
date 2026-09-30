@@ -4,7 +4,7 @@ import { LIMITS, TIERS, TIER_RANK, yearlyPerMonth, type Tier } from "@/domain/pl
 import { useT } from "@/app/i18n/LanguageContext";
 import { useSubscription } from "@/app/hooks/useSubscription";
 import { eur } from "@/app/utils/pricing";
-import { cn } from "@/app/utils/cn";
+import { cn } from "@/shared/ui/cn";
 
 /**
  * LE TABLEAU DE COMPARAISON — un vrai tableau, qui montre la différence.

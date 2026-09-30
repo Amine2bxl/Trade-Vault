@@ -2,7 +2,7 @@
 // main i18n dictionary so the flow's strings stay together and reviewable.
 // English is the source; each locale supplies a full set. Missing keys fall
 // back to English via the spread in `oc()`.
-import type { Lang } from "../i18n/translations";
+import type { Lang } from "@/app/i18n/translations";
 
 export interface OnboardingCopy {
   langTitle: string;

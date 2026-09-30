@@ -1,7 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
 import { getActiveAccountId } from "./accounts";
-import { computeReadiness, isEmotionalState, type EmotionalState } from "../utils/readiness";
+import { computeReadiness, isEmotionalState, type EmotionalState } from "../trading/readiness";
 import { todayLocalDate } from "../utils/sessionDate";
 
 export { todayLocalDate };
@@ -28,7 +28,7 @@ export interface TradingSession {
   startedAt: string;
   endedAt: string | null;
   emotionalState: EmotionalState | null;
-  /** DÉRIVÉ. Voir `utils/readiness.ts` — jamais saisi par l'utilisateur. */
+  /** DÉRIVÉ. Voir `app/trading/readiness.ts` — jamais saisi par l'utilisateur. */
   readinessScore: number | null;
   readinessInputs: Record<string, unknown>;
   checklistSnapshot: Record<string, unknown>;

@@ -1,7 +1,7 @@
 import type { Trade, TradeStats } from "@/app/types";
 import { computeStats, toInsightTradesPayload } from "@/app/utils/tradeCalcs";
 import { computeBehaviorSignals } from "./behaviorSignals";
-import type { TradingRule } from "@/app/utils/tradingRules";
+import type { TradingRule } from "@/app/trading/tradingRules";
 import { remember } from "@/modules/ai/memory";
 import { AI_LIMITS } from "@/domain/ai-limits";
 import { selectMemories, type MemoryLike } from "@/modules/ai/memory-select";

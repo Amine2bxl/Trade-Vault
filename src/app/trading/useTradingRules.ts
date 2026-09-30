@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
-import { loadTradingRules, type TradingRule } from "../utils/tradingRules";
+import { loadTradingRules, type TradingRule } from "./tradingRules";
 
 /**
  * The trader's own rules, kept live.

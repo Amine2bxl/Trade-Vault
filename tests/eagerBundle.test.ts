@@ -27,7 +27,7 @@ const ROOT = resolve(import.meta.dir, "..");
  * — celle-ci importe AUSSI la landing en statique (c'est le repli SSR d'un
  * visiteur non connecté), donc elle fait partie du chargement initial réel.
  */
-const ENTRIES = ["src/app/App.tsx", "src/routes/$page.tsx"];
+const ENTRIES = ["src/app/shell/App.tsx", "src/routes/$page.tsx"];
 
 /** Paquets qui n'ont RIEN à faire dans le chargement initial. */
 const MUST_BE_LAZY = ["recharts", "react-markdown"];

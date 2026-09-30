@@ -6,7 +6,7 @@ import {
   sanitizeFilter,
   type UnifiedFilter,
 } from "../tradeFilter";
-import type { Trade } from "../../types";
+import type { Trade } from "@/app/types";
 
 /**
  * Filtre unifié — non-régression.

@@ -19,10 +19,10 @@ import {
   directionLabel,
   directionBadgeClass,
 } from "@/app/utils/tradeCalcs";
-import { CHART_GREEN, CHART_RED } from "@/app/utils/chartTheme";
+import { CHART_GREEN, CHART_RED } from "@/app/trading/chartTheme";
 import { loadOnboarding } from "@/app/store/profile";
 import { deriveDailyRule } from "@/app/utils/edgeScore";
-import { useEdgeScore } from "@/app/hooks/useEdgeScore";
+import { useEdgeScore } from "@/app/trading/useEdgeScore";
 import {
   readHistory,
   writeHistory,
@@ -39,17 +39,17 @@ import { PageContainer, Metric, Card, Button, StreakCard, density } from "@/shar
 import type { StreakPeriod } from "@/shared/ui";
 import { usePageActions, usePageLead } from "@/app/contexts/PageActionsContext";
 import CopilotBlock from "./CopilotBlock";
-import { DeferredFallback } from "@/app/components/PageTransition";
-import { cn } from "@/app/utils/cn";
+import { DeferredFallback } from "@/app/shell/PageTransition";
+import { cn } from "@/shared/ui/cn";
 import { useT } from "@/app/i18n/LanguageContext";
 import { computeChecklistStreakStats, recentChecklistPeriods } from "../checklist/checklistStreak";
-import { newestFirst } from "@/app/utils/tradeOrder";
+import { newestFirst } from "@/app/trading/tradeOrder";
 import { formatMoney } from "@/shared/currency";
 
 // recharts (~150-200 KB) is loaded on demand: the Dashboard shell is eager
 // (landing page), but the equity chart — below the fold — is code-split so it
 // no longer weighs on the initial bundle.
-const EquityChart = lazyPage(() => import("@/app/components/EquityChart"));
+const EquityChart = lazyPage(() => import("@/app/trading/EquityChart"));
 
 interface DashboardProps {
   trades: Trade[];

@@ -17,7 +17,7 @@ import {
   Trash2,
   ChevronDown,
 } from "lucide-react";
-import { cn } from "@/app/utils/cn";
+import { cn } from "@/shared/ui/cn";
 import {
   type GoalDef,
   type GoalKind,

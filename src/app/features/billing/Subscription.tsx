@@ -17,7 +17,7 @@ import {
 import { useT } from "@/app/i18n/LanguageContext";
 import type { TKey } from "@/app/i18n/translations";
 import { useSubscription } from "@/app/hooks/useSubscription";
-import { cn } from "@/app/utils/cn";
+import { cn } from "@/shared/ui/cn";
 import {
   eur,
   planPrice,

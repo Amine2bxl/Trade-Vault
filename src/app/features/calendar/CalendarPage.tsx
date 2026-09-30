@@ -5,7 +5,7 @@ import { loadMissedOpportunities } from "@/app/store";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useAccounts } from "@/app/contexts/AccountContext";
 
-import { cn } from "@/app/utils/cn";
+import { cn } from "@/shared/ui/cn";
 import { dayTone, dayToneBorder, dayToneFill, dayToneSegments } from "./calendarTone";
 import { monthGrid, weekTotals as weekTotalsOf, type GridDay } from "./calendarGrid";
 import WeekDetailModal from "./WeekDetailModal";

@@ -10,7 +10,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { MissedOpportunity } from "@/app/types";
-import { cn } from "@/app/utils/cn";
+import { cn } from "@/shared/ui/cn";
 import { ScreenshotsView } from "./MissedOpportunities";
 import { useT } from "@/app/i18n/LanguageContext";
 import { Modal } from "@/shared/ui";

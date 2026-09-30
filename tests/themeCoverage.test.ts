@@ -86,7 +86,7 @@ describe("l'inventaire de ce qui reste en dur", () => {
     const DELIBERATE: Record<string, string> = {
       "utils/themes.ts":
         "la définition des thèmes intégrés — c'est la SOURCE des variables, elle ne peut pas s'y référer",
-      "onboarding/Onboarding.tsx":
+      "features/onboarding/Onboarding.tsx":
         "les couleurs de départ d'un thème que le trader va créer — un thème neuf part du thème par défaut",
       "store/accounts.ts":
         "la couleur par défaut d'un COMPTE, écrite en base : une donnée, pas un style",
@@ -124,7 +124,7 @@ describe("l'inventaire de ce qui reste en dur", () => {
 describe("les écrans d'accueil portent le thème du trader", () => {
   /** Les surfaces où un cyan en dur est une régression, pas un choix. */
   const SURFACES = [
-    "../src/app/onboarding/Onboarding.tsx",
+    "../src/app/features/onboarding/Onboarding.tsx",
     "../src/app/features/checklist/Checklist.tsx",
     "../src/app/features/checklist/ChecklistWizard.tsx",
   ];
@@ -177,7 +177,7 @@ describe("le tableau de bord ne connaît que les deux verts du langage", () => {
   const SURFACE = [
     "features/dashboard/Dashboard.tsx",
     "features/dashboard/CopilotBlock.tsx",
-    "components/EquityChart.tsx",
+    "trading/EquityChart.tsx",
   ];
 
   for (const file of SURFACE) {

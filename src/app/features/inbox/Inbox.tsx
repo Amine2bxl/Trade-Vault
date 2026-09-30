@@ -28,7 +28,7 @@ import type { TKey } from "@/app/i18n/translations";
 import { usePageActions, usePageLead } from "@/app/contexts/PageActionsContext";
 import { Button } from "@/shared/ui";
 import { useAvailableHeight } from "@/app/hooks/useAvailableHeight";
-import { cn } from "@/app/utils/cn";
+import { cn } from "@/shared/ui/cn";
 import { CATEGORY_LABEL, notificationTarget, WHY_KEY } from "./notificationMeta";
 
 /** « Toutes », « non lues », ou une catégorie. */

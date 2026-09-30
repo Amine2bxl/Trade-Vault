@@ -1,4 +1,4 @@
-import { cn } from "../utils/cn";
+import { cn } from "@/shared/ui/cn";
 import { useT } from "../i18n/LanguageContext";
 import type { Page } from "../types";
 

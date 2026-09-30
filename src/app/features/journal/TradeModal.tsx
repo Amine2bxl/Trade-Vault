@@ -18,7 +18,7 @@ import {
 import { Trade, STRATEGIES, MISTAKE_OPTIONS } from "@/app/types";
 import { getSession } from "@/app/utils/quantStats";
 import { getDuration } from "@/app/utils/tradeCalcs";
-import { POINT_VALUES, calcContracts as calcContractsFor } from "@/app/utils/positionCalc";
+import { POINT_VALUES, calcContracts as calcContractsFor } from "@/app/trading/positionCalc";
 import { generateId } from "@/app/store";
 import {
   loadConfluences,
@@ -30,7 +30,7 @@ import {
 } from "@/app/store";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useT } from "@/app/i18n/LanguageContext";
-import { cn } from "@/app/utils/cn";
+import { cn } from "@/shared/ui/cn";
 import { useConfirm } from "@/app/contexts/ConfirmContext";
 import { compressImageToFile } from "@/app/utils/image";
 import { useScreenshotUrls, invalidateScreenshot } from "@/app/hooks/useScreenshotUrls";
@@ -68,7 +68,7 @@ import {
   loadTradeIntent,
   loadTradeReflection,
 } from "@/app/store/tradeIntel";
-import { EMOTIONAL_STATES, type EmotionalState } from "@/app/utils/readiness";
+import { EMOTIONAL_STATES, type EmotionalState } from "@/app/trading/readiness";
 import { currencySymbol, formatMoney } from "@/shared/currency";
 
 interface TradeModalProps {

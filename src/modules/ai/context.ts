@@ -85,7 +85,7 @@ export interface AIUserContext {
   conversation?: { role: "user" | "assistant"; content: string }[];
   /**
    * Échelle de représentation de l'historique quand il a été recalibré.
-   * Absente = échelle d'origine. Voir `app/utils/accountCalibration.ts`.
+   * Absente = échelle d'origine. Voir `app/trading/accountCalibration.ts`.
    */
   calibration?: { originalBalance: number; currentBalance: number; scale: number };
   /**

@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { Bot, X, ArrowRight, CheckCircle2, Lightbulb } from "lucide-react";
 import { Modal } from "@/shared/ui";
 import { useT } from "@/app/i18n/LanguageContext";
-import { cn } from "@/app/utils/cn";
+import { cn } from "@/shared/ui/cn";
 import type { AppNotification } from "@/modules/notifications/types";
 import { CATEGORY_LABEL, WHY_KEY, notificationTarget } from "./notificationMeta";
 import type { TKey } from "@/app/i18n/translations";

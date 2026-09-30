@@ -4,7 +4,7 @@ import type {
   NotificationKind,
 } from "@/modules/notifications/types";
 import type { TKey } from "@/app/i18n/translations";
-import { encodeFilter, type UnifiedFilter } from "@/app/utils/tradeFilter";
+import { encodeFilter, type UnifiedFilter } from "@/app/trading/tradeFilter";
 
 /* Ce que la boîte de réception et le popup de détail partagent : le nom de
    chaque catégorie, la raison d'être de chaque kind, et la destination d'une

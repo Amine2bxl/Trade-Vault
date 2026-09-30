@@ -1,5 +1,5 @@
 import type { Trade } from "../types";
-import { checkTradeAgainstRules, type TradingRule } from "./ruleCheck";
+import { checkTradeAgainstRules, type TradingRule } from "../utils/ruleCheck";
 import { localDateOf } from "@/shared/calendar-date";
 
 /**

@@ -29,7 +29,7 @@ import {
 import { useScreenshotUrls, invalidateScreenshot } from "@/app/hooks/useScreenshotUrls";
 import { formatShortDate } from "@/app/utils/tradeCalcs";
 import { compressImageToFile } from "@/app/utils/image";
-import { cn } from "@/app/utils/cn";
+import { cn } from "@/shared/ui/cn";
 import { useT } from "@/app/i18n/LanguageContext";
 import { useToast } from "@/app/contexts/ToastContext";
 import { useConfirm } from "@/app/contexts/ConfirmContext";

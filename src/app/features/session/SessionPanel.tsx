@@ -1,21 +1,21 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Play, Square, Activity } from "lucide-react";
-import type { Trade } from "../types";
+import type { Trade } from "@/app/types";
 import {
   closeSession,
   loadTodaySession,
   openSession,
   todayLocalDate,
   type TradingSession,
-} from "../store";
-import { loadTradingRules } from "../utils/tradingRules";
-import { computeReadiness, EMOTIONAL_STATES, type EmotionalState } from "../utils/readiness";
-import { useAuth } from "../contexts/AuthContext";
-import { useT } from "../i18n/LanguageContext";
-import { cn } from "../utils/cn";
-import { formatPnl } from "../utils/tradeCalcs";
+} from "@/app/store";
+import { loadTradingRules } from "@/app/trading/tradingRules";
+import { computeReadiness, EMOTIONAL_STATES, type EmotionalState } from "@/app/trading/readiness";
+import { useAuth } from "@/app/contexts/AuthContext";
+import { useT } from "@/app/i18n/LanguageContext";
+import { cn } from "@/shared/ui/cn";
+import { formatPnl } from "@/app/utils/tradeCalcs";
 import { Button, Card, FIELD_BASE } from "@/shared/ui";
-import type { TKey } from "../i18n/translations";
+import type { TKey } from "@/app/i18n/translations";
 
 /**
  * La séance du jour, au-dessus de la checklist qui l'alimente.
@@ -29,7 +29,7 @@ import type { TKey } from "../i18n/translations";
  * AUCUN CURSEUR DE PRÉPARATION. Le score affiché est calculé à partir de la
  * checklist réellement cochée, de l'état déclaré et des règles de risque
  * actives ; il est montré AVEC sa décomposition, jamais demandé. Voir
- * `utils/readiness.ts` pour le raisonnement complet.
+ * `app/trading/readiness.ts` pour le raisonnement complet.
  */
 
 interface SessionPanelProps {

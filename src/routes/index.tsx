@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ClientOnly } from "@tanstack/react-router";
-import App from "@/app/App";
+import App from "@/app/shell/App";
 import { LANDING_ALTERNATES, pageSeo } from "../shared/seo";
 import Landing from "@/app/public/landing/Landing";
 

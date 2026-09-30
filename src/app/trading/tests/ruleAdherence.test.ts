@@ -1,7 +1,7 @@
 import { describe, it, expect } from "bun:test";
 import { computeRuleAdherence } from "../ruleAdherence";
 import type { TradingRule } from "../tradingRules";
-import type { Trade } from "../../types";
+import type { Trade } from "@/app/types";
 
 /**
  * Adhérence aux règles — non-régression.

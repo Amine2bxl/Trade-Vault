@@ -14,7 +14,7 @@ import {
   hexToRgb,
   type ThemeDef,
 } from "@/app/utils/themes";
-import { cn } from "@/app/utils/cn";
+import { cn } from "@/shared/ui/cn";
 
 /**
  * LE CRÉATEUR DE THÈME — trois étapes, aucun réglage de développeur.

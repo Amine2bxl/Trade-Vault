@@ -20,8 +20,8 @@ import {
   User,
   Shuffle,
 } from "lucide-react";
-import { PAGES, SECTIONS, type Page, type SectionId } from "./types";
-import type { TKey } from "./i18n/translations";
+import { PAGES, SECTIONS, type Page, type SectionId } from "../types";
+import type { TKey } from "../i18n/translations";
 
 /**
  * Navigation — la seule source de vérité de toutes les surfaces de navigation.

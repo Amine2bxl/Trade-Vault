@@ -27,10 +27,10 @@ import {
   glowActiveDot,
   moneyAxisProps,
   tooltipStyle,
-} from "@/app/utils/chartTheme";
+} from "@/app/trading/chartTheme";
 import { MONTHS_SHORT, type SeasonalAsset } from "./assetSeasonality";
 import { assetEquity, readSeasonalPath, seasonalPath } from "./seasonalCurve";
-import { cn } from "@/app/utils/cn";
+import { cn } from "@/shared/ui/cn";
 
 const pct = (v: number) => `${v >= 0 ? "+" : ""}${v.toFixed(1)}%`;
 

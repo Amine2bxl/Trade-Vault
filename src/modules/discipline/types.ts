@@ -1,4 +1,4 @@
-import type { TradingRule, Violation } from "@/app/utils/tradingRules";
+import type { TradingRule, Violation } from "@/app/trading/tradingRules";
 
 /**
  * Discipline domain types. The rule shape (TradingRule) is owned by the

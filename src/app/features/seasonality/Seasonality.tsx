@@ -34,7 +34,7 @@ import {
   EQUITY_GRID,
   moneyAxisProps,
   tooltipStyle,
-} from "@/app/utils/chartTheme";
+} from "@/app/trading/chartTheme";
 import {
   ASSET_SEASONALITY,
   CATEGORY_LABELS,
@@ -47,7 +47,7 @@ import { useT } from "@/app/i18n/LanguageContext";
 import { Skeleton } from "@/app/components/Skeleton";
 import { usePersistedValue, nsKey, writeJSON } from "@/app/utils/persistence";
 import { useAuth } from "@/app/contexts/AuthContext";
-import { cn } from "@/app/utils/cn";
+import { cn } from "@/shared/ui/cn";
 import { PageContainer, Card, Kpi, KpiGrid, SelectPicker } from "@/shared/ui";
 import { useIsNarrow } from "@/app/hooks/useIsNarrow";
 import { formatMoney } from "@/shared/currency";

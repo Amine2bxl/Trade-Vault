@@ -21,7 +21,7 @@ import { useT } from "@/app/i18n/LanguageContext";
 import type { TKey } from "@/app/i18n/translations";
 import { useSubscription } from "@/app/hooks/useSubscription";
 import { tierAtLeast } from "@/app/utils/pricing";
-import { cn } from "@/app/utils/cn";
+import { cn } from "@/shared/ui/cn";
 
 type NotifCategory = "discipline" | "goals" | "risk" | "ai" | "economic";
 

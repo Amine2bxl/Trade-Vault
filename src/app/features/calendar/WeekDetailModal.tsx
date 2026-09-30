@@ -4,7 +4,7 @@ import { formatMoney } from "@/shared/currency";
 import { isBreakEven, type Trade } from "@/app/types";
 import type { GridDay } from "./calendarGrid";
 import { useT } from "@/app/i18n/LanguageContext";
-import { cn } from "@/app/utils/cn";
+import { cn } from "@/shared/ui/cn";
 
 /**
  * LA SEMAINE, OUVERTE.
