@@ -1,4 +1,4 @@
-import { isBreakEven, type Trade } from "../types";
+import { isBreakEven, type Trade } from "@/app/types";
 
 /**
  * LA TEINTE D'UNE JOURNÉE DU CALENDRIER — calculée sur les VRAIS résultats.

@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useTradingRules } from "../hooks/useTradingRules";
-import { useGoalProgress } from "../hooks/useGoalProgress";
+import { useGoalProgress } from "../features/goals/useGoalProgress";
 import { computeRuleAdherence, ADHERENCE_WINDOW_DAYS } from "../utils/ruleAdherence";
 import { TrendingDown, CheckCircle2, Ban, Wrench, TrendingUp, ChevronDown } from "lucide-react";
 import { Trade } from "../types";

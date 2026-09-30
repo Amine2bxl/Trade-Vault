@@ -1,5 +1,5 @@
 import type { SeasonalAsset } from "./assetSeasonality";
-import type { Trade } from "../types";
+import type { Trade } from "@/app/types";
 
 /**
  * LA COURBE SAISONNIÈRE — la même donnée que les barres, lue autrement.

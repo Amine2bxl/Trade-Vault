@@ -16,14 +16,14 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Dices, ShieldAlert, Target, TrendingDown, Info, Scale } from "lucide-react";
-import type { Trade } from "../types";
-import { useT } from "../i18n/LanguageContext";
-import { useAccounts } from "../contexts/AccountContext";
-import { useAuth } from "../contexts/AuthContext";
-import { useToast } from "../contexts/ToastContext";
-import { loadScenarios, saveScenario, type SavedScenario } from "../store/simulations";
-import { cn } from "../utils/cn";
-import { assessDataset } from "../utils/datasetQuality";
+import type { Trade } from "@/app/types";
+import { useT } from "@/app/i18n/LanguageContext";
+import { useAccounts } from "@/app/contexts/AccountContext";
+import { useAuth } from "@/app/contexts/AuthContext";
+import { useToast } from "@/app/contexts/ToastContext";
+import { loadScenarios, saveScenario, type SavedScenario } from "@/app/store/simulations";
+import { cn } from "@/app/utils/cn";
+import { assessDataset } from "./datasetQuality";
 import {
   Button,
   Card,

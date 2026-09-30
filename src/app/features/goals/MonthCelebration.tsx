@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useT } from "../i18n/LanguageContext";
+import { useT } from "@/app/i18n/LanguageContext";
 
 /**
  * LA VALIDATION DU MOIS.

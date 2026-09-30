@@ -26,23 +26,23 @@ import type { Page } from "./types";
 // deux fois le même loader ne télécharge qu'une fois.
 const loadJournal = () => import("./pages/Journal");
 const loadChecklist = () => import("./pages/Checklist");
-const loadCalendar = () => import("./pages/CalendarPage");
+const loadCalendar = () => import("./features/calendar/CalendarPage");
 const loadAnalytics = () => import("./pages/Analytics");
 const loadMistakes = () => import("./pages/Mistakes");
 const loadJarvis = () => import("./pages/Jarvis");
 const loadProfile = () => import("./pages/Profile");
 const loadMissed = () => import("./pages/MissedOpportunities");
 const loadNews = () => import("./pages/EconomicNews");
-const loadSeasonality = () => import("./pages/Seasonality");
+const loadSeasonality = () => import("./features/seasonality/Seasonality");
 const loadCalculator = () => import("./pages/LotSizeCalculator");
 const loadSettings = () => import("./pages/Settings");
 const loadReports = () => import("./pages/Reports");
-const loadGoals = () => import("./pages/Goals");
+const loadGoals = () => import("./features/goals/Goals");
 const loadTradingPlan = () => import("./pages/TradingPlan");
 const loadAppearance = () => import("./pages/Appearance");
 const loadSubscription = () => import("./pages/Subscription");
 const loadInbox = () => import("./pages/Inbox");
-const loadMonteCarlo = () => import("./pages/MonteCarlo");
+const loadMonteCarlo = () => import("./features/monte-carlo/MonteCarlo");
 
 export const Journal = lazyPage(loadJournal);
 export const Checklist = lazyPage(loadChecklist);

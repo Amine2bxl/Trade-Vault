@@ -6,7 +6,7 @@ import {
   mapRowsToTrades,
   MC_REQUIRED,
 } from "../src/app/utils/csvImport";
-import { deriveRFromPnl, extractRSamples } from "../src/app/utils/monteCarlo";
+import { deriveRFromPnl, extractRSamples } from "../src/app/features/monte-carlo/monteCarloEngine";
 
 /**
  * « LE CSV NE MARCHE PAS. »

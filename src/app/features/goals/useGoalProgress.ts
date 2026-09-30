@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import type { Trade } from "../types";
-import { computeStats } from "../utils/tradeCalcs";
-import { computeQuantStats } from "../utils/quantStats";
-import { loadStartingBalance } from "../store";
-import { loadGoalPlan, currentGoalValue, type GoalPlan, type MeasureCtx } from "../utils/goalPlan";
+import type { Trade } from "@/app/types";
+import { computeStats } from "@/app/utils/tradeCalcs";
+import { computeQuantStats } from "@/app/utils/quantStats";
+import { loadStartingBalance } from "@/app/store";
+import { loadGoalPlan, currentGoalValue, type GoalPlan, type MeasureCtx } from "./goalPlan";
 
 /**
  * Objectifs du trader et leur progression MESURÉE.

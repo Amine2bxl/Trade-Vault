@@ -99,7 +99,7 @@ describe("aucune date métier ne repasse par UTC", () => {
     "../src/app/utils/demoTrades.ts",
     "../src/app/pages/checklist/helpers.ts",
     "../src/app/pages/MissedOpportunities.tsx",
-    "../src/app/pages/Goals.tsx",
+    "../src/app/features/goals/Goals.tsx",
     "../src/app/pages/Inbox.tsx",
     "../src/app/components/jarvis/workspaces/ConversationWorkspace.tsx",
   ];

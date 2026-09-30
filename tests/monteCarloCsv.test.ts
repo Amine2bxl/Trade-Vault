@@ -6,7 +6,7 @@ import {
   runMonteCarlo,
   computeStatistics,
   type MonteCarloParams,
-} from "../src/app/utils/monteCarlo";
+} from "../src/app/features/monte-carlo/monteCarloEngine";
 
 /**
  * L'IMPORT CSV DE MONTE-CARLO, DE BOUT EN BOUT.

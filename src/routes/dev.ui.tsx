@@ -27,15 +27,15 @@ import type { Trade } from "@/app/types";
  * poignée de lignes.
  */
 
-const MonteCarlo = lazy(() => import("@/app/pages/MonteCarlo"));
+const MonteCarlo = lazy(() => import("@/app/features/monte-carlo/MonteCarlo"));
 const Analytics = lazy(() => import("@/app/pages/Analytics"));
 const Mistakes = lazy(() => import("@/app/pages/Mistakes"));
-const Goals = lazy(() => import("@/app/pages/Goals"));
+const Goals = lazy(() => import("@/app/features/goals/Goals"));
 const TradingPlan = lazy(() => import("@/app/pages/TradingPlan"));
 const Subscription = lazy(() => import("@/app/pages/Subscription"));
 const Inbox = lazy(() => import("@/app/pages/Inbox"));
 const GoalsPlan = lazy(() =>
-  import("@/app/pages/goals/views").then((m) => ({ default: m.PlanView })),
+  import("@/app/features/goals/views").then((m) => ({ default: m.PlanView })),
 );
 
 const IDS = [

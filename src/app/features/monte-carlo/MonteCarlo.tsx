@@ -27,13 +27,13 @@ import {
   Tooltip,
   ReferenceLine,
 } from "recharts";
-import { Trade } from "../types";
-import { formatPnl } from "../utils/tradeCalcs";
-import { useT } from "../i18n/LanguageContext";
-import { useAccounts } from "../contexts/AccountContext";
-import { cn } from "../utils/cn";
-import { usePageActions } from "../contexts/PageActionsContext";
-import { useAvailableHeight } from "../hooks/useAvailableHeight";
+import { Trade } from "@/app/types";
+import { formatPnl } from "@/app/utils/tradeCalcs";
+import { useT } from "@/app/i18n/LanguageContext";
+import { useAccounts } from "@/app/contexts/AccountContext";
+import { cn } from "@/app/utils/cn";
+import { usePageActions } from "@/app/contexts/PageActionsContext";
+import { useAvailableHeight } from "@/app/hooks/useAvailableHeight";
 import { Kpi, KpiGrid, Modal } from "@/shared/ui";
 import {
   pathBands,
@@ -44,8 +44,8 @@ import {
   probabilityOfProfit,
   histogram,
   rHistogram,
-} from "../utils/monteCarloViz";
-import { splitCleanTrades } from "../utils/mistakePlan";
+} from "./monteCarloViz";
+import { splitCleanTrades } from "@/app/utils/mistakePlan";
 import {
   extractRSamples,
   runMonteCarlo,
@@ -58,15 +58,15 @@ import {
   type MonteCarloParams,
   type MonteCarloResult,
   type RMultipleSample,
-} from "../utils/monteCarlo";
+} from "./monteCarloEngine";
 import {
   parseCsv,
   guessMapping,
   mapRowsToTrades,
   rejectFile,
   MC_REQUIRED,
-} from "../utils/csvImport";
-import { formatMoney } from "../utils/propFirms";
+} from "@/app/utils/csvImport";
+import { formatMoney } from "./propFirms";
 import {
   AXIS_TICK,
   CHART_GREEN,
@@ -74,7 +74,7 @@ import {
   EQUITY_GRID,
   EQUITY_LINE,
   tooltipStyle,
-} from "../utils/chartTheme";
+} from "@/app/utils/chartTheme";
 import { currencySymbol } from "@/shared/currency";
 
 interface Props {

@@ -11,10 +11,10 @@ import {
   CartesianGrid,
 } from "recharts";
 import { Activity, LineChart as LineIcon } from "lucide-react";
-import type { Trade } from "../../types";
-import { useT } from "../../i18n/LanguageContext";
+import type { Trade } from "@/app/types";
+import { useT } from "@/app/i18n/LanguageContext";
 import { Kpi, KpiGrid } from "@/shared/ui";
-import { formatPnl } from "../../utils/tradeCalcs";
+import { formatPnl } from "@/app/utils/tradeCalcs";
 import {
   AXIS_TICK,
   CHART_GREEN,
@@ -27,10 +27,10 @@ import {
   glowActiveDot,
   moneyAxisProps,
   tooltipStyle,
-} from "../../utils/chartTheme";
-import { MONTHS_SHORT, type SeasonalAsset } from "../../utils/assetSeasonality";
-import { assetEquity, readSeasonalPath, seasonalPath } from "../../utils/seasonalCurve";
-import { cn } from "../../utils/cn";
+} from "@/app/utils/chartTheme";
+import { MONTHS_SHORT, type SeasonalAsset } from "./assetSeasonality";
+import { assetEquity, readSeasonalPath, seasonalPath } from "./seasonalCurve";
+import { cn } from "@/app/utils/cn";
 
 const pct = (v: number) => `${v >= 0 ? "+" : ""}${v.toFixed(1)}%`;
 

@@ -17,7 +17,7 @@ import {
   Trash2,
   ChevronDown,
 } from "lucide-react";
-import { cn } from "../../utils/cn";
+import { cn } from "@/app/utils/cn";
 import {
   type GoalDef,
   type GoalKind,
@@ -33,7 +33,7 @@ import {
   monthOf,
   monthTaskCompletion,
   tasksForMonth,
-} from "../../utils/goalPlan";
+} from "./goalPlan";
 import type { GoalForecast } from "@/modules/probability/goals";
 import { formatMoney } from "@/shared/currency";
 

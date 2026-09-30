@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { dayTone, dayToneFill, dayToneSegments } from "../src/app/utils/calendarTone";
+import { dayTone, dayToneFill, dayToneSegments } from "../src/app/features/calendar/calendarTone";
 import type { Trade } from "../src/app/types";
 
 const trade = (pnl: number, rMultiple: number, direction: Trade["direction"] = "long") =>
@@ -55,7 +55,7 @@ describe("teinte d'une journée du calendrier", () => {
 
 describe("le liseré de la case", () => {
   test("il prend la couleur du résultat NET de la journée", async () => {
-    const { dayToneBorder } = await import("../src/app/utils/calendarTone");
+    const { dayToneBorder } = await import("../src/app/features/calendar/calendarTone");
     const mk = (kind: "win" | "loss" | "mixed" | "flat", net: number) =>
       ({ kind, positiveShare: 0.5, neutralShare: 0, magnitude: 1, net, unit: "R" }) as never;
     expect(dayToneBorder(mk("win", 2))).toContain("--tv-chart-green-rgb");

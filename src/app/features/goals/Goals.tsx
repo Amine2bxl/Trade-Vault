@@ -1,18 +1,18 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import MonthCelebration from "../components/MonthCelebration";
+import MonthCelebration from "./MonthCelebration";
 import { Loader2, Flag } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
-import { useAuth } from "../contexts/AuthContext";
-import { useAccounts } from "../contexts/AccountContext";
-import { useT } from "../i18n/LanguageContext";
-import { useToast } from "../contexts/ToastContext";
-import { useConfirm } from "../contexts/ConfirmContext";
-import type { Trade } from "../types";
-import { computeStats } from "../utils/tradeCalcs";
-import { useGoalProgress } from "../hooks/useGoalProgress";
+import { useAuth } from "@/app/contexts/AuthContext";
+import { useAccounts } from "@/app/contexts/AccountContext";
+import { useT } from "@/app/i18n/LanguageContext";
+import { useToast } from "@/app/contexts/ToastContext";
+import { useConfirm } from "@/app/contexts/ConfirmContext";
+import type { Trade } from "@/app/types";
+import { computeStats } from "@/app/utils/tradeCalcs";
+import { useGoalProgress } from "./useGoalProgress";
 import { buildDataset } from "@/modules/probability/dataset";
 import { forecastCapitalGoal } from "@/modules/probability/goals";
-import { loadStartingBalance } from "../store";
+import { loadStartingBalance } from "@/app/store";
 import { sendPushToSelf } from "@/backend/push.functions";
 import {
   HORIZON,
@@ -25,13 +25,13 @@ import {
   monthTaskCompletion,
   saveGoalPlan,
   setTaskDone,
-} from "../utils/goalPlan";
+} from "./goalPlan";
 
 // Goals 2.0 — pick SEVERAL fully customizable goals at once; TradeVault
 // generates a progressive 6-month action plan: per-goal milestones + concrete
 // monthly tasks, checkable and persisted, with push reminders.
 
-import { GoalPicker, PlanView } from "./goals/views";
+import { GoalPicker, PlanView } from "./views";
 import { todayLocalDate } from "@/shared/calendar-date";
 
 export default function Goals({ trades }: { trades: Trade[] }) {

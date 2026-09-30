@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { monthGrid, weekTotals } from "../src/app/utils/calendarGrid";
+import { monthGrid, weekTotals } from "../src/app/features/calendar/calendarGrid";
 
 describe("grille du calendrier", () => {
   test("septembre 2026 commence un mardi : la grille ouvre sur le lundi 31 août", () => {

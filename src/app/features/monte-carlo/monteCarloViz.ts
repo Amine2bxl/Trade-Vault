@@ -1,4 +1,4 @@
-import type { MonteCarloResult, RMultipleSample, SimulationRun } from "./monteCarlo";
+import type { MonteCarloResult, RMultipleSample, SimulationRun } from "./monteCarloEngine";
 
 /**
  * CE QUE LES 2 000 TIRAGES DISENT, CALCULÉ — PAS DESSINÉ.

@@ -467,7 +467,7 @@ export function computeProfitFactor(wr: number, aw: number, al: number): number 
  * perte (aucune unité à en tirer) : rendre les trades inchangés vaut mieux que
  * d'inventer une échelle.
  *
- * Extrait de `pages/MonteCarlo.tsx`, où il vivait inline — donc intestable,
+ * Extrait de `features/monte-carlo/MonteCarlo.tsx`, où il vivait inline — donc intestable,
  * pour la seule branche d'import que personne ne peut vérifier à l'œil.
  */
 export function deriveRFromPnl<T extends { pnl: number; rMultiple: number }>(trades: T[]): T[] {

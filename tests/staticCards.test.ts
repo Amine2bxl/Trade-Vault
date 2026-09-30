@@ -39,13 +39,13 @@ const APP = resolve(import.meta.dir, "..", "src", "app");
  */
 const PORTENT_KPI = [
   "pages/Analytics.tsx",
-  "pages/CalendarPage.tsx",
+  "features/calendar/CalendarPage.tsx",
   "pages/Journal.tsx",
   "pages/MissedOpportunities.tsx",
-  "pages/MonteCarlo.tsx",
+  "features/monte-carlo/MonteCarlo.tsx",
   "pages/Reports.tsx",
-  "pages/Seasonality.tsx",
-  "pages/Simulator.tsx",
+  "features/seasonality/Seasonality.tsx",
+  "features/simulator/Simulator.tsx",
   "pages/Subscription.tsx",
   "components/jarvis/BlockRenderer.tsx",
 ];

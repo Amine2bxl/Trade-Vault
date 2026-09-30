@@ -49,7 +49,7 @@ describe("les surfaces réparées suivent le thème", () => {
        Ce que ce test protège reste entier : le fichier n'écrit aucun cyan en
        dur, et les couleurs qu'il porte sont celles que le studio repeint. */
     "components/jarvis/components/CreditsBar.tsx": ["var(--tv-highlight)", "var(--tv-accent)"],
-    "pages/MonteCarlo.tsx": ["var(--tv-highlight)"],
+    "features/monte-carlo/MonteCarlo.tsx": ["var(--tv-highlight)"],
     "pages/Checklist.tsx": ["var(--tv-highlight)"],
   };
 

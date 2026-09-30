@@ -1,5 +1,9 @@
 import { expect, test } from "bun:test";
-import { tasksForMonth, monthTaskCompletion, type GoalPlan } from "../src/app/utils/goalPlan";
+import {
+  tasksForMonth,
+  monthTaskCompletion,
+  type GoalPlan,
+} from "../src/app/features/goals/goalPlan";
 
 const plan: GoalPlan = {
   goals: [{ id: "g1", kind: "capital", startValue: 10000, targetValue: 20000 }],

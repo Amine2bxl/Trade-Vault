@@ -17,7 +17,7 @@
  * ce qui est présent, il ne devine pas ce qui manque.
  */
 
-import type { Trade } from "../types";
+import type { Trade } from "@/app/types";
 
 /** Une dimension d'analyse, et ce qu'elle débloque. */
 export type QualityDimension = "risk" | "direction" | "strategy" | "times" | "screenshots";

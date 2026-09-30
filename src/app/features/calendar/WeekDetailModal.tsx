@@ -1,10 +1,10 @@
 import { ChevronRight, X } from "lucide-react";
 import { Modal } from "@/shared/ui";
 import { formatMoney } from "@/shared/currency";
-import { isBreakEven, type Trade } from "../../types";
-import type { GridDay } from "../../utils/calendarGrid";
-import { useT } from "../../i18n/LanguageContext";
-import { cn } from "../../utils/cn";
+import { isBreakEven, type Trade } from "@/app/types";
+import type { GridDay } from "./calendarGrid";
+import { useT } from "@/app/i18n/LanguageContext";
+import { cn } from "@/app/utils/cn";
 
 /**
  * LA SEMAINE, OUVERTE.

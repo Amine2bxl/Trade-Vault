@@ -20,9 +20,9 @@ import {
   Sparkles,
   Layers,
 } from "lucide-react";
-import { Trade } from "../types";
-import { formatPnl } from "../utils/tradeCalcs";
-import { MIN_BUCKET_SAMPLE } from "../utils/quantStats";
+import { Trade } from "@/app/types";
+import { formatPnl } from "@/app/utils/tradeCalcs";
+import { MIN_BUCKET_SAMPLE } from "@/app/utils/quantStats";
 import {
   AXIS_TICK,
   BAR_FILL_GREEN,
@@ -34,7 +34,7 @@ import {
   EQUITY_GRID,
   moneyAxisProps,
   tooltipStyle,
-} from "../utils/chartTheme";
+} from "@/app/utils/chartTheme";
 import {
   ASSET_SEASONALITY,
   CATEGORY_LABELS,
@@ -42,16 +42,16 @@ import {
   computeSeasonalStats,
   type AssetCategory,
   type SeasonalAsset,
-} from "../utils/assetSeasonality";
-import { useT } from "../i18n/LanguageContext";
-import { Skeleton } from "../components/Skeleton";
-import { usePersistedValue, nsKey, writeJSON } from "../utils/persistence";
-import { useAuth } from "../contexts/AuthContext";
-import { cn } from "../utils/cn";
+} from "./assetSeasonality";
+import { useT } from "@/app/i18n/LanguageContext";
+import { Skeleton } from "@/app/components/Skeleton";
+import { usePersistedValue, nsKey, writeJSON } from "@/app/utils/persistence";
+import { useAuth } from "@/app/contexts/AuthContext";
+import { cn } from "@/app/utils/cn";
 import { PageContainer, Card, Kpi, KpiGrid, SelectPicker } from "@/shared/ui";
-import { useIsNarrow } from "../hooks/useIsNarrow";
+import { useIsNarrow } from "@/app/hooks/useIsNarrow";
 import { formatMoney } from "@/shared/currency";
-import { SeasonalEquity } from "../components/seasonality/SeasonalEquity";
+import { SeasonalEquity } from "./SeasonalEquity";
 
 interface SeasonalityProps {
   trades: Trade[];

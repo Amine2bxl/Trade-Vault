@@ -1,6 +1,6 @@
 import { describe, it, expect } from "bun:test";
 import { assessDataset, GAP_THRESHOLD } from "../datasetQuality";
-import type { Trade } from "../../types";
+import type { Trade } from "@/app/types";
 
 function trade(patch: Partial<Trade> = {}): Trade {
   return {

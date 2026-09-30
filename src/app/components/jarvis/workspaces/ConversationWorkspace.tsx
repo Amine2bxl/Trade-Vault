@@ -20,7 +20,7 @@ import type { CoachV1Payload } from "../../../utils/aiContext";
 import { isCalibrated } from "../../../utils/accountCalibration";
 import { loadMemory, remember, type MemoryEntry } from "@/modules/ai/memory";
 import { useTradingRules } from "../../../hooks/useTradingRules";
-import { useGoalProgress } from "../../../hooks/useGoalProgress";
+import { useGoalProgress } from "@/app/features/goals/useGoalProgress";
 import { computeRuleAdherence } from "../../../utils/ruleAdherence";
 import { loadTradingRules, saveTradingRules } from "../../../utils/tradingRules";
 import { computeBehaviorSignals } from "../../../utils/behaviorSignals";

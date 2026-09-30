@@ -1,21 +1,21 @@
 import { useState, useMemo, useEffect, type CSSProperties } from "react";
 import { ChevronLeft, ChevronRight, Target } from "lucide-react";
-import { Trade, MissedOpportunity } from "../types";
-import { loadMissedOpportunities } from "../store";
-import { useAuth } from "../contexts/AuthContext";
-import { useAccounts } from "../contexts/AccountContext";
+import { Trade, MissedOpportunity } from "@/app/types";
+import { loadMissedOpportunities } from "@/app/store";
+import { useAuth } from "@/app/contexts/AuthContext";
+import { useAccounts } from "@/app/contexts/AccountContext";
 
-import { cn } from "../utils/cn";
-import { dayTone, dayToneBorder, dayToneFill, dayToneSegments } from "../utils/calendarTone";
-import { monthGrid, weekTotals as weekTotalsOf, type GridDay } from "../utils/calendarGrid";
-import WeekDetailModal from "../components/calendar/WeekDetailModal";
-import { useIsNarrow } from "../hooks/useIsNarrow";
+import { cn } from "@/app/utils/cn";
+import { dayTone, dayToneBorder, dayToneFill, dayToneSegments } from "./calendarTone";
+import { monthGrid, weekTotals as weekTotalsOf, type GridDay } from "./calendarGrid";
+import WeekDetailModal from "./WeekDetailModal";
+import { useIsNarrow } from "@/app/hooks/useIsNarrow";
 import { todayLocalDate } from "@/shared/calendar-date";
-import TradeDetailModal from "../components/TradeDetailModal";
-import MissedSetupDetailModal from "../components/MissedSetupDetailModal";
-import { useT } from "../i18n/LanguageContext";
+import TradeDetailModal from "@/app/components/TradeDetailModal";
+import MissedSetupDetailModal from "@/app/components/MissedSetupDetailModal";
+import { useT } from "@/app/i18n/LanguageContext";
 import { Kpi, KpiGrid } from "@/shared/ui";
-import { useAvailableHeight } from "../hooks/useAvailableHeight";
+import { useAvailableHeight } from "@/app/hooks/useAvailableHeight";
 import { formatMoney } from "@/shared/currency";
 
 interface CalendarPageProps {
