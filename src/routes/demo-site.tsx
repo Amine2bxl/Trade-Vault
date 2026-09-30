@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { pageSeo } from "../shared/seo";
-import { LandingDemo } from "@/app/components/LandingDemo";
+import { LandingDemo } from "@/app/public/LandingDemo";
 
 // /demo-site — la découverte GUIDÉE du site, sans connexion : l'utilisateur
 // voit l'application en action (données d'exemple, rien de modifiable) et est

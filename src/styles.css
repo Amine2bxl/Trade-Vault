@@ -3034,7 +3034,7 @@ a:focus-visible,
   }
 }
 
-/* Landing styles: split to src/app/pages/landing.css (lazy-loaded) */
+/* Landing styles: split to src/app/public/landing/landing.css (lazy-loaded) */
 
 /* ── reduced motion (scoped to landing) ── */
 @media (prefers-reduced-motion: reduce) {

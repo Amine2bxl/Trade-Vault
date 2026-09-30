@@ -13,7 +13,7 @@
  * Depuis une machine qui atteint Supabase, on s'en passe.
  *
  * Les fichiers produits sont indexes automatiquement par
- * `src/app/pages/landing/shots.ts` : deposer l'image suffit, aucun code a
+ * `src/app/public/landing/shots.ts` : deposer l'image suffit, aucun code a
  * changer. Voir `src/assets/product/README.md` pour les noms attendus.
  *
  * ── POURQUOI LES REPONSES SUPABASE SONT SERVIES LOCALEMENT ─────────────────

@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { ClientOnly } from "@tanstack/react-router";
 import App from "@/app/App";
 import { LANDING_ALTERNATES, pageSeo } from "../shared/seo";
-import Landing from "@/app/pages/Landing";
+import Landing from "@/app/public/landing/Landing";
 
 // The brand comes first and stands alone before the separator, so the browser
 // tab, search results and Google's brand review all read "TradeVault" first.

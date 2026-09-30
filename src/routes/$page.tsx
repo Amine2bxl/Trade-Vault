@@ -1,7 +1,7 @@
 import { lazyPage } from "@/shared/lazy-page";
 import { createFileRoute, ClientOnly, redirect, notFound } from "@tanstack/react-router";
 import App from "@/app/App";
-import PublicShell from "@/app/pages/PublicShell";
+import PublicShell from "@/app/public/PublicShell";
 import { pageSeo } from "../shared/seo";
 import { isPage } from "@/app/types";
 import { resolveLocation, pathForPage } from "@/app/utils/pageUrl";

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
-import { LandingLangProvider, useLandingT, tr } from "../src/app/pages/landing/i18n";
+import { LandingLangProvider, useLandingT, tr } from "../src/app/public/landing/i18n";
 import { SSR_LANG } from "../src/shared/lang";
 
 /**

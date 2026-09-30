@@ -4,7 +4,7 @@
  * ── POURQUOI UN MODULE À DEUX LIGNES ────────────────────────────────────────
  *
  * Cette constante est lue par `routes/__root.tsx` (attribut `lang` de `<html>`)
- * ET par `app/pages/landing/i18n.tsx` (état initial du fournisseur de langue).
+ * ET par `app/public/landing/i18n.tsx` (état initial du fournisseur de langue).
  * La déclarer dans le second et l'importer depuis le premier faisait entrer le
  * dictionnaire complet de la landing — une vingtaine de kilo-octets — dans le
  * chunk d'entrée, chargé sur CHAQUE route, y compris celles d'un trader

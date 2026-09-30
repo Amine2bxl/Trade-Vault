@@ -115,7 +115,7 @@ test.each(ENTRIES)("%s reaches no heavy chart or markdown library statically", (
  */
 test("the authenticated route does not statically reach the landing page", () => {
   const files = eagerFiles("src/routes/$page.tsx");
-  const landing = resolve(ROOT, "src/app/pages/Landing.tsx");
+  const landing = resolve(ROOT, "src/app/public/landing/Landing.tsx");
   expect([...files]).not.toContain(landing);
 });
 

@@ -4,8 +4,8 @@ import { Suspense, useEffect, useRef, useState } from "react";
 // qu'ils portaient : voir le pied de page plus bas.
 import { Check } from "lucide-react";
 import logoSrc from "@/assets/tradevault-logo-128.png";
-import { Icon, type IName } from "./landing/Icon";
-import { ShotOuVisuel } from "./landing/ProductShot";
+import { Icon, type IName } from "./Icon";
+import { ShotOuVisuel } from "./ProductShot";
 /**
  * L'ÉCRAN D'AUTHENTIFICATION EST DIFFÉRÉ, et c'est lui qui porte Supabase.
  *
@@ -19,38 +19,29 @@ import { ShotOuVisuel } from "./landing/ProductShot";
  * chargement ici ferait clignoter la page pour quelques dizaines de
  * millisecondes.
  */
-const AuthModal = lazyPage(() =>
-  import("./landing/AuthModal").then((m) => ({ default: m.AuthModal })),
-);
-const DemoModal = lazyPage(() =>
-  import("./landing/DemoModal").then((m) => ({ default: m.DemoModal })),
-);
-import { TrustStrip } from "./landing/Showcase";
+const AuthModal = lazyPage(() => import("./AuthModal").then((m) => ({ default: m.AuthModal })));
+const DemoModal = lazyPage(() => import("./DemoModal").then((m) => ({ default: m.DemoModal })));
+import { TrustStrip } from "./Showcase";
 import { TRUSTPILOT_URL } from "@/shared/site";
-import { TourProduit } from "./landing/Tour";
+import { TourProduit } from "./Tour";
 import { CursorOrb } from "@/shared/ui/CursorOrb";
-import { LIENS_NAV } from "./landing/nav";
-import MegaNav from "./landing/MegaNav";
-import { LangMenuPied } from "./landing/LangMenu";
-import { CookieConsent } from "./landing/CookieConsent";
+import { LIENS_NAV } from "./nav";
+import MegaNav from "./MegaNav";
+import { LangMenuPied } from "./LangMenu";
+import { CookieConsent } from "./CookieConsent";
 import {
   DefilementDoux,
   allerVers,
   useApparitions,
   useDefilementSansRendu,
   usePrefereMoinsDeMouvement,
-} from "./landing/motion";
+} from "./motion";
 import { useLenis } from "lenis/react";
 import { faqPageJsonLd } from "@/shared/seo";
 import { RESEAUX_ACTIFS } from "@/shared/socials";
-import { lireLePassage, positionDeReprise } from "./landing/langSwap";
-import { YEARLY_PER_MONTH, eur } from "../utils/pricing";
-import {
-  LandingLangProvider,
-  useLandingT,
-  type LandingKey,
-  type LandingLang,
-} from "./landing/i18n";
+import { lireLePassage, positionDeReprise } from "./langSwap";
+import { YEARLY_PER_MONTH, eur } from "@/app/utils/pricing";
+import { LandingLangProvider, useLandingT, type LandingKey, type LandingLang } from "./i18n";
 import "./landing.css";
 
 /**

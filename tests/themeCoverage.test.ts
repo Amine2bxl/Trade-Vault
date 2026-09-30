@@ -80,7 +80,7 @@ describe("l'inventaire de ce qui reste en dur", () => {
     /**
      * Fichier → pourquoi la variable serait FAUSSE ici.
      *
-     * La vitrine (`pages/Landing.tsx`, `pages/landing/`) est hors périmètre :
+     * La vitrine (`public/landing/`) est hors périmètre :
      * elle s'affiche avant toute connexion, donc avant tout thème.
      */
     const DELIBERATE: Record<string, string> = {
@@ -95,7 +95,7 @@ describe("l'inventaire de ce qui reste en dur", () => {
     const found: string[] = [];
     for (const file of filesUnder(APP)) {
       const rel = relative(APP, file);
-      if (rel === "pages/Landing.tsx" || rel.startsWith("pages/landing/")) continue;
+      if (rel.startsWith("public/landing/")) continue;
       if (stripComments(read(file)).match(BRAND_HEX)) found.push(rel);
     }
 

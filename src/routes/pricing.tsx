@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import PricingPage from "../app/pages/PricingPage";
+import PricingPage from "../app/public/PricingPage";
 import { pageSeo } from "../shared/seo";
 
 export const Route = createFileRoute("/pricing")({

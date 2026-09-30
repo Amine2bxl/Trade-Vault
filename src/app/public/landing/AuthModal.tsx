@@ -7,7 +7,7 @@
  * de vente anglaise et tombait sur un formulaire français au moment exact de la
  * conversion : le seul écran où l'on demande quelque chose. */
 import { FormEvent, useEffect, useState } from "react";
-import { EnsureAuthProvider, useAuth } from "../../contexts/AuthContext";
+import { EnsureAuthProvider, useAuth } from "@/app/contexts/AuthContext";
 import logoSrc from "@/assets/tradevault-logo-128.png";
 import { Icon } from "./Icon";
 import { useLandingT } from "./i18n";

@@ -1589,7 +1589,7 @@ const M: Record<string, Msg> = {
    *
    * Chaque libellé ci-dessous correspond maintenant à une ancre réelle de la
    * page ou à une route réelle du produit. Voir `FOOTER_PRODUCT` et
-   * `FOOTER_RESOURCES` dans `pages/Landing.tsx`. */
+   * `FOOTER_RESOURCES` dans `Landing.tsx`. */
   "footer.f1": { en: "The problem", fr: "Le problème" },
   "footer.f2": { en: "Trust & security", fr: "Confiance et sécurité" },
   "footer.f3": { en: "The product", fr: "Le produit" },

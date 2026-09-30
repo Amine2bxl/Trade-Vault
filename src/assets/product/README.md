@@ -1,7 +1,7 @@
 # Captures du produit pour la landing
 
 Dépose ici les captures d'écran **réelles** du SaaS. Aucun code à modifier :
-`src/app/pages/landing/shots.ts` liste le contenu de ce dossier au moment du
+`src/app/public/landing/shots.ts` liste le contenu de ce dossier au moment du
 build, et chaque section de la landing bascule d'elle-même du dessin
 d'illustration vers la vraie capture dès que le fichier correspondant existe.
 

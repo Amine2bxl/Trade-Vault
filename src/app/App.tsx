@@ -113,7 +113,7 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { clearCurrencyCache, setCurrency, useCurrency } from "@/shared/currency";
 import { AccountProvider, useAccounts } from "./contexts/AccountContext";
 import { PageActionsProvider } from "./contexts/PageActionsContext";
-const Landing = lazyPage(() => import("./pages/Landing"));
+const Landing = lazyPage(() => import("./public/landing/Landing"));
 import FirstSessionWelcome from "./components/FirstSessionWelcome";
 import { SkeletonForPage } from "./components/Skeleton";
 import { DeferredFallback, PageTransition } from "./components/PageTransition";

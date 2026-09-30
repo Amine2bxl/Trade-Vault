@@ -7,7 +7,7 @@ import { SUPPORT_EMAIL } from "../types";
 import { LEGAL_ROUTES, legalBlurb, legalChrome, legalLabel, type LegalDoc } from "./legal-content";
 import { usePublicLang } from "./usePersistedLang";
 import { breadcrumbJsonLd } from "@/shared/seo";
-import "./landing.css";
+import "./landing/landing.css";
 
 /**
  * LE GABARIT DES PAGES LÉGALES.

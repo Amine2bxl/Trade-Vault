@@ -18,7 +18,7 @@ import { LandingLangProvider, useLandingT, type LandingKey } from "./landing/i18
 import { TIER_BY_ID } from "@/domain/plans";
 import { pathForPage } from "../utils/pageUrl";
 import { breadcrumbJsonLd } from "@/shared/seo";
-import "./landing.css";
+import "./landing/landing.css";
 
 /**
  * /pricing — la page des tarifs, à part.
