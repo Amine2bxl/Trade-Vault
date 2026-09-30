@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { TradeStats } from "@/app/types";
-import type { QuantStats } from "@/app/utils/quantStats";
+import type { QuantStats } from "@/domain/quantStats";
 import { formatMoney } from "@/shared/currency";
 
 // Goals 2.0 — the trader selects SEVERAL fully customizable goals at once;

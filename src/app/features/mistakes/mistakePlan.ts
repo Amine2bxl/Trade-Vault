@@ -1,5 +1,5 @@
 import { Trade } from "@/app/types";
-import { MISTAKE_SEVERITY, TREND_WINDOW_DAYS, type Severity } from "@/app/utils/behavioral";
+import { MISTAKE_SEVERITY, TREND_WINDOW_DAYS, type Severity } from "@/domain/behavioral";
 import { localDateOf } from "@/shared/calendar-date";
 
 /**

@@ -23,7 +23,7 @@ import {
   niceEquityScale,
   EQUITY_X_PADDING,
 } from "./chartTheme";
-import { formatShortDate } from "../utils/tradeCalcs";
+import { formatShortDate } from "@/domain/tradeCalcs";
 import { useIsNarrow } from "../hooks/useIsNarrow";
 import { useT } from "../i18n/LanguageContext";
 import { formatMoney } from "@/shared/currency";

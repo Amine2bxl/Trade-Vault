@@ -1,6 +1,6 @@
 import { describe, it, expect } from "bun:test";
-import { computeBehavioral, TREND_WINDOW_DAYS } from "../behavioral";
-import type { Trade } from "../../types";
+import { computeBehavioral, TREND_WINDOW_DAYS } from "./behavioral";
+import type { Trade } from "./trade";
 
 /**
  * Tendance PAR ERREUR — non-régression.

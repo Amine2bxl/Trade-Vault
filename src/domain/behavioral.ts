@@ -1,4 +1,4 @@
-import { Trade } from "../types";
+import { Trade } from "./trade";
 import { getSession, TradingSession } from "./quantStats";
 import { localDateOf } from "@/shared/calendar-date";
 

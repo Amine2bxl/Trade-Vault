@@ -7,7 +7,7 @@ import {
   parseCurrency,
   setCurrency,
 } from "../src/shared/currency";
-import { formatPnl } from "../src/app/utils/tradeCalcs";
+import { formatPnl } from "../src/domain/tradeCalcs";
 import { formatAxisMoney } from "../src/app/trading/chartTheme";
 
 afterEach(() => setCurrency("USD"));

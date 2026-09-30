@@ -32,14 +32,14 @@ import { useAuth } from "@/app/contexts/AuthContext";
 import { useToast } from "@/app/contexts/ToastContext";
 import { useT } from "@/app/i18n/LanguageContext";
 import { loadMonthlyReports, type MonthlyReportRow } from "@/app/store";
-import { buildMonthlyReport, prevMonthOf, type MonthlyReportData } from "@/app/utils/monthlyReport";
+import { buildMonthlyReport, prevMonthOf, type MonthlyReportData } from "@/domain/monthlyReport";
 import { useAccounts } from "@/app/contexts/AccountContext";
 import { localMonthOf, todayLocalDate } from "@/shared/calendar-date";
-import { statsBySession, MIN_BUCKET_SAMPLE } from "@/app/utils/quantStats";
+import { statsBySession, MIN_BUCKET_SAMPLE } from "@/domain/quantStats";
 import { currencySymbol, useCurrency } from "@/shared/currency";
 import { missingReportMonths } from "./reportMonths";
 import { generateMyMonthlyReport } from "@/backend/reports.functions";
-import { formatPnl, formatPct } from "@/app/utils/tradeCalcs";
+import { formatPnl, formatPct } from "@/domain/tradeCalcs";
 import {
   AXIS_TICK,
   BAR_FILL_GREEN,

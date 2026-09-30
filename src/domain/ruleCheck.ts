@@ -1,4 +1,4 @@
-import type { Trade } from "../types";
+import type { Trade } from "./trade";
 
 /**
  * Vérification des règles du trader — logique PURE.

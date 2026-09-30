@@ -2,7 +2,7 @@ import type { Trade, TradeStats } from "@/app/types";
 import type { BehaviorSignals } from "@/app/features/jarvis/behaviorSignals";
 import type { RuleAdherence } from "@/app/trading/ruleAdherence";
 import type { TradeIntent, TradeReflection } from "@/app/store/tradeIntel";
-import { computeStats } from "@/app/utils/tradeCalcs";
+import { computeStats } from "@/domain/tradeCalcs";
 import { sampleVerdict } from "@/modules/coaching";
 import { formatMoney } from "../copy/templates";
 import type { DailyReview } from "./types";

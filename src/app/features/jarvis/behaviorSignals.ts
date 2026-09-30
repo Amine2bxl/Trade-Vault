@@ -1,6 +1,6 @@
 import { Trade, isBreakEven } from "@/app/types";
-import { computeStats } from "@/app/utils/tradeCalcs";
-import { getSession, statsBySession, winRateOf, type BucketStat } from "@/app/utils/quantStats";
+import { computeStats } from "@/domain/tradeCalcs";
+import { getSession, statsBySession, winRateOf, type BucketStat } from "@/domain/quantStats";
 
 /**
  * Behaviour signals — the deterministic "why" behind the numbers.

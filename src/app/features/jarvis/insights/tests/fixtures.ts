@@ -1,7 +1,7 @@
 import type { Trade } from "@/app/types";
-import { computeStats } from "@/app/utils/tradeCalcs";
+import { computeStats } from "@/domain/tradeCalcs";
 import { computeBehaviorSignals } from "@/app/features/jarvis/behaviorSignals";
-import { deriveDailyRule } from "@/app/utils/edgeScore";
+import { deriveDailyRule } from "@/domain/edgeScore";
 import type { JarvisHomeData, JarvisMemory } from "../types";
 
 /**

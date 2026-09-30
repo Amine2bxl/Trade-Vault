@@ -21,8 +21,8 @@ import {
   Layers,
 } from "lucide-react";
 import { Trade } from "@/app/types";
-import { formatPnl } from "@/app/utils/tradeCalcs";
-import { MIN_BUCKET_SAMPLE } from "@/app/utils/quantStats";
+import { formatPnl } from "@/domain/tradeCalcs";
+import { MIN_BUCKET_SAMPLE } from "@/domain/quantStats";
 import {
   AXIS_TICK,
   BAR_FILL_GREEN,

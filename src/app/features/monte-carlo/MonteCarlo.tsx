@@ -28,7 +28,7 @@ import {
   ReferenceLine,
 } from "recharts";
 import { Trade } from "@/app/types";
-import { formatPnl } from "@/app/utils/tradeCalcs";
+import { formatPnl } from "@/domain/tradeCalcs";
 import { useT } from "@/app/i18n/LanguageContext";
 import { useAccounts } from "@/app/contexts/AccountContext";
 import { cn } from "@/shared/ui/cn";

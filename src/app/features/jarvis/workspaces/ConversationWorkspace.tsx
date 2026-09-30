@@ -24,10 +24,10 @@ import { useGoalProgress } from "@/app/features/goals/useGoalProgress";
 import { computeRuleAdherence } from "@/app/trading/ruleAdherence";
 import { loadTradingRules, saveTradingRules } from "@/app/trading/tradingRules";
 import { computeBehaviorSignals } from "../behaviorSignals";
-import { computeStats } from "@/app/utils/tradeCalcs";
+import { computeStats } from "@/domain/tradeCalcs";
 import { useSubscription } from "@/app/hooks/useSubscription";
 import { useEdgeScore } from "@/app/trading/useEdgeScore";
-import { EDGE_WINDOW_DAYS } from "@/app/utils/edgeScore";
+import { EDGE_WINDOW_DAYS } from "@/domain/edgeScore";
 import { loadTodaySession } from "@/app/store";
 import {
   loadTradeIntents,

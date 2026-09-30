@@ -8,7 +8,7 @@ import { useT } from "@/app/i18n/LanguageContext";
 import { useToast } from "@/app/contexts/ToastContext";
 import { useConfirm } from "@/app/contexts/ConfirmContext";
 import type { Trade } from "@/app/types";
-import { computeStats } from "@/app/utils/tradeCalcs";
+import { computeStats } from "@/domain/tradeCalcs";
 import { useGoalProgress } from "./useGoalProgress";
 import { buildDataset } from "@/modules/probability/dataset";
 import { forecastCapitalGoal } from "@/modules/probability/goals";

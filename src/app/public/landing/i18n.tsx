@@ -1037,7 +1037,7 @@ const M: Record<string, Msg> = {
    *
    * Le différenciateur le plus court à expliquer et le plus difficile à
    * copier : un score de comportement dont le P&L est VOLONTAIREMENT absent
-   * (`app/utils/edgeScore.ts`). Il dit la philosophie du produit — la
+   * (`domain/edgeScore.ts`). Il dit la philosophie du produit — la
    * discipline avant le profit — en un seul chiffre. */
   "edge.title.a": { en: "A score that doesn't look", fr: "Un score qui ne regarde pas" },
   "edge.title.b": { en: "at your P&L.", fr: "ton P&L." },

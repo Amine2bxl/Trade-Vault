@@ -1,8 +1,8 @@
 import type { Trade } from "@/app/types";
 import type { JarvisProfile, OnboardingData } from "@/app/store";
-import type { computeStats } from "@/app/utils/tradeCalcs";
+import type { computeStats } from "@/domain/tradeCalcs";
 import type { computeBehaviorSignals } from "../behaviorSignals";
-import type { DailyRule } from "@/app/utils/edgeScore";
+import type { DailyRule } from "@/domain/edgeScore";
 import type { RuleAdherence } from "@/app/trading/ruleAdherence";
 
 /**

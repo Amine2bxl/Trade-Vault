@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
-import { computeEdgeScore, riskThreshold, deriveDailyRule } from "../src/app/utils/edgeScore";
-import { computeStats } from "../src/app/utils/tradeCalcs";
+import { computeEdgeScore, riskThreshold, deriveDailyRule } from "../src/domain/edgeScore";
+import { computeStats } from "../src/domain/tradeCalcs";
 import type { Trade } from "../src/app/types";
 
 // Minimal trade factory — only the fields the Edge Score reads.

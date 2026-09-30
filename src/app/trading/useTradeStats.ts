@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { computeStats } from "../utils/tradeCalcs";
+import { computeStats } from "@/domain/tradeCalcs";
 import type { Trade } from "../types";
 
 // Single, memoized source of derived trade statistics. Any component — a page,

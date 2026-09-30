@@ -7,7 +7,7 @@ import {
   statsByHour,
   dayHourMatrix,
   winRateOf,
-} from "../src/app/utils/quantStats";
+} from "../src/domain/quantStats";
 import type { Trade } from "../src/app/types";
 
 function mkTrade(over: Partial<Trade>): Trade {

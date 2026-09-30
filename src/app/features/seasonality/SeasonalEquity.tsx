@@ -14,7 +14,7 @@ import { Activity, LineChart as LineIcon } from "lucide-react";
 import type { Trade } from "@/app/types";
 import { useT } from "@/app/i18n/LanguageContext";
 import { Kpi, KpiGrid } from "@/shared/ui";
-import { formatPnl } from "@/app/utils/tradeCalcs";
+import { formatPnl } from "@/domain/tradeCalcs";
 import {
   AXIS_TICK,
   CHART_GREEN,

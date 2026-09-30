@@ -13,7 +13,7 @@ import { computeReadiness, EMOTIONAL_STATES, type EmotionalState } from "@/app/t
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useT } from "@/app/i18n/LanguageContext";
 import { cn } from "@/shared/ui/cn";
-import { formatPnl } from "@/app/utils/tradeCalcs";
+import { formatPnl } from "@/domain/tradeCalcs";
 import { Button, Card, FIELD_BASE } from "@/shared/ui";
 import type { TKey } from "@/app/i18n/translations";
 

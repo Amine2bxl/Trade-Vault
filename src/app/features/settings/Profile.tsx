@@ -1,6 +1,6 @@
 import { useAuth } from "@/app/contexts/AuthContext";
 import { Trade, SUPPORT_EMAIL } from "@/app/types";
-import { computeStats, formatPnl, formatPct } from "@/app/utils/tradeCalcs";
+import { computeStats, formatPnl, formatPct } from "@/domain/tradeCalcs";
 import {
   LogOut,
   Mail,

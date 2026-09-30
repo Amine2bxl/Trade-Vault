@@ -1,12 +1,12 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { chainNextInvocation, cursorFrom, runUserBatch } from "./cron-batch";
-import type { Trade } from "@/app/types";
+import type { Trade } from "@/domain/trade";
 import {
   buildMonthlyReport,
   monthRange,
   prevMonthOf,
   type MonthlyReportData,
-} from "@/app/utils/monthlyReport";
+} from "@/domain/monthlyReport";
 import { sendWebPush, type PushSubRow } from "./push-crypto.server";
 import { currencySymbol, formatMoney, parseCurrency, type CurrencyCode } from "@/shared/currency";
 

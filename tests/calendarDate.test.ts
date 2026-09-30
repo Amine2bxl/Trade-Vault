@@ -93,7 +93,7 @@ describe("aucune date métier ne repasse par UTC", () => {
     "../src/app/trading/ruleAdherence.ts",
     "../src/app/trading/tradeFilter.ts",
     "../src/app/features/checklist/checklistStreak.ts",
-    "../src/app/utils/behavioral.ts",
+    "../src/domain/behavioral.ts",
     "../src/app/features/journal/exportCsv.ts",
     "../src/app/utils/previewTrades.ts",
     "../src/app/shell/demoTrades.ts",

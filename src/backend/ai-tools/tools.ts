@@ -1,11 +1,11 @@
 import type { ToolDefinition, ToolContext } from "@/modules/ai/tools/types";
-import type { Trade } from "@/app/types";
+import type { Trade } from "@/domain/trade";
 import { serviceClient } from "@/backend/billing.server";
 import { loadTrades, type AnyClient } from "./trades";
-import { computeStats } from "@/app/utils/tradeCalcs";
-import { computeQuantStats, statsBySession } from "@/app/utils/quantStats";
-import { computeBehavioral } from "@/app/utils/behavioral";
-import { computeEdgeScore, EDGE_WINDOW_DAYS } from "@/app/utils/edgeScore";
+import { computeStats } from "@/domain/tradeCalcs";
+import { computeQuantStats, statsBySession } from "@/domain/quantStats";
+import { computeBehavioral } from "@/domain/behavioral";
+import { computeEdgeScore, EDGE_WINDOW_DAYS } from "@/domain/edgeScore";
 import { todayLocalDate } from "@/shared/calendar-date";
 
 /**

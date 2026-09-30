@@ -1,4 +1,4 @@
-import { Trade, isBreakEven } from "../types";
+import { Trade, isBreakEven } from "./trade";
 
 // ── Trading sessions (ET, ICT convention) ──────────────────────────────────
 // Times entered in the journal are treated as US Eastern (the reference for

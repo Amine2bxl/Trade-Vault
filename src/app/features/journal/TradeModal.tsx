@@ -16,8 +16,8 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { Trade, STRATEGIES, MISTAKE_OPTIONS } from "@/app/types";
-import { getSession } from "@/app/utils/quantStats";
-import { getDuration } from "@/app/utils/tradeCalcs";
+import { getSession } from "@/domain/quantStats";
+import { getDuration } from "@/domain/tradeCalcs";
 import { POINT_VALUES, calcContracts as calcContractsFor } from "@/app/trading/positionCalc";
 import { generateId } from "@/app/store";
 import {

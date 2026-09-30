@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import type { TradingRule } from "../utils/ruleCheck";
+import type { TradingRule } from "@/domain/ruleCheck";
 
 /**
  * Persistance des règles du trader (colonne `trading_rules` de `profiles`).
@@ -9,7 +9,7 @@ import type { TradingRule } from "../utils/ruleCheck";
  * appelants existants continuent d'importer depuis `tradingRules`.
  */
 
-export * from "../utils/ruleCheck";
+export * from "@/domain/ruleCheck";
 
 export async function loadTradingRules(userId: string): Promise<TradingRule[]> {
   const { data, error } = await supabase

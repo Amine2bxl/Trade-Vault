@@ -18,10 +18,10 @@ import {
   formatShortDate,
   directionLabel,
   directionBadgeClass,
-} from "@/app/utils/tradeCalcs";
+} from "@/domain/tradeCalcs";
 import { CHART_GREEN, CHART_RED } from "@/app/trading/chartTheme";
 import { loadOnboarding } from "@/app/store/profile";
-import { deriveDailyRule } from "@/app/utils/edgeScore";
+import { deriveDailyRule } from "@/domain/edgeScore";
 import { useEdgeScore } from "@/app/trading/useEdgeScore";
 import {
   readHistory,

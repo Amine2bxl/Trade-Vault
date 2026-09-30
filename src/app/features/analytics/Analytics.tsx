@@ -2,7 +2,7 @@ import { createPortal } from "react-dom";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { Info, TrendingUp, TrendingDown, CalendarDays, Clock, Sparkles } from "lucide-react";
 import { Trade, isBreakEven } from "@/app/types";
-import { computeStats, formatPnl, formatPct, formatShortDate } from "@/app/utils/tradeCalcs";
+import { computeStats, formatPnl, formatPct, formatShortDate } from "@/domain/tradeCalcs";
 import {
   computeQuantStats,
   getSession,
@@ -10,7 +10,7 @@ import {
   winRateOf,
   MIN_BUCKET_SAMPLE,
   TradingSession,
-} from "@/app/utils/quantStats";
+} from "@/domain/quantStats";
 import { loadStartingBalance } from "@/app/store";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useAccounts } from "@/app/contexts/AccountContext";

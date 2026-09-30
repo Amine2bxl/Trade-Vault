@@ -1,4 +1,4 @@
-import { Trade } from "../types";
+import { Trade } from "./trade";
 import { computeStats } from "./tradeCalcs";
 import { computeQuantStats, winRateOf, MIN_BUCKET_SAMPLE } from "./quantStats";
 

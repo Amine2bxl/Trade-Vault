@@ -1,5 +1,5 @@
 import type { Trade, TradeStats } from "@/app/types";
-import { computeStats, toInsightTradesPayload } from "@/app/utils/tradeCalcs";
+import { computeStats, toInsightTradesPayload } from "@/domain/tradeCalcs";
 import { computeBehaviorSignals } from "./behaviorSignals";
 import type { TradingRule } from "@/app/trading/tradingRules";
 import { remember } from "@/modules/ai/memory";

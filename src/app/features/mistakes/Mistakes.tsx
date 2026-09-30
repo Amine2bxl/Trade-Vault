@@ -5,7 +5,7 @@ import { useGoalProgress } from "../goals/useGoalProgress";
 import { computeRuleAdherence, ADHERENCE_WINDOW_DAYS } from "@/app/trading/ruleAdherence";
 import { TrendingDown, CheckCircle2, Ban, Wrench, TrendingUp, ChevronDown } from "lucide-react";
 import { Trade } from "@/app/types";
-import { computeBehavioral } from "@/app/utils/behavioral";
+import { computeBehavioral } from "@/domain/behavioral";
 import {
   buildMistakePlan,
   computeAfterLoss,

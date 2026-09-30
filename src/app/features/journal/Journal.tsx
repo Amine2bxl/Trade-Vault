@@ -23,7 +23,7 @@ import {
   formatShortDate,
   directionLabel,
   directionBadgeClass,
-} from "@/app/utils/tradeCalcs";
+} from "@/domain/tradeCalcs";
 import { exportTradesCSV } from "./exportCsv";
 import { cn } from "@/shared/ui/cn";
 import { useT } from "@/app/i18n/LanguageContext";

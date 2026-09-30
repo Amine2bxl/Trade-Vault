@@ -27,7 +27,7 @@ import {
   deleteScreenshot,
 } from "@/app/store";
 import { useScreenshotUrls, invalidateScreenshot } from "@/app/hooks/useScreenshotUrls";
-import { formatShortDate } from "@/app/utils/tradeCalcs";
+import { formatShortDate } from "@/domain/tradeCalcs";
 import { compressImageToFile } from "@/app/utils/image";
 import { cn } from "@/shared/ui/cn";
 import { useT } from "@/app/i18n/LanguageContext";

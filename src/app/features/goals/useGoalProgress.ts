@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Trade } from "@/app/types";
-import { computeStats } from "@/app/utils/tradeCalcs";
-import { computeQuantStats } from "@/app/utils/quantStats";
+import { computeStats } from "@/domain/tradeCalcs";
+import { computeQuantStats } from "@/domain/quantStats";
 import { loadStartingBalance } from "@/app/store";
 import { loadGoalPlan, currentGoalValue, type GoalPlan, type MeasureCtx } from "./goalPlan";
 

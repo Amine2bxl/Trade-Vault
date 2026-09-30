@@ -1,8 +1,8 @@
 import { describe, expect, it } from "bun:test";
 import type { Trade } from "@/app/types";
-import { computeStats } from "@/app/utils/tradeCalcs";
+import { computeStats } from "@/domain/tradeCalcs";
 import { computeBehaviorSignals } from "@/app/features/jarvis/behaviorSignals";
-import { deriveDailyRule } from "@/app/utils/edgeScore";
+import { deriveDailyRule } from "@/domain/edgeScore";
 import { MIN_SAMPLE } from "@/modules/coaching";
 import { buildDailyBrief, type DailyBriefInput } from "../coaching/brief";
 import { buildDailyReview } from "../coaching/review";

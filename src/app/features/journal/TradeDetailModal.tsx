@@ -12,13 +12,8 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { Trade, MissedOpportunity, isBreakEven } from "@/app/types";
-import {
-  formatPnl,
-  getDuration,
-  directionLabel,
-  directionBadgeClass,
-} from "@/app/utils/tradeCalcs";
-import { getSession, getMacroEvents } from "@/app/utils/quantStats";
+import { formatPnl, getDuration, directionLabel, directionBadgeClass } from "@/domain/tradeCalcs";
+import { getSession, getMacroEvents } from "@/domain/quantStats";
 import { cn } from "@/shared/ui/cn";
 import { useEffect, useRef, useState } from "react";
 import { useT } from "@/app/i18n/LanguageContext";

@@ -1,4 +1,4 @@
-import type { Trade, TradeStats } from "../types";
+import type { Trade, TradeStats } from "./trade";
 
 // ── Edge Score ───────────────────────────────────────────────────────────────
 // A deterministic 0–100 discipline score derived ONLY from the trader's real

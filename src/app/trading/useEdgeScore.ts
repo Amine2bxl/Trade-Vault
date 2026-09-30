@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { computeEdgeScore, EDGE_WINDOW_DAYS, type EdgeResult } from "../utils/edgeScore";
+import { computeEdgeScore, EDGE_WINDOW_DAYS, type EdgeResult } from "@/domain/edgeScore";
 import { loadStartingBalance } from "../store";
 import { loadTradingPlan } from "./tradingPlan";
 import type { Trade } from "../types";

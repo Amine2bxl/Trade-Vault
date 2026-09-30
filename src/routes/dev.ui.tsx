@@ -8,8 +8,8 @@ import { ToastProvider } from "@/app/contexts/ToastContext";
 import { ConfirmProvider } from "@/app/contexts/ConfirmContext";
 import { PageActionsProvider } from "@/app/contexts/PageActionsContext";
 import { previewTrades } from "@/app/utils/previewTrades";
-import { computeStats } from "@/app/utils/tradeCalcs";
-import { computeQuantStats } from "@/app/utils/quantStats";
+import { computeStats } from "@/domain/tradeCalcs";
+import { computeQuantStats } from "@/domain/quantStats";
 import type { Trade } from "@/app/types";
 
 /**

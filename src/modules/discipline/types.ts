@@ -1,4 +1,4 @@
-import type { TradingRule, Violation } from "@/app/trading/tradingRules";
+import type { TradingRule, Violation } from "@/domain/ruleCheck";
 
 /**
  * Discipline domain types. The rule shape (TradingRule) is owned by the
@@ -32,7 +32,7 @@ export interface DisciplineSummary {
 export interface DisciplineContext {
   userId: string;
   /** Trades already logged the same day (excluding the one being checked). */
-  sameDayTrades: import("@/app/types").Trade[];
+  sameDayTrades: import("@/domain/trade").Trade[];
   accountBalance: number;
   rules: TradingRule[];
 }
