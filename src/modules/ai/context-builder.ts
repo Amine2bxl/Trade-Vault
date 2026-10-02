@@ -109,6 +109,18 @@ export class ContextBuilder {
     return this;
   }
 
+  /** Échelle du compte recalibré — un seul objet, jamais converti ici. */
+  withCalibration(calibration: NonNullable<AIUserContext["calibration"]>): this {
+    this.ctx.calibration = calibration;
+    return this;
+  }
+
+  /** Simulation DÉJÀ produite par le moteur Monte-Carlo — lue, jamais refaite. */
+  withSimulation(simulation: NonNullable<AIUserContext["simulation"]>): this {
+    this.ctx.simulation = simulation;
+    return this;
+  }
+
   withLanguage(language: string | undefined): this {
     if (language) this.ctx.language = language;
     return this;

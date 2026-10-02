@@ -338,21 +338,38 @@ export const getMistakes: ToolDefinition = {
     "mistakes. SIGN MATTERS: netPnl < 0 means the trades carrying that mistake LOST money " +
     "(a cost); netPnl > 0 means they were net PROFITABLE — never call a positive netPnl a " +
     "cost. `costliestByNetPnl` is the mistake that cost the most; `mistakes` is ordered by " +
-    "severity × magnitude, NOT by cost. Args: days (default 90).",
+    "severity × magnitude, NOT by cost. Args: days (default 90), or explicit since/until " +
+    "market dates — call it once per period to compare two periods.",
   inputSchema: {
     type: "object",
-    properties: { days: { type: "number", description: "Window length in days, default 90." } },
+    properties: {
+      days: { type: "number", description: "Window length in days, default 90." },
+      since: { type: "string", description: "Inclusive start market date, YYYY-MM-DD." },
+      until: { type: "string", description: "Inclusive end market date, YYYY-MM-DD." },
+    },
     additionalProperties: false,
   },
   sideEffect: false,
   source: "local",
   async execute(input, ctx) {
     const args = (input ?? {}) as Record<string, unknown>;
+    const since = date(args.since);
+    const until = date(args.until);
     const jours = entier(args.days, LIMITES.joursDefaut, LIMITES.joursMax);
-    const trades = await tradesDe(ctx, { jours });
+    // Une période nommée (« août ») se lit par ses bornes : c'est ce qui permet
+    // de comparer deux mois, erreur par erreur.
+    const trades = await tradesDe(ctx, { since, until, jours: since || until ? undefined : jours });
     const b = computeBehavioral(trades);
     return {
-      window: fenetre(jours, trades),
+      window:
+        since || until
+          ? {
+              since: since ?? null,
+              until: until ?? null,
+              tradesInWindow: trades.length,
+              ...(trades.truncated ? { historyTruncated: true } : {}),
+            }
+          : fenetre(jours, trades),
       totalIncidents: b.totalIncidents,
       totalCost: arrondi(b.totalCost),
       tradesWithMistakes: b.tradesWithMistakes,

@@ -43,6 +43,8 @@ export interface UsageEvent {
 export interface GenerateOptions {
   /** Override provider resolution (e.g. force a model family, or inject a fake in tests). */
   provider?: AIProvider;
+  /** Une chaîne de fournisseurs explicite — celle du niveau de difficulté (`runtime/tiers.ts`). */
+  providers?: AIProvider[];
   /** Fired once per provider call — the seam for `ai_agent_runs` telemetry. */
   onUsage?: (event: UsageEvent) => void;
   /** Contexte d'audit pour les logs runtime (jamais de contenu sensible). */
@@ -54,7 +56,12 @@ export interface GenerateOptions {
  *  provider active échoue (quota, panne, timeout), bascule automatiquement sur
  *  la suivante configurée — aucune erreur ne se voit dans le chat. */
 export async function generate(req: AIRequest, opts: GenerateOptions = {}): Promise<AIResponse> {
-  return routeCompletion(req, { provider: opts.provider, meta: opts.meta, onUsage: opts.onUsage });
+  return routeCompletion(req, {
+    provider: opts.provider,
+    providers: opts.providers,
+    meta: opts.meta,
+    onUsage: opts.onUsage,
+  });
 }
 
 export interface ToolLoopOptions extends GenerateOptions {

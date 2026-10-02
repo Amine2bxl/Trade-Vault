@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireJarvisAccess } from "@/backend/require-pro";
-import { runCoach } from "@/modules/ai/agents/coach.agent";
+import { orchestrateCoach } from "@/modules/ai/agents/coach.orchestrator";
 import { ensureJarvisTools } from "@/backend/ai-tools";
 import { recordAgentRun } from "./telemetry.server";
 import {
@@ -255,82 +255,86 @@ export const askCoach = createServerFn({ method: "POST" })
   .inputValidator(parseCoachAsk)
   .handler(async ({ data, context }) => {
     data.question = sanitizePrompt(data.question);
-    // Télémétrie : `onUsage` est le point d'accroche prévu par
-    // `provider-service` (« the seam for ai_agent_runs telemetry »). On y
-    // capture provider, modèle, tokens et latence RÉELS de l'appel servi —
-    // pas une estimation. Écriture best-effort, jamais bloquante.
     const userId = (context as { userId?: string } | undefined)?.userId;
-    let served: {
-      provider?: string;
-      model?: string;
-      inputTokens?: number;
-      outputTokens?: number;
-      latencyMs?: number;
-    } = {};
-    const onUsage = (e: {
-      provider: string;
-      model: string;
-      latencyMs: number;
-      ok: boolean;
-      inputTokens?: number;
-      outputTokens?: number;
-    }) => {
-      // Le routeur peut essayer plusieurs providers (fallback en cascade) :
-      // c'est le DERNIER appel qui a servi la réponse, donc celui qu'on garde.
-      served = {
-        provider: e.provider,
-        model: e.model,
-        latencyMs: e.latencyMs,
-        inputTokens: e.inputTokens,
-        outputTokens: e.outputTokens,
-      };
-    };
-    const track = (status: "ok" | "error" | "fallback", error?: string) => {
+    const started = Date.now();
+
+    /* LA TÉLÉMÉTRIE D'UNE QUESTION, ENTIÈRE (bug B9). L'ancien relevé gardait
+       le DERNIER appel modèle seulement : une question qui en coûtait quatre
+       (boucle d'outils) en déclarait un, et la réflexion de Gemini n'était
+       jamais comptée. La trace de l'orchestrateur somme tous les appels,
+       réflexion comprise, et dit le niveau, les outils, la validation et le
+       coût estimé. Toujours sans le moindre contenu. */
+    const track = (
+      status: "ok" | "error" | "fallback",
+      trace?: Awaited<ReturnType<typeof orchestrateCoach>>["trace"],
+      error?: string,
+    ) => {
       if (!userId) return;
       void recordAgentRun({
         userId,
         agent: "coach",
-        // `chat` : taxonomie AiIntent existante, pas une valeur inventée.
+        // `chat` : taxonomie AiIntent existante ; le détail est dans `route`.
         intent: "chat",
-        provider: served.provider ?? "",
-        model: served.model ?? "",
+        provider: trace?.provider ?? "",
+        model: trace?.model ?? "",
         status,
-        inputTokens: served.inputTokens,
-        outputTokens: served.outputTokens,
-        latencyMs: served.latencyMs ?? 0,
+        inputTokens: trace?.inputTokens,
+        outputTokens: trace?.outputTokens,
+        latencyMs: trace?.totalMs ?? Date.now() - started,
         error,
+        ...(trace
+          ? {
+              tier: trace.tier,
+              slot: trace.slot,
+              route: {
+                domains: trace.domains,
+                ambiguous: trace.ambiguous,
+                modelRouted: trace.modelRouted,
+                signals: trace.signals,
+              },
+              tools: trace.tools.map((t) => t.name),
+              toolCalls: trace.tools.length,
+              prefetch: trace.prefetch,
+              modelCalls: trace.modelCalls,
+              thinkingTokens: trace.thinkingTokens,
+              cachedInputTokens: trace.cachedInputTokens,
+              costUsd: trace.costUsd,
+              validation: trace.validation,
+              unsupportedFigures: trace.unsupportedFigures,
+              contextChars: trace.contextChars,
+            }
+          : {}),
       });
     };
-    // The trader must always get a grounded answer. When no provider is
-    // configured (beta with no key) or the call fails, we answer deterministically
-    // from the very same payload — zero cost, same grounding rules, no error
-    // bubble in the conversation.
+
     try {
       /* LES OUTILS — ce qui fait que Jarvis peut répondre à une question dont la
          réponse n'était pas dans le paquet envoyé.
 
-         Ils ne sont remis au modèle que si l'utilisateur est identifié : un outil
+         Ils ne sont ENREGISTRÉS que si l'utilisateur est identifié : un outil
          sans `userId` n'a aucun journal à lire, et lui en donner un par défaut
-         serait exactement la faille à ne pas ouvrir. Sans identité, on garde le
-         chemin historique — le contexte poussé par le client suffit à répondre.
+         serait exactement la faille à ne pas ouvrir. Enregistrés, ils servent
+         d'abord aux LECTURES PRÉPARÉES du Context Engine (sans appel modèle).
 
-         COUPE-CIRCUIT : `AI_TOOLS=off` désactive la boucle sans redéploiement de
-         code. Le tool-calling multiplie les allers-retours modèle, donc le coût
-         d'une question ; il faut pouvoir l'éteindre en une variable le jour où la
-         facture le demande. */
-      const outils = userId && process.env.AI_TOOLS !== "off" ? ensureJarvisTools() : [];
-      const res = await runCoach(data, {
-        onUsage,
-        tools: outils,
-        toolContext: userId ? { userId, accountId: data.accountId ?? null } : undefined,
+         COUPE-CIRCUIT : `AI_TOOLS=off` retire la BOUCLE d'outils pilotée par le
+         modèle (chaque tour est un appel modèle de plus) sans redéploiement de
+         code. Les lectures préparées, elles, ne coûtent aucun appel modèle et
+         restent actives. */
+      const registered = userId ? ensureJarvisTools() : [];
+      const modelTools = process.env.AI_TOOLS !== "off" ? registered : [];
+      const { text: answer, trace } = await orchestrateCoach(data, {
+        userId,
+        accountId: data.accountId ?? null,
+        modelTools,
+        prefetch: registered.length > 0,
       });
-      const text = res.text?.trim();
+      const text = answer.trim();
       if (text) {
-        track("ok");
+        track("ok", trace);
         return { answer: text, source: "ai" as const };
       }
-      console.warn("[coach] provider answered but text was empty", res);
-      track("fallback", "empty response");
+      console.warn("[coach] provider answered but text was empty");
+      track("fallback", trace, "empty response");
       return {
         answer: indisponible(data.language),
         source: "unavailable" as const,
@@ -344,6 +348,7 @@ export const askCoach = createServerFn({ method: "POST" })
       const runtime = err as { type?: string; technicalMessage?: string };
       track(
         "error",
+        undefined,
         runtime?.technicalMessage ?? (err instanceof Error ? err.message : String(err)),
       );
       return {

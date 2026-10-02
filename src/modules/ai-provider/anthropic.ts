@@ -177,10 +177,16 @@ export const AnthropicProvider: AIProvider = {
 
     const model = req.model ?? getModel();
     const maxTokens = req.maxTokens ?? 4096;
-    const systemText = req.messages
-      .filter((m) => m.role === "system")
-      .map((m) => m.content)
-      .join("\n\n");
+    // Un bloc par message système. Le PREMIER — persona, règles, protocole,
+    // identique d'une question à l'autre — porte le point de cache ; les
+    // consignes propres à la question suivent sans casser ce préfixe.
+    const systemBlocks = req.messages
+      .filter((m) => m.role === "system" && m.content.trim())
+      .map((m, i) => ({
+        type: "text",
+        text: m.content,
+        ...(i === 0 ? { cache_control: { type: "ephemeral" } } : {}),
+      }));
     const effort = usesEffort(model);
     const thinking =
       !effort && /^claude-haiku/.test(model) ? haikuThinking(req.reasoning, maxTokens) : undefined;
@@ -215,9 +221,7 @@ export const AnthropicProvider: AIProvider = {
         max_tokens: maxTokens,
         // Le système en bloc avec un point de cache : outils + système forment
         // le préfixe stable de toute la boucle d'outils.
-        ...(systemText && {
-          system: [{ type: "text", text: systemText, cache_control: { type: "ephemeral" } }],
-        }),
+        ...(systemBlocks.length && { system: systemBlocks }),
         // Cache automatique de la fin de l'historique : chaque tour d'outils
         // relit le précédent depuis le cache au lieu de le repayer.
         cache_control: { type: "ephemeral" },
