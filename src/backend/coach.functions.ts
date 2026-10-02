@@ -134,6 +134,37 @@ const CoachAskShape = z.object({
     .optional(),
   /** Compact onboarding profile so the coaching is never generic. */
   profile: z.string().max(600).optional(),
+  /**
+   * Échelle du compte quand l'historique a été recalibré. Le client l'envoyait
+   * depuis le début, mais le schéma ne la déclarait pas : Zod la retirait en
+   * silence (bug B5) et Jarvis lisait des montants recalibrés sans le savoir —
+   * « tu as doublé ton risque » à un trader qui risque toujours 1 %.
+   */
+  calibration: z
+    .object({
+      originalBalance: z.number().finite(),
+      currentBalance: z.number().finite(),
+      scale: z.number().finite(),
+    })
+    .optional(),
+  /**
+   * Résultat DÉJÀ calculé par le moteur Monte-Carlo (`modules/probability`).
+   * Même bug que la calibration : envoyé, retiré par le schéma, et Jarvis
+   * répondait « je n'ai pas de simulation » alors que le trader en avait une.
+   */
+  simulation: z
+    .object({
+      engineVersion: z.string().max(40),
+      method: z.string().max(60),
+      sampleSize: z.number().finite(),
+      passProbability: z.number().finite(),
+      riskOfRuin: z.number().finite(),
+      medianPnl: z.number().finite(),
+      medianDrawdown: z.number().finite(),
+      horizonTrades: z.number().finite(),
+      scenario: z.string().max(200).optional(),
+    })
+    .optional(),
   conversation: ConversationSchema.optional(),
 });
 

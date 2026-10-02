@@ -1,7 +1,15 @@
 import type { ToolDefinition, ToolContext } from "@/modules/ai/tools/types";
 import type { Trade } from "@/domain/trade";
 import { serviceClient } from "@/backend/billing.server";
-import { loadTrades, type AnyClient } from "./trades";
+import { loadTradeNotes, loadTradesWithMeta, type AnyClient } from "./trades";
+import {
+  compactTradingPlan,
+  loadGoalPlanFor,
+  loadRulesAndPlan,
+  loadStartingBalanceFor,
+  parseTradingRules,
+  planMaxRiskPct,
+} from "./profile-data";
 import { computeStats } from "@/domain/tradeCalcs";
 import { computeQuantStats, statsBySession } from "@/domain/quantStats";
 import { computeBehavioral } from "@/domain/behavioral";
@@ -102,24 +110,38 @@ const arrondi = (n: number) => Math.round(n * 100) / 100;
 
 /** Le bloc de fenêtre commun à toutes les sorties : sans lui, le modèle citerait
  *  un chiffre sans dire sur quoi il porte. */
-function fenetre(jours: number, trades: Trade[]) {
+function fenetre(jours: number, trades: Trade[] & { truncated?: boolean }) {
   return {
     windowDays: jours,
     since: depuis(jours),
     until: todayLocalDate(),
     tradesInWindow: trades.length,
+    // Le garde-fou de 50 000 lignes a coupé : le chiffre porte sur une partie.
+    ...(trades.truncated ? { historyTruncated: true } : {}),
   };
 }
 
 async function tradesDe(
   ctx: ToolContext,
   opts: { jours?: number; since?: string; until?: string } = {},
-): Promise<Trade[]> {
-  return loadTrades(client(), ctx.userId, {
+): Promise<Trade[] & { truncated?: boolean }> {
+  const { trades, truncated } = await loadTradesWithMeta(client(), ctx.userId, {
     accountId: ctx.accountId ?? null,
     since: opts.since ?? (opts.jours ? depuis(opts.jours) : undefined),
     until: opts.until,
   });
+  // Le drapeau voyage avec le tableau : chaque outil peut le recopier dans sa
+  // sortie sans changer la signature de tous les appelants.
+  return truncated ? Object.assign(trades, { truncated }) : trades;
+}
+
+/** Les notes des trades RENDUS (bornées) — voir `loadTradeNotes`. */
+async function notesDe(ctx: ToolContext, trades: readonly Trade[]): Promise<Map<string, string>> {
+  return loadTradeNotes(
+    client(),
+    ctx.userId,
+    trades.map((t) => t.id),
+  );
 }
 
 // ── get_trades ───────────────────────────────────────────────────────────────
@@ -170,6 +192,8 @@ export const getTrades: ToolDefinition = {
       jours: since || until ? undefined : LIMITES.joursMax,
     });
     const total = trades.length;
+    // Capturé AVANT les filtres, qui recréent le tableau sans le drapeau.
+    const tronque = !!trades.truncated;
     if (symbol) trades = trades.filter((t) => t.symbol.toUpperCase() === symbol);
     if (mistake) trades = trades.filter((t) => t.mistakes.some((m) => m.toLowerCase() === mistake));
     if (outcome === "win") trades = trades.filter((t) => t.pnl > 0);
@@ -177,6 +201,8 @@ export const getTrades: ToolDefinition = {
     else if (outcome === "be") trades = trades.filter((t) => t.pnl === 0);
 
     const matched = trades.length;
+    const rendus = trades.slice(0, limit);
+    const notes = await notesDe(ctx, rendus);
     return {
       // Le décompte AVANT plafonnement : « 50 trades » et « 50 trades sur 312 »
       // ne se commentent pas de la même façon, et le modèle doit pouvoir le dire.
@@ -184,7 +210,8 @@ export const getTrades: ToolDefinition = {
       returned: Math.min(matched, limit),
       totalInScope: total,
       netPnl: arrondi(trades.reduce((s, t) => s + t.pnl, 0)),
-      trades: trades.slice(0, limit).map((t) => ({
+      ...(tronque ? { historyTruncated: true } : {}),
+      trades: rendus.map((t) => ({
         date: t.date,
         symbol: t.symbol,
         direction: t.direction,
@@ -196,7 +223,7 @@ export const getTrades: ToolDefinition = {
         entryTime: t.entryTime || null,
         // Les notes du trader : sans elles, « qu'est-ce que j'avais écrit sur ce
         // trade ? » restait sans réponse. Tronquées — la sortie revient au prompt.
-        notes: t.notes ? t.notes.slice(0, LIMITES.note) : null,
+        notes: notes.get(t.id)?.slice(0, LIMITES.note) ?? null,
       })),
     };
   },
@@ -248,7 +275,12 @@ export const getStats: ToolDefinition = {
     return {
       window:
         since || until
-          ? { since: since ?? null, until: until ?? null, tradesInWindow: trades.length }
+          ? {
+              since: since ?? null,
+              until: until ?? null,
+              tradesInWindow: trades.length,
+              ...(trades.truncated ? { historyTruncated: true } : {}),
+            }
           : fenetre(jours, trades),
       totalPnl: arrondi(s.totalPnl),
       winRatePct: arrondi(s.winRate * 100),
@@ -374,8 +406,12 @@ export const getEdgeScore: ToolDefinition = {
   description:
     `Read the trader's Edge Score over its own ${EDGE_WINDOW_DAYS}-traded-day window, with ` +
     "its four weighted components (clean trades 35%, risk 25%, clean days 25%, routine 15%) " +
-    "and the weakest one. Quote this number verbatim — it is the one shown in the app. " +
-    "Args: maxRiskPct and startingBalance from the written plan, when known.",
+    "and the weakest one. The plan's max risk and the account starting balance are read " +
+    "automatically, exactly like the dashboard. The `routine` component comes from the " +
+    "pre-market checklist stored on the trader's device: it is unavailable here, so this " +
+    "score can differ from the one shown in the app when the trader uses the checklist — " +
+    "prefer the EDGE SCORE block when it is present. Args (optional overrides): maxRiskPct, " +
+    "startingBalance.",
   inputSchema: {
     type: "object",
     properties: {
@@ -390,10 +426,22 @@ export const getEdgeScore: ToolDefinition = {
     const args = (input ?? {}) as Record<string, unknown>;
     // La fenêtre de l'Edge Score se compte en JOURS TRADÉS, pas en jours
     // calendaires : on lui donne largement de quoi les trouver, il coupe seul.
-    const trades = await tradesDe(ctx, { jours: 365 });
+    //
+    // LES MÊMES ENTRÉES QUE LE TABLEAU DE BORD (`useEdgeScore`) : le risque max
+    // du plan écrit et le solde de départ du compte. Sans elles, le sous-score
+    // de risque retombait sur 1,5 × le risque médian et l'outil citait un autre
+    // chiffre que celui affiché, tout en disant « cite-le tel quel ».
+    const sb = client();
+    const [trades, plan, solde] = await Promise.all([
+      tradesDe(ctx, { jours: 365 }),
+      loadRulesAndPlan(sb, ctx.userId).catch(() => null),
+      loadStartingBalanceFor(sb, ctx.userId, ctx.accountId).catch(() => null),
+    ]);
     const e = computeEdgeScore(trades, {
-      maxRiskPct: typeof args.maxRiskPct === "number" ? args.maxRiskPct : null,
-      startingBalance: typeof args.startingBalance === "number" ? args.startingBalance : null,
+      maxRiskPct:
+        typeof args.maxRiskPct === "number" ? args.maxRiskPct : planMaxRiskPct(plan?.rawPlan),
+      startingBalance:
+        typeof args.startingBalance === "number" ? args.startingBalance : (solde ?? null),
     });
     return {
       score: e.score,
@@ -504,10 +552,12 @@ export const getProfile: ToolDefinition = {
   description:
     "Read who this trader is: first name, language, what they trade (markets, style, " +
     "experience, ICT/SMC), their declared goal and biggest pain point, monthly target, " +
-    "written trading rules and plan, their trading accounts (name, type, starting " +
-    "balance, which one is active), long-term goals and current plan tier. Use it for " +
-    "any personal question (their name, their accounts, their goal, their rules) and " +
-    "to personalise advice. No arguments.",
+    "written trading rules and trading plan (risk limits, setups, daily limits, routine), " +
+    "their trading accounts (name, type, starting balance, which one is active), the goal " +
+    "plan of the active account (targets only — measured progress is in the GOALS block " +
+    "when present) and current plan tier. Use it for any personal question (their name, " +
+    "their accounts, their goal, their rules, their plan) and to personalise advice. " +
+    "A null plan or empty rules list means the trader has not written one. No arguments.",
   inputSchema: { type: "object", properties: {}, additionalProperties: false },
   sideEffect: false,
   source: "local",
@@ -520,10 +570,13 @@ export const getProfile: ToolDefinition = {
         .select("id, name, type, starting_balance, currency, is_default, created_at")
         .eq("user_id", ctx.userId)
         .order("created_at"),
-      sb
-        .from("six_month_goals")
-        .select("kind, start_value, target_value, started_at")
-        .eq("user_id", ctx.userId),
+      // `goal_plans` (Goals 2.0, un plan par COMPTE) — et non `six_month_goals`,
+      // que plus aucun code n'écrit (bug B3). Une lecture ratée n'annule pas le
+      // profil : elle est signalée dans `unavailable`.
+      loadGoalPlanFor(sb, ctx.userId, ctx.accountId).then(
+        (plan) => ({ plan, failed: false }),
+        () => ({ plan: null, failed: true }),
+      ),
       sb.from("subscriptions").select("plan, status").eq("user_id", ctx.userId).maybeSingle(),
     ]);
     if (profil.error) throw new Error(profil.error.message);
@@ -531,7 +584,9 @@ export const getProfile: ToolDefinition = {
     // nommer une colonne absente ferait échouer toute la lecture.
     const p = (profil.data ?? {}) as Record<string, unknown>;
     const txt = (k: string) => (typeof p[k] === "string" && p[k] ? (p[k] as string) : null);
-    const actif = (p.active_account_id as string | null) ?? null;
+    // Le compte « actif » pour CETTE question est celui que le trader regarde
+    // (`ctx.accountId`), pas la dernière sélection mémorisée en base.
+    const actif = ctx.accountId ?? (p.active_account_id as string | null) ?? null;
     return {
       firstName: txt("jarvis_first_name") ?? txt("name"),
       email: txt("email"),
@@ -549,8 +604,9 @@ export const getProfile: ToolDefinition = {
         selfDeclaredStrength: txt("jarvis_strength"),
         selfDeclaredWeakness: txt("jarvis_weakness"),
       },
-      rules: txt("trading_rules")?.slice(0, 1500) ?? null,
-      plan: txt("trading_plan")?.slice(0, 1500) ?? null,
+      // jsonb, PAS du texte : l'ancien `txt()` les rendait toujours `null` (B3).
+      rules: parseTradingRules(p.trading_rules),
+      plan: compactTradingPlan(p.trading_plan),
       accounts: ((comptes.data ?? []) as Record<string, unknown>[]).map((a) => ({
         name: a.name,
         type: a.type,
@@ -559,8 +615,16 @@ export const getProfile: ToolDefinition = {
         active: a.id === actif,
         isDefault: !!a.is_default,
       })),
-      longTermGoals: objectifs.data ?? [],
+      goalPlan: objectifs.plan,
       subscription: abonnement.data ?? { plan: "free", status: "none" },
+      ...(objectifs.failed || comptes.error
+        ? {
+            unavailable: [
+              ...(objectifs.failed ? ["goalPlan"] : []),
+              ...(comptes.error ? ["accounts"] : []),
+            ],
+          }
+        : {}),
     };
   },
 };
@@ -568,21 +632,34 @@ export const getProfile: ToolDefinition = {
 // ── get_day ──────────────────────────────────────────────────────────────────
 
 /**
- * UNE JOURNÉE, en entier. « Qu'est-ce que j'avais noté le 12 ? » touche quatre
- * tables : les trades (et leurs notes), la séance (objectif du jour, état
- * émotionnel, note de revue), le score de discipline et les occasions
- * manquées. Sans cet outil, le modèle n'en voyait qu'une — et répondait « tu
- * n'as rien noté » à un trader qui avait tout écrit ailleurs.
+ * UNE JOURNÉE, en entier. « Qu'est-ce que j'avais noté le 12 ? » touche
+ * plusieurs tables : les trades (et leurs notes), la séance (objectif du jour,
+ * état émotionnel, readiness, score de discipline, note de revue), les
+ * intentions/réflexions et les occasions manquées. Sans cet outil, le modèle
+ * n'en voyait qu'une — et répondait « tu n'as rien noté » à un trader qui avait
+ * tout écrit ailleurs.
+ *
+ * LA CHECKLIST N'EST PAS ICI, et c'est dit. L'outil interrogeait une table
+ * `discipline_days` qui n'existe dans aucune migration (bug B6) : l'erreur
+ * était avalée et la section revenait toujours vide, ce que le modèle pouvait
+ * lire comme « pas de checklist ce jour-là ». La checklist prémarché vit sur
+ * l'APPAREIL du trader (localStorage) ; le serveur ne la voit pas. Le score de
+ * discipline par jour, lui, est dans `sessions[].discipline_score`.
+ *
+ * UNE LECTURE QUI ÉCHOUE SE DIT. Chaque section en erreur est listée dans
+ * `unavailable` au lieu de revenir vide : un vide se répète comme un fait.
  */
 export const getDay: ToolDefinition = {
   name: "get_day",
   description:
     "Read everything the trader logged for ONE market date (YYYY-MM-DD) or a short range " +
     "(max 14 days): trades with their notes, the trading session (daily objective, " +
-    "emotional state, readiness, review note, discipline score), the checklist/discipline " +
-    "day, pre-trade intents and post-trade reflections, and missed opportunities with " +
-    "lessons. Use it for 'what did I write / do / feel on <day>', 'how was my Monday', " +
-    "'my notes from yesterday'. Args: date, or since+until.",
+    "emotional state, readiness, review note, discipline score), pre-trade intents and " +
+    "post-trade reflections, and missed opportunities with lessons. The pre-market " +
+    "checklist is stored on the trader's device and is NOT available here. Use it for " +
+    "'what did I write / do / feel on <day>', 'how was my Monday', 'my notes from " +
+    "yesterday'. Args: date, or since+until. Sections listed in `unavailable` could not " +
+    "be read — say so, never treat them as empty.",
   inputSchema: {
     type: "object",
     properties: {
@@ -635,16 +712,11 @@ export const getDay: ToolDefinition = {
     if (compte) qManquees = qManquees.eq("account_id", compte);
 
     const trades = await tradesDe(ctx, { since, until });
-    const ids = trades.map((t) => t.id).filter(Boolean);
-    const [seances, discipline, manquees, intentions, reflexions] = await Promise.all([
+    const rendus = trades.slice(0, LIMITES.trades);
+    const ids = rendus.map((t) => t.id).filter(Boolean);
+    const vide = Promise.resolve({ data: [], error: null });
+    const [seances, manquees, intentions, reflexions, notes] = await Promise.all([
       qSeances.limit(LIMITES.jour),
-      sb
-        .from("discipline_days")
-        .select("date, score, checklist_done_at, journal_complete, trade_count")
-        .eq("user_id", ctx.userId)
-        .gte("date", since)
-        .lte("date", until)
-        .limit(LIMITES.jour),
       qManquees.limit(LIMITES.jour),
       ids.length
         ? sb
@@ -653,7 +725,7 @@ export const getDay: ToolDefinition = {
             .eq("user_id", ctx.userId)
             .in("trade_id", ids)
             .limit(LIMITES.trades)
-        : Promise.resolve({ data: [], error: null }),
+        : vide,
       ids.length
         ? sb
             .from("trade_reflection")
@@ -661,8 +733,17 @@ export const getDay: ToolDefinition = {
             .eq("user_id", ctx.userId)
             .in("trade_id", ids)
             .limit(LIMITES.trades)
-        : Promise.resolve({ data: [], error: null }),
+        : vide,
+      notesDe(ctx, rendus).catch(() => null),
     ]);
+
+    const indisponibles = [
+      seances.error ? "sessions" : null,
+      manquees.error ? "missedOpportunities" : null,
+      intentions.error ? "intent" : null,
+      reflexions.error ? "reflection" : null,
+      notes === null ? "notes" : null,
+    ].filter((x): x is string => x !== null);
 
     const coupe = (v: unknown) => (typeof v === "string" ? v.slice(0, LIMITES.note) : v);
     const parTrade = <R extends { trade_id?: unknown }>(rows: R[] | null) => {
@@ -678,7 +759,7 @@ export const getDay: ToolDefinition = {
       until,
       tradeCount: trades.length,
       netPnl: arrondi(trades.reduce((s, t) => s + t.pnl, 0)),
-      trades: trades.slice(0, LIMITES.trades).map((t) => ({
+      trades: rendus.map((t) => ({
         date: t.date,
         time: t.entryTime || null,
         symbol: t.symbol,
@@ -687,7 +768,7 @@ export const getDay: ToolDefinition = {
         rMultiple: arrondi(t.rMultiple),
         strategy: t.strategy || null,
         mistakes: t.mistakes,
-        notes: t.notes ? t.notes.slice(0, LIMITES.note) : null,
+        notes: notes?.get(t.id)?.slice(0, LIMITES.note) ?? null,
         intent: intentDe.get(t.id) ?? null,
         reflection: reflexDe.get(t.id) ?? null,
       })),
@@ -695,12 +776,13 @@ export const getDay: ToolDefinition = {
         ...s,
         review_note: coupe(s.review_note),
       })),
-      discipline: discipline.data ?? [],
       missedOpportunities: ((manquees.data ?? []) as Record<string, unknown>[]).map((m) => ({
         ...m,
         what_happened: coupe(m.what_happened),
         lesson_learned: coupe(m.lesson_learned),
       })),
+      checklist: "device-local — not readable server-side",
+      ...(indisponibles.length ? { unavailable: indisponibles } : {}),
     };
   },
 };

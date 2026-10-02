@@ -273,9 +273,12 @@ export function buildCoachMessages(input: CoachInput, opts: BuildOptions = {}) {
   // Le profil déclaré ET les souvenirs sélectionnés partagent le même bloc
   // « faits que tu connais déjà » : même sémantique, aucun tuyau supplémentaire.
   // Le profil vient EN PREMIER — c'est l'identité, elle cadre tout le reste.
+  //
+  // Défense en profondeur contre le doublon (bug B15) : un client ancien peut
+  // encore envoyer le souvenir `profile` en plus du champ `profile`.
   const memoryBlock = [
     ...(input.profile ? [{ kind: "profile", content: input.profile }] : []),
-    ...(input.memory ?? []),
+    ...(input.memory ?? []).filter((m) => !(input.profile && m.kind === "profile")),
   ];
   if (memoryBlock.length) builder.withMemory(memoryBlock);
 

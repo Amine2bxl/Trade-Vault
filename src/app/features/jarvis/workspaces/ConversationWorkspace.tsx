@@ -8,7 +8,7 @@ import { setJarvisActivity } from "../activity";
 import { useJarvisVoice } from "../jarvisVoice";
 import { askCoach } from "@/backend/coach.functions";
 import { extractMemory } from "@/backend/memory.functions";
-import { buildCoachV1Payload, seedProfileMemory } from "../aiContext";
+import { buildCoachV1Payload, recentTrades, seedProfileMemory } from "../aiContext";
 import { useAccounts } from "@/app/contexts/AccountContext";
 import { loadScenarios } from "@/app/store/simulations";
 import { buildDataset } from "@/modules/probability/dataset";
@@ -19,6 +19,7 @@ import { applyLever } from "@/modules/probability/sensitivity";
 import type { CoachV1Payload } from "../aiContext";
 import { isCalibrated } from "@/app/trading/accountCalibration";
 import { loadMemory, remember, type MemoryEntry } from "@/modules/ai/memory";
+import { shouldAttemptExtraction } from "@/modules/ai/memory-extract";
 import { useTradingRules } from "@/app/trading/useTradingRules";
 import { useGoalProgress } from "@/app/features/goals/useGoalProgress";
 import { computeRuleAdherence } from "@/app/trading/ruleAdherence";
@@ -284,7 +285,17 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
   // Objectifs mesurés — hook PARTAGÉ avec la page Goals. Le pipeline du coach
   // acceptait `goals` depuis le début, mais rien ne les lui envoyait : Jarvis
   // était incapable de relier ses conseils à ce que le trader vise.
-  const { measured: measuredGoals, ctx: goalCtx } = useGoalProgress(context.trades, userId);
+  //
+  // LE COMPTE ACTIF EST OBLIGATOIRE. Sans lui, `useGoalProgress` ne charge
+  // aucun plan (les objectifs sont rattachés à un compte) : `measured` restait
+  // vide et Jarvis ne recevait JAMAIS les objectifs — et l'adhérence ci-dessous
+  // était calculée sur un solde de départ à 0 (bug B4). Même appel que la page
+  // Objectifs.
+  const { measured: measuredGoals, ctx: goalCtx } = useGoalProgress(
+    context.trades,
+    userId,
+    activeAccountId,
+  );
   // Tenue des règles — réutilise le vérificateur du moteur de discipline, donc
   // une seule définition de « violer une règle » dans tout le produit.
   const adherence = useMemo(
@@ -307,7 +318,9 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
   useEffect(() => {
     if (!userId || context.trades.length === 0) return;
     let active = true;
-    const ids = context.trades.slice(-25).map((t) => t.id);
+    // Les 25 trades les plus RÉCENTS — la même sélection que le bloc d'exemples
+    // (`recentTrades`). `slice(-25)` prenait les plus anciens (bug B1).
+    const ids = recentTrades(context.trades).map((t) => t.id);
     void Promise.all([
       loadTradeIntents(userId, ids),
       loadTradeReflections(userId, ids),
@@ -628,6 +641,10 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
   const learnFrom = (question: string) => {
     void (async () => {
       if (!userId) return;
+      // Même pré-filtre déterministe que le serveur : la très grande majorité
+      // des questions ne porte aucun engagement, inutile d'en faire un aller-
+      // retour réseau (le serveur refait ce contrôle, il ne s'y fie pas).
+      if (!shouldAttemptExtraction(question)) return;
       const known = memoryRef.current.map((m) => m.key).filter((k): k is string => !!k);
       const out = await extractMemory({ data: { userMessage: question, knownKeys: known } });
       for (const c of out.candidates) {
@@ -818,6 +835,15 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
       userId,
       signals,
       activeAccountId,
+      // Tout ce que la question emporte : sans eux, `ask` gardait une version
+      // figée — un Edge Score calculé avant le chargement du solde et du plan,
+      // des objectifs vides, la limite gratuite d'un compte Pro.
+      edge,
+      measuredGoals,
+      adherence,
+      calibration,
+      simulationFor,
+      dailyLimit,
     ],
   );
 

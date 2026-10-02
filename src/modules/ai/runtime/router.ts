@@ -54,17 +54,33 @@ export interface RouteOptions {
     model: string;
     inputTokens?: number;
     outputTokens?: number;
+    thinkingTokens?: number;
+    cachedInputTokens?: number;
     latencyMs: number;
     ok: boolean;
   }) => void;
 }
 
-/** Une requête qui demande au modèle de RÉFLÉCHIR (budget de réflexion) a
- *  droit à plus de temps : couper la réflexion à mi-chemin rendrait une panne
- *  là où il suffisait d'attendre quelques secondes de plus. */
+/** Les fournisseurs qui RÉFLÉCHISSENT réellement avant de répondre. */
+const THINKING_PROVIDERS: ReadonlySet<string> = new Set(["gemini", "anthropic"]);
+
+/**
+ * Le délai d'UN appel.
+ *
+ * 1. Le niveau de difficulté fixe son propre délai (`runtime/tiers.ts`) : il
+ *    prime — une revue profonde n'a pas le délai d'un « salut ».
+ * 2. Sinon, le délai du fournisseur, plus 20 s quand on lui demande de
+ *    réfléchir : couper la réflexion à mi-chemin rendrait une panne là où il
+ *    suffisait d'attendre. SEULEMENT pour un fournisseur qui réfléchit (bug
+ *    B10) : Groq ou OpenRouter ignorent le budget, et leur accorder 25 s
+ *    retardait d'autant le repli quand ils pendaient.
+ */
 function timeoutMs(provider: AIProvider, req?: AIRequest): number {
+  if (req?.timeoutMs && req.timeoutMs > 0) return req.timeoutMs;
   const base = PROVIDER_TIMEOUTS[provider.id] ?? 8_000;
-  return req?.reasoningBudget ? base + 20_000 : base;
+  const thinks =
+    (req?.reasoning !== undefined && req.reasoning !== "none") || (req?.reasoningBudget ?? 0) > 0;
+  return thinks && THINKING_PROVIDERS.has(provider.id) ? base + 20_000 : base;
 }
 
 /**
@@ -185,6 +201,8 @@ export async function routeCompletion(
           model: res.model,
           inputTokens: res.usage?.inputTokens,
           outputTokens: res.usage?.outputTokens,
+          thinkingTokens: res.usage?.thinkingTokens,
+          cachedInputTokens: res.usage?.cachedInputTokens,
           latencyMs,
           ok: true,
         });
