@@ -75,7 +75,7 @@ const THINKING_PROVIDERS: ReadonlySet<string> = new Set(["gemini", "anthropic"])
  *    B10) : Groq ou OpenRouter ignorent le budget, et leur accorder 25 s
  *    retardait d'autant le repli quand ils pendaient.
  */
-function timeoutMs(provider: AIProvider, req?: AIRequest): number {
+export function callTimeoutMs(provider: AIProvider, req?: AIRequest): number {
   if (req?.timeoutMs && req.timeoutMs > 0) return req.timeoutMs;
   const base = PROVIDER_TIMEOUTS[provider.id] ?? 8_000;
   const thinks =
@@ -153,7 +153,7 @@ export async function routeCompletion(
       // Un délai par TENTATIVE : une attente de quota ne doit pas consommer le
       // temps de la tentative suivante.
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), timeoutMs(provider, req));
+      const timer = setTimeout(() => controller.abort(), callTimeoutMs(provider, req));
       const attemptStart = Date.now();
       try {
         const res = await provider.complete({ ...req, signal: controller.signal });

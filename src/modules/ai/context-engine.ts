@@ -457,13 +457,16 @@ export function compactOutput(output: unknown, maxChars = PREFETCH_BLOCK_CHARS):
   for (const key of ["trades", "mistakes", "missedOpportunities", "sessions", "memories"]) {
     const list = copy[key];
     if (!Array.isArray(list)) continue;
+    // La mesure inclut la mention « n of N » : sans elle, la version raccourcie
+    // dépassait encore le plafond et finissait coupée net, JSON cassé.
+    const shortened = (n: number) => ({
+      ...copy,
+      [key]: list.slice(0, n),
+      [`${key}ShownForBrevity`]: `${n} of ${list.length}`,
+    });
     let n = list.length;
-    while (n > 1 && JSON.stringify({ ...copy, [key]: list.slice(0, n) }).length > maxChars)
-      n = Math.floor(n * 0.7);
-    if (n < list.length) {
-      copy[key] = list.slice(0, n);
-      copy[`${key}ShownForBrevity`] = `${n} of ${list.length}`;
-    }
+    while (n > 1 && JSON.stringify(shortened(n)).length > maxChars) n = Math.floor(n * 0.7);
+    if (n < list.length) Object.assign(copy, shortened(n));
     json = JSON.stringify(copy);
     if (json.length <= maxChars) return json;
   }

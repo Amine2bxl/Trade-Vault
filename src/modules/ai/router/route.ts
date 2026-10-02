@@ -814,7 +814,11 @@ export function mergeModelRoute(route: QuestionRoute, raw: unknown): QuestionRou
     ? DOMAIN_ORDER.filter((d) => (r.domains as unknown[]).includes(d))
     : [];
   if (domains.length === 0) return route;
-  const tier = [1, 2, 3, 4].includes(Number(r.tier)) ? (Number(r.tier) as RouteTier) : route.tier;
+  // Le niveau proposé est PLAFONNÉ à 3 : le niveau 4 (le modèle le plus cher)
+  // ne s'ouvre que sur une demande explicite d'analyse complète, reconnue de
+  // façon déterministe — jamais sur l'avis d'un petit modèle.
+  const proposed = [1, 2, 3, 4].includes(Number(r.tier)) ? Number(r.tier) : route.tier;
+  const tier = Math.min(proposed, 3) as RouteTier;
   const set = new Set(domains);
   const q = "";
   return {
