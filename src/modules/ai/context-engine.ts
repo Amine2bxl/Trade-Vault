@@ -204,7 +204,9 @@ const RECIPES: Record<RouteDomain, Recipe> = {
     },
   },
   performance: {
-    blocks: ["stats", "mistakes", "goals", "calibration"],
+    // `edge` : « quel est mon Edge Score ? » arrive ici — le bloc client EST le
+    // chiffre du tableau de bord, et l'outil serveur est retiré quand il est là.
+    blocks: ["stats", "mistakes", "goals", "calibration", "edge"],
     tools: ["get_stats", "get_trades", "get_mistakes"],
     prefetch: statsFor,
   },
@@ -352,7 +354,10 @@ export function planContext(
   if (route.entities.period || route.entities.comparison) blocks.delete("stats");
 
   // Edge Score : le bloc client EST le chiffre du tableau de bord.
-  if (opts.hasEdgeBlock) tools.delete("get_edge_score");
+  // Seulement si le bloc est GARDÉ : retirer l'outil sans garder le bloc
+  // laissait la question sans aucun Edge Score.
+  const edgeKept = !!opts.hasEdgeBlock && blocks.has("edge");
+  if (edgeKept) tools.delete("get_edge_score");
 
   // Les analyses profondes ont droit à tous les outils : on ne sait pas
   // d'avance ce qu'un diagnostic croisé ira chercher.
@@ -366,7 +371,7 @@ export function planContext(
       "get_edge_score",
       "search_memory",
     ])
-      if (!(opts.hasEdgeBlock && t === "get_edge_score")) tools.add(t);
+      if (!(edgeKept && t === "get_edge_score")) tools.add(t);
   }
 
   // Lectures dédoublonnées (même outil, mêmes arguments) et bornées.

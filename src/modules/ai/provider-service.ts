@@ -36,6 +36,8 @@ export interface UsageEvent {
   thinkingTokens?: number;
   /** Part de l'entrée servie depuis le cache du fournisseur. */
   cachedInputTokens?: number;
+  /** Part de l'entrée écrite dans le cache (comprise dans `inputTokens`). */
+  cacheWriteInputTokens?: number;
   latencyMs: number;
   ok: boolean;
 }

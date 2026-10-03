@@ -56,6 +56,7 @@ export interface RouteOptions {
     outputTokens?: number;
     thinkingTokens?: number;
     cachedInputTokens?: number;
+    cacheWriteInputTokens?: number;
     latencyMs: number;
     ok: boolean;
   }) => void;
@@ -203,6 +204,7 @@ export async function routeCompletion(
           outputTokens: res.usage?.outputTokens,
           thinkingTokens: res.usage?.thinkingTokens,
           cachedInputTokens: res.usage?.cachedInputTokens,
+          cacheWriteInputTokens: res.usage?.cacheWriteInputTokens,
           latencyMs,
           ok: true,
         });

@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireJarvisAccess } from "@/backend/require-pro";
-import { orchestrateCoach } from "@/modules/ai/agents/coach.orchestrator";
+import { orchestrateCoach, traceOfError } from "@/modules/ai/agents/coach.orchestrator";
 import { ensureJarvisTools } from "@/backend/ai-tools";
 import { recordAgentRun } from "./telemetry.server";
 import {
@@ -346,9 +346,11 @@ export const askCoach = createServerFn({ method: "POST" })
       // écrivait « [object Object] » dans `ai_agent_runs`, et la vraie cause
       // (quota Gemini, modèle retiré chez OpenRouter) restait invisible.
       const runtime = err as { type?: string; technicalMessage?: string };
+      // La trace PARTIELLE : les appels déjà payés avant la panne (routage,
+      // tours d'outils réussis) restent comptés, avec le modèle qui a échoué.
       track(
         "error",
-        undefined,
+        traceOfError(err),
         runtime?.technicalMessage ?? (err instanceof Error ? err.message : String(err)),
       );
       return {

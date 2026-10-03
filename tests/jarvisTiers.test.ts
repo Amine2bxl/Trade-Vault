@@ -176,6 +176,23 @@ describe("B9 — coût estimé", () => {
     expect(estimateCostUsd({ model: "llama-3.3-70b", inputTokens: 1000 })).toBeNull();
   });
 
+  test("l'écriture en cache est facturée 1,25 × l'entrée (TTL 5 min)", () => {
+    // Opus 5.5 : 10 en entrée + 1 000 écrits en cache + 5 en sortie.
+    expect(
+      estimateCostUsd({
+        model: "claude-opus-5-5",
+        inputTokens: 1_010,
+        cacheWriteInputTokens: 1_000,
+        outputTokens: 5,
+      }),
+    ).toBeCloseTo((10 * 4 + 1_000 * 4 * 1.25 + 5 * 20) / 1_000_000, 9);
+  });
+
+  test("le modèle de repli serveur (Opus 4.8) a un prix : le coût ne devient pas null", () => {
+    expect(priceOf("claude-opus-4-8")).toEqual([5, 25, 0.5]);
+    expect(estimateCostUsd({ model: "claude-opus-4-8", inputTokens: 1_000_000 })).toBeCloseTo(5, 6);
+  });
+
   test("AI_MODEL_PRICES complète la table", () => {
     process.env.AI_MODEL_PRICES = JSON.stringify({ "llama-3.3-70b": [0.59, 0.79] });
     expect(estimateCostUsd({ model: "llama-3.3-70b", inputTokens: 1_000_000 })).toBeCloseTo(

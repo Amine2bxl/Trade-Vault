@@ -129,6 +129,9 @@ export interface AIResponse {
     thinkingTokens?: number;
     /** Part de l'entrée servie depuis le cache du fournisseur. */
     cachedInputTokens?: number;
+    /** Part de l'entrée ÉCRITE dans le cache ce tour-ci (facturée plus cher
+     *  que l'entrée normale chez Anthropic). Comprise dans `inputTokens`. */
+    cacheWriteInputTokens?: number;
   };
   /** Populated only when the model requested one or more tool invocations. */
   toolCalls?: ProviderToolCall[];

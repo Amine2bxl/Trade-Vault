@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { ensureJarvisTools, JARVIS_TOOL_NAMES } from "../src/backend/ai-tools";
-import { orchestrateCoach } from "../src/modules/ai/agents/coach.orchestrator";
+import { orchestrateCoach, traceOfError } from "../src/modules/ai/agents/coach.orchestrator";
 import { buildCoachMessages } from "../src/modules/ai/agents/coach.agent";
 import type { AIProvider, AIRequest, AIResponse } from "../src/modules/ai-provider";
 import { withFakePostgrest, type Row } from "./helpers/fakePostgrest";
@@ -276,5 +276,102 @@ describe("question ambiguë", () => {
     });
     expect(seen.length).toBe(1);
     expect(trace.modelRouted).toBe(false);
+  });
+});
+
+describe("revue adversariale du LOT 2 — régressions", () => {
+  test("une réparation COUPÉE par le plafond ne remplace jamais le brouillon complet", async () => {
+    await withFakePostgrest(septembre(), async () => {
+      const { text, trace } = await orchestrateCoach(
+        fullCoachInput("Combien j'ai gagné en septembre ?"),
+        {
+          userId: "u1",
+          accountId: "acc1",
+          modelTools: JARVIS_TOOL_NAMES,
+          prefetch: true,
+          providers: [
+            scripted(
+              [
+                "Ton P&L de septembre est de 300 € sur 3 trades. Ton meilleur jour : 999 €.",
+                { text: "Ton P&L de septembre est de 300 € sur 3", finishReason: "length" },
+              ],
+              [],
+            ),
+          ],
+        },
+      );
+      expect(text).toContain("Ton meilleur jour : 999 €.");
+      expect(text).toContain("n'ont pas pu être vérifiés");
+      expect(trace.validation).toBe("flagged");
+      expect(trace.unsupportedFigures).toBe(1);
+    });
+  });
+
+  test("les réponses PRÉCÉDENTES de Jarvis ne servent pas de preuve", async () => {
+    const input = fullCoachInput("Et donc combien j'ai perdu sur le FOMO ?", {
+      conversation: [
+        { role: "user", content: "Combien me coûte le FOMO ?" },
+        { role: "assistant", content: "Le FOMO te coûte 3 456 € sur 23 trades." },
+      ],
+    });
+    const { trace } = await orchestrateCoach(input, {
+      modelTools: [],
+      prefetch: false,
+      providers: [scripted(["Le FOMO te coûte 3 456 €."], [])],
+    });
+    // 3 456 € n'existe que dans l'ancienne réponse — jamais dans les données.
+    expect(trace.validation).toBe("flagged");
+  });
+
+  test("une question qui ÉCHOUE garde la trace des appels déjà payés", async () => {
+    await withFakePostgrest(septembre(), async () => {
+      let calls = 0;
+      const flaky: AIProvider = {
+        id: `orch-flaky-${++seq}`,
+        supportsTools: true,
+        isConfigured: () => true,
+        async complete(): Promise<AIResponse> {
+          calls += 1;
+          if (calls === 1) {
+            return {
+              text: "",
+              provider: "orch-flaky",
+              model: "claude-sonnet-5-5",
+              usage: { inputTokens: 1_000, outputTokens: 40, thinkingTokens: 10 },
+              finishReason: "tool_calls",
+              toolCalls: [
+                { name: "get_stats", arguments: { since: "2026-09-01", until: "2026-09-30" } },
+              ],
+            };
+          }
+          throw new Error("provider down");
+        },
+      };
+      let caught: unknown;
+      try {
+        await orchestrateCoach(fullCoachInput("Pourquoi je perds autant le lundi ?"), {
+          userId: "u1",
+          accountId: "acc1",
+          modelTools: JARVIS_TOOL_NAMES,
+          prefetch: true,
+          providers: [flaky],
+        });
+      } catch (e) {
+        caught = e;
+      }
+      expect(caught).toBeDefined();
+      const trace = traceOfError(caught);
+      expect(trace).toBeDefined();
+      expect(trace!.inputTokens).toBe(1_000);
+      expect(trace!.thinkingTokens).toBe(10);
+      expect(trace!.modelCalls).toBeGreaterThan(1);
+      expect(trace!.tools.map((t) => t.name)).toEqual(["get_stats"]);
+      expect(trace!.tier).toBe(3);
+      expect(trace!.validation).toBe("skipped");
+      // L'erreur d'origine n'est pas remplacée : askCoach lit toujours son
+      // `type` (quota → « busy ») et son `technicalMessage`.
+      const original = caught as { technicalMessage?: string; message?: string };
+      expect(original.technicalMessage ?? original.message ?? "").toContain("provider down");
+    });
   });
 });

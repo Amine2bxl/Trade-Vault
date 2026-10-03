@@ -115,6 +115,24 @@ describe("validateAnswer", () => {
   });
 });
 
+describe("montants qui ressemblent à une année", () => {
+  const corpus = JSON.stringify({ totalPnl: 1950.37, maxDrawdown: -2019.83, avgWin: 2044.67 });
+
+  test.each([
+    "Ton P&L net est de 1950,37 €.",
+    "Ton drawdown max est de $2019.83.",
+    "Ton gain moyen : 2044,67 €.",
+  ])("« %s » cité tel quel n'est pas signalé", (answer) => {
+    expect(validateAnswer(answer, corpus).ok).toBe(true);
+  });
+
+  test("les vraies années restent ignorées, un montant inventé reste refusé", () => {
+    expect(validateAnswer("Depuis 2024, ton P&L net est de 1950,37 €.", corpus).ok).toBe(true);
+    expect(extractFigures("en 2025 et depuis 2023, fin 2024.")).toEqual([]);
+    expect(validateAnswer("Ton P&L net est de 1850,37 €.", corpus).ok).toBe(false);
+  });
+});
+
 describe("réparation et mention honnête", () => {
   test("la consigne nomme les chiffres et interdit d'en recalculer", () => {
     const r = validateAnswer("Ton win rate est de 61 %.", DATA);

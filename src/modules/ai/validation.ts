@@ -77,8 +77,13 @@ function scrub(text: string): string {
         /\b(january|february|march|april|may|june|july|august|september|october|november|december|janvier|février|fevrier|avril|juillet|août|aout|septembre|octobre|novembre|décembre|decembre)\s+\d{1,2}\b/gi,
         " ",
       )
-      // Années.
-      .replace(/\b(19|20)\d{2}\b/g, " ")
+      // Années — mais pas un MONTANT qui leur ressemble : « 1950,37 € »,
+      // « $2019.83 » ou « 2019 € » perdaient leur partie entière et leurs
+      // décimales étaient ensuite signalées comme inventées.
+      .replace(
+        /(?<![$€£¥]\s?|[\d.,])\b(19|20)\d{2}\b(?![.,]\d|\s?(?:[$€£¥%]|R\b|[kK]\b|pts?\b|points?\b))/g,
+        " ",
+      )
       // Puces numérotées en début de ligne (« 1. », « 2) »).
       .replace(/^\s*\d{1,2}[.)]\s/gm, " ")
   );

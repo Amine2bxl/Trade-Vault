@@ -6,7 +6,9 @@
  * module traduit les tokens en dollars, PAR MODÈLE.
  *
  * ── D'OÙ VIENNENT LES PRIX ─────────────────────────────────────────────────
- *  - Claude : grille publique Anthropic (référence de septembre 2026).
+ *  - Claude : grille publique Anthropic (référence de septembre 2026). Les
+ *    écritures en cache (TTL 5 min, le seul que l'adaptateur pose) coûtent
+ *    1,25 × l'entrée ; les lectures, le tarif « cache » de la table.
  *  - Gemini : prix publics de lancement de la gamme 2.5 — VALEURS DE
  *    RÉFÉRENCE À RECONFIRMER sur la grille Google en vigueur.
  *  - Les autres (OpenAI, Groq, OpenRouter, modèles gratuits) : inconnus ici ;
@@ -25,6 +27,9 @@ const DEFAULT_PRICES: Record<string, Price> = {
   // Anthropic — grille publique (cache lu ≈ 10 % de l'entrée).
   "claude-opus-5-5": [4, 20, 0.2],
   "claude-opus-5": [5, 25, 0.5],
+  // Modèle de repli serveur (`fallbacks: "default"`) — le modèle qui a SERVI
+  // est celui de la réponse : sans son prix, tout le coût devenait `null`.
+  "claude-opus-4-8": [5, 25, 0.5],
   "claude-sonnet-5-5": [2, 10, 0.2],
   "claude-sonnet-5": [2, 10, 0.2],
   "claude-haiku-4-5": [1, 5, 0.1],
@@ -72,12 +77,17 @@ export interface UsageForCost {
   outputTokens?: number;
   thinkingTokens?: number;
   cachedInputTokens?: number;
+  cacheWriteInputTokens?: number;
 }
+
+/** Multiplicateur d'une écriture en cache Anthropic (TTL 5 minutes). */
+const CACHE_WRITE_MULTIPLIER = 1.25;
 
 /**
  * Coût estimé d'un appel, en dollars, ou `null` quand le prix du modèle est
  * inconnu. La réflexion est facturée comme de la sortie ; l'entrée lue en cache
- * l'est au tarif du cache.
+ * l'est au tarif du cache, l'entrée ÉCRITE en cache à 1,25 × l'entrée (les
+ * deux sont comprises dans `inputTokens`).
  */
 export function estimateCostUsd(u: UsageForCost): number | null {
   const price = priceOf(u.model);
@@ -85,6 +95,13 @@ export function estimateCostUsd(u: UsageForCost): number | null {
   const [inP, outP, cacheP] = price;
   const input = u.inputTokens ?? 0;
   const cached = Math.min(u.cachedInputTokens ?? 0, input);
+  const writes = Math.min(u.cacheWriteInputTokens ?? 0, input - cached);
   const output = (u.outputTokens ?? 0) + (u.thinkingTokens ?? 0);
-  return ((input - cached) * inP + cached * cacheP + output * outP) / 1_000_000;
+  return (
+    ((input - cached - writes) * inP +
+      writes * inP * CACHE_WRITE_MULTIPLIER +
+      cached * cacheP +
+      output * outP) /
+    1_000_000
+  );
 }

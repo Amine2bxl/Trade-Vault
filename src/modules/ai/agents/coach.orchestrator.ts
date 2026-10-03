@@ -214,18 +214,104 @@ async function resolveAmbiguity(
   }
 }
 
-/** Le corpus de vérification : tout ce que le modèle a reçu, plus la question. */
+/**
+ * Le corpus de vérification : les DONNÉES reçues (blocs de contexte, lectures
+ * préparées, sorties d'outils), la question et les tours du TRADER. Jamais les
+ * réponses précédentes de Jarvis : un chiffre signalé une fois devenait une
+ * « preuve » dès qu'il était répété au tour suivant.
+ */
 function evidenceCorpus(
   input: CoachInput,
   prefetched: string,
   toolOutputs: readonly ToolResult[],
 ): string {
-  const messages = buildCoachMessages(input, { prefetched });
+  const messages = buildCoachMessages(
+    { ...input, conversation: (input.conversation ?? []).filter((t) => t.role === "user") },
+    { prefetched },
+  );
   return [
     ...messages.filter((m) => m.role !== "system").map((m) => m.content),
     ...toolOutputs.map((r) => JSON.stringify(r.output ?? r.error ?? null)),
     input.question,
   ].join("\n");
+}
+
+/** Ce qu'il faut pour écrire la trace — y compris d'une question qui a échoué. */
+interface TraceParts {
+  route: QuestionRoute;
+  ambiguityUsed: boolean;
+  usage: readonly UsageEvent[];
+  toolResults: readonly { result: ToolResult; ms: number }[];
+  prefetchResults: readonly PrefetchResult[];
+  blocksKept: string[];
+  contextChars: number;
+  provider: string;
+  model: string;
+  validation: JarvisTrace["validation"];
+  unsupportedFigures: number;
+  text: string;
+  started: number;
+}
+
+function buildTrace(p: TraceParts): JarvisTrace {
+  const ok = p.usage.filter((u) => u.ok);
+  const costs = ok.map((u) => estimateCostUsd(u));
+  return {
+    domains: p.route.domains,
+    tier: p.route.tier,
+    slot: TIER_SLOT[p.route.tier],
+    ambiguous: p.route.ambiguous || p.ambiguityUsed,
+    modelRouted: p.ambiguityUsed,
+    signals: p.route.signals,
+    provider: p.provider,
+    model: p.model,
+    modelCalls: p.usage.length,
+    inputTokens: ok.reduce((n, u) => n + (u.inputTokens ?? 0), 0),
+    outputTokens: ok.reduce((n, u) => n + (u.outputTokens ?? 0), 0),
+    thinkingTokens: ok.reduce((n, u) => n + (u.thinkingTokens ?? 0), 0),
+    cachedInputTokens: ok.reduce((n, u) => n + (u.cachedInputTokens ?? 0), 0),
+    costUsd:
+      costs.length && costs.every((c) => c !== null)
+        ? costs.reduce<number>((n, c) => n + (c ?? 0), 0)
+        : costs.length
+          ? null
+          : 0,
+    tools: p.toolResults.map((t) => ({ name: t.result.name, ok: !t.result.error, ms: t.ms })),
+    prefetch: p.prefetchResults.map((r) => ({ tool: r.call.tool, ok: r.ok, ms: r.durationMs })),
+    blocksKept: p.blocksKept,
+    contextChars: p.contextChars,
+    validation: p.validation,
+    unsupportedFigures: p.unsupportedFigures,
+    causalPhrases: p.text && !checkCausalLanguage(p.text).ok ? 1 : 0,
+    totalMs: Date.now() - p.started,
+  };
+}
+
+/**
+ * La trace partielle d'une question qui a ÉCHOUÉ, attachée à l'erreur. Les
+ * appels déjà payés (routage, tours d'outils réussis) restaient sinon hors de
+ * `ai_agent_runs` — précisément pour les questions qu'on cherche à comprendre.
+ * Propriété non énumérable : l'erreur garde sa forme (`type`, message…).
+ */
+function withTrace(err: unknown, trace: JarvisTrace): unknown {
+  if (err && typeof err === "object") {
+    try {
+      Object.defineProperty(err, "trace", { value: trace, enumerable: false, configurable: true });
+    } catch {
+      /* objet gelé : l'erreur repart sans trace plutôt que masquée */
+    }
+    return err;
+  }
+  const wrapped = new Error(String(err));
+  Object.defineProperty(wrapped, "trace", { value: trace, enumerable: false });
+  return wrapped;
+}
+
+/** La trace attachée à une erreur d'orchestration, s'il y en a une. */
+export function traceOfError(err: unknown): JarvisTrace | undefined {
+  if (!err || typeof err !== "object") return undefined;
+  const t = (err as { trace?: unknown }).trace;
+  return t && typeof t === "object" ? (t as JarvisTrace) : undefined;
 }
 
 export async function orchestrateCoach(
@@ -240,144 +326,165 @@ export async function orchestrateCoach(
 
   // 1. COMPRENDRE
   let route = routeQuestion(input.question, { today: input.today });
-  const ambiguity = await resolveAmbiguity(route, input.question, opts.providers, onUsage);
-  route = ambiguity.route;
-
-  // 2. CHOISIR
-  const plan = planContext(route, { hasEdgeBlock: !!input.edge && input.edge.score !== null });
-  const selected = selectInputForPlan(input, plan);
-
-  // 3. LIRE — en parallèle, sous l'identité et le compte de la requête.
-  const toolContext = opts.userId
-    ? { userId: opts.userId, accountId: opts.accountId ?? null }
-    : undefined;
-  const prefetchResults: PrefetchResult[] =
-    toolContext && opts.prefetch && plan.prefetch.length
-      ? await executePrefetch(plan.prefetch, toolContext)
-      : [];
-  const prefetched = prefetchBlocks(prefetchResults);
-
-  // 4. RAISONNER — le modèle du niveau, et seulement les outils utiles.
-  const slot = TIER_SLOT[route.tier];
-  const policy = SLOT_POLICY[slot];
-  const providers = opts.providers ?? slotChain(slot);
-  const offered = new Set(opts.modelTools);
-  const tools = toolContext ? plan.tools.filter((t) => offered.has(t)) : [];
+  let ambiguityUsed = false;
+  let blocksKept: string[] = [];
+  let prefetchResults: PrefetchResult[] = [];
   const toolResults: { result: ToolResult; ms: number }[] = [];
-  const guidance = routeGuidance(route, plan);
-  const contextChars = buildCoachMessages(selected, {
-    prefetched,
-    guidance,
-    tools: tools.length > 0,
-  }).reduce((n, m) => n + m.content.length, 0);
+  let contextChars = 0;
 
-  const res = await runCoach(selected, {
-    providers,
-    tools,
-    toolContext,
-    maxToolIterations: policy.maxToolIterations,
-    maxTokens: policy.maxTokens,
-    reasoning: policy.reasoning,
-    timeoutMs: policy.timeoutMs,
-    prefetched,
-    guidance,
-    onUsage,
-    onToolResult: (result, ms) => toolResults.push({ result, ms }),
-  });
-  let text = res.text.trim();
-  let provider = res.provider;
-  let model = res.model;
+  try {
+    const ambiguity = await resolveAmbiguity(route, input.question, opts.providers, onUsage);
+    route = ambiguity.route;
+    ambiguityUsed = ambiguity.used;
 
-  // 5. VÉRIFIER
-  let validation: JarvisTrace["validation"] = "skipped";
-  let unsupportedFigures = 0;
-  // Seules les réponses sur les DONNÉES du trader se vérifient : une
-  // salutation, une définition ou une question produit n'affirment rien sur
-  // son journal.
-  const aboutData = route.domains.some(isJournalDomain);
-  if (text && opts.validate !== false && aboutData) {
-    const corpus = evidenceCorpus(
-      selected,
+    // 2. CHOISIR
+    const plan = planContext(route, { hasEdgeBlock: !!input.edge && input.edge.score !== null });
+    blocksKept = plan.blocks;
+    const selected = selectInputForPlan(input, plan);
+
+    // 3. LIRE — en parallèle, sous l'identité et le compte de la requête.
+    const toolContext = opts.userId
+      ? { userId: opts.userId, accountId: opts.accountId ?? null }
+      : undefined;
+    prefetchResults =
+      toolContext && opts.prefetch && plan.prefetch.length
+        ? await executePrefetch(plan.prefetch, toolContext)
+        : [];
+    const prefetched = prefetchBlocks(prefetchResults);
+
+    // 4. RAISONNER — le modèle du niveau, et seulement les outils utiles.
+    const slot = TIER_SLOT[route.tier];
+    const policy = SLOT_POLICY[slot];
+    const providers = opts.providers ?? slotChain(slot);
+    const offered = new Set(opts.modelTools);
+    const tools = toolContext ? plan.tools.filter((t) => offered.has(t)) : [];
+    const guidance = routeGuidance(route, plan);
+    contextChars = buildCoachMessages(selected, {
       prefetched,
-      toolResults.map((t) => t.result),
-    );
-    const first = validateAnswer(text, corpus);
-    unsupportedFigures = first.unsupported.length;
-    validation = first.ok ? "ok" : "flagged";
-    if (!first.ok) {
-      // UNE réparation : le brouillon, la liste des chiffres sans appui, les
-      // mêmes données (sorties d'outils comprises) — sans outils, au même niveau.
-      const toolBlock = toolResults
-        .filter((t) => !t.result.error)
-        .map((t) => `MEASURED — tool ${t.result.name}:\n${JSON.stringify(t.result.output)}`)
-        .join("\n\n");
-      try {
-        const messages = buildCoachMessages(selected, {
-          prefetched: [prefetched, toolBlock].filter(Boolean).join("\n\n"),
-          guidance,
-        });
-        messages.push(
-          { role: "assistant", content: text },
-          { role: "user", content: repairInstruction(first.unsupported, input.language) },
-        );
-        const repaired = await generate(
-          {
-            messages,
-            maxTokens: policy.maxTokens,
-            reasoning: policy.reasoning,
-            timeoutMs: policy.timeoutMs,
-          },
-          { providers, onUsage },
-        );
-        const fixed = repaired.text?.trim();
-        if (fixed) {
-          const second = validateAnswer(fixed, corpus);
-          if (second.unsupported.length < first.unsupported.length) {
-            text = fixed;
-            provider = repaired.provider;
-            model = repaired.model;
-            unsupportedFigures = second.unsupported.length;
-            validation = second.ok ? "repaired" : "flagged";
-          }
-        }
-      } catch {
-        /* la réparation est un bonus : la mention honnête suit */
-      }
-      if (validation === "flagged") text = `${text}\n\n${unverifiedNotice(input.language)}`;
-    }
-  }
+      guidance,
+      tools: tools.length > 0,
+    }).reduce((n, m) => n + m.content.length, 0);
 
-  // 6. MESURER
-  const ok = usage.filter((u) => u.ok);
-  const costs = ok.map((u) => estimateCostUsd(u));
-  const trace: JarvisTrace = {
-    domains: route.domains,
-    tier: route.tier,
-    slot,
-    ambiguous: route.ambiguous || ambiguity.used,
-    modelRouted: ambiguity.used,
-    signals: route.signals,
-    provider,
-    model,
-    modelCalls: usage.length,
-    inputTokens: ok.reduce((n, u) => n + (u.inputTokens ?? 0), 0),
-    outputTokens: ok.reduce((n, u) => n + (u.outputTokens ?? 0), 0),
-    thinkingTokens: ok.reduce((n, u) => n + (u.thinkingTokens ?? 0), 0),
-    cachedInputTokens: ok.reduce((n, u) => n + (u.cachedInputTokens ?? 0), 0),
-    costUsd:
-      costs.length && costs.every((c) => c !== null)
-        ? costs.reduce<number>((n, c) => n + (c ?? 0), 0)
-        : costs.length
-          ? null
-          : 0,
-    tools: toolResults.map((t) => ({ name: t.result.name, ok: !t.result.error, ms: t.ms })),
-    prefetch: prefetchResults.map((r) => ({ tool: r.call.tool, ok: r.ok, ms: r.durationMs })),
-    blocksKept: plan.blocks,
-    contextChars,
-    validation,
-    unsupportedFigures,
-    causalPhrases: checkCausalLanguage(text).ok ? 0 : 1,
-    totalMs: Date.now() - started,
-  };
-  return { text, trace };
+    const res = await runCoach(selected, {
+      providers,
+      tools,
+      toolContext,
+      maxToolIterations: policy.maxToolIterations,
+      maxTokens: policy.maxTokens,
+      reasoning: policy.reasoning,
+      timeoutMs: policy.timeoutMs,
+      prefetched,
+      guidance,
+      onUsage,
+      onToolResult: (result, ms) => toolResults.push({ result, ms }),
+    });
+    let text = res.text.trim();
+    let provider = res.provider;
+    let model = res.model;
+
+    // 5. VÉRIFIER
+    let validation: JarvisTrace["validation"] = "skipped";
+    let unsupportedFigures = 0;
+    // Seules les réponses sur les DONNÉES du trader se vérifient : une
+    // salutation, une définition ou une question produit n'affirment rien sur
+    // son journal.
+    const aboutData = route.domains.some(isJournalDomain);
+    if (text && opts.validate !== false && aboutData) {
+      const corpus = evidenceCorpus(
+        selected,
+        prefetched,
+        toolResults.map((t) => t.result),
+      );
+      const first = validateAnswer(text, corpus);
+      unsupportedFigures = first.unsupported.length;
+      validation = first.ok ? "ok" : "flagged";
+      if (!first.ok) {
+        // UNE réparation : le brouillon, la liste des chiffres sans appui, les
+        // mêmes données (sorties d'outils comprises) — sans outils, au même niveau.
+        const toolBlock = toolResults
+          .filter((t) => !t.result.error)
+          .map((t) => `MEASURED — tool ${t.result.name}:\n${JSON.stringify(t.result.output)}`)
+          .join("\n\n");
+        try {
+          const messages = buildCoachMessages(selected, {
+            prefetched: [prefetched, toolBlock].filter(Boolean).join("\n\n"),
+            guidance,
+          });
+          messages.push(
+            { role: "assistant", content: text },
+            { role: "user", content: repairInstruction(first.unsupported, input.language) },
+          );
+          const repaired = await generate(
+            {
+              messages,
+              maxTokens: policy.maxTokens,
+              reasoning: policy.reasoning,
+              timeoutMs: policy.timeoutMs,
+            },
+            { providers, onUsage },
+          );
+          // Une réécriture COUPÉE (plafond atteint) ou refusée a mécaniquement
+          // moins de chiffres que le brouillon : elle ne le remplace jamais —
+          // le trader recevrait une réponse qui s'arrête au milieu d'une phrase.
+          const complete =
+            repaired.finishReason !== "length" && repaired.finishReason !== "content_filter";
+          const fixed = complete ? repaired.text?.trim() : "";
+          if (fixed) {
+            const second = validateAnswer(fixed, corpus);
+            if (second.unsupported.length < first.unsupported.length) {
+              text = fixed;
+              provider = repaired.provider;
+              model = repaired.model;
+              unsupportedFigures = second.unsupported.length;
+              validation = second.ok ? "repaired" : "flagged";
+            }
+          }
+        } catch {
+          /* la réparation est un bonus : la mention honnête suit */
+        }
+        if (validation === "flagged") text = `${text}\n\n${unverifiedNotice(input.language)}`;
+      }
+    }
+
+    // 6. MESURER
+    return {
+      text,
+      trace: buildTrace({
+        route,
+        ambiguityUsed,
+        usage,
+        toolResults,
+        prefetchResults,
+        blocksKept,
+        contextChars,
+        provider,
+        model,
+        validation,
+        unsupportedFigures,
+        text,
+        started,
+      }),
+    };
+  } catch (err) {
+    // Le fournisseur et le modèle du DERNIER appel tenté — réussi ou non.
+    const last = usage[usage.length - 1];
+    throw withTrace(
+      err,
+      buildTrace({
+        route,
+        ambiguityUsed,
+        usage,
+        toolResults,
+        prefetchResults,
+        blocksKept,
+        contextChars,
+        provider: last?.provider ?? "",
+        model: last?.model ?? "",
+        validation: "skipped",
+        unsupportedFigures: 0,
+        text: "",
+        started,
+      }),
+    );
+  }
 }

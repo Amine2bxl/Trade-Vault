@@ -264,6 +264,9 @@ export const AnthropicProvider: AIProvider = {
         (json.usage?.cache_creation_input_tokens ?? 0),
       outputTokens: json.usage?.output_tokens,
       cachedInputTokens: json.usage?.cache_read_input_tokens,
+      // L'écriture en cache est facturée 1,25 × l'entrée (TTL 5 min) : le coût
+      // estimé doit la distinguer, sinon chaque tour d'outils est sous-compté.
+      cacheWriteInputTokens: json.usage?.cache_creation_input_tokens,
     };
 
     // UN REFUS se rend VIDE : le texte partiel d'une réponse déclinée n'est

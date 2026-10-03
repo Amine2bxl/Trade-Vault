@@ -107,6 +107,26 @@ describe("plans par question", () => {
     expect(plan(q, { hasEdgeBlock: true }).tools).not.toContain("get_edge_score");
   });
 
+  test("« quel est mon Edge Score ? » garde le bloc Edge Score envoyé par le client", () => {
+    for (const q of [
+      "What is my edge score?",
+      "quel est mon edge score ?",
+      "Why did my edge score drop?",
+    ]) {
+      const p = plan(q, { hasEdgeBlock: true });
+      expect(p.blocks).toContain("edge");
+      const kept = selectInputForPlan(fullCoachInput(q), p);
+      expect(kept.edge?.score).toBe(64);
+    }
+  });
+
+  test("l'outil Edge Score n'est retiré que si le bloc client est GARDÉ", () => {
+    // Comparaison (niveau 3) : pas de bloc edge dans la recette, l'outil reste offert.
+    const p = plan("What changed between August and September?", { hasEdgeBlock: true });
+    expect(p.blocks).not.toContain("edge");
+    expect(p.tools).toContain("get_edge_score");
+  });
+
   test("lectures dédoublonnées et plafonnées à 6", () => {
     const p = plan(
       "Fais-moi une analyse complète de mon trading, mes erreurs, mon plan, mes règles et mon risque",

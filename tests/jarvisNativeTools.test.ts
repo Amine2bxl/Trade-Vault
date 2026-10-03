@@ -109,7 +109,7 @@ describe("Anthropic", () => {
           input_tokens: 100,
           output_tokens: 20,
           cache_read_input_tokens: 900,
-          cache_creation_input_tokens: 0,
+          cache_creation_input_tokens: 300,
         },
       },
     ]);
@@ -132,11 +132,13 @@ describe("Anthropic", () => {
     expect(system[1].cache_control).toBeUndefined();
     expect(body.fallbacks).toBe("default");
     expect(headers["anthropic-beta"]).toBe("server-side-fallback-2026-07-01");
-    // L'entrée facturée inclut le cache ; la part lue en cache est remontée à part.
+    // L'entrée facturée inclut le cache ; les parts lue et ÉCRITE en cache sont
+    // remontées à part (l'écriture coûte 1,25 × l'entrée).
     expect(res.usage).toMatchObject({
-      inputTokens: 1_000,
+      inputTokens: 1_300,
       outputTokens: 20,
       cachedInputTokens: 900,
+      cacheWriteInputTokens: 300,
     });
     expect(res.text).toBe("Septembre : +1 250 €.");
     expect(res.providerTurn).toBeUndefined();
