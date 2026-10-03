@@ -6,6 +6,7 @@ import {
   inheritFromPrevious,
   isUnrecognised,
   mergeModelRoute,
+  personalFallback,
   normalizeQuestion,
   routeQuestion,
   type RouteDomain,
@@ -342,5 +343,82 @@ describe("relances — héritage de la question précédente", () => {
     expect(p.user.startsWith("Previous question: ")).toBe(true);
     expect(p.user.length).toBeLessThan(900);
     expect(ambiguityPrompt("tell me more").user).toBe("tell me more");
+  });
+});
+
+describe("revue adversariale du LOT 2 — routage", () => {
+  const today = "2026-10-01";
+  const route = (q: string) => routeQuestion(q, { today });
+
+  test("« sept » est d'abord le nombre sept", () => {
+    expect(route("Analyse mes sept derniers trades").entities.period).toBeUndefined();
+    expect(route("J'ai perdu sept trades d'affilée, pourquoi ?").entities.period).toBeUndefined();
+    expect(route("une série de sept trades perdants").entities.period).toBeUndefined();
+    // Avec une préposition ou une année, c'est bien septembre.
+    expect(route("mes résultats en sept").entities.period?.since).toBe("2026-09-01");
+    expect(route("sept 2025").entities.period?.since).toBe("2025-09-01");
+  });
+
+  test("une salutation qui contient « aujourd'hui » reste une salutation", () => {
+    expect(route("Hello, how are you today?").domains).toEqual(["smalltalk"]);
+    expect(route("Salut Jarvis, ça va aujourd'hui ?").domains).toEqual(["smalltalk"]);
+    // Mais une question personnelle sur sa journée lit la journée.
+    expect(route("Salut, qu'est-ce que j'ai fait aujourd'hui ?").domains).toContain("day");
+  });
+
+  test("le niveau 4 exige une revue complète demandée sur SES données", () => {
+    expect(route("Fais-moi une analyse complète de mon trading").tier).toBe(4);
+    expect(route("Fais une analyse complète du marché").tier).toBeLessThan(4);
+    const recit =
+      "Today I took 3 trades on NQ at the open, the first one was a long that hit my target, " +
+      "then I got stopped out twice on shorts because I was impatient and did not wait for " +
+      "confirmation. I followed my plan in the morning but not after lunch. Can you give me a " +
+      "quick tip for tomorrow morning? Thanks";
+    expect(recit.length).toBeGreaterThan(260);
+    expect(route(recit).tier).toBe(3);
+  });
+
+  test("« explique la session de Londres » est une question générale", () => {
+    const r = route("Explain the London session");
+    expect(r.domains).toEqual(["knowledge"]);
+    expect(r.tier).toBe(1);
+    // « pourquoi » sans rien de personnel : pas de diagnostic du journal (niveau 3).
+    expect(route("Why is the London session volatile?").tier).toBeLessThan(3);
+    // « pourquoi je perds en session de Londres ? » reste un diagnostic.
+    expect(route("Pourquoi je perds en session de Londres ?").tier).toBe(3);
+  });
+
+  test("une courte question personnelle n'est jamais rabattue sur « knowledge »", () => {
+    expect(route("Mon RR moyen").domains).toContain("performance");
+    expect(route("My average R").domains).toContain("performance");
+    expect(route("Am I disciplined?").memoryIntent).toBe("discipline");
+    expect(route("Ma journée ?").domains).toContain("day");
+    // Non reconnue mais personnelle : ambiguë quelle que soit sa longueur…
+    const r = route("Et moi alors ?");
+    expect(r.ambiguous).toBe(true);
+    // … et, sans petit modèle, elle reçoit au moins la performance.
+    expect(personalFallback(r).domains).toEqual(["performance"]);
+    expect(personalFallback(route("Raconte un truc"))).toEqual(route("Raconte un truc"));
+  });
+
+  test("« mieux en septembre qu'en août » est une comparaison des deux mois", () => {
+    for (const q of [
+      "Did I do better in September than in August?",
+      "Ai-je fait mieux en septembre qu'en août ?",
+    ]) {
+      const r = route(q);
+      expect(r.domains).toContain("comparison");
+      expect(r.entities.comparison?.map((p) => p.since)).toEqual(["2026-08-01", "2026-09-01"]);
+    }
+  });
+
+  test("une comparaison tranchée par le petit modèle retrouve ses deux périodes", () => {
+    const base = route("Comment ça s'est passé en septembre et en août ?");
+    expect(base.entities.comparison).toBeUndefined();
+    const merged = mergeModelRoute(base, { domains: ["comparison", "performance"], tier: 3 });
+    expect(merged.entities.comparison?.map((p) => `${p.since}..${p.until}`)).toEqual([
+      "2026-08-01..2026-08-31",
+      "2026-09-01..2026-09-30",
+    ]);
   });
 });

@@ -34,6 +34,7 @@ import {
   isJournalDomain,
   isUnrecognised,
   mergeModelRoute,
+  personalFallback,
   routeQuestion,
   type QuestionRoute,
 } from "../router/route";
@@ -148,7 +149,11 @@ export function selectInputForPlan(input: CoachInput, plan: ContextPlan): CoachI
 export function routeGuidance(route: QuestionRoute, plan: ContextPlan): string {
   const lines: string[] = [];
   const e = route.entities;
-  if (e.comparison) {
+  // « Salut, ça va aujourd'hui ? » nomme une date sans demander de chiffres.
+  const aboutData = route.domains.some(isJournalDomain);
+  if (!aboutData) {
+    /* ni période ni comparaison à citer */
+  } else if (e.comparison) {
     lines.push(
       `COMPARISON: ${e.comparison[0].label} (${e.comparison[0].since}..${e.comparison[0].until}) vs ` +
         `${e.comparison[1].label} (${e.comparison[1].since}..${e.comparison[1].until}). Compare the ` +
@@ -351,6 +356,8 @@ export async function orchestrateCoach(
     );
     route = ambiguity.route;
     ambiguityUsed = ambiguity.used;
+    // Petit modèle coupé ou muet : une question personnelle reçoit le journal.
+    if (!ambiguityUsed) route = personalFallback(route);
 
     // 2. CHOISIR
     const plan = planContext(route, { hasEdgeBlock: !!input.edge && input.edge.score !== null });

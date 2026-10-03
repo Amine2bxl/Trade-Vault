@@ -114,6 +114,8 @@ export interface RouteEntities {
   sessions: ("asia" | "london" | "newyork")[];
   /** Horizon futur demandé en heures (« dans les deux prochaines heures »). */
   horizonHours?: number;
+  /** Toutes les périodes nommées, dans l'ordre (au plus trois). */
+  periods?: Period[];
 }
 
 export interface QuestionRoute {
@@ -162,17 +164,17 @@ const LEXICON: Record<Exclude<RouteDomain, "smalltalk" | "knowledge" | "product"
     /\b(mon (pre)?nom|my name|qui suis[- ]je|who am i|mon profil|my profile|mes comptes|my accounts|mon compte|my account|sous[- ]comptes?|sub[- ]?accounts?|mon abonnement|my subscription)\b/,
   trade:
     /\b(ce trade|this trade|dernier trade|last trade|mon trade|my trade|ce position|cette position|entrees?|entry|entries|sorties?|exits?|setups?)\b/,
-  day: /\b(hier|yesterday|avant[- ]hier|aujourd'?hui|today|today's|ce matin|this morning|cette seance|today'?s session|\d{4}-\d{2}-\d{2}|\d{1,2}\/\d{1,2}(\/\d{2,4})?|le \d{1,2}\b|notes?|note[sd]?|ecrit|wrote|written)\b/,
+  day: /\b(hier|yesterday|avant[- ]hier|aujourd'?hui|today|today's|ce matin|this morning|cette seance|today'?s session|\d{4}-\d{2}-\d{2}|\d{1,2}\/\d{1,2}(\/\d{2,4})?|le \d{1,2}\b|notes?|note[sd]?|ecrit|wrote|written|journee|my day)\b/,
   performance:
-    /(\bperformances?\b|\bwin ?rate\b|taux de r|\bp&l\b|\bpnl\b|\bprofit|\bresultats?\b|\bresults?\b|\bstats?\b|\bstatistiques?\b|\bedge\b|\bgagn|\bperd|\bpertes?\b|\bloss|\blos(e|ing|t)\b|\bmois\b|\bmonth|\bsemaine|\bweek|\bprogres|\bameliore?r?|\bexpectancy|esperance|profit factor|\brendement|\breturns?\b|\bequity|\bbilan|\breview|\bmauvais|\bbad\b|\bbon mois|\bgood month|\bmeilleur|\bbest\b|\bworst\b|\bpire\b|\bserie\b|\bstreak|\bchute|\bdrop|\btrade[sd]?\b)/,
+    /(\bperformances?\b|\bwin ?rate\b|taux de r|\bp&l\b|\bpnl\b|\bprofit|\bresultats?\b|\bresults?\b|\bstats?\b|\bstatistiques?\b|\bedge\b|\bgagn|\bperd|\bpertes?\b|\bloss|\blos(e|ing|t)\b|\bmois\b|\bmonth|\bsemaine|\bweek|\bprogres|\bameliore?r?|\bexpectancy|esperance|profit factor|\brendement|\breturns?\b|\bequity|\bbilan|\breview|\bmauvais|\bbad\b|\bbon mois|\bgood month|\bmeilleur|\bbest\b|\bworst\b|\bpire\b|\bserie\b|\bstreak|\bchute|\bdrop|\btrade[sd]?\b|\brr\b|\br moyen|average r\b|\bavg r\b|r[- ]multiple)/,
   comparison:
-    /(\bcompar|\bvs\.?\b|\bversus\b|\bentre .{2,40} et\b|\bbetween .{2,40} and\b|par rapport|\bchanged?\b|\bevolu|\bdifferen|mieux que|better than|worse than|pire que|qu'est-ce qui a change)/,
+    /(\bcompar|\bvs\.?\b|\bversus\b|\bentre .{2,40} et\b|\bbetween .{2,40} and\b|par rapport|\bchanged?\b|\bevolu|\bdifferen|mieux que|better than|worse than|pire que|qu'est-ce qui a change|\b(mieux|pire|better|worse|plus|moins)\b.{1,40}\b(qu'|que\b|than\b))/,
   mistakes:
     /(\berreurs?\b|\bmistakes?\b|\bfautes?\b|\bfomo\b|\brevenge\b|\bovertrad|\bsur-?trad|\btilt|\berrors?\b|\bleak)/,
   psychology:
     /(tilt|\bemotion|\bpeur\b|\bfear|\bstress|\banxi|\bconfian|\bconfiden|\bfomo\b|\bpanic|\bpaniqu|\brevenge\b|\bfrustr|\bmental|\bimpatien|discipline mentale|state of mind|\bmotivation|\bcolere|\banger)/,
   risk: /(\brisqu|\brisk|\bstop\b|\bstops\b|\btaille|\bsize|\bsizing|\blots?\b|\blevier|\bleverage|\bruine?\b|\bruin\b|\bdrawdown|perte max|max loss|\bexposition|\bexposure)/,
-  plan: /(plan de trading|trading plan|\bmon plan\b|\bmy plan\b|\bdu plan\b|\bthe plan\b|\brespect|\btenu\b|\btenir\b|\bhold\b|\bfollow|\bsuivre|\bsuis-je\b|\badheren|\bdiscipline\b|\bchecklist|\broutine|\bprocess)/,
+  plan: /(plan de trading|trading plan|\bmon plan\b|\bmy plan\b|\bdu plan\b|\bthe plan\b|\brespect|\btenu\b|\btenir\b|\bhold\b|\bfollow|\bsuivre|\bsuis-je\b|\badheren|\bdisciplin|\bchecklist|\broutine|\bprocess)/,
   rules:
     /(\bregles?\b|\brules?\b|\bengagements?\b|\bcommit|\bpromesse|\binterdit|m'imposer|\bimpose|\bjamais plus|\bnever again|\blimites?\b)/,
   goals:
@@ -208,7 +210,7 @@ const DEFINITION =
 
 /** Concepts généraux — reconnus pour classer en « knowledge » plutôt qu'en données. */
 const CONCEPTS =
-  /(drawdown|order block|\bfvg\b|fair value gap|liquidit|\bict\b|\bsmc\b|risk[- ]?reward|\brr\b|expectancy|esperance|sharpe|sortino|profit factor|win ?rate|kelly|scalping|swing|spread|slippage|levier|leverage|\bpips?\b|\bticks?\b|contrats?|prop firm|funded|trailing|vwap|\bema\b|\brsi\b|support|resistance|break of structure|\bbos\b|\bchoch\b|kill ?zone|silver bullet|judas|power of 3|stop loss|take profit|position sizing|money management|gestion du risque|risk management|\bfutures?\b|\bforex\b|\boptions?\b|\bcfd\b|\bmarge\b|\bmargin\b)/;
+  /(drawdown|order block|\bfvg\b|fair value gap|liquidit|\bict\b|\bsmc\b|risk[- ]?reward|\brr\b|expectancy|esperance|sharpe|sortino|profit factor|win ?rate|kelly|scalping|swing|spread|slippage|levier|leverage|\bpips?\b|\bticks?\b|contrats?|prop firm|funded|trailing|vwap|\bema\b|\brsi\b|support|resistance|break of structure|\bbos\b|\bchoch\b|kill ?zone|silver bullet|judas|power of 3|stop loss|take profit|position sizing|money management|gestion du risque|risk management|\bfutures?\b|\bforex\b|\boptions?\b|\bcfd\b|\bmarge\b|\bmargin\b|\bsessions?\b|\blondon\b|\blondres\b|new york|\basia|\basie\b|\bouverture\b|\bopen\b)/;
 
 /** Les noms des pages et fonctionnalités du produit. */
 const FEATURES =
@@ -465,12 +467,20 @@ export function extractPeriods(q: string, today: string): Period[] {
     each(new RegExp(`${re.source}(?:\\s+(\\d{4}))?`), (m) => {
       // Déjà lu comme un jour précis (« le 15 septembre ») : pas le mois entier.
       if (taken(m.index, m[0].length)) return;
-      // Les formes courtes sont aussi des mots (« may » = pouvoir, « dec ») :
+      // Les formes courtes sont aussi des mots (« may » = pouvoir, « dec ») —
+      // et « sept » est d'abord le nombre SEPT (« mes sept derniers trades ») :
       // on ne les prend pour un mois que suivies d'une année ou précédées de
-      // « en / in / de / du / of / mois de ».
-      if (m[1].length <= 3 && !m[2]) {
+      // « en / in / de / du / of / mois de », et jamais devant un nom compté.
+      if ((m[1].length <= 3 || m[1] === "sept") && !m[2]) {
         const before = q.slice(Math.max(0, m.index - 10), m.index);
         if (!/(\ben|\bin|\bde|\bdu|\bof|mois de|month of)\s+$/.test(before)) return;
+        const after = q.slice(m.index + m[0].length);
+        if (
+          /^\s+(trades?|fois|jours?|derniers?|dernieres?|premiers?|premieres?|pertes?|gains?|semaines?|mois|heures?|minutes?|positions?|setups?|erreurs?|series?)\b/.test(
+            after,
+          )
+        )
+          return;
       }
       const year = m[2] ? Number(m[2]) : month > tm ? ty - 1 : ty;
       push(m.index, monthPeriod(year, month, today, `${m[1]}${m[2] ? ` ${m[2]}` : ""}`));
@@ -738,7 +748,11 @@ export function routeQuestion(question: string, opts: RouteOptions = {}): Questi
       .replace(/[^a-z0-9 ]/g, "")
       .split(" ")
       .filter(Boolean).length <= 6;
-  if (SMALLTALK.test(q) && short && domains.size === 0) {
+  // « Salut, ça va aujourd'hui ? » : le seul mot reconnu est la date — c'est
+  // toujours une salutation, pas une lecture de la journée du trader.
+  const onlyDateWord = domains.size > 0 && [...domains].every((d) => d === "day");
+  if (SMALLTALK.test(q) && short && (domains.size === 0 || (onlyDateWord && !personal))) {
+    domains.clear();
     domains.add("smalltalk");
     signals.push("smalltalk");
   }
@@ -809,13 +823,19 @@ export function routeQuestion(question: string, opts: RouteOptions = {}): Questi
   if (finalDomains.every((d) => d === "smalltalk" || d === "knowledge" || d === "product")) {
     // Bavardage, définition, question produit : une réponse directe.
     tier = 1;
-  } else if (deep || (q.length > 260 && journal.length >= 3)) {
+  } else if (deep && personal) {
+    // Le modèle le plus cher : une revue complète demandée EXPLICITEMENT sur
+    // ses propres données. Un long message n'est pas une demande d'audit.
     tier = 4;
   } else if (
     comparison ||
     finalDomains.includes("comparison") ||
     (finalDomains.includes("market") && journal.length > 0) ||
-    (asksWhy && (behavioural || journal.length >= 3)) ||
+    // Un « pourquoi » sur SES données ; « explique la session de Londres » n'en
+    // est pas un.
+    (asksWhy && personal && (behavioural || journal.length >= 3)) ||
+    // Un long récit qui touche plusieurs domaines : un diagnostic, pas un audit.
+    (q.length > 260 && journal.length >= 3) ||
     // Tenue du plan : confronter les règles écrites au comportement réel.
     (personal && finalDomains.includes("plan")) ||
     // Chercher un schéma (« quel pattern me coûte ») est un diagnostic.
@@ -832,7 +852,9 @@ export function routeQuestion(question: string, opts: RouteOptions = {}): Questi
   // ── Confiance / ambiguïté ──
   const words = q.split(" ").filter(Boolean).length;
   const confidence = !recognised ? 0.2 : signals.length >= 2 ? 0.9 : 0.7;
-  const ambiguous = !recognised && words >= 4;
+  // Une question PERSONNELLE non reconnue (« Mon RR moyen ? ») est ambiguë
+  // quelle que soit sa longueur : elle parle du journal, il faut trancher.
+  const ambiguous = !recognised && (words >= 4 || personal);
 
   const set = new Set(finalDomains);
   return {
@@ -846,6 +868,7 @@ export function routeQuestion(question: string, opts: RouteOptions = {}): Questi
       symbols,
       sessions,
       ...(horizonHours ? { horizonHours } : {}),
+      ...(periods.length ? { periods: periods.slice(0, 3) } : {}),
     },
     asksWhy,
     personal,
@@ -895,6 +918,25 @@ export function isUnrecognised(route: QuestionRoute): boolean {
     route.domains[0] === "knowledge" &&
     !route.signals.includes("definition")
   );
+}
+
+/**
+ * Une question PERSONNELLE restée non reconnue (« Mon RR moyen ? »), quand le
+ * petit modèle de routage est coupé ou n'a rien rendu d'exploitable : elle
+ * parle du journal du trader, elle reçoit au moins la performance — jamais le
+ * repli « knowledge », qui la laissait sans aucune donnée ni outil.
+ */
+export function personalFallback(route: QuestionRoute): QuestionRoute {
+  if (!route.personal || !isUnrecognised(route)) return route;
+  const set = new Set<RouteDomain>(["performance"]);
+  return {
+    ...route,
+    domains: ["performance"],
+    primary: "performance",
+    uiIntent: deriveUiIntent(set, ""),
+    memoryIntent: deriveMemoryIntent(set, ""),
+    signals: [...route.signals, "personal-fallback"],
+  };
 }
 
 /**
@@ -962,11 +1004,20 @@ export function mergeModelRoute(route: QuestionRoute, raw: unknown): QuestionRou
   const tier = Math.min(proposed, 3) as RouteTier;
   const set = new Set(domains);
   const q = "";
+  const periods = route.entities.periods ?? [];
+  const comparison =
+    set.has("comparison") && !route.entities.comparison && periods.length >= 2
+      ? ([periods[0], periods[1]].sort((a, b) => a.since.localeCompare(b.since)) as [
+          Period,
+          Period,
+        ])
+      : route.entities.comparison;
   return {
     ...route,
     domains,
     primary: domains[0],
     tier,
+    entities: { ...route.entities, ...(comparison ? { comparison } : {}) },
     confidence: 0.6,
     ambiguous: false,
     uiIntent: deriveUiIntent(set, q),

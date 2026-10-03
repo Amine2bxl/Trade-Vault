@@ -424,3 +424,34 @@ describe("relances de conversation", () => {
     expect(allText(seen[0])).not.toContain("4 321");
   });
 });
+
+describe("question personnelle courte, petit modèle coupé", () => {
+  test("« Mon setup préféré ? » reçoit le journal, pas le repli « knowledge »", async () => {
+    process.env.AI_MODEL_ROUTER = "off";
+    const seen: AIRequest[] = [];
+    const { trace } = await orchestrateCoach(
+      fullCoachInput("Et moi alors ?", { conversation: [] }),
+      {
+        userId: "u1",
+        accountId: "acc1",
+        modelTools: JARVIS_TOOL_NAMES,
+        prefetch: false,
+        providers: [scripted(["Ton win rate est de 58,3 %."], seen)],
+      },
+    );
+    expect(trace.domains).toEqual(["performance"]);
+    expect(trace.signals).toContain("personal-fallback");
+    expect(seen[0].tools?.map((t) => t.name)).toContain("get_stats");
+    // La consigne de période n'apparaît pas sur une salutation.
+  });
+
+  test("une salutation avec « aujourd'hui » ne reçoit aucune consigne de période", async () => {
+    const seen: AIRequest[] = [];
+    await orchestrateCoach(fullCoachInput("Salut Jarvis, ça va aujourd'hui ?"), {
+      modelTools: [],
+      prefetch: false,
+      providers: [scripted(["Salut !"], seen)],
+    });
+    expect(allText(seen[0])).not.toContain("PERIOD:");
+  });
+});
