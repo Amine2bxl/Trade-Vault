@@ -58,10 +58,21 @@ features/jarvis (page Jarvis.tsx / widget AiAssistant.tsx)
 **Niveaux de modèle** (`runtime/tiers.ts`) : 1 = rapide (bavardage,
 définition, lecture simple), 2 = équilibré (analyse d'un domaine), 3 = puissant
 (diagnostic croisé, comparaison, tenue du plan), 4 = profond (revue complète
-demandée explicitement). Chaque emplacement (`router`, `fast`, `balanced`,
-`strong`, `deep`) a sa politique (réflexion, plafond, délai, tours d'outils) et
-sa chaîne `AI_MODEL_<EMPLACEMENT>` ; le petit modèle ne peut jamais ouvrir le
-niveau 4.
+demandée explicitement sur ses propres données — jamais sur la seule longueur
+d'un message). Chaque emplacement (`router`, `fast`, `balanced`, `strong`,
+`deep`) a sa politique (réflexion, plafond, délai, tours d'outils) et sa chaîne
+`AI_MODEL_<EMPLACEMENT>` ; le petit modèle ne peut jamais ouvrir le niveau 4.
+
+**Relances et questions courtes** : une relance non reconnue (« pourquoi ? »,
+« et sur NQ ? ») hérite des domaines et de la période de la question
+précédente du trader ; une question personnelle non reconnue est ambiguë quelle
+que soit sa longueur et, sans petit modèle, reçoit au moins la performance.
+
+**Budget de temps** : une question dispose de `QUESTION_BUDGET_MS` (240 s, sous
+la limite de 300 s de la fonction serveur). Chaque appel modèle reçoit le temps
+qui reste, la boucle d'outils s'arrête à temps pour répondre, la réparation des
+chiffres est sautée faute de temps — la réponse se termine toujours par une
+réponse ou par le message honnête « indisponible », télémétrie écrite.
 
 **Appels d'outils natifs** : Gemini (`functionCall`/`functionResponse`,
 signatures de réflexion rejouées), Anthropic (`tool_use`/`tool_result`, blocs

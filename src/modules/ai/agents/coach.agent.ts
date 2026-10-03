@@ -421,6 +421,7 @@ export async function runCoach(
     providers: opts?.providers,
     onUsage: opts?.onUsage,
     meta: { trades: input.trades?.length, ...opts?.meta },
+    deadline: opts?.deadline,
   };
   const build = { prefetched: opts?.prefetched, guidance: opts?.guidance };
 

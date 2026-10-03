@@ -455,3 +455,51 @@ describe("question personnelle courte, petit modèle coupé", () => {
     expect(allText(seen[0])).not.toContain("PERIOD:");
   });
 });
+
+describe("budget de temps de la question", () => {
+  test("un fournisseur qui ne répond pas : la question s'arrête dans son budget, trace comprise", async () => {
+    const hang: AIProvider = {
+      id: `orch-hang-${++seq}`,
+      supportsTools: true,
+      isConfigured: () => true,
+      complete: (req) =>
+        new Promise<AIResponse>((_, reject) => {
+          req.signal?.addEventListener("abort", () => reject(new Error("AbortError: aborted")));
+        }),
+    };
+    const started = Date.now();
+    let caught: unknown;
+    try {
+      await orchestrateCoach(fullCoachInput("salut"), {
+        modelTools: [],
+        prefetch: false,
+        providers: [hang],
+        budgetMs: 3_500,
+      });
+    } catch (e) {
+      caught = e;
+    }
+    expect(Date.now() - started).toBeLessThan(5_000);
+    expect(traceOfError(caught)?.modelCalls).toBeGreaterThan(0);
+  });
+
+  test("sans le temps d'un vrai appel, pas de réparation : la mention honnête suffit", async () => {
+    await withFakePostgrest(septembre(), async () => {
+      const seen: AIRequest[] = [];
+      const { text, trace } = await orchestrateCoach(
+        fullCoachInput("Combien j'ai gagné en septembre ?"),
+        {
+          userId: "u1",
+          accountId: "acc1",
+          modelTools: [],
+          prefetch: true,
+          providers: [scripted(["Ton P&L de septembre est de 4 200 €."], seen)],
+          budgetMs: 5_000,
+        },
+      );
+      expect(seen.length).toBe(1);
+      expect(trace.validation).toBe("flagged");
+      expect(text).toContain("n'ont pas pu être vérifiés");
+    });
+  });
+});

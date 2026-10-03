@@ -106,7 +106,18 @@ export interface OrchestrateOptions {
   providers?: AIProvider[];
   /** Validation + réparation des chiffres (défaut : actives). */
   validate?: boolean;
+  /** Budget de temps de la question, en ms (défaut : `QUESTION_BUDGET_MS`). */
+  budgetMs?: number;
 }
+
+/**
+ * LE TEMPS D'UNE QUESTION, TOUT COMPRIS : routage, lectures, boucle d'outils,
+ * repli, réparation. La fonction serveur est coupée à 300 s par la plateforme
+ * (`vite.config.ts`) ; une question coupée ne rend ni réponse honnête ni
+ * télémétrie. Chaque appel modèle reçoit le temps qui RESTE, jamais plus — la
+ * marge couvre la réponse HTTP et l'écriture de `ai_agent_runs`.
+ */
+export const QUESTION_BUDGET_MS = 240_000;
 
 export interface OrchestrateResult {
   text: string;
@@ -193,6 +204,7 @@ async function resolveAmbiguity(
   previous: string | undefined,
   providers: AIProvider[] | undefined,
   onUsage: (e: UsageEvent) => void,
+  deadline: number,
 ): Promise<{ route: QuestionRoute; used: boolean }> {
   if (!route.ambiguous || !modelRoutingEnabled()) return { route, used: false };
   const chain = providers ?? slotChain("router");
@@ -211,7 +223,7 @@ async function resolveAmbiguity(
         reasoning: policy.reasoning,
         timeoutMs: policy.timeoutMs,
       },
-      { providers: chain, onUsage },
+      { providers: chain, onUsage, deadline },
     );
     const parsed = tryParseJson(res);
     if (!parsed.ok) return { route, used: false };
@@ -327,6 +339,7 @@ export async function orchestrateCoach(
   opts: OrchestrateOptions,
 ): Promise<OrchestrateResult> {
   const started = Date.now();
+  const deadline = started + (opts.budgetMs ?? QUESTION_BUDGET_MS);
   const usage: UsageEvent[] = [];
   const onUsage = (e: UsageEvent) => {
     usage.push(e);
@@ -353,6 +366,7 @@ export async function orchestrateCoach(
       previous,
       opts.providers,
       onUsage,
+      deadline,
     );
     route = ambiguity.route;
     ambiguityUsed = ambiguity.used;
@@ -398,6 +412,7 @@ export async function orchestrateCoach(
       prefetched,
       guidance,
       onUsage,
+      deadline,
       onToolResult: (result, ms) => toolResults.push({ result, ms }),
     });
     let text = res.text.trim();
@@ -420,7 +435,10 @@ export async function orchestrateCoach(
       const first = validateAnswer(text, corpus);
       unsupportedFigures = first.unsupported.length;
       validation = first.ok ? "ok" : "flagged";
-      if (!first.ok) {
+      // La réparation est un bonus : sans le temps d'un vrai appel, la réponse
+      // part telle quelle avec la mention honnête.
+      const timeForRepair = deadline - Date.now() > policy.timeoutMs / 2;
+      if (!first.ok && timeForRepair) {
         // UNE réparation : le brouillon, la liste des chiffres sans appui, les
         // mêmes données (sorties d'outils comprises) — sans outils, au même niveau.
         const toolBlock = toolResults
@@ -443,7 +461,7 @@ export async function orchestrateCoach(
               reasoning: policy.reasoning,
               timeoutMs: policy.timeoutMs,
             },
-            { providers, onUsage },
+            { providers, onUsage, deadline },
           );
           // Une réécriture COUPÉE (plafond atteint) ou refusée a mécaniquement
           // moins de chiffres que le brouillon : elle ne le remplace jamais —
@@ -464,8 +482,8 @@ export async function orchestrateCoach(
         } catch {
           /* la réparation est un bonus : la mention honnête suit */
         }
-        if (validation === "flagged") text = `${text}\n\n${unverifiedNotice(input.language)}`;
       }
+      if (validation === "flagged") text = `${text}\n\n${unverifiedNotice(input.language)}`;
     }
 
     // 6. MESURER

@@ -42,6 +42,13 @@ const PROVIDER_TIMEOUTS: Record<string, number> = {
 };
 
 export interface RouteOptions {
+  /**
+   * Échéance ABSOLUE (epoch ms) de la question entière. Aucune tentative ne
+   * démarre au-delà, aucune ne la dépasse, et aucune attente de quota ne la
+   * franchit : la fonction serveur s'arrête à 300 s, et une question coupée par
+   * la plateforme ne rend ni réponse honnête ni télémétrie.
+   */
+  deadline?: number;
   /** Override explicite (tests/routage) — ce provider uniquement. */
   provider?: AIProvider;
   /** Chaîne explicite (tests) — sinon les fournisseurs configurés. */
@@ -99,6 +106,8 @@ const MAX_QUOTA_WAIT_MS = 20_000;
 /** Un quota JOURNALIER épuisé écarte le fournisseur ce temps-là. */
 const DAILY_QUOTA_PAUSE_MS = 30 * 60_000;
 const QUOTA_WAIT_BUDGET_MS = 30_000;
+/** En deçà, une tentative n'a aucune chance d'aboutir : on ne la lance pas. */
+const MIN_ATTEMPT_MS = 3_000;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /** Retry sur le MÊME provider uniquement pour 500/réseau (transitoires). */
@@ -116,6 +125,8 @@ export async function routeCompletion(
   const payloadBytes = JSON.stringify(req).length;
   let lastErr: RuntimeError | null = null;
   let quotaWaited = 0;
+  const timeLeft = () =>
+    opts.deadline === undefined ? Number.POSITIVE_INFINITY : opts.deadline - Date.now();
 
   if (providers.length === 0) {
     const err: RuntimeError = {
@@ -151,10 +162,25 @@ export async function routeCompletion(
   ): Promise<AIResponse | null> => {
     let attempts = 0;
     while (true) {
+      // L'échéance de la question : plus le temps d'une vraie tentative, on
+      // s'arrête — l'appelant sert alors la réponse honnête « indisponible ».
+      const left = timeLeft();
+      if (left < MIN_ATTEMPT_MS) {
+        lastErr ??= {
+          type: "timeout",
+          provider: provider.id,
+          userMessage: "Le temps imparti à la question est écoulé.",
+          technicalMessage: "question time budget exhausted",
+        };
+        return null;
+      }
       // Un délai par TENTATIVE : une attente de quota ne doit pas consommer le
-      // temps de la tentative suivante.
+      // temps de la tentative suivante. Jamais au-delà de l'échéance.
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), callTimeoutMs(provider, req));
+      const timer = setTimeout(
+        () => controller.abort(),
+        Math.min(callTimeoutMs(provider, req), left),
+      );
       const attemptStart = Date.now();
       try {
         const res = await provider.complete({ ...req, signal: controller.signal });
@@ -239,7 +265,8 @@ export async function routeCompletion(
           wait !== undefined &&
           attempts === 1 &&
           wait <= MAX_QUOTA_WAIT_MS &&
-          quotaWaited + wait <= QUOTA_WAIT_BUDGET_MS;
+          quotaWaited + wait <= QUOTA_WAIT_BUDGET_MS &&
+          wait + MIN_ATTEMPT_MS < timeLeft();
         logRuntime({
           requested,
           used: provider.id,
@@ -314,7 +341,12 @@ export async function routeCompletion(
   deferred.sort((x, y) => x.wait - y.wait);
   for (const d of deferred) {
     const remaining = Math.max(0, d.wait - (Date.now() - d.at));
-    if (d.wait > MAX_QUOTA_WAIT_MS || quotaWaited + remaining > QUOTA_WAIT_BUDGET_MS) continue;
+    if (
+      d.wait > MAX_QUOTA_WAIT_MS ||
+      quotaWaited + remaining > QUOTA_WAIT_BUDGET_MS ||
+      remaining + MIN_ATTEMPT_MS >= timeLeft()
+    )
+      continue;
     quotaWaited += remaining;
     if (remaining > 0) await sleep(remaining + 250);
     const res = await tryProvider(d.provider, false);

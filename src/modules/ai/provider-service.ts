@@ -51,6 +51,8 @@ export interface GenerateOptions {
   onUsage?: (event: UsageEvent) => void;
   /** Contexte d'audit pour les logs runtime (jamais de contenu sensible). */
   meta?: { trades?: number };
+  /** Échéance absolue (epoch ms) de la question — voir `RouteOptions.deadline`. */
+  deadline?: number;
 }
 
 /** One completion, routed through the AI Runtime (circuit breaker, per-provider
@@ -63,6 +65,7 @@ export async function generate(req: AIRequest, opts: GenerateOptions = {}): Prom
     providers: opts.providers,
     meta: opts.meta,
     onUsage: opts.onUsage,
+    deadline: opts.deadline,
   });
 }
 
@@ -137,7 +140,7 @@ export async function runWithTools(req: AIRequest, opts: ToolLoopOptions): Promi
     try {
       res = await generate(
         { ...req, messages, tools: manifest, toolChoice: "auto" },
-        { provider: candidate, onUsage: opts.onUsage },
+        { provider: candidate, onUsage: opts.onUsage, deadline: opts.deadline },
       );
       provider = candidate;
       break;
@@ -151,10 +154,18 @@ export async function runWithTools(req: AIRequest, opts: ToolLoopOptions): Promi
   const pinned: AIRequest = { ...req, ...(res.model ? { model: res.model } : {}) };
 
   for (let i = 0; i < maxIterations; i++) {
+    // Plus le temps d'un tour d'outils ET de la réponse : on répond maintenant
+    // avec ce qui a été lu, plutôt que d'être coupé par la plateforme.
+    if (
+      i > 0 &&
+      opts.deadline !== undefined &&
+      opts.deadline - Date.now() < (req.timeoutMs ?? 30_000)
+    )
+      break;
     if (i > 0) {
       res = await generate(
         { ...pinned, messages, tools: manifest, toolChoice: "auto" },
-        { provider, onUsage: opts.onUsage },
+        { provider, onUsage: opts.onUsage, deadline: opts.deadline },
       );
     }
     if (!res.toolCalls?.length) return res;
@@ -177,6 +188,6 @@ export async function runWithTools(req: AIRequest, opts: ToolLoopOptions): Promi
      déclaration (ou y lient la réflexion déjà produite). */
   return generate(
     { ...pinned, messages, tools: manifest, toolChoice: "none" },
-    { provider, onUsage: opts.onUsage },
+    { provider, onUsage: opts.onUsage, deadline: opts.deadline },
   );
 }

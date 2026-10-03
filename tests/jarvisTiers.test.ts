@@ -10,7 +10,7 @@ import {
   slotChain,
 } from "../src/modules/ai/runtime/tiers";
 import { estimateCostUsd, priceOf } from "../src/modules/ai/runtime/pricing";
-import { callTimeoutMs } from "../src/modules/ai/runtime/router";
+import { callTimeoutMs, routeCompletion } from "../src/modules/ai/runtime/router";
 import { recordAgentRun } from "../src/backend/telemetry.server";
 import type { AIProvider, AIRequest, AIResponse } from "../src/modules/ai-provider";
 
@@ -259,5 +259,55 @@ describe("B9 — écriture de la télémétrie", () => {
     });
     expect("tier" in bodies[1]).toBe(false);
     expect(bodies[1]).toMatchObject({ input_tokens: 5_200, output_tokens: 640, status: "ok" });
+  });
+});
+
+describe("budget de temps d'une question (limite de 300 s de la plateforme)", () => {
+  let n = 0;
+  /** Un fournisseur qui ne répond jamais — sauf à l'annulation. */
+  function hanging(calls: { n: number }): AIProvider {
+    return {
+      id: `hang-${++n}`,
+      supportsTools: true,
+      isConfigured: () => true,
+      complete: (req: AIRequest) =>
+        new Promise<AIResponse>((_, reject) => {
+          calls.n += 1;
+          req.signal?.addEventListener("abort", () => reject(new Error("AbortError: aborted")));
+        }),
+    };
+  }
+  const msg = [{ role: "user" as const, content: "x" }];
+
+  test("aucune tentative ne dépasse l'échéance de la question", async () => {
+    const calls = { n: 0 };
+    const started = Date.now();
+    let err: unknown;
+    try {
+      await routeCompletion(
+        { messages: msg, timeoutMs: 75_000 },
+        { provider: hanging(calls), deadline: Date.now() + 3_300 },
+      );
+    } catch (e) {
+      err = e;
+    }
+    // Coupée à l'échéance (~3,3 s), pas au délai du niveau (75 s).
+    expect(Date.now() - started).toBeLessThan(5_000);
+    expect(calls.n).toBe(1);
+    expect((err as { type?: string }).type).toBe("timeout");
+  });
+
+  test("une échéance dépassée ne lance aucun appel", async () => {
+    const calls = { n: 0 };
+    let err: unknown;
+    try {
+      await routeCompletion({ messages: msg }, { provider: hanging(calls), deadline: Date.now() });
+    } catch (e) {
+      err = e;
+    }
+    expect(calls.n).toBe(0);
+    expect((err as { technicalMessage?: string }).technicalMessage).toBe(
+      "question time budget exhausted",
+    );
   });
 });
