@@ -1,12 +1,14 @@
 import {
   ProviderHttpError,
   parseRetryAfterMs,
+  type AIMessage,
   type AIProvider,
   type AIRequest,
   type AIResponse,
   type FinishReason,
   type ProviderTool,
   type ProviderToolCall,
+  type ReasoningLevel,
 } from "./types";
 
 /**
@@ -136,32 +138,154 @@ function mapFinish(reason: string | undefined, hasCalls: boolean): FinishReason 
 interface GeminiPart {
   text?: string;
   thought?: boolean;
-  functionCall?: { name?: string; args?: Record<string, unknown> };
+  /** Signature de réflexion — SŒUR de `functionCall` dans la même part, à rejouer telle quelle. */
+  thoughtSignature?: string;
+  functionCall?: { id?: string; name?: string; args?: Record<string, unknown> };
+  functionResponse?: { id?: string; name: string; response: Record<string, unknown> };
+}
+
+interface GeminiContent {
+  role: "user" | "model";
+  parts: GeminiPart[];
 }
 
 /**
- * Thinking budget (Gemini 2.5+).
- *
- * These models reason before answering and, left alone, use a DYNAMIC budget:
- * the model decides how long to think, with no ceiling we control. Those tokens
- * are produced before the first visible character and are billed as output, so
- * an unbounded budget is the single largest source of variable latency here.
- *
- * Coaching answers interpret numbers that a deterministic engine already
- * computed — they need some reasoning, but not an open-ended budget. We cap it
- * rather than disable it: `0` would remove reasoning entirely and risk flatter,
- * less accurate synthesis, which is the opposite of what we want.
- *
- * Override with `GEMINI_THINKING_BUDGET` (0 disables, -1 restores dynamic) so
- * the trade-off can be tuned in production without a code change.
+ * Le préfixe des ids d'appel SYNTHÉTISÉS par le runtime (`tools/runtime.ts`).
+ * Gemini 2.5 ne rend en général pas d'id : on n'en renvoie un dans la réponse
+ * de fonction que si l'appel en portait un.
  */
-function getThinkingBudget(): number {
-  const raw = process.env.GEMINI_THINKING_BUDGET;
-  if (raw !== undefined) {
-    const parsed = Number.parseInt(raw, 10);
-    if (Number.isFinite(parsed)) return parsed;
+const SYNTHETIC_CALL_ID = /^tvcall_/;
+
+/** La valeur sentinelle documentée quand un appel est rejoué sans sa signature
+ *  d'origine (historique produit par un autre modèle) — exigée par Gemini 3. */
+const SKIP_SIGNATURE = "skip_thought_signature_validator";
+
+/**
+ * Les messages du runtime → `contents` Gemini.
+ *
+ * - Un tour assistant qui porte un tour NATIF Gemini est rejoué TEL QUEL
+ *   (parts, signatures de réflexion comprises).
+ * - Un message de résultats devient UN contenu `user` de parts
+ *   `functionResponse`, une par appel, dans l'ordre, sans texte ajouté.
+ * - Tout le reste reste du texte, comme avant.
+ */
+export function toGeminiContents(messages: AIMessage[], model: string): GeminiContent[] {
+  const out: GeminiContent[] = [];
+  const strict = model.startsWith("gemini-3");
+  for (const m of messages) {
+    if (m.role === "system") continue;
+    const native = m.providerTurn?.provider === "gemini" && Array.isArray(m.providerTurn.raw);
+    if (m.role === "assistant" && native) {
+      const parts = (m.providerTurn!.raw as GeminiPart[]).map((p) =>
+        // Une signature est liée au modèle qui l'a produite. Gemini 3 refuse un
+        // appel rejoué sans la sienne : on pose la sentinelle documentée.
+        strict && p.functionCall && m.providerTurn!.model !== model
+          ? { ...p, thoughtSignature: SKIP_SIGNATURE }
+          : p,
+      );
+      out.push({ role: "model", parts });
+      continue;
+    }
+    if (m.toolResults?.length) {
+      out.push({
+        role: "user",
+        parts: m.toolResults.map((r) => ({
+          functionResponse: {
+            ...(r.id && !SYNTHETIC_CALL_ID.test(r.id) ? { id: r.id } : {}),
+            name: r.name,
+            // `response` DOIT être un objet : un tableau de trades est enveloppé.
+            response: r.error !== undefined ? { error: r.error } : { output: r.output ?? null },
+          },
+        })),
+      });
+      continue;
+    }
+    const role = m.role === "assistant" ? "model" : "user";
+    const prev = out[out.length - 1];
+    // Deux tours texte du même rôle à la suite (une conversation qui finit sur
+    // une question) sont fusionnés : jamais une part de texte dans un contenu
+    // de réponses de fonction.
+    if (
+      prev &&
+      prev.role === role &&
+      prev.parts.every((p) => typeof p.text === "string" && !p.thoughtSignature)
+    ) {
+      prev.parts.push({ text: m.content });
+    } else {
+      out.push({ role, parts: [{ text: m.content }] });
+    }
   }
-  return 512;
+  return out;
+}
+
+/**
+ * Budget de réflexion par défaut (Gemini 2.5) quand rien d'autre n'est demandé.
+ *
+ * Ces modèles réfléchissent avant de répondre et, laissés seuls, choisissent
+ * leur budget sans plafond — facturé en sortie, et première source de latence
+ * variable. On le borne plutôt que de le couper.
+ *
+ * `GEMINI_THINKING_BUDGET` est le levier d'EXPLOITATION (0 coupe, -1 rend la
+ * main au modèle) : quand il est posé, il PRIME sur tout, y compris sur le
+ * niveau choisi par le routeur. Il ne servait plus à rien depuis que le coach
+ * imposait 2 048 (bug B10) — c'est corrigé : un réglage de coût posé en
+ * production doit toujours être obéi.
+ */
+function envThinkingBudget(): number | undefined {
+  const raw = process.env.GEMINI_THINKING_BUDGET;
+  if (raw === undefined || raw.trim() === "") return undefined;
+  const parsed = Number.parseInt(raw, 10);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+const DEFAULT_THINKING_BUDGET = 512;
+
+/** Niveau de réflexion → budget de tokens (Gemini 2.5). */
+const LEVEL_BUDGET: Record<ReasoningLevel, number> = {
+  none: 0,
+  low: 512,
+  medium: 2_048,
+  high: 8_192,
+};
+
+/**
+ * Borne un budget aux plages ACCEPTÉES par chaque modèle 2.5 — une valeur hors
+ * plage est un refus 400 :
+ *   - 2.5 Pro : la réflexion ne se coupe pas, 128–32 768 (ou -1) ;
+ *   - 2.5 Flash : 0–24 576 ;
+ *   - 2.5 Flash-Lite : 0, ou 512–24 576.
+ */
+export function clampThinkingBudget(model: string, budget: number): number {
+  if (budget === -1) return -1;
+  if (/flash-lite/.test(model)) return budget <= 0 ? 0 : Math.min(Math.max(budget, 512), 24_576);
+  if (/flash/.test(model)) return Math.min(Math.max(budget, 0), 24_576);
+  // Pro (et tout modèle inconnu de la famille 2.5) : jamais 0.
+  return Math.min(Math.max(budget, 128), 32_768);
+}
+
+/**
+ * La configuration de réflexion d'UN modèle.
+ *
+ * Gemini 3 se règle par NIVEAU (`thinkingLevel`), jamais avec un budget en
+ * même temps (refus 400) ; la famille 2.5 par budget, borné par modèle.
+ */
+export function thinkingConfigFor(model: string, req: AIRequest): Record<string, unknown> {
+  const env = envThinkingBudget();
+  if (model.startsWith("gemini-3")) {
+    if (env !== undefined) return { thinkingBudget: env };
+    const level = req.reasoning ?? (req.reasoningBudget ? "medium" : "low");
+    const flash = /flash/.test(model);
+    const map: Record<ReasoningLevel, string> = flash
+      ? { none: "minimal", low: "low", medium: "medium", high: "high" }
+      : { none: "low", low: "low", medium: "high", high: "high" };
+    return { thinkingLevel: map[level] };
+  }
+  const budget =
+    env ??
+    (req.reasoning !== undefined
+      ? LEVEL_BUDGET[req.reasoning]
+      : (req.reasoningBudget ?? DEFAULT_THINKING_BUDGET));
+  return { thinkingBudget: clampThinkingBudget(model, budget) };
 }
 
 export const GeminiProvider: AIProvider = {
@@ -180,34 +304,41 @@ export const GeminiProvider: AIProvider = {
     if (!apiKey) throw new Error("AI is not configured (missing GEMINI_API_KEY).");
 
     const system = req.messages.filter((m) => m.role === "system");
-    const turns = req.messages.filter((m) => m.role !== "system");
-    const withTools = !!req.tools?.length && req.toolChoice !== "none";
+    const withTools = !!req.tools?.length;
 
-    const body = JSON.stringify({
-      ...(system.length > 0 && {
-        system_instruction: { parts: system.map((m) => ({ text: m.content })) },
-      }),
-      contents: turns.map((m) => ({
-        role: m.role === "assistant" ? "model" : "user",
-        parts: [{ text: m.content }],
-      })),
-      ...(withTools && {
-        tools: [{ functionDeclarations: toFunctionDeclarations(req.tools ?? []) }],
-        toolConfig: {
-          functionCallingConfig: { mode: req.toolChoice === "required" ? "ANY" : "AUTO" },
+    /* LE CORPS EST CONSTRUIT PAR MODÈLE. La réflexion se règle différemment
+       selon le modèle (budget borné en 2.5, niveau en 3) : un corps unique
+       réutilisé le long de la chaîne Pro → Flash → Flash-Lite enverrait à
+       Flash-Lite un budget que seul Pro accepte. */
+    const bodyFor = (model: string) =>
+      JSON.stringify({
+        ...(system.length > 0 && {
+          system_instruction: { parts: system.map((m) => ({ text: m.content })) },
+        }),
+        contents: toGeminiContents(req.messages, model),
+        ...(withTools && {
+          tools: [{ functionDeclarations: toFunctionDeclarations(req.tools ?? []) }],
+          /* « none » GARDE les outils et passe en mode NONE : retirer les
+             déclarations alors que l'historique contient des appels natifs
+             ferait refuser la requête. */
+          toolConfig: {
+            functionCallingConfig: {
+              mode:
+                req.toolChoice === "none" ? "NONE" : req.toolChoice === "required" ? "ANY" : "AUTO",
+            },
+          },
+        }),
+        generationConfig: {
+          maxOutputTokens: req.maxTokens ?? 4096,
+          // Réflexion bornée — voir `thinkingConfigFor`. Les tokens de réflexion
+          // sont décomptés de `maxOutputTokens` : la borne protège aussi la
+          // réponse d'une réflexion qui mangerait tout.
+          thinkingConfig: thinkingConfigFor(model, req),
+          ...(req.temperature !== undefined && { temperature: req.temperature }),
+          // JSON strict et appels de fonction sont incompatibles côté Gemini.
+          ...(req.json && !withTools && { responseMimeType: "application/json" }),
         },
-      }),
-      generationConfig: {
-        maxOutputTokens: req.maxTokens ?? 4096,
-        // Bounded reasoning — see getThinkingBudget(). Thinking tokens are
-        // charged against maxOutputTokens, so the cap also protects the
-        // answer from being squeezed out by an over-long reasoning pass.
-        thinkingConfig: { thinkingBudget: req.reasoningBudget ?? getThinkingBudget() },
-        ...(req.temperature !== undefined && { temperature: req.temperature }),
-        // JSON strict et appels de fonction sont incompatibles côté Gemini.
-        ...(req.json && !withTools && { responseMimeType: "application/json" }),
-      },
-    });
+      });
 
     const call = (model: string) =>
       fetch(
@@ -217,7 +348,7 @@ export const GeminiProvider: AIProvider = {
         {
           method: "POST",
           headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
-          body,
+          body: bodyFor(model),
           ...(req.signal ? { signal: req.signal } : {}),
         },
       );
@@ -226,8 +357,11 @@ export const GeminiProvider: AIProvider = {
        répondaient tous deux 503 (« This model is currently experiencing high
        demand ») — une saturation PAR MODÈLE, pas une panne de Google. Flash-Lite
        a sa propre capacité : il répond quand les deux autres sont saturés. On
-       descend la chaîne tant que le refus tient au modèle ou à sa charge. */
-    const chain = [getModel(), FALLBACK_MODEL, LITE_MODEL].filter(
+       descend la chaîne tant que le refus tient au modèle ou à sa charge.
+
+       Le modèle DEMANDÉ (`req.model`, fixé par le niveau de difficulté) ouvre
+       la chaîne ; à défaut, `GEMINI_MODEL`. */
+    const chain = [req.model ?? getModel(), FALLBACK_MODEL, LITE_MODEL].filter(
       (m, i, all) => all.indexOf(m) === i,
     );
     const usable = chain.filter((m) => !isRefused(m));
@@ -287,17 +421,30 @@ export const GeminiProvider: AIProvider = {
       .join("");
     const toolCalls: ProviderToolCall[] = parts
       .filter((p) => p.functionCall?.name)
-      .map((p) => ({ name: p.functionCall?.name ?? "", arguments: p.functionCall?.args ?? {} }));
+      .map((p) => ({
+        // Un id seulement s'il existe : la forme normalisée reste `{name, arguments}`.
+        ...(p.functionCall?.id ? { id: p.functionCall.id } : {}),
+        name: p.functionCall?.name ?? "",
+        arguments: p.functionCall?.args ?? {},
+      }));
+    const usage = json?.usageMetadata ?? {};
 
     return {
       text,
       provider: "gemini",
       model,
       usage: {
-        inputTokens: json?.usageMetadata?.promptTokenCount,
-        outputTokens: json?.usageMetadata?.candidatesTokenCount,
+        inputTokens: usage.promptTokenCount,
+        outputTokens: usage.candidatesTokenCount,
+        // Facturés comme de la sortie, et jusqu'ici jamais comptés (bug B9).
+        thinkingTokens: usage.thoughtsTokenCount,
+        cachedInputTokens: usage.cachedContentTokenCount,
       },
-      ...(toolCalls.length && { toolCalls }),
+      ...(toolCalls.length && {
+        toolCalls,
+        // Les parts BRUTES, signatures comprises — à rejouer telles quelles.
+        providerTurn: { provider: "gemini", model, raw: parts },
+      }),
       finishReason: mapFinish(candidate?.finishReason, toolCalls.length > 0),
     };
   },

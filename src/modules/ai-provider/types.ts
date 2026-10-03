@@ -13,8 +13,48 @@ export type AIRole = "system" | "user" | "assistant";
 
 export interface AIMessage {
   role: AIRole;
+  /**
+   * Le texte du message — TOUJOURS rempli, y compris pour un tour d'outils.
+   * C'est la forme que comprend tout fournisseur (et tout faux fournisseur de
+   * test) : les champs natifs ci-dessous ne sont qu'une précision en plus.
+   */
   content: string;
+  /** Tour assistant qui a demandé des outils : les appels, ids garantis. */
+  toolCalls?: ProviderToolCall[];
+  /**
+   * Le tour NATIF du fournisseur qui a produit ce message (blocs Anthropic,
+   * parts Gemini, `tool_calls` OpenAI), à rejouer TEL QUEL par ce même
+   * fournisseur : il porte les signatures de réflexion que l'API vérifie.
+   * Un autre fournisseur l'ignore et lit `content`.
+   */
+  providerTurn?: ProviderTurn;
+  /** Message qui rend les résultats d'outils — un par appel, dans l'ordre. */
+  toolResults?: ProviderToolResult[];
 }
+
+/** Un tour natif opaque : seul le fournisseur `provider` sait le relire. */
+export interface ProviderTurn {
+  provider: string;
+  /** Le modèle qui l'a produit — les signatures de réflexion y sont liées. */
+  model: string;
+  raw: unknown;
+}
+
+/** Le résultat d'un appel d'outil, rendu au modèle sous forme native. */
+export interface ProviderToolResult {
+  /** L'id de l'appel (synthétisé par le runtime quand le fournisseur n'en donne pas). */
+  id: string;
+  name: string;
+  output?: unknown;
+  error?: string;
+}
+
+/**
+ * Le niveau de réflexion demandé — une intention, traduite par chaque
+ * fournisseur dans SON vocabulaire (budget Gemini, `effort` Anthropic…). Un
+ * fournisseur qui ne sait pas réfléchir l'ignore.
+ */
+export type ReasoningLevel = "none" | "low" | "medium" | "high";
 
 /**
  * Provider-agnostic tool spec handed to the model as its function-calling
@@ -58,6 +98,17 @@ export interface AIRequest {
   toolChoice?: ToolChoice;
   /** Abort signal — used by the runtime to enforce per-provider timeouts. */
   signal?: AbortSignal;
+  /**
+   * Le modèle à utiliser — fixé par le niveau de difficulté (`runtime/tiers.ts`)
+   * et ÉPINGLÉ pendant toute une boucle d'outils : les signatures de réflexion
+   * sont liées au modèle qui les a produites. Absent = le modèle par défaut du
+   * fournisseur (variable d'environnement).
+   */
+  model?: string;
+  /** Le niveau de réflexion voulu. Prioritaire sur `reasoningBudget` quand les deux sont là. */
+  reasoning?: ReasoningLevel;
+  /** Délai de l'appel (ms), quand le niveau en impose un autre que celui du fournisseur. */
+  timeoutMs?: number;
 }
 
 /** Why the model stopped — normalized. `tool_calls` means it wants tools run. */
@@ -69,10 +120,28 @@ export interface AIResponse {
    *  branch application logic on this). */
   provider: string;
   model: string;
-  usage?: { inputTokens?: number; outputTokens?: number };
+  usage?: {
+    /** Tokens d'entrée facturés, cache compris. */
+    inputTokens?: number;
+    /** Tokens de sortie VISIBLES. */
+    outputTokens?: number;
+    /** Tokens de réflexion, facturés comme de la sortie mais invisibles. */
+    thinkingTokens?: number;
+    /** Part de l'entrée servie depuis le cache du fournisseur. */
+    cachedInputTokens?: number;
+    /** Part de l'entrée ÉCRITE dans le cache ce tour-ci (facturée plus cher
+     *  que l'entrée normale chez Anthropic). Comprise dans `inputTokens`. */
+    cacheWriteInputTokens?: number;
+  };
   /** Populated only when the model requested one or more tool invocations. */
   toolCalls?: ProviderToolCall[];
   finishReason?: FinishReason;
+  /**
+   * Le tour natif à rejouer, quand la réponse demande des outils (voir
+   * `AIMessage.providerTurn`). Hors de `toolCalls`, délibérément : la forme
+   * normalisée des appels reste identique d'un fournisseur à l'autre.
+   */
+  providerTurn?: ProviderTurn;
 }
 
 export interface AIProvider {

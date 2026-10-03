@@ -89,10 +89,17 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
   );
 
   // La sidebar / le coach demandent une analyse → ouvre la Conversation.
+  //
+  // ET OUVRE LA FENÊTRE (bug B12). Le prompt était mis en attente sans que le
+  // panneau s'ouvre : `JarvisShell` n'est monté que si `open`, donc la question
+  // restait dans le vide jusqu'à ce que le trader clique le dock — et partait
+  // alors sans qu'il l'ait vue venir. Les boutons « Demander à Jarvis » de la
+  // Checklist ne faisaient, à l'écran, rien du tout.
   const askJarvis = useCallback(
     (prompt: string) => {
       setPendingPrompt(prompt);
       setActiveWorkspace("conversation");
+      setOpen(true);
       if (user?.id && !conversationIdRef.current) {
         void jarvisConversationStore(user.id)
           .create()

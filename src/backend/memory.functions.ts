@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireJarvisSideAccess } from "@/backend/require-pro";
+import { enforceHourlyAiQuota, requireJarvisSideAccess } from "@/backend/require-pro";
 import { runMemoryExtraction } from "@/modules/ai/agents/memory.agent";
 import { shouldAttemptExtraction, type MemoryCandidate } from "@/modules/ai/memory-extract";
 import { recordAgentRun } from "./telemetry.server";
@@ -46,6 +46,10 @@ export const extractMemory = createServerFn({ method: "POST" })
     if (!shouldAttemptExtraction(data.userMessage)) {
       return { candidates: [], skipped: "no_marker" };
     }
+
+    // Le jeton horaire n'est pris QU'ICI : l'extraction est activée et le
+    // message porte un engagement, donc un appel modèle va vraiment partir.
+    await enforceHourlyAiQuota((context as { supabase?: unknown } | undefined)?.supabase);
 
     const userId = (context as { userId?: string } | undefined)?.userId;
     let served: { provider?: string; model?: string; latencyMs?: number } = {};

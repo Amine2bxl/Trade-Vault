@@ -17,4 +17,7 @@ export type {
   ProviderToolCall,
   ToolChoice,
   FinishReason,
+  ProviderTurn,
+  ProviderToolResult,
+  ReasoningLevel,
 } from "./types";

@@ -3,6 +3,23 @@
 Journal des changements **structurels** (pas des features ni des correctifs,
 qui vivent dans l'historique git et les PR).
 
+## 2026-10-02 — Jarvis : chaîne d'intelligence (LOT 2)
+
+- Une seule chaîne pour une question posée à Jarvis :
+  `modules/ai/agents/coach.orchestrator.ts` (route → plan de contexte →
+  lectures parallèles → modèle du niveau → validation des chiffres → trace).
+- Nouveaux modules : `modules/ai/router/route.ts` (routeur unifié, source de
+  `app/features/jarvis/intent.ts` et de l'intention mémoire),
+  `modules/ai/context-engine.ts`, `modules/ai/validation.ts`,
+  `modules/ai/runtime/tiers.ts`, `modules/ai/runtime/pricing.ts`,
+  `backend/ai-tools/profile-data.ts`.
+- Appels d'outils natifs dans les adaptateurs Gemini, Anthropic et
+  OpenAI-compatibles (champs optionnels `toolCalls` / `providerTurn` /
+  `toolResults` sur `AIMessage`).
+- Migration additive `20261002090000_ai_agent_runs_observability` (colonnes de
+  télémétrie ; l'écriture retombe sur les colonnes historiques tant qu'elle
+  n'est pas appliquée).
+
 ## 2026-09-30 — Restructuration complète du dépôt
 
 Zéro changement fonctionnel : déplacements, imports, chemins lus par les tests,

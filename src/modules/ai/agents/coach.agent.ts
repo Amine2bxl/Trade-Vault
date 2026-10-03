@@ -18,7 +18,8 @@ import { currencySymbol, formatMoney, parseCurrency } from "@/shared/currency";
  * (or injected via opts), so this is unit-testable without network.
  */
 import { generate, runWithTools, type GenerateOptions } from "../provider-service";
-import type { ToolContext } from "../tools/types";
+import type { ToolContext, ToolResult } from "../tools/types";
+import type { AIProvider, AIRequest, ReasoningLevel } from "@/modules/ai-provider";
 import { buildPrompt, type ConversationTurn } from "../prompt-builder";
 import { createContextBuilder } from "../context-builder";
 import { toFormatted, type FormattedResponse } from "../response-formatter";
@@ -81,6 +82,11 @@ export interface CoachInput {
    * à chaque session et un coach qui se souvient de ce qu'il lui a dit.
    */
   memory?: { kind: string; content: string }[];
+  /**
+   * Échelle du compte quand l'historique a été recalibré : sans elle, Jarvis
+   * lirait des montants recalibrés comme tradés tels quels (bug B5).
+   */
+  calibration?: AIUserContext["calibration"];
   /**
    * Résultat DÉJÀ CALCULÉ par le moteur probabiliste (`modules/probability`).
    *
@@ -193,6 +199,28 @@ export const ANTI_HALLUCINATION =
   "never a prediction, and mention the sample size when it is thin.";
 
 /**
+ * CE QUE L'ON SAIT, CE QUE L'ON CALCULE, CE QUE L'ON SUPPOSE.
+ *
+ * Jarvis doit séparer l'observé de l'interprété : « tes données montrent X »
+ * n'est pas « une explication probable est Y ». Et une association n'est pas
+ * une cause — règle du produit (`modules/patterns/language.ts`), appliquée ici
+ * à la conversation. Bloc STABLE : il fait partie du préfixe mis en cache.
+ */
+export const EVIDENCE_RULES =
+  "EVIDENCE RULES:\n" +
+  '- Keep apart what the data SHOWS (journal entries, engine figures: say "your data shows…"), ' +
+  'what you INTERPRET ("a likely explanation is…", "this suggests…") and what you CANNOT ' +
+  "confirm (say so). Never present an interpretation as a fact.\n" +
+  "- Every statistic about the trader carries its sample size (n trades, n days). Below 10 " +
+  "trades, say the sample is too small to conclude.\n" +
+  '- Describe associations, never causes: "these trades are associated with…", "on N ' +
+  'trades…" — not "X causes Y".\n' +
+  "- Quote figures exactly as the data gives them. Do not compute new totals, shares, " +
+  "averages or differences yourself: if a figure the question needs is not in the data, say " +
+  "it is not available rather than estimating it.\n" +
+  "- All data covers the trader's ACTIVE account only.";
+
+/**
  * LE PROTOCOLE D'OUTILS — ajouté au prompt SEULEMENT quand des outils sont
  * réellement branchés.
  *
@@ -254,6 +282,17 @@ export interface BuildOptions {
    *  outils sont effectivement remis au modèle — décrire des outils absents le
    *  pousserait à annoncer des lectures qu'il ne fera jamais. */
   tools?: boolean;
+  /**
+   * Les lectures préparées côté serveur par le Context Engine (blocs « MEASURED »),
+   * ajoutées après les blocs du client.
+   */
+  prefetched?: string;
+  /**
+   * Les consignes propres à CETTE question (routage, sources non branchées,
+   * forme de réponse). Un SECOND message système : le premier reste identique
+   * d'une question à l'autre, donc cachable.
+   */
+  guidance?: string;
 }
 
 /** Assemble the grounded prompt from the trader's real data. Pure & testable. */
@@ -273,30 +312,49 @@ export function buildCoachMessages(input: CoachInput, opts: BuildOptions = {}) {
   // Le profil déclaré ET les souvenirs sélectionnés partagent le même bloc
   // « faits que tu connais déjà » : même sémantique, aucun tuyau supplémentaire.
   // Le profil vient EN PREMIER — c'est l'identité, elle cadre tout le reste.
+  //
+  // Défense en profondeur contre le doublon (bug B15) : un client ancien peut
+  // encore envoyer le souvenir `profile` en plus du champ `profile`.
   const memoryBlock = [
     ...(input.profile ? [{ kind: "profile", content: input.profile }] : []),
-    ...(input.memory ?? []),
+    ...(input.memory ?? []).filter((m) => !(input.profile && m.kind === "profile")),
   ];
   if (memoryBlock.length) builder.withMemory(memoryBlock);
+  // Échelle et simulation : envoyées par le client, et jusqu'ici jamais posées
+  // dans le prompt (bug B5) — la consigne disait « pas de simulation » à un
+  // trader qui en avait une.
+  if (input.calibration && input.calibration.scale !== 1)
+    builder.withCalibration(input.calibration);
+  if (input.simulation) builder.withSimulation(input.simulation);
 
   const lang = languageName(input.language);
   // La devise du journal : sans elle, le modèle écrivait des « $ » à un
   // trader qui tient son journal en euros.
   const currency = parseCurrency(input.currency);
   const currencyRule = `Every money amount in the data is in ${currency}. Write amounts with the ${currencySymbol(currency)} symbol (for example ${formatMoney(-1234.5, { currency })}), never with another currency.`;
-  return buildPrompt({
+  const clientBlocks = builder.blocks();
+  const contextBlocks = [clientBlocks, opts.prefetched?.trim() ?? ""].filter(Boolean).join("\n\n");
+  const messages = buildPrompt({
+    // L'ORDRE COMPTE pour le cache des fournisseurs : ce qui ne change jamais
+    // d'abord (persona, règles, protocole), ce qui change chaque jour ou par
+    // trader ensuite (date, devise).
     identity: [
       coachIdentity(lang),
+      ANTI_HALLUCINATION,
+      EVIDENCE_RULES,
+      ...(opts.tools ? [TOOL_PROTOCOL] : []),
       dateRule(input.today),
       currencyRule,
-      ANTI_HALLUCINATION,
-      ...(opts.tools ? [TOOL_PROTOCOL] : []),
     ].join("\n\n"),
     outputFormat: CHAT_FORMAT,
-    contextBlocks: builder.blocks(),
+    contextBlocks,
     conversation: input.conversation,
     userTurn: `Question: ${input.question}`,
   });
+  if (opts.guidance?.trim()) {
+    messages.splice(1, 0, { role: "system", content: opts.guidance.trim() });
+  }
+  return messages;
 }
 
 export interface CoachRunOptions extends GenerateOptions {
@@ -311,6 +369,20 @@ export interface CoachRunOptions extends GenerateOptions {
   toolContext?: ToolContext;
   /** Tours de dialogue modèle↔outils avant de forcer une réponse (défaut : 4). */
   maxToolIterations?: number;
+  /**
+   * La chaîne du NIVEAU de difficulté (`runtime/tiers.ts`). Absente : l'ancien
+   * comportement (fournisseurs du registre, réflexion et plafond historiques).
+   */
+  providers?: AIProvider[];
+  /** Plafond de sortie, réflexion et délai du niveau — absents : valeurs historiques. */
+  maxTokens?: number;
+  reasoning?: ReasoningLevel;
+  timeoutMs?: number;
+  /** Lectures préparées et consignes de la question (voir `BuildOptions`). */
+  prefetched?: string;
+  guidance?: string;
+  /** Audit de chaque outil exécuté par la boucle. */
+  onToolResult?: (result: ToolResult, durationMs: number) => void;
 }
 
 /**
@@ -334,27 +406,36 @@ export async function runCoach(
   input: CoachInput,
   opts?: CoachRunOptions,
 ): Promise<FormattedResponse> {
-  /* LE TEMPS DE RÉFLÉCHIR. Le budget de réflexion laisse au modèle un vrai
-     passage d'analyse avant d'écrire ; il est décompté des tokens de sortie,
-     d'où un plafond qui garde assez de place pour la réponse elle-même. */
-  const maxTokens = 6144;
-  const reasoningBudget = 2048;
+  /* LE TEMPS DE RÉFLÉCHIR. Avec un niveau de difficulté (`opts.reasoning`), la
+     réflexion, le plafond et le délai sont ceux du niveau. Sans niveau, les
+     valeurs historiques : un budget de réflexion décompté des tokens de
+     sortie, d'où un plafond qui garde de la place pour la réponse. Dans les
+     deux cas, `GEMINI_THINKING_BUDGET` posé en production prime (adaptateur). */
+  const tiered = opts?.reasoning !== undefined;
+  const sizing: Pick<AIRequest, "maxTokens" | "reasoningBudget" | "reasoning" | "timeoutMs"> =
+    tiered
+      ? { maxTokens: opts?.maxTokens, reasoning: opts?.reasoning, timeoutMs: opts?.timeoutMs }
+      : { maxTokens: opts?.maxTokens ?? 6144, reasoningBudget: 2048 };
   const genOpts: GenerateOptions = {
     provider: opts?.provider,
+    providers: opts?.providers,
     onUsage: opts?.onUsage,
     meta: { trades: input.trades?.length, ...opts?.meta },
+    deadline: opts?.deadline,
   };
+  const build = { prefetched: opts?.prefetched, guidance: opts?.guidance };
 
   const outils = opts?.tools ?? [];
   if (outils.length > 0 && opts?.toolContext) {
     try {
       const res = await runWithTools(
-        { messages: buildCoachMessages(input, { tools: true }), maxTokens, reasoningBudget },
+        { messages: buildCoachMessages(input, { ...build, tools: true }), ...sizing },
         {
           ...genOpts,
           tools: outils,
           toolContext: opts.toolContext,
           maxIterations: opts.maxToolIterations,
+          onToolResult: opts.onToolResult,
           /* LECTURE SEULE, explicitement. C'est déjà le défaut du runtime, et
              tous les outils branchés déclarent `sideEffect: false` — mais un
              outil d'écriture ajouté un jour ne doit pas devenir appelable par
@@ -368,9 +449,6 @@ export async function runCoach(
     }
   }
 
-  const res = await generate(
-    { messages: buildCoachMessages(input), maxTokens, reasoningBudget },
-    genOpts,
-  );
+  const res = await generate({ messages: buildCoachMessages(input, build), ...sizing }, genOpts);
   return toFormatted(res);
 }

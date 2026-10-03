@@ -22,6 +22,7 @@
  * React. Il est donc testable exhaustivement — ce qui compte, parce que c'est
  * lui qui décide de ce que Jarvis « sait » à chaque réponse.
  */
+import { routeQuestion, type MemoryIntent } from "./router/route";
 
 /** Les catégories présentes dans `ai_memory` (V2). */
 export type MemoryKind = "profile" | "fact" | "lesson" | "conversation" | "preference" | "decision";
@@ -39,15 +40,11 @@ export interface MemoryLike {
 
 /**
  * Intentions de mémoire : on classe ici ce qu'il faut SAVOIR pour répondre à
- * la question, pas ce qu'il faut afficher.
+ * la question, pas ce qu'il faut afficher. Le type et la classification
+ * viennent du routeur unifié (`router/route.ts`) — une seule lecture de la
+ * question dans tout Jarvis.
  */
-export type MemoryIntent =
-  | "psychology"
-  | "discipline"
-  | "performance"
-  | "goals"
-  | "rules"
-  | "generic";
+export type { MemoryIntent };
 
 /**
  * Budget de tokens pour le bloc mémoire entier.
@@ -89,42 +86,16 @@ export function estimateTokens(text: string): number {
   return Math.ceil(text.length / 4);
 }
 
-const PATTERNS: Array<{ intent: MemoryIntent; re: RegExp }> = [
-  {
-    intent: "psychology",
-    re: /tilt|émotion|emotion|peur|fear|stress|anxi|confian|confiden|fomo|panic|panique|revenge|frustr|mental|impatien|discipline mentale|state of mind/i,
-  },
-  {
-    intent: "discipline",
-    re: /discipline|respect|tenu|tenir|hold|checklist|routine|process|sur-?trade|overtrad|taille|size|risque|risk|stop|plan de trading|trading plan/i,
-  },
-  {
-    intent: "performance",
-    re: /win ?rate|taux de r|gain|perte|loss|profit|pnl|p&l|résultat|result|performance|drawdown|série|streak|meilleur|worst|pire|setup|stratég|strateg/i,
-  },
-  {
-    intent: "goals",
-    re: /objectif|goal|cible|target|but\b|ambition|progress|améliorer|improve|atteindre|reach/i,
-  },
-  {
-    intent: "rules",
-    re: /règle|regle|rule|engagement|commit|promesse|interdit|jamais|toujours|max\b|limite/i,
-  },
-];
-
 /**
  * Détecte l'intention MÉMOIRE d'une question.
  *
- * L'ordre compte : `psychology` est testé en premier parce qu'une question
- * émotionnelle contient souvent aussi des mots de performance (« j'ai peur de
- * perdre »), et c'est l'émotion qui doit gagner — c'est elle qui détermine
- * quels souvenirs aident réellement.
+ * Dérivée du routeur unifié, avec la même priorité qu'avant : l'ÉMOTION
+ * d'abord (« j'ai peur de perdre » parle d'état mental, pas de P&L), puis la
+ * discipline, la performance, les objectifs, les règles. Le lexique, lui, n'est
+ * plus tenu ici : il est celui qui décide aussi des données et du modèle.
  */
 export function detectMemoryIntent(question: string): MemoryIntent {
-  for (const { intent, re } of PATTERNS) {
-    if (re.test(question)) return intent;
-  }
-  return "generic";
+  return routeQuestion(question).memoryIntent;
 }
 
 /**
