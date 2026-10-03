@@ -1,7 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import {
+  ambiguityPrompt,
   extractPeriods,
   extractSymbols,
+  inheritFromPrevious,
+  isUnrecognised,
   mergeModelRoute,
   normalizeQuestion,
   routeQuestion,
@@ -296,5 +299,48 @@ describe("revue adversariale du LOT 2 — dates", () => {
     expect(periods("Qu'est-ce que j'ai fait le 12/09 ?", "2026-10-01")).toEqual([
       "2026-09-12..2026-09-12",
     ]);
+  });
+});
+
+describe("relances — héritage de la question précédente", () => {
+  const today = "2026-10-01";
+  const prev = routeQuestion("Why did I lose money this week?", { today });
+
+  test.each(["why?", "pourquoi ?", "tell me more", "and on NQ?"])(
+    "« %s » hérite des domaines du journal et de la période",
+    (q) => {
+      const r = routeQuestion(q, { today });
+      expect(isUnrecognised(r)).toBe(true);
+      const m = inheritFromPrevious(r, prev);
+      expect(m.domains).toContain("performance");
+      expect(m.entities.period?.label).toBe("this week");
+      expect(m.ambiguous).toBe(false);
+      expect(m.signals).toContain("follow-up");
+    },
+  );
+
+  test("une entité nommée par la relance prime sur celle de la question précédente", () => {
+    const m = inheritFromPrevious(routeQuestion("and on NQ?", { today }), prev);
+    expect(m.entities.symbols).toEqual(["NQ"]);
+  });
+
+  test("un merci ou une définition ne sont pas des relances", () => {
+    expect(isUnrecognised(routeQuestion("ok merci", { today }))).toBe(false);
+    expect(isUnrecognised(routeQuestion("c'est quoi le drawdown ?", { today }))).toBe(false);
+  });
+
+  test("rien à hériter d'une question précédente hors journal ; jamais le niveau 4", () => {
+    const r = routeQuestion("tell me more", { today });
+    expect(inheritFromPrevious(r, routeQuestion("salut", { today }))).toBe(r);
+    const deep = routeQuestion("Fais-moi une analyse complète de mon trading", { today });
+    expect(deep.tier).toBe(4);
+    expect(inheritFromPrevious(r, deep).tier).toBe(3);
+  });
+
+  test("le prompt de routage porte la question précédente, bornée", () => {
+    const p = ambiguityPrompt("tell me more", "x".repeat(1000));
+    expect(p.user.startsWith("Previous question: ")).toBe(true);
+    expect(p.user.length).toBeLessThan(900);
+    expect(ambiguityPrompt("tell me more").user).toBe("tell me more");
   });
 });

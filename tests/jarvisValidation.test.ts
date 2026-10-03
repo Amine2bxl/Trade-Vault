@@ -133,6 +133,21 @@ describe("montants qui ressemblent à une année", () => {
   });
 });
 
+describe("jours du mois en français", () => {
+  test("« le 12 », « du 3 au 10 » sont des dates, pas des mesures", () => {
+    expect(extractFigures("Le 12, tu as perdu 50 €.").map((f) => f.raw)).toEqual(["50 €"]);
+    expect(extractFigures("du 3 au 10, ton P&L a reculé")).toEqual([]);
+    expect(
+      validateAnswer("Une perte de 50 € le 12 a pesé sur le mois.", '{"avgLoss":-50}').ok,
+    ).toBe(true);
+  });
+
+  test("avec une unité, ce sont toujours des chiffres vérifiés", () => {
+    expect(extractFigures("le 12 % de tes trades").map((f) => f.raw)).toEqual(["12 %"]);
+    expect(extractFigures("le 15 trades").map((f) => f.raw)).toEqual(["15"]);
+  });
+});
+
 describe("réparation et mention honnête", () => {
   test("la consigne nomme les chiffres et interdit d'en recalculer", () => {
     const r = validateAnswer("Ton win rate est de 61 %.", DATA);

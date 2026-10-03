@@ -244,7 +244,7 @@ describe("question ambiguë", () => {
   test("un petit modèle tranche, borné et en JSON, puis le niveau proposé s'applique", async () => {
     delete process.env.AI_MODEL_ROUTER;
     const seen: AIRequest[] = [];
-    const { trace } = await orchestrateCoach(fullCoachInput(q), {
+    const { trace } = await orchestrateCoach(fullCoachInput(q, { conversation: [] }), {
       modelTools: [],
       prefetch: false,
       providers: [
@@ -269,7 +269,7 @@ describe("question ambiguë", () => {
   test("AI_MODEL_ROUTER=off : pas d'appel de routage", async () => {
     process.env.AI_MODEL_ROUTER = "off";
     const seen: AIRequest[] = [];
-    const { trace } = await orchestrateCoach(fullCoachInput(q), {
+    const { trace } = await orchestrateCoach(fullCoachInput(q, { conversation: [] }), {
       modelTools: [],
       prefetch: false,
       providers: [scripted(["Tu peux préciser ta question ?"], seen)],
@@ -373,5 +373,54 @@ describe("revue adversariale du LOT 2 — régressions", () => {
       const original = caught as { technicalMessage?: string; message?: string };
       expect(original.technicalMessage ?? original.message ?? "").toContain("provider down");
     });
+  });
+});
+
+describe("relances de conversation", () => {
+  test("« pourquoi ? » hérite des données de la question précédente, chiffres vérifiés", async () => {
+    await withFakePostgrest(septembre(), async () => {
+      const seen: AIRequest[] = [];
+      const input = fullCoachInput("pourquoi ?", {
+        conversation: [
+          { role: "user", content: "Combien j'ai gagné en septembre ?" },
+          { role: "assistant", content: "En septembre, ton P&L net est de 300 €." },
+        ],
+      });
+      const { trace } = await orchestrateCoach(input, {
+        userId: "u1",
+        accountId: "acc1",
+        modelTools: JARVIS_TOOL_NAMES,
+        prefetch: true,
+        providers: [scripted(["Une perte de 50 € le 12 a pesé sur le mois."], seen)],
+      });
+      expect(trace.signals).toContain("follow-up");
+      expect(trace.domains).toContain("performance");
+      // La période de la question précédente est relue, pour le compte actif.
+      expect(allText(seen[0])).toContain("MEASURED — stats 2026-09-01..2026-09-30");
+      expect(seen[0].tools?.length).toBeGreaterThan(0);
+      // Et la réponse est vérifiée : -50 € figure dans les données lues.
+      expect(trace.validation).toBe("ok");
+    });
+  });
+
+  test("le petit modèle de routage voit la question précédente du trader, jamais une réponse", async () => {
+    delete process.env.AI_MODEL_ROUTER;
+    const seen: AIRequest[] = [];
+    await orchestrateCoach(
+      fullCoachInput("Peux-tu m'en dire plus là-dessus stp ?", {
+        conversation: [
+          { role: "user", content: "Peux-tu m'expliquer ça ?" },
+          { role: "assistant", content: "Réponse confidentielle 4 321 €." },
+        ],
+      }),
+      {
+        modelTools: [],
+        prefetch: false,
+        providers: [scripted(['{"domains":["knowledge"],"tier":1}', "Bien sûr."], seen)],
+      },
+    );
+    expect(seen[0].json).toBe(true);
+    expect(allText(seen[0])).toContain("Previous question: Peux-tu m'expliquer ça ?");
+    expect(allText(seen[0])).not.toContain("4 321");
   });
 });

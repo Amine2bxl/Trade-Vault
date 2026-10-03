@@ -30,7 +30,9 @@ import { generate, type UsageEvent } from "../provider-service";
 import { tryParseJson } from "../response-formatter";
 import {
   ambiguityPrompt,
+  inheritFromPrevious,
   isJournalDomain,
+  isUnrecognised,
   mergeModelRoute,
   routeQuestion,
   type QuestionRoute,
@@ -183,6 +185,7 @@ export function routeGuidance(route: QuestionRoute, plan: ContextPlan): string {
 async function resolveAmbiguity(
   route: QuestionRoute,
   question: string,
+  previous: string | undefined,
   providers: AIProvider[] | undefined,
   onUsage: (e: UsageEvent) => void,
 ): Promise<{ route: QuestionRoute; used: boolean }> {
@@ -190,7 +193,7 @@ async function resolveAmbiguity(
   const chain = providers ?? slotChain("router");
   if (chain.length === 0) return { route, used: false };
   const policy = SLOT_POLICY.router;
-  const p = ambiguityPrompt(question);
+  const p = ambiguityPrompt(question, previous);
   try {
     const res = await generate(
       {
@@ -324,8 +327,14 @@ export async function orchestrateCoach(
     usage.push(e);
   };
 
-  // 1. COMPRENDRE
+  // 1. COMPRENDRE — une relance (« pourquoi ? ») se comprend avec la question
+  // précédente du trader (jamais avec une réponse de Jarvis).
+  const previous = [...(input.conversation ?? [])]
+    .reverse()
+    .find((t) => t.role === "user")?.content;
   let route = routeQuestion(input.question, { today: input.today });
+  if (previous && isUnrecognised(route))
+    route = inheritFromPrevious(route, routeQuestion(previous, { today: input.today }));
   let ambiguityUsed = false;
   let blocksKept: string[] = [];
   let prefetchResults: PrefetchResult[] = [];
@@ -333,7 +342,13 @@ export async function orchestrateCoach(
   let contextChars = 0;
 
   try {
-    const ambiguity = await resolveAmbiguity(route, input.question, opts.providers, onUsage);
+    const ambiguity = await resolveAmbiguity(
+      route,
+      input.question,
+      previous,
+      opts.providers,
+      onUsage,
+    );
     route = ambiguity.route;
     ambiguityUsed = ambiguity.used;
 

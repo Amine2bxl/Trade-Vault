@@ -866,7 +866,15 @@ export const ROUTE_DOMAINS: readonly RouteDomain[] = DOMAIN_ORDER;
  * Le prompt du petit modèle de routage. Court, en JSON strict : il ne voit que
  * la question — jamais les données du trader.
  */
-export function ambiguityPrompt(question: string): { system: string; user: string } {
+export function ambiguityPrompt(
+  question: string,
+  previous?: string,
+): { system: string; user: string } {
+  // La question PRÉCÉDENTE du trader (jamais une réponse, jamais une donnée) :
+  // « dis-m'en plus » ne se classe qu'avec elle.
+  const user = previous
+    ? `Previous question: ${previous.slice(0, 300)}\nQuestion: ${question.slice(0, 500)}`
+    : question.slice(0, 500);
   return {
     system:
       "You classify a trader's question for a trading-journal assistant. Reply with STRICT JSON " +
@@ -876,7 +884,62 @@ export function ambiguityPrompt(question: string): { system: string; user: strin
       "analysis of one area of their data; 3 = diagnosis crossing several areas or periods; 4 = " +
       "explicit full deep review. If the question is about their own trading, include at least one " +
       "data domain.",
-    user: question.slice(0, 500),
+    user,
+  };
+}
+
+/** Rien n'a été reconnu : la route est le repli « knowledge » faute de mieux. */
+export function isUnrecognised(route: QuestionRoute): boolean {
+  return (
+    route.domains.length === 1 &&
+    route.domains[0] === "knowledge" &&
+    !route.signals.includes("definition")
+  );
+}
+
+/**
+ * Une RELANCE (« pourquoi ? », « et sur NQ ? », « dis-m'en plus ») ne se
+ * comprend qu'avec la question d'avant : elle en hérite les domaines du journal
+ * et les entités qu'elle ne nomme pas elle-même. Sans cet héritage, la relance
+ * la plus courante d'une conversation partait sans aucune donnée, sans outil et
+ * sans vérification des chiffres.
+ *
+ * Le niveau reste plafonné à 3 : seule une demande EXPLICITE d'analyse
+ * complète ouvre le niveau 4. Une question précédente sans journal ne
+ * transmet rien.
+ */
+export function inheritFromPrevious(route: QuestionRoute, previous: QuestionRoute): QuestionRoute {
+  const domains = previous.domains.filter(
+    (d) => d !== "smalltalk" && d !== "knowledge" && d !== "product",
+  );
+  if (!domains.some(isJournalDomain)) return route;
+  const cur = route.entities;
+  const prev = previous.entities;
+  const set = new Set(domains);
+  return {
+    ...route,
+    domains,
+    primary: domains[0],
+    tier: Math.min(Math.max(route.tier, previous.tier), 3) as RouteTier,
+    entities: {
+      ...((cur.period ?? prev.period) ? { period: cur.period ?? prev.period } : {}),
+      ...((cur.comparison ?? prev.comparison)
+        ? { comparison: cur.comparison ?? prev.comparison }
+        : {}),
+      weekdays: cur.weekdays.length ? cur.weekdays : prev.weekdays,
+      symbols: cur.symbols.length ? cur.symbols : prev.symbols,
+      sessions: cur.sessions.length ? cur.sessions : prev.sessions,
+      ...((cur.horizonHours ?? prev.horizonHours)
+        ? { horizonHours: cur.horizonHours ?? prev.horizonHours }
+        : {}),
+    },
+    asksWhy: route.asksWhy || previous.asksWhy,
+    personal: route.personal || previous.personal,
+    confidence: 0.5,
+    ambiguous: false,
+    uiIntent: deriveUiIntent(set, ""),
+    memoryIntent: deriveMemoryIntent(set, ""),
+    signals: [...route.signals, "follow-up"],
   };
 }
 

@@ -77,6 +77,12 @@ function scrub(text: string): string {
         /\b(january|february|march|april|may|june|july|august|september|october|november|december|janvier|février|fevrier|avril|juillet|août|aout|septembre|octobre|novembre|décembre|decembre)\s+\d{1,2}\b/gi,
         " ",
       )
+      // Jour du mois en français (« le 12, tu as… », « du 3 au 10 ») — une
+      // date, pas une mesure ; « le 12 % » ou « le 12 € » restent des chiffres.
+      .replace(
+        /\b(le|du|au|depuis le|jusqu'au)\s+(\d{1,2})(er)?\b(?!\s*(?:%|[$€£¥]|R\b|[kK]\b|pts?\b|points?\b|trades?\b|fois\b|derniers?\b|premiers?\b|jours?\b))/gi,
+        (whole, _w: string, day: string) => (Number(day) >= 1 && Number(day) <= 31 ? " " : whole),
+      )
       // Années — mais pas un MONTANT qui leur ressemble : « 1950,37 € »,
       // « $2019.83 » ou « 2019 € » perdaient leur partie entière et leurs
       // décimales étaient ensuite signalées comme inventées.
