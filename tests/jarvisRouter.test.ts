@@ -246,3 +246,55 @@ describe("résolution d'ambiguïté par un petit modèle", () => {
     expect(mergeModelRoute(base, { domains: ["patterns"], tier: 4 }).tier).toBe(3);
   });
 });
+
+describe("revue adversariale du LOT 2 — dates", () => {
+  const periods = (q: string, today: string) =>
+    extractPeriods(normalizeQuestion(q), today).map((p) => `${p.since}..${p.until}`);
+
+  test("« du mois dernier » / « du mois de septembre » ne sont pas le mois en cours", () => {
+    expect(periods("Mes résultats du mois dernier", "2026-10-15")).toEqual([
+      "2026-09-01..2026-09-30",
+    ]);
+    expect(periods("Mes trades du mois de septembre", "2026-10-15")).toEqual([
+      "2026-09-01..2026-09-30",
+    ]);
+    expect(periods("du mois dernier", "2026-01-01")).toEqual(["2025-12-01..2025-12-31"]);
+    // « du mois » seul reste le mois en cours.
+    expect(periods("le P&L du mois", "2026-10-15")).toEqual(["2026-10-01..2026-10-15"]);
+  });
+
+  test("un jour nommé avec son mois est CE jour-là, pas le mois ni « le 15 » courant", () => {
+    const today = "2026-10-20";
+    for (const q of [
+      "Comment s'est passé le 15 septembre ?",
+      "Mes trades du 15 septembre",
+      "My trades on September 15",
+      "September 15th",
+    ])
+      expect(periods(q, today)).toEqual(["2026-09-15..2026-09-15"]);
+    expect(periods("le 1er octobre", today)).toEqual(["2026-10-01..2026-10-01"]);
+    // Sans année, la date passée la plus récente.
+    expect(periods("le 25 octobre", today)).toEqual(["2025-10-25..2025-10-25"]);
+    expect(periods("September 15th, 2025", today)).toEqual(["2025-09-15..2025-09-15"]);
+    const r = routeQuestion("Qu'est-ce que j'ai fait le 15 septembre ?", { today });
+    expect(r.domains).toContain("day");
+    expect(r.entities.period).toMatchObject({ since: "2026-09-15", granularity: "day" });
+  });
+
+  test("une plage de jours dans un mois reste une plage", () => {
+    const today = "2026-10-20";
+    expect(periods("du 1er au 15 septembre", today)).toEqual(["2026-09-01..2026-09-15"]);
+    expect(periods("September 1-15", today)).toEqual(["2026-09-01..2026-09-15"]);
+    expect(periods("entre le 3 et le 10 mars 2025", today)).toEqual(["2025-03-03..2025-03-10"]);
+  });
+
+  test("jj/mm sans année n'est jamais une date future", () => {
+    expect(periods("Mes trades du 25/12", "2026-01-05")).toEqual(["2025-12-25..2025-12-25"]);
+    expect(periods("Mes trades du 25/12", "2026-12-26")).toEqual(["2026-12-25..2026-12-25"]);
+    // « le 03/10/2025 » : la date entière, pas « le 3 » du mois courant en plus.
+    expect(periods("le 03/10/2025", "2026-01-05")).toEqual(["2025-10-03..2025-10-03"]);
+    expect(periods("Qu'est-ce que j'ai fait le 12/09 ?", "2026-10-01")).toEqual([
+      "2026-09-12..2026-09-12",
+    ]);
+  });
+});

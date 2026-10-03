@@ -315,6 +315,10 @@ function validIso(text: string): string | null {
 export function extractPeriods(q: string, today: string): Period[] {
   const { y: ty, m: tm, d: td } = parseIso(today);
   const found: { at: number; period: Period }[] = [];
+  // Portions de texte déjà lues comme une date PRÉCISE (« le 15 septembre ») :
+  // le mois seul ou « le 15 » nu ne doivent pas les relire autrement.
+  const consumed: [number, number][] = [];
+  const taken = (at: number, len: number) => consumed.some(([s, e]) => at < e && at + len > s);
   const push = (at: number, period: Period) => {
     if (period.since > period.until) return;
     if (found.some((f) => f.period.since === period.since && f.period.until === period.until))
@@ -359,8 +363,11 @@ export function extractPeriods(q: string, today: string): Period[] {
       granularity: "week",
     });
   });
-  each(/\b(ce mois(-ci)?|this month|du mois|mois en cours|current month)\b/, (m) =>
-    push(m.index, monthPeriod(ty, tm, today, "this month")),
+  // « du mois » seul = ce mois-ci ; « du mois dernier », « du mois de
+  // septembre » nomment un AUTRE mois, lu plus bas.
+  each(
+    /\b(ce mois(-ci)?|this month|du mois(?! (?:dernier|passe|precedent|d'|de\b))|mois en cours|current month)\b/,
+    (m) => push(m.index, monthPeriod(ty, tm, today, "this month")),
   );
   each(
     /\b(le mois (dernier|passe)|mois dernier|mois precedent|last month|previous month)\b/,
@@ -394,10 +401,70 @@ export function extractPeriods(q: string, today: string): Period[] {
         });
     },
   );
+  // Un JOUR nommé avec son mois (« le 15 septembre », « September 15th »,
+  // « 1er octobre ») ou une PLAGE de jours (« du 1er au 15 septembre »,
+  // « September 1-15 ») : une date précise, jamais le mois entier ni « le 15 »
+  // du mois courant. Sans année : la date passée la plus récente.
+  const dayIn = (year: number | null, month: number, day: number): string | null => {
+    const at = (y: number) =>
+      validIso(`${y}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`);
+    if (year !== null) return at(year);
+    const thisYear = at(ty);
+    return thisYear && thisYear <= today ? thisYear : at(ty - 1);
+  };
+  for (const [re, month] of MONTHS) {
+    // `\b(septembre|september|sept|sep)\b` → `(?:septembre|september|sept|sep)`.
+    const name = `(?:${re.source.replace(/^\\b\(|\)\\b$/g, "")})`;
+    // Plages : FR « du 1er au 15 septembre », « entre le 3 et le 10 mars » ;
+    // EN « September 1-15 », « September 1 to 15 ». Groupes : jour, jour, année.
+    const rangeRes = [
+      new RegExp(
+        `\\b(?:du|entre le) (\\d{1,2})(?:er)? (?:au|et le) (\\d{1,2}) (?:de )?${name}\\b(?: (\\d{4}))?`,
+        "g",
+      ),
+      new RegExp(
+        `\\b${name} (\\d{1,2})(?:st|nd|rd|th)?\\s*(?:-|to|through|until)\\s*(\\d{1,2})(?:st|nd|rd|th)?\\b(?:,? (\\d{4}))?`,
+        "g",
+      ),
+    ];
+    for (const rr of rangeRes)
+      each(rr, (m) => {
+        const year = m[3] ? Number(m[3]) : null;
+        const from = dayIn(year, month, Number(m[1]));
+        const to = dayIn(year, month, Number(m[2]));
+        if (!from || !to || from > to) return;
+        consumed.push([m.index, m.index + m[0].length]);
+        push(m.index, {
+          since: from,
+          until: to > today ? today : to,
+          label: m[0],
+          granularity: "range",
+        });
+      });
+    // Jours : FR « le 15 septembre », « 1er octobre » ; EN « September 15th ».
+    // Groupes : jour, année.
+    const dayRes = [
+      new RegExp(
+        `(?:\\b(?:le|du|au|the|on) )?\\b(\\d{1,2})(?:er|st|nd|rd|th)? (?:de |of )?${name}\\b(?: (\\d{4}))?`,
+        "g",
+      ),
+      new RegExp(`\\b${name} (\\d{1,2})(?:st|nd|rd|th)?\\b(?:,? (\\d{4}))?`, "g"),
+    ];
+    for (const dr of dayRes)
+      each(dr, (m) => {
+        if (taken(m.index, m[0].length)) return;
+        const d = dayIn(m[2] ? Number(m[2]) : null, month, Number(m[1]));
+        if (!d) return;
+        consumed.push([m.index, m.index + m[0].length]);
+        push(m.index, { since: d, until: d, label: m[0], granularity: "day" });
+      });
+  }
   // Mois nommés, avec année éventuelle. Sans année, le mois à venir est celui
   // de l'an dernier : « septembre » posé en août parle du septembre passé.
   for (const [re, month] of MONTHS) {
     each(new RegExp(`${re.source}(?:\\s+(\\d{4}))?`), (m) => {
+      // Déjà lu comme un jour précis (« le 15 septembre ») : pas le mois entier.
+      if (taken(m.index, m[0].length)) return;
       // Les formes courtes sont aussi des mots (« may » = pouvoir, « dec ») :
       // on ne les prend pour un mois que suivies d'une année ou précédées de
       // « en / in / de / du / of / mois de ».
@@ -412,7 +479,9 @@ export function extractPeriods(q: string, today: string): Period[] {
   // Dates explicites.
   each(/\b(\d{4}-\d{2}-\d{2})\b/, (m) => {
     const d = validIso(m[1]);
-    if (d) push(m.index, { since: d, until: d, label: d, granularity: "day" });
+    if (!d) return;
+    consumed.push([m.index, m.index + m[0].length]);
+    push(m.index, { since: d, until: d, label: d, granularity: "day" });
   });
   each(/\b(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\b/, (m) => {
     // Jour d'abord (convention française du produit).
@@ -420,12 +489,21 @@ export function extractPeriods(q: string, today: string): Period[] {
     const month = Number(m[2]);
     let year = m[3] ? Number(m[3]) : ty;
     if (year < 100) year += 2000;
-    const d = validIso(`${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`);
-    if (d) push(m.index, { since: d, until: d, label: d, granularity: "day" });
+    const at = (y: number) =>
+      validIso(`${y}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`);
+    let d = at(year);
+    // Sans année, la date passée la plus récente : « le 25/12 » posé le 5
+    // janvier parle du Noël écoulé, pas du prochain.
+    if (!m[3] && (!d || d > today)) d = at(ty - 1) ?? d;
+    if (!d) return;
+    // « le 12/09 » : la date entière, jamais « le 12 » du mois courant.
+    consumed.push([m.index, m.index + m[0].length]);
+    push(m.index, { since: d, until: d, label: d, granularity: "day" });
   });
   each(/\ble (\d{1,2})\b(?! (?:derniers|jours|days|trades?|fois|%|euros?|dollars?))/, (m) => {
     const day = Number(m[1]);
     if (day < 1 || day > 31) return;
+    if (taken(m.index, m[0].length)) return;
     // « le 12 » : ce mois-ci si le jour est passé, sinon le mois précédent.
     const useMonth = day <= td ? tm : tm === 1 ? 12 : tm - 1;
     const useYear = day <= td ? ty : tm === 1 ? ty - 1 : ty;
