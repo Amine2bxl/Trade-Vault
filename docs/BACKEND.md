@@ -27,6 +27,7 @@ suffixe `*.server.ts`.
 | Fonction | Fichier | Rôle |
 | --- | --- | --- |
 | `askCoach` | `coach.functions.ts` | Jarvis (seul endpoint IA en production) |
+| `brokerCapabilities`, `connectTradovateCredentials`, `startTradovateOAuth`, `completeTradovateOAuth`, `syncBrokers`, `refreshBrokerAccountList` | `brokers.functions.ts` | Synchro broker (§9) |
 | `extractMemory` | `memory.functions.ts` | Extraction de souvenirs (coupée sauf `AI_MEMORY_EXTRACTION=1`) |
 | `acceptProposal` | `proposals.functions.ts` | Seule voie d'écriture de Jarvis : applique une proposition acceptée |
 | `generateMyMonthlyReport` | `reports.functions.ts` | Rapport mensuel à la demande |
@@ -55,6 +56,7 @@ n'est jamais évalué sur une requête de page. Rate-limit par IP
 | --- | --- | --- |
 | `/api/health` | tout | Sonde de santé |
 | `/api/cron/monthly-reports` · `lifecycle-emails` · `pattern-scan` · `economic-calendar` | POST | Crons (voir §4) |
+| `/api/cron/broker-sync` | GET, POST | Rattrapage quotidien de la synchro broker (§9) |
 | `/api/emails/welcome` | POST | E-mail de bienvenue |
 | `/api/billing/checkout` · `/api/billing/portal` | POST | Stripe Checkout / portail client |
 | `/api/stripe/webhook` | POST | Webhook Stripe (signature vérifiée, idempotent) |
@@ -73,6 +75,7 @@ n'est jamais évalué sur une requête de page. Rate-limit par IP
 | `0 8 * * *` | `lifecycle-emails` | Expirations d'essai, e-mails de cycle de vie, rappels d'objectifs, purge de `ai_agent_runs` (90 j) — best-effort |
 | `0 5 * * *` | `economic-calendar` | Synchro Forex Factory → `economic_events` (semaine en cours ; `actual` non fourni par la source) |
 | `0 3 * * *` | `pattern-scan` | Détection de motifs → propositions ([`AI.md`](AI.md) §4) |
+| `30 22 * * *` | `broker-sync` | Connexions broker actives non synchronisées depuis 1 h (§9) |
 
 Garde-fous : `Authorization: Bearer $CRON_SECRET` obligatoire (refus sans
 secret configuré) ; client **service-role** limité à ces handlers ;
@@ -124,3 +127,41 @@ Google ne redirige jamais vers l'app, mais vers Supabase :
 Seuls les scopes non sensibles (`openid`, e-mail, profil) sont demandés : ne
 jamais en ajouter sans mesurer le coût de vérification Google. L'adresse de
 support déclarée à Google doit rester `SUPPORT_EMAIL` (`src/app/types.ts`).
+
+## 9. Synchronisation broker (Tradovate)
+
+Le trader connecte un login Tradovate (prop firms comprises) ; chaque
+aller-retour clôturé arrive dans son journal, déjà rempli de tout le
+structurel, et ouvre son formulaire pour qu'il complète le jugement.
+
+- **Connexion** — deux parcours (`brokers.functions.ts`) : OAuth « Se connecter
+  avec Tradovate » (`TRADOVATE_CLIENT_ID` / `TRADOVATE_CLIENT_SECRET`, retour
+  sur `/brokers` avec `code` + `state`, `state` stocké en empreinte SHA-256,
+  30 min de validité) ou **clé API** du trader (`POST /auth/accesstokenrequest`
+  avec login, mot de passe, `cid`, `sec`). Sans `BROKER_CREDENTIALS_KEY`,
+  aucune connexion n'est proposée.
+- **Secrets** — identifiants et jetons chiffrés AES-256-GCM
+  (`broker-crypto.server.ts`) avant toute écriture ; jamais renvoyés au
+  navigateur (le store client ne lit que les colonnes publiques).
+- **Jeton** — ~90 min, renouvelé par `GET /auth/renewaccesstoken` 10 min avant
+  expiration ; expiré : redemandé avec la clé API, ou connexion passée en
+  `error` (OAuth) — le trader reconnecte. Un refus n'est jamais retenté en
+  boucle (Tradovate pénalise les échecs : `p-ticket`, captcha).
+- **Synchro** (`broker-sync.server.ts`, même code pour l'app et le cron) :
+  comptes (`/account/list` → `broker_accounts`, rattachés au compte TradeVault
+  par défaut de la connexion) → `/fill/list`, `/order/list`, `/position/list`
+  → contrats (`contract` → `contractMaturity` → `product.valuePerPoint`, mis en
+  cache dans `sync_cursor`) → frais (`fillFee`, au mieux) →
+  `modules/brokers` (plat → plat, déterministe ; position antérieure à la
+  fenêtre absorbée, jamais inventée) → stop initial (`orderVersion`) pour le
+  risque et le R → `upsert … on conflict (user_id, external_id) do nothing`.
+  `sync_cursor.syncedThrough` (dernière sortie traitée) empêche un trade
+  supprimé de revenir.
+- **Cadence** — `useBrokerSync` (app ouverte, onglet visible) appelle
+  `syncBrokers` toutes les 60 s ; le serveur ignore une connexion
+  synchronisée depuis moins de 30 s. Le cron quotidien rattrape le reste.
+- **Côté client** — les trades importés entrent dans le cache React Query du
+  compte affiché ; ceux de cette session ouvrent le `TradeModal` un par un
+  (P&L broker verrouillé, R déduit du risque confirmé) ; les autres attendent
+  dans le Journal (« N à relire »).
+

@@ -19,6 +19,7 @@ import {
   Target,
   User,
   Shuffle,
+  Cable,
 } from "lucide-react";
 import { PAGES, SECTIONS, type Page, type SectionId } from "../types";
 import type { TKey } from "../i18n/translations";
@@ -74,6 +75,7 @@ export const PAGE_META: Record<Page, { labelKey: TKey; icon: typeof LayoutDashbo
   // section entière : trois entrées identiques dans une rangée de quatre. Le
   // tirage aléatoire de trajectoires se lit mieux en brassage.
   montecarlo: { labelKey: "nav.montecarlo", icon: Shuffle },
+  brokers: { labelKey: "nav.brokers", icon: Cable },
 };
 
 /** Libellé + icône de chaque section. */

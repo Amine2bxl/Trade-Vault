@@ -3,6 +3,22 @@
 Journal des changements **structurels** (pas des features ni des correctifs,
 qui vivent dans l'historique git et les PR).
 
+## 2026-10-08 — Synchro broker, sous-comptes, langage Lucid
+
+- Nouveau moteur `src/modules/brokers/` (pur) et frontière serveur
+  `backend/brokers.functions.ts`, `broker-sync.server.ts`,
+  `tradovate.server.ts`, `broker-crypto.server.ts` ; feature
+  `app/features/brokers/` (page `brokers`, section Réglages).
+- Migration `20261008120000_broker_sync.sql` : `broker_connections`,
+  `broker_accounts`, colonnes d'exécution et d'import sur `trades`, index
+  unique `(user_id, external_id)`, recalibrage étendu aux frais.
+- Transfert de trades entre comptes : `trading/tradeTransfer.ts` (pur),
+  `store/tradeTransfer.ts`, `shell/TransferTradesModal.tsx` ; compte principal
+  (`accounts.is_default`) exposé par `AccountContext`.
+- Typographie : l'app connectée passe à la pile système de Lucid
+  (`--font-lucid`, `body.tv-app-type`) ; accent et vert P&L `#31d68a`.
+- `store/trades.ts` lit `*` (colonnes ajoutées tolérées avant migration).
+
 ## 2026-09-30 — Restructuration complète du dépôt
 
 Zéro changement fonctionnel : déplacements, imports, chemins lus par les tests,

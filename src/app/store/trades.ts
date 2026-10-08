@@ -27,7 +27,21 @@ interface TradeRow {
   mfe?: number | null;
   slippage?: number | null;
   is_example?: boolean;
+  // Colonnes de la migration `broker_sync` : absentes tant qu'elle n'a pas
+  // tourné, d'où le `?` et les replis neutres de `rowToTrade`.
+  quantity?: number | null;
+  entry_price?: number | null;
+  exit_price?: number | null;
+  fees?: number | null;
+  broker?: string | null;
+  external_id?: string | null;
+  broker_account?: string | null;
+  review_pending?: boolean | null;
+  copied_from?: string | null;
 }
+
+const numOrNull = (v: unknown): number | null =>
+  v == null || v === "" || !Number.isFinite(Number(v)) ? null : Number(v);
 
 /** Ligne SQL → `Trade`. Exporté pour le temps réel : un événement Supabase
  *  livre exactement cette forme de ligne. */
@@ -57,6 +71,15 @@ export function rowToTrade(r: TradeRow): Trade {
     // Le compte d'origine voyage AVEC le trade : c'est ce qui permet à une
     // modification de ne pas le déplacer vers le compte actif du moment.
     accountId: r.account_id ?? null,
+    quantity: numOrNull(r.quantity),
+    entryPrice: numOrNull(r.entry_price),
+    exitPrice: numOrNull(r.exit_price),
+    fees: numOrNull(r.fees),
+    broker: r.broker ?? null,
+    externalId: r.external_id ?? null,
+    brokerAccount: r.broker_account ?? null,
+    reviewPending: !!r.review_pending,
+    copiedFrom: r.copied_from ?? null,
   };
 }
 
@@ -65,6 +88,36 @@ export function rowToTrade(r: TradeRow): Trade {
 const toCents = (n: number) => Math.round(n * 100) / 100;
 
 function tradeToRow(t: Trade, userId: string): TradeRow {
+  return { ...baseRow(t, userId), ...executionColumns(t) };
+}
+
+/**
+ * Les colonnes d'exécution ne partent QUE si le trade en porte.
+ *
+ * Une saisie manuelle n'en a aucune : ne pas les nommer du tout garde
+ * l'écriture valable sur une base où la migration `broker_sync` n'a pas
+ * encore tourné (PostgREST refuse une colonne inconnue — et l'application est
+ * déployée AVANT ses migrations). Pour un trade importé, `review_pending`
+ * repart à chaque écriture : l'enregistrer depuis le formulaire, c'est
+ * l'avoir relu.
+ */
+function executionColumns(t: Trade): Partial<TradeRow> {
+  const row: Partial<TradeRow> = {};
+  if (t.quantity != null) row.quantity = t.quantity;
+  if (t.entryPrice != null) row.entry_price = t.entryPrice;
+  if (t.exitPrice != null) row.exit_price = t.exitPrice;
+  if (t.fees != null) row.fees = toCents(t.fees);
+  if (t.broker) {
+    row.broker = t.broker;
+    row.external_id = t.externalId ?? null;
+    row.broker_account = t.brokerAccount ?? null;
+    row.review_pending = !!t.reviewPending;
+  }
+  if (t.copiedFrom) row.copied_from = t.copiedFrom;
+  return row;
+}
+
+function baseRow(t: Trade, userId: string): TradeRow {
   return {
     id: t.id,
     user_id: userId,
@@ -101,8 +154,15 @@ function tradeToRow(t: Trade, userId: string): TradeRow {
 
 // ── Trades ──
 
-const TRADE_COLS =
-  "id,user_id,account_id,trade_date,symbol,direction,pnl,risk_amount,r_multiple,strategy,mistakes,setup_quality,notes,screenshots,entry_time,exit_time,confluences,confidence,mae,mfe,slippage,is_example,created_at,updated_at";
+/**
+ * `*` et NON une liste de colonnes — la leçon déjà apprise sur `accounts`
+ * (voir `loadAccounts`) : nommer une colonne qui n'existe pas encore fait
+ * échouer la requête ENTIÈRE, et le journal se vide. Les colonnes d'exécution
+ * (`quantity`, `broker`…) arrivent par une migration qui tourne APRÈS le
+ * déploiement du code ; `*` rend ce qui existe et `rowToTrade` retombe sur
+ * des valeurs neutres pour le reste.
+ */
+const TRADE_COLS = "*";
 
 /**
  * Taille d'une page de lecture.
@@ -173,7 +233,7 @@ export async function loadUserTrades(
 export async function upsertTrade(userId: string, trade: Trade): Promise<void> {
   // RLS ensures auth.uid() = user_id on both INSERT and UPDATE.
   // The row's user_id is always set from the authenticated userId param.
-  const { error } = await supabase.from("trades").upsert(tradeToRow(trade, userId));
+  const { error } = await supabase.from("trades").upsert(tradeToRow(trade, userId) as never);
   if (error) {
     // La limite mensuelle est aussi appliquée par un déclencheur Postgres : son
     // refus doit arriver à l'interface comme un moment de vente, pas comme une
@@ -216,14 +276,19 @@ export async function importTrades(
 
   for (let i = 0; i < trades.length; i += IMPORT_BATCH_SIZE) {
     const batch = trades.slice(i, i + IMPORT_BATCH_SIZE);
-    const { error } = await supabase.from("trades").upsert(batch.map((t) => tradeToRow(t, userId)));
+    const { error } = await supabase
+      .from("trades")
+      // `as never` : les types générés ne connaissent pas encore les colonnes
+      // d'exécution (migration `broker_sync`) ; `tradeToRow` ne les nomme que
+      // lorsqu'un trade en porte.
+      .upsert(batch.map((t) => tradeToRow(t, userId)) as never);
     if (!error) {
       saved.push(...batch);
     } else {
       // Repli ligne à ligne pour isoler la ou les lignes réellement fautives.
       console.error("Batch import failed, retrying row by row", error);
       const results = await Promise.allSettled(
-        batch.map((t) => supabase.from("trades").upsert(tradeToRow(t, userId))),
+        batch.map((t) => supabase.from("trades").upsert(tradeToRow(t, userId) as never)),
       );
       results.forEach((r, k) => {
         if (r.status === "fulfilled" && !r.value.error) {

@@ -39,6 +39,34 @@ export interface Trade {
    * le comportement voulu à la CRÉATION.
    */
   accountId?: string | null;
+
+  // ── Données d'exécution (import broker) ──────────────────────────────────
+  // Optionnelles : une saisie manuelle n'en porte aucune, et aucune statistique
+  // ne les exige. Elles existent pour que le trade importé arrive COMPLET dans
+  // le formulaire (« 2 contrats, 18 012,25 → 18 031,50 ») et pour que le trader
+  // puisse vérifier ce que le broker a réellement exécuté.
+
+  /** Nombre de contrats (ou de lots) — la taille maximale de la position. */
+  quantity?: number | null;
+  /** Prix moyen d'entrée (prix de MARCHÉ : jamais recalibré). */
+  entryPrice?: number | null;
+  /** Prix moyen de sortie (prix de MARCHÉ : jamais recalibré). */
+  exitPrice?: number | null;
+  /** Commissions et frais en monnaie du compte, déjà déduits de `pnl`. */
+  fees?: number | null;
+  /** Broker d'origine (`tradovate`…) — absent pour une saisie manuelle. */
+  broker?: string | null;
+  /** Identifiant STABLE du trade chez le broker : la clé de déduplication. */
+  externalId?: string | null;
+  /** Nom du compte chez le broker (ex. « APEX-1234-07 »). */
+  brokerAccount?: string | null;
+  /**
+   * Importé automatiquement et pas encore relu. Le formulaire du trade s'ouvre
+   * de lui-même sur un trade dans cet état ; l'enregistrer le marque relu.
+   */
+  reviewPending?: boolean;
+  /** Trade dont celui-ci est la COPIE (transfert entre comptes). */
+  copiedFrom?: string | null;
 }
 
 export interface TradeStats {
