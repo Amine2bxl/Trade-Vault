@@ -1,15 +1,23 @@
 ---
 name: typography
-description: Loi typographique de TradeVault — famille Inter unique, échelle `--tv-t-*` à 8 rôles, chiffres tabulaires `.tv-figure`, libellés `.tv-label`, plancher de lisibilité, titrage marketing vs titrage produit. À charger avant d'écrire une taille de texte, un titre, un libellé, un chiffre ou une graisse. Se déclenche sur : police, font, typo, taille de texte, titre, h1, h2, libellé, label, chiffre, nombre, graisse, tracking, interlignage, lisibilité.
+description: Loi typographique de TradeVault — pile système de Lucid dans l'app (Inter sur la vitrine), échelle `--tv-t-*` à 8 rôles, chiffres tabulaires `.tv-figure`, libellés `.tv-label`, plancher de lisibilité, titrage marketing vs titrage produit. À charger avant d'écrire une taille de texte, un titre, un libellé, un chiffre ou une graisse. Se déclenche sur : police, font, typo, taille de texte, titre, h1, h2, libellé, label, chiffre, nombre, graisse, tracking, interlignage, lisibilité.
 ---
 
-# Typographie — une seule voix
+# Typographie — une voix par surface
 
-## Une famille, pas deux
+## La police de Lucid dans l'app, Inter sur la vitrine
 
-**Inter** porte tout : corps ET display. `--font-display` existe mais pointe sur
-Inter — la hiérarchie vient de la **taille, de la graisse et de l'approche**,
-jamais d'une deuxième famille. `Roboto Mono` (`--font-mono`) est réservé aux
+L'**app connectée** écrit dans la police de Lucid : la **pile système**
+`--font-lucid` (`-apple-system`/SF Pro, Segoe UI, Roboto, Helvetica Neue,
+Arial), relevée sur les captures de leur tableau de bord — aucune police web,
+le chiffre est dessiné pour l'écran qui l'affiche. `body.tv-app-type` (posé
+par `shell/App.tsx`) l'applique au corps et aux titres, modales comprises.
+
+La **vitrine**, les pages légales et la démo gardent **Inter** (`--font-sans`,
+`--font-display`). `.tv-figure` et `.tv-label` portent la pile Lucid partout.
+
+Dans chaque surface, une seule famille : la hiérarchie vient de la **taille,
+de la graisse et de l'approche**. `Roboto Mono` (`--font-mono`) est réservé aux
 rares données techniques (codes, identifiants).
 
 Ne jamais introduire une police d'affichage « pour le caractère ». Le produit
@@ -39,7 +47,8 @@ mention. Rien sous 10px. Du texte réel à lire : 12px minimum.
 ### `.tv-figure` — le chiffre
 
 ```
-font-variant-numeric: tabular-nums; font-weight: 800; letter-spacing: -0.02em;
+font-family: var(--font-lucid); font-variant-numeric: tabular-nums;
+font-weight: 800; letter-spacing: -0.01em;
 ```
 
 **Obligatoire** sur tout prix, P&L, R-multiple, pourcentage, statistique. Le
@@ -50,7 +59,7 @@ ligne. La classe ne fixe **pas** de couleur — la teinte porte le signe.
 ### `.tv-label` — le libellé
 
 ```
-10px / 600 / uppercase / letter-spacing: .05em
+var(--font-lucid) · 10px / 700 / uppercase / letter-spacing: .08em
 ```
 
 Un libellé **nomme la case**, il ne fait pas une phrase. Il doit pouvoir être

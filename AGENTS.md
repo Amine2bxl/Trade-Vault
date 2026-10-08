@@ -52,7 +52,9 @@ suite ; ne jamais affaiblir une assertion pour passer.
   `useLandingT()`, `SSR_LANG`). Anglais par défaut, changement de langue
   uniquement par choix explicite. Toute clé ajoutée dans `translations.ts` et
   `fr`. Aucune chaîne visible codée en dur.
-- **Design** : thème par défaut **`lucid`** (accent menthe `#22e08a`) ; le
+- **Design** : thème par défaut **`lucid`** (accent menthe `#31d68a`, le vert
+  relevé sur Lucid) ; l'app connectée écrit dans la pile système de Lucid
+  (`--font-lucid`), la vitrine garde Inter ; le
   `:root` de `src/styles.css` reste identique au thème par défaut. Rien ne
   rayonne (ni ombre, ni halo, ni dégradé, ni `animate-ping`) ; le P&L garde ses
   couleurs fixes. Primitives `src/shared/ui`. Charger les skills de

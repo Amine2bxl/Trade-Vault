@@ -16,7 +16,8 @@ teinté, barre mobile flottante — **jamais** le logo, la marque, les textes ni
 le produit de Lucid.
 
 **Deux verts qui ne se confondent pas :**
-1. L'**accent** (`--tv-accent` `#22e08a`) = une action : aplat plein (bouton,
+1. L'**accent** (`--tv-accent` `#31d68a`, relevé pixel par pixel sur le
+   tableau de bord Lucid) = une action : aplat plein (bouton,
    onglet actif, `+`, focus) avec texte quasi noir.
 2. La **donnée** (`--tv-chart-green` / `--tv-chart-red`) = un résultat : texte
    coloré ou surface à ~10 % d'opacité, jamais un aplat. Le P&L **ne suit aucun
@@ -42,8 +43,10 @@ plancher de lisibilité 10 px (12 px pour du texte à lire) ;
 - Stockage par appareil : `tv-themes-v2` (thèmes) et `tv-theme-vars-v2`
   (variables résolues), purgés à la déconnexion.
 - Palette `lucid` : fond `#07080a` · carte `--tv-plate-1` `#131416` · tuile
-  `--tv-plate-2` `#1a1c1e` · creux `--tv-plate-0` `#0d0e10` · accent `#22e08a`
-  (foncé `#12b981`, clair `#5bf0ab`) · texte `#f2f4f5` · liseré
+  `--tv-plate-2` `#1a1c1e` · creux `--tv-plate-0` `#0d0e10` · accent `#31d68a`
+  (foncé `#1fb574`, clair `#6be3a8`) · P&L `--tv-chart-green` `#31d68a` /
+  `--tv-chart-red` `#f87171`. La vitrine garde son émeraude verrouillée
+  (`#22e08a`, `.landing-root`) · texte `#f2f4f5` · liseré
   `rgb(255 255 255 / .05)`.
 
 **Grammaire de surface** : `.glass`, `.glass-strong`, `.panel`, `.stat-card*`
@@ -51,7 +54,13 @@ rendent la **même** plaque ; seule la valeur change.
 
 ## 3. Typographie
 
-Famille unique **Inter**. Échelle à rôles `--tv-t-*` : `display`, `h1`, `h2`,
+**Deux voix, une par surface.** L'app connectée écrit dans la police de Lucid
+— la **pile système** `--font-lucid` (SF Pro sur Apple, Segoe UI sous Windows,
+Roboto sous Android), relevée sur leurs captures, sans police web à charger ;
+`body.tv-app-type` (posé par `shell/App.tsx`) l'applique, modales comprises.
+La vitrine, les pages légales et la démo gardent **Inter**. `.tv-figure`
+(chiffres, P&L) et `.tv-label` (petites capitales grasses espacées) portent la
+pile Lucid partout. Échelle à rôles `--tv-t-*` : `display`, `h1`, `h2`,
 `h3`, `body`, `body-sm`, `caption`, `micro`. Chiffres : `.tv-figure`
 (tabulaires). Libellés : `.tv-label` (petites capitales espacées). Détail :
 skill `typography`.
@@ -63,7 +72,11 @@ encore davantage (dette à résorber, sans en ajouter) —, **300 ms maximum dan
 `transform` et `opacity`, jamais `transition-property: all`. Pas de Framer
 Motion. Reveal au scroll réservé à la landing (GSAP, contenu visible par
 défaut). Recharts reste hors du chunk initial (chargé paresseusement).
-Détail : skill `motion`.
+Effet compteur de Lucid : `RollingFigure` (`shared/ui`) fait rouler un chiffre
+qui change — tuiles `Metric`/`Kpi`, P&L du tableau de bord — avec les
+keyframes du prix animé (`prix-entre`/`prix-sort`), aucune nouvelle keyframe.
+Le rail se plie en 260 ms : seule sa largeur s'anime, les icônes ne bougent
+pas, les libellés s'effacent en fondu. Détail : skill `motion`.
 
 ## 5. Primitives (`src/shared/ui`)
 
@@ -90,7 +103,8 @@ Réutiliser avant de restyler. Graphes : `app/trading/chartTheme.ts` +
 - **Navigation** : source unique `PAGES` / `SECTIONS` (`src/app/types.ts`) →
   `shell/navigation.ts` → Sidebar, barre mobile, palette ⌘K. Six sections dans
   l'ordre d'une séance : Dashboard · Préparation · Journal · Analyse · Coach ·
-  Stratégie (+ Réglages).
+  Stratégie (+ Réglages). Les entrées du rail sont des **carrés** aux angles
+  adoucis (`--radius-lg`), comme chez Lucid — plus de pilules.
 - **Pages plein écran** (Calendar, Inbox, Jarvis, Journal, Monte Carlo) :
   `hooks/useAvailableHeight`, jamais de défilement de page.
 - **États** : chargement par squelette à la géométrie finale ; état vide qui

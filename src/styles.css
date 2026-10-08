@@ -122,7 +122,7 @@
   --color-surface: #16191c;
   --color-surface-light: #1d2125;
   --color-surface-lighter: #23282d;
-  --color-profit: #22e08a;
+  --color-profit: #31d68a;
   --color-loss: #ef4444;
 
   /* ----------------------------------------------------------------
@@ -342,6 +342,14 @@
      de la sidebar l'utilisent. */
   --font-display:
     "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  /* LA PILE DE LUCID — la police du système, sans police web. SF Pro sur
+     Apple (`-apple-system` / `BlinkMacSystemFont`), Segoe UI sous Windows,
+     Roboto sous Android, Helvetica Neue / Arial en dernier recours. C'est
+     exactement ce que rend leur tableau de bord (vérifié sur leurs captures :
+     SF Pro sur iPhone, Segoe UI sur un poste Windows). */
+  --font-lucid:
+    -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
   /* Default identity = "Graphite" neutral gray — matches the public landing
      page so the signed-in app and the marketing site share one identity. */
   /* Surfaces et textes — extraits en variables pour que le studio de thème
@@ -398,16 +406,18 @@
      Vérifié par le calcul sur `computeThemeVars(graphite)`. Si les ancres du
      thème changent, relancer le calcul plutôt que d'ajuster ces nombres à
      l'estime. */
-  --tv-primary-h: 156.4;
-  --tv-primary-c: 1.3;
-  --tv-secondary-h: 162.4;
-  --tv-secondary-c: 1.063;
-  --tv-accent: #22e08a;
-  --tv-accent-2: #12b981;
-  --tv-highlight: #5bf0ab;
-  --tv-accent-rgb: 34 224 138;
-  --tv-accent-2-rgb: 18 185 129;
-  --tv-highlight-rgb: 91 240 171;
+  /* Recalculé par `computeThemeVars(lucid)` après le passage au vert Lucid
+     (#31d68a, relevé sur l'aplat du bouton actif du tableau de bord Lucid). */
+  --tv-primary-h: 157.4;
+  --tv-primary-c: 1.22;
+  --tv-secondary-h: 158;
+  --tv-secondary-c: 1.092;
+  --tv-accent: #31d68a;
+  --tv-accent-2: #1fb574;
+  --tv-highlight: #6be3a8;
+  --tv-accent-rgb: 49 214 138;
+  --tv-accent-2-rgb: 31 181 116;
+  --tv-highlight-rgb: 107 227 168;
 
   /* ── LE VERT DE LA DONNÉE ──
    *
@@ -424,10 +434,13 @@
    * unique de la courbe, de son dégradé, de sa légende et de ses pastilles.
    * `--tv-chart-red` en est le pendant pour la perte et pour le repère de
    * plancher. */
-  /* Le vert du gain EST le vert de la vitrine (#22e08a, le « Get Started ») :
-     un seul vert dans tout le produit, de la landing à la courbe. */
-  --tv-chart-green: #22e08a;
-  --tv-chart-green-rgb: 34 224 138;
+  /* LE VERT ET LE ROUGE DE LUCID. Relevés pixel par pixel sur les captures du
+     tableau de bord Lucid (`docs/assets/lucid/`) : l'aplat du bouton actif et
+     le P&L positif donnent #31d68a, la perte #f87171 (déjà le nôtre). Le vert
+     du gain reste le vert de l'accent : un seul vert dans l'app, de l'onglet
+     actif à la courbe. La vitrine garde son émeraude verrouillée. */
+  --tv-chart-green: #31d68a;
+  --tv-chart-green-rgb: 49 214 138;
   --tv-chart-red: #f87171;
   --tv-chart-red-rgb: 248 113 113;
 
@@ -535,7 +548,7 @@
   --tv-text-muted: #8f959b;
 
   /* L5 data emphasis / L6 risk / L7 discipline */
-  --tv-success: #22e08a;
+  --tv-success: #31d68a;
   --tv-warning: #f59e0b;
   --tv-danger: #ef4444;
   --tv-success-rgb: 16 185 129;
@@ -1243,6 +1256,28 @@ body {
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
   }
+}
+
+/* ══ L'APP CONNECTÉE PARLE LA POLICE DE LUCID ══
+ *
+ * `body.tv-app-type` est posé par `shell/App.tsx` tant que l'application
+ * connectée est montée, et retiré à sa sortie : la vitrine, les pages légales
+ * et la démo gardent Inter, leur identité de marque. La classe vit sur `body`
+ * et non sur la coque, parce que les modales sont rendues en PORTAIL sur
+ * `document.body` : posée plus bas, elle laisserait le formulaire de trade et
+ * toutes les feuilles dans l'ancienne police.
+ *
+ * Les alternates d'Inter (`cv02`…) n'ont pas de sens hors d'Inter : on les
+ * neutralise, et l'approche revient à 0 — la police système est déjà dessinée
+ * serrée pour l'écran. */
+body.tv-app-type {
+  font-family: var(--font-lucid);
+  font-feature-settings: normal;
+  letter-spacing: 0;
+}
+body.tv-app-type :is(h1, h2, h3, h4, h5, h6, .font-display) {
+  font-family: var(--font-lucid);
+  letter-spacing: -0.01em;
 }
 
 /* Display family — Inter, la même voix que la landing : les titres portent la
@@ -2249,27 +2284,37 @@ a:focus-visible,
     /* L'arête qui FAIT FACE à la fenêtre s'éclaire comme celle du haut. */ inset -1px 0 0
       rgb(255 255 255 / 0.08),
     0 18px 50px -24px rgb(0 0 0 / 0.8);
-  /* La largeur est la SEULE chose qui s'anime au pli/dépli. */
-  transition: width var(--tv-dur-4) var(--tv-ease);
+  /* La largeur est la SEULE chose qui s'anime au pli/dépli — en 260 ms et
+     non plus 400 : la loi de mouvement plafonne l'app à 300 ms, et un pli
+     qu'on attend est un pli qui rame. Rien d'autre ne change de géométrie
+     pendant ce temps : les icônes ne bougent pas d'un pixel (voir
+     `.rail-item`), les libellés s'effacent en fondu. */
+  transition: width var(--tv-dur-3) var(--tv-ease);
 }
 
 /* Une entrée de navigation. La forme est la même pliée ou dépliée : une
    pilule. Dépliée elle contient icône + libellé, pliée elle se referme sur
    son icône. */
-/* PLIÉE, l'entrée n'est plus une pilule étirée mais un vrai DISQUE de 40px
-   centré dans le rail — c'est la forme de la maquette, et une pilule de 48×40
-   posée sur un rail de 68 ne se lit pas comme un bouton d'icône. */
-.rail-collapsed .rail-item {
-  width: var(--rail-disc);
-  margin-inline: auto;
-}
+/* DES CARRÉS, PLUS DES BULLES — la forme de Lucid : chaque entrée est un
+   carré aux angles adoucis (12px), plié comme déplié.
+
+   L'ICÔNE NE BOUGE JAMAIS. Son retrait gauche (15px) est calculé pour qu'elle
+   tombe pile au centre du rail plié : 10px de gouttière + 15 + 18 d'icône +
+   15 = les 68px du rail. Dépliée, l'entrée s'élargit À DROITE de l'icône, et
+   c'est tout. Le pli ne recompose donc plus la colonne (l'ancienne version
+   passait de `px-3` à `justify-center` au premier frame : chaque icône
+   sautait de deux pixels, puis le rail rétrécissait sous elle). */
 .rail-item {
   position: relative;
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: 0.625rem;
   height: var(--rail-disc);
-  border-radius: 9999px;
+  padding-left: 15px;
+  padding-right: 0.75rem;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
   font-size: 0.8125rem;
   font-weight: 600;
   letter-spacing: -0.01em;
@@ -2283,6 +2328,25 @@ a:focus-visible,
 }
 .rail-icon {
   transition: transform var(--tv-dur-2) var(--tv-ease);
+}
+/* Le libellé s'efface pendant que le rail se resserre — `opacity` seule,
+   composée sur le GPU. Il part plus vite que le rail (120 ms contre 260) :
+   un mot à moitié coupé par le bord qui avance se lit comme un bug. Au
+   dépli, il revient en fin de course, une fois la place faite. */
+.rail-label {
+  opacity: 1;
+  transition: opacity var(--tv-dur-2) var(--tv-ease) 80ms;
+}
+.rail-collapsed .rail-label {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--tv-dur-1) var(--tv-ease);
+}
+@media (prefers-reduced-motion: reduce) {
+  .rail-label,
+  .rail-collapsed .rail-label {
+    transition: none;
+  }
 }
 
 /* ══ LE FOCUS DU SURVOL ══
@@ -2359,7 +2423,7 @@ a:focus-visible,
   left: 0.625rem;
   top: 0;
   width: calc(100% - 1.25rem + var(--rail-bridge));
-  border-radius: 9999px;
+  border-radius: var(--radius-lg);
   border-top-right-radius: 0;
   border-bottom-right-radius: 0;
   background: var(--tv-plate-0);
@@ -2370,25 +2434,15 @@ a:focus-visible,
   z-index: 1;
   pointer-events: none;
 }
-/* Pliée : la languette se referme sur le disque, centré, et seul le couloir
-   continue vers la fenêtre. */
-.rail-collapsed .rail-tab {
-  left: calc(0.625rem + (100% - 1.25rem - var(--rail-disc)) / 2);
-  /* Pliée, la languette part plus à droite que dépliée — de la marge qui
-     centre le disque dans la gouttière. Son couloir doit donc être plus long
-     d'autant pour finir au MÊME endroit, deux pixels à l'intérieur de la
-     fenêtre. D'où le terme de centrage repris tel quel dans la largeur, plutôt
-     qu'une seconde valeur à tenir à jour. */
-  width: calc(var(--rail-disc) + var(--rail-bridge) + (100% - 1.25rem - var(--rail-disc)) / 2);
-}
+/* Pliée, la languette garde EXACTEMENT la même géométrie : l'entrée occupe
+   toute la gouttière dans les deux états, donc la languette n'a plus de
+   second calcul de position — elle suit la largeur du rail, rien d'autre. */
 /* Le déplacement. `transform` et `height` seulement : rien qui reprenne la
    mise en page. La largeur, elle, suit le pli du rail sur sa propre durée. */
 .rail-tab-ready {
   transition:
     transform var(--tv-dur-3) var(--tv-ease),
-    height var(--tv-dur-3) var(--tv-ease),
-    left var(--tv-dur-4) var(--tv-ease),
-    width var(--tv-dur-4) var(--tv-ease);
+    height var(--tv-dur-3) var(--tv-ease);
 }
 @media (prefers-reduced-motion: reduce) {
   .rail-tab-ready {
@@ -2512,10 +2566,7 @@ a:focus-visible,
   .rail-tab {
     width: calc(100% - 1.25rem);
     border: 0;
-    border-radius: 9999px;
-  }
-  .rail-collapsed .rail-tab {
-    width: var(--rail-disc);
+    border-radius: var(--radius-lg);
   }
   .rail-tab::before,
   .rail-tab::after {
@@ -2559,7 +2610,7 @@ a:focus-visible,
   width: 2rem;
   height: 2rem;
   flex-shrink: 0;
-  border-radius: 9999px;
+  border-radius: var(--radius-md);
   color: rgb(255 255 255 / 0.6);
   background: rgb(255 255 255 / 0.08);
   transition:
@@ -2587,7 +2638,7 @@ a:focus-visible,
   justify-content: center;
   gap: 0.375rem;
   height: 2rem;
-  border-radius: 9999px;
+  border-radius: var(--radius-md);
   font-size: 0.6875rem;
   font-weight: 600;
   color: rgb(255 255 255 / 0.7);
@@ -2801,6 +2852,14 @@ a:focus-visible,
     animation: prix-sort 182ms var(--tv-ease) both;
   }
 }
+/* Mouvement réduit : la valeur sortante n'a pas d'animation, donc pas de
+   `animationend` pour la retirer — elle resterait empilée derrière la bonne.
+   Elle ne s'affiche tout simplement pas. */
+@media (prefers-reduced-motion: reduce) {
+  .prix-anime-sort {
+    display: none;
+  }
+}
 @keyframes prix-entre {
   from {
     opacity: 0;
@@ -2923,10 +2982,18 @@ a:focus-visible,
  * (vert gagné, rouge perdu), et cela se décide au point d'appel.
  */
 .tv-figure {
+  /* LA POLICE DES CHIFFRES DE LUCID. Relevée sur leurs captures : leur
+     tableau de bord n'embarque AUCUNE police web, il s'écrit dans la police
+     du système — SF Pro sur Apple, Segoe UI sous Windows, Roboto sous
+     Android — en graisse lourde. C'est ce qui donne à « +$4,936 » sa
+     carrure : un chiffre natif, large, dessiné pour l'écran qui l'affiche.
+     On reprend exactement la même pile (`--font-lucid`), donc le même
+     rendu sur chaque appareil, sans un octet de police à télécharger. */
+  font-family: var(--font-lucid);
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum";
   font-weight: 800;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
 }
 
 /* ══ LE LIBELLÉ ══
@@ -2945,9 +3012,12 @@ a:focus-visible,
  * pour un objectif atteint) : la couleur reste au point d'appel, sinon la
  * classe l'écraserait silencieusement. */
 .tv-label {
+  /* Lucid : « ACCOUNT BALANCE », « TOTAL P&L » — capitales grasses, très
+     espacées, dans la même police système que le chiffre qu'elles nomment. */
+  font-family: var(--font-lucid);
   font-size: var(--tv-t-micro);
-  font-weight: 600;
-  letter-spacing: 0.05em;
+  font-weight: 700;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
@@ -3762,10 +3832,10 @@ a:focus-visible,
     --tv-text-muted: #7c8594;
     --tv-border: rgba(255, 255, 255, 0.08);
     --tv-border-strong: rgba(255, 255, 255, 0.16);
-    --tv-chart-green: #22e08a;
-    --tv-chart-green-rgb: 34 224 138;
-    --tv-accent: #22e08a;
-    --tv-accent-rgb: 34 224 138;
+    --tv-chart-green: #31d68a;
+    --tv-chart-green-rgb: 49 214 138;
+    --tv-accent: #31d68a;
+    --tv-accent-rgb: 49 214 138;
 
     display: block !important;
     width: 100% !important;

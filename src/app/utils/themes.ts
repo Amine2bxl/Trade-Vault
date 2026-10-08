@@ -173,7 +173,7 @@ export interface PaletteFamily {
  * vif, doux). Les verts Lucid/Émeraude sont ceux des thèmes intégrés.
  */
 export const ACCENT_PALETTE: PaletteFamily[] = [
-  { name: "Lucid", tones: ["#12b981", "#22e08a", "#5bf0ab", "#a7f5cf"] },
+  { name: "Lucid", tones: ["#1fb574", "#31d68a", "#6be3a8", "#a7f5cf"] },
   { name: "Emerald", tones: ["#047857", "#10b981", "#34d399", "#a7f3d0"] },
   { name: "Teal", tones: ["#0f766e", "#14b8a6", "#2dd4bf", "#99f6e4"] },
   { name: "Cyan", tones: ["#0e7490", "#06b6d4", "#22d3ee", "#a5f3fc"] },
@@ -258,9 +258,12 @@ export const BUILTIN_THEMES: ThemeDef[] = [
     id: "lucid",
     name: "Lucid",
     builtin: true,
-    primary: "#22e08a",
-    secondary: "#12b981",
-    highlight: "#5bf0ab",
+    /* Le vert relevé sur le tableau de bord Lucid lui-même (aplat du bouton
+       actif, P&L positif) : un menthe un cran plus posé que l'ancien #22e08a,
+       qui « criait » à côté des chiffres. */
+    primary: "#31d68a",
+    secondary: "#1fb574",
+    highlight: "#6be3a8",
     background: "#07080a",
   },
   {
