@@ -9,13 +9,19 @@
  *     pour rattraper les journées où l'app n'a pas été ouverte.
  *
  * Le déroulé, dans un ordre qui ne perd ni ne double jamais rien :
- *   1. un jeton valide (renouvelé avant expiration, ou redemandé) ;
+ *   1. un jeton valide — renouvelé avant expiration ; expiré, la connexion
+ *      passe « à reconnecter » (TradeVault ne détient aucun mot de passe
+ *      qui lui permettrait d'en redemander un) ;
  *   2. les comptes du login (nouveaux comptes enregistrés, rattachés au compte
  *      TradeVault par défaut de la connexion) ;
  *   3. exécutions + ordres + positions + contrats (+ frais, + stops) ;
  *   4. appariement plat → plat (`modules/brokers`, pur et déterministe) ;
  *   5. insertion `on conflict do nothing` sur `(user_id, external_id)` ;
  *   6. curseur avancé : un trade supprimé par le trader ne revient pas.
+ *
+ * Tout ce qui part vers Tradovate est une LECTURE (`tvGet`, liste blanche dans
+ * `tradovate.server.ts`). Réservé au palier Pro : les appelants vérifient le
+ * palier avant (`requireProPlan`, et le filtre du cron ci-dessous).
  */
 
 import {
@@ -26,15 +32,10 @@ import {
   type BrokerStopOrder,
 } from "@/modules/brokers";
 import type { Trade } from "@/domain/trade";
-import { decryptJson, decryptSecret, encryptSecret } from "./broker-crypto.server";
-import {
-  renewAccessToken,
-  requestAccessToken,
-  tvGet,
-  tvItems,
-  type TvCredentials,
-  type TvEnvironment,
-} from "./tradovate.server";
+import { effectiveTier, type EntitlementRow } from "@/domain/entitlement";
+import { tierAtLeast } from "@/domain/plans";
+import { decryptSecret, encryptSecret } from "./broker-crypto.server";
+import { renewAccessToken, tvGet, tvItems, type TvEnvironment } from "./tradovate.server";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Sb = any;
@@ -43,11 +44,9 @@ export interface ConnectionRow {
   id: string;
   user_id: string;
   broker: "tradovate";
-  auth_mode: "oauth" | "credentials";
   environment: TvEnvironment;
   label: string;
   status: "pending" | "active" | "error" | "disabled";
-  secret_ciphertext: string | null;
   token_ciphertext: string | null;
   token_expires_at: string | null;
   default_risk: number | null;
@@ -84,7 +83,6 @@ interface SyncCursor {
 export type SyncErrorCode =
   | "reauth_required"
   | "rate_limited"
-  | "captcha_required"
   | "broker_unreachable"
   | "plan_limit"
   | "crypto_unavailable";
@@ -117,35 +115,16 @@ async function ensureToken(
 
   // Encore largement valide : rien à faire.
   if (current && exp - Date.now() > RENEW_MARGIN_MS) return { token: current };
+  // Expiré : seul le trader peut en obtenir un nouveau, en se reconnectant
+  // CHEZ Tradovate. TradeVault n'a aucun identifiant pour le faire à sa place,
+  // et c'est voulu.
+  if (!current || exp <= Date.now()) return { error: "reauth_required" };
 
-  let result: tv.TvAuthResult | null = null;
-  // Encore valide mais proche de l'expiration : on renouvelle (sans compter
-  // comme un essai de connexion chez Tradovate).
-  if (current && exp > Date.now()) {
-    result = await renewAccessToken(conn.environment, current).catch(() => null);
-  }
-  // Expiré (ou renouvellement refusé) : seule la clé API permet de redemander
-  // un jeton sans le trader. Une connexion OAuth doit être reconnectée.
-  if ((!result || !result.ok) && conn.auth_mode === "credentials" && conn.secret_ciphertext) {
-    let creds: TvCredentials;
-    try {
-      creds = await decryptJson<TvCredentials>(conn.secret_ciphertext);
-    } catch {
-      return { error: "crypto_unavailable" };
-    }
-    result = await requestAccessToken(conn.environment, creds).catch(() => null);
-  }
+  // Encore valide mais proche de l'expiration : on le renouvelle.
+  const result = await renewAccessToken(conn.environment, current).catch(() => null);
   if (!result) return { error: "broker_unreachable" };
-  if (!result.ok) {
-    return {
-      error:
-        result.reason === "penalty"
-          ? "rate_limited"
-          : result.reason === "captcha"
-            ? "captcha_required"
-            : "reauth_required",
-    };
-  }
+  if (!result.ok)
+    return { error: result.reason === "penalty" ? "rate_limited" : "reauth_required" };
   await sb
     .from("broker_connections")
     .update({
@@ -340,9 +319,9 @@ export async function syncConnection(sb: Sb, conn: ConnectionRow): Promise<SyncO
       .update({
         last_sync_at: startedAt,
         last_error: error,
-        // Un jeton définitivement refusé met la connexion en erreur : elle
-        // n'est plus tentée en boucle, le trader voit qu'il doit reconnecter.
-        ...(error === "reauth_required" || error === "captcha_required" ? { status: "error" } : {}),
+        // Un jeton expiré ou refusé met la connexion en erreur : elle n'est
+        // plus tentée en boucle, le trader voit qu'il doit se reconnecter.
+        ...(error === "reauth_required" ? { status: "error" } : {}),
       })
       .eq("id", conn.id);
     return outcome;
@@ -506,7 +485,17 @@ export function rowToBrokerTrade(r: Record<string, unknown>): Trade {
 }
 
 export const CONNECTION_COLUMNS =
-  "id, user_id, broker, auth_mode, environment, label, status, secret_ciphertext, token_ciphertext, token_expires_at, default_risk, default_account_id, timezone, last_sync_at, sync_cursor";
+  "id, user_id, broker, environment, label, status, token_ciphertext, token_expires_at, default_risk, default_account_id, timezone, last_sync_at, sync_cursor";
+
+/** Les colonnes dont dépend le palier — les mêmes que lit `require-pro.ts`. */
+export const ENTITLEMENT_COLUMNS =
+  "user_id, plan, status, source, trial_ends_at, current_period_end";
+
+/** Le palier ouvre-t-il la synchro broker ? Pur : partagé par le cron et la
+ *  garde des server functions. Aucune ligne d'abonnement = gratuit. */
+export function brokerSyncAllowed(row: EntitlementRow | null | undefined): boolean {
+  return tierAtLeast(effectiveTier(row ?? null), "pro");
+}
 
 // ── Le cron de rattrapage ────────────────────────────────────────────────────
 
@@ -518,8 +507,8 @@ function json(body: unknown, status: number): Response {
 }
 
 /**
- * Une fois par jour, en service-role : chaque connexion active qui n'a pas
- * été synchronisée depuis une heure. Le rattrapage des journées sans app
+ * Une fois par jour, en service-role : chaque connexion active d'un abonné
+ * Pro qui n'a pas été synchronisée depuis une heure. Le rattrapage des journées sans app
  * ouverte — l'app, elle, synchronise toute seule pendant qu'elle tourne.
  * Budget de temps borné ; ce qui n'est pas traité l'est au passage suivant.
  */
@@ -544,15 +533,38 @@ export async function handleBrokerSyncCron(request: Request): Promise<Response> 
     .limit(200);
   if (error) return json({ error: error.message }, 500);
 
+  // Le palier Pro, vérifié pour TOUS les propriétaires en une requête (pas
+  // une par connexion). Un abonnement échu n'est plus synchronisé ; ses
+  // connexions restent, et reprennent dès que l'abonnement revient.
+  const conns = (data ?? []) as ConnectionRow[];
+  const owners = [...new Set(conns.map((c) => c.user_id))];
+  const allowed = new Set<string>();
+  if (owners.length) {
+    const { data: subs, error: subError } = await sb
+      .from("subscriptions")
+      .select(ENTITLEMENT_COLUMNS)
+      .in("user_id", owners);
+    // Échoue FERMÉ : sans savoir qui paie, on ne synchronise personne.
+    if (subError) return json({ error: subError.message }, 500);
+    for (const row of (subs ?? []) as (EntitlementRow & { user_id: string })[]) {
+      if (brokerSyncAllowed(row)) allowed.add(row.user_id);
+    }
+  }
+
   let synced = 0;
   let inserted = 0;
   let failed = 0;
-  for (const conn of (data ?? []) as ConnectionRow[]) {
+  let skipped = 0;
+  for (const conn of conns) {
     if (Date.now() - started > budgetMs) break;
+    if (!allowed.has(conn.user_id)) {
+      skipped++;
+      continue;
+    }
     const res = await syncConnection(sb, conn).catch(() => null);
     if (!res || res.error) failed++;
     else synced++;
     inserted += res?.inserted.length ?? 0;
   }
-  return json({ synced, inserted, failed }, 200);
+  return json({ synced, inserted, failed, skipped }, 200);
 }

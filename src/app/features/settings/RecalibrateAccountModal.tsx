@@ -1,18 +1,23 @@
-import { useMemo, useState } from "react";
-import { Scale, Loader2, RotateCcw, ShieldCheck, ArrowRight } from "lucide-react";
-import { Button, Modal } from "@/shared/ui";
+import { useEffect, useMemo, useState } from "react";
+import { ArrowRight, Loader2, Lock, RotateCcw, Scale, ShieldCheck, X } from "lucide-react";
+import { Badge, Button, Chip, CHIP_ROW, FIELD_BASE, Modal, SelectPicker, cn } from "@/shared/ui";
 import { useT } from "@/app/i18n/LanguageContext";
+import { useAuth } from "@/app/contexts/AuthContext";
 import { useAccounts } from "@/app/contexts/AccountContext";
 import { useToast } from "@/app/contexts/ToastContext";
-import { cn } from "@/shared/ui/cn";
+import { useSubscription } from "@/app/hooks/useSubscription";
+import { loadUserTrades } from "@/app/store/trades";
+import { isPlanLimitError } from "@/app/utils/planLimits";
 import type { Trade } from "@/app/types";
 import {
   factorFor,
+  fmtFactor,
   isCalibrated,
   pickPreviewTrade,
   previewCalibration,
   type CalibrationPreviewRow,
 } from "@/app/trading/accountCalibration";
+import { AccountScaleBridge } from "@/app/trading/AccountScaleBridge";
 import { formatMoney } from "@/shared/currency";
 
 /**
@@ -24,25 +29,70 @@ import { formatMoney } from "@/shared/currency";
  * convaincante n'est pas un paragraphe, c'est son PROPRE trade montré avant /
  * après — avec le R multiple et le risque en % affichés côte à côte,
  * identiques.
+ *
+ * ── DEUX COLONNES ──
+ * À gauche, la décision (quel compte, quelle taille, le pont d'échelle) ; à
+ * droite, la preuve (le trade réel avant / après, ce qui ne bouge pas). Sur
+ * mobile, la preuve passe sous la décision, dans le même ordre de lecture.
+ *
+ * ── PRO ──
+ * Recalibrer est une offre Pro, vérifiée par `recalibrate_account` lui-même.
+ * Le RETOUR au capital d'origine reste ouvert à tous : un compte recalibré du
+ * temps de l'abonnement n'est jamais prisonnier de son échelle.
  */
+
+/** Les tailles de compte qu'un trader de prop firm achète réellement. */
+const PRESETS = [25_000, 50_000, 100_000, 150_000];
+
 export default function RecalibrateAccountModal({
   accountId,
-  trades,
+  trades: activeTrades,
   onClose,
 }: {
   accountId: string;
-  trades: Trade[];
+  /** Les trades du compte AFFICHÉ, déjà en mémoire : évitent une lecture
+   *  quand c'est lui qu'on recalibre. */
+  trades?: Trade[];
   onClose: () => void;
 }) {
   const { t } = useT();
-  const { accounts, recalibrate } = useAccounts();
+  const { user } = useAuth();
+  const { accounts, activeId, recalibrate } = useAccounts();
   const { toast } = useToast();
-  const account = accounts.find((a) => a.id === accountId) ?? null;
+  const { can } = useSubscription();
+  const isPro = can("recalibration");
+
+  const [selectedId, setSelectedId] = useState(accountId);
+  const account = accounts.find((a) => a.id === selectedId) ?? null;
 
   const original = account ? account.originalBalance || account.startingBalance : 0;
   const current = account?.startingBalance ?? 0;
   const [target, setTarget] = useState(String(current || ""));
   const [saving, setSaving] = useState(false);
+
+  // Changer de compte remet la cible sur SA taille actuelle.
+  useEffect(() => {
+    setTarget(String(current || ""));
+  }, [selectedId, current]);
+
+  // Le trade d'aperçu vient du compte CHOISI, qui n'est pas forcément celui
+  // affiché : on le lit à part, une fois par changement.
+  const [loaded, setLoaded] = useState<Trade[] | null>(null);
+  useEffect(() => {
+    if (selectedId === activeId && activeTrades) {
+      setLoaded(activeTrades);
+      return;
+    }
+    if (!user) return;
+    let alive = true;
+    setLoaded(null);
+    loadUserTrades(user.id, { accountId: selectedId })
+      .then((list) => alive && setLoaded(list))
+      .catch(() => alive && setLoaded([]));
+    return () => {
+      alive = false;
+    };
+  }, [user, selectedId, activeId, activeTrades]);
 
   const targetValue = Number(target) || 0;
   // Le facteur porte sur la représentation COURANTE : c'est elle qui est
@@ -50,27 +100,42 @@ export default function RecalibrateAccountModal({
   const factor = factorFor(current, targetValue);
   const valid = targetValue > 0 && Number.isFinite(targetValue);
 
-  const sample = useMemo(() => pickPreviewTrade(trades), [trades]);
+  const sample = useMemo(() => (loaded ? pickPreviewTrade(loaded) : null), [loaded]);
   const rows = useMemo(
-    () => (valid ? previewCalibration(sample, current, targetValue, factor) : []),
+    () => (valid && sample ? previewCalibration(sample, current, targetValue, factor) : []),
     [sample, current, targetValue, factor, valid],
   );
 
   const alreadyCalibrated = isCalibrated(account?.calibrationScale);
   const noChange = valid && Math.abs(targetValue - current) < 0.005;
+  // Revenir au capital d'origine n'est pas « recalibrer » : ouvert à tous.
+  const isReset = valid && Math.abs(targetValue - original) < 0.005;
+  const locked = !isPro && !isReset;
+
+  // La modale d'offre s'ouvre À LA PLACE de celle-ci : empilées, l'une
+  // cacherait l'autre.
+  const openUpgrade = () => {
+    onClose();
+    window.dispatchEvent(new CustomEvent("tv:upgrade"));
+  };
 
   const submit = async (to: number) => {
-    if (saving || to <= 0) return;
+    if (saving || to <= 0 || !account) return;
+    if (!isPro && Math.abs(to - original) >= 0.005) return openUpgrade();
     setSaving(true);
     try {
-      const converted = await recalibrate(accountId, to);
+      const converted = await recalibrate(account.id, to);
       // Le nombre réellement converti : c'est la preuve que seuls les trades
       // déjà encodés ont bougé.
       toast(t("recal.done").replace("{n}", String(converted)), "success");
       onClose();
     } catch (e) {
-      console.error("Recalibration failed", e);
-      toast(t("recal.failed"), "error");
+      if (isPlanLimitError(e) && e.kind === "pro") {
+        openUpgrade();
+      } else {
+        console.error("Recalibration failed", e);
+        toast(t("recal.failed"), "error");
+      }
     } finally {
       setSaving(false);
     }
@@ -78,112 +143,199 @@ export default function RecalibrateAccountModal({
 
   if (!account) return null;
 
+  const accountOptions = accounts.map((a) => ({
+    value: a.id,
+    label: a.name,
+    hint: formatMoney(a.startingBalance, { whole: true }),
+  }));
+  const presets = [...new Set([...(alreadyCalibrated ? [original] : []), ...PRESETS])];
+
   return (
-    <Modal open onClose={onClose} className="md:max-w-lg">
-      <div className="px-6 py-5 space-y-5">
-        <header className="flex items-start gap-3">
-          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl tv-accent-fill">
-            <Scale className="w-4 h-4" />
+    <Modal
+      open
+      onClose={saving ? () => {} : onClose}
+      closeOnBackdrop={!saving}
+      className="md:max-w-3xl max-h-[94vh] overflow-hidden"
+      labelledBy="recal-title"
+    >
+      <div className="flex items-start justify-between gap-3 border-b border-[var(--tv-border)] px-6 py-4">
+        <div className="flex min-w-0 items-start gap-3">
+          <span className="tv-accent-fill grid h-9 w-9 shrink-0 place-items-center rounded-xl">
+            <Scale className="h-4 w-4" />
           </span>
           <div className="min-w-0">
-            <h2 className="font-display tv-title leading-tight">{t("recal.title")}</h2>
-            <p className="tv-prose text-slate-500 mt-1">{t("recal.subtitle")}</p>
+            <h2
+              id="recal-title"
+              className="tv-title flex flex-wrap items-center gap-2 leading-tight"
+            >
+              {t("recal.title")}
+              {!isPro && <Badge variant="accent">{t("credits.plan.pro")}</Badge>}
+            </h2>
+            <p className="tv-prose mt-1 text-slate-500">{t("recal.subtitle")}</p>
           </div>
-        </header>
-
-        {/* Échelle actuelle — répond à « à quelle échelle mon historique
-            est-il représenté ? », qui doit toujours avoir une réponse. */}
-        <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-4 py-3 space-y-1.5">
-          <Line label={t("recal.original")} value={money(original)} />
-          <Line
-            label={t("recal.currentScale")}
-            value={
-              alreadyCalibrated
-                ? `${money(current)} · ${fmtScale(account.calibrationScale)}`
-                : t("recal.none")
-            }
-          />
         </div>
+        <button
+          onClick={onClose}
+          disabled={saving}
+          aria-label={t("common.close")}
+          className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-slate-400 transition-colors hover:bg-white/5 hover:text-white"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
 
-        <div>
-          <label className="block text-[11px] font-semibold text-slate-400 mb-1.5">
-            {t("recal.targetLabel")}
-          </label>
-          <input
-            type="number"
-            min={1}
-            step={1000}
-            value={target}
-            onChange={(e) => setTarget(e.target.value)}
-            autoFocus
-            className="tv-figure w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500/50"
-          />
-          {valid && !noChange && (
-            <p className="tv-figure mt-2 text-[11px] text-cyan-400">
-              {t("recal.scaleIs").replace("{scale}", fmtScale(factor))}
-            </p>
-          )}
-        </div>
-
-        {/* L'aperçu sur un trade RÉEL du journal. */}
-        {valid && !noChange && rows.length > 0 && (
-          <div className="rounded-xl border border-white/[0.07] overflow-hidden">
-            <div className="tv-label px-3.5 py-2 border-b border-white/[0.05] text-slate-500">
-              {sample ? t("recal.previewOn").replace("{date}", sample.date) : t("recal.preview")}
-            </div>
-            <ul className="divide-y divide-white/[0.04]">
-              {rows.map((r) => (
-                <PreviewLine
-                  key={r.key}
-                  row={r}
-                  label={t(r.key)}
-                  unchanged={t("recal.unchanged")}
+      <div className="max-h-[70vh] overflow-y-auto">
+        <div className="grid md:grid-cols-2">
+          {/* ── LA DÉCISION ── */}
+          <div className="space-y-5 px-6 py-5">
+            {accounts.length > 1 && (
+              <div>
+                <span className="tv-label mb-1.5 block text-slate-400">{t("recal.account")}</span>
+                <SelectPicker
+                  label={t("recal.account")}
+                  value={selectedId}
+                  options={accountOptions}
+                  onChange={setSelectedId}
+                  variant="field"
+                  width="100%"
                 />
-              ))}
-            </ul>
-          </div>
-        )}
+              </div>
+            )}
 
-        {/* Ce que le recalibrage ne touche pas. Dit explicitement, parce que
-            c'est la première inquiétude légitime du trader. */}
-        <div className="rounded-xl bg-emerald-500/[0.05] border border-emerald-500/20 px-4 py-3 flex gap-2.5">
-          <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-          <div className="text-[11px] text-slate-300 leading-relaxed space-y-1">
-            <p className="font-semibold text-emerald-300">{t("recal.safeTitle")}</p>
-            <p>{t("recal.safeBody")}</p>
-            <p>{t("recal.safeBehaviour")}</p>
-            {/* Les objectifs vivent dans `goal_plans`, qui n'a PAS de lien
-                vers un compte : impossible de savoir si une cible de capital
-                concerne celui-ci. On le dit plutôt que de deviner. */}
-            <p className="text-slate-400">{t("recal.goalsNote")}</p>
+            {/* Échelle actuelle — répond à « à quelle échelle mon historique
+                est-il représenté ? », qui doit toujours avoir une réponse. */}
+            <div className="space-y-1.5 rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-2)] px-4 py-3">
+              <Line label={t("recal.original")} value={formatMoney(original, { whole: true })} />
+              <Line
+                label={t("recal.currentScale")}
+                value={
+                  alreadyCalibrated
+                    ? `${formatMoney(current, { whole: true })} · ×${fmtFactor(account.calibrationScale)}`
+                    : t("recal.none")
+                }
+              />
+            </div>
+
+            <div>
+              <label htmlFor="recal-target" className="tv-label mb-1.5 block text-slate-400">
+                {t("recal.targetLabel")}
+              </label>
+              <input
+                id="recal-target"
+                type="number"
+                min={1}
+                step={1000}
+                value={target}
+                onChange={(e) => setTarget(e.target.value)}
+                autoFocus
+                className={cn(FIELD_BASE, "tv-figure h-11 text-[15px]")}
+              />
+              <div className={cn(CHIP_ROW, "mt-2.5")} aria-label={t("recal.presets")}>
+                {presets.map((p) => (
+                  <Chip
+                    key={p}
+                    selected={Math.abs(targetValue - p) < 0.005}
+                    onClick={() => setTarget(String(p))}
+                    className="tv-figure px-3 py-1.5"
+                  >
+                    {p === original && alreadyCalibrated && (
+                      <RotateCcw className="h-3 w-3" aria-hidden />
+                    )}
+                    {formatMoney(p, { whole: true })}
+                  </Chip>
+                ))}
+              </div>
+            </div>
+
+            {valid && (
+              <AccountScaleBridge
+                from={{ label: t("recal.bridgeFrom"), name: account.name, balance: current }}
+                to={{ label: t("recal.bridgeTo"), name: account.name, balance: targetValue }}
+                factor={noChange ? 1 : factor}
+              />
+            )}
+          </div>
+
+          {/* ── LA PREUVE ── */}
+          <div className="space-y-4 border-t border-[var(--tv-border)] bg-[var(--tv-plate-0)] px-6 py-5 md:border-l md:border-t-0">
+            <div className="overflow-hidden rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)]">
+              <div className="tv-label border-b border-[var(--tv-border)] px-3.5 py-2 text-slate-500">
+                {sample ? t("recal.previewOn").replace("{date}", sample.date) : t("recal.preview")}
+              </div>
+              {loaded === null ? (
+                <div className="space-y-2 p-3.5" aria-hidden>
+                  {[0, 1, 2, 3].map((i) => (
+                    <div key={i} className="h-4 rounded bg-white/[0.04]" />
+                  ))}
+                </div>
+              ) : !sample ? (
+                <p className="px-3.5 py-3 text-xs leading-snug text-slate-500">
+                  {t("recal.noTrades")}
+                </p>
+              ) : (
+                <ul className="divide-y divide-[var(--tv-border)]">
+                  {(rows.length ? rows : previewCalibration(sample, current, current, 1)).map(
+                    (r) => (
+                      <PreviewLine
+                        key={r.key}
+                        row={r}
+                        label={t(r.key)}
+                        unchanged={t("recal.unchanged")}
+                      />
+                    ),
+                  )}
+                </ul>
+              )}
+            </div>
+
+            {/* Ce que le recalibrage ne touche pas. Dit explicitement, parce que
+                c'est la première inquiétude légitime du trader. */}
+            <div className="flex gap-2.5 rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-4 py-3">
+              <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-[var(--tv-accent)]" />
+              <div className="space-y-1 text-xs leading-relaxed text-slate-300">
+                <p className="font-semibold text-white">{t("recal.safeTitle")}</p>
+                <p>{t("recal.safeBody")}</p>
+                <p>{t("recal.safeBehaviour")}</p>
+                {/* Les objectifs vivent dans `goal_plans`, qui n'a PAS de lien
+                    vers un compte : impossible de savoir si une cible de capital
+                    concerne celui-ci. On le dit plutôt que de deviner. */}
+                <p className="text-slate-400">{t("recal.goalsNote")}</p>
+              </div>
+            </div>
           </div>
         </div>
+      </div>
 
-        <div className="flex flex-col sm:flex-row gap-2">
-          <Button variant="ghost" onClick={onClose} className="sm:flex-1">
+      <div className="flex flex-col gap-2 border-t border-[var(--tv-border)] px-6 py-4 sm:flex-row sm:items-center">
+        {!isPro && (
+          <p className="text-xs leading-snug text-slate-500 sm:flex-1">{t("recal.proNote")}</p>
+        )}
+        <div className="flex flex-col gap-2 sm:ml-auto sm:flex-row">
+          <Button variant="ghost" onClick={onClose} disabled={saving}>
             {t("common.cancel")}
           </Button>
           {/* Le retour à l'origine est offert dès qu'une calibration est
               active : l'opération doit être visiblement réversible, pas
               seulement techniquement. */}
           {alreadyCalibrated && (
-            <Button
-              variant="ghost"
-              onClick={() => submit(original)}
-              disabled={saving}
-              className="sm:flex-1"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
+            <Button variant="ghost" onClick={() => submit(original)} disabled={saving}>
+              <RotateCcw className="h-3.5 w-3.5" />
               {t("recal.reset")}
             </Button>
           )}
           <Button
-            onClick={() => submit(targetValue)}
+            onClick={() => (locked ? openUpgrade() : submit(targetValue))}
             disabled={!valid || noChange || saving}
-            className="sm:flex-1 disabled:opacity-50"
+            className="disabled:opacity-50"
           >
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Scale className="w-4 h-4" />}
-            {t("recal.confirm")}
+            {saving ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : locked ? (
+              <Lock className="h-4 w-4" />
+            ) : (
+              <Scale className="h-4 w-4" />
+            )}
+            {locked ? t("recal.proCta") : t("recal.confirm")}
           </Button>
         </div>
       </div>
@@ -194,8 +346,8 @@ export default function RecalibrateAccountModal({
 function Line({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-3">
-      <span className="text-[11px] text-slate-500">{label}</span>
-      <span className="tv-figure text-[12px] text-slate-200">{value}</span>
+      <span className="text-xs text-slate-500">{label}</span>
+      <span className="tv-figure text-[13px] text-slate-200">{value}</span>
     </div>
   );
 }
@@ -214,37 +366,25 @@ function PreviewLine({
   const same = Math.abs(row.after - row.before) < 0.005;
   const fmt = (n: number) =>
     row.format === "money"
-      ? money(n)
+      ? formatMoney(n)
       : row.format === "percent"
         ? `${n.toFixed(2)}%`
         : n.toFixed(2);
   return (
     <li className="flex items-center gap-2 px-3.5 py-2 text-xs">
-      <span className="text-slate-500 flex-1 min-w-0 truncate">{label}</span>
+      <span className="min-w-0 flex-1 truncate text-slate-500">{label}</span>
       {same ? (
         <>
           <span className="tv-figure text-slate-300">{fmt(row.before)}</span>
-          <span className="tv-label text-emerald-400/80 shrink-0">{unchanged}</span>
+          <span className="tv-label shrink-0 text-[var(--tv-accent)]">{unchanged}</span>
         </>
       ) : (
         <>
           <span className="tv-figure text-slate-500">{fmt(row.before)}</span>
-          <ArrowRight className="w-3 h-3 text-slate-600 shrink-0" />
-          <span className={cn("tv-figure", row.after >= 0 ? "text-cyan-300" : "text-amber-300")}>
-            {fmt(row.after)}
-          </span>
+          <ArrowRight className="h-3 w-3 shrink-0 text-slate-600" />
+          <span className="tv-figure text-white">{fmt(row.after)}</span>
         </>
       )}
     </li>
   );
-}
-
-function money(n: number): string {
-  return formatMoney(n);
-}
-
-/** `2×`, `0.5×`, `1.25×` — jamais `2.00×`, qui donne l'air d'un arrondi. */
-function fmtScale(scale: number): string {
-  const s = Number(scale.toFixed(4));
-  return `${s}×`;
 }

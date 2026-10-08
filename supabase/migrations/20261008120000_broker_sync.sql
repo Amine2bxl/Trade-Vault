@@ -11,11 +11,15 @@
 --                             TradeVault dans lequel chacun se journalise ;
 --   3. des colonnes d'EXÉCUTION sur `trades` + une clé de déduplication.
 --
--- ── LES SECRETS ─────────────────────────────────────────────────────────────
--- Les identifiants et jetons broker sont CHIFFRÉS par le serveur (AES-256-GCM,
--- clé `BROKER_CREDENTIALS_KEY`, jamais en base ni dans le bundle client)
--- AVANT d'être écrits. La RLS reste owner-only : lire sa propre ligne ne rend
--- qu'un texte chiffré inexploitable sans la clé serveur.
+-- ── AUCUN MOT DE PASSE, LECTURE SEULE ───────────────────────────────────────
+-- Le trader se connecte CHEZ Tradovate (OAuth) : son identifiant, son mot de
+-- passe et son e-mail ne transitent jamais par TradeVault et ne sont stockés
+-- nulle part ici. TradeVault ne garde que le JETON d'accès délivré par
+-- Tradovate, CHIFFRÉ par le serveur (AES-256-GCM, clé
+-- `BROKER_CREDENTIALS_KEY`, jamais en base ni dans le bundle client) avant
+-- écriture. Le client serveur n'appelle que des lectures (liste blanche dans
+-- `backend/tradovate.server.ts`) : aucun ordre, aucune modification de compte.
+-- La RLS reste owner-only : lire sa propre ligne ne rend qu'un texte chiffré.
 --
 -- ── LA DÉDUPLICATION ────────────────────────────────────────────────────────
 -- `trades (user_id, external_id)` est UNIQUE. La synchronisation recalcule les
@@ -30,14 +34,11 @@ create table if not exists public.broker_connections (
   id                uuid primary key default gen_random_uuid(),
   user_id           uuid not null default auth.uid() references auth.users(id) on delete cascade,
   broker            text not null default 'tradovate' check (broker in ('tradovate')),
-  -- `oauth` : connexion « Se connecter avec Tradovate » (partenaire).
-  -- `credentials` : clé API Tradovate du trader (cid / sec) + login.
-  auth_mode         text not null check (auth_mode in ('oauth', 'credentials')),
   environment       text not null default 'live' check (environment in ('live', 'demo')),
   label             text not null default '',
   status            text not null default 'active'
                       check (status in ('pending', 'active', 'error', 'disabled')),
-  secret_ciphertext text,
+  -- Le jeton d'accès Tradovate, chiffré. Jamais d'identifiant ni de mot de passe.
   token_ciphertext  text,
   token_expires_at  timestamptz,
   -- Empreinte SHA-256 du `state` OAuth en attente (jamais la valeur brute).
@@ -148,10 +149,16 @@ create index if not exists trades_review_pending_idx
 create index if not exists trades_copied_from_idx
   on public.trades (account_id, copied_from) where copied_from is not null;
 
--- ── 4. Le recalibrage convertit aussi les frais ─────────────────────────────
+-- ── 4. Le recalibrage convertit aussi les frais, et devient une offre Pro ──
 -- Les frais sont de l'argent, déjà déduits du P&L : ils suivent l'échelle
 -- comme lui (`CONVERTED_FIELDS`, `app/trading/accountCalibration.ts`). Les
 -- prix et la quantité sont des faits de marché : jamais convertis.
+--
+-- Le recalibrage est réservé au palier Pro, et c'est vérifié ICI comme les
+-- limites de trades et de comptes : le navigateur parle directement à
+-- PostgREST, un contrôle d'interface seul se contourne. Une exception : le
+-- RETOUR au capital d'origine reste ouvert à tous — un compte recalibré du
+-- temps de l'abonnement ne doit pas rester prisonnier de son échelle.
 create or replace function public.recalibrate_account(
   p_account_id       uuid,
   p_factor           numeric,
@@ -175,6 +182,11 @@ begin
   end if;
   if p_factor = 1 then
     return 0;
+  end if;
+  if p_target_balance <> p_original_balance
+     and public.effective_tier(auth.uid()) not in ('pro', 'elite') then
+    raise exception 'PLAN_LIMIT_PRO: account recalibration requires the Pro plan'
+      using errcode = 'check_violation';
   end if;
 
   update public.trades set

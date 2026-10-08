@@ -27,7 +27,7 @@ suffixe `*.server.ts`.
 | Fonction | Fichier | Rôle |
 | --- | --- | --- |
 | `askCoach` | `coach.functions.ts` | Jarvis (seul endpoint IA en production) |
-| `brokerCapabilities`, `connectTradovateCredentials`, `startTradovateOAuth`, `completeTradovateOAuth`, `syncBrokers`, `refreshBrokerAccountList` | `brokers.functions.ts` | Synchro broker (§9) |
+| `brokerCapabilities`, `startTradovateOAuth`, `completeTradovateOAuth`, `syncBrokers`, `refreshBrokerAccountList` | `brokers.functions.ts` | Synchro broker (§9) — palier Pro (`requireProPlan`) sauf `brokerCapabilities` |
 | `extractMemory` | `memory.functions.ts` | Extraction de souvenirs (coupée sauf `AI_MEMORY_EXTRACTION=1`) |
 | `acceptProposal` | `proposals.functions.ts` | Seule voie d'écriture de Jarvis : applique une proposition acceptée |
 | `generateMyMonthlyReport` | `reports.functions.ts` | Rapport mensuel à la demande |
@@ -134,19 +134,38 @@ Le trader connecte un login Tradovate (prop firms comprises) ; chaque
 aller-retour clôturé arrive dans son journal, déjà rempli de tout le
 structurel, et ouvre son formulaire pour qu'il complète le jugement.
 
-- **Connexion** — deux parcours (`brokers.functions.ts`) : OAuth « Se connecter
-  avec Tradovate » (`TRADOVATE_CLIENT_ID` / `TRADOVATE_CLIENT_SECRET`, retour
-  sur `/brokers` avec `code` + `state`, `state` stocké en empreinte SHA-256,
-  30 min de validité) ou **clé API** du trader (`POST /auth/accesstokenrequest`
-  avec login, mot de passe, `cid`, `sec`). Sans `BROKER_CREDENTIALS_KEY`,
-  aucune connexion n'est proposée.
-- **Secrets** — identifiants et jetons chiffrés AES-256-GCM
-  (`broker-crypto.server.ts`) avant toute écriture ; jamais renvoyés au
+- **Connexion — chez Tradovate, jamais chez nous** — un seul parcours, OAuth
+  (`brokers.functions.ts`) : le trader est redirigé vers la page de connexion
+  de Tradovate (`TRADOVATE_CLIENT_ID` / `TRADOVATE_CLIENT_SECRET`), s'y
+  identifie, revient sur `/brokers` avec `code` + `state` (`state` stocké en
+  empreinte SHA-256, 30 min de validité). Identifiant, mot de passe et e-mail
+  restent dans la base de Tradovate : aucune fonction ne les reçoit, aucune
+  colonne ne les stocke. Une connexion expirée se **reconnecte** par le même
+  parcours (`startTradovateOAuth({ connectionId })`) : comptes rattachés et
+  curseur conservés. Au retour, `SyncCelebration` montre ce que la première
+  synchro a réellement trouvé (comptes, trades) — ou dit qu'elle n'a pas
+  abouti. Sans `BROKER_CREDENTIALS_KEY` ou sans identifiants OAuth, la page le
+  dit et ne propose aucun bouton qui échouerait.
+- **Lecture seule, par construction** — `tradovate.server.ts` n'appelle que
+  les chemins de `READ_ONLY_ENDPOINTS` (listes et fiches : comptes, fills,
+  ordres, versions d'ordre, positions, frais, contrats), tous en `GET` ;
+  `assertReadOnly` refuse tout autre chemin avant le réseau (passer, modifier
+  ou annuler un ordre, lire `/auth/me` ou `/user/*`). Le seul `POST` est
+  l'échange du code OAuth. L'application partenaire se déclare aussi en
+  permissions « Read Only » chez Tradovate. Testé : `tests/brokerSync.test.ts`.
+- **Secrets** — seul le jeton d'accès est stocké, chiffré AES-256-GCM
+  (`broker-crypto.server.ts`) avant toute écriture ; jamais renvoyé au
   navigateur (le store client ne lit que les colonnes publiques).
 - **Jeton** — ~90 min, renouvelé par `GET /auth/renewaccesstoken` 10 min avant
-  expiration ; expiré : redemandé avec la clé API, ou connexion passée en
-  `error` (OAuth) — le trader reconnecte. Un refus n'est jamais retenté en
-  boucle (Tradovate pénalise les échecs : `p-ticket`, captcha).
+  expiration ; expiré, la connexion passe en `error` (`reauth_required`) sans
+  aucun appel : TradeVault n'a rien pour en redemander un, le trader se
+  reconnecte en un clic. Le cron quotidien ne rattrape donc que les jetons
+  encore vivants ; l'app ouverte les renouvelle en continu.
+- **Pro** — connecter, reconnecter et synchroniser passent par
+  `requireProPlan` (`require-pro.ts`, palier via `domain/entitlement`, échoue
+  fermé, préfixe `PLAN_LIMIT_PRO`) ; le cron filtre les propriétaires par
+  palier en une requête (`brokerSyncAllowed`). Lire et SUPPRIMER ses
+  connexions restent ouverts à tous (RLS).
 - **Synchro** (`broker-sync.server.ts`, même code pour l'app et le cron) :
   comptes (`/account/list` → `broker_accounts`, rattachés au compte TradeVault
   par défaut de la connexion) → `/fill/list`, `/order/list`, `/position/list`

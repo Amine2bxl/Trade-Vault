@@ -23,7 +23,7 @@ Ce qui ne se prouve pas dans le code — validation humaine requise.
 | L6 | Auth | Politique de mots de passe, protection des mots de passe divulgués (dashboard Supabase), vérification d'e-mail |
 | L7 | RGPD | Suppression de compte en place (`delete-account`) ; export des données à vérifier ; délivrabilité des e-mails Resend |
 | L8 | Mesure | Aucun outil d'analytics produit branché ; coût IA par utilisateur à estimer depuis `ai_agent_runs` ; aucun test de charge ni audit d'accessibilité |
-| L9 | **Synchro broker** | Poser `BROKER_CREDENTIALS_KEY` (≥ 32 caractères aléatoires) dans Vercel ; demander l'accès partenaire OAuth à Tradovate/NinjaTrader puis `TRADOVATE_CLIENT_ID` / `TRADOVATE_CLIENT_SECRET` (URL de retour `/brokers`) ; tester avec un compte Tradovate démo (clé API) : connexion, import d'un aller-retour, formulaire ouvert, pas de doublon au second passage ; appliquer la migration `20261008120000_broker_sync.sql` |
+| L9 | **Synchro broker** | Poser `BROKER_CREDENTIALS_KEY` (≥ 32 caractères aléatoires) dans Vercel ; demander l'accès partenaire OAuth à Tradovate/NinjaTrader en permissions « Read Only » puis `TRADOVATE_CLIENT_ID` / `TRADOVATE_CLIENT_SECRET` (URL de retour `/brokers`) — sans eux, aucune connexion n'est possible ; tester avec un compte Tradovate démo : redirection, retour animé, import d'un aller-retour, formulaire ouvert, pas de doublon au second passage, reconnexion après expiration ; appliquer la migration `20261008120000_broker_sync.sql` |
 
 ## Produit — ouvert
 

@@ -17,6 +17,7 @@ import { clearTradesCache, tradesQueryKey } from "@/app/trading/useTrades";
  * le trader complète le jugement.
  *
  * Coût maîtrisé :
+ *   • aucun appel hors palier Pro ;
  *   • aucun appel tant qu'aucune connexion n'existe (une seule lecture
  *     `count` au démarrage, relue quand la page Brokers annonce un
  *     changement) ;
@@ -53,6 +54,8 @@ export function announceBrokersChanged(): void {
 export function useBrokerSync(opts: {
   userId: string | undefined;
   activeAccountId: string | null;
+  /** Session prête ET palier Pro : hors Pro, aucun appel (le serveur le
+   *  refuserait de toute façon, `requireProPlan`). */
   ready: boolean;
   /** Trades fraîchement importés dans le compte AFFICHÉ, à relire. */
   onReview: (trades: Trade[]) => void;

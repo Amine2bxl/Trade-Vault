@@ -18,6 +18,18 @@ qui vivent dans l'historique git et les PR).
 - Typographie : l'app connectée passe à la pile système de Lucid
   (`--font-lucid`, `body.tv-app-type`) ; accent et vert P&L `#31d68a`.
 - `store/trades.ts` lit `*` (colonnes ajoutées tolérées avant migration).
+- Synchro broker en **OAuth seul, lecture seule** : plus de connexion par clé
+  API ni de colonne `secret_ciphertext` / `auth_mode` ; liste blanche
+  `READ_ONLY_ENDPOINTS` + `assertReadOnly` dans `tradovate.server.ts`.
+- Offre Pro : capacités `brokerSync`, `accountTransfer`, `recalibration`
+  (`domain/plans.ts`) ; garde serveur `requireProPlan` (`require-pro.ts`) ;
+  `recalibrate_account` refuse hors Pro (`PLAN_LIMIT_PRO`), retour à l'origine
+  excepté ; `PlanLimitError("pro")` côté client.
+- Comptes : `features/settings/AccountsManager.tsx` (rubrique « Comptes »),
+  `trading/AccountScaleBridge.tsx` partagé par le transfert et le recalibrage,
+  `shell/accountVisuals.ts` (icônes et libellés de compte sortis
+  d'`AccountSwitcher`).
+- Tests SQL : `tests/sql/broker.sql`, branché dans `scripts/test-sql.sh`.
 
 ## 2026-09-30 — Restructuration complète du dépôt
 

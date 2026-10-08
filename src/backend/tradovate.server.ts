@@ -1,23 +1,29 @@
 /**
- * Client HTTP Tradovate — serveur uniquement.
+ * Client HTTP Tradovate — serveur uniquement, LECTURE SEULE.
  *
- * Deux façons d'obtenir un jeton d'accès, selon ce que le trader possède :
+ * ── AUCUN MOT DE PASSE ──────────────────────────────────────────────────────
+ * Le trader se connecte CHEZ Tradovate, sur leur page (OAuth « Se connecter
+ * avec Tradovate »). Son identifiant, son mot de passe et son e-mail restent
+ * dans la base de Tradovate : TradeVault ne les voit jamais, ne les reçoit
+ * jamais, ne les stocke jamais. Il ne reçoit qu'un JETON d'accès, que le
+ * serveur chiffre avant de l'écrire (`broker-crypto.server.ts`). Exige que
+ * TradeVault soit déclaré partenaire OAuth chez Tradovate :
+ * `TRADOVATE_CLIENT_ID` / `TRADOVATE_CLIENT_SECRET`.
  *
- *   1. OAuth (« Se connecter avec Tradovate ») — le parcours des journaux
- *      partenaires. Le trader se connecte CHEZ Tradovate, nous ne voyons jamais
- *      son mot de passe. Exige que TradeVault soit déclaré partenaire :
- *      `TRADOVATE_CLIENT_ID` / `TRADOVATE_CLIENT_SECRET`.
- *   2. Clé API — `POST /auth/accesstokenrequest` avec le login, le mot de passe
- *      et la paire `cid` / `sec` que le trader génère dans Tradovate
- *      (Application Settings → API Access). Utilisable dès aujourd'hui, sans
- *      accord partenaire.
+ * ── LECTURE SEULE, PAR CONSTRUCTION ─────────────────────────────────────────
+ * Deux garde-fous indépendants :
+ *   1. côté Tradovate, l'application partenaire est déclarée en permissions
+ *      « Read Only » (comptes, ordres, positions, bibliothèque de contrats) —
+ *      réglage du propriétaire, voir `docs/BACKEND.md` §9 ;
+ *   2. ICI, aucun appel ne part hors de `READ_ONLY_ENDPOINTS` : uniquement des
+ *      `GET` sur des listes et des fiches. Passer un ordre, annuler, modifier
+ *      un compte ou lire le profil privé de l'utilisateur (`/auth/me`,
+ *      `/user/*`) est impossible depuis ce module, même par erreur de
+ *      programmation : `tvGet` refuse le chemin avant tout réseau.
  *
- * Un jeton vit ~90 minutes et se renouvelle par `GET /auth/renewaccesstoken`
- * tant qu'il est valide. La synchro le renouvelle avant expiration.
- *
- * Les échecs d'authentification sont comptés par Tradovate (quelques essais
- * par heure, puis une pénalité `p-ticket`) : un refus n'est JAMAIS retenté en
- * boucle, il est rapporté au trader.
+ * Un jeton vit environ 90 minutes et se renouvelle par
+ * `GET /auth/renewaccesstoken` tant qu'il est valide. Expiré, la connexion
+ * passe en « à reconnecter » : un clic, et le trader repasse chez Tradovate.
  */
 
 import { parseAuthResponse, type TvAuthResult } from "@/modules/brokers/tradovate";
@@ -29,7 +35,7 @@ const HOSTS: Record<TvEnvironment, string> = {
   demo: "https://demo.tradovateapi.com/v1",
 };
 
-/** Page d'autorisation OAuth de Tradovate (celle de leur exemple officiel). */
+/** Page de connexion OAuth de Tradovate (celle de leur exemple officiel). */
 export const TRADOVATE_AUTHORIZE_URL = "https://trader.tradovate.com/oauth";
 
 /** Échange du code OAuth. Surchargé par l'environnement si Tradovate change
@@ -38,9 +44,25 @@ function oauthTokenUrl(): string {
   return process.env.TRADOVATE_OAUTH_TOKEN_URL || "https://live.tradovateapi.com/auth/oauthtoken";
 }
 
-/** Délai maximal d'un appel : une API lente ne doit pas consommer tout le
- *  budget d'une server function. */
-const TIMEOUT_MS = 15_000;
+/**
+ * LES SEULS CHEMINS QUE TRADEVAULT APPELLE CHEZ TRADOVATE.
+ *
+ * Des LECTURES de données de trading — comptes, exécutions, ordres et leurs
+ * versions (pour retrouver le stop initial), positions, frais, fiches de
+ * contrat — et le renouvellement du jeton. Rien d'autre : ni écriture, ni
+ * profil utilisateur. Ajouter une entrée ici doit rester une lecture.
+ */
+export const READ_ONLY_ENDPOINTS: readonly RegExp[] = [
+  /^\/account\/list$/,
+  /^\/fill\/list$/,
+  /^\/order\/list$/,
+  /^\/orderVersion\/list$/,
+  /^\/position\/list$/,
+  /^\/fillFee\/items\?ids=[\d,]+$/,
+  /^\/contract\/items\?ids=[\d,]+$/,
+  /^\/contractMaturity\/items\?ids=[\d,]+$/,
+  /^\/product\/items\?ids=[\d,]+$/,
+];
 
 export class TradovateError extends Error {
   constructor(
@@ -51,13 +73,16 @@ export class TradovateError extends Error {
   }
 }
 
-export interface TvCredentials {
-  username: string;
-  password: string;
-  cid: string;
-  sec: string;
-  deviceId: string;
+/** Refuse tout chemin hors de la liste blanche — avant le moindre réseau. */
+export function assertReadOnly(path: string): void {
+  if (!READ_ONLY_ENDPOINTS.some((re) => re.test(path))) {
+    throw new TradovateError(`blocked: ${path} is not a read-only endpoint`, 0);
+  }
 }
+
+/** Délai maximal d'un appel : une API lente ne doit pas consommer tout le
+ *  budget d'une server function. */
+const TIMEOUT_MS = 15_000;
 
 export function tradovateOAuthConfigured(): boolean {
   return !!process.env.TRADOVATE_CLIENT_ID && !!process.env.TRADOVATE_CLIENT_SECRET;
@@ -72,31 +97,10 @@ async function readJson(res: Response): Promise<unknown> {
   }
 }
 
-export async function requestAccessToken(
-  env: TvEnvironment,
-  creds: TvCredentials,
-): Promise<TvAuthResult> {
-  const res = await fetch(`${HOSTS[env]}/auth/accesstokenrequest`, {
-    method: "POST",
-    headers: { "content-type": "application/json", accept: "application/json" },
-    body: JSON.stringify({
-      name: creds.username,
-      password: creds.password,
-      appId: process.env.TRADOVATE_APP_ID || "TradeVault",
-      appVersion: process.env.TRADOVATE_APP_VERSION || "1.0",
-      // `cid` est numérique chez Tradovate ; une valeur non numérique est
-      // transmise telle quelle et refusée par eux, avec leur message.
-      cid: /^\d+$/.test(creds.cid) ? Number(creds.cid) : creds.cid,
-      sec: creds.sec,
-      deviceId: creds.deviceId,
-    }),
-    signal: AbortSignal.timeout(TIMEOUT_MS),
-  });
-  return parseAuthResponse(await readJson(res));
-}
-
+/** Renouvelle un jeton encore valide (lecture : `GET`, aucun identifiant). */
 export async function renewAccessToken(env: TvEnvironment, token: string): Promise<TvAuthResult> {
   const res = await fetch(`${HOSTS[env]}/auth/renewaccesstoken`, {
+    method: "GET",
     headers: { authorization: `Bearer ${token}`, accept: "application/json" },
     signal: AbortSignal.timeout(TIMEOUT_MS),
   });
@@ -105,7 +109,8 @@ export async function renewAccessToken(env: TvEnvironment, token: string): Promi
 }
 
 /** Échange du code OAuth contre un jeton (corps en formulaire, comme dans
- *  l'exemple officiel de Tradovate). */
+ *  l'exemple officiel de Tradovate). Le seul `POST` du module : il ne porte
+ *  que le code à usage unique et les identifiants de l'APPLICATION. */
 export async function exchangeOAuthCode(code: string, redirectUri: string): Promise<TvAuthResult> {
   const form = new URLSearchParams({
     grant_type: "authorization_code",
@@ -140,9 +145,11 @@ export async function exchangeOAuthCode(code: string, redirectUri: string): Prom
   };
 }
 
-/** Lecture d'une entité. `path` sans le préfixe de version (`/fill/list`). */
+/** Lecture d'une entité (`/fill/list`…). Hors liste blanche : refusé. */
 export async function tvGet<T>(env: TvEnvironment, token: string, path: string): Promise<T> {
+  assertReadOnly(path);
   const res = await fetch(`${HOSTS[env]}${path}`, {
+    method: "GET",
     headers: { authorization: `Bearer ${token}`, accept: "application/json" },
     signal: AbortSignal.timeout(TIMEOUT_MS),
   });

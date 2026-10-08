@@ -11,18 +11,24 @@ import { afterAll, beforeAll, beforeEach, describe, expect, test } from "bun:tes
  *   • les secrets n'atteignent jamais la base en clair ;
  *   • un aller-retour clos devient UN trade, complet, dans le bon compte ;
  *   • rejouer la synchro n'écrit rien de plus ;
- *   • un compte broker sans compte TradeVault choisi n'écrit rien.
+ *   • un compte broker sans compte TradeVault choisi n'écrit rien ;
+ *   • LECTURE SEULE : tout ce qui part vers Tradovate est un `GET` sur la
+ *     liste blanche — aucun ordre, aucun profil, aucun mot de passe ;
+ *   • un jeton expiré met la connexion « à reconnecter », sans rien tenter ;
+ *   • seul un abonné Pro est synchronisé par le cron.
  */
 
 process.env.BROKER_CREDENTIALS_KEY = "k".repeat(48);
 
 const { encryptSecret, decryptSecret, encryptJson, decryptJson, sha256Hex } =
   await import("../src/backend/broker-crypto.server");
-const { syncConnection } = await import("../src/backend/broker-sync.server");
+const { syncConnection, brokerSyncAllowed } = await import("../src/backend/broker-sync.server");
+const { assertReadOnly, READ_ONLY_ENDPOINTS } = await import("../src/backend/tradovate.server");
 
 // ── Tradovate simulé ─────────────────────────────────────────────────────────
 const realFetch = globalThis.fetch;
 const calls: string[] = [];
+const methods: string[] = [];
 let positions = [{ accountId: 900, contractId: 7, netPos: 0 }];
 
 function tradovateResponse(path: string): unknown {
@@ -73,13 +79,20 @@ function tradovateResponse(path: string): unknown {
     ];
   if (path.endsWith("/orderVersion/list"))
     return [{ id: 131, orderId: 13, orderType: "Stop", stopPrice: 19990 }];
+  if (path.endsWith("/auth/renewaccesstoken"))
+    return {
+      accessToken: "renewed-token",
+      expirationTime: new Date(Date.now() + 90 * 60_000).toISOString(),
+      userId: 42,
+    };
   return null;
 }
 
 beforeAll(() => {
-  globalThis.fetch = (async (url: string | URL) => {
+  globalThis.fetch = (async (url: string | URL, init?: RequestInit) => {
     const path = String(url);
     calls.push(path);
+    methods.push((init?.method ?? "GET").toUpperCase());
     return new Response(JSON.stringify(tradovateResponse(path)), {
       status: 200,
       headers: { "content-type": "application/json" },
@@ -142,25 +155,17 @@ function fakeSb() {
   };
 }
 
-async function connection(defaultAccount: string | null) {
+async function connection(defaultAccount: string | null, expiresInMs = 2 * 3600_000) {
   return {
     id: "conn-1",
     user_id: "user-1",
     broker: "tradovate" as const,
-    auth_mode: "credentials" as const,
     environment: "demo" as const,
     label: "me",
     status: "active" as const,
-    secret_ciphertext: await encryptJson({
-      username: "u",
-      password: "p",
-      cid: "1",
-      sec: "s",
-      deviceId: "d",
-    }),
     token_ciphertext: await encryptSecret("valid-token"),
-    // Valide encore deux heures : aucun appel d'authentification attendu.
-    token_expires_at: new Date(Date.now() + 2 * 3600_000).toISOString(),
+    // Par défaut valide encore deux heures : aucun appel d'authentification.
+    token_expires_at: new Date(Date.now() + expiresInMs).toISOString(),
     default_risk: null,
     default_account_id: defaultAccount,
     timezone: "America/New_York",
@@ -173,6 +178,7 @@ beforeEach(() => {
   tables = { trades: [], broker_accounts: [] };
   updates = [];
   calls.length = 0;
+  methods.length = 0;
   positions = [{ accountId: 900, contractId: 7, netPos: 0 }];
 });
 
@@ -273,5 +279,99 @@ describe("la synchronisation", () => {
     const written = JSON.stringify([tables, updates]);
     expect(written).not.toContain("valid-token");
     expect(written).not.toContain('"password"');
+  });
+});
+
+describe("le jeton : renouvelé, jamais redemandé", () => {
+  test("proche de l'expiration : renouvelé par un GET, et réécrit chiffré", async () => {
+    const sb = fakeSb();
+    const res = await syncConnection(sb, await connection("tv-acc-50k", 5 * 60_000));
+    expect(res.error).toBeNull();
+    expect(calls.filter((c) => c.endsWith("/auth/renewaccesstoken"))).toHaveLength(1);
+    const patch = updates.find((u) => u.patch.token_ciphertext)?.patch;
+    expect(String(patch?.token_ciphertext)).toMatch(/^v1:/);
+    expect(await decryptSecret(String(patch?.token_ciphertext))).toBe("renewed-token");
+    expect(JSON.stringify(updates)).not.toContain("renewed-token");
+  });
+
+  test("expiré : « à reconnecter », sans le moindre appel chez Tradovate", async () => {
+    const sb = fakeSb();
+    const res = await syncConnection(sb, await connection("tv-acc-50k", -60_000));
+    expect(res.error).toBe("reauth_required");
+    expect(res.inserted).toEqual([]);
+    expect(calls).toEqual([]);
+    const patch = updates.find((u) => u.table === "broker_connections")?.patch;
+    expect(patch?.status).toBe("error");
+    expect(patch?.last_error).toBe("reauth_required");
+  });
+});
+
+describe("lecture seule, par construction", () => {
+  test("une synchro complète n'envoie que des GET, tous sur la liste blanche", async () => {
+    const sb = fakeSb();
+    await syncConnection(sb, await connection("tv-acc-50k", 5 * 60_000));
+    expect(calls.length).toBeGreaterThan(0);
+    expect(new Set(methods)).toEqual(new Set(["GET"]));
+    for (const url of calls) {
+      const path = url.replace(/^https:\/\/(live|demo)\.tradovateapi\.com\/v1/, "");
+      if (path === "/auth/renewaccesstoken") continue;
+      expect(() => assertReadOnly(path)).not.toThrow();
+    }
+  });
+
+  test("passer, modifier ou annuler un ordre est refusé avant tout réseau", () => {
+    for (const path of [
+      "/order/placeorder",
+      "/order/placeOSO",
+      "/order/modifyorder",
+      "/order/cancelorder",
+      "/order/liquidateposition",
+      "/account/item?id=1",
+      "/cashBalance/getcashbalancesnapshot",
+      "/auth/me",
+      "/user/list",
+      "/userProperty/list",
+      "/fill/list/../../order/placeorder",
+      "/contract/items?ids=1;drop",
+    ]) {
+      expect(() => assertReadOnly(path)).toThrow(/read-only/);
+    }
+  });
+
+  test("la liste blanche ne contient que des lectures", () => {
+    for (const re of READ_ONLY_ENDPOINTS) {
+      expect(re.source).toMatch(/\\\/(list|items)/);
+      expect(re.source).not.toMatch(/place|modify|cancel|liquidate|auth|user/i);
+    }
+  });
+});
+
+describe("Pro uniquement", () => {
+  test("le cron ne synchronise qu'un abonnement Pro ou Elite actif", () => {
+    const future = new Date(Date.now() + 86_400_000).toISOString();
+    expect(brokerSyncAllowed(null)).toBe(false);
+    expect(brokerSyncAllowed({ plan: "free", status: "active", source: "signup" })).toBe(false);
+    expect(brokerSyncAllowed({ plan: "pro_monthly", status: "active", source: "stripe" })).toBe(
+      true,
+    );
+    expect(
+      brokerSyncAllowed({
+        plan: "elite_yearly",
+        status: "active",
+        source: "stripe",
+        current_period_end: future,
+      }),
+    ).toBe(true);
+    expect(brokerSyncAllowed({ plan: "pro_monthly", status: "canceled", source: "stripe" })).toBe(
+      false,
+    );
+    expect(
+      brokerSyncAllowed({
+        plan: "pro_monthly",
+        status: "active",
+        source: "crypto",
+        current_period_end: "2020-01-01T00:00:00Z",
+      }),
+    ).toBe(false);
   });
 });

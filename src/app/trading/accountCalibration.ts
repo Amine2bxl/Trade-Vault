@@ -107,6 +107,12 @@ export function factorFor(currentBalance: number, targetBalance: number): number
  * appliqué côté SQL (`round(x, 2)` sur des colonnes `numeric`), pour que
  * l'aperçu montré au trader corresponde exactement à ce qui sera écrit.
  */
+/** Un facteur lisible : `2`, `0.5`, `1.25` — jamais `2.00`, qui donne l'air
+ *  d'un arrondi. Le `×` reste à l'appelant. */
+export function fmtFactor(factor: number): string {
+  return String(Number(factor.toFixed(4)));
+}
+
 export function roundMoney(n: number): number {
   return Math.round(n * 100) / 100;
 }

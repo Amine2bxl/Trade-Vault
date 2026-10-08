@@ -25,9 +25,9 @@ Chemins relatifs à `src/app/` sauf mention contraire.
 | Jarvis (`insights`) | `features/jarvis/` | `Jarvis.tsx` (page) · `AiAssistant.tsx` (widget) | voir [`AI.md`](AI.md) |
 | Plan de trading (`tradingplan`) | `features/trading-plan/` | `TradingPlan.tsx` | `TradingRulesSection`, `trading/tradingPlan`, `trading/tradingRules` |
 | Objectifs (`goals`) | `features/goals/` | `Goals.tsx` | `views`, `goalPlan`, `useGoalProgress` (consommé aussi par Mistakes et Jarvis), `modules/probability/goals` |
-| Réglages (`settings`, `profile`, `appearance`) | `features/settings/` | `Settings.tsx` · `Profile.tsx` · `Appearance.tsx` | `ThemeSettings`, `ThemeStudioModal`, `PushNotificationSettings`, `RecalibrateAccountModal`, `utils/themes` |
+| Réglages (`settings`, `profile`, `appearance`) | `features/settings/` | `Settings.tsx` · `Profile.tsx` · `Appearance.tsx` | `ThemeSettings`, `ThemeStudioModal`, `PushNotificationSettings`, `AccountsManager` (principal, sous-comptes, transfert et recalibrage — Pro), `RecalibrateAccountModal`, `trading/AccountScaleBridge`, `utils/themes` |
 | Abonnement (`subscription`) | `features/billing/` | `Subscription.tsx` | `PricingPlans`, `PlanMatrix`, `PremiumGate`, `UpgradeModal`, codes promo, `domain/plans`, `hooks/useSubscription` |
-| Brokers (`brokers`) | `features/brokers/` | `Brokers.tsx` | `useBrokerSync` (synchro pendant que l'app est ouverte + file de relecture, monté par `shell/App.tsx`), `store/brokers`, `backend/brokers.functions`, `backend/broker-sync.server`, `backend/tradovate.server`, `modules/brokers` |
+| Brokers (`brokers`, Pro) | `features/brokers/` | `Brokers.tsx` | `SyncCelebration` (retour de connexion chez Tradovate), `useBrokerSync` (synchro pendant que l'app est ouverte + file de relecture, monté par `shell/App.tsx`), `store/brokers`, `backend/brokers.functions`, `backend/broker-sync.server`, `backend/tradovate.server`, `modules/brokers` |
 | Inbox (`inbox`) | `features/inbox/` | `Inbox.tsx` | `NotificationDetailModal`, `notificationMeta`, `useUnreadCount` (badge de la sidebar), `modules/notifications` |
 
 ## Hors navigation

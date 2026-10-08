@@ -1,10 +1,6 @@
 import { Suspense, lazy, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import {
-  User,
-  Building2,
-  FlaskConical,
-  Zap,
   Check,
   ChevronDown,
   Plus,
@@ -13,16 +9,6 @@ import {
   Trash2,
   AlertTriangle,
   Layers,
-  Briefcase,
-  Flame,
-  Star,
-  Shield,
-  Target,
-  TrendingUp,
-  Compass,
-  Home,
-  CreditCard,
-  Globe,
   Lock,
   Crown,
   Repeat2,
@@ -34,25 +20,19 @@ import { useSubscription } from "../hooks/useSubscription";
 import { isPlanLimitError } from "../utils/planLimits";
 import { cn } from "@/shared/ui/cn";
 import type { Account, AccountType } from "../store";
+import {
+  AVAILABLE_ICONS,
+  ICON_MAP,
+  TYPE_ICON,
+  TYPE_LABEL_KEY,
+  getAccountIcon,
+} from "./accountVisuals";
 import { Modal, FIELD_BASE, Chip, CHIP_ROW } from "@/shared/ui";
 import { currencySymbol, formatMoney, useCurrency } from "@/shared/currency";
 
 // Chargée à la demande : la modale de transfert n'a rien à faire dans le
 // premier rendu du rail.
 const TransferTradesModal = lazy(() => import("./TransferTradesModal"));
-
-const TYPE_ICON: Record<AccountType, typeof User> = {
-  personal: User,
-  prop: Building2,
-  demo: FlaskConical,
-  live: Zap,
-};
-const TYPE_LABEL_KEY = {
-  personal: "account.typePersonal",
-  prop: "account.typeProp",
-  demo: "account.typeDemo",
-  live: "account.typeLive",
-} as const;
 
 /**
  * LA TEINTE D'UN COMPTE — celle du THÈME, pas une couleur figée.
@@ -77,31 +57,6 @@ const ACCOUNT_TINT = {
   ring: "rgb(var(--tv-accent-rgb) / 0.22)",
 };
 
-const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
-  User,
-  Building2,
-  FlaskConical,
-  Zap,
-  Briefcase,
-  Flame,
-  Star,
-  Shield,
-  Target,
-  TrendingUp,
-  Layers,
-  Compass,
-  Home,
-  CreditCard,
-  Globe,
-};
-
-const AVAILABLE_ICONS = Object.keys(ICON_MAP);
-
-function getAccountIcon(a: Account) {
-  if (a.icon && ICON_MAP[a.icon]) return ICON_MAP[a.icon];
-  return TYPE_ICON[a.type] ?? User;
-}
-
 export default function AccountSwitcher({
   compact = false,
   variant = "bar",
@@ -117,7 +72,8 @@ export default function AccountSwitcher({
   const { accounts, activeAccount, mainAccount, switchAccount, removeAccount, setMain } =
     useAccounts();
   const { toast } = useToast();
-  const { accountLimit } = useSubscription();
+  const { accountLimit, can } = useSubscription();
+  const canTransfer = can("accountTransfer");
   const computedBalance = balanceProp ?? activeAccount?.startingBalance ?? 0;
   useCurrency(); // redessine le solde quand la devise change
   const fmtBalance = formatMoney(computedBalance, { whole: true });
@@ -342,7 +298,9 @@ export default function AccountSwitcher({
             title={accounts.length < 2 ? t("transfer.needTwo") : undefined}
             className="flex h-10 items-center justify-center gap-2 rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-2)] text-[13px] font-semibold text-slate-200 transition-colors hover:border-[var(--tv-border-strong)] hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <Repeat2 className="h-4 w-4" />
+            {/* Hors Pro, la modale s'ouvre quand même (elle montre ce que
+                l'offre apporte) ; le cadenas l'annonce dès ici. */}
+            {canTransfer ? <Repeat2 className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
             {t("transfer.open")}
           </button>
         </div>
@@ -538,7 +496,7 @@ export default function AccountSwitcher({
                       }}
                       className="flex min-h-[92px] flex-col items-center justify-center gap-2 rounded-2xl border border-[var(--tv-border)] bg-white/[0.03] p-3.5 text-slate-300 transition active:scale-[0.97]"
                     >
-                      <Repeat2 className="h-5 w-5" />
+                      {canTransfer ? <Repeat2 className="h-5 w-5" /> : <Lock className="h-5 w-5" />}
                       <span className="text-center text-xs font-semibold">
                         {t("transfer.open")}
                       </span>
@@ -811,7 +769,7 @@ export default function AccountSwitcher({
 
 /** Two-step destructive confirmation: a first "I understand" gate, then the
  *  actual red delete — trades and history go with the account (FK cascade). */
-function DeleteAccountModal({
+export function DeleteAccountModal({
   account,
   onConfirm,
   onClose,
@@ -890,7 +848,7 @@ function DeleteAccountModal({
   );
 }
 
-function CreateAccountModal({ onClose, edit }: { onClose: () => void; edit?: Account }) {
+export function CreateAccountModal({ onClose, edit }: { onClose: () => void; edit?: Account }) {
   const { addAccount, editAccount } = useAccounts();
   const { t, lang } = useT();
   const { toast } = useToast();

@@ -4,8 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
  * Connexions broker — lecture et réglages, côté client.
  *
  * Le navigateur ne lit QUE les colonnes publiques d'une connexion : jamais
- * `secret_ciphertext` ni `token_ciphertext` (chiffrés de toute façon, et sans
- * aucune utilité ici). Tout ce qui touche au broker lui-même — authentifier,
+ * `token_ciphertext` (chiffré de toute façon, et sans aucune utilité ici). Il
+ * n'existe aucun mot de passe broker à lire : le trader se connecte chez
+ * Tradovate, pas chez TradeVault. Tout ce qui touche au broker lui-même — authentifier,
  * synchroniser — passe par les server functions de
  * `backend/brokers.functions.ts`.
  *
@@ -19,7 +20,6 @@ export type BrokerConnectionStatus = "pending" | "active" | "error" | "disabled"
 export interface BrokerConnection {
   id: string;
   broker: "tradovate";
-  authMode: "oauth" | "credentials";
   environment: "live" | "demo";
   label: string;
   status: BrokerConnectionStatus;
@@ -41,7 +41,7 @@ export interface BrokerAccount {
 }
 
 const CONNECTION_PUBLIC_COLUMNS =
-  "id, broker, auth_mode, environment, label, status, default_risk, default_account_id, last_sync_at, last_success_at, last_error, created_at";
+  "id, broker, environment, label, status, default_risk, default_account_id, last_sync_at, last_success_at, last_error, created_at";
 
 // Les tables ne sont pas (encore) dans les types générés.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -50,7 +50,6 @@ const db = supabase as any;
 interface ConnectionRow {
   id: string;
   broker: "tradovate";
-  auth_mode: "oauth" | "credentials";
   environment: "live" | "demo";
   label: string;
   status: BrokerConnectionStatus;
@@ -73,7 +72,6 @@ export async function loadBrokerConnections(userId: string): Promise<BrokerConne
   return ((data ?? []) as ConnectionRow[]).map((r) => ({
     id: r.id,
     broker: r.broker,
-    authMode: r.auth_mode,
     environment: r.environment,
     label: r.label,
     status: r.status,

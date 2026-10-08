@@ -30,7 +30,7 @@ Postgres via Supabase (projet `tjikygsipblatubyzbrt`, constante
 | Motifs et Jarvis | `mistake_clusters`, `mistake_taxonomy`, `detected_patterns`, `agent_proposals`, `ai_memory`, `ai_agent_runs` (télémétrie, 90 j), `ai_reports`, `ai_rate_limits`, `simulation_scenarios` |
 | Facturation | `subscriptions`, `processed_webhook_events`, `promo_codes`, `promo_redemptions`, `comp_grants`, `email_log`, `push_subscriptions` |
 | Calendrier économique | `economic_events`, `economic_calendar_sync` — **lecture publique**, écriture service-role (cron) |
-| Synchro broker | `broker_connections` (une par login broker ; identifiants et jetons **chiffrés AES-256-GCM** par le serveur, `sync_cursor`), `broker_accounts` (comptes du login → compte TradeVault cible) |
+| Synchro broker | `broker_connections` (une par login broker ; seul le **jeton d'accès** OAuth, **chiffré AES-256-GCM** par le serveur — aucun identifiant ni mot de passe ; `sync_cursor`), `broker_accounts` (comptes du login → compte TradeVault cible) |
 | Fondation IA sans code consommateur | `ai_embeddings` (pgvector `vector(1536)`), `ai_jobs` |
 
 Colonnes de `trades` (mapping vers le type `Trade` dans `store/trades.ts`) :
@@ -70,7 +70,7 @@ Toute fonction `SECURITY DEFINER` voit son `EXECUTE` révoqué pour
 | `enforce_proposal_budget` | Budget des propositions de Jarvis (3 en attente, 1 par jour) |
 | `apply_subscription_event` | Transitions d'abonnement idempotentes (webhooks) |
 | `redeem_promo_code`, `release_promo_redemption` | Codes promo |
-| `recalibrate_account`, `recalibrate_account_trades` | Recalibrage atomique de l'échelle d'un compte (frais compris depuis `broker_sync`) |
+| `recalibrate_account`, `recalibrate_account_trades` | Recalibrage atomique de l'échelle d'un compte (frais compris depuis `broker_sync`). Palier Pro exigé (`PLAN_LIMIT_PRO`), sauf le retour au capital d'origine |
 | `adjust_memory_confidence` | Confiance des souvenirs de Jarvis |
 | `handle_new_user`, `handle_new_user_billing` | Initialisation à l'inscription (triggers) |
 | `users_with_trades_since`, `find_user_id_by_email` | Balayages de cron, administration |

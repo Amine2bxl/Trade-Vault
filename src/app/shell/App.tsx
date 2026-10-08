@@ -164,11 +164,13 @@ function AppContent() {
   // Multi-appareils : ce qui est encodé/modifié/supprimé ailleurs arrive ici
   // instantanément, sans rafraîchissement (voir `useRealtimeTrades`).
   useRealtimeTrades(user?.id, activeId);
+  const { tier, can: canUse, loading: subLoading } = useSubscription();
   // Synchro broker : le journal se remplit seul pendant que l'app est ouverte.
+  // Palier Pro uniquement — hors Pro, aucun appel ne part.
   useBrokerSync({
     userId: user?.id,
     activeAccountId: activeId,
-    ready: accountsReady,
+    ready: accountsReady && !subLoading && canUse("brokerSync"),
     onReview: (imported) => {
       setReviewQueue((q) => {
         const known = new Set(q.map((t) => t.id));
@@ -313,7 +315,6 @@ function AppContent() {
   // les voyait remplacés par des données de démonstration une fois l'abonnement
   // résolu — ses propres nombres, changés sous ses yeux.
   const { locked: pageLocked, resolved: gateResolved } = usePageLockState(page);
-  const { tier } = useSubscription();
   const shownTrades = pageLocked ? previewTrades() : trades;
 
   // Tous les « Go Pro » ouvrent la modale d'abonnement (Pro/Elite, mensuel ou
