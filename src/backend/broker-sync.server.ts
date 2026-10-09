@@ -35,7 +35,16 @@ import type { Trade } from "@/domain/trade";
 import { effectiveTier, type EntitlementRow } from "@/domain/entitlement";
 import { tierAtLeast } from "@/domain/plans";
 import { decryptSecret, encryptSecret } from "./broker-crypto.server";
-import { renewAccessToken, tvGet, tvItems, type TvEnvironment } from "./tradovate.server";
+import {
+  TradovateError,
+  newSession,
+  refreshAccessToken,
+  renewAccessToken,
+  tvGet,
+  tvItems,
+  type TvEnvironment,
+  type TvSession,
+} from "./tradovate.server";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Sb = any;
@@ -49,6 +58,8 @@ export interface ConnectionRow {
   status: "pending" | "active" | "error" | "disabled";
   token_ciphertext: string | null;
   token_expires_at: string | null;
+  refresh_token_ciphertext?: string | null;
+  api_hosts?: tv.ApiHosts | null;
   default_risk: number | null;
   default_account_id: string | null;
   timezone: string;
@@ -85,7 +96,22 @@ export type SyncErrorCode =
   | "rate_limited"
   | "broker_unreachable"
   | "plan_limit"
-  | "crypto_unavailable";
+  | "crypto_unavailable"
+  /** Le login n'a pas la permission de lire (403) : souvent un compte prop
+   *  firm sans accès API, ou une application enregistrée sans « Read ». */
+  | "permission_denied"
+  /** Des trades n'ont pas pu être écrits : ils seront retentés. */
+  | "insert_failed";
+
+/** Le code d'erreur d'un échec Tradovate, selon son statut HTTP. */
+export function errorFromTradovate(e: unknown): SyncErrorCode {
+  if (e instanceof TradovateError) {
+    if (e.status === 401) return "reauth_required";
+    if (e.status === 403) return "permission_denied";
+    if (e.status === 429) return "rate_limited";
+  }
+  return "broker_unreachable";
+}
 
 export interface SyncOutcome {
   connectionId: string;
@@ -99,40 +125,89 @@ const RENEW_MARGIN_MS = 10 * 60_000;
 
 // ── Jeton ────────────────────────────────────────────────────────────────────
 
+/**
+ * Un jeton d'accès valide pour cette connexion, dans une session d'appels.
+ *
+ *  1. encore largement valide : tel quel ;
+ *  2. proche de l'expiration : renouvelé (`GET /auth/renewaccesstoken`) ;
+ *  3. expiré, ou renouvellement refusé : le `refresh_token` OAuth en redonne
+ *     un — la connexion survit à une journée sans app ouverte ;
+ *  4. ni l'un ni l'autre : « à reconnecter ». TradeVault n'a aucun mot de
+ *     passe pour se reconnecter à la place du trader, et c'est voulu.
+ *
+ * Tout nouveau jeton (et les hôtes d'API renvoyés) est réécrit chiffré.
+ */
 async function ensureToken(
   sb: Sb,
   conn: ConnectionRow,
-): Promise<{ token: string } | { error: SyncErrorCode }> {
+): Promise<{ session: TvSession } | { error: SyncErrorCode }> {
   const exp = conn.token_expires_at ? Date.parse(conn.token_expires_at) : 0;
   let current: string | null = null;
-  if (conn.token_ciphertext) {
-    try {
-      current = await decryptSecret(conn.token_ciphertext);
-    } catch {
-      return { error: "crypto_unavailable" };
-    }
+  let refresh: string | null = null;
+  try {
+    if (conn.token_ciphertext) current = await decryptSecret(conn.token_ciphertext);
+    if (conn.refresh_token_ciphertext) refresh = await decryptSecret(conn.refresh_token_ciphertext);
+  } catch {
+    return { error: "crypto_unavailable" };
+  }
+  const hosts = conn.api_hosts ?? {};
+
+  if (current && exp - Date.now() > RENEW_MARGIN_MS) {
+    return { session: newSession(conn.environment, current, hosts) };
+  }
+  if ((!current || exp <= Date.now()) && !refresh) return { error: "reauth_required" };
+
+  let result: tv.TvTokenResult | null = null;
+  if (current && exp > Date.now()) {
+    result = await renewAccessToken(newSession(conn.environment, current, hosts)).catch(() => null);
+  }
+  if ((!result || !result.ok) && refresh) {
+    result = await refreshAccessToken(refresh).catch(() => null);
+  }
+  if (!result) return { error: "broker_unreachable" };
+  if (!result.ok) {
+    return { error: result.reason === "penalty" ? "rate_limited" : "reauth_required" };
   }
 
-  // Encore largement valide : rien à faire.
-  if (current && exp - Date.now() > RENEW_MARGIN_MS) return { token: current };
-  // Expiré : seul le trader peut en obtenir un nouveau, en se reconnectant
-  // CHEZ Tradovate. TradeVault n'a aucun identifiant pour le faire à sa place,
-  // et c'est voulu.
-  if (!current || exp <= Date.now()) return { error: "reauth_required" };
-
-  // Encore valide mais proche de l'expiration : on le renouvelle.
-  const result = await renewAccessToken(conn.environment, current).catch(() => null);
-  if (!result) return { error: "broker_unreachable" };
-  if (!result.ok)
-    return { error: result.reason === "penalty" ? "rate_limited" : "reauth_required" };
+  const merged = tv.mergeApiHosts(hosts, result.apiHosts);
   await sb
     .from("broker_connections")
     .update({
       token_ciphertext: await encryptSecret(result.accessToken),
       token_expires_at: result.expiresAt,
+      ...(result.refreshToken
+        ? { refresh_token_ciphertext: await encryptSecret(result.refreshToken) }
+        : {}),
+      api_hosts: merged,
     })
     .eq("id", conn.id);
-  return { token: result.accessToken };
+  return { session: newSession(conn.environment, result.accessToken, merged) };
+}
+
+/**
+ * L'environnement qui porte réellement les comptes de ce login.
+ *
+ * Un compte prop firm vit le plus souvent sur l'environnement « démo » de
+ * Tradovate ; un trader qui laisse « Live » par défaut verrait « 0 compte ».
+ * Après la connexion, on regarde l'environnement choisi, puis l'autre s'il
+ * est vide. Le même jeton OAuth est accepté sur les deux hôtes.
+ */
+export async function detectEnvironment(
+  preferred: TvEnvironment,
+  token: string,
+  hosts: tv.ApiHosts,
+): Promise<TvEnvironment> {
+  const count = async (env: TvEnvironment) => {
+    try {
+      const list = await tvGet<tv.TvAccount[]>(newSession(env, token, hosts), "/account/list");
+      return Array.isArray(list) ? list.filter((a) => !a.archived).length : 0;
+    } catch {
+      return -1;
+    }
+  };
+  if ((await count(preferred)) > 0) return preferred;
+  const other: TvEnvironment = preferred === "live" ? "demo" : "live";
+  return (await count(other)) > 0 ? other : preferred;
 }
 
 // ── Comptes ──────────────────────────────────────────────────────────────────
@@ -141,9 +216,9 @@ async function ensureToken(
 export async function refreshBrokerAccounts(
   sb: Sb,
   conn: ConnectionRow,
-  token: string,
+  session: TvSession,
 ): Promise<BrokerAccountRow[]> {
-  const remote = await tvGet<tv.TvAccount[]>(conn.environment, token, "/account/list");
+  const remote = await tvGet<tv.TvAccount[]>(session, "/account/list");
   const { data: known } = await sb
     .from("broker_accounts")
     .select("id, connection_id, external_account_id, name, account_id, enabled")
@@ -177,8 +252,7 @@ export async function refreshBrokerAccounts(
 // ── Contrats ─────────────────────────────────────────────────────────────────
 
 async function resolveContracts(
-  env: TvEnvironment,
-  token: string,
+  session: TvSession,
   ids: readonly number[],
   cache: Record<string, tv.ContractInfo>,
 ): Promise<Map<number, tv.ContractInfo>> {
@@ -194,22 +268,19 @@ async function resolveContracts(
   // contrat → échéance → produit : c'est le produit qui porte la valeur du
   // point (`valuePerPoint`) et la racine (« MNQ »).
   const contracts = await tvItems<{ id: number; name: string; contractMaturityId: number }>(
-    env,
-    token,
+    session,
     "contract",
     missing,
   );
   const maturityIds = [...new Set(contracts.map((c) => c.contractMaturityId))];
   const maturities = await tvItems<{ id: number; productId: number }>(
-    env,
-    token,
+    session,
     "contractMaturity",
     maturityIds,
   );
   const productIds = [...new Set(maturities.map((m) => m.productId))];
   const products = await tvItems<{ id: number; name: string; valuePerPoint: number }>(
-    env,
-    token,
+    session,
     "product",
     productIds,
   );
@@ -272,34 +343,91 @@ function tradeRow(t: Trade, userId: string) {
 const isPlanLimit = (e: unknown) =>
   String((e as { message?: string } | null)?.message ?? e).includes("PLAN_LIMIT_TRADES");
 
+/**
+ * Écrit les trades. Rend ce qui a été inséré ET l'ensemble des `externalId`
+ * TRAITÉS — insérés ou déjà présents (doublon ignoré). Un trade refusé pour une
+ * autre raison n'est pas traité : le curseur ne doit pas passer par-dessus,
+ * sinon il serait perdu pour toujours.
+ */
 async function insertTrades(
   sb: Sb,
   userId: string,
   trades: Trade[],
-): Promise<{ inserted: Record<string, unknown>[]; planLimit: boolean }> {
-  if (!trades.length) return { inserted: [], planLimit: false };
+): Promise<{
+  inserted: Record<string, unknown>[];
+  processed: Set<string>;
+  planLimit: boolean;
+  failed: number;
+}> {
+  const processed = new Set<string>();
+  if (!trades.length) return { inserted: [], processed, planLimit: false, failed: 0 };
   const rows = trades.map((t) => tradeRow(t, userId));
   const { data, error } = await sb
     .from("trades")
     .upsert(rows, { onConflict: "user_id,external_id", ignoreDuplicates: true })
     .select("*");
-  if (!error) return { inserted: (data ?? []) as Record<string, unknown>[], planLimit: false };
+  if (!error) {
+    for (const t of trades) if (t.externalId) processed.add(t.externalId);
+    return {
+      inserted: (data ?? []) as Record<string, unknown>[],
+      processed,
+      planLimit: false,
+      failed: 0,
+    };
+  }
   // Un lot refusé est repris ligne à ligne : une seule ligne fautive (ou la
   // limite de l'offre atteinte en cours de lot) n'emporte pas les autres.
   const inserted: Record<string, unknown>[] = [];
   let planLimit = isPlanLimit(error);
+  let failed = 0;
   for (const row of rows) {
     const res = await sb
       .from("trades")
       .upsert([row], { onConflict: "user_id,external_id", ignoreDuplicates: true })
       .select("*");
-    if (!res.error) inserted.push(...((res.data ?? []) as Record<string, unknown>[]));
-    else if (isPlanLimit(res.error)) {
+    if (!res.error) {
+      inserted.push(...((res.data ?? []) as Record<string, unknown>[]));
+      if (row.external_id) processed.add(row.external_id);
+    } else if (isPlanLimit(res.error)) {
       planLimit = true;
       break;
+    } else {
+      failed++;
+      console.error("[broker-sync] trade insert failed", row.external_id, res.error?.message);
     }
   }
-  return { inserted, planLimit };
+  return { inserted, processed, planLimit, failed };
+}
+
+/**
+ * Le curseur d'un compte n'avance que sur une suite CONTINUE d'allers-retours
+ * traités, dans l'ordre des sorties : le premier non traité l'arrête, pour
+ * qu'il soit repris au passage suivant (les suivants, déjà écrits, sont alors
+ * ignorés par la clé de déduplication).
+ */
+export function advanceCursor(
+  through: Record<string, string>,
+  trips: readonly { accountId: string; exitTime: string; externalId: string }[],
+  processed: ReadonlySet<string>,
+): Record<string, string> {
+  const out = { ...through };
+  const blocked = new Set<string>();
+  // À sortie égale, le non traité passe d'abord : sinon le curseur avancerait
+  // jusqu'à son heure et le filtre `exitTime > syncedThrough` l'oublierait.
+  const done = (t: { externalId: string }) => (processed.has(t.externalId) ? 1 : 0);
+  const ordered = [...trips].sort((a, b) =>
+    a.exitTime < b.exitTime ? -1 : a.exitTime > b.exitTime ? 1 : done(a) - done(b),
+  );
+  for (const trip of ordered) {
+    if (blocked.has(trip.accountId)) continue;
+    if (!processed.has(trip.externalId)) {
+      blocked.add(trip.accountId);
+      continue;
+    }
+    const prev = out[trip.accountId];
+    if (!prev || trip.exitTime > prev) out[trip.accountId] = trip.exitTime;
+  }
+  return out;
 }
 
 // ── La synchro ───────────────────────────────────────────────────────────────
@@ -319,9 +447,12 @@ export async function syncConnection(sb: Sb, conn: ConnectionRow): Promise<SyncO
       .update({
         last_sync_at: startedAt,
         last_error: error,
-        // Un jeton expiré ou refusé met la connexion en erreur : elle n'est
-        // plus tentée en boucle, le trader voit qu'il doit se reconnecter.
-        ...(error === "reauth_required" ? { status: "error" } : {}),
+        // Un jeton expiré ou refusé, ou un login sans permission de lecture,
+        // met la connexion en erreur : elle n'est plus tentée en boucle, le
+        // trader voit ce qu'il doit faire.
+        ...(error === "reauth_required" || error === "permission_denied"
+          ? { status: "error" }
+          : {}),
       })
       .eq("id", conn.id);
     return outcome;
@@ -329,26 +460,21 @@ export async function syncConnection(sb: Sb, conn: ConnectionRow): Promise<SyncO
 
   const auth = await ensureToken(sb, conn);
   if ("error" in auth) return fail(auth.error);
-  const token = auth.token;
-  const env = conn.environment;
+  const session = auth.session;
   const cursor: SyncCursor = { ...(conn.sync_cursor ?? {}) };
   cursor.contracts = { ...(cursor.contracts ?? {}) };
 
   try {
-    const accounts = await refreshBrokerAccounts(sb, conn, token);
+    const accounts = await refreshBrokerAccounts(sb, conn, session);
     const target = new Map(
       accounts.filter((a) => a.enabled && a.account_id).map((a) => [a.external_account_id, a]),
     );
     outcome.unmappedAccounts = accounts.filter((a) => a.enabled && !a.account_id).length;
 
     const [fills, orders, positions] = await Promise.all([
-      tvGet<tv.TvFill[]>(env, token, "/fill/list"),
-      tvGet<tv.TvOrder[]>(env, token, "/order/list"),
-      tvGet<{ accountId: number; contractId: number; netPos: number }[]>(
-        env,
-        token,
-        "/position/list",
-      ),
+      tvGet<tv.TvFill[]>(session, "/fill/list"),
+      tvGet<tv.TvOrder[]>(session, "/order/list"),
+      tvGet<{ accountId: number; contractId: number; netPos: number }[]>(session, "/position/list"),
     ]);
     const orderById = new Map(orders.map((o) => [o.id, o]));
     const relevant = fills.filter((f) => {
@@ -358,16 +484,14 @@ export async function syncConnection(sb: Sb, conn: ConnectionRow): Promise<SyncO
 
     if (relevant.length) {
       const contracts = await resolveContracts(
-        env,
-        token,
+        session,
         [...new Set(relevant.map((f) => f.contractId))],
         cursor.contracts,
       );
       // Les frais sont un plus, pas un prérequis : une API de frais
       // indisponible ne bloque pas le journal (frais à 0, P&L brut).
       const feeList = await tvItems<tv.TvFillFee>(
-        env,
-        token,
+        session,
         "fillFee",
         relevant.map((f) => f.id),
       ).catch(() => [] as tv.TvFillFee[]);
@@ -398,7 +522,7 @@ export async function syncConnection(sb: Sb, conn: ConnectionRow): Promise<SyncO
         // Les stops ne sont lus que s'il y a quelque chose à journaliser.
         let stops: BrokerStopOrder[] = [];
         try {
-          const versions = await tvGet<tv.TvOrderVersion[]>(env, token, "/orderVersion/list");
+          const versions = await tvGet<tv.TvOrderVersion[]>(session, "/orderVersion/list");
           stops = tv.stopOrders(orders, versions);
         } catch {
           stops = [];
@@ -415,25 +539,24 @@ export async function syncConnection(sb: Sb, conn: ConnectionRow): Promise<SyncO
             stops,
           });
         });
-        const { inserted, planLimit } = await insertTrades(sb, conn.user_id, trades);
+        const { inserted, processed, planLimit, failed } = await insertTrades(
+          sb,
+          conn.user_id,
+          trades,
+        );
         outcome.inserted = inserted.map(rowToBrokerTrade);
         if (planLimit) outcome.error = "plan_limit";
-        // Le curseur n'avance que jusqu'à ce qui a été réellement traité :
-        // si la limite de l'offre a coupé le lot, la suite sera reprise.
-        const done = planLimit
-          ? trades.filter((t) => inserted.some((r) => r.external_id === t.externalId))
-          : trades;
-        for (const trip of fresh) {
-          if (!done.some((t) => t.externalId === trip.externalId)) continue;
-          const prev = through[trip.accountId];
-          if (!prev || trip.exitTime > prev) through[trip.accountId] = trip.exitTime;
-        }
-        cursor.syncedThrough = through;
+        else if (failed > 0) outcome.error = "insert_failed";
+        // Le curseur n'avance que sur ce qui a été réellement traité : si la
+        // limite de l'offre ou une écriture refusée a coupé le lot, la suite
+        // sera reprise au prochain passage.
+        cursor.syncedThrough = advanceCursor(through, fresh, processed);
       }
     }
   } catch (e) {
-    console.error("[broker-sync] tradovate", conn.id, e);
-    return fail("broker_unreachable");
+    const code = errorFromTradovate(e);
+    console.error("[broker-sync] tradovate", conn.id, code, e instanceof Error ? e.message : e);
+    return fail(code);
   }
 
   await sb
@@ -444,6 +567,9 @@ export async function syncConnection(sb: Sb, conn: ConnectionRow): Promise<SyncO
       last_error: outcome.error,
       status: "active",
       sync_cursor: cursor,
+      // Une redirection a révélé l'hôte dédié du compte : retenu pour ne plus
+      // passer par la redirection.
+      ...(session.hostsChanged ? { api_hosts: session.hosts } : {}),
     })
     .eq("id", conn.id);
   return outcome;
@@ -485,7 +611,7 @@ export function rowToBrokerTrade(r: Record<string, unknown>): Trade {
 }
 
 export const CONNECTION_COLUMNS =
-  "id, user_id, broker, environment, label, status, token_ciphertext, token_expires_at, default_risk, default_account_id, timezone, last_sync_at, sync_cursor";
+  "id, user_id, broker, environment, label, status, token_ciphertext, token_expires_at, refresh_token_ciphertext, api_hosts, default_risk, default_account_id, timezone, last_sync_at, sync_cursor";
 
 /** Les colonnes dont dépend le palier — les mêmes que lit `require-pro.ts`. */
 export const ENTITLEMENT_COLUMNS =

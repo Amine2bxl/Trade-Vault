@@ -5,7 +5,9 @@ import {
   Cable,
   Check,
   ChevronDown,
+  Copy,
   ExternalLink,
+  FileUp,
   Loader2,
   Lock,
   Pause,
@@ -15,6 +17,7 @@ import {
   ShieldCheck,
   Trash2,
   TriangleAlert,
+  Wrench,
 } from "lucide-react";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useAccounts } from "@/app/contexts/AccountContext";
@@ -39,6 +42,7 @@ import {
   completeTradovateOAuth,
   startTradovateOAuth,
   syncBrokers,
+  type BrokerCapabilities,
 } from "@/backend/brokers.functions";
 import { announceBrokerImport, announceBrokersChanged } from "./useBrokerSync";
 import { SyncCelebration, type CelebrationState } from "./SyncCelebration";
@@ -71,13 +75,60 @@ type Env = "live" | "demo";
 const ERROR_KEYS: Record<string, TKey> = {
   crypto_unavailable: "brokers.err.crypto",
   oauth_unavailable: "brokers.err.oauth",
+  schema_missing: "brokers.err.schema",
+  server_error: "brokers.err.server",
   denied: "brokers.err.denied",
+  access_denied: "brokers.err.denied",
+  exchange_failed: "brokers.err.exchange",
   rate_limited: "brokers.err.rateLimited",
   broker_unreachable: "brokers.err.unreachable",
   invalid_state: "brokers.err.state",
   reauth_required: "brokers.err.reauth",
+  permission_denied: "brokers.err.permission",
+  insert_failed: "brokers.err.insert",
   plan_limit: "brokers.err.planLimit",
 };
+
+/** Les échecs qu'un nouvel essai peut réparer (le trader a refusé, le lien a
+ *  expiré, Tradovate n'a pas répondu) — les autres attendent la configuration
+ *  du serveur, et « Réessayer » mentirait. */
+const RETRYABLE = new Set([
+  "denied",
+  "access_denied",
+  "exchange_failed",
+  "broker_unreachable",
+  "invalid_state",
+  "server_error",
+]);
+
+/** Le `state` OAuth de la tentative en cours, gardé dans l'onglet : si
+ *  Tradovate ne le renvoie pas dans l'URL de retour, la connexion se termine
+ *  quand même — l'empreinte reste vérifiée côté serveur. */
+const STATE_KEY = "tv:tradovate-oauth-state";
+const NO_CAPS: BrokerCapabilities = {
+  encryption: false,
+  oauth: false,
+  schema: true,
+  ready: false,
+  setup: null,
+};
+
+function rememberState(state: string | null): void {
+  try {
+    if (state) sessionStorage.setItem(STATE_KEY, state);
+    else sessionStorage.removeItem(STATE_KEY);
+  } catch {
+    // Stockage bloqué (navigation privée stricte) : le `state` de l'URL suffit.
+  }
+}
+
+function recallState(): string | null {
+  try {
+    return sessionStorage.getItem(STATE_KEY);
+  } catch {
+    return null;
+  }
+}
 
 /** Le serveur refuse hors Pro avec ce préfixe stable (`requireProPlan`). */
 const isPlanRequired = (e: unknown) =>
@@ -109,7 +160,7 @@ export default function Brokers() {
   const completeOAuth = useServerFn(completeTradovateOAuth);
   const sync = useServerFn(syncBrokers);
 
-  const [caps, setCaps] = useState<{ encryption: boolean; oauth: boolean } | null>(null);
+  const [caps, setCaps] = useState<BrokerCapabilities | null>(null);
   const [connections, setConnections] = useState<BrokerConnection[] | null>(null);
   const [brokerAccounts, setBrokerAccounts] = useState<BrokerAccount[]>([]);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -156,7 +207,7 @@ export default function Brokers() {
     void reload();
     getCaps()
       .then(setCaps)
-      .catch(() => setCaps({ encryption: false, oauth: false }));
+      .catch(() => setCaps(NO_CAPS));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reload]);
 
@@ -164,14 +215,28 @@ export default function Brokers() {
     if (!targetAccount && activeAccount) setTargetAccount(activeAccount.id);
   }, [activeAccount, targetAccount]);
 
+  // Retour arrière depuis la page Tradovate : le navigateur restaure la page
+  // telle qu'elle était (cache « back-forward »), bouton encore en train de
+  // tourner. On la rend de nouveau utilisable.
+  useEffect(() => {
+    const onShow = (e: PageTransitionEvent) => {
+      if (!e.persisted) return;
+      setRedirecting(false);
+      setBusyId(null);
+    };
+    window.addEventListener("pageshow", onShow);
+    return () => window.removeEventListener("pageshow", onShow);
+  }, []);
+
   // ── Retour de chez Tradovate : `code` + `state`, ou `error` si refusé. ──
   useEffect(() => {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
     const code = params.get("code");
-    const state = params.get("state");
     const denied = params.get("error");
-    if (!(code && state) && !denied) return;
+    if (!code && !denied) return;
+    const state = params.get("state") || recallState();
+    rememberState(null);
     // On nettoie l'URL tout de suite : un code OAuth ne se rejoue pas, et il
     // n'a rien à faire dans l'historique ni dans un lien partagé.
     for (const k of ["code", "state", "error", "error_description"]) params.delete(k);
@@ -182,7 +247,11 @@ export default function Brokers() {
       `${window.location.pathname}${rest ? `?${rest}` : ""}`,
     );
     if (!code || !state) {
-      setCelebration({ phase: "failed", messageKey: "brokers.err.denied" });
+      setCelebration({
+        phase: "failed",
+        messageKey: code ? "brokers.err.state" : "brokers.err.denied",
+        action: "retry",
+      });
       return;
     }
     setCelebration({ phase: "working" });
@@ -192,6 +261,7 @@ export default function Brokers() {
           setCelebration({
             phase: "failed",
             messageKey: ERROR_KEYS[res.error ?? ""] ?? "brokers.err.unknown",
+            action: RETRYABLE.has(res.error ?? "") ? "retry" : undefined,
           });
           return;
         }
@@ -209,10 +279,11 @@ export default function Brokers() {
         });
       })
       .catch((e) =>
-        setCelebration({
-          phase: "failed",
-          messageKey: isPlanRequired(e) ? "brokers.proTitle" : "brokers.err.unknown",
-        }),
+        setCelebration(
+          isPlanRequired(e)
+            ? { phase: "failed", messageKey: "brokers.proTitle", action: "upgrade" }
+            : { phase: "failed", messageKey: "brokers.err.unknown", action: "retry" },
+        ),
       );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -245,6 +316,9 @@ export default function Brokers() {
         setBusyId(null);
         return;
       }
+      rememberState(res.state);
+      // Même onglet : la page de connexion de Tradovate remplace TradeVault,
+      // puis Tradovate renvoie ici. Pas de fenêtre surgissante à bloquer.
       window.location.assign(res.url);
     } catch (e) {
       if (isPlanRequired(e)) openUpgrade();
@@ -343,33 +417,53 @@ export default function Brokers() {
         })
       : t("brokers.never");
 
-  // Le serveur ne sait pas (encore) connecter : on le dit honnêtement, au
-  // lieu d'un bouton qui échouerait après la redirection.
+  // Le serveur ne sait pas (encore) connecter : on le dit honnêtement, à
+  // TOUS — abonné ou non. Vendre Pro pour un bouton qui échouerait après la
+  // redirection serait une promesse fausse.
   const blockedKey: TKey | null =
     caps === null
       ? null
-      : !caps.encryption
-        ? "brokers.unavailable"
-        : !caps.oauth
-          ? "brokers.err.oauth"
-          : null;
+      : !caps.schema
+        ? "brokers.err.schema"
+        : !caps.encryption
+          ? "brokers.unavailable"
+          : !caps.oauth
+            ? "brokers.err.oauth"
+            : null;
+  const blocked = blockedKey !== null;
   const hasConnections = (connections?.length ?? 0) > 0;
+  const openImport = () => window.dispatchEvent(new CustomEvent("tv:open-import"));
 
   const connectButton = (
     <Button
       onClick={() => void goToTradovate()}
-      disabled={redirecting || (isPro && (caps === null || blockedKey !== null))}
+      disabled={redirecting || caps === null || blocked}
       className="w-full sm:w-auto"
     >
-      {redirecting ? (
+      {redirecting || caps === null ? (
         <Loader2 className="h-4 w-4 animate-spin" />
+      ) : blocked ? (
+        <Lock className="h-4 w-4" />
       ) : isPro ? (
         <ExternalLink className="h-4 w-4" />
       ) : (
         <Lock className="h-4 w-4" />
       )}
-      {isPro ? t("brokers.connectOAuth") : t("brokers.proCta")}
+      {blocked ? t("brokers.soon") : isPro ? t("brokers.connectOAuth") : t("brokers.proCta")}
     </Button>
+  );
+
+  const blockedNote = blockedKey && (
+    <div className="space-y-2 rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-2)] px-3 py-2.5">
+      <p className="flex items-start gap-2 text-xs leading-snug text-slate-400">
+        <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-400" />
+        {t(blockedKey)}
+      </p>
+      <Button variant="subtle" size="sm" onClick={openImport}>
+        <FileUp className="h-3.5 w-3.5" />
+        {t("brokers.importCsv")}
+      </Button>
+    </div>
   );
 
   const options = (
@@ -462,17 +556,12 @@ export default function Brokers() {
                 {connectButton}
                 <p className="flex items-start gap-1.5 text-xs leading-snug text-slate-500">
                   <ShieldCheck className="mt-px h-3.5 w-3.5 shrink-0 text-[var(--tv-accent)]" />
-                  {isPro ? t("brokers.redirectNote") : t("brokers.proBody")}
+                  {isPro || blocked ? t("brokers.redirectNote") : t("brokers.proBody")}
                 </p>
-                {isPro && blockedKey && (
-                  <p className="flex items-start gap-2 rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-2)] px-3 py-2.5 text-xs leading-snug text-slate-400">
-                    <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-400" />
-                    {t(blockedKey)}
-                  </p>
-                )}
+                {blockedNote}
               </div>
 
-              {isPro && !blockedKey && options}
+              {isPro && !blocked && caps !== null && options}
             </div>
             <TrustPanel
               t={t}
@@ -481,6 +570,9 @@ export default function Brokers() {
           </div>
         </Card>
       )}
+
+      {/* ── LA CONFIGURATION, pour l'administrateur seulement ── */}
+      {caps?.setup && <SetupChecklist setup={caps.setup} ready={caps.ready} t={t} />}
 
       {/* ── LES CONNEXIONS ── */}
       {connections === null ? (
@@ -549,7 +641,7 @@ export default function Brokers() {
                   variant="subtle"
                   size="sm"
                   onClick={() => void goToTradovate()}
-                  disabled={redirecting || (isPro && blockedKey !== null)}
+                  disabled={redirecting || blocked}
                 >
                   {isPro ? <Plus className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
                   {t("brokers.addLogin")}
@@ -595,6 +687,14 @@ export default function Brokers() {
 
       <SyncCelebration
         state={celebration}
+        onRetry={() => {
+          setCelebration(null);
+          void goToTradovate();
+        }}
+        onUpgrade={() => {
+          setCelebration(null);
+          openUpgrade();
+        }}
         onClose={() => setCelebration(null)}
         onOpenJournal={() => {
           setCelebration(null);
@@ -606,6 +706,84 @@ export default function Brokers() {
 }
 
 type T = (k: TKey) => string;
+
+/**
+ * Ce qui manque pour que « Se connecter avec Tradovate » mène quelque part —
+ * montré au SEUL administrateur (`ADMIN_EMAILS`, vérifié côté serveur). Des
+ * NOMS de variables, jamais leur valeur ; et l'adresse de retour exacte à
+ * déclarer chez Tradovate, puisqu'elle doit correspondre au caractère près.
+ */
+function SetupChecklist({
+  setup,
+  ready,
+  t,
+}: {
+  setup: NonNullable<BrokerCapabilities["setup"]>;
+  ready: boolean;
+  t: T;
+}) {
+  const { toast } = useToast();
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(setup.redirectUri);
+      toast(t("brokers.setupCopied"), "success");
+    } catch {
+      // Presse-papiers refusé : l'adresse reste sélectionnable à la main.
+    }
+  };
+  return (
+    <Card pad="default" className="animate-fade-in-up">
+      <div className="flex items-center gap-2">
+        <Wrench className="h-3.5 w-3.5 text-slate-500" />
+        <span className="tv-label text-slate-500">{t("brokers.setupTitle")}</span>
+        {ready && (
+          <Badge variant="profit">
+            <Check className="h-3 w-3" />
+            {t("brokers.setupReady")}
+          </Badge>
+        )}
+      </div>
+      <div className="mt-3 space-y-3 text-xs leading-snug text-slate-400">
+        {setup.missing.length > 0 && (
+          <div>
+            <p>{t("brokers.setupMissing")}</p>
+            <ul className="mt-1.5 flex flex-wrap gap-1.5">
+              {setup.missing.map((name) => (
+                <li
+                  key={name}
+                  className="tv-figure rounded-md border border-amber-500/20 bg-amber-500/[0.06] px-1.5 py-0.5 text-amber-300"
+                >
+                  {name}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        <div>
+          <p>{t("brokers.setupRedirect")}</p>
+          <div className="mt-1.5 flex items-center gap-2">
+            <code className="tv-figure min-w-0 flex-1 select-all truncate rounded-lg border border-[var(--tv-border)] bg-[var(--tv-plate-2)] px-2.5 py-1.5 text-slate-200">
+              {setup.redirectUri}
+            </code>
+            <Button
+              variant="subtle"
+              size="sm"
+              className="w-8 px-0"
+              onClick={() => void copy()}
+              aria-label={t("brokers.setupCopy")}
+              title={t("brokers.setupCopy")}
+            >
+              <Copy className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        </div>
+        <p>{t("brokers.setupPerms")}</p>
+        <p>{t("brokers.setupPro")}</p>
+        {setup.derivedKey && <p className="text-slate-500">{t("brokers.setupDerived")}</p>}
+      </div>
+    </Card>
+  );
+}
 
 /** Les trois temps du parcours, pour qu'aucun ne surprenne. */
 function Steps({ t }: { t: T }) {

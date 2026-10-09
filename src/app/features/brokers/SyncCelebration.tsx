@@ -33,7 +33,13 @@ export type CelebrationState =
        *  retentée) : on ne prétend pas que tout est synchronisé. */
       syncPending: boolean;
     }
-  | { phase: "failed"; messageKey: TKey };
+  | {
+      phase: "failed";
+      messageKey: TKey;
+      /** Le geste qui débloque : repartir chez Tradovate, ou passer Pro. Sans
+       *  lui, le trader restait devant un « non » sans issue. */
+      action?: "retry" | "upgrade";
+    };
 
 /** Décalage entre deux étapes qui se cochent. */
 const STEP_MS = 260;
@@ -46,10 +52,14 @@ export function SyncCelebration({
   state,
   onClose,
   onOpenJournal,
+  onRetry,
+  onUpgrade,
 }: {
   state: CelebrationState | null;
   onClose: () => void;
   onOpenJournal: () => void;
+  onRetry?: () => void;
+  onUpgrade?: () => void;
 }) {
   const { t } = useT();
   // Nombre d'étapes cochées : on les révèle une par une une fois la réponse
@@ -127,9 +137,24 @@ export function SyncCelebration({
               {t("brokers.failedTitle")}
             </h2>
             <p className="tv-prose mt-1.5 text-slate-400">{t(state.messageKey)}</p>
-            <Button className="mt-5 w-full" onClick={onClose}>
-              {t("brokers.done")}
-            </Button>
+            <div className="mt-5 flex w-full flex-col gap-2">
+              {state.action === "retry" && onRetry ? (
+                <Button className="w-full" onClick={onRetry}>
+                  {t("brokers.retry")}
+                </Button>
+              ) : state.action === "upgrade" && onUpgrade ? (
+                <Button className="w-full" onClick={onUpgrade}>
+                  {t("brokers.proCta")}
+                </Button>
+              ) : null}
+              <Button
+                variant={state.action ? "ghost" : "primary"}
+                className="w-full"
+                onClick={onClose}
+              >
+                {t("brokers.done")}
+              </Button>
+            </div>
           </>
         ) : (
           <>

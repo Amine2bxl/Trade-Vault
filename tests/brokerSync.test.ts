@@ -14,25 +14,46 @@ import { afterAll, beforeAll, beforeEach, describe, expect, test } from "bun:tes
  *   • un compte broker sans compte TradeVault choisi n'écrit rien ;
  *   • LECTURE SEULE : tout ce qui part vers Tradovate est un `GET` sur la
  *     liste blanche — aucun ordre, aucun profil, aucun mot de passe ;
- *   • un jeton expiré met la connexion « à reconnecter », sans rien tenter ;
+ *   • un jeton expiré met la connexion « à reconnecter », sans rien tenter —
+ *     sauf s'il reste un `refresh_token` OAuth, qui en redonne un ;
+ *   • l'hôte d'API dédié d'une prop firm (redirection 307) est suivi avec le
+ *     jeton, et seulement vers un hôte Tradovate / NinjaTrader ;
+ *   • l'adresse de retour OAuth suit l'origine de l'appel, jamais un hôte
+ *     inconnu ;
  *   • seul un abonné Pro est synchronisé par le cron.
  */
 
 process.env.BROKER_CREDENTIALS_KEY = "k".repeat(48);
+process.env.TRADOVATE_CLIENT_ID = "app-client-id";
+process.env.TRADOVATE_CLIENT_SECRET = "app-client-secret";
 
 const { encryptSecret, decryptSecret, encryptJson, decryptJson, sha256Hex } =
   await import("../src/backend/broker-crypto.server");
-const { syncConnection, brokerSyncAllowed } = await import("../src/backend/broker-sync.server");
-const { assertReadOnly, READ_ONLY_ENDPOINTS } = await import("../src/backend/tradovate.server");
+const { syncConnection, brokerSyncAllowed, advanceCursor, detectEnvironment } =
+  await import("../src/backend/broker-sync.server");
+const { assertReadOnly, READ_ONLY_ENDPOINTS, exchangeOAuthCode } =
+  await import("../src/backend/tradovate.server");
+const { parseTokenResponse, parseApiHosts, isTrustedTradovateHost } =
+  await import("../src/modules/brokers/tradovate");
+const { oauthRedirectUri } = await import("../src/backend/broker-oauth.server");
 
 // ── Tradovate simulé ─────────────────────────────────────────────────────────
 const realFetch = globalThis.fetch;
 const calls: string[] = [];
 const methods: string[] = [];
+const auths: (string | null)[] = [];
+const bodies: string[] = [];
 let positions = [{ accountId: 900, contractId: 7, netPos: 0 }];
+/** Une redirection à renvoyer pour cette URL (hôte dédié d'une prop firm). */
+let redirectFor: ((url: string) => string | null) | null = null;
+/** Comptes renvoyés par hôte — pour la détection d'environnement. */
+let accountsByHost: Record<string, unknown[]> | null = null;
 
 function tradovateResponse(path: string): unknown {
-  if (path.endsWith("/account/list")) return [{ id: 900, name: "APEX-123-01", active: true }];
+  if (path.endsWith("/account/list")) {
+    if (accountsByHost) return accountsByHost[new URL(path).host] ?? [];
+    return [{ id: 900, name: "APEX-123-01", active: true }];
+  }
   if (path.endsWith("/fill/list"))
     return [
       {
@@ -85,6 +106,13 @@ function tradovateResponse(path: string): unknown {
       expirationTime: new Date(Date.now() + 90 * 60_000).toISOString(),
       userId: 42,
     };
+  if (path.endsWith("/auth/oauthtoken"))
+    return {
+      access_token: "refreshed-token",
+      token_type: "bearer",
+      expires_in: 4800,
+      refresh_token: "next-refresh-token",
+    };
   return null;
 }
 
@@ -93,6 +121,11 @@ beforeAll(() => {
     const path = String(url);
     calls.push(path);
     methods.push((init?.method ?? "GET").toUpperCase());
+    const headers = (init?.headers ?? {}) as Record<string, string>;
+    auths.push(headers.authorization ?? null);
+    bodies.push(typeof init?.body === "string" ? init.body : "");
+    const location = redirectFor?.(path) ?? null;
+    if (location) return new Response(null, { status: 307, headers: { location } });
     return new Response(JSON.stringify(tradovateResponse(path)), {
       status: 200,
       headers: { "content-type": "application/json" },
@@ -155,7 +188,11 @@ function fakeSb() {
   };
 }
 
-async function connection(defaultAccount: string | null, expiresInMs = 2 * 3600_000) {
+async function connection(
+  defaultAccount: string | null,
+  expiresInMs = 2 * 3600_000,
+  refreshToken: string | null = null,
+) {
   return {
     id: "conn-1",
     user_id: "user-1",
@@ -166,6 +203,8 @@ async function connection(defaultAccount: string | null, expiresInMs = 2 * 3600_
     token_ciphertext: await encryptSecret("valid-token"),
     // Par défaut valide encore deux heures : aucun appel d'authentification.
     token_expires_at: new Date(Date.now() + expiresInMs).toISOString(),
+    refresh_token_ciphertext: refreshToken ? await encryptSecret(refreshToken) : null,
+    api_hosts: {},
     default_risk: null,
     default_account_id: defaultAccount,
     timezone: "America/New_York",
@@ -179,7 +218,11 @@ beforeEach(() => {
   updates = [];
   calls.length = 0;
   methods.length = 0;
+  auths.length = 0;
+  bodies.length = 0;
   positions = [{ accountId: 900, contractId: 7, netPos: 0 }];
+  redirectFor = null;
+  accountsByHost = null;
 });
 
 describe("le chiffrement des secrets broker", () => {
@@ -330,6 +373,208 @@ describe("le jeton : renouvelé, jamais redemandé", () => {
     const patch = updates.find((u) => u.table === "broker_connections")?.patch;
     expect(patch?.status).toBe("error");
     expect(patch?.last_error).toBe("reauth_required");
+  });
+
+  test("expiré mais refresh_token présent : nouveau jeton, sans renvoyer le trader chez Tradovate", async () => {
+    const sb = fakeSb();
+    const res = await syncConnection(
+      sb,
+      await connection("tv-acc-50k", -60_000, "first-refresh-token"),
+    );
+    expect(res.error).toBeNull();
+    expect(res.inserted).toHaveLength(1);
+    // Un seul POST : le refresh, qui ne porte que l'identité de l'APPLICATION
+    // et le jeton — jamais un identifiant ni un mot de passe du trader.
+    const posts = methods.map((m, i) => [m, i] as const).filter(([m]) => m === "POST");
+    expect(posts).toHaveLength(1);
+    const form = new URLSearchParams(bodies[posts[0][1]]);
+    expect(form.get("grant_type")).toBe("refresh_token");
+    expect(form.get("refresh_token")).toBe("first-refresh-token");
+    expect([...form.keys()].sort()).toEqual(
+      ["client_id", "client_secret", "grant_type", "refresh_token"].sort(),
+    );
+    // Le nouveau jeton ET le nouveau refresh_token sont réécrits chiffrés.
+    const patch = updates.find((u) => u.patch.token_ciphertext)?.patch;
+    expect(await decryptSecret(String(patch?.token_ciphertext))).toBe("refreshed-token");
+    expect(await decryptSecret(String(patch?.refresh_token_ciphertext))).toBe("next-refresh-token");
+    const written = JSON.stringify(updates);
+    expect(written).not.toContain("refreshed-token");
+    expect(written).not.toContain("next-refresh-token");
+    // Les données ont ensuite été lues avec le jeton neuf.
+    expect(auths.filter((a) => a === "Bearer refreshed-token").length).toBeGreaterThan(0);
+  });
+});
+
+describe("hôtes dédiés (NinjaTrader, octobre 2026)", () => {
+  test("une redirection 307 vers l'hôte de la prop firm est suivie AVEC le jeton, puis retenue", async () => {
+    const sb = fakeSb();
+    redirectFor = (url) =>
+      url.startsWith("https://demo.tradovateapi.com/")
+        ? url.replace("demo.tradovateapi.com", "firm-a.tradovateapi.com")
+        : null;
+    const res = await syncConnection(sb, await connection("tv-acc-50k"));
+    expect(res.error).toBeNull();
+    expect(res.inserted).toHaveLength(1);
+    // La requête suivie part avec l'en-tête d'autorisation (que `fetch`
+    // retire en suivant seul une redirection vers une autre origine).
+    const followed = calls.findIndex((c) => c.startsWith("https://firm-a.tradovateapi.com/"));
+    expect(followed).toBeGreaterThan(-1);
+    expect(auths[followed]).toBe("Bearer valid-token");
+    // Une fois l'hôte connu, plus aucun détour par l'hôte partagé.
+    expect(calls.filter((c) => c.startsWith("https://demo.tradovateapi.com/"))).toHaveLength(1);
+    const patch = updates.filter((u) => u.table === "broker_connections").at(-1)?.patch;
+    expect(patch?.api_hosts).toEqual({ demo: "firm-a.tradovateapi.com" });
+  });
+
+  test("une redirection vers un hôte inconnu n'est jamais suivie : le jeton ne sort pas", async () => {
+    const sb = fakeSb();
+    redirectFor = (url) =>
+      url.includes("tradovateapi.com") ? "https://evil.example.com/v1/account/list" : null;
+    const res = await syncConnection(sb, await connection("tv-acc-50k"));
+    expect(res.error).toBe("broker_unreachable");
+    expect(calls.some((c) => c.includes("evil.example.com"))).toBe(false);
+  });
+
+  test("seuls les hôtes Tradovate / NinjaTrader sont de confiance", () => {
+    expect(isTrustedTradovateHost("live.tradovateapi.com")).toBe(true);
+    expect(isTrustedTradovateHost("firm.api.ninjatrader.com")).toBe(true);
+    expect(isTrustedTradovateHost("tradovateapi.com.evil.io")).toBe(false);
+    expect(isTrustedTradovateHost("eviltradovateapi.com")).toBe(false);
+    expect(isTrustedTradovateHost("live.tradovateapi.com/x")).toBe(false);
+    expect(
+      parseApiHosts({
+        apiHosts: { live: "https://firm.tradovateapi.com/v1", demo: "attacker.io" },
+      }),
+    ).toEqual({ live: "firm.tradovateapi.com" });
+  });
+});
+
+describe("l'échange OAuth et la détection d'environnement", () => {
+  test("réponse OAuth (snake_case) et renouvellement (camelCase) se lisent pareil", () => {
+    const now = Date.parse("2026-10-09T12:00:00Z");
+    const oauth = parseTokenResponse(
+      { access_token: "a", expires_in: 4800, refresh_token: "r" },
+      now,
+    );
+    expect(oauth).toEqual({
+      ok: true,
+      accessToken: "a",
+      expiresAt: "2026-10-09T13:20:00.000Z",
+      refreshToken: "r",
+      apiHosts: {},
+    });
+    const renew = parseTokenResponse(
+      { accessToken: "b", expirationTime: "2026-10-09T13:30:00.000Z" },
+      now,
+    );
+    expect(renew.ok && renew.accessToken).toBe("b");
+    expect(renew.ok && renew.refreshToken).toBeNull();
+    expect(parseTokenResponse({ error: "invalid_grant" }, now).ok).toBe(false);
+    const penalty = parseTokenResponse({ "p-ticket": "t", "p-time": 5 }, now);
+    expect(!penalty.ok && penalty.reason).toBe("penalty");
+  });
+
+  test("l'échange du code renvoie l'adresse de retour à l'identique, en formulaire", async () => {
+    const res = await exchangeOAuthCode("one-time-code", "https://preview.vercel.app/brokers");
+    expect(res.ok).toBe(true);
+    expect(methods).toEqual(["POST"]);
+    const form = new URLSearchParams(bodies[0]);
+    expect(form.get("grant_type")).toBe("authorization_code");
+    expect(form.get("code")).toBe("one-time-code");
+    expect(form.get("redirect_uri")).toBe("https://preview.vercel.app/brokers");
+    expect(form.get("client_id")).toBe("app-client-id");
+    expect(form.has("password")).toBe(false);
+    expect(form.has("username")).toBe(false);
+  });
+
+  test("un login prop firm sans compte « live » bascule sur « démo » tout seul", async () => {
+    accountsByHost = {
+      "live.tradovateapi.com": [],
+      "demo.tradovateapi.com": [{ id: 900, name: "APEX-1", active: true }],
+    };
+    expect(await detectEnvironment("live", "tok", {})).toBe("demo");
+    accountsByHost = {
+      "live.tradovateapi.com": [{ id: 1, name: "LIVE-1", active: true }],
+      "demo.tradovateapi.com": [{ id: 900, name: "APEX-1", active: true }],
+    };
+    expect(await detectEnvironment("live", "tok", {})).toBe("live");
+    accountsByHost = {};
+    expect(await detectEnvironment("demo", "tok", {})).toBe("demo");
+  });
+});
+
+describe("l'adresse de retour OAuth", () => {
+  const saved = { ...process.env };
+  afterAll(() => {
+    for (const k of [
+      "TRADOVATE_REDIRECT_URI",
+      "VERCEL_BRANCH_URL",
+      "VERCEL_URL",
+      "TRADOVATE_REDIRECT_ORIGINS",
+    ]) {
+      if (saved[k] === undefined) delete process.env[k];
+      else process.env[k] = saved[k];
+    }
+  });
+
+  test("suit l'origine de l'appel quand c'est la nôtre", () => {
+    delete process.env.TRADOVATE_REDIRECT_URI;
+    process.env.VERCEL_BRANCH_URL = "tradevault-git-feature-team.vercel.app";
+    expect(oauthRedirectUri("https://tradevault-git-feature-team.vercel.app")).toBe(
+      "https://tradevault-git-feature-team.vercel.app/brokers",
+    );
+    expect(oauthRedirectUri("http://localhost:8080")).toBe("http://localhost:8080/brokers");
+  });
+
+  test("une origine inconnue ne choisit jamais l'adresse : domaine canonique", () => {
+    delete process.env.TRADOVATE_REDIRECT_URI;
+    for (const origin of [
+      "https://evil.example.com",
+      "http://tradevault-git-feature-team.vercel.app",
+      "javascript:alert(1)",
+      null,
+    ]) {
+      expect(oauthRedirectUri(origin)).toMatch(/^https:\/\/[^/]+\/brokers$/);
+      expect(oauthRedirectUri(origin)).not.toContain("evil");
+      expect(oauthRedirectUri(origin)).not.toContain("vercel.app");
+    }
+  });
+
+  test("TRADOVATE_REDIRECT_URI l'emporte partout", () => {
+    process.env.TRADOVATE_REDIRECT_URI = "https://tradevault.be/brokers";
+    expect(oauthRedirectUri("http://localhost:8080")).toBe("https://tradevault.be/brokers");
+  });
+});
+
+describe("le curseur ne saute jamais un trade non écrit", () => {
+  const trip = (accountId: string, exitTime: string, externalId: string) => ({
+    accountId,
+    exitTime,
+    externalId,
+  });
+
+  test("il s'arrête au premier aller-retour non traité de chaque compte", () => {
+    const out = advanceCursor(
+      {},
+      [
+        trip("A", "2026-10-08T14:00:00Z", "a1"),
+        trip("A", "2026-10-08T15:00:00Z", "a2"),
+        trip("A", "2026-10-08T16:00:00Z", "a3"),
+        trip("B", "2026-10-08T15:30:00Z", "b1"),
+      ],
+      new Set(["a1", "a3", "b1"]),
+    );
+    expect(out).toEqual({ A: "2026-10-08T14:00:00Z", B: "2026-10-08T15:30:00Z" });
+  });
+
+  test("à sortie égale, le non traité bloque l'avance", () => {
+    const at = "2026-10-08T14:00:00Z";
+    const out = advanceCursor(
+      { A: "2026-10-08T13:00:00Z" },
+      [trip("A", at, "done"), trip("A", at, "todo")],
+      new Set(["done"]),
+    );
+    expect(out).toEqual({ A: "2026-10-08T13:00:00Z" });
   });
 });
 

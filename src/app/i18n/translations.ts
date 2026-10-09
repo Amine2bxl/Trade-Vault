@@ -2119,7 +2119,7 @@ const en = {
   "brokers.envLive": "Live",
   "brokers.envDemo": "Demo",
   "brokers.envHint":
-    "Pick the environment your Tradovate account runs on (shown in the Tradovate app). If unsure, try Live, then Demo.",
+    "TradeVault keeps the environment that holds your accounts (prop firm accounts usually run on Demo). Change it only if you know you need to.",
   "brokers.journalInto": "Journal into",
   "brokers.chooseAccount": "Choose an account…",
   "brokers.defaultRisk": "Default risk per trade",
@@ -2226,18 +2226,44 @@ const en = {
   "brokers.stepTradesLater": "Trades not read yet",
   "brokers.firstSyncLater":
     "Tradovate didn't answer in time for the first sync. TradeVault retries on its own within a minute; nothing to redo on your side.",
-  "trade.rDerivedHint": "Calculated from the broker P&L and your risk",
+  "trade.rDerivedHint": "P&L ÷ risk — edit either one",
   "trade.brokerPnl": "Net P&L (broker)",
   "trade.importedFrom": "Imported from {broker}",
-  "trade.contractsCount": "{n} contracts",
-  "trade.feesValue": "Fees {fees}",
   "trade.reviewHint": "Structure is filled in — add your setup, mistakes, notes and screenshots.",
   "trade.reviewHintRisk":
     "Structure is filled in — confirm your risk to get the R, then add your setup, notes and screenshots.",
   "journal.reviewPending": "{n} imported trades to review",
   "journal.reviewNow": "Review",
   "journal.connectBroker": "Connect a broker",
-  "trade.contractsOne": "1 contract",
+  "brokers.err.schema":
+    "Broker sync isn't installed on this database yet. Your trades can still be imported from a CSV export.",
+  "brokers.err.server": "TradeVault couldn't save the connection. Try again in a moment.",
+  "brokers.err.exchange":
+    "Tradovate didn't complete the sign-in. Start again — if it keeps failing, TradeVault's registration at Tradovate needs checking.",
+  "brokers.err.permission":
+    "This Tradovate login doesn't allow reading its trades. Check API access with your broker or prop firm, then reconnect.",
+  "brokers.err.insert": "Some trades couldn't be saved. They'll be retried at the next sync.",
+  "brokers.retry": "Try again",
+  "brokers.soon": "Opening soon",
+  "brokers.importCsv": "Import a CSV instead",
+  "brokers.toastReauth": "Tradovate: reconnection needed. Open Brokers to sign in again.",
+  "brokers.toastPermission": "Tradovate: this login doesn't allow reading its trades. See Brokers.",
+  "brokers.setupTitle": "Setup — visible to admins only",
+  "brokers.setupReady": "Ready",
+  "brokers.setupMissing": "Still to set in Vercel (Production and Preview), then redeploy:",
+  "brokers.setupRedirect": "Redirect URI to register at Tradovate, exactly as written:",
+  "brokers.setupCopy": "Copy the address",
+  "brokers.setupCopied": "Address copied",
+  "brokers.setupPerms":
+    "Permissions to request at Tradovate: Read Only for Account Info, Orders, Positions and Contract Library. Nothing else.",
+  "brokers.setupPro":
+    "Connecting requires the Pro plan, admins included: grant yourself Pro from Admin → plans to test.",
+  "brokers.setupDerived":
+    "No BROKER_CREDENTIALS_KEY: tokens are sealed with a key derived from the server's service key. Optional.",
+  "trade.execContracts": "Contracts",
+  "trade.execEntry": "Entry price",
+  "trade.execExit": "Exit price",
+  "trade.execFees": "Fees",
 };
 
 // The English dict above is the source of truth and the runtime fallback —

@@ -61,6 +61,10 @@ export function useBrokerSync(opts: {
   onReview: (trades: Trade[]) => void;
   /** Trades importés dans un AUTRE compte que celui affiché. */
   onOtherAccount: (count: number) => void;
+  /** Une connexion vient de passer en erreur et attend le trader (jeton
+   *  refusé, lecture interdite). Appelé une fois : la connexion en erreur
+   *  n'est plus synchronisée, donc plus signalée, jusqu'à sa reconnexion. */
+  onActionNeeded?: (code: "reauth_required" | "permission_denied") => void;
 }): void {
   const { userId, activeAccountId, ready } = opts;
   const queryClient = useQueryClient();
@@ -100,10 +104,20 @@ export function useBrokerSync(opts: {
     try {
       const res = await sync({ data: { force: false } });
       absorb(res.inserted, true);
+      const blocking = res.errors.find(
+        (e) => e.error === "reauth_required" || e.error === "permission_denied",
+      );
+      if (blocking) {
+        callbacks.current.onActionNeeded?.(
+          blocking.error as "reauth_required" | "permission_denied",
+        );
+        announceBrokersChanged();
+      }
     } catch {
       // Réseau ou serveur indisponible : silencieux, on réessaie au tour
-      // suivant. L'erreur durable (jeton refusé…) est affichée sur la page
-      // Brokers, pas en toast toutes les minutes.
+      // suivant. L'erreur durable (jeton refusé…) est signalée une fois par
+      // `onActionNeeded`, puis affichée sur la page Brokers — jamais en toast
+      // toutes les minutes.
     } finally {
       inFlight.current = false;
     }

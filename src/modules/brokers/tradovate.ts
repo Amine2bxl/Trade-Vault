@@ -226,3 +226,109 @@ export function parseAuthResponse(body: unknown): TvAuthResult {
     message: typeof b.errorText === "string" && b.errorText ? b.errorText : "authentication failed",
   };
 }
+
+// ── OAuth : jetons, renouvellement, hôtes dynamiques ───────────────────────
+
+/**
+ * Les hôtes d'API propres à un compte (« dynamic API hosts » de NinjaTrader,
+ * depuis octobre 2026) : une prop firm peut avoir son hôte dédié pour `live`
+ * ou `demo`. Clés connues : live, demo, mdLive, mdDemo, replay, reporting…
+ * Valeurs : des noms d'hôte nus (sans schéma ni chemin).
+ */
+export type ApiHosts = Record<string, string>;
+
+/** Les seuls domaines vers lesquels un jeton Tradovate peut partir. */
+const TRUSTED_HOST = /(^|\.)(tradovateapi\.com|tradovate\.com|ninjatrader\.com|ninjatrader\.dev)$/i;
+
+export function isTrustedTradovateHost(host: string): boolean {
+  return /^[a-z0-9.-]+$/i.test(host) && TRUSTED_HOST.test(host);
+}
+
+/**
+ * Les hôtes renvoyés par une réponse d'authentification (`apiHosts`, parfois
+ * `api_hosts`). Toute valeur hors des domaines de confiance est ignorée : un
+ * hôte reçu ne doit jamais pouvoir détourner le jeton ailleurs.
+ */
+export function parseApiHosts(body: unknown): ApiHosts {
+  const b = (body ?? {}) as Record<string, unknown>;
+  const raw = (b.apiHosts ?? b.api_hosts) as Record<string, unknown> | undefined;
+  if (!raw || typeof raw !== "object") return {};
+  const out: ApiHosts = {};
+  for (const [k, v] of Object.entries(raw)) {
+    if (typeof v !== "string") continue;
+    const host = v
+      .trim()
+      .replace(/^https?:\/\//i, "")
+      .replace(/[/?#].*$/, "")
+      .toLowerCase();
+    if (isTrustedTradovateHost(host)) out[k] = host;
+  }
+  return out;
+}
+
+/** Fusionne champ par champ : une réponse qui omet un hôte ne l'efface pas. */
+export function mergeApiHosts(prev: ApiHosts | null | undefined, next: ApiHosts): ApiHosts {
+  return { ...(prev ?? {}), ...next };
+}
+
+/**
+ * Le résultat d'un échange OAuth, d'un renouvellement ou d'un `refresh_token`.
+ * Deux dialectes coexistent chez Tradovate : l'échange OAuth répond en
+ * `snake_case` (`access_token`, `expires_in`, `refresh_token`), le
+ * renouvellement en `camelCase` (`accessToken`, `expirationTime`). Un seul
+ * lecteur pour les deux.
+ */
+export type TvTokenResult =
+  | {
+      ok: true;
+      accessToken: string;
+      expiresAt: string;
+      /** Présent quand Tradovate en délivre un (échange et refresh). */
+      refreshToken: string | null;
+      apiHosts: ApiHosts;
+    }
+  | {
+      ok: false;
+      reason: "invalid" | "penalty" | "captcha";
+      /** Code d'erreur OAuth stable (`invalid_client`, `invalid_grant`…) ou
+       *  message court — jamais un secret. */
+      message: string;
+    };
+
+/** Durée de vie prudente quand la réponse n'en donne pas (≈ 80-90 min). */
+const DEFAULT_TTL_SEC = 80 * 60;
+
+export function parseTokenResponse(body: unknown, now: number = Date.now()): TvTokenResult {
+  const b = (body ?? {}) as Record<string, unknown>;
+  const access =
+    typeof b.access_token === "string" && b.access_token
+      ? b.access_token
+      : typeof b.accessToken === "string" && b.accessToken
+        ? b.accessToken
+        : null;
+  if (access) {
+    let expiresAt: string | null = null;
+    if (typeof b.expirationTime === "string") {
+      const t = Date.parse(b.expirationTime);
+      if (Number.isFinite(t)) expiresAt = new Date(t).toISOString();
+    }
+    if (!expiresAt) {
+      const ttl = Number(b.expires_in);
+      expiresAt = new Date(now + (ttl > 0 ? ttl : DEFAULT_TTL_SEC) * 1000).toISOString();
+    }
+    return {
+      ok: true,
+      accessToken: access,
+      expiresAt,
+      refreshToken: typeof b.refresh_token === "string" && b.refresh_token ? b.refresh_token : null,
+      apiHosts: parseApiHosts(b),
+    };
+  }
+  if (b["p-captcha"]) return { ok: false, reason: "captcha", message: "captcha required" };
+  if (b["p-ticket"]) return { ok: false, reason: "penalty", message: "rate limited" };
+  const code =
+    (typeof b.error === "string" && b.error) ||
+    (typeof b.errorText === "string" && b.errorText) ||
+    "authentication failed";
+  return { ok: false, reason: "invalid", message: code.slice(0, 120) };
+}

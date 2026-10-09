@@ -187,6 +187,13 @@ function AppContent() {
       if (user) void runImportedThroughAutomation(user.id, imported);
     },
     onOtherAccount: (n) => toast(t("brokers.importedElsewhere").replace("{n}", String(n)), "info"),
+    // Une connexion qui vient de passer « à reconnecter » : dit une fois, au
+    // moment où ça arrive, plutôt que découvert des jours plus tard.
+    onActionNeeded: (code) =>
+      toast(
+        t(code === "permission_denied" ? "brokers.toastPermission" : "brokers.toastReauth"),
+        "error",
+      ),
   });
   // Shim preserving the exact `setTrades` signature the optimistic write
   // handlers already use — updates the cache in place instead of local state,
@@ -405,6 +412,14 @@ function AppContent() {
     };
     window.addEventListener("tv:navigate", onNavigate);
     return () => window.removeEventListener("tv:navigate", onNavigate);
+  }, []);
+
+  // L'import CSV s'ouvre depuis n'importe quelle page — Brokers le propose
+  // quand la connexion broker n'est pas (encore) possible.
+  useEffect(() => {
+    const onOpenImport = () => setImportOpen(true);
+    window.addEventListener("tv:open-import", onOpenImport);
+    return () => window.removeEventListener("tv:open-import", onOpenImport);
   }, []);
 
   // Deep link from lifecycle emails: /?upgrade=1&promo=VAULT20 lands on the

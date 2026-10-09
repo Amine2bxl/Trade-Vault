@@ -7,7 +7,9 @@
 --   • le retour au capital d'origine reste ouvert à tous ;
 --   • les frais suivent l'échelle comme le P&L ;
 --   • aucune colonne d'identifiant ou de mot de passe broker n'existe ;
---   • `(user_id, external_id)` empêche un trade importé deux fois.
+--   • `(user_id, external_id)` empêche un trade importé deux fois ;
+--   • copier un trade vers un autre compte est une offre Pro, vérifiée par
+--     la base.
 --
 -- Chaque bloc lève une exception à la première divergence : `psql` s'arrête
 -- (ON_ERROR_STOP) et le runner sort en erreur.
@@ -75,4 +77,32 @@ insert into public.trades (user_id, trade_date, external_id) values ('b0000000-0
   on conflict (user_id, external_id) do nothing;
 do $$ begin
   if (select count(*) from public.trades where external_id = 'tradovate:900:1') <> 1 then raise exception 'ASSERT: dedup'; end if;
+end $$;
+
+-- 6. Copier un trade vers un autre compte est une offre Pro, refusée par la
+--    base à un compte gratuit ; un compte Pro copie normalement.
+do $$
+begin
+  begin
+    insert into public.trades (user_id, trade_date, copied_from)
+      values ('b0000000-0000-4000-8000-0000000000f1', '2026-10-03', 'source-trade');
+    raise exception 'ASSERT: free copy should have been refused';
+  exception when check_violation then
+    if sqlerrm not like 'PLAN_LIMIT_PRO%' then raise; end if;
+  end;
+  insert into public.trades (user_id, trade_date, copied_from)
+    values ('b0000000-0000-4000-8000-0000000000f2', '2026-10-03', 'source-trade');
+  -- Un trade gratuit SANS copie passe toujours.
+  insert into public.trades (user_id, trade_date)
+    values ('b0000000-0000-4000-8000-0000000000f1', '2026-10-03');
+end $$;
+
+-- 7. Les colonnes OAuth existent : retour exact, jeton de renouvellement
+--    chiffré, hôtes d'API par compte.
+do $$
+begin
+  if (select count(*) from information_schema.columns where table_name = 'broker_connections'
+      and column_name in ('oauth_redirect_uri', 'refresh_token_ciphertext', 'api_hosts')) <> 3 then
+    raise exception 'ASSERT: OAuth columns missing';
+  end if;
 end $$;

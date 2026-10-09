@@ -18,8 +18,12 @@
       "schedule": "0 3 * * *"
     },
     {
-      "path": "/api/cron/broker-sync",
-      "schedule": "30 22 * * *"
+      "path": "/api/cron/broker-sync?slot=edt",
+      "schedule": "0 20 * * 1-5"
+    },
+    {
+      "path": "/api/cron/broker-sync?slot=est",
+      "schedule": "0 21 * * 1-5"
     }
   ],
   "headers": [

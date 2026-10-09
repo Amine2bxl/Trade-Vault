@@ -41,8 +41,18 @@ create table if not exists public.broker_connections (
   -- Le jeton d'accès Tradovate, chiffré. Jamais d'identifiant ni de mot de passe.
   token_ciphertext  text,
   token_expires_at  timestamptz,
+  -- Le jeton de RENOUVELLEMENT OAuth, chiffré lui aussi : il redonne un jeton
+  -- d'accès sans renvoyer le trader chez Tradovate (le jeton d'accès ne vit
+  -- qu'environ 90 minutes).
+  refresh_token_ciphertext text,
+  -- Les hôtes d'API propres au compte (NinjaTrader « dynamic API hosts » :
+  -- une prop firm peut avoir son hôte dédié), tels que Tradovate les renvoie.
+  api_hosts         jsonb not null default '{}'::jsonb,
   -- Empreinte SHA-256 du `state` OAuth en attente (jamais la valeur brute).
   oauth_state       text,
+  -- L'adresse de retour EXACTE envoyée à Tradovate pour cette tentative :
+  -- l'échange du code exige la même, au caractère près.
+  oauth_redirect_uri text,
   external_user_id  text,
   -- Risque par trade utilisé quand aucun stop n'est retrouvé chez le broker.
   default_risk      numeric(12, 2) check (default_risk is null or default_risk >= 0),
@@ -59,6 +69,12 @@ create table if not exists public.broker_connections (
   created_at        timestamptz not null default now(),
   updated_at        timestamptz not null default now()
 );
+
+-- Rejouable sur une table créée par une version antérieure de ce fichier.
+alter table public.broker_connections add column if not exists refresh_token_ciphertext text;
+alter table public.broker_connections
+  add column if not exists api_hosts jsonb not null default '{}'::jsonb;
+alter table public.broker_connections add column if not exists oauth_redirect_uri text;
 
 create index if not exists broker_connections_user_idx on public.broker_connections (user_id);
 create index if not exists broker_connections_sync_idx
@@ -214,6 +230,38 @@ begin
   return n;
 end
 $$;
+
+-- ── 5. Le transfert entre comptes (copie) est une offre Pro ────────────────
+-- Une COPIE porte `copied_from`. Comme le recalibrage, la règle est vérifiée
+-- par la base, pas seulement par l'interface. Un trade déjà existant (upsert
+-- d'une modification) passe toujours : une copie faite du temps de
+-- l'abonnement reste modifiable après.
+create or replace function public.enforce_copy_pro()
+returns trigger
+language plpgsql
+security definer set search_path = public
+as $$
+begin
+  if new.copied_from is null then
+    return new;
+  end if;
+  if exists (select 1 from public.trades where id = new.id) then
+    return new;
+  end if;
+  if public.effective_tier(new.user_id) not in ('pro', 'elite') then
+    raise exception 'PLAN_LIMIT_PRO: copying trades between accounts requires the Pro plan'
+      using errcode = 'check_violation';
+  end if;
+  return new;
+end;
+$$;
+
+revoke all on function public.enforce_copy_pro() from public, anon, authenticated;
+
+drop trigger if exists trades_enforce_copy_pro on public.trades;
+create trigger trades_enforce_copy_pro
+  before insert on public.trades
+  for each row execute function public.enforce_copy_pro();
 
 -- Realtime : un trade importé par le cron arrive à l'écran ouvert sans
 -- rechargement (la table `trades` est déjà publiée, voir

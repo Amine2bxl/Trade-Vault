@@ -2031,7 +2031,7 @@ const fr: Dict = {
   "brokers.envLive": "Live",
   "brokers.envDemo": "Démo",
   "brokers.envHint":
-    "Choisis l'environnement de ton compte Tradovate (indiqué dans l'app Tradovate). En cas de doute, essaie Live, puis Démo.",
+    "TradeVault garde l'environnement qui porte tes comptes (les comptes prop firm tournent souvent en Démo). Ne le change que si tu sais en avoir besoin.",
   "brokers.journalInto": "Journaliser dans",
   "brokers.chooseAccount": "Choisir un compte…",
   "brokers.defaultRisk": "Risque par défaut par trade",
@@ -2139,11 +2139,9 @@ const fr: Dict = {
   "brokers.stepTradesLater": "Trades pas encore lus",
   "brokers.firstSyncLater":
     "Tradovate n'a pas répondu à temps pour la première synchro. TradeVault réessaie seul d'ici une minute ; rien à refaire de ton côté.",
-  "trade.rDerivedHint": "Calculé depuis le P&L broker et ton risque",
+  "trade.rDerivedHint": "P&L ÷ risque — l'un ou l'autre se modifie",
   "trade.brokerPnl": "P&L net (broker)",
   "trade.importedFrom": "Importé de {broker}",
-  "trade.contractsCount": "{n} contrats",
-  "trade.feesValue": "Frais {fees}",
   "trade.reviewHint":
     "La structure est remplie — ajoute ton setup, tes erreurs, tes notes et tes captures.",
   "trade.reviewHintRisk":
@@ -2151,7 +2149,36 @@ const fr: Dict = {
   "journal.reviewPending": "{n} trades importés à relire",
   "journal.reviewNow": "Relire",
   "journal.connectBroker": "Connecter un broker",
-  "trade.contractsOne": "1 contrat",
+  "brokers.err.schema":
+    "La synchro broker n'est pas encore installée sur cette base. Tes trades peuvent toujours être importés depuis un export CSV.",
+  "brokers.err.server": "TradeVault n'a pas pu enregistrer la connexion. Réessaie dans un instant.",
+  "brokers.err.exchange":
+    "Tradovate n'a pas terminé la connexion. Recommence — si l'échec persiste, l'enregistrement de TradeVault chez Tradovate est à vérifier.",
+  "brokers.err.permission":
+    "Ce login Tradovate ne permet pas de lire ses trades. Vérifie l'accès API auprès de ton broker ou de ta prop firm, puis reconnecte.",
+  "brokers.err.insert":
+    "Certains trades n'ont pas pu être enregistrés. Ils seront retentés à la prochaine synchro.",
+  "brokers.retry": "Réessayer",
+  "brokers.soon": "Bientôt disponible",
+  "brokers.importCsv": "Importer un CSV à la place",
+  "brokers.toastReauth": "Tradovate : reconnexion nécessaire. Ouvre Brokers pour te reconnecter.",
+  "brokers.toastPermission": "Tradovate : ce login ne permet pas de lire ses trades. Voir Brokers.",
+  "brokers.setupTitle": "Configuration — visible des administrateurs seulement",
+  "brokers.setupReady": "Prêt",
+  "brokers.setupMissing": "Reste à poser dans Vercel (Production et Preview), puis redéployer :",
+  "brokers.setupRedirect": "Adresse de retour à déclarer chez Tradovate, exactement telle quelle :",
+  "brokers.setupCopy": "Copier l'adresse",
+  "brokers.setupCopied": "Adresse copiée",
+  "brokers.setupPerms":
+    "Permissions à demander chez Tradovate : Read Only pour Account Info, Orders, Positions et Contract Library. Rien d'autre.",
+  "brokers.setupPro":
+    "Se connecter exige le plan Pro, administrateurs compris : accorde-toi Pro depuis Admin → offres pour tester.",
+  "brokers.setupDerived":
+    "Pas de BROKER_CREDENTIALS_KEY : les jetons sont scellés avec une clé dérivée de la clé de service du serveur. Facultatif.",
+  "trade.execContracts": "Contrats",
+  "trade.execEntry": "Prix d'entrée",
+  "trade.execExit": "Prix de sortie",
+  "trade.execFees": "Frais",
 };
 
 export default fr;
