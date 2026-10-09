@@ -1,71 +1,126 @@
 /**
- * Chiffrement des secrets broker — AES-256-GCM, clé serveur.
+ * Chiffrement des jetons broker — AES-256-GCM, clé serveur.
  *
- * Les identifiants Tradovate (login, mot de passe, clé API) et les jetons
- * d'accès donnent la main sur des comptes de trading réels. Ils ne sont
- * JAMAIS écrits en clair : la base ne voit qu'un texte chiffré, et la clé vit
- * uniquement dans l'environnement serveur (`BROKER_CREDENTIALS_KEY`). Une
- * fuite de la base seule ne livre donc rien d'exploitable.
+ * Le jeton d'accès Tradovate donne la lecture d'un compte de trading réel. Il
+ * n'est JAMAIS écrit en clair : la base ne voit qu'un texte chiffré, et la clé
+ * ne vit que dans l'environnement serveur. Une fuite de la base seule ne livre
+ * donc rien d'exploitable.
  *
- * Format : `v1:<iv base64>:<chiffré+tag base64>`. Le préfixe de version
- * permettra une rotation de clé sans ambiguïté sur les lignes existantes.
+ * ── D'OÙ VIENT LA CLÉ ──
+ * 1. `BROKER_CREDENTIALS_KEY` quand l'opérateur l'a posée (≥ 32 caractères) —
+ *    format `v1:` ;
+ * 2. sinon, une clé DÉRIVÉE (HKDF-SHA256, étiquette dédiée) du secret serveur
+ *    `SUPABASE_SERVICE_ROLE_KEY`, déjà présent dans chaque environnement —
+ *    format `d1:`. La synchro n'exige donc aucune variable de plus pour
+ *    démarrer, et la clé dérivée ne sert qu'à ça : connaître le texte chiffré
+ *    et la clé de service ne donne pas plus que la clé de service seule, qui
+ *    ouvre déjà toute la base.
+ *
+ * Le préfixe dit quelle clé a scellé chaque ligne : poser
+ * `BROKER_CREDENTIALS_KEY` plus tard ne rend pas illisibles les jetons déjà
+ * scellés par la clé dérivée (ils restent lus avec elle), les nouveaux
+ * passent sur la clé explicite.
+ *
+ * Format : `<v1|d1>:<iv base64>:<chiffré+tag base64>`.
  *
  * WebCrypto (`crypto.subtle`) : disponible nativement sur le runtime Node de
  * Vercel comme sous Bun, sans dépendance.
  */
 
-const VERSION = "v1";
+type KeySource = "v1" | "d1";
+
+/** Étiquette HKDF : la clé dérivée ne peut servir à rien d'autre. */
+const HKDF_INFO = "tradevault/broker-tokens/v1";
 
 export class BrokerCryptoUnavailable extends Error {
   constructor() {
-    super("BROKER_CREDENTIALS_KEY is not configured");
+    super("no broker encryption key: set BROKER_CREDENTIALS_KEY or SUPABASE_SERVICE_ROLE_KEY");
   }
 }
 
-/** La clé est-elle configurée ? Sans elle, aucune connexion n'est proposée. */
+const explicitSecret = () => {
+  const raw = process.env.BROKER_CREDENTIALS_KEY ?? "";
+  return raw.length >= 32 ? raw : null;
+};
+const derivationSecret = () => {
+  const raw = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
+  return raw.length >= 32 ? raw : null;
+};
+
+/** Une clé est-elle disponible ? Sans aucune, aucune connexion n'est proposée. */
 export function brokerCryptoConfigured(): boolean {
-  return (process.env.BROKER_CREDENTIALS_KEY ?? "").length >= 32;
+  return !!explicitSecret() || !!derivationSecret();
+}
+
+/** La source qu'utilise un NOUVEAU chiffrement. */
+function currentSource(): KeySource {
+  if (explicitSecret()) return "v1";
+  if (derivationSecret()) return "d1";
+  throw new BrokerCryptoUnavailable();
 }
 
 const b64 = (bytes: Uint8Array) => Buffer.from(bytes).toString("base64");
 const unb64 = (text: string) => new Uint8Array(Buffer.from(text, "base64"));
 
-let cachedKey: { raw: string; key: CryptoKey } | null = null;
+const cache = new Map<KeySource, { raw: string; key: CryptoKey }>();
 
 /**
- * La clé AES dérivée du secret d'environnement. Le secret peut être n'importe
- * quelle chaîne d'au moins 32 caractères : on en prend le SHA-256, ce qui
- * donne toujours exactement 256 bits sans imposer un format à l'opérateur.
+ * La clé AES d'une source.
+ *  - `v1` : SHA-256 du secret explicite (n'importe quelle chaîne ≥ 32
+ *    caractères donne exactement 256 bits) ;
+ *  - `d1` : HKDF-SHA256 du secret de service, sel fixe, étiquette dédiée.
  */
-async function key(): Promise<CryptoKey> {
-  const raw = process.env.BROKER_CREDENTIALS_KEY ?? "";
-  if (raw.length < 32) throw new BrokerCryptoUnavailable();
-  if (cachedKey?.raw === raw) return cachedKey.key;
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(raw));
-  const k = await crypto.subtle.importKey("raw", digest, { name: "AES-GCM" }, false, [
+async function key(source: KeySource): Promise<CryptoKey> {
+  const raw = source === "v1" ? explicitSecret() : derivationSecret();
+  if (!raw) throw new BrokerCryptoUnavailable();
+  const hit = cache.get(source);
+  if (hit?.raw === raw) return hit.key;
+  const enc = new TextEncoder();
+  let bits: ArrayBuffer;
+  if (source === "v1") {
+    bits = await crypto.subtle.digest("SHA-256", enc.encode(raw));
+  } else {
+    const base = await crypto.subtle.importKey("raw", enc.encode(raw), "HKDF", false, [
+      "deriveBits",
+    ]);
+    bits = await crypto.subtle.deriveBits(
+      {
+        name: "HKDF",
+        hash: "SHA-256",
+        salt: enc.encode("tradevault"),
+        info: enc.encode(HKDF_INFO),
+      },
+      base,
+      256,
+    );
+  }
+  const k = await crypto.subtle.importKey("raw", bits, { name: "AES-GCM" }, false, [
     "encrypt",
     "decrypt",
   ]);
-  cachedKey = { raw, key: k };
+  cache.set(source, { raw, key: k });
   return k;
 }
 
 export async function encryptSecret(plain: string): Promise<string> {
+  const source = currentSource();
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const ct = await crypto.subtle.encrypt(
     { name: "AES-GCM", iv },
-    await key(),
+    await key(source),
     new TextEncoder().encode(plain),
   );
-  return `${VERSION}:${b64(iv)}:${b64(new Uint8Array(ct))}`;
+  return `${source}:${b64(iv)}:${b64(new Uint8Array(ct))}`;
 }
 
 export async function decryptSecret(sealed: string): Promise<string> {
-  const [version, iv, ct] = sealed.split(":");
-  if (version !== VERSION || !iv || !ct) throw new Error("unsupported secret format");
+  const [source, iv, ct] = sealed.split(":");
+  if ((source !== "v1" && source !== "d1") || !iv || !ct) {
+    throw new Error("unsupported secret format");
+  }
   const plain = await crypto.subtle.decrypt(
     { name: "AES-GCM", iv: unb64(iv) },
-    await key(),
+    await key(source),
     unb64(ct),
   );
   return new TextDecoder().decode(plain);

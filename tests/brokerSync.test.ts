@@ -198,6 +198,33 @@ describe("le chiffrement des secrets broker", () => {
       "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
     );
   });
+
+  test("sans BROKER_CREDENTIALS_KEY : clé dérivée du secret de service, préfixe d1", async () => {
+    const explicit = process.env.BROKER_CREDENTIALS_KEY;
+    const service = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    try {
+      delete process.env.BROKER_CREDENTIALS_KEY;
+      process.env.SUPABASE_SERVICE_ROLE_KEY = "s".repeat(64);
+      const sealed = await encryptSecret("jeton-tradovate");
+      expect(sealed.startsWith("d1:")).toBe(true);
+      expect(sealed).not.toContain("jeton");
+      expect(await decryptSecret(sealed)).toBe("jeton-tradovate");
+      // Poser la clé explicite PLUS TARD ne rend pas illisible ce qui a été
+      // scellé avec la clé dérivée ; les nouveaux scellés passent en v1.
+      process.env.BROKER_CREDENTIALS_KEY = "k".repeat(48);
+      expect(await decryptSecret(sealed)).toBe("jeton-tradovate");
+      expect((await encryptSecret("x")).startsWith("v1:")).toBe(true);
+      // Une autre clé de service ne déchiffre pas : la dérivation dépend bien
+      // du secret, pas d'une constante.
+      delete process.env.BROKER_CREDENTIALS_KEY;
+      process.env.SUPABASE_SERVICE_ROLE_KEY = "t".repeat(64);
+      await expect(decryptSecret(sealed)).rejects.toThrow();
+    } finally {
+      process.env.BROKER_CREDENTIALS_KEY = explicit;
+      if (service === undefined) delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+      else process.env.SUPABASE_SERVICE_ROLE_KEY = service;
+    }
+  });
 });
 
 describe("la synchronisation", () => {
