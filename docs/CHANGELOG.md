@@ -30,6 +30,12 @@ qui vivent dans l'historique git et les PR).
   `shell/accountVisuals.ts` (icônes et libellés de compte sortis
   d'`AccountSwitcher`).
 - Tests SQL : `tests/sql/broker.sql`, branché dans `scripts/test-sql.sh`.
+- Connexion Tradovate : `backend/broker-oauth.server.ts` (adresse de retour
+  par origine, check-list administrateur) ; colonnes `refresh_token_ciphertext`,
+  `api_hosts`, `oauth_redirect_uri` sur `broker_connections` ; copie de trade
+  (`copied_from`) réservée au Pro par le trigger `trades_enforce_copy_pro` ;
+  cron `broker-sync` déplacé avant la clôture CME (deux créneaux) ; événement
+  `tv:open-import` (ouvrir l'import CSV depuis une page).
 
 ## 2026-09-30 — Restructuration complète du dépôt
 

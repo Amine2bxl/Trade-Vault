@@ -75,7 +75,7 @@ n'est jamais évalué sur une requête de page. Rate-limit par IP
 | `0 8 * * *` | `lifecycle-emails` | Expirations d'essai, e-mails de cycle de vie, rappels d'objectifs, purge de `ai_agent_runs` (90 j) — best-effort |
 | `0 5 * * *` | `economic-calendar` | Synchro Forex Factory → `economic_events` (semaine en cours ; `actual` non fourni par la source) |
 | `0 3 * * *` | `pattern-scan` | Détection de motifs → propositions ([`AI.md`](AI.md) §4) |
-| `30 22 * * *` | `broker-sync` | Connexions broker actives non synchronisées depuis 1 h (§9) |
+| `0 20 * * 1-5` et `0 21 * * 1-5` | `broker-sync` | Connexions broker actives non synchronisées depuis 1 h, AVANT la clôture CME de 17:00 ET (`/fill/list` ne rend que la séance en cours) — deux créneaux pour l'heure d'été et d'hiver (§9) |
 
 Garde-fous : `Authorization: Bearer $CRON_SECRET` obligatoire (refus sans
 secret configuré) ; client **service-role** limité à ces handlers ;
@@ -138,29 +138,51 @@ structurel, et ouvre son formulaire pour qu'il complète le jugement.
   (`brokers.functions.ts`) : le trader est redirigé vers la page de connexion
   de Tradovate (`TRADOVATE_CLIENT_ID` / `TRADOVATE_CLIENT_SECRET`), s'y
   identifie, revient sur `/brokers` avec `code` + `state` (`state` stocké en
-  empreinte SHA-256, 30 min de validité). Identifiant, mot de passe et e-mail
+  empreinte SHA-256, 30 min de validité ; gardé aussi en `sessionStorage` si
+  Tradovate ne le renvoie pas). L'**adresse de retour** suit l'origine de
+  l'appel (`broker-oauth.server.ts` : domaine, URL Vercel du déploiement,
+  `localhost`, `TRADOVATE_REDIRECT_ORIGINS`), est mémorisée dans
+  `oauth_redirect_uri` et renvoyée à l'identique à l'échange — Tradovate
+  l'exige au caractère près ; `TRADOVATE_REDIRECT_URI` force une adresse
+  unique. L'environnement retenu est celui qui porte des comptes
+  (`detectEnvironment` : un login prop firm vit souvent en démo). Identifiant, mot de passe et e-mail
   restent dans la base de Tradovate : aucune fonction ne les reçoit, aucune
   colonne ne les stocke. Une connexion expirée se **reconnecte** par le même
   parcours (`startTradovateOAuth({ connectionId })`) : comptes rattachés et
   curseur conservés. Au retour, `SyncCelebration` montre ce que la première
   synchro a réellement trouvé (comptes, trades) — ou dit qu'elle n'a pas
-  abouti. Sans `BROKER_CREDENTIALS_KEY` ou sans identifiants OAuth, la page le
-  dit et ne propose aucun bouton qui échouerait.
+  abouti, avec « Réessayer ». Sans identifiants OAuth, sans tables (migration
+  absente) ou sans chiffrement, la page le dit à tous, propose l'import CSV,
+  et ne vend aucun bouton qui échouerait ; l'administrateur (`ADMIN_EMAILS`)
+  voit la check-list : variables manquantes (noms seulement), adresse de
+  retour exacte à déclarer, permissions « Read Only ». Les erreurs sont des
+  codes stables (`schema_missing`, `exchange_failed`, `permission_denied`…),
+  jamais une exception brute.
 - **Lecture seule, par construction** — `tradovate.server.ts` n'appelle que
   les chemins de `READ_ONLY_ENDPOINTS` (listes et fiches : comptes, fills,
   ordres, versions d'ordre, positions, frais, contrats), tous en `GET` ;
   `assertReadOnly` refuse tout autre chemin avant le réseau (passer, modifier
-  ou annuler un ordre, lire `/auth/me` ou `/user/*`). Le seul `POST` est
-  l'échange du code OAuth. L'application partenaire se déclare aussi en
+  ou annuler un ordre, lire `/auth/me` ou `/user/*`). Les seuls `POST` sont
+  l'échange du code OAuth et le `refresh_token` (identifiants d'APPLICATION et
+  jeton, rien du trader). L'application partenaire se déclare aussi en
   permissions « Read Only » chez Tradovate. Testé : `tests/brokerSync.test.ts`.
-- **Secrets** — seul le jeton d'accès est stocké, chiffré AES-256-GCM
-  (`broker-crypto.server.ts`) avant toute écriture ; jamais renvoyé au
-  navigateur (le store client ne lit que les colonnes publiques).
+- **Hôtes dédiés** (NinjaTrader, octobre 2026) — une prop firm peut avoir son
+  hôte d'API, renvoyé dans `apiHosts` ou par une redirection 307. `fetch`
+  retirerait l'en-tête `Authorization` en changeant d'origine : les
+  redirections sont suivies à la main, seulement en HTTPS vers
+  `tradovateapi.com`, `tradovate.com`, `ninjatrader.com` ou `ninjatrader.dev`,
+  et l'hôte appris est enregistré (`broker_connections.api_hosts`).
+- **Secrets** — seuls le jeton d'accès et le `refresh_token` sont stockés,
+  chiffrés AES-256-GCM (`broker-crypto.server.ts`) avant toute écriture ;
+  jamais renvoyés au navigateur (le store client ne lit que les colonnes
+  publiques). Clé : `BROKER_CREDENTIALS_KEY` (préfixe `v1:`), ou à défaut une
+  clé dérivée par HKDF de `SUPABASE_SERVICE_ROLE_KEY` (préfixe `d1:`) — les
+  deux restent lisibles si la clé dédiée est posée plus tard.
 - **Jeton** — ~90 min, renouvelé par `GET /auth/renewaccesstoken` 10 min avant
-  expiration ; expiré, la connexion passe en `error` (`reauth_required`) sans
-  aucun appel : TradeVault n'a rien pour en redemander un, le trader se
-  reconnecte en un clic. Le cron quotidien ne rattrape donc que les jetons
-  encore vivants ; l'app ouverte les renouvelle en continu.
+  expiration ; expiré, le `refresh_token` OAuth en redonne un sans renvoyer le
+  trader chez Tradovate. Sans l'un ni l'autre, la connexion passe en `error`
+  (`reauth_required`) sans aucun appel, et l'app le signale une fois (toast) :
+  le trader se reconnecte en un clic.
 - **Pro** — connecter, reconnecter et synchroniser passent par
   `requireProPlan` (`require-pro.ts`, palier via `domain/entitlement`, échoue
   fermé, préfixe `PLAN_LIMIT_PRO`) ; le cron filtre les propriétaires par
@@ -175,12 +197,15 @@ structurel, et ouvre son formulaire pour qu'il complète le jugement.
   fenêtre absorbée, jamais inventée) → stop initial (`orderVersion`) pour le
   risque et le R → `upsert … on conflict (user_id, external_id) do nothing`.
   `sync_cursor.syncedThrough` (dernière sortie traitée) empêche un trade
-  supprimé de revenir.
+  supprimé de revenir ; il n'avance que sur une suite continue de trades
+  réellement écrits (`advanceCursor`) — un trade refusé (limite d'offre,
+  écriture en échec) est repris au passage suivant.
 - **Cadence** — `useBrokerSync` (app ouverte, onglet visible) appelle
   `syncBrokers` toutes les 60 s ; le serveur ignore une connexion
   synchronisée depuis moins de 30 s. Le cron quotidien rattrape le reste.
 - **Côté client** — les trades importés entrent dans le cache React Query du
   compte affiché ; ceux de cette session ouvrent le `TradeModal` un par un
-  (P&L broker verrouillé, R déduit du risque confirmé) ; les autres attendent
+  (P&L broker prérempli et modifiable, R déduit du risque — saisir un R
+  réécrit le P&L ; contrats, prix et frais modifiables) ; les autres attendent
   dans le Journal (« N à relire »).
 
