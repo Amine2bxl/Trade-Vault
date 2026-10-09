@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import {
   Ban,
@@ -101,10 +101,24 @@ const RETRYABLE = new Set([
   "server_error",
 ]);
 
-/** Le `state` OAuth de la tentative en cours, gardé dans l'onglet : si
- *  Tradovate ne le renvoie pas dans l'URL de retour, la connexion se termine
- *  quand même — l'empreinte reste vérifiée côté serveur. */
-const STATE_KEY = "tv:tradovate-oauth-state";
+/**
+ * La tentative en cours — QUOI on connectait, jamais le `state` OAuth.
+ *
+ * La page TradeVault est remplacée par celle de Tradovate : au retour, tout
+ * l'état du composant est perdu. « Réessayer » doit pourtant rejouer la MÊME
+ * tentative — reconnecter le login existant, avec ses comptes rattachés, et
+ * non en créer un second. Le `state`, lui, n'est JAMAIS gardé ni substitué :
+ * seul celui que Tradovate renvoie dans l'URL prouve que le code vient de
+ * cet aller-retour (sinon un code obtenu par un tiers sur SON compte
+ * Tradovate pourrait être greffé sur la session du trader).
+ */
+interface Attempt {
+  connectionId?: string;
+  environment: Env;
+  defaultAccountId: string | null;
+  defaultRisk: number | null;
+}
+const ATTEMPT_KEY = "tv:tradovate-attempt";
 const NO_CAPS: BrokerCapabilities = {
   encryption: false,
   oauth: false,
@@ -113,22 +127,34 @@ const NO_CAPS: BrokerCapabilities = {
   setup: null,
 };
 
-function rememberState(state: string | null): void {
+function rememberAttempt(attempt: Attempt | null): void {
   try {
-    if (state) sessionStorage.setItem(STATE_KEY, state);
-    else sessionStorage.removeItem(STATE_KEY);
+    if (attempt) sessionStorage.setItem(ATTEMPT_KEY, JSON.stringify(attempt));
+    else sessionStorage.removeItem(ATTEMPT_KEY);
   } catch {
-    // Stockage bloqué (navigation privée stricte) : le `state` de l'URL suffit.
+    // Stockage bloqué : « Réessayer » repartira des options par défaut.
   }
 }
 
-function recallState(): string | null {
+function recallAttempt(): Attempt | null {
   try {
-    return sessionStorage.getItem(STATE_KEY);
+    const raw = sessionStorage.getItem(ATTEMPT_KEY);
+    const a = raw ? (JSON.parse(raw) as Partial<Attempt>) : null;
+    if (!a || (a.environment !== "live" && a.environment !== "demo")) return null;
+    return {
+      connectionId: typeof a.connectionId === "string" ? a.connectionId : undefined,
+      environment: a.environment,
+      defaultAccountId: typeof a.defaultAccountId === "string" ? a.defaultAccountId : null,
+      defaultRisk: typeof a.defaultRisk === "number" ? a.defaultRisk : null,
+    };
   } catch {
     return null;
   }
 }
+
+/** Erreurs de première synchro qui ne se répareront PAS seules : la
+ *  connexion est en erreur, le trader doit agir. */
+const BLOCKING_SYNC = new Set(["permission_denied", "reauth_required"]);
 
 /** Le serveur refuse hors Pro avec ce préfixe stable (`requireProPlan`). */
 const isPlanRequired = (e: unknown) =>
@@ -172,6 +198,8 @@ export default function Brokers() {
   const [targetAccount, setTargetAccount] = useState<string>(activeAccount?.id ?? "");
   const [defaultRisk, setDefaultRisk] = useState("");
   const [redirecting, setRedirecting] = useState(false);
+  // La tentative que « Réessayer » rejoue (voir `Attempt`).
+  const lastAttempt = useRef<Attempt | null>(null);
 
   const lead = useMemo(
     () => (
@@ -235,8 +263,10 @@ export default function Brokers() {
     const code = params.get("code");
     const denied = params.get("error");
     if (!code && !denied) return;
-    const state = params.get("state") || recallState();
-    rememberState(null);
+    // Le `state` vient de l'URL, et d'elle seule (voir `Attempt`).
+    const state = params.get("state");
+    lastAttempt.current = recallAttempt();
+    rememberAttempt(null);
     // On nettoie l'URL tout de suite : un code OAuth ne se rejoue pas, et il
     // n'a rien à faire dans l'historique ni dans un lien partagé.
     for (const k of ["code", "state", "error", "error_description"]) params.delete(k);
@@ -270,6 +300,25 @@ export default function Brokers() {
         if (res.inserted.length) announceBrokerImport(res.inserted, { autoOpen: false });
         announceBrokersChanged();
         await reload();
+        // Connecté, mais la lecture est refusée ou le jeton déjà rejeté : la
+        // connexion est en erreur et ne sera pas retentée seule. Le dire,
+        // plutôt qu'un « TradeVault réessaie tout seul » faux.
+        if (res.syncError && BLOCKING_SYNC.has(res.syncError)) {
+          if (res.connectionId) {
+            lastAttempt.current = {
+              connectionId: res.connectionId,
+              environment: res.environment ?? "live",
+              defaultAccountId: null,
+              defaultRisk: null,
+            };
+          }
+          setCelebration({
+            phase: "failed",
+            messageKey: ERROR_KEYS[res.syncError] ?? "brokers.err.unknown",
+            action: res.syncError === "reauth_required" ? "retry" : undefined,
+          });
+          return;
+        }
         setCelebration({
           phase: "done",
           accounts: res.accounts,
@@ -290,23 +339,23 @@ export default function Brokers() {
 
   const riskValue = defaultRisk.trim() === "" ? null : Math.max(0, Number(defaultRisk) || 0);
 
-  /** Part chez Tradovate — nouvelle connexion, ou reconnexion d'un login. */
-  const goToTradovate = async (reconnect?: BrokerConnection) => {
+  /** Part chez Tradovate pour une tentative donnée. */
+  const startAttempt = async (attempt: Attempt) => {
     if (!isPro) return openUpgrade();
     setRedirecting(true);
-    if (reconnect) setBusyId(reconnect.id);
+    if (attempt.connectionId) setBusyId(attempt.connectionId);
     try {
       const res = await startOAuth({
-        data: reconnect
+        data: attempt.connectionId
           ? {
-              connectionId: reconnect.id,
-              environment: reconnect.environment,
+              connectionId: attempt.connectionId,
+              environment: attempt.environment,
               timezone: browserTimeZone(),
             }
           : {
-              environment: env,
-              defaultRisk: riskValue,
-              defaultAccountId: targetAccount || null,
+              environment: attempt.environment,
+              defaultRisk: attempt.defaultRisk,
+              defaultAccountId: attempt.defaultAccountId,
               timezone: browserTimeZone(),
             },
       });
@@ -316,7 +365,7 @@ export default function Brokers() {
         setBusyId(null);
         return;
       }
-      rememberState(res.state);
+      rememberAttempt(attempt);
       // Même onglet : la page de connexion de Tradovate remplace TradeVault,
       // puis Tradovate renvoie ici. Pas de fenêtre surgissante à bloquer.
       window.location.assign(res.url);
@@ -327,6 +376,19 @@ export default function Brokers() {
       setBusyId(null);
     }
   };
+
+  /** Nouvelle connexion (options du formulaire), ou reconnexion d'un login. */
+  const goToTradovate = (reconnect?: BrokerConnection) =>
+    startAttempt(
+      reconnect
+        ? {
+            connectionId: reconnect.id,
+            environment: reconnect.environment,
+            defaultAccountId: null,
+            defaultRisk: null,
+          }
+        : { environment: env, defaultAccountId: targetAccount || null, defaultRisk: riskValue },
+    );
 
   const syncNow = async (id: string) => {
     if (!isPro) return openUpgrade();
@@ -689,7 +751,9 @@ export default function Brokers() {
         state={celebration}
         onRetry={() => {
           setCelebration(null);
-          void goToTradovate();
+          // La MÊME tentative : un login en reconnexion reste le même login.
+          const attempt = lastAttempt.current;
+          void (attempt ? startAttempt(attempt) : goToTradovate());
         }}
         onUpgrade={() => {
           setCelebration(null);

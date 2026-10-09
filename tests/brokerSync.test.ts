@@ -29,7 +29,7 @@ process.env.TRADOVATE_CLIENT_SECRET = "app-client-secret";
 
 const { encryptSecret, decryptSecret, encryptJson, decryptJson, sha256Hex } =
   await import("../src/backend/broker-crypto.server");
-const { syncConnection, brokerSyncAllowed, advanceCursor, detectEnvironment } =
+const { syncConnection, brokerSyncAllowed, advanceCursor, detectEnvironment, cronSlotActive } =
   await import("../src/backend/broker-sync.server");
 const { assertReadOnly, READ_ONLY_ENDPOINTS, exchangeOAuthCode } =
   await import("../src/backend/tradovate.server");
@@ -48,6 +48,8 @@ let positions = [{ accountId: 900, contractId: 7, netPos: 0 }];
 let redirectFor: ((url: string) => string | null) | null = null;
 /** Comptes renvoyés par hôte — pour la détection d'environnement. */
 let accountsByHost: Record<string, unknown[]> | null = null;
+/** Statut HTTP imposé au serveur de jetons (panne passagère simulée). */
+let tokenStatus: number | null = null;
 
 function tradovateResponse(path: string): unknown {
   if (path.endsWith("/account/list")) {
@@ -124,6 +126,9 @@ beforeAll(() => {
     const headers = (init?.headers ?? {}) as Record<string, string>;
     auths.push(headers.authorization ?? null);
     bodies.push(typeof init?.body === "string" ? init.body : "");
+    if (tokenStatus && path.endsWith("/auth/oauthtoken")) {
+      return new Response("<html>Bad gateway</html>", { status: tokenStatus });
+    }
     const location = redirectFor?.(path) ?? null;
     if (location) return new Response(null, { status: 307, headers: { location } });
     return new Response(JSON.stringify(tradovateResponse(path)), {
@@ -223,6 +228,7 @@ beforeEach(() => {
   positions = [{ accountId: 900, contractId: 7, netPos: 0 }];
   redirectFor = null;
   accountsByHost = null;
+  tokenStatus = null;
 });
 
 describe("le chiffrement des secrets broker", () => {
@@ -402,6 +408,58 @@ describe("le jeton : renouvelé, jamais redemandé", () => {
     expect(written).not.toContain("next-refresh-token");
     // Les données ont ensuite été lues avec le jeton neuf.
     expect(auths.filter((a) => a === "Bearer refreshed-token").length).toBeGreaterThan(0);
+  });
+});
+
+describe("une panne passagère n'est pas une révocation", () => {
+  for (const status of [502, 503, 429]) {
+    test(`refresh en HTTP ${status} : la connexion reste active et sera retentée`, async () => {
+      tokenStatus = status;
+      const sb = fakeSb();
+      const res = await syncConnection(
+        sb,
+        await connection("tv-acc-50k", -60_000, "still-valid-refresh"),
+      );
+      expect(res.error).toBe("broker_unreachable");
+      const patch = updates.find((u) => u.table === "broker_connections")?.patch;
+      // Surtout pas « error » : syncBrokers et le cron ne relisent que les
+      // connexions actives, la connexion serait perdue pour de bon.
+      expect(patch?.status).toBeUndefined();
+      expect(patch?.last_error).toBe("broker_unreachable");
+    });
+  }
+
+  test("renouvellement en panne mais jeton encore valide : la synchro continue avec lui", async () => {
+    const realFetchMock = globalThis.fetch;
+    globalThis.fetch = (async (url: string | URL, init?: RequestInit) => {
+      if (String(url).endsWith("/auth/renewaccesstoken")) {
+        calls.push(String(url));
+        methods.push("GET");
+        return new Response("", { status: 503 });
+      }
+      return realFetchMock(url, init);
+    }) as typeof fetch;
+    try {
+      const sb = fakeSb();
+      const res = await syncConnection(sb, await connection("tv-acc-50k", 5 * 60_000));
+      expect(res.error).toBeNull();
+      expect(res.inserted).toHaveLength(1);
+    } finally {
+      globalThis.fetch = realFetchMock;
+    }
+  });
+});
+
+describe("le cron passe avant la clôture CME, une fois par jour", () => {
+  test("créneau d'été en été, créneau d'hiver en hiver", () => {
+    const summer = new Date("2026-07-15T20:30:00Z");
+    const winter = new Date("2026-01-15T21:30:00Z");
+    expect(cronSlotActive("edt", summer)).toBe(true);
+    expect(cronSlotActive("est", summer)).toBe(false);
+    expect(cronSlotActive("edt", winter)).toBe(false);
+    expect(cronSlotActive("est", winter)).toBe(true);
+    // Appel manuel, sans créneau : il travaille toujours.
+    expect(cronSlotActive(null, winter)).toBe(true);
   });
 });
 
@@ -645,5 +703,17 @@ describe("Pro uniquement", () => {
         current_period_end: "2020-01-01T00:00:00Z",
       }),
     ).toBe(false);
+  });
+});
+
+describe("le retour OAuth n'accepte que le state de l'URL", () => {
+  test("aucun state gardé ni substitué côté navigateur", async () => {
+    const { readSource } = await import("./helpers/source");
+    const page = readSource(import.meta.dir, "../src/app/features/brokers/Brokers.tsx");
+    // Substituer un state stocké à un state absent laissait un code obtenu par
+    // un tiers sur SON compte Tradovate se greffer sur la session du trader.
+    expect(page).toContain('const state = params.get("state");');
+    expect(page).not.toMatch(/params\.get\("state"\)\s*\|\|/);
+    expect(page).not.toContain("recallState");
   });
 });

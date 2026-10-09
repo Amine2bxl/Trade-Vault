@@ -164,8 +164,15 @@ async function ensureToken(
   if ((!result || !result.ok) && refresh) {
     result = await refreshAccessToken(refresh).catch(() => null);
   }
-  if (!result) return { error: "broker_unreachable" };
-  if (!result.ok) {
+  if (!result || !result.ok) {
+    // Le jeton actuel vit encore (moins de 10 min) : on s'en sert plutôt que
+    // d'échouer — le renouvellement sera retenté au passage suivant.
+    if (current && exp > Date.now()) {
+      return { session: newSession(conn.environment, current, hosts) };
+    }
+    // Panne ou limitation chez Tradovate : la connexion reste active et sera
+    // retentée. Seul un REFUS explicite la met « à reconnecter ».
+    if (!result || result.reason === "transient") return { error: "broker_unreachable" };
     return { error: result.reason === "penalty" ? "rate_limited" : "reauth_required" };
   }
 
@@ -638,6 +645,25 @@ function json(body: unknown, status: number): Response {
  * ouverte — l'app, elle, synchronise toute seule pendant qu'elle tourne.
  * Budget de temps borné ; ce qui n'est pas traité l'est au passage suivant.
  */
+/** New York est-il à l'heure d'été à cet instant ? */
+function newYorkOnDst(at: Date): boolean {
+  const name = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    timeZoneName: "short",
+  })
+    .formatToParts(at)
+    .find((p) => p.type === "timeZoneName")?.value;
+  return name === "EDT";
+}
+
+/** Le créneau `edt` ne travaille qu'en heure d'été, `est` qu'en heure
+ *  d'hiver ; un appel sans créneau (manuel) travaille toujours. */
+export function cronSlotActive(slot: string | null, at: Date): boolean {
+  if (slot === "edt") return newYorkOnDst(at);
+  if (slot === "est") return !newYorkOnDst(at);
+  return true;
+}
+
 export async function handleBrokerSyncCron(request: Request): Promise<Response> {
   const secret = process.env.CRON_SECRET;
   const auth = request.headers.get("authorization");
@@ -646,6 +672,13 @@ export async function handleBrokerSyncCron(request: Request): Promise<Response> 
   const { serviceClient } = await import("./billing.server");
   const sb = serviceClient();
   if (!sb) return json({ error: "supabase service credentials missing" }, 500);
+
+  // Deux créneaux (heure d'été / d'hiver de New York) pour passer chaque
+  // jour juste AVANT la clôture CME de 17:00 ET, que Vercel ne sait pas
+  // exprimer en heure locale. Seul le créneau de la saison en cours travaille :
+  // l'autre tomberait après la clôture, ou rendrait le premier inutile.
+  const slot = new URL(request.url).searchParams.get("slot");
+  if (!cronSlotActive(slot, new Date())) return json({ skipped: "slot" }, 200);
 
   const budgetMs = Number(process.env.CRON_TIME_BUDGET_MS ?? "240000");
   const started = Date.now();

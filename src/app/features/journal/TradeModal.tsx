@@ -584,6 +584,9 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
     form.date &&
     parseFloat(form.riskAmount) > 0 &&
     (pnlLocked || form.direction === "be" || form.rMultiple !== "") &&
+    // P&L d'un trade importé vidé : refusé plutôt qu'enregistré à 0, ce qui
+    // ferait d'un gain un trade nul dans toutes les statistiques.
+    (!pnlLocked || (form.brokerPnl.trim() !== "" && Number.isFinite(parseFloat(form.brokerPnl)))) &&
     !timeError &&
     !rMultipleError;
 

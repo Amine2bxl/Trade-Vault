@@ -289,7 +289,10 @@ export type TvTokenResult =
     }
   | {
       ok: false;
-      reason: "invalid" | "penalty" | "captcha";
+      /** `transient` : panne passagère (5xx, 429, réponse illisible) — le
+       *  jeton n'est PAS révoqué, la connexion ne doit pas passer « à
+       *  reconnecter » pour autant. */
+      reason: "invalid" | "penalty" | "captcha" | "transient";
       /** Code d'erreur OAuth stable (`invalid_client`, `invalid_grant`…) ou
        *  message court — jamais un secret. */
       message: string;

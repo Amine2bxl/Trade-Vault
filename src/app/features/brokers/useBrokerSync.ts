@@ -2,7 +2,8 @@ import { useCallback, useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { syncBrokers } from "@/backend/brokers.functions";
-import { hasActiveBrokerConnection } from "@/app/store/brokers";
+import { hasActiveBrokerConnection, loadBrokerAlerts } from "@/app/store/brokers";
+import { nsKey, readJSON, writeJSON } from "@/app/utils/persistence";
 import type { Trade } from "@/app/types";
 import { clearTradesCache, tradesQueryKey } from "@/app/trading/useTrades";
 
@@ -27,6 +28,17 @@ import { clearTradesCache, tradesQueryKey } from "@/app/trading/useTrades";
  */
 
 const POLL_MS = 60_000;
+
+type Blocking = "reauth_required" | "permission_denied";
+
+/**
+ * Une alerte par ÉPISODE d'erreur, pas une par chargement : on retient, par
+ * connexion, l'erreur déjà signalée. Une connexion revenue active sort de la
+ * liste ; une nouvelle erreur sur elle sera signalée à nouveau.
+ */
+function alertedKey(userId: string): string {
+  return nsKey(userId, "brokers.alerted");
+}
 const IMPORTED_EVENT = "tv:broker-imported";
 const CHANGED_EVENT = "tv:brokers-changed";
 
@@ -64,7 +76,7 @@ export function useBrokerSync(opts: {
   /** Une connexion vient de passer en erreur et attend le trader (jeton
    *  refusé, lecture interdite). Appelé une fois : la connexion en erreur
    *  n'est plus synchronisée, donc plus signalée, jusqu'à sa reconnexion. */
-  onActionNeeded?: (code: "reauth_required" | "permission_denied") => void;
+  onActionNeeded?: (code: Blocking) => void;
 }): void {
   const { userId, activeAccountId, ready } = opts;
   const queryClient = useQueryClient();
@@ -107,10 +119,10 @@ export function useBrokerSync(opts: {
       const blocking = res.errors.find(
         (e) => e.error === "reauth_required" || e.error === "permission_denied",
       );
-      if (blocking) {
-        callbacks.current.onActionNeeded?.(
-          blocking.error as "reauth_required" | "permission_denied",
-        );
+      if (blocking && userId) {
+        const seen = readJSON<Record<string, string>>(alertedKey(userId), {});
+        writeJSON(alertedKey(userId), { ...seen, [blocking.connectionId]: blocking.error });
+        callbacks.current.onActionNeeded?.(blocking.error as Blocking);
         announceBrokersChanged();
       }
     } catch {
@@ -121,7 +133,7 @@ export function useBrokerSync(opts: {
     } finally {
       inFlight.current = false;
     }
-  }, [sync, absorb]);
+  }, [sync, absorb, userId]);
 
   useEffect(() => {
     if (!userId || !ready) return;
@@ -131,6 +143,22 @@ export function useBrokerSync(opts: {
       if (alive && enabled.current) void run();
     };
     void check();
+
+    // Au démarrage : une connexion passée en erreur pendant l'absence du
+    // trader (cron, autre appareil) est signalée une fois, sans attendre
+    // qu'il ouvre la page Brokers.
+    void loadBrokerAlerts(userId).then((alerts) => {
+      if (!alive) return;
+      const seen = readJSON<Record<string, string>>(alertedKey(userId), {});
+      const next: Record<string, string> = {};
+      let fresh: Blocking | null = null;
+      for (const a of alerts) {
+        next[a.id] = a.lastError;
+        if (seen[a.id] !== a.lastError && !fresh) fresh = a.lastError;
+      }
+      writeJSON(alertedKey(userId), next);
+      if (fresh) callbacks.current.onActionNeeded?.(fresh);
+    });
 
     const onImported = (e: Event) => {
       const d = (e as CustomEvent<ImportDetail>).detail;

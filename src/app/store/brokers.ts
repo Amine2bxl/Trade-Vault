@@ -157,3 +157,25 @@ export async function hasActiveBrokerConnection(userId: string): Promise<boolean
   if (error) return false;
   return (count ?? 0) > 0;
 }
+
+/** Les connexions qui attendent le trader (jeton refusé, lecture interdite) :
+ *  lues au démarrage pour le prévenir même si la bascule s'est faite pendant
+ *  qu'il était absent (cron). Colonnes publiques seulement. */
+export async function loadBrokerAlerts(
+  userId: string,
+): Promise<
+  { id: string; lastError: "reauth_required" | "permission_denied"; lastSyncAt: string | null }[]
+> {
+  const { data, error } = await db
+    .from("broker_connections")
+    .select("id, last_error, last_sync_at")
+    .eq("user_id", userId)
+    .eq("status", "error")
+    .in("last_error", ["reauth_required", "permission_denied"]);
+  if (error || !data) return [];
+  return (data as { id: string; last_error: string; last_sync_at: string | null }[]).map((r) => ({
+    id: r.id,
+    lastError: r.last_error as "reauth_required" | "permission_denied",
+    lastSyncAt: r.last_sync_at,
+  }));
+}

@@ -133,6 +133,24 @@ export function restBase(env: TvEnvironment, hosts?: ApiHosts | null): string {
   return `https://${host && isTrustedTradovateHost(host) ? host : DEFAULT_HOSTS[env]}/v1`;
 }
 
+/**
+ * Une réponse du serveur de jetons qui ne dit RIEN du jeton : panne (5xx),
+ * limitation (429, 408) ou corps illisible derrière un proxy. Lue comme un
+ * refus, elle mettait une connexion valide « à reconnecter » pour de bon.
+ */
+function transientTokenFailure(res: Response, body: unknown): TvTokenResult | null {
+  const unreadable =
+    body === null ||
+    (typeof body === "object" &&
+      body !== null &&
+      Object.keys(body).length === 1 &&
+      "errorText" in body);
+  if (res.status >= 500 || res.status === 429 || res.status === 408 || (res.ok && unreadable)) {
+    return { ok: false, reason: "transient", message: `HTTP ${res.status}` };
+  }
+  return null;
+}
+
 async function readJson(res: Response): Promise<unknown> {
   const text = await res.text();
   try {
@@ -188,7 +206,8 @@ export async function renewAccessToken(session: TvSession): Promise<TvTokenResul
     (host) => rememberHost(session, host),
   );
   if (res.status === 401) return { ok: false, reason: "invalid", message: "token expired" };
-  return parseTokenResponse(await readJson(res));
+  const body = await readJson(res);
+  return transientTokenFailure(res, body) ?? parseTokenResponse(body);
 }
 
 /** Les identifiants de l'APPLICATION, jamais ceux du trader. */
@@ -207,7 +226,7 @@ async function postToken(kind: string, form: string): Promise<TvTokenResult> {
     body: form,
   });
   const body = await readJson(res);
-  const result = parseTokenResponse(body);
+  const result = transientTokenFailure(res, body) ?? parseTokenResponse(body);
   if (!result.ok) {
     // Diagnostic côté serveur (journal Vercel) : statut et code d'erreur
     // OAuth, jamais le code à usage unique, le jeton ou le secret.

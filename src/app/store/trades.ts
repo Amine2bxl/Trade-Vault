@@ -103,10 +103,20 @@ function tradeToRow(t: Trade, userId: string): TradeRow {
  */
 function executionColumns(t: Trade): Partial<TradeRow> {
   const row: Partial<TradeRow> = {};
-  if (t.quantity != null) row.quantity = t.quantity;
-  if (t.entryPrice != null) row.entry_price = t.entryPrice;
-  if (t.exitPrice != null) row.exit_price = t.exitPrice;
-  if (t.fees != null) row.fees = toCents(t.fees);
+  if (t.broker) {
+    // Trade importé : son exécution est éditable dans le formulaire, et un
+    // champ VIDÉ doit s'écrire vide — omettre la colonne laissait l'upsert
+    // conserver l'ancienne valeur du broker.
+    row.quantity = t.quantity ?? null;
+    row.entry_price = t.entryPrice ?? null;
+    row.exit_price = t.exitPrice ?? null;
+    row.fees = t.fees != null ? toCents(t.fees) : null;
+  } else {
+    if (t.quantity != null) row.quantity = t.quantity;
+    if (t.entryPrice != null) row.entry_price = t.entryPrice;
+    if (t.exitPrice != null) row.exit_price = t.exitPrice;
+    if (t.fees != null) row.fees = toCents(t.fees);
+  }
   if (t.broker) {
     row.broker = t.broker;
     row.external_id = t.externalId ?? null;

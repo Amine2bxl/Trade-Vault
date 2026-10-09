@@ -75,7 +75,7 @@ n'est jamais évalué sur une requête de page. Rate-limit par IP
 | `0 8 * * *` | `lifecycle-emails` | Expirations d'essai, e-mails de cycle de vie, rappels d'objectifs, purge de `ai_agent_runs` (90 j) — best-effort |
 | `0 5 * * *` | `economic-calendar` | Synchro Forex Factory → `economic_events` (semaine en cours ; `actual` non fourni par la source) |
 | `0 3 * * *` | `pattern-scan` | Détection de motifs → propositions ([`AI.md`](AI.md) §4) |
-| `0 20 * * 1-5` et `0 21 * * 1-5` | `broker-sync` | Connexions broker actives non synchronisées depuis 1 h, AVANT la clôture CME de 17:00 ET (`/fill/list` ne rend que la séance en cours) — deux créneaux pour l'heure d'été et d'hiver (§9) |
+| `0 20 * * 1-5` et `0 21 * * 1-5` | `broker-sync` | Connexions broker actives non synchronisées depuis 1 h, AVANT la clôture CME de 17:00 ET (`/fill/list` ne rend que la séance en cours) — deux créneaux (`?slot=edt|est`), seul celui de la saison en cours à New York travaille (`cronSlotActive`) (§9) |
 
 Garde-fous : `Authorization: Bearer $CRON_SECRET` obligatoire (refus sans
 secret configuré) ; client **service-role** limité à ces handlers ;
@@ -138,8 +138,11 @@ structurel, et ouvre son formulaire pour qu'il complète le jugement.
   (`brokers.functions.ts`) : le trader est redirigé vers la page de connexion
   de Tradovate (`TRADOVATE_CLIENT_ID` / `TRADOVATE_CLIENT_SECRET`), s'y
   identifie, revient sur `/brokers` avec `code` + `state` (`state` stocké en
-  empreinte SHA-256, 30 min de validité ; gardé aussi en `sessionStorage` si
-  Tradovate ne le renvoie pas). L'**adresse de retour** suit l'origine de
+  empreinte SHA-256, 30 min de validité). Le `state` vient de l'URL et d'elle
+  seule : le substituer depuis le navigateur laisserait greffer sur la session
+  du trader un code obtenu par un tiers sur son propre compte Tradovate. Seule
+  la tentative (login à reconnecter, options) est gardée en `sessionStorage`,
+  pour que « Réessayer » rejoue la même. L'**adresse de retour** suit l'origine de
   l'appel (`broker-oauth.server.ts` : domaine, URL Vercel du déploiement,
   `localhost`, `TRADOVATE_REDIRECT_ORIGINS`), est mémorisée dans
   `oauth_redirect_uri` et renvoyée à l'identique à l'échange — Tradovate
@@ -180,9 +183,12 @@ structurel, et ouvre son formulaire pour qu'il complète le jugement.
   deux restent lisibles si la clé dédiée est posée plus tard.
 - **Jeton** — ~90 min, renouvelé par `GET /auth/renewaccesstoken` 10 min avant
   expiration ; expiré, le `refresh_token` OAuth en redonne un sans renvoyer le
-  trader chez Tradovate. Sans l'un ni l'autre, la connexion passe en `error`
-  (`reauth_required`) sans aucun appel, et l'app le signale une fois (toast) :
-  le trader se reconnecte en un clic.
+  trader chez Tradovate. Une panne passagère (5xx, 429, réponse illisible)
+  n'est pas un refus : la connexion reste active et sera retentée. Sans jeton
+  valide ni `refresh_token`, ou sur refus explicite, la connexion passe en
+  `error` (`reauth_required`) ; l'app le signale une fois par épisode (toast,
+  y compris au démarrage si la bascule a eu lieu pendant l'absence) : le
+  trader se reconnecte en un clic.
 - **Pro** — connecter, reconnecter et synchroniser passent par
   `requireProPlan` (`require-pro.ts`, palier via `domain/entitlement`, échoue
   fermé, préfixe `PLAN_LIMIT_PRO`) ; le cron filtre les propriétaires par
