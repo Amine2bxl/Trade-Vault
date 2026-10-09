@@ -9,7 +9,7 @@ import type { Trade } from "../types";
  * afficher la bonne offre plutôt qu'un « échec de l'enregistrement » qui ne dit
  * rien et ne vend rien.
  */
-export type LimitKind = "accounts" | "trades" | "jarvis";
+export type LimitKind = "accounts" | "trades" | "jarvis" | "pro";
 
 export class PlanLimitError extends Error {
   readonly kind: LimitKind;
@@ -50,6 +50,9 @@ export function planLimitFromDbError(e: unknown): PlanLimitError | null {
         : "";
   if (message.includes("PLAN_LIMIT_TRADES")) return new PlanLimitError("trades");
   if (message.includes("PLAN_LIMIT_ACCOUNTS")) return new PlanLimitError("accounts");
+  // Une fonctionnalité réservée à Pro (recalibrage, synchro broker), refusée
+  // par la base ou par `requireProPlan`.
+  if (message.includes("PLAN_LIMIT_PRO")) return new PlanLimitError("pro");
   return null;
 }
 

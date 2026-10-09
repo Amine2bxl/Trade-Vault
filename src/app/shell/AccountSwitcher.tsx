@@ -1,10 +1,6 @@
-import { useEffect, useState } from "react";
+import { Suspense, lazy, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import {
-  User,
-  Building2,
-  FlaskConical,
-  Zap,
   Check,
   ChevronDown,
   Plus,
@@ -13,17 +9,9 @@ import {
   Trash2,
   AlertTriangle,
   Layers,
-  Briefcase,
-  Flame,
-  Star,
-  Shield,
-  Target,
-  TrendingUp,
-  Compass,
-  Home,
-  CreditCard,
-  Globe,
   Lock,
+  Crown,
+  Repeat2,
 } from "lucide-react";
 import { useAccounts } from "../contexts/AccountContext";
 import { useT } from "../i18n/LanguageContext";
@@ -32,21 +20,19 @@ import { useSubscription } from "../hooks/useSubscription";
 import { isPlanLimitError } from "../utils/planLimits";
 import { cn } from "@/shared/ui/cn";
 import type { Account, AccountType } from "../store";
+import {
+  AVAILABLE_ICONS,
+  ICON_MAP,
+  TYPE_ICON,
+  TYPE_LABEL_KEY,
+  getAccountIcon,
+} from "./accountVisuals";
 import { Modal, FIELD_BASE, Chip, CHIP_ROW } from "@/shared/ui";
 import { currencySymbol, formatMoney, useCurrency } from "@/shared/currency";
 
-const TYPE_ICON: Record<AccountType, typeof User> = {
-  personal: User,
-  prop: Building2,
-  demo: FlaskConical,
-  live: Zap,
-};
-const TYPE_LABEL_KEY = {
-  personal: "account.typePersonal",
-  prop: "account.typeProp",
-  demo: "account.typeDemo",
-  live: "account.typeLive",
-} as const;
+// Chargée à la demande : la modale de transfert n'a rien à faire dans le
+// premier rendu du rail.
+const TransferTradesModal = lazy(() => import("./TransferTradesModal"));
 
 /**
  * LA TEINTE D'UN COMPTE — celle du THÈME, pas une couleur figée.
@@ -71,31 +57,6 @@ const ACCOUNT_TINT = {
   ring: "rgb(var(--tv-accent-rgb) / 0.22)",
 };
 
-const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
-  User,
-  Building2,
-  FlaskConical,
-  Zap,
-  Briefcase,
-  Flame,
-  Star,
-  Shield,
-  Target,
-  TrendingUp,
-  Layers,
-  Compass,
-  Home,
-  CreditCard,
-  Globe,
-};
-
-const AVAILABLE_ICONS = Object.keys(ICON_MAP);
-
-function getAccountIcon(a: Account) {
-  if (a.icon && ICON_MAP[a.icon]) return ICON_MAP[a.icon];
-  return TYPE_ICON[a.type] ?? User;
-}
-
 export default function AccountSwitcher({
   compact = false,
   variant = "bar",
@@ -108,8 +69,11 @@ export default function AccountSwitcher({
   variant?: "bar" | "fab" | "card";
   balance?: number;
 }) {
-  const { accounts, activeAccount, switchAccount, removeAccount } = useAccounts();
-  const { accountLimit } = useSubscription();
+  const { accounts, activeAccount, mainAccount, switchAccount, removeAccount, setMain } =
+    useAccounts();
+  const { toast } = useToast();
+  const { accountLimit, can } = useSubscription();
+  const canTransfer = can("accountTransfer");
   const computedBalance = balanceProp ?? activeAccount?.startingBalance ?? 0;
   useCurrency(); // redessine le solde quand la devise change
   const fmtBalance = formatMoney(computedBalance, { whole: true });
@@ -125,6 +89,7 @@ export default function AccountSwitcher({
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
   const [createOpen, setCreateOpen] = useState(false);
+  const [transferOpen, setTransferOpen] = useState(false);
   const [deleting, setDeleting] = useState<Account | null>(null);
   const [editingModalAccount, setEditingModalAccount] = useState<Account | null>(null);
 
@@ -151,114 +116,197 @@ export default function AccountSwitcher({
    * (transform + overflow-hidden) était clippé/invisible — le bug « le sous-
    * compte ne s'ouvre pas ». Le portal n'est jamais contenu ni clippé.
    */
-  const AccountSheet = ({ open, onClose }: { open: boolean; onClose: () => void }) => (
-    <Modal
-      open={open}
-      onClose={onClose}
-      wrapperClassName="z-[var(--tv-z-sheet)]"
-      className="md:max-w-sm max-h-[80vh] overflow-hidden"
-    >
-      <div className="px-5 py-4 border-b border-white/[0.06]">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="tv-title">{t("account.title")}</h2>
-            <p className="tv-row-label">{t("account.subtitle")}</p>
-          </div>
+  const AccountSheet = ({ open, onClose }: { open: boolean; onClose: () => void }) => {
+    // LE COMPTE PRINCIPAL D'ABORD — la référence, « le chef » — puis les
+    // sous-comptes. L'ordre de création ne dit rien de l'importance d'un
+    // compte ; la couronne, si.
+    const subs = accounts.filter((a) => a.id !== mainAccount?.id);
+    const row = (a: Account, isMain: boolean) => {
+      const Icon = getAccountIcon(a);
+      const active = a.id === activeAccount?.id;
+      return (
+        <div
+          key={a.id}
+          className={cn(
+            "group flex w-full items-center gap-2.5 rounded-xl border px-2.5 py-2 transition-colors",
+            active
+              ? "border-[var(--tv-border-accent)] bg-[rgb(var(--tv-accent-rgb)/0.07)]"
+              : "border-transparent hover:bg-white/[0.05]",
+          )}
+        >
           <button
-            onClick={onClose}
-            aria-label={t("common.close")}
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:bg-white/[0.05]"
+            onClick={() => {
+              switchAccount(a.id);
+              onClose();
+            }}
+            className="flex min-w-0 flex-1 items-center gap-2.5 text-left"
           >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-      <div className="p-3 max-h-[60vh] overflow-y-auto">
-        {accounts.map((a) => {
-          const Icon = getAccountIcon(a);
-          const active = a.id === activeAccount?.id;
-          return (
-            <div
-              key={a.id}
-              className={cn(
-                "group w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl transition-colors",
-                active ? "bg-cyan-500/15" : "hover:bg-white/[0.06]",
-              )}
+            <span
+              className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
+              style={{ background: ACCOUNT_TINT.bg, color: ACCOUNT_TINT.fg }}
             >
+              <Icon className="h-3.5 w-3.5" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="flex items-center gap-1.5">
+                <span
+                  className={cn(
+                    "truncate text-sm font-semibold",
+                    active ? "text-white" : "text-slate-300",
+                  )}
+                >
+                  {a.name}
+                </span>
+                {isMain && (
+                  <span className="tv-label inline-flex shrink-0 items-center gap-1 rounded-md bg-[rgb(var(--tv-accent-rgb)/0.12)] px-1.5 py-0.5 text-[var(--tv-accent)]">
+                    <Crown className="h-2.5 w-2.5" />
+                    {t("account.mainBadge")}
+                  </span>
+                )}
+              </span>
+              <span className="tv-figure block text-[11px] font-semibold text-slate-500">
+                {formatMoney(a.startingBalance, { whole: true })} · {t(TYPE_LABEL_KEY[a.type])}
+              </span>
+            </span>
+          </button>
+          {/* Les commandes d'un compte, visibles au survol (toujours au
+              clavier) : rien ne s'empile sur le nom au repos. */}
+          <div className="flex shrink-0 items-center gap-0.5 opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100">
+            {!isMain && (
+              <button
+                onClick={async () => {
+                  try {
+                    await setMain(a.id);
+                    toast(t("account.mainSet").replace("{name}", a.name), "success");
+                  } catch {
+                    toast(t("account.mainSetFailed"), "error");
+                  }
+                }}
+                aria-label={t("account.makeMain")}
+                title={t("account.makeMain")}
+                className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 hover:bg-white/[0.08] hover:text-[var(--tv-accent)]"
+              >
+                <Crown className="h-3.5 w-3.5" />
+              </button>
+            )}
+            <button
+              onClick={() => {
+                setEditingModalAccount(a);
+                onClose();
+              }}
+              aria-label={t("account.edit")}
+              title={t("account.edit")}
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 hover:bg-white/[0.08] hover:text-white"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </button>
+            {accounts.length > 1 && (
               <button
                 onClick={() => {
-                  switchAccount(a.id);
+                  setDeleting(a);
                   onClose();
                 }}
-                className="flex-1 flex items-center gap-2.5 min-w-0 text-left"
+                aria-label={t("account.delete")}
+                title={t("account.delete")}
+                className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-600 hover:bg-red-500/10 hover:text-red-400"
               >
-                <span
-                  className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-                  style={{ background: ACCOUNT_TINT.bg, color: ACCOUNT_TINT.fg }}
-                >
-                  <Icon className="w-3.5 h-3.5" />
-                </span>
-                <span className="flex-1 min-w-0">
-                  <span
-                    className={cn(
-                      "block text-sm font-medium truncate",
-                      active ? "text-white" : "text-slate-300",
-                    )}
-                  >
-                    {a.name}
-                  </span>
-                  <span className="block text-[10px] text-slate-500">
-                    {t(TYPE_LABEL_KEY[a.type])}
-                  </span>
-                </span>
+                <Trash2 className="h-3.5 w-3.5" />
               </button>
-              {accounts.length > 1 && (
-                <button
-                  onClick={() => {
-                    setDeleting(a);
-                    onClose();
-                  }}
-                  aria-label={t("account.delete")}
-                  className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-slate-600 opacity-0 group-hover:opacity-100 hover:text-red-400 hover:bg-red-500/10 transition"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              )}
-              {active && <Check className="w-4 h-4 text-cyan-300 shrink-0" />}
+            )}
+          </div>
+          {active && <Check className="h-4 w-4 shrink-0 text-[var(--tv-accent)]" />}
+        </div>
+      );
+    };
+    return (
+      <Modal
+        open={open}
+        onClose={onClose}
+        wrapperClassName="z-[var(--tv-z-sheet)]"
+        className="md:max-w-md max-h-[84vh] overflow-hidden"
+      >
+        <div className="border-b border-white/[0.06] px-5 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="tv-title">{t("account.title")}</h2>
+              <p className="tv-row-label">{t("account.subtitleMain")}</p>
             </div>
-          );
-        })}
-        <div className="h-px bg-white/[0.06] my-1.5 mx-1" />
-        {canAddAccount ? (
+            <button
+              onClick={onClose}
+              aria-label={t("common.close")}
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-white/[0.05]"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+        <div className="max-h-[56vh] space-y-3 overflow-y-auto p-3">
+          {mainAccount && (
+            <div>
+              <div className="tv-label px-1.5 pb-1.5 text-slate-500">
+                {t("account.mainSection")}
+              </div>
+              {row(mainAccount, true)}
+            </div>
+          )}
+          <div>
+            <div className="tv-label px-1.5 pb-1.5 text-slate-500">
+              {t("account.subSection")}
+              {subs.length > 0 && (
+                <span className="tv-figure ml-1.5 text-slate-600">{subs.length}</span>
+              )}
+            </div>
+            {subs.length === 0 ? (
+              <p className="px-1.5 pb-1 text-xs leading-snug text-slate-500">
+                {t("account.subEmpty")}
+              </p>
+            ) : (
+              <div className="space-y-1">{subs.map((a) => row(a, false))}</div>
+            )}
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-2 border-t border-white/[0.06] p-3">
+          {canAddAccount ? (
+            <button
+              onClick={() => {
+                setCreateOpen(true);
+                onClose();
+              }}
+              className="flex h-10 items-center justify-center gap-2 rounded-xl border border-[var(--tv-border-accent)] bg-[rgb(var(--tv-accent-rgb)/0.08)] text-[13px] font-semibold text-[var(--tv-accent)] transition-colors hover:bg-[rgb(var(--tv-accent-rgb)/0.14)]"
+            >
+              <Plus className="h-4 w-4" />
+              {t("account.newSub")}
+            </button>
+          ) : (
+            <button
+              onClick={() => {
+                goPro();
+                onClose();
+              }}
+              className="flex h-10 items-center justify-center gap-2 rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-2)] text-[13px] font-semibold text-slate-400 transition-colors hover:text-white"
+            >
+              <Lock className="h-4 w-4" />
+              {t("account.moreAccountsPro")}
+            </button>
+          )}
           <button
             onClick={() => {
-              setCreateOpen(true);
+              setTransferOpen(true);
               onClose();
             }}
-            className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-cyan-300 hover:bg-cyan-500/10 transition-colors"
+            disabled={accounts.length < 2}
+            title={accounts.length < 2 ? t("transfer.needTwo") : undefined}
+            className="flex h-10 items-center justify-center gap-2 rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-2)] text-[13px] font-semibold text-slate-200 transition-colors hover:border-[var(--tv-border-strong)] hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <span className="w-7 h-7 rounded-lg bg-cyan-500/10 flex items-center justify-center shrink-0">
-              <Plus className="w-4 h-4" />
-            </span>
-            <span className="text-sm font-semibold">{t("account.new")}</span>
+            {/* Hors Pro, la modale s'ouvre quand même (elle montre ce que
+                l'offre apporte) ; le cadenas l'annonce dès ici. */}
+            {canTransfer ? <Repeat2 className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
+            {t("transfer.open")}
           </button>
-        ) : (
-          <button
-            onClick={() => {
-              goPro();
-              onClose();
-            }}
-            className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-slate-400 hover:bg-cyan-500/10 hover:text-cyan-300 transition-colors"
-          >
-            <span className="w-7 h-7 rounded-lg bg-cyan-500/10 flex items-center justify-center shrink-0">
-              <Lock className="w-4 h-4" />
-            </span>
-            <span className="text-sm font-semibold">{t("account.moreAccountsPro")}</span>
-          </button>
-        )}
-      </div>
-    </Modal>
-  );
+        </div>
+      </Modal>
+    );
+  };
 
   // Mobile FAB: a floating circular button (bottom-left, mirroring the AI Coach)
   // that opens a premium bottom sheet of tappable account cards — one tap to
@@ -374,7 +422,9 @@ export default function AccountSwitcher({
                               {a.name}
                             </span>
                             <span className="block text-[10px] text-slate-500 truncate">
-                              {t(TYPE_LABEL_KEY[a.type])}
+                              {a.id === mainAccount?.id
+                                ? `${t("account.mainBadge")} · ${t(TYPE_LABEL_KEY[a.type])}`
+                                : t(TYPE_LABEL_KEY[a.type])}
                             </span>
                           </span>
                         </button>
@@ -438,6 +488,20 @@ export default function AccountSwitcher({
                       </span>
                     </button>
                   )}
+                  {accounts.length > 1 && (
+                    <button
+                      onClick={() => {
+                        setTransferOpen(true);
+                        setOpen(false);
+                      }}
+                      className="flex min-h-[92px] flex-col items-center justify-center gap-2 rounded-2xl border border-[var(--tv-border)] bg-white/[0.03] p-3.5 text-slate-300 transition active:scale-[0.97]"
+                    >
+                      {canTransfer ? <Repeat2 className="h-5 w-5" /> : <Lock className="h-5 w-5" />}
+                      <span className="text-center text-xs font-semibold">
+                        {t("transfer.open")}
+                      </span>
+                    </button>
+                  )}
                 </div>
               </div>
             </div>,
@@ -445,6 +509,11 @@ export default function AccountSwitcher({
           )}
 
         {createOpen && <CreateAccountModal onClose={() => setCreateOpen(false)} />}
+        {transferOpen && (
+          <Suspense fallback={null}>
+            <TransferTradesModal onClose={() => setTransferOpen(false)} />
+          </Suspense>
+        )}
         {editingModalAccount && (
           <CreateAccountModal
             edit={editingModalAccount}
@@ -510,14 +579,16 @@ export default function AccountSwitcher({
           }
           aria-label={`${activeAccount.name} — ${fmtBalance} — ${t("account.switch")}`}
           className={cn(
-            "tv-interactive group/acc flex items-center rounded-2xl text-left",
+            // Un carré aux angles adoucis, comme les entrées du rail : la
+            // même forme pliée et dépliée (la grammaire de Lucid).
+            "tv-interactive group/acc flex items-center rounded-xl text-left",
             "border border-[var(--tv-border)] bg-[var(--tv-plate-2)]",
             "hover:border-[var(--tv-border-strong)] hover:bg-[var(--tv-plate-3)]",
             compact ? "relative h-10 w-10 justify-center p-0" : "w-full gap-2.5 px-2.5 py-2",
           )}
         >
           <span
-            className="grid h-7 w-7 shrink-0 place-items-center rounded-xl border"
+            className="grid h-7 w-7 shrink-0 place-items-center rounded-lg border"
             style={{
               background: ACCOUNT_TINT.bg,
               color: ACCOUNT_TINT.fg,
@@ -556,6 +627,11 @@ export default function AccountSwitcher({
         </button>
         <AccountSheet open={open} onClose={() => setOpen(false)} />
         {createOpen && <CreateAccountModal onClose={() => setCreateOpen(false)} />}
+        {transferOpen && (
+          <Suspense fallback={null}>
+            <TransferTradesModal onClose={() => setTransferOpen(false)} />
+          </Suspense>
+        )}
         {editingModalAccount && (
           <CreateAccountModal
             edit={editingModalAccount}
@@ -662,6 +738,11 @@ export default function AccountSwitcher({
       <AccountSheet open={open} onClose={() => setOpen(false)} />
 
       {createOpen && <CreateAccountModal onClose={() => setCreateOpen(false)} />}
+      {transferOpen && (
+        <Suspense fallback={null}>
+          <TransferTradesModal onClose={() => setTransferOpen(false)} />
+        </Suspense>
+      )}
       {editingModalAccount && (
         <CreateAccountModal
           edit={editingModalAccount}
@@ -688,7 +769,7 @@ export default function AccountSwitcher({
 
 /** Two-step destructive confirmation: a first "I understand" gate, then the
  *  actual red delete — trades and history go with the account (FK cascade). */
-function DeleteAccountModal({
+export function DeleteAccountModal({
   account,
   onConfirm,
   onClose,
@@ -767,7 +848,7 @@ function DeleteAccountModal({
   );
 }
 
-function CreateAccountModal({ onClose, edit }: { onClose: () => void; edit?: Account }) {
+export function CreateAccountModal({ onClose, edit }: { onClose: () => void; edit?: Account }) {
   const { addAccount, editAccount } = useAccounts();
   const { t, lang } = useT();
   const { toast } = useToast();

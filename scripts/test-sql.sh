@@ -20,6 +20,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
 MIGRATION="supabase/migrations/20260829090000_billing_and_quota_hardening.sql"
+BROKER_MIGRATION="supabase/migrations/20261008120000_broker_sync.sql"
 OWN_CLUSTER=0
 CLUSTER_DIR=""
 
@@ -123,6 +124,24 @@ fi
 rm -f "$MIGRATION_LOG"
 echo "→ assertions de facturation et de quota"
 psql_run -f tests/sql/billing.sql
+echo "→ migration $BROKER_MIGRATION"
+MIGRATION_LOG=$(mktemp)
+if ! psql_run -f "$BROKER_MIGRATION" >"$MIGRATION_LOG" 2>&1; then
+  grep -v "^NOTICE:" "$MIGRATION_LOG" >&2 || true
+  rm -f "$MIGRATION_LOG"
+  echo "ÉCHEC : la migration broker_sync ne s'applique pas." >&2
+  exit 1
+fi
+# Rejouée : une migration additive doit pouvoir repasser sans erreur.
+if ! psql_run -f "$BROKER_MIGRATION" >"$MIGRATION_LOG" 2>&1; then
+  grep -v "^NOTICE:" "$MIGRATION_LOG" >&2 || true
+  rm -f "$MIGRATION_LOG"
+  echo "ÉCHEC : la migration broker_sync ne se rejoue pas." >&2
+  exit 1
+fi
+rm -f "$MIGRATION_LOG"
+echo "→ assertions synchro broker et recalibrage Pro"
+psql_run -f tests/sql/broker.sql
 echo "→ concurrence (deux sessions simultanées)"
 if [ -n "$CONN" ]; then
   PSQL_ARGS="$CONN" bash tests/sql/concurrency.sh

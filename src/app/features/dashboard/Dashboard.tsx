@@ -35,7 +35,15 @@ import { useAuth } from "@/app/contexts/AuthContext";
 import { useAccounts } from "@/app/contexts/AccountContext";
 import { useToast } from "@/app/contexts/ToastContext";
 import { useHasTradeDraft } from "@/app/utils/persistence";
-import { PageContainer, Metric, Card, Button, StreakCard, density } from "@/shared/ui";
+import {
+  PageContainer,
+  Metric,
+  Card,
+  Button,
+  StreakCard,
+  RollingFigure,
+  density,
+} from "@/shared/ui";
 import type { StreakPeriod } from "@/shared/ui";
 import { usePageActions, usePageLead } from "@/app/contexts/PageActionsContext";
 import CopilotBlock from "./CopilotBlock";
@@ -489,7 +497,8 @@ export default function Dashboard({
                             gain ? "text-emerald-400" : "text-red-400",
                           )}
                         >
-                          {formatPnl(stats.totalPnl)}
+                          {/* Le compteur Lucid : le P&L roule quand un trade le change. */}
+                          <RollingFigure value={formatPnl(stats.totalPnl)} />
                         </span>
                         {periodPct !== null && (
                           <span

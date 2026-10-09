@@ -251,6 +251,17 @@ export default {
         const { handleEconomicCalendarCron } = await import("./backend/economic-calendar.server");
         return await handleEconomicCalendarCron(request);
       }
+      // Rattrapage quotidien de la synchro broker. GET ET POST : Vercel Cron
+      // appelle en GET (voir `docs/ROADMAP.md` L1), un déclenchement manuel
+      // en POST. Le secret partagé est exigé dans les deux cas.
+      if (pathname === "/api/cron/broker-sync" && request.method === "POST") {
+        const { handleBrokerSyncCron } = await import("./backend/broker-sync.server");
+        return await handleBrokerSyncCron(request);
+      }
+      if (pathname === "/api/cron/broker-sync" && request.method === "GET") {
+        const { handleBrokerSyncCron } = await import("./backend/broker-sync.server");
+        return await handleBrokerSyncCron(request);
+      }
       if (pathname.startsWith("/api/cron/") && !pathname.startsWith("/api/cron/__")) {
         return new Response("Method not allowed", {
           status: 405,

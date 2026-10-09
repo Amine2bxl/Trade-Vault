@@ -229,6 +229,10 @@ Deno.serve(async (req) => {
       "email_log",
       "promo_redemptions",
       "subscriptions",
+      // Connexions broker : identifiants chiffrés, jetons, comptes rattachés.
+      // Avant `accounts`, qu'elles référencent.
+      "broker_accounts",
+      "broker_connections",
       "accounts",
     ];
     for (const table of userTables) {

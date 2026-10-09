@@ -26,6 +26,12 @@ import { useSubscription } from "../hooks/useSubscription";
 import { PlanLimitError } from "../utils/planLimits";
 import { factorFor } from "../trading/accountCalibration";
 import { clearTradesCache } from "../trading/useTrades";
+import {
+  setMainAccount as setMainAccountRow,
+  transferTrades as transferTradesRows,
+  type TransferRequest,
+  type TransferResult,
+} from "../store/tradeTransfer";
 
 interface Ctx {
   accounts: Account[];
@@ -48,6 +54,17 @@ interface Ctx {
   /** Recalibre un compte. Convertit les trades déjà encodés, une seule fois,
    *  puis rend leur nombre. */
   recalibrate: (id: string, targetBalance: number) => Promise<number>;
+  /** Le compte PRINCIPAL — la référence, « le chef » : celui qui porte
+   *  `is_default`, ou à défaut le plus ancien. */
+  mainAccount: Account | null;
+  /** Désigne le compte principal. */
+  setMain: (id: string) => Promise<void>;
+  /** Copie ou déplace des trades d'un compte vers un autre (voir
+   *  `store/tradeTransfer.ts`), puis rafraîchit le journal affiché. */
+  transfer: (
+    req: TransferRequest,
+    onProgress?: (done: number, total: number) => void,
+  ) => Promise<TransferResult>;
   refresh: () => Promise<void>;
 }
 
@@ -275,6 +292,48 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     [user, accounts, queryClient],
   );
 
+  const setMain = useCallback(
+    async (id: string) => {
+      if (!user) return;
+      if (!accounts.some((a) => a.id === id)) throw new Error("Unknown account");
+      // Optimiste : la couronne change de compte tout de suite, et revient si
+      // l'écriture échoue.
+      const snapshot = accounts;
+      setAccounts((prev) => prev.map((a) => ({ ...a, isDefault: a.id === id })));
+      try {
+        await setMainAccountRow(user.id, id);
+      } catch (e) {
+        setAccounts(snapshot);
+        throw e;
+      }
+    },
+    [user, accounts],
+  );
+
+  const transfer = useCallback(
+    async (req: TransferRequest, onProgress?: (done: number, total: number) => void) => {
+      if (!user) throw new Error("not authenticated");
+      // Deux comptes de CET utilisateur, et deux comptes distincts : première
+      // barrière, avant les filtres `user_id` des requêtes et la RLS.
+      const known = new Set(accounts.map((a) => a.id));
+      if (!known.has(req.sourceAccountId) || !known.has(req.targetAccountId)) {
+        throw new Error("Unknown account");
+      }
+      const result = await transferTradesRows(user.id, req, onProgress);
+      // Le transfert réécrit des lignes hors du cache : même purge que le
+      // recalibrage, miroir AVANT invalidation (voir plus haut).
+      clearTradesCache(user.id);
+      await queryClient.invalidateQueries({ queryKey: ["trades"] });
+      return result;
+    },
+    [user, accounts, queryClient],
+  );
+
+  const mainAccount = useMemo(
+    () => accounts.find((a) => a.isDefault) ?? accounts[0] ?? null,
+    [accounts],
+  );
+
   const refresh = useCallback(async () => {
     if (user) await load(user.id);
   }, [user, load]);
@@ -290,6 +349,9 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       editAccount,
       removeAccount,
       recalibrate,
+      mainAccount,
+      setMain,
+      transfer,
       refresh,
     }),
     [
@@ -301,6 +363,9 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       editAccount,
       removeAccount,
       recalibrate,
+      mainAccount,
+      setMain,
+      transfer,
       refresh,
     ],
   );

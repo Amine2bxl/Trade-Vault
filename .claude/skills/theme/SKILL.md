@@ -60,8 +60,8 @@ Tailwind d'origine.
 
 | Token | Valeur | Rôle |
 | --- | --- | --- |
-| `--tv-accent` | `#22e08a` (lucid par défaut) | Accent de marque, themeable à chaud |
-| `--tv-highlight` | `#5bf0ab` | Le cran clair : mot accentué d'un titre, icône active |
+| `--tv-accent` | `#31d68a` (lucid par défaut, relevé sur Lucid) | Accent de marque, themeable à chaud |
+| `--tv-highlight` | `#6be3a8` | Le cran clair : mot accentué d'un titre, icône active |
 | `--tv-cta` / `-hover` / `-active` | oklch dérivé | **La seule surface pleinement colorée** |
 | `.tv-accent-fill` | `--tv-cta` + texte blanc | Bouton primaire, pastille active, vignette d'icône qui compte |
 
@@ -73,7 +73,7 @@ la marque, le CTA primaire, l'anneau de focus, le lien, l'état actif. Si un
 
 | Token | Valeur | Rôle |
 | --- | --- | --- |
-| `--tv-chart-green` | `#34d399` | Gagné — **ne bouge avec aucun thème** |
+| `--tv-chart-green` | `#31d68a` | Gagné — **ne bouge avec aucun thème** (le vert de Lucid) |
 | `--tv-chart-red` | `#f87171` | Perdu — idem |
 | `--tv-success` / `--tv-warning` / `--tv-danger` | `#10b981` / `#f59e0b` / `#ef4444` | États d'interface |
 
