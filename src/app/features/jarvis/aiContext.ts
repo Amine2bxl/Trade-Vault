@@ -1,5 +1,6 @@
 import type { Trade, TradeStats } from "@/app/types";
 import { computeStats, toInsightTradesPayload } from "@/domain/tradeCalcs";
+import { newestFirst } from "@/app/trading/tradeOrder";
 import { computeBehaviorSignals } from "./behaviorSignals";
 import type { TradingRule } from "@/app/trading/tradingRules";
 import { remember } from "@/modules/ai/memory";
@@ -20,6 +21,23 @@ import type { AIUserContext } from "@/modules/ai/context";
  * Memory is best-effort: any DB hiccup degrades gracefully to "no memory"
  * rather than blocking the coach. RLS (owner-only) still applies to every read.
  */
+
+/** Combien de trades récents servent d'exemples au coach (et dont on charge
+ *  les intentions / réflexions). Une seule constante pour les deux usages. */
+export const RECENT_TRADES_FOR_COACH = 25;
+
+/**
+ * Les trades les plus RÉCENTS du journal, du plus récent au plus ancien.
+ *
+ * Le journal client est trié du plus récent au plus ancien (`loadUserTrades`,
+ * insertion optimiste en tête, temps réel retrié). On ne se fie pas pour autant
+ * à l'ordre reçu : un tri explicite par date puis heure d'entrée (`newestFirst`,
+ * la règle du journal) garantit que « récent » veut dire récent, même si un
+ * appelant passe une liste dans un autre ordre.
+ */
+export function recentTrades(trades: Trade[], n = RECENT_TRADES_FOR_COACH): Trade[] {
+  return [...trades].sort(newestFirst).slice(0, n);
+}
 
 export interface CoachTurn {
   role: "user" | "assistant";
@@ -278,6 +296,11 @@ export function buildCoachV1Payload(opts: {
     calibration,
     simulation,
   } = opts;
+  // Le profil part dans son propre champ. Le souvenir `profile` semé depuis
+  // l'onboarding (`seedProfileMemory`) dit la même chose : l'envoyer aussi
+  // doublait le profil dans le prompt et prenait une des huit places de la
+  // mémoire à une leçon ou un engagement (bug B15).
+  const profileLine = describeProfile(onboarding, jarvisProfile)?.slice(0, 600);
   // UNE seule exécution, réutilisée pour les erreurs récurrentes ET l'instantané.
   const stats = trades.length ? computeStats(trades) : null;
   const mistakes = stats
@@ -306,14 +329,19 @@ export function buildCoachV1Payload(opts: {
     // Les 25 derniers trades suffisent pour les exemples du coach (les stats et
     // signaux portent la vue d'ensemble). Un payload plus léger = l'IA répond
     // plus vite et reste sous les limites de temps (serverless Vercel ~10s).
-    trades: toInsightTradesPayload(trades.slice(-25)),
+    //
+    // `slice(0, 25)`, PAS `slice(-25)` : le journal est trié du plus RÉCENT au
+    // plus ancien (`app/store/trades.ts`, `trading/tradeOrder.ts`). La fin du
+    // tableau, ce sont les trades les plus ANCIENS — Jarvis recevait sous le
+    // titre « RECENT TRADES » le début de l'historique (bug B1).
+    trades: toInsightTradesPayload(recentTrades(trades)),
     stats: stats ? compactStats(stats) : undefined,
     // Mémoire : on n'envoie QUE les souvenirs utiles à cette question, sous
     // budget de tokens strict. Envoyer l'historique complet noierait le modèle
     // et ferait exploser la latence sans rien améliorer.
     memory:
       memory?.length && question
-        ? selectMemories(memory, question)
+        ? selectMemories(withoutProfileWhenSent(memory, profileLine), question)
             .selected.slice(0, 12)
             .map((m) => ({ kind: m.kind.slice(0, 20), content: m.content.slice(0, 300) }))
         : undefined,
@@ -341,7 +369,7 @@ export function buildCoachV1Payload(opts: {
       role: turn.role,
       content: turn.content.slice(0, AI_LIMITS.conversationContent),
     })),
-    profile: describeProfile(onboarding, jarvisProfile)?.slice(0, 600),
+    profile: profileLine,
     // Omise quand l'échelle est d'origine : ne pas encombrer le prompt d'un
     // bloc qui, dans ce cas, ne dit rien.
     calibration: calibration && calibration.scale !== 1 ? calibration : undefined,
@@ -351,6 +379,17 @@ export function buildCoachV1Payload(opts: {
     simulation,
     language,
   };
+}
+
+/**
+ * Retire les souvenirs de type `profile` quand le profil est déjà envoyé dans
+ * son champ dédié — une information, un seul endroit du prompt.
+ */
+export function withoutProfileWhenSent<T extends { kind: string }>(
+  memory: T[],
+  profileLine: string | undefined,
+): T[] {
+  return profileLine ? memory.filter((m) => m.kind !== "profile") : memory;
 }
 
 export async function seedProfileMemory(userId: string): Promise<void> {

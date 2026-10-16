@@ -33,24 +33,53 @@ type RunInput = Omit<AgentRun, "id" | "createdAt" | "inputSummary" | "outputSumm
 export async function recordAgentRun(run: RunInput): Promise<void> {
   const url = process.env.SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  // Environnement sans clé service (développement local, preview partielle) :
-  // on n'échoue pas, on ne mesure simplement pas.
   if (!url || !serviceKey) return;
+
+  const base = {
+    user_id: run.userId,
+    agent: run.agent,
+    intent: run.intent,
+    provider: run.provider || null,
+    model: run.model || null,
+    status: run.status,
+    input_tokens: run.inputTokens ?? null,
+    output_tokens: run.outputTokens ?? null,
+    latency_ms: run.latencyMs,
+    error: run.error ? run.error.slice(0, 500) : null,
+  };
+  // Les colonnes d'observabilité (migration `ai_agent_runs_observability`) :
+  // seulement celles que l'appelant renseigne.
+  const extended = {
+    ...(run.tier !== undefined ? { tier: run.tier } : {}),
+    ...(run.slot !== undefined ? { slot: run.slot } : {}),
+    ...(run.route !== undefined ? { route: run.route } : {}),
+    ...(run.tools !== undefined ? { tools: run.tools } : {}),
+    ...(run.toolCalls !== undefined ? { tool_calls: run.toolCalls } : {}),
+    ...(run.prefetch !== undefined ? { prefetch: run.prefetch } : {}),
+    ...(run.modelCalls !== undefined ? { model_calls: run.modelCalls } : {}),
+    ...(run.thinkingTokens !== undefined ? { thinking_tokens: run.thinkingTokens } : {}),
+    ...(run.cachedInputTokens !== undefined ? { cached_input_tokens: run.cachedInputTokens } : {}),
+    ...(run.costUsd !== undefined ? { cost_usd: run.costUsd } : {}),
+    ...(run.validation !== undefined ? { validation: run.validation } : {}),
+    ...(run.unsupportedFigures !== undefined
+      ? { unsupported_figures: run.unsupportedFigures }
+      : {}),
+    ...(run.contextChars !== undefined ? { context_chars: run.contextChars } : {}),
+  };
 
   try {
     const sb = createClient(url, serviceKey, { auth: { persistSession: false } });
-    await sb.from("ai_agent_runs").insert({
-      user_id: run.userId,
-      agent: run.agent,
-      intent: run.intent,
-      provider: run.provider || null,
-      model: run.model || null,
-      status: run.status,
-      input_tokens: run.inputTokens ?? null,
-      output_tokens: run.outputTokens ?? null,
-      latency_ms: run.latencyMs,
-      error: run.error ? run.error.slice(0, 500) : null,
-    });
+    const { error } = await sb.from("ai_agent_runs").insert({ ...base, ...extended });
+    /* BASE EN RETARD SUR LES MIGRATIONS. Tant que les colonnes d'observabilité
+       n'existent pas (PostgREST : colonne inconnue), on garde au moins la
+       mesure historique plutôt que de tout perdre. */
+    if (
+      error &&
+      Object.keys(extended).length &&
+      /column|schema cache|PGRST204|42703/i.test(`${error.code} ${error.message}`)
+    ) {
+      await sb.from("ai_agent_runs").insert(base);
+    }
   } catch (e) {
     console.warn("[telemetry] écriture ignorée", e);
   }

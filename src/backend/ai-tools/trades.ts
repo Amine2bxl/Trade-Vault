@@ -85,26 +85,95 @@ export interface LoadTradesOptions {
 }
 
 /**
- * Les trades d'UN utilisateur, du plus récent au plus ancien.
+ * Taille d'une page de lecture — la même que le journal client
+ * (`app/store/trades.ts`).
+ *
+ * PostgREST plafonne TOUTE réponse à `db.max_rows` (1 000 chez Supabase) sans
+ * le signaler. Une lecture sans `.range()` rendait donc les mille trades les
+ * plus récents et calculait des statistiques « sur cinq ans » à partir d'eux :
+ * Jarvis citait un win rate différent de celui du tableau de bord, qui pagine
+ * (bug B7 de l'audit).
+ */
+export const TRADES_PAGE_SIZE = 1000;
+
+/** Même garde-fou que le journal client : au-delà, on s'arrête et on le dit. */
+export const TRADES_HARD_CAP = 50_000;
+
+export interface LoadedTrades {
+  trades: Trade[];
+  /** `true` quand le garde-fou a coupé l'historique — à DIRE au modèle. */
+  truncated: boolean;
+}
+
+/**
+ * Les trades d'UN utilisateur, du plus récent au plus ancien, EN ENTIER.
  *
  * `eq("user_id", userId)` est non négociable : le client de service contourne
  * la RLS, donc le cloisonnement est porté par cette ligne. Elle est ici, dans
  * l'unique chemin de lecture des outils, et nulle part ailleurs.
+ *
+ * Tri stable `trade_date` puis `id` : sans départage, deux pages peuvent rendre
+ * la même ligne et en sauter une autre.
  */
+export async function loadTradesWithMeta(
+  sb: AnyClient,
+  userId: string,
+  opts: LoadTradesOptions = {},
+): Promise<LoadedTrades> {
+  const trades: Trade[] = [];
+  for (let from = 0; from < TRADES_HARD_CAP; from += TRADES_PAGE_SIZE) {
+    let q = sb.from("trades").select(TRADE_COLS).eq("user_id", userId);
+    if (opts.accountId) q = q.eq("account_id", opts.accountId);
+    if (opts.since) q = q.gte("trade_date", opts.since);
+    if (opts.until) q = q.lte("trade_date", opts.until);
+    const { data, error } = await q
+      .order("trade_date", { ascending: false })
+      .order("id", { ascending: false })
+      .range(from, from + TRADES_PAGE_SIZE - 1);
+    if (error) throw new Error(error.message);
+    const rows = (data ?? []) as TradeRow[];
+    for (const r of rows) trades.push(rowToTrade(r));
+    if (rows.length < TRADES_PAGE_SIZE) return { trades, truncated: false };
+  }
+  console.warn(`[ai-tools] historique tronqué à ${TRADES_HARD_CAP} trades pour ${userId}`);
+  return { trades, truncated: true };
+}
+
+/** Les trades seuls — pour les appelants qui n'ont pas à signaler la coupure. */
 export async function loadTrades(
   sb: AnyClient,
   userId: string,
   opts: LoadTradesOptions = {},
 ): Promise<Trade[]> {
-  let q = sb
+  return (await loadTradesWithMeta(sb, userId, opts)).trades;
+}
+
+/**
+ * Les NOTES de quelques trades, lues à part.
+ *
+ * `TRADE_COLS` ne les sélectionne pas, et c'est voulu : aucun moteur ne les
+ * consomme, et les lire pour cinq ans d'historique ferait transiter des
+ * mégaoctets de texte pour en rendre une poignée. Mais `get_trades` et
+ * `get_day` PROMETTENT les notes au modèle — et les rendaient toujours `null`
+ * (bug B2) : Jarvis pouvait dire « tu n'as rien noté » à un trader qui avait
+ * tout écrit. On lit donc les notes des seules lignes renvoyées, bornées.
+ */
+export async function loadTradeNotes(
+  sb: AnyClient,
+  userId: string,
+  ids: readonly string[],
+): Promise<Map<string, string>> {
+  const notes = new Map<string, string>();
+  const unique = [...new Set(ids.filter(Boolean))];
+  if (unique.length === 0) return notes;
+  const { data, error } = await sb
     .from("trades")
-    .select(TRADE_COLS)
+    .select("id, notes")
     .eq("user_id", userId)
-    .order("trade_date", { ascending: false });
-  if (opts.accountId) q = q.eq("account_id", opts.accountId);
-  if (opts.since) q = q.gte("trade_date", opts.since);
-  if (opts.until) q = q.lte("trade_date", opts.until);
-  const { data, error } = await q;
+    .in("id", unique);
   if (error) throw new Error(error.message);
-  return ((data ?? []) as TradeRow[]).map(rowToTrade);
+  for (const r of (data ?? []) as { id: string; notes: string | null }[]) {
+    if (typeof r.notes === "string" && r.notes.trim()) notes.set(r.id, r.notes);
+  }
+  return notes;
 }

@@ -1,3 +1,5 @@
+import { routeQuestion, type UiIntent } from "@/modules/ai/router/route";
+
 /**
  * DE QUOI PARLE LA QUESTION — pour que Jarvis annonce CE QU'IL FAIT.
  *
@@ -8,42 +10,19 @@
  * consulter. Une classification simple et déterministe — pas de tirage au
  * hasard dans une liste de phrases.
  */
-export type JarvisIntent =
-  | "trade"
-  | "day"
-  | "performance"
-  | "risk"
-  | "psychology"
-  | "goal"
-  | "general";
+export type JarvisIntent = UiIntent;
 
-const RULES: [JarvisIntent, RegExp][] = [
-  [
-    "day",
-    /\b(hier|yesterday|aujourd'?hui|today|lundi|mardi|mercredi|jeudi|vendredi|monday|tuesday|wednesday|thursday|friday|semaine derni|last week|\d{1,2}\/\d{1,2}|le \d{1,2}\b|note)/i,
-  ],
-  [
-    "trade",
-    /\b(ce trade|this trade|dernier trade|last trade|mon trade|my trade|entr[ée]e|entry|sortie|exit|setup)/i,
-  ],
-  [
-    "risk",
-    /\b(risque|risk|stop|taille|size|lot|levier|leverage|ruine|ruin|drawdown|perte max|max loss)/i,
-  ],
-  [
-    "psychology",
-    /\b(erreur|mistake|[ée]motion|tilt|revenge|fomo|discipline|stress|peur|fear|confiance|confidence)/i,
-  ],
-  ["goal", /\b(objectif|goal|target|cible|challenge|prop|funded|pass)/i],
-  [
-    "performance",
-    /\b(performance|win ?rate|p&l|pnl|profit|r[ée]sultat|stat|edge|mois|month|semaine|week|progress|am[ée]lior)/i,
-  ],
-];
-
+/**
+ * L'intention AFFICHÉE, dérivée du routeur unifié (`modules/ai/router/route.ts`).
+ *
+ * Ce fichier tenait son propre lexique ; la mémoire en tenait un autre, et le
+ * routage d'agents un troisième — trois lectures de la même question qui ne
+ * s'accordaient pas. Il n'y en a plus qu'une : celle qui décide aussi des
+ * données lues et du modèle choisi. Les étapes affichées disent donc ce que
+ * Jarvis consulte réellement.
+ */
 export function classifyQuestion(q: string): JarvisIntent {
-  for (const [intent, re] of RULES) if (re.test(q)) return intent;
-  return "general";
+  return routeQuestion(q).uiIntent;
 }
 
 /** Les clés d'étapes par intention (textes dans les dictionnaires i18n). */

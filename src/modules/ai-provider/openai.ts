@@ -1,6 +1,7 @@
 import {
   ProviderHttpError,
   parseRetryAfterMs,
+  type AIMessage,
   type AIProvider,
   type AIRequest,
   type AIResponse,
@@ -127,8 +128,72 @@ interface OpenAIToolCall {
   function?: { name?: string; arguments?: string };
 }
 interface OpenAIChoice {
-  message?: { content?: string | null; tool_calls?: OpenAIToolCall[] };
+  message?: {
+    content?: string | null;
+    tool_calls?: OpenAIToolCall[];
+    /** Raisonnement renvoyé par certains modèles (Groq) — à rejouer avec le tour. */
+    reasoning?: string;
+    /** Détails de raisonnement signés (OpenRouter) — idem. */
+    reasoning_details?: unknown;
+  };
   finish_reason?: string;
+}
+
+/** Le tour natif OpenAI-compatible, tel que rejoué au tour suivant. */
+interface OpenAITurn {
+  content: string | null;
+  tool_calls: { id: string; type: "function"; function: { name: string; arguments: string } }[];
+  reasoning?: string;
+  reasoning_details?: unknown;
+}
+
+/**
+ * Les messages du runtime → `messages` OpenAI-compatibles.
+ *
+ * Un tour natif de CE fournisseur est rejoué avec ses `tool_calls` (arguments
+ * en chaîne, tels que reçus) ; ses résultats partent en messages `tool`, un par
+ * appel, juste derrière. Un tour d'outils d'un autre fournisseur reste du texte.
+ */
+export function toOpenAIMessages(messages: AIMessage[], providerId: string): unknown[] {
+  const out: unknown[] = [];
+  let lastNative = false;
+  for (const m of messages) {
+    const native =
+      m.role === "assistant" &&
+      m.providerTurn?.provider === providerId &&
+      !!m.providerTurn.raw &&
+      typeof m.providerTurn.raw === "object";
+    if (native) {
+      const t = m.providerTurn!.raw as OpenAITurn;
+      out.push({
+        role: "assistant",
+        content: t.content ?? null,
+        tool_calls: t.tool_calls,
+        ...(providerId === "groq" && t.reasoning ? { reasoning: t.reasoning } : {}),
+        ...(providerId === "openrouter" && t.reasoning_details
+          ? { reasoning_details: t.reasoning_details }
+          : {}),
+      });
+      lastNative = true;
+      continue;
+    }
+    if (m.toolResults?.length && lastNative) {
+      for (const r of m.toolResults) {
+        out.push({
+          role: "tool",
+          tool_call_id: r.id,
+          content: JSON.stringify(
+            r.error !== undefined ? { error: r.error } : { output: r.output ?? null },
+          ),
+        });
+      }
+      lastNative = false;
+      continue;
+    }
+    lastNative = false;
+    out.push({ role: m.role, content: m.content });
+  }
+  return out;
 }
 interface OpenAIResponse {
   choices?: OpenAIChoice[];
@@ -148,6 +213,16 @@ function mapFinish(reason: string | undefined): FinishReason {
       return "content_filter";
     default:
       return "unknown";
+  }
+}
+
+function validJson(raw: string): boolean {
+  if (!raw.trim()) return false;
+  try {
+    const v: unknown = JSON.parse(raw);
+    return !!v && typeof v === "object";
+  } catch {
+    return false;
   }
 }
 
@@ -215,7 +290,7 @@ function createOpenAICompatibleProvider(cfg: OpenAIProviderConfig): AIProvider {
               })),
               tool_choice: req.toolChoice ?? "auto",
             }),
-            messages: req.messages.map((m) => ({ role: m.role, content: m.content })),
+            messages: toOpenAIMessages(req.messages, cfg.id),
           }),
           ...(req.signal ? { signal: req.signal } : {}),
         });
@@ -244,13 +319,34 @@ function createOpenAICompatibleProvider(cfg: OpenAIProviderConfig): AIProvider {
         const choice = json.choices?.[0];
         const text = choice?.message?.content ?? "";
 
-        const toolCalls: ProviderToolCall[] | undefined = choice?.message?.tool_calls
-          ?.filter((c) => c.function?.name)
-          .map((c) => ({
-            id: c.id,
-            name: c.function?.name ?? "",
-            arguments: parseArguments(c.function?.arguments),
-          }));
+        const raw = (choice?.message?.tool_calls ?? []).filter((c) => c.function?.name);
+        // Un appel sans id reçoit un id stable, utilisé des DEUX côtés (le tour
+        // rejoué et le message `tool`) — sinon l'API refuse la paire.
+        const withIds = raw.map((c, i) => ({
+          id: c.id || `tvcall_${i}`,
+          name: c.function?.name ?? "",
+          rawArgs: c.function?.arguments ?? "",
+        }));
+        const toolCalls: ProviderToolCall[] = withIds.map((c) => ({
+          id: c.id,
+          name: c.name,
+          arguments: parseArguments(c.rawArgs),
+        }));
+        const turn: OpenAITurn | undefined = toolCalls.length
+          ? {
+              content: text || null,
+              tool_calls: withIds.map((c) => ({
+                id: c.id,
+                type: "function",
+                // La chaîne telle que reçue ; une chaîne illisible devient « {} ».
+                function: { name: c.name, arguments: validJson(c.rawArgs) ? c.rawArgs : "{}" },
+              })),
+              ...(choice?.message?.reasoning ? { reasoning: choice.message.reasoning } : {}),
+              ...(choice?.message?.reasoning_details
+                ? { reasoning_details: choice.message.reasoning_details }
+                : {}),
+            }
+          : undefined;
 
         return {
           text,
@@ -260,7 +356,10 @@ function createOpenAICompatibleProvider(cfg: OpenAIProviderConfig): AIProvider {
             inputTokens: json.usage?.prompt_tokens,
             outputTokens: json.usage?.completion_tokens,
           },
-          ...(toolCalls?.length && { toolCalls }),
+          ...(toolCalls.length && {
+            toolCalls,
+            providerTurn: { provider: cfg.id, model, raw: turn },
+          }),
           finishReason: mapFinish(choice?.finish_reason),
         };
       };
@@ -284,10 +383,13 @@ function createOpenAICompatibleProvider(cfg: OpenAIProviderConfig): AIProvider {
 
       const known = discovered.get(cfg.id);
       const configured = getModel();
+      // Un modèle DEMANDÉ (niveau de difficulté, ou épinglé par une boucle
+      // d'outils) passe avant le modèle découvert.
       const first =
-        known && Date.now() < known.until && !isModelRefused(cfg.id, known.model)
+        req.model ??
+        (known && Date.now() < known.until && !isModelRefused(cfg.id, known.model)
           ? known.model
-          : configured;
+          : configured);
       const tried = new Set<string>();
       let lastErr: unknown;
       if (!isModelRefused(cfg.id, first)) {

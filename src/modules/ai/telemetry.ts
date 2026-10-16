@@ -35,6 +35,31 @@ export interface AgentRun {
   outputSummary?: string;
   error?: string;
   createdAt: string;
+  /**
+   * OBSERVABILITÉ D'UNE QUESTION (LOT 2) — des métadonnées, jamais de contenu.
+   * Tous optionnels : un appelant historique (extraction de mémoire) ne les
+   * renseigne pas.
+   */
+  /** Niveau de difficulté 1–4 et emplacement de modèle choisi. */
+  tier?: number;
+  slot?: string;
+  /** Domaines routés, ambiguïté, routage par modèle, étiquettes du lexique. */
+  route?: { domains: string[]; ambiguous: boolean; modelRouted: boolean; signals: string[] };
+  /** Outils exécutés par la boucle, et lectures préparées. */
+  tools?: string[];
+  toolCalls?: number;
+  prefetch?: { tool: string; ok: boolean; ms: number }[];
+  /** Appels modèle de la question (routage, boucle, réparation). */
+  modelCalls?: number;
+  thinkingTokens?: number;
+  cachedInputTokens?: number;
+  /** Coût estimé en $ (`null` = prix d'un modèle inconnu). */
+  costUsd?: number | null;
+  /** Résultat de la vérification des chiffres. */
+  validation?: "ok" | "repaired" | "flagged" | "skipped";
+  unsupportedFigures?: number;
+  /** Taille du contexte envoyé au premier appel, en caractères. */
+  contextChars?: number;
 }
 
 export interface TelemetryRecorder {

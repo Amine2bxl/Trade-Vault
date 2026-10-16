@@ -16,12 +16,13 @@ import {
   type AIRequest,
   type AIResponse,
 } from "@/modules/ai-provider";
-import type { ToolContext } from "./tools/types";
+import type { ToolContext, ToolResult } from "./tools/types";
 import {
   executeToolCalls,
   resultsToMessage,
   toProviderTools,
   toolCallsToAssistantMessage,
+  withCallIds,
 } from "./tools/runtime";
 import { routeCompletion } from "./runtime/router";
 import { circuit } from "./runtime/circuit";
@@ -31,6 +32,12 @@ export interface UsageEvent {
   model: string;
   inputTokens?: number;
   outputTokens?: number;
+  /** Tokens de réflexion — facturés comme de la sortie, jamais visibles. */
+  thinkingTokens?: number;
+  /** Part de l'entrée servie depuis le cache du fournisseur. */
+  cachedInputTokens?: number;
+  /** Part de l'entrée écrite dans le cache (comprise dans `inputTokens`). */
+  cacheWriteInputTokens?: number;
   latencyMs: number;
   ok: boolean;
 }
@@ -38,10 +45,14 @@ export interface UsageEvent {
 export interface GenerateOptions {
   /** Override provider resolution (e.g. force a model family, or inject a fake in tests). */
   provider?: AIProvider;
+  /** Une chaîne de fournisseurs explicite — celle du niveau de difficulté (`runtime/tiers.ts`). */
+  providers?: AIProvider[];
   /** Fired once per provider call — the seam for `ai_agent_runs` telemetry. */
   onUsage?: (event: UsageEvent) => void;
   /** Contexte d'audit pour les logs runtime (jamais de contenu sensible). */
   meta?: { trades?: number };
+  /** Échéance absolue (epoch ms) de la question — voir `RouteOptions.deadline`. */
+  deadline?: number;
 }
 
 /** One completion, routed through the AI Runtime (circuit breaker, per-provider
@@ -49,7 +60,13 @@ export interface GenerateOptions {
  *  provider active échoue (quota, panne, timeout), bascule automatiquement sur
  *  la suivante configurée — aucune erreur ne se voit dans le chat. */
 export async function generate(req: AIRequest, opts: GenerateOptions = {}): Promise<AIResponse> {
-  return routeCompletion(req, { provider: opts.provider, meta: opts.meta, onUsage: opts.onUsage });
+  return routeCompletion(req, {
+    provider: opts.provider,
+    providers: opts.providers,
+    meta: opts.meta,
+    onUsage: opts.onUsage,
+    deadline: opts.deadline,
+  });
 }
 
 export interface ToolLoopOptions extends GenerateOptions {
@@ -61,16 +78,40 @@ export interface ToolLoopOptions extends GenerateOptions {
   maxIterations?: number;
   /** Allow side-effecting tools in this loop (default false — read-only). */
   allowSideEffects?: boolean;
+  /**
+   * La chaîne de fournisseurs du NIVEAU de la question (`runtime/tiers.ts`),
+   * chacun épinglé sur son modèle. Absent : les fournisseurs capables d'outils,
+   * dans l'ordre du registre.
+   */
+  providers?: AIProvider[];
+  /** Audit de chaque exécution d'outil (nom, durée, succès) — la télémétrie. */
+  onToolResult?: (result: ToolResult, durationMs: number) => void;
 }
 
 /**
  * Runs the full tool-calling loop against a tool-capable provider:
  * call → if the model requested tools, execute them and feed results back →
  * repeat until the model answers or `maxIterations` is hit (then one final
- * tool-free call forces a text answer). Provider-agnostic.
+ * call forces a text answer). Provider-agnostic.
+ *
+ * ── APPELS NATIFS ──────────────────────────────────────────────────────────
+ * Chaque tour d'outils est rendu au modèle sous DEUX formes : le texte
+ * universel (« Calling tools… », « TOOL RESULTS… ») et la forme native du
+ * fournisseur (appels avec ids, tour brut à rejouer, résultats). Un adaptateur
+ * qui sait la lire l'utilise — c'est ce qui préserve les signatures de
+ * réflexion Gemini/Claude ; tout autre fournisseur lit le texte.
+ *
+ * ── LE MODÈLE EST ÉPINGLÉ ──────────────────────────────────────────────────
+ * Après le premier tour, chaque appel redemande le modèle qui a SERVI : une
+ * signature de réflexion est liée au modèle qui l'a produite, et changer de
+ * modèle au milieu d'un raisonnement mélangerait deux réflexions.
  */
 export async function runWithTools(req: AIRequest, opts: ToolLoopOptions): Promise<AIResponse> {
-  const all = opts.provider ? [opts.provider] : resolveToolCapableProviders();
+  const all = opts.provider
+    ? [opts.provider]
+    : opts.providers
+      ? opts.providers.filter((p) => p.supportsTools)
+      : resolveToolCapableProviders();
   /* Les fournisseurs dont le circuit est ouvert passent en DERNIER, pas nulle
      part : chacun est appelé avec un fournisseur imposé, qui court-circuite le
      tri du routeur — sans ce classement, la boucle réessayait d'abord celui qui
@@ -99,7 +140,7 @@ export async function runWithTools(req: AIRequest, opts: ToolLoopOptions): Promi
     try {
       res = await generate(
         { ...req, messages, tools: manifest, toolChoice: "auto" },
-        { provider: candidate, onUsage: opts.onUsage },
+        { provider: candidate, onUsage: opts.onUsage, deadline: opts.deadline },
       );
       provider = candidate;
       break;
@@ -109,22 +150,44 @@ export async function runWithTools(req: AIRequest, opts: ToolLoopOptions): Promi
     }
   }
   if (!res) throw lastErr ?? new Error("No tool-capable AI provider answered.");
+  // Le modèle qui a servi le premier tour sert toute la boucle.
+  const pinned: AIRequest = { ...req, ...(res.model ? { model: res.model } : {}) };
 
   for (let i = 0; i < maxIterations; i++) {
+    // Plus le temps d'un tour d'outils ET de la réponse : on répond maintenant
+    // avec ce qui a été lu, plutôt que d'être coupé par la plateforme.
+    if (
+      i > 0 &&
+      opts.deadline !== undefined &&
+      opts.deadline - Date.now() < (req.timeoutMs ?? 30_000)
+    )
+      break;
     if (i > 0) {
       res = await generate(
-        { ...req, messages, tools: manifest, toolChoice: "auto" },
-        { provider, onUsage: opts.onUsage },
+        { ...pinned, messages, tools: manifest, toolChoice: "auto" },
+        { provider, onUsage: opts.onUsage, deadline: opts.deadline },
       );
     }
     if (!res.toolCalls?.length) return res;
+    // Un refus, ou une réponse coupée par le plafond : les appels d'outils
+    // qu'elle porte peuvent être tronqués — on ne les exécute JAMAIS.
+    if (res.finishReason === "content_filter") return res;
+    if (res.finishReason === "length") break;
 
-    const results = await executeToolCalls(res.toolCalls, opts.toolContext, {
+    const calls = withCallIds(res.toolCalls);
+    const results = await executeToolCalls(calls, opts.toolContext, {
       allowSideEffects: opts.allowSideEffects,
+      onResult: opts.onToolResult,
     });
-    messages.push(toolCallsToAssistantMessage(res.toolCalls), resultsToMessage(results));
+    messages.push(toolCallsToAssistantMessage(calls, res.providerTurn), resultsToMessage(results));
   }
 
-  // Budget exhausted — force a final answer without tools.
-  return generate({ ...req, messages }, { provider, onUsage: opts.onUsage });
+  /* Budget épuisé — une dernière réponse SANS nouvel appel d'outil. Les outils
+     restent DÉCLARÉS (mode « none ») : l'historique contient des appels natifs,
+     et certains fournisseurs refusent un historique d'outils sans leur
+     déclaration (ou y lient la réflexion déjà produite). */
+  return generate(
+    { ...pinned, messages, tools: manifest, toolChoice: "none" },
+    { provider, onUsage: opts.onUsage, deadline: opts.deadline },
+  );
 }

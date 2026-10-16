@@ -83,7 +83,8 @@ const ENTITLEMENT_COLS = "plan, status, source, trial_ends_at, current_period_en
  * de 3 — et le client affichait « Something went wrong ». Jarvis est donc gardé
  * par le QUOTA du palier, pas par l'abonnement.
  */
-function accessGuard(opts: { entitlement: boolean; daily: boolean }) {
+function accessGuard(opts: { entitlement: boolean; daily: boolean; hourly?: boolean }) {
+  const hourly = opts.hourly ?? true;
   return createMiddleware({ type: "function" })
     .middleware([requireSupabaseAuth])
     .server(async ({ next, context }) => {
@@ -95,11 +96,18 @@ function accessGuard(opts: { entitlement: boolean; daily: boolean }) {
       // quota quotidien de Jarvis dépend du PALIER, et le palier vient de cette
       // ligne. Une lecture sur clé primaire indexée, une par appel IA — négligeable
       // devant l'appel modèle qui suit.
-      const { data: row, error: rowError } = await supabase
-        .from("subscriptions")
-        .select(ENTITLEMENT_COLS)
-        .eq("user_id", userId)
-        .maybeSingle();
+      //
+      // … sauf pour une garde qui n'en a l'usage ni pour l'entitlement ni pour
+      // le quota quotidien : une lecture inutile par appel annexe, c'est une
+      // lecture de base pour rien (bug B13).
+      const needsRow = opts.entitlement || opts.daily;
+      const { data: row, error: rowError } = needsRow
+        ? await supabase
+            .from("subscriptions")
+            .select(ENTITLEMENT_COLS)
+            .eq("user_id", userId)
+            .maybeSingle()
+        : { data: null, error: null };
 
       // ── 2) Entitlement ──────────────────────────────────────────────────────
       //
@@ -144,8 +152,10 @@ function accessGuard(opts: { entitlement: boolean; daily: boolean }) {
       // Toujours actif, indépendant de l'offre : il protège le coût, pas le
       // revenu. Échoue OUVERT — un incident sur le compteur ne doit pas priver
       // d'IA un utilisateur qui n'a rien demandé.
-      const withinHourly = await consumeQuota(supabase, "hourly", RATE_LIMIT_PER_HOUR, 3_600);
-      if (withinHourly === false) throw new RateLimitError();
+      if (hourly) {
+        const withinHourly = await consumeQuota(supabase, "hourly", RATE_LIMIT_PER_HOUR, 3_600);
+        if (withinHourly === false) throw new RateLimitError();
+      }
 
       return next();
     });
@@ -157,9 +167,32 @@ export const requireProAccess = accessGuard({ entitlement: true, daily: true });
 /** La conversation Jarvis : ouverte à tous les paliers, bornée par leur quota. */
 export const requireJarvisAccess = accessGuard({ entitlement: false, daily: true });
 
-/** Les appels ANNEXES d'une question Jarvis (extraction de mémoire) : ils ne
- *  doivent pas consommer une deuxième analyse du quota quotidien. */
-export const requireJarvisSideAccess = accessGuard({ entitlement: false, daily: false });
+/**
+ * Les appels ANNEXES d'une question Jarvis (extraction de mémoire) : ils ne
+ * doivent pas consommer une deuxième analyse du quota quotidien.
+ *
+ * NI le plafond horaire d'office (bug B13). L'extraction suivait CHAQUE
+ * réponse et décomptait un jeton horaire avant même de savoir qu'elle était
+ * désactivée (`AI_MEMORY_EXTRACTION`, éteinte par défaut) : une question en
+ * coûtait deux, et le plafond réel de Jarvis tombait de moitié. Le jeton est
+ * maintenant pris par le handler, uniquement quand un appel modèle va partir —
+ * voir `enforceHourlyAiQuota`.
+ */
+export const requireJarvisSideAccess = accessGuard({
+  entitlement: false,
+  daily: false,
+  hourly: false,
+});
+
+/**
+ * Le plafond horaire anti-abus, à consommer au moment où un appel modèle part
+ * vraiment. Même règle que la garde : il échoue OUVERT (un compteur
+ * indisponible ne prive pas d'IA), et seul un refus explicite lève.
+ */
+export async function enforceHourlyAiQuota(supabase: unknown): Promise<void> {
+  const withinHourly = await consumeQuota(supabase, "hourly", RATE_LIMIT_PER_HOUR, 3_600);
+  if (withinHourly === false) throw new RateLimitError();
+}
 
 /**
  * Consomme un jeton de quota dans une fenêtre fixe.

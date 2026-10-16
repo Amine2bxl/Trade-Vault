@@ -27,7 +27,7 @@ Postgres via Supabase (projet `tjikygsipblatubyzbrt`, constante
 | Cœur trading | `profiles` (profil, langue, devise, plan et règles JSON, `checklist_config`, compte actif), `trades`, `accounts` (sous-comptes, calibrage), `missed_opportunities` |
 | Séances et réflexion | `trading_sessions` (+ `trades.session_id`), `trade_intent`, `trade_reflection` |
 | Discipline, objectifs, rapports | `goal_plans` (par compte), `six_month_goals`, `habits`, `monthly_reports`, `notifications`, `user_preferences` |
-| Motifs et Jarvis | `mistake_clusters`, `mistake_taxonomy`, `detected_patterns`, `agent_proposals`, `ai_memory`, `ai_agent_runs` (télémétrie, 90 j), `ai_reports`, `ai_rate_limits`, `simulation_scenarios` |
+| Motifs et Jarvis | `mistake_clusters`, `mistake_taxonomy`, `detected_patterns`, `agent_proposals`, `ai_memory`, `ai_agent_runs` (télémétrie, 90 j — niveau, outils, tokens de réflexion/cache, coût estimé, validation : migration `20261002090000_ai_agent_runs_observability`), `ai_reports`, `ai_rate_limits`, `simulation_scenarios` |
 | Facturation | `subscriptions`, `processed_webhook_events`, `promo_codes`, `promo_redemptions`, `comp_grants`, `email_log`, `push_subscriptions` |
 | Calendrier économique | `economic_events`, `economic_calendar_sync` — **lecture publique**, écriture service-role (cron) |
 | Synchro broker | `broker_connections` (une par login broker ; seuls les **jetons** OAuth — accès et renouvellement — **chiffrés AES-256-GCM** par le serveur, aucun identifiant ni mot de passe ; `api_hosts` (hôte d'API dédié), `oauth_redirect_uri` (adresse de retour de la tentative en cours), `sync_cursor`), `broker_accounts` (comptes du login → compte TradeVault cible) |
