@@ -19,9 +19,15 @@ import { lazy, type ComponentType } from "react";
 
 export const CHUNK_RELOAD_KEY = "tv-chunk-reload-at";
 
-/** Recharge une fois ; `false` si un rechargement vient déjà d'avoir lieu. */
+// Partagé par le gestionnaire Vite et les imports React.lazy DU MÊME document.
+// Le garde persistant protège le document suivant, pas celui qui attend déjà
+// son rechargement : sinon le second appel transforme l'import annulé en 500.
+let reloadPending = false;
+
+/** `true` si le document se recharge déjà ; `false` après un échec persistant. */
 export function reloadForStaleChunk(): boolean {
   if (typeof window === "undefined") return false;
+  if (reloadPending) return true;
   try {
     const last = Number(sessionStorage.getItem(CHUNK_RELOAD_KEY) || 0);
     if (Date.now() - last < 10_000) return false;
@@ -29,6 +35,7 @@ export function reloadForStaleChunk(): boolean {
   } catch {
     /* stockage indisponible : on recharge quand même, une fois */
   }
+  reloadPending = true;
   window.location.reload();
   return true;
 }
