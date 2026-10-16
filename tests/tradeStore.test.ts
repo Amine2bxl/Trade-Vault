@@ -24,6 +24,10 @@ let eqFilters: Record<string, unknown> = {};
 let removedPaths: string[] = [];
 /** Lignes réellement envoyées à `upsert`. */
 let upserted: Record<string, unknown>[] = [];
+let transferMode = false;
+let schemaMissing = false;
+let writeError: { code: string; message: string } | null = null;
+let copiedPaths: string[] = [];
 
 /**
  * La suppression : `delete().eq().eq()` doit s'attendre à n'importe quel
@@ -35,7 +39,8 @@ const del: { eq: () => typeof del; then: (r: (v: { error: null }) => void) => Pr
   then: (r) => Promise.resolve({ error: null as null }).then(r),
 };
 
-function makeQuery() {
+function makeQuery(table: string) {
+  const filters: Record<string, unknown> = {};
   const q = {
     select: () => q,
     // `delete()` rend une requête « terminale » : elle se résout sur le
@@ -43,16 +48,38 @@ function makeQuery() {
     delete: () => del,
     eq: (col: string, value: unknown) => {
       eqFilters[col] = value;
+      filters[col] = value;
       return q;
     },
+    limit: () =>
+      Promise.resolve({
+        data: [],
+        error: schemaMissing
+          ? { code: "42703", message: "column copied_from does not exist" }
+          : null,
+      }),
+    in: () => Promise.resolve({ data: [], error: null }),
     order: () => q,
-    upsert: (row: Record<string, unknown>) => {
-      upserted.push(row);
-      return Promise.resolve({ data: null, error: null });
+    upsert: (row: Record<string, unknown> | Record<string, unknown>[]) => {
+      const rows = Array.isArray(row) ? row : [row];
+      upserted.push(...rows);
+      if (transferMode && !writeError) {
+        for (const r of rows) {
+          const index = allRows.findIndex((old) => old.id === r.id);
+          if (index === -1) allRows.push(r);
+          else allRows[index] = { ...allRows[index], ...r };
+        }
+      }
+      return Promise.resolve({ data: null, error: writeError });
     },
     range: (from: number, to: number) => {
       ranges.push([from, to]);
-      const slice = allRows.slice(from, to + 1);
+      const list = transferMode
+        ? allRows.filter(
+            (row) => table === "trades" && Object.entries(filters).every(([k, v]) => row[k] === v),
+          )
+        : allRows;
+      const slice = list.slice(from, to + 1);
       return Promise.resolve({ data: slice, error: null });
     },
   };
@@ -61,9 +88,13 @@ function makeQuery() {
 
 mock.module("@/integrations/supabase/client", () => ({
   supabase: {
-    from: () => makeQuery(),
+    from: (table: string) => makeQuery(table),
     storage: {
       from: () => ({
+        copy: (_original: string, target: string) => {
+          copiedPaths.push(target);
+          return Promise.resolve({ error: null });
+        },
         remove: (paths: string[]) => {
           removedPaths.push(...paths);
           return Promise.resolve({ data: null, error: null });
@@ -76,6 +107,7 @@ mock.module("@/integrations/supabase/client", () => ({
 const { loadUserTrades, rowToTrade, deleteAllTrades, upsertTrade } =
   await import("../src/app/store/trades");
 const { setActiveAccountId } = await import("../src/app/store/accounts");
+const { transferTrades } = await import("../src/app/store/tradeTransfer");
 
 const row = (id: number, over: Record<string, unknown> = {}) => ({
   id: `t${id}`,
@@ -104,6 +136,11 @@ beforeEach(() => {
   eqFilters = {};
   allRows = [];
   removedPaths = [];
+  transferMode = false;
+  schemaMissing = false;
+  writeError = null;
+  copiedPaths = [];
+  upserted = [];
 });
 
 describe("loadUserTrades — plus de troncature silencieuse", () => {
@@ -346,5 +383,72 @@ describe("exécution d'un trade importé", () => {
     for (const col of ["quantity", "entry_price", "exit_price", "fees"]) {
       expect(col in row).toBe(false);
     }
+  });
+});
+
+describe("transfert entre comptes — lecture, écriture et reprise", () => {
+  const req = {
+    sourceAccountId: "source",
+    targetAccountId: "target",
+    mode: "copy" as const,
+    factor: 2,
+    from: null,
+    to: null,
+    skipAlreadyCopied: true,
+  };
+  const seed = () => {
+    transferMode = true;
+    allRows = [
+      row(1, {
+        account_id: "source",
+        screenshots: ["u1/original.png"],
+        pnl: 10,
+        risk_amount: 5,
+        r_multiple: 2,
+      }),
+    ];
+  };
+  test("copie vers la cible, conserve l'original et ne double pas au rejeu", async () => {
+    seed();
+    const result = await transferTrades("u1", req);
+    expect(result.transferred).toBe(1);
+    expect(allRows).toHaveLength(2);
+    const copy = allRows.find((t) => t.account_id === "target")!;
+    expect(copy.copied_from).toBe("t1");
+    expect(copy.pnl).toBe(20);
+    expect(copy.r_multiple).toBe(2);
+    expect(copy.screenshots).not.toEqual(["u1/original.png"]);
+    expect(allRows.find((t) => t.id === "t1")?.account_id).toBe("source");
+    expect((await transferTrades("u1", req)).skipped).toBe(1);
+    expect(allRows).toHaveLength(2);
+  });
+  test("déplace les mêmes identifiants et les retire du compte source", async () => {
+    seed();
+    const result = await transferTrades("u1", { ...req, mode: "move" });
+    expect(result.transferred).toBe(1);
+    expect(allRows).toHaveLength(1);
+    expect(allRows[0].id).toBe("t1");
+    expect(allRows[0].account_id).toBe("target");
+    expect(allRows[0].pnl).toBe(20);
+    expect(allRows[0].screenshots).toEqual(["u1/original.png"]);
+    expect(copiedPaths).toHaveLength(0);
+  });
+  test("une colonne absente est signalée AVANT toute copie de capture ou écriture", async () => {
+    seed();
+    schemaMissing = true;
+    await expect(transferTrades("u1", req)).rejects.toThrow("Account transfer schema");
+    expect(copiedPaths).toHaveLength(0);
+    expect(upserted).toHaveLength(0);
+    expect(allRows).toHaveLength(1);
+  });
+  test("un refus d'écriture laisse les originaux et nettoie seulement les captures copiées", async () => {
+    seed();
+    writeError = { code: "42501", message: "permission denied" };
+    const result = await transferTrades("u1", req);
+    expect(result.transferred).toBe(0);
+    expect(result.failed).toBe(1);
+    expect(allRows).toHaveLength(1);
+    expect(removedPaths).toEqual(copiedPaths);
+    expect(removedPaths).not.toContain("u1/original.png");
   });
 });

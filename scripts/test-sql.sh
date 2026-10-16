@@ -124,6 +124,10 @@ fi
 rm -f "$MIGRATION_LOG"
 echo "→ assertions de facturation et de quota"
 psql_run -f tests/sql/billing.sql
+echo "→ transfert indépendant de broker_sync"
+psql_run -f supabase/migrations/20261016221756_account_transfer_schema.sql
+psql_run -f supabase/migrations/20261016221756_account_transfer_schema.sql
+psql_run -f tests/sql/account-transfer.sql
 echo "→ migration $BROKER_MIGRATION"
 MIGRATION_LOG=$(mktemp)
 if ! psql_run -f "$BROKER_MIGRATION" >"$MIGRATION_LOG" 2>&1; then

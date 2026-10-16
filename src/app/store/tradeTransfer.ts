@@ -2,7 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { generateId } from "@/domain";
 import type { Trade } from "../types";
 import { loadUserTrades, importTrades } from "./trades";
-import { SCREENSHOTS_BUCKET } from "./storage";
+import { SCREENSHOTS_BUCKET, removeScreenshotFiles, storagePathsOf } from "./storage";
 import {
   alreadyCopiedIds,
   copiedScreenshotPath,
@@ -42,6 +42,14 @@ export interface TransferResult {
   screenshotsCopied: number;
   screenshotsFailed: number;
   planLimitReached: boolean;
+}
+
+/** La copie exige sa colonne de provenance : l'omettre casserait l'anti-doublon. */
+export class TransferSchemaError extends Error {
+  constructor() {
+    super("Account transfer schema is unavailable");
+    this.name = "TransferSchemaError";
+  }
 }
 
 /** Morceaux de lecture/écriture : bornés pour rester sous la taille d'URL
@@ -125,6 +133,16 @@ export async function transferTrades(
     throw new Error("source and target accounts must differ");
   }
 
+  if (req.mode === "copy") {
+    // Vérifier AVANT de dupliquer des captures. La migration broker pouvait
+    // manquer : chaque copie échouait ensuite sur `copied_from`, lot par lot.
+    const { error } = await supabase.from("trades").select("copied_from").limit(0);
+    if (error) {
+      if (error.code === "PGRST204" || error.code === "42703") throw new TransferSchemaError();
+      throw error;
+    }
+  }
+
   const source = await loadUserTrades(userId, { accountId: req.sourceAccountId });
   const target =
     req.mode === "copy" && req.skipAlreadyCopied
@@ -132,6 +150,7 @@ export async function transferTrades(
       : [];
 
   const plan = planTransfer(source, req, alreadyCopiedIds(target), generateId);
+  onProgress?.(0, plan.trades.length);
 
   let screenshotsCopied = 0;
   let screenshotsFailed = 0;
@@ -156,6 +175,15 @@ export async function transferTrades(
     const written = new Set(saved.map((t) => t.id));
     await copyIntel("trade_intent", userId, plan.idMap, written);
     await copyIntel("trade_reflection", userId, plan.idMap, written);
+  }
+
+  if (req.mode === "copy" && failed > 0) {
+    // Un trade refusé ne doit pas laisser ses copies de captures orphelines.
+    // Seuls les NOUVEAUX chemins sont nettoyés, jamais ceux des originaux.
+    const written = new Set(saved.map((t) => t.id));
+    await removeScreenshotFiles(
+      toWrite.filter((t) => !written.has(t.id)).flatMap((t) => storagePathsOf(t.screenshots)),
+    );
   }
 
   return {
