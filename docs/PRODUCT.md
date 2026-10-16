@@ -44,7 +44,7 @@ Source unique : `src/domain/plans.ts` (partagée par l'app et le serveur).
 | Offre | Mensuel | Annuel | Esprit |
 | --- | --- | --- | --- |
 | Free | 0 € | 0 € | « Log your trades. Forever. » — 10 trades par mois |
-| Pro | 15 € | 120 € | Trades illimités, jusqu'à 3 comptes, tout débloqué |
+| Pro | 15 € | 120 € | Trades illimités, jusqu'à 3 comptes, synchro Tradovate (lecture seule), transfert et recalibrage entre comptes, tout débloqué |
 | Elite | 25 € | 200 € | Les mêmes outils, sans aucune limite (Jarvis, comptes) |
 
 Pas d'essai gratuit. Limites appliquées **en base** (`enforce_trade_quota`,

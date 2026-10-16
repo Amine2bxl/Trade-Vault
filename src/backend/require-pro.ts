@@ -2,7 +2,7 @@ import { createMiddleware } from "@tanstack/react-start";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { effectiveTier, isEntitled, type EntitlementRow } from "@/domain/entitlement";
-import { LIMITS } from "@/domain/plans";
+import { LIMITS, tierAtLeast } from "@/domain/plans";
 
 // Réexporté pour que le point d'entrée serveur reste le seul import des
 // appelants historiques ; la DÉFINITION, elle, vit dans `domain/entitlement`.
@@ -192,3 +192,29 @@ async function consumeQuota(
     return null;
   }
 }
+
+/**
+ * LES OUTILS DE COMPTE DU PALIER PRO — synchro broker, transferts, recalibrage.
+ *
+ * Distincte des gardes IA ci-dessus : ni quota ni plafond horaire, seulement le
+ * palier, et TOUJOURS appliquée (elle ne suit pas `AI_REQUIRE_PRO`, qui ne
+ * concerne que l'IA). Le palier vient de `domain/entitlement`, la même
+ * définition que l'app et que `public.effective_tier` en SQL.
+ *
+ * ÉCHOUE FERMÉ : une ligne d'abonnement illisible vaut « pas Pro ». Le
+ * message porte le préfixe stable `PLAN_LIMIT_PRO`, que l'app traduit en
+ * proposition d'offre (`planLimitFromDbError`) plutôt qu'en erreur technique.
+ */
+export const requireProPlan = createMiddleware({ type: "function" })
+  .middleware([requireSupabaseAuth])
+  .server(async ({ next, context }) => {
+    const { data: row, error } = await context.supabase
+      .from("subscriptions")
+      .select(ENTITLEMENT_COLS)
+      .eq("user_id", context.userId)
+      .maybeSingle();
+    if (error || !tierAtLeast(effectiveTier(row), "pro")) {
+      throw new Error("PLAN_LIMIT_PRO: this feature requires the Pro plan.");
+    }
+    return next();
+  });

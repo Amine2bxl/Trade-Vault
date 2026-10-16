@@ -214,7 +214,10 @@ export async function recalibrateAccount(
     p_original_balance: input.originalBalance,
     p_cumulative: input.cumulative,
   });
-  if (error) throw error;
+  // Recalibrer est une offre Pro, vérifiée par la fonction SQL elle-même :
+  // son refus remonte en `PlanLimitError("pro")`, que l'interface traduit en
+  // proposition d'offre plutôt qu'en erreur.
+  if (error) throw planLimitFromDbError(error) ?? error;
 
   return Number(data) || 0;
 }

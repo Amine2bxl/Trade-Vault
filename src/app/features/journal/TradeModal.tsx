@@ -97,6 +97,13 @@ const defaultForm = {
   mae: "",
   mfe: "",
   slippage: "",
+  // Trade importé : P&L net et exécution, préremplis par le broker et
+  // modifiables (le broker peut se tromper de frais, le trader de compte).
+  brokerPnl: "",
+  quantity: "",
+  entryPrice: "",
+  exitPrice: "",
+  fees: "",
   intentEmotion: null as EmotionalState | null,
   intentReasoning: "",
   intentPlan: "",
@@ -170,7 +177,9 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
         date: trade.date,
         symbol: trade.symbol,
         direction: trade.direction,
-        riskAmount: String(trade.riskAmount),
+        // Un trade importé sans stop retrouvé arrive à risque 0 : le champ
+        // reste VIDE (et non « 0 ») pour que le trader voie qu'il est à saisir.
+        riskAmount: trade.broker && !(trade.riskAmount > 0) ? "" : String(trade.riskAmount),
         rMultiple: String(trade.rMultiple),
         pnl: trade.pnl,
         strategy: trade.strategy,
@@ -185,6 +194,11 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
         mae: trade.mae != null ? String(trade.mae) : "",
         mfe: trade.mfe != null ? String(trade.mfe) : "",
         slippage: trade.slippage != null ? String(trade.slippage) : "",
+        brokerPnl: trade.broker ? String(trade.pnl) : "",
+        quantity: trade.quantity != null ? String(trade.quantity) : "",
+        entryPrice: trade.entryPrice != null ? String(trade.entryPrice) : "",
+        exitPrice: trade.exitPrice != null ? String(trade.exitPrice) : "",
+        fees: trade.fees != null ? String(trade.fees) : "",
       };
       // Modifications non enregistrées récupérées telles quelles (hors
       // captures : leurs fichiers ne survivent pas à la popup).
@@ -258,10 +272,39 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
     return (val / 100) * accountBalance;
   }, [form.riskAmount, form.riskType, accountBalance]);
 
+  /* LE P&L D'UN TRADE IMPORTÉ EST LA RÉFÉRENCE, PAS UN CALCUL. Pour une
+     saisie manuelle, P&L = risque × R. Pour un trade venu du broker, le P&L
+     net est ce que le compte a encaissé : c'est lui qui fait foi, et le R qui
+     s'en DÉDUIT avec le risque que le trader confirme. Sans ce renversement,
+     saisir le risque d'un trade importé (R encore à 0) aurait écrit un P&L
+     nul par-dessus celui du broker.
+     Les deux restent MODIFIABLES : corriger le P&L recalcule le R, saisir un
+     R réécrit le P&L (risque × R). Le trader a toujours le dernier mot. */
+  const pnlLocked = !!trade?.broker;
+  const brokerPnl = pnlLocked ? parseFloat(form.brokerPnl) || 0 : null;
+  const derivedR = pnlLocked && riskDollar > 0 ? (brokerPnl as number) / riskDollar : 0;
+  // Saisie du R en cours : le champ montre ce qui est tapé, pas l'arrondi
+  // recalculé à chaque frappe (« 1. » deviendrait « 1.00 » sous le curseur).
+  const [rDraft, setRDraft] = useState<string | null>(null);
+  const editBrokerR = (value: string) => {
+    setRDraft(value);
+    const r = parseFloat(value);
+    if (riskDollar > 0 && Number.isFinite(r)) {
+      setForm((f) => ({ ...f, brokerPnl: String(Math.round(riskDollar * r * 100) / 100) }));
+    }
+  };
+  /** Un nombre saisi, ou `null` si le champ est vide (donnée inconnue). */
+  const optionalNumber = (v: string): number | null => {
+    if (v.trim() === "") return null;
+    const n = parseFloat(v);
+    return Number.isFinite(n) ? n : null;
+  };
+
   const calculatedPnl = useMemo(() => {
+    if (pnlLocked) return brokerPnl as number;
     const rm = parseFloat(form.rMultiple) || 0;
     return riskDollar * rm;
-  }, [riskDollar, form.rMultiple]);
+  }, [riskDollar, form.rMultiple, pnlLocked, brokerPnl]);
 
   // Position-size helper — shared math with the Lot Size Calculator page.
   const calcContracts = useMemo(
@@ -437,8 +480,14 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
 
   const handleSave = () => {
     const isBE = form.direction === "be";
-    const rm = isBE ? 0 : parseFloat(form.rMultiple) || 0;
     const risk = riskDollar;
+    // Trade importé : le R se déduit du P&L broker (exact, sans arrondi au
+    // centième qui ferait dériver le P&L d'un cent).
+    const rm = pnlLocked
+      ? Math.round(derivedR * 10000) / 10000
+      : isBE
+        ? 0
+        : parseFloat(form.rMultiple) || 0;
     savedRef.current = true;
     // Trade committed — the draft has served its purpose.
     removeKey(draftKey);
@@ -467,7 +516,11 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
         date: form.date,
         symbol: form.symbol.toUpperCase(),
         direction: form.direction,
-        pnl: isBE ? 0 : Math.round(risk * rm * 100) / 100,
+        pnl: pnlLocked
+          ? Math.round((brokerPnl as number) * 100) / 100
+          : isBE
+            ? 0
+            : Math.round(risk * rm * 100) / 100,
         riskAmount: Math.round(risk * 100) / 100,
         rMultiple: rm,
         strategy: form.strategy,
@@ -484,6 +537,22 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
         slippage: form.slippage === "" ? null : parseFloat(form.slippage) || 0,
         // Any save through the form makes the trade "real" — demo badge drops.
         isExample: false,
+        // Le compte du trade VOYAGE avec lui : le formulaire ne l'édite pas, il
+        // ne doit pas non plus le perdre (sans `accountId`, un trade modifié
+        // depuis un autre compte actif y était réaffecté — voir `tradeToRow`).
+        accountId: trade?.accountId,
+        // L'exécution d'un trade importé est éditable ; celle d'un trade saisi
+        // à la main (souvent absente) est conservée telle quelle.
+        quantity: pnlLocked ? optionalNumber(form.quantity) : trade?.quantity,
+        entryPrice: pnlLocked ? optionalNumber(form.entryPrice) : trade?.entryPrice,
+        exitPrice: pnlLocked ? optionalNumber(form.exitPrice) : trade?.exitPrice,
+        fees: pnlLocked ? optionalNumber(form.fees) : trade?.fees,
+        broker: trade?.broker,
+        externalId: trade?.externalId,
+        brokerAccount: trade?.brokerAccount,
+        copiedFrom: trade?.copiedFrom,
+        // Enregistré depuis le formulaire = relu.
+        reviewPending: false,
       },
       {
         intent: isIntentEmpty(intent) ? null : intent,
@@ -500,8 +569,10 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
     const m = /^(\d{1,2}):(\d{2})/.exec(v ?? "");
     return m ? `${m[1].padStart(2, "0")}:${m[2]}` : "";
   };
+  // Un trade IMPORTÉ peut passer minuit (session du soir) : ses heures sont
+  // celles du broker, pas une saisie à corriger.
   const timeError =
-    form.entryTime && form.exitTime && hhmm(form.exitTime) < hhmm(form.entryTime)
+    !pnlLocked && form.entryTime && form.exitTime && hhmm(form.exitTime) < hhmm(form.entryTime)
       ? t("trade.error.exitBeforeEntry")
       : null;
   const rMultipleError =
@@ -512,7 +583,10 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
     form.symbol &&
     form.date &&
     parseFloat(form.riskAmount) > 0 &&
-    (form.direction === "be" || form.rMultiple !== "") &&
+    (pnlLocked || form.direction === "be" || form.rMultiple !== "") &&
+    // P&L d'un trade importé vidé : refusé plutôt qu'enregistré à 0, ce qui
+    // ferait d'un gain un trade nul dans toutes les statistiques.
+    (!pnlLocked || (form.brokerPnl.trim() !== "" && Number.isFinite(parseFloat(form.brokerPnl)))) &&
     !timeError &&
     !rMultipleError;
 
@@ -611,6 +685,54 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
         </div>
 
         <div className="overflow-y-auto max-h-[calc(92vh-130px)] px-4 sm:px-6 py-4 space-y-3.5">
+          {/* TRADE IMPORTÉ — ce que le broker a réellement exécuté, en clair.
+              Le trader voit d'où vient le trade et ce qui est déjà rempli ;
+              il ne lui reste que le jugement (setup, erreurs, notes,
+              captures). */}
+          {trade?.broker && (
+            <div className="rounded-xl border border-[var(--tv-border-accent)] bg-[rgb(var(--tv-accent-rgb)/0.06)] px-3.5 py-3">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <span className="tv-label text-[var(--tv-accent)]">
+                  {t("trade.importedFrom").replace("{broker}", "Tradovate")}
+                </span>
+                {trade.brokerAccount && (
+                  <span className="text-xs font-semibold text-slate-300">
+                    {trade.brokerAccount}
+                  </span>
+                )}
+              </div>
+              {/* L'exécution, préremplie et corrigeable : contrats, prix,
+                  frais. Rien ici n'est recalculé derrière le trader. */}
+              <div className="mt-2.5 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {(
+                  [
+                    ["quantity", "trade.execContracts", "1"],
+                    ["entryPrice", "trade.execEntry", "0.25"],
+                    ["exitPrice", "trade.execExit", "0.25"],
+                    ["fees", "trade.execFees", "0.01"],
+                  ] as const
+                ).map(([key, label, step]) => (
+                  <label key={key} className="block min-w-0">
+                    <span className="tv-label mb-1 block text-slate-500">{t(label)}</span>
+                    <input
+                      type="number"
+                      step={step}
+                      inputMode="decimal"
+                      value={form[key]}
+                      onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
+                      placeholder="—"
+                      className={cn(inputClass, "tv-figure")}
+                    />
+                  </label>
+                ))}
+              </div>
+              {trade.reviewPending && (
+                <p className="mt-1.5 text-xs leading-snug text-slate-500">
+                  {riskDollar > 0 ? t("trade.reviewHint") : t("trade.reviewHintRisk")}
+                </p>
+              )}
+            </div>
+          )}
           {/* Row 1: Symbol, Direction, Date */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
@@ -725,31 +847,79 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
             </div>
             <div>
               <label className={labelClass}>{t("trade.rrMultiple")}</label>
-              <input
-                type="number"
-                step="0.1"
-                value={form.rMultiple}
-                onChange={(e) => setForm((f) => ({ ...f, rMultiple: e.target.value }))}
-                placeholder="2.0"
-                className={inputClass}
-              />
-              <div className="text-[11px] text-slate-600 mt-1">{t("trade.rrHint")}</div>
+              {pnlLocked ? (
+                <>
+                  <input
+                    type="number"
+                    step="0.1"
+                    inputMode="decimal"
+                    value={rDraft ?? (riskDollar > 0 ? derivedR.toFixed(2) : "")}
+                    onChange={(e) => editBrokerR(e.target.value)}
+                    onBlur={() => setRDraft(null)}
+                    disabled={!(riskDollar > 0)}
+                    placeholder="—"
+                    aria-describedby="trade-r-derived"
+                    className={cn(inputClass, "tv-figure")}
+                  />
+                  <div id="trade-r-derived" className="text-[11px] text-slate-600 mt-1">
+                    {t("trade.rDerivedHint")}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={form.rMultiple}
+                    onChange={(e) => setForm((f) => ({ ...f, rMultiple: e.target.value }))}
+                    placeholder="2.0"
+                    className={inputClass}
+                  />
+                  <div className="text-[11px] text-slate-600 mt-1">{t("trade.rrHint")}</div>
+                </>
+              )}
             </div>
             <div>
-              <label className={labelClass}>{t("trade.estPnl")}</label>
-              <div
-                className={cn(
-                  "tv-figure w-full h-11 flex items-center rounded-xl px-3 text-sm border",
-                  calculatedPnl > 0
-                    ? "bg-emerald-500/10 border-emerald-500/15 text-emerald-400"
-                    : calculatedPnl < 0
-                      ? "bg-red-500/10 border-red-500/15 text-red-400"
-                      : "bg-white/[0.03] border-white/[0.06] text-slate-400",
-                )}
-              >
-                {calculatedPnl >= 0 ? "+" : ""}
-                {calculatedPnl.toFixed(2)}
-              </div>
+              <label className={labelClass} htmlFor={pnlLocked ? "trade-broker-pnl" : undefined}>
+                {pnlLocked ? t("trade.brokerPnl") : t("trade.estPnl")}
+              </label>
+              {pnlLocked ? (
+                // P&L net du broker, corrigeable : le R se recalcule dessus.
+                <input
+                  id="trade-broker-pnl"
+                  type="number"
+                  step="0.01"
+                  inputMode="decimal"
+                  value={form.brokerPnl}
+                  onChange={(e) => {
+                    setRDraft(null);
+                    setForm((f) => ({ ...f, brokerPnl: e.target.value }));
+                  }}
+                  className={cn(
+                    inputClass,
+                    "tv-figure",
+                    calculatedPnl > 0
+                      ? "text-emerald-400"
+                      : calculatedPnl < 0
+                        ? "text-red-400"
+                        : "text-slate-300",
+                  )}
+                />
+              ) : (
+                <div
+                  className={cn(
+                    "tv-figure w-full h-11 flex items-center rounded-xl px-3 text-sm border",
+                    calculatedPnl > 0
+                      ? "bg-emerald-500/10 border-emerald-500/15 text-emerald-400"
+                      : calculatedPnl < 0
+                        ? "bg-red-500/10 border-red-500/15 text-red-400"
+                        : "bg-white/[0.03] border-white/[0.06] text-slate-400",
+                  )}
+                >
+                  {calculatedPnl >= 0 ? "+" : ""}
+                  {calculatedPnl.toFixed(2)}
+                </div>
+              )}
             </div>
           </div>
 

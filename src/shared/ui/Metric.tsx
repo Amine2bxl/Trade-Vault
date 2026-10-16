@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from "react";
 import { cn } from "./cn";
 import { density, type } from "./tokens";
+import { RollingFigure } from "./RollingFigure";
 
 /**
  * Metric — the single KPI tile of the product (label / big tabular number /
@@ -154,7 +155,10 @@ export function Metric({
           </div>
           {/* LE CHIFFRE. Chasse fixe (voir `.tv-figure`) : c'est la tuile qui
               porte la signature typographique du produit. */}
-          <div className={cn(type.figure, valueClass ?? trendClass(trend))}>{value}</div>
+          <div className={cn(type.figure, valueClass ?? trendClass(trend))}>
+            {/* Le chiffre roule quand il change (l'effet compteur de Lucid). */}
+            <RollingFigure value={value} />
+          </div>
           {subtitle && (
             <p className={cn(type.caption, "text-slate-500 mt-1 truncate")}>{subtitle}</p>
           )}

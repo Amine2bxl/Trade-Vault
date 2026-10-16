@@ -14,6 +14,8 @@ import {
   Download,
   Target,
   SlidersHorizontal,
+  ClipboardCheck,
+  Cable,
 } from "lucide-react";
 import { Trade, isBreakEven } from "@/app/types";
 import {
@@ -350,9 +352,46 @@ export default function Journal({
   // ceux de la section Journal (`SectionTabs`), rendus par le shell, et ce
   // sont de vrais liens.
 
+  // Trades importés par la synchro broker et pas encore relus : la file se
+  // relit dans l'ordre de la séance, le plus ancien d'abord.
+  const pendingReview = useMemo(
+    () =>
+      trades
+        .filter((tr) => tr.reviewPending)
+        .sort((a, b) => (`${a.date} ${a.entryTime}` < `${b.date} ${b.entryTime}` ? -1 : 1)),
+    [trades],
+  );
+
   const headerActions = useMemo(
     () => (
       <div className="flex items-center gap-2 shrink-0">
+        {pendingReview.length > 0 && (
+          <Button
+            variant="subtle"
+            size="sm"
+            onClick={() => onEdit(pendingReview[0])}
+            title={t("journal.reviewPending").replace("{n}", String(pendingReview.length))}
+            className="border-[var(--tv-border-accent)] text-[var(--tv-accent)]"
+          >
+            <ClipboardCheck className="h-3.5 w-3.5" />
+            <span className="tv-figure">{pendingReview.length}</span>
+            <span className="hidden md:inline">{t("journal.reviewNow")}</span>
+          </Button>
+        )}
+        {/* Le chemin vers la synchro automatique, là où l'on saisit ses
+            trades à la main : c'est ici qu'on se demande si on pourrait ne
+            plus le faire. */}
+        <Button
+          variant="subtle"
+          size="sm"
+          onClick={() =>
+            window.dispatchEvent(new CustomEvent("tv:navigate", { detail: { page: "brokers" } }))
+          }
+          title={t("journal.connectBroker")}
+        >
+          <Cable className="h-3.5 w-3.5" />
+          <span className="hidden lg:inline">{t("nav.brokers")}</span>
+        </Button>
         <Button variant="subtle" size="sm" onClick={() => exportTradesCSV(trades)}>
           <Download className="w-3.5 h-3.5" />
           <span className="hidden md:inline">{t("common.exportCsv")}</span>
@@ -381,7 +420,7 @@ export default function Journal({
       </div>
     ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [trades, onDeleteAll, onAdd, onOpenMissed, t],
+    [trades, pendingReview, onEdit, onDeleteAll, onAdd, onOpenMissed, t],
   );
   usePageActions(headerActions);
 

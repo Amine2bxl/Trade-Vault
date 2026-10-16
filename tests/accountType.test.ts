@@ -27,7 +27,17 @@ describe("type de compte lu en base", () => {
   });
 
   test("le sélecteur a toujours une icône à rendre", () => {
-    const src = readFileSync(join(import.meta.dir, "../src/app/shell/AccountSwitcher.tsx"), "utf8");
-    expect(src).toContain("TYPE_ICON[a.type] ?? User");
+    // L'icône d'un compte vit dans `accountVisuals.ts` (partagée avec le
+    // gestionnaire de comptes des réglages) ; le sélecteur la lit de là.
+    const visuals = readFileSync(
+      join(import.meta.dir, "../src/app/shell/accountVisuals.ts"),
+      "utf8",
+    );
+    expect(visuals).toContain("TYPE_ICON[a.type] ?? User");
+    const switcher = readFileSync(
+      join(import.meta.dir, "../src/app/shell/AccountSwitcher.tsx"),
+      "utf8",
+    );
+    expect(switcher).toMatch(/getAccountIcon[\s\S]*from "\.\/accountVisuals"/);
   });
 });

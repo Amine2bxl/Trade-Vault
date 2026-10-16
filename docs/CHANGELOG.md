@@ -3,6 +3,40 @@
 Journal des changements **structurels** (pas des features ni des correctifs,
 qui vivent dans l'historique git et les PR).
 
+## 2026-10-08 — Synchro broker, sous-comptes, langage Lucid
+
+- Nouveau moteur `src/modules/brokers/` (pur) et frontière serveur
+  `backend/brokers.functions.ts`, `broker-sync.server.ts`,
+  `tradovate.server.ts`, `broker-crypto.server.ts` ; feature
+  `app/features/brokers/` (page `brokers`, section Réglages).
+- Migration `20261008120000_broker_sync.sql` : `broker_connections`,
+  `broker_accounts`, colonnes d'exécution et d'import sur `trades`, index
+  unique `(user_id, external_id)`, recalibrage étendu aux frais.
+- Transfert de trades entre comptes : `trading/tradeTransfer.ts` (pur),
+  `store/tradeTransfer.ts`, `shell/TransferTradesModal.tsx` ; compte principal
+  (`accounts.is_default`) exposé par `AccountContext`.
+- Typographie : l'app connectée passe à la pile système de Lucid
+  (`--font-lucid`, `body.tv-app-type`) ; accent et vert P&L `#31d68a`.
+- `store/trades.ts` lit `*` (colonnes ajoutées tolérées avant migration).
+- Synchro broker en **OAuth seul, lecture seule** : plus de connexion par clé
+  API ni de colonne `secret_ciphertext` / `auth_mode` ; liste blanche
+  `READ_ONLY_ENDPOINTS` + `assertReadOnly` dans `tradovate.server.ts`.
+- Offre Pro : capacités `brokerSync`, `accountTransfer`, `recalibration`
+  (`domain/plans.ts`) ; garde serveur `requireProPlan` (`require-pro.ts`) ;
+  `recalibrate_account` refuse hors Pro (`PLAN_LIMIT_PRO`), retour à l'origine
+  excepté ; `PlanLimitError("pro")` côté client.
+- Comptes : `features/settings/AccountsManager.tsx` (rubrique « Comptes »),
+  `trading/AccountScaleBridge.tsx` partagé par le transfert et le recalibrage,
+  `shell/accountVisuals.ts` (icônes et libellés de compte sortis
+  d'`AccountSwitcher`).
+- Tests SQL : `tests/sql/broker.sql`, branché dans `scripts/test-sql.sh`.
+- Connexion Tradovate : `backend/broker-oauth.server.ts` (adresse de retour
+  par origine, check-list administrateur) ; colonnes `refresh_token_ciphertext`,
+  `api_hosts`, `oauth_redirect_uri` sur `broker_connections` ; copie de trade
+  (`copied_from`) réservée au Pro par le trigger `trades_enforce_copy_pro` ;
+  cron `broker-sync` déplacé avant la clôture CME (deux créneaux) ; événement
+  `tv:open-import` (ouvrir l'import CSV depuis une page).
+
 ## 2026-09-30 — Restructuration complète du dépôt
 
 Zéro changement fonctionnel : déplacements, imports, chemins lus par les tests,

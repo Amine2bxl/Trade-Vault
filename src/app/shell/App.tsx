@@ -44,6 +44,7 @@ import {
   Subscription,
   Inbox,
   MonteCarlo,
+  Brokers,
   preloadPage,
   LIKELY_NEXT_PAGES,
 } from "./pageModules";
@@ -80,6 +81,7 @@ import {
 } from "../store";
 import { useTrades, tradesQueryKey } from "../trading/useTrades";
 import { useRealtimeTrades } from "../trading/useRealtimeTrades";
+import { useBrokerSync } from "../features/brokers/useBrokerSync";
 import { useSubscription } from "../hooks/useSubscription";
 import { generateMyMonthlyReport } from "@/backend/reports.functions";
 import { missingReportMonths } from "../features/reports/reportMonths";
@@ -162,6 +164,37 @@ function AppContent() {
   // Multi-appareils : ce qui est encodé/modifié/supprimé ailleurs arrive ici
   // instantanément, sans rafraîchissement (voir `useRealtimeTrades`).
   useRealtimeTrades(user?.id, activeId);
+  const { tier, can: canUse, loading: subLoading } = useSubscription();
+  // Synchro broker : le journal se remplit seul pendant que l'app est ouverte.
+  // Palier Pro uniquement — hors Pro, aucun appel ne part.
+  useBrokerSync({
+    userId: user?.id,
+    activeAccountId: activeId,
+    ready: accountsReady && !subLoading && canUse("brokerSync"),
+    onReview: (imported) => {
+      setReviewQueue((q) => {
+        const known = new Set(q.map((t) => t.id));
+        // Le plus ancien d'abord : on relit une séance dans l'ordre où elle
+        // s'est jouée.
+        const fresh = imported
+          .filter((t) => !known.has(t.id))
+          .sort((a, b) => (`${a.date} ${a.entryTime}` < `${b.date} ${b.entryTime}` ? -1 : 1));
+        return [...q, ...fresh];
+      });
+      // Un trade importé est un trade NOUVEAU pour les moteurs : la discipline
+      // (règles du plan), les notifications et l'analyse le voient arriver
+      // comme s'il avait été saisi — sans attendre que le trader le relise.
+      if (user) void runImportedThroughAutomation(user.id, imported);
+    },
+    onOtherAccount: (n) => toast(t("brokers.importedElsewhere").replace("{n}", String(n)), "info"),
+    // Une connexion qui vient de passer « à reconnecter » : dit une fois, au
+    // moment où ça arrive, plutôt que découvert des jours plus tard.
+    onActionNeeded: (code) =>
+      toast(
+        t(code === "permission_denied" ? "brokers.toastPermission" : "brokers.toastReauth"),
+        "error",
+      ),
+  });
   // Shim preserving the exact `setTrades` signature the optimistic write
   // handlers already use — updates the cache in place instead of local state,
   // so none of the save/delete/import logic below had to change.
@@ -273,6 +306,11 @@ function AppContent() {
   }, []);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingTrade, setEditingTrade] = useState<Trade | null>(null);
+  /* LA FILE DE RELECTURE BROKER. Un trade clôturé chez Tradovate arrive ici
+     (voir `useBrokerSync`) et ouvre son formulaire, déjà rempli de tout le
+     structurel. S'il en arrive plusieurs pendant qu'un formulaire est ouvert,
+     ils attendent leur tour : un formulaire n'en écrase jamais un autre. */
+  const [reviewQueue, setReviewQueue] = useState<Trade[]>([]);
   const [paletteOpen, setPaletteOpen] = useState(false);
   // Page verrouillée : elle est rendue avec un historique de DÉMONSTRATION, pas
   // avec le compte réel. Sans ça, l'aperçu d'un compte vide ne montrerait
@@ -284,7 +322,6 @@ function AppContent() {
   // les voyait remplacés par des données de démonstration une fois l'abonnement
   // résolu — ses propres nombres, changés sous ses yeux.
   const { locked: pageLocked, resolved: gateResolved } = usePageLockState(page);
-  const { tier } = useSubscription();
   const shownTrades = pageLocked ? previewTrades() : trades;
 
   // Tous les « Go Pro » ouvrent la modale d'abonnement (Pro/Elite, mensuel ou
@@ -375,6 +412,14 @@ function AppContent() {
     };
     window.addEventListener("tv:navigate", onNavigate);
     return () => window.removeEventListener("tv:navigate", onNavigate);
+  }, []);
+
+  // L'import CSV s'ouvre depuis n'importe quelle page — Brokers le propose
+  // quand la connexion broker n'est pas (encore) possible.
+  useEffect(() => {
+    const onOpenImport = () => setImportOpen(true);
+    window.addEventListener("tv:open-import", onOpenImport);
+    return () => window.removeEventListener("tv:open-import", onOpenImport);
   }, []);
 
   // Deep link from lifecycle emails: /?upgrade=1&promo=VAULT20 lands on the
@@ -603,6 +648,37 @@ function AppContent() {
     return () => window.clearInterval(id);
   }, [user?.id, accountsReady, tradesLoading, trades, stats, economicEvents]);
 
+  /* Les trades importés par la synchro broker passent par le MÊME pipeline
+     qu'une saisie (`AutomationEngine.tradeSaved`, isNew) : règles du plan,
+     discipline, notifications. Dans l'ordre de la séance, chacun avec
+     l'historique qui le précède. */
+  const runImportedThroughAutomation = useCallback(
+    async (userId: string, imported: Trade[]) => {
+      const ids = new Set(imported.map((tr) => tr.id));
+      const before = (
+        queryClient.getQueryData<Trade[]>(tradesQueryKey(userId, activeId)) ?? []
+      ).filter((tr) => !ids.has(tr.id));
+      const startBal = await loadStartingBalance(userId).catch(() => 0);
+      const ordered = [...imported].sort((a, b) =>
+        `${a.date} ${a.entryTime}` < `${b.date} ${b.entryTime}` ? -1 : 1,
+      );
+      let previous = before;
+      for (const trade of ordered) {
+        await AutomationEngine.tradeSaved({
+          userId,
+          trade,
+          previousTrades: previous,
+          isNew: true,
+          accountBalance: startBal + previous.reduce((s, tr) => s + tr.pnl, 0),
+          rules: rulesRef.current,
+          extras: { intent: null, reflection: null },
+        }).catch(() => {});
+        previous = [trade, ...previous];
+      }
+    },
+    [queryClient, activeId],
+  );
+
   const handleSave = useCallback(
     async (trade: Trade, meta?: TradeJournalMeta) => {
       if (!user) return;
@@ -763,6 +839,20 @@ function AppContent() {
     setModalOpen(false);
     setEditingTrade(null);
   }, []);
+
+  // La file de relecture se vide UN formulaire à la fois, et seulement quand
+  // aucun n'est ouvert. On relit la version COURANTE du trade (le cache a pu
+  // être corrigé entre-temps, par le temps réel ou un autre appareil) et on
+  // saute celui qui a déjà été relu ailleurs.
+  useEffect(() => {
+    if (modalOpen || reviewQueue.length === 0) return;
+    const [next, ...rest] = reviewQueue;
+    setReviewQueue(rest);
+    const current = trades.find((tr) => tr.id === next.id) ?? next;
+    if (!current.reviewPending) return;
+    setEditingTrade(current);
+    setModalOpen(true);
+  }, [modalOpen, reviewQueue, trades]);
   // Stable — évite un nouveau nœud à chaque rendu (boucle `usePageActions`).
   const handleOpenMissed = useCallback(() => setPage("missed"), []);
 
@@ -837,6 +927,15 @@ function AppContent() {
     },
     [user, generateReport, t, toast],
   );
+
+  // La police de Lucid (pile système) habille toute l'app CONNECTÉE, modales
+  // comprises — d'où une classe sur `body`, retirée dès qu'on retombe sur la
+  // vitrine, qui garde Inter. Voir `body.tv-app-type` dans `styles.css`.
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    document.body.classList.add("tv-app-type");
+    return () => document.body.classList.remove("tv-app-type");
+  }, [isAuthenticated]);
 
   if (loading) {
     return <LoadingScreen message={t("app.checkingAccount")} />;
@@ -996,6 +1095,7 @@ function AppContent() {
                     {page === "appearance" && <Appearance />}
                     {page === "subscription" && <Subscription trades={shownTrades} />}
                     {page === "montecarlo" && <MonteCarlo trades={shownTrades} />}
+                    {page === "brokers" && <Brokers />}
                     {page === "inbox" && <Inbox />}
                     {page === "profile" && <Profile trades={trades} />}
                   </PageGate>

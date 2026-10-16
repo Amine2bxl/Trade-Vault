@@ -35,7 +35,7 @@
  *
  * ── CE QUI EST CONVERTI, ET CE QUI NE L'EST PAS ────────────────────────────
  * Converti (valeurs monétaires) : `pnl` · `riskAmount` · `mae` · `mfe` ·
- * `slippage`.
+ * `slippage` · `fees`.
  *
  * JAMAIS : le `rMultiple`, parce que c'est un RATIO — risquer 250 pour gagner
  * 500 ou 500 pour gagner 1 000, c'est le même trade : 2R. Et tout le
@@ -43,9 +43,10 @@
  * horaires. « Tu as revenge-tradé 4 fois » reste 4 fois quel que soit le
  * capital.
  *
- * Le modèle `Trade` ne contient **aucun prix de marché** (ni SL/TP en prix, ni
- * ticks, ni points — vérifié dans `types.ts` et `domain/trade.ts`), donc aucun
- * stop à 17 950 ne risque d'être doublé.
+ * Le modèle `Trade` porte désormais des prix de marché (`entryPrice`,
+ * `exitPrice`, issus d'un import broker) et une `quantity` : ils sont HORS de
+ * `CONVERTED_FIELDS`, à dessein, et aucune conversion ne les touche — un stop
+ * à 17 950 ne doit jamais devenir 35 900.
  *
  * ── LE SOLDE SUIT, DONC LES POURCENTAGES NE BOUGENT PAS ────────────────────
  * Le solde du compte passe à la nouvelle taille en même temps que les trades.
@@ -70,7 +71,7 @@ export const IDENTITY_FACTOR = 1;
 /** Les seuls champs monétaires du modèle. Liste explicite : un champ ajouté au
  *  modèle ne doit PAS être converti par défaut, il doit être ajouté ici en
  *  conscience — c'est ainsi qu'un futur prix de marché restera protégé. */
-export const CONVERTED_FIELDS = ["pnl", "riskAmount", "mae", "mfe", "slippage"] as const;
+export const CONVERTED_FIELDS = ["pnl", "riskAmount", "mae", "mfe", "slippage", "fees"] as const;
 
 /** Un facteur est actif dès qu'il s'écarte de 1. */
 export function isCalibrated(factor: number | null | undefined): boolean {
@@ -106,6 +107,12 @@ export function factorFor(currentBalance: number, targetBalance: number): number
  * appliqué côté SQL (`round(x, 2)` sur des colonnes `numeric`), pour que
  * l'aperçu montré au trader corresponde exactement à ce qui sera écrit.
  */
+/** Un facteur lisible : `2`, `0.5`, `1.25` — jamais `2.00`, qui donne l'air
+ *  d'un arrondi. Le `×` reste à l'appelant. */
+export function fmtFactor(factor: number): string {
+  return String(Number(factor.toFixed(4)));
+}
+
 export function roundMoney(n: number): number {
   return Math.round(n * 100) / 100;
 }
@@ -133,6 +140,11 @@ export function convertTrade(trade: Trade, factor: number): Trade {
     mae: convertMoney(trade.mae, factor),
     mfe: convertMoney(trade.mfe, factor),
     slippage: convertMoney(trade.slippage, factor),
+    // Les frais sont de l'argent : ils suivent l'échelle comme le P&L dont
+    // ils sont déjà déduits. Les PRIX et la QUANTITÉ, eux, sont des faits de
+    // marché — un stop à 18 000 ne devient pas 36 000 parce que le compte
+    // double (voir la note en tête de fichier).
+    fees: convertMoney(trade.fees, factor),
     // rMultiple et tout le comportemental : INCHANGÉS.
   };
 }
