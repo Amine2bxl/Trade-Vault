@@ -730,21 +730,24 @@ body {
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background:
-    radial-gradient(68rem 42rem at 72% -8%, rgb(var(--tv-accent-rgb) / 0.11), transparent 62%),
-    radial-gradient(56rem 40rem at 6% 18%, rgb(86 96 210 / 0.08), transparent 60%),
-    radial-gradient(70rem 50rem at 50% 108%, rgb(86 96 210 / 0.06), transparent 62%);
+  background: radial-gradient(
+    56rem 32rem at 58% 22%,
+    rgb(var(--tv-accent-rgb) / 0.055),
+    transparent 68%
+  );
 }
 .onb-root::after {
-  content: "";
-  position: absolute;
-  inset: 0;
+  content: none;
+}
+.onb-data-field {
   z-index: -1;
-  pointer-events: none;
-  background-image: radial-gradient(circle, rgb(255 255 255 / 0.18) 0 1px, transparent 1.25px);
-  background-size: 46px 46px;
-  mask-image: radial-gradient(ellipse 76% 72% at 50% 45%, #000 8%, transparent 78%);
-  -webkit-mask-image: radial-gradient(ellipse 76% 72% at 50% 45%, #000 8%, transparent 78%);
+  opacity: 0.72;
+  mask-image: radial-gradient(ellipse 88% 86% at 54% 44%, #000 10%, transparent 88%);
+  -webkit-mask-image: radial-gradient(ellipse 88% 86% at 54% 44%, #000 10%, transparent 88%);
+}
+.onb-market-pulse {
+  z-index: -1;
+  opacity: 0.62;
 }
 /* Le bouton principal de la LP, au pixel près : même coin, même ombre portée
    dans l'accent, même relief au survol. */
@@ -761,6 +764,31 @@ body {
 .onb-root .onb-selected {
   box-shadow: inset 0 0 0 1px rgb(var(--tv-accent-rgb) / 0.28);
 }
+@keyframes onb-lock-sweep {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.onb-lock-sweep,
+.onb-pulse-trace {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: onb-lock-sweep 520ms var(--tv-ease) forwards;
+}
+.onb-pulse-trace {
+  animation-duration: 1100ms;
+}
+@keyframes onb-status-pulse {
+  50% {
+    opacity: 0.28;
+  }
+}
+.onb-status-dot {
+  animation: onb-status-pulse 1.8s ease-in-out infinite;
+}
 @media (prefers-reduced-motion: reduce) {
   .onb-root .onb-cta:hover:not(:disabled) {
     transform: none;
@@ -769,7 +797,19 @@ body {
 /* Entrée d'étape : le même geste vertical que dans la référence, court et
    répété. Les détails internes se déploient ensuite via `.onb-in`. */
 .onb-step-enter {
-  animation: fade-in-up var(--duration-panel) var(--tv-ease) both;
+  animation: onb-calibration-enter 480ms var(--tv-ease) both;
+}
+@keyframes onb-calibration-enter {
+  from {
+    opacity: 0;
+    filter: blur(5px);
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: none;
+  }
 }
 
 /* Accueil final : logo, phrase puis contexte, en trois battements. Chaque
@@ -783,6 +823,43 @@ body {
 .onb-launch-copy {
   animation: fade-in var(--duration-base) var(--tv-ease) 260ms both;
 }
+.onb-launch-recap {
+  animation: fade-in-up var(--duration-panel) var(--tv-ease) 460ms both;
+}
+.onb-launch-recap > * {
+  animation: fade-in-up var(--duration-panel) var(--tv-ease) both;
+  animation-delay: calc(500ms + var(--onb-order, 0) * 70ms);
+}
+.onb-dashboard-reveal {
+  animation: onb-dashboard-enter 620ms var(--tv-ease) 780ms both;
+  transform-origin: top center;
+}
+@keyframes onb-dashboard-enter {
+  from {
+    opacity: 0;
+    filter: blur(7px);
+    transform: translateY(14px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: none;
+  }
+}
+@keyframes onb-radar-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.onb-radar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  border-top: 1px solid var(--tv-accent);
+  border-right: 1px solid transparent;
+  animation: onb-radar-spin 1.8s linear infinite;
+}
 
 @media (prefers-reduced-motion: reduce) {
   .onb-in > * {
@@ -794,8 +871,18 @@ body {
   .onb-step-enter,
   .onb-launch-logo,
   .onb-launch-title,
-  .onb-launch-copy {
+  .onb-launch-copy,
+  .onb-launch-recap,
+  .onb-launch-recap > *,
+  .onb-dashboard-reveal {
     animation: fade-in 0.2s ease-out both;
+  }
+  .onb-lock-sweep,
+  .onb-pulse-trace,
+  .onb-status-dot,
+  .onb-radar::after {
+    animation: none;
+    stroke-dashoffset: 0;
   }
 }
 

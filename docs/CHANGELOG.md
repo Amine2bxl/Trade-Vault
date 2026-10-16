@@ -12,6 +12,10 @@ qui vivent dans l'historique git et les PR).
 - L'onboarding adopte une seule entrée verticale séquencée, une progression
   animée par transformation et un accueil final personnalisé avant le
   dashboard, avec mouvement réduit respecté.
+- Direction « terminal financier » issue du prototype Lovable Onboarding
+  Prime : rail de calibration sur desktop, progression segmentée sur mobile,
+  fond de données statique, pulse de marché, verrouillage tracé des choix et
+  mini-dashboard dans la séquence finale.
 
 ## 2026-10-08 — Synchro broker, sous-comptes, langage Lucid
 

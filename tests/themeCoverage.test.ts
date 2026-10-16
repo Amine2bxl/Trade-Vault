@@ -233,6 +233,15 @@ describe("la sortie d'onboarding est une transition, pas une coupure", () => {
     expect(onboarding).toContain('c.personalWelcome.replace("{name}"');
     expect(onboarding).toContain("onb-launch-logo");
     expect(onboarding).toContain("onb-launch-title");
+    expect(onboarding).toContain("onb-dashboard-reveal");
     expect(onboarding).toContain("prefers-reduced-motion: reduce");
+  });
+
+  test("porte les repères d'un terminal de calibration sur desktop et mobile", () => {
+    expect(onboarding).toContain("c.systemModules");
+    expect(onboarding).toContain("c.systemCalibrating");
+    expect(onboarding).toContain("STEP_CODES");
+    expect(onboarding).toContain("onb-market-pulse");
+    expect(onboarding).toContain("onb-lock-sweep");
   });
 });
