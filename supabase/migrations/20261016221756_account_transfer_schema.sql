@@ -23,8 +23,7 @@ begin
 end;
 $$;
 revoke all on function public.enforce_copy_pro() from public, anon, authenticated;
-drop trigger if exists trades_enforce_copy_pro on public.trades;
-create trigger trades_enforce_copy_pro before insert on public.trades
+create or replace trigger trades_enforce_copy_pro before insert on public.trades
   for each row execute function public.enforce_copy_pro();
 
 notify pgrst, 'reload schema';
