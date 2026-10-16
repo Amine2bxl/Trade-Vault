@@ -3,6 +3,16 @@
 Journal des changements **structurels** (pas des features ni des correctifs,
 qui vivent dans l'historique git et les PR).
 
+## 2026-10-16 — Chiffres de référence et entrée d'onboarding
+
+- Toutes les valeurs chiffrées et leurs libellés utilisent désormais Inter
+  ExtraBold/tabulaire via `--font-figure`, y compris les champs numériques.
+- Le vert sémantique des profits est fixé à `#61f8ab`, relevé pixel par pixel
+  sur la référence fournie ; il reste indépendant du thème actif.
+- L'onboarding adopte une seule entrée verticale séquencée, une progression
+  animée par transformation et un accueil final personnalisé avant le
+  dashboard, avec mouvement réduit respecté.
+
 ## 2026-10-08 — Synchro broker, sous-comptes, langage Lucid
 
 - Nouveau moteur `src/modules/brokers/` (pur) et frontière serveur

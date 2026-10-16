@@ -8,6 +8,7 @@ export interface OnboardingCopy {
   langTitle: string;
   langSub: string;
   welcomeTitle: string;
+  personalWelcome: string;
   welcomeSub: string;
   feat1T: string;
   feat1D: string;
@@ -119,6 +120,7 @@ const en: OnboardingCopy = {
   langTitle: "Choose your language",
   langSub: "The whole app will be in this language.",
   welcomeTitle: "Welcome to TradeVault",
+  personalWelcome: "Welcome, {name}.",
   welcomeSub:
     "Your trading journal, built to find your edge. Log every trade, see what's actually working, and fix the leaks before they cost you.",
   feat1T: "Journal every trade",
@@ -226,6 +228,7 @@ const fr: OnboardingCopy = {
   langTitle: "Choisis ta langue",
   langSub: "Toute l'application sera dans cette langue.",
   welcomeTitle: "Bienvenue sur TradeVault",
+  personalWelcome: "Bienvenue, {name}.",
   welcomeSub:
     "Ton journal de trading, pensé pour trouver ton edge. Note chaque trade, vois ce qui marche vraiment, et corrige les fuites avant qu'elles ne coûtent cher.",
   feat1T: "Journalise chaque trade",
@@ -333,6 +336,7 @@ const es: OnboardingCopy = {
   langTitle: "Elige tu idioma",
   langSub: "Toda la app estará en este idioma.",
   welcomeTitle: "Bienvenido a TradeVault",
+  personalWelcome: "Bienvenido, {name}.",
   welcomeSub:
     "Tu diario de trading, hecho para encontrar tu edge. Registra cada operación, ve qué funciona de verdad y corrige las fugas antes de que te cuesten.",
   feat1T: "Registra cada operación",
@@ -423,6 +427,7 @@ const pt: OnboardingCopy = {
   langTitle: "Escolha seu idioma",
   langSub: "Todo o app ficará neste idioma.",
   welcomeTitle: "Bem-vindo ao TradeVault",
+  personalWelcome: "Bem-vindo, {name}.",
   welcomeSub:
     "Seu diário de trading, feito para achar seu edge. Registre cada trade, veja o que funciona de verdade e corrija os vazamentos antes que custem caro.",
   feat1T: "Registre cada trade",
@@ -513,6 +518,7 @@ const de: OnboardingCopy = {
   langTitle: "Wähle deine Sprache",
   langSub: "Die ganze App wird in dieser Sprache sein.",
   welcomeTitle: "Willkommen bei TradeVault",
+  personalWelcome: "Willkommen, {name}.",
   welcomeSub:
     "Dein Trading-Journal, gebaut um deinen Edge zu finden. Logge jeden Trade, sieh was wirklich funktioniert und stopfe die Lecks, bevor sie teuer werden.",
   feat1T: "Jeden Trade journalen",
@@ -603,6 +609,7 @@ const it: OnboardingCopy = {
   langTitle: "Scegli la lingua",
   langSub: "Tutta l'app sarà in questa lingua.",
   welcomeTitle: "Benvenuto su TradeVault",
+  personalWelcome: "Benvenuto, {name}.",
   welcomeSub:
     "Il tuo diario di trading, fatto per trovare il tuo edge. Registra ogni trade, vedi cosa funziona davvero e tappa le falle prima che costino.",
   feat1T: "Registra ogni trade",
@@ -693,6 +700,7 @@ const nl: OnboardingCopy = {
   langTitle: "Kies je taal",
   langSub: "De hele app komt in deze taal.",
   welcomeTitle: "Welkom bij TradeVault",
+  personalWelcome: "Welkom, {name}.",
   welcomeSub:
     "Je trading-journal, gebouwd om je edge te vinden. Log elke trade, zie wat écht werkt en dicht de lekken voor ze je geld kosten.",
   feat1T: "Log elke trade",
@@ -783,6 +791,7 @@ const ru: OnboardingCopy = {
   langTitle: "Выбери язык",
   langSub: "Всё приложение будет на этом языке.",
   welcomeTitle: "Добро пожаловать в TradeVault",
+  personalWelcome: "Добро пожаловать, {name}.",
   welcomeSub:
     "Твой торговый журнал, чтобы найти своё преимущество. Записывай каждую сделку, смотри что реально работает и закрывай утечки, пока они не стоили дорого.",
   feat1T: "Записывай каждую сделку",
@@ -873,6 +882,7 @@ const zh: OnboardingCopy = {
   langTitle: "选择你的语言",
   langSub: "整个应用将使用这种语言。",
   welcomeTitle: "欢迎来到 TradeVault",
+  personalWelcome: "欢迎，{name}。",
   welcomeSub:
     "你的交易日志，专为找到你的优势而生。记录每一笔交易，看清什么真正有效，在漏洞变贵之前补上它。",
   feat1T: "记录每一笔交易",
@@ -963,6 +973,7 @@ const ja: OnboardingCopy = {
   langTitle: "言語を選ぶ",
   langSub: "アプリ全体がこの言語になります。",
   welcomeTitle: "TradeVault へようこそ",
+  personalWelcome: "ようこそ、{name}。",
   welcomeSub:
     "あなたのエッジを見つけるためのトレード日誌。すべてのトレードを記録し、本当に効いているものを見極め、コストになる前に穴を塞ぐ。",
   feat1T: "全トレードを記録",
@@ -1053,6 +1064,7 @@ const ar: OnboardingCopy = {
   langTitle: "اختر لغتك",
   langSub: "سيكون التطبيق بالكامل بهذه اللغة.",
   welcomeTitle: "مرحبًا بك في TradeVault",
+  personalWelcome: "مرحبًا، {name}.",
   welcomeSub:
     "مذكرة تداولك، مصمّمة لإيجاد ميزتك. سجّل كل صفقة، وشاهد ما ينجح فعلًا، وأغلق الثغرات قبل أن تكلّفك.",
   feat1T: "سجّل كل صفقة",
@@ -1143,6 +1155,7 @@ const hi: OnboardingCopy = {
   langTitle: "अपनी भाषा चुनें",
   langSub: "पूरा ऐप इसी भाषा में होगा।",
   welcomeTitle: "TradeVault में आपका स्वागत है",
+  personalWelcome: "स्वागत है, {name}।",
   welcomeSub:
     "आपका ट्रेडिंग जर्नल, आपकी एज ढूँढने के लिए बना। हर ट्रेड लॉग करें, देखें क्या वाकई काम करता है, और लीक महँगे पड़ने से पहले भरें।",
   feat1T: "हर ट्रेड लॉग करें",

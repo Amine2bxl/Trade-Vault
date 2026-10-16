@@ -19,7 +19,7 @@ le produit de Lucid.
 1. L'**accent** (`--tv-accent` `#31d68a`, relevé pixel par pixel sur le
    tableau de bord Lucid) = une action : aplat plein (bouton,
    onglet actif, `+`, focus) avec texte quasi noir.
-2. La **donnée** (`--tv-chart-green` / `--tv-chart-red`) = un résultat : texte
+2. La **donnée** (`--tv-chart-green` `#61f8ab` / `--tv-chart-red`) = un résultat : texte
    coloré ou surface à ~10 % d'opacité, jamais un aplat. Le P&L **ne suit aucun
    thème**.
 3. Un titre n'est jamais peint en vert (le contre-temps d'une accroche est gris).
@@ -44,7 +44,7 @@ plancher de lisibilité 10 px (12 px pour du texte à lire) ;
   (variables résolues), purgés à la déconnexion.
 - Palette `lucid` : fond `#07080a` · carte `--tv-plate-1` `#131416` · tuile
   `--tv-plate-2` `#1a1c1e` · creux `--tv-plate-0` `#0d0e10` · accent `#31d68a`
-  (foncé `#1fb574`, clair `#6be3a8`) · P&L `--tv-chart-green` `#31d68a` /
+  (foncé `#1fb574`, clair `#6be3a8`) · P&L `--tv-chart-green` `#61f8ab` /
   `--tv-chart-red` `#f87171`. La vitrine garde son émeraude verrouillée
   (`#22e08a`, `.landing-root`) · texte `#f2f4f5` · liseré
   `rgb(255 255 255 / .05)`.
@@ -59,8 +59,9 @@ rendent la **même** plaque ; seule la valeur change.
 Roboto sous Android), relevée sur leurs captures, sans police web à charger ;
 `body.tv-app-type` (posé par `shell/App.tsx`) l'applique, modales comprises.
 La vitrine, les pages légales et la démo gardent **Inter**. `.tv-figure`
-(chiffres, P&L) et `.tv-label` (petites capitales grasses espacées) portent la
-pile Lucid partout. Échelle à rôles `--tv-t-*` : `display`, `h1`, `h2`,
+(chiffres, P&L) et `.tv-label` (petites capitales grasses espacées) portent
+**Inter ExtraBold** via `--font-figure`, conformément à la référence fournie et
+de façon identique sur tous les appareils. Échelle à rôles `--tv-t-*` : `display`, `h1`, `h2`,
 `h3`, `body`, `body-sm`, `caption`, `micro`. Chiffres : `.tv-figure`
 (tabulaires). Libellés : `.tv-label` (petites capitales espacées). Détail :
 skill `typography`.

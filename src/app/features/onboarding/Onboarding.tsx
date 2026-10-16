@@ -1,4 +1,4 @@
-import { useCallback, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { SelectPicker } from "@/shared/ui";
 import {
   ArrowLeft,
@@ -43,6 +43,7 @@ import {
 
 /** What the user picked on the quick-start step — App.tsx acts on it. */
 export type OnboardingAction = "import" | "demo" | null;
+type LaunchState = { action: OnboardingAction } | null;
 
 // Onboarding 2.0 — UNE question par écran, design premium TradeVault.
 //   1. IDENTITÉ   — prénom + langue
@@ -219,6 +220,7 @@ export default function Onboarding({
   const { createTheme } = useTheme();
   const [idx, setIdx] = useState(0);
   const [saving, setSaving] = useState<OnboardingAction | "fresh" | null>(null);
+  const [launching, setLaunching] = useState<LaunchState>(null);
   const [saveError, setSaveError] = useState(false);
   const [notifBusy, setNotifBusy] = useState(false);
   // Réponses (toutes optionnelles).
@@ -250,16 +252,10 @@ export default function Onboarding({
   const progress = (idx + 1) / steps.length;
   const stepNum = Math.min(idx + 1, steps.length);
 
-  /* Sens de la dernière navigation : la transition d'étape doit dire OÙ l'on va.
-   * Avancer et reculer produisaient la même entrée, donc le mouvement
-   * n'expliquait rien — il décorait. */
-  const [dir, setDir] = useState<1 | -1>(1);
   const next = useCallback(() => {
-    setDir(1);
     setIdx((i) => Math.min(i + 1, steps.length - 1));
   }, [steps.length]);
   const back = useCallback(() => {
-    setDir(-1);
     setIdx((i) => Math.max(i - 1, 0));
   }, []);
 
@@ -297,7 +293,10 @@ export default function Onboarding({
         if (Number.isFinite(size) && size > 0) {
           await saveAccountBalance(userId, size).catch(() => {});
         }
-        onDone(action);
+        // Comme dans la référence : l'application ne coupe pas brutalement
+        // après le dernier choix. Elle confirme l'identité du trader pendant
+        // un battement, puis révèle le dashboard déjà prêt.
+        setLaunching({ action });
       } catch (e) {
         console.error("Failed to save onboarding", e);
         setSaveError(true);
@@ -307,7 +306,6 @@ export default function Onboarding({
     [
       saving,
       userId,
-      onDone,
       style,
       pain,
       target,
@@ -320,6 +318,13 @@ export default function Onboarding({
       currency,
     ],
   );
+
+  useEffect(() => {
+    if (!launching) return;
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const timer = window.setTimeout(() => onDone(launching.action), reduced ? 120 : 1_150);
+    return () => window.clearTimeout(timer);
+  }, [launching, onDone]);
 
   // Permission push, ré-intégrée — jamais bloquante.
   const enableNotify = useCallback(async () => {
@@ -336,6 +341,7 @@ export default function Onboarding({
   }, [notifBusy, subscribe, next]);
 
   const langs = Object.entries(LANG_NAMES) as [Lang, string][];
+  const launchTitle = c.personalWelcome.replace("{name}", firstName.trim() || "Trader");
 
   const ContinueBtn = ({
     onClick,
@@ -364,6 +370,33 @@ export default function Onboarding({
     </button>
   );
 
+  if (launching) {
+    return (
+      <div
+        className="tv-public onb-root relative flex h-dvh w-full items-center justify-center overflow-hidden px-6"
+        style={{ background: "var(--tv-bg)" }}
+        role="status"
+        aria-live="polite"
+      >
+        <div className="relative z-10 max-w-lg text-center">
+          <img
+            src={logoSrc}
+            alt=""
+            width={72}
+            height={72}
+            className="onb-launch-logo mx-auto h-[72px] w-[72px] rounded-2xl"
+          />
+          <h1 className="onb-launch-title mt-7 text-2xl font-bold tracking-[-0.025em] text-white sm:text-3xl">
+            {launchTitle}
+          </h1>
+          <p className="onb-launch-copy tv-prose mx-auto mt-2 max-w-sm text-slate-400">
+            {c.revealTitle}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className="tv-public onb-root relative h-dvh w-full overflow-hidden flex flex-col"
@@ -385,11 +418,9 @@ export default function Onboarding({
 
         <div className="flex-1 h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
           <div
-            className="relative h-full rounded-full bg-[var(--tv-accent)] transition duration-250 ease-out"
-            style={{ width: `${Math.round(progress * 100)}%` }}
-          >
-            <div className="onb-progress-shimmer absolute inset-y-0 w-1/3 bg-gradient-to-r from-transparent via-white/50 to-transparent" />
-          </div>
+            className="h-full w-full origin-left rounded-full bg-[var(--tv-accent)] transition-transform duration-250 ease-out"
+            style={{ transform: `scaleX(${progress})` }}
+          />
         </div>
 
         <span className="tv-figure shrink-0 text-[10px] text-slate-600">
@@ -399,14 +430,11 @@ export default function Onboarding({
 
       {/* Body */}
       <div className="relative z-10 flex-1 flex items-center justify-center px-4 pt-6 overflow-y-auto">
-        <div
-          key={step}
-          className={cn("w-full max-w-lg pb-6", dir === 1 ? "onb-step-fwd" : "onb-step-back")}
-        >
+        <div key={step} className="onb-step-enter w-full max-w-lg pb-6">
           {/* ── 1 · IDENTITÉ ── */}
           {step === "identity" && (
             <div className="text-center">
-              <div className="flex justify-center mb-5">
+              <div className="onb-launch-logo mb-5 flex justify-center">
                 <div className="relative">
                   <img
                     src={logoSrc}
@@ -418,13 +446,15 @@ export default function Onboarding({
                 </div>
               </div>
 
-              <div className="flex justify-center mb-3">
+              <div className="onb-launch-title mb-3 flex justify-center">
                 <div className="grid h-9 w-9 place-items-center rounded-xl bg-[rgb(var(--tv-accent-rgb)/0.15)] border border-[rgb(var(--tv-accent-rgb)/0.20)]">
                   <UserRound className="w-4 h-4 text-[var(--tv-highlight)]" />
                 </div>
               </div>
-              <h1 className="tv-title tracking-tight mb-1.5">{t("onb.nameTitle")}</h1>
-              <p className="tv-prose text-slate-400 max-w-sm mx-auto mb-4">{t("onb.nameSub")}</p>
+              <div className="onb-launch-copy">
+                <h1 className="tv-title mb-1.5 tracking-tight">{t("onb.nameTitle")}</h1>
+                <p className="tv-prose mx-auto mb-4 max-w-sm text-slate-400">{t("onb.nameSub")}</p>
+              </div>
 
               <input
                 type="text"
@@ -730,9 +760,8 @@ export default function Onboarding({
           {step === "notify" && (
             <div className="text-center">
               <div className="flex justify-center">
-                <div className="relative mb-4">
-                  <span className="absolute -inset-2 rounded-2xl bg-[rgb(var(--tv-accent-rgb)/0.30)] blur-md" />
-                  <div className="relative grid h-12 w-12 place-items-center rounded-2xl tv-accent-fill">
+                <div className="mb-4">
+                  <div className="grid h-12 w-12 place-items-center rounded-2xl tv-accent-fill">
                     <Bell className="w-6 h-6" />
                   </div>
                 </div>
@@ -770,9 +799,8 @@ export default function Onboarding({
             <div>
               <div className="text-center">
                 <div className="flex justify-center">
-                  <div className="relative mb-4">
-                    <span className="absolute -inset-2 rounded-2xl bg-[rgb(var(--tv-accent-2-rgb)/0.3)] blur-md" />
-                    <div className="relative grid h-12 w-12 place-items-center rounded-2xl tv-accent-fill shadow-xl">
+                  <div className="mb-4">
+                    <div className="grid h-12 w-12 place-items-center rounded-2xl tv-accent-fill">
                       <Rocket className="w-6 h-6" />
                     </div>
                   </div>

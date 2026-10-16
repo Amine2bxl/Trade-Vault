@@ -122,7 +122,7 @@
   --color-surface: #16191c;
   --color-surface-light: #1d2125;
   --color-surface-lighter: #23282d;
-  --color-profit: #31d68a;
+  --color-profit: #61f8ab;
   --color-loss: #ef4444;
 
   /* ----------------------------------------------------------------
@@ -350,6 +350,11 @@
   --font-lucid:
     -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto,
     "Helvetica Neue", Arial, sans-serif;
+  /* La voix des données de la référence fournie : Inter ExtraBold, chargée
+     une seule fois par la racine. Contrairement à la pile système, elle garde
+     exactement la même carrure sur Mac, Windows et mobile. */
+  --font-figure:
+    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   /* Default identity = "Graphite" neutral gray — matches the public landing
      page so the signed-in app and the marketing site share one identity. */
   /* Surfaces et textes — extraits en variables pour que le studio de thème
@@ -434,13 +439,11 @@
    * unique de la courbe, de son dégradé, de sa légende et de ses pastilles.
    * `--tv-chart-red` en est le pendant pour la perte et pour le repère de
    * plancher. */
-  /* LE VERT ET LE ROUGE DE LUCID. Relevés pixel par pixel sur les captures du
-     tableau de bord Lucid (`docs/assets/lucid/`) : l'aplat du bouton actif et
-     le P&L positif donnent #31d68a, la perte #f87171 (déjà le nôtre). Le vert
-     du gain reste le vert de l'accent : un seul vert dans l'app, de l'onglet
-     actif à la courbe. La vitrine garde son émeraude verrouillée. */
-  --tv-chart-green: #31d68a;
-  --tv-chart-green-rgb: 49 214 138;
+  /* VERT PROFIT DE LA RÉFÉRENCE FOURNIE. Relevé pixel par pixel sur l'aplat
+     du P&L positif : #61f8ab. Il reste fixe dans tous les thèmes et se
+     distingue volontairement de l'accent d'action. */
+  --tv-chart-green: #61f8ab;
+  --tv-chart-green-rgb: 97 248 171;
   --tv-chart-red: #f87171;
   --tv-chart-red-rgb: 248 113 113;
 
@@ -698,25 +701,13 @@ body {
 /* Tactile press feedback on selectable cards. */
 .onb-card {
   transition:
-    transform 0.16s cubic-bezier(0.16, 1, 0.3, 1),
-    border-color 0.2s ease,
-    background 0.2s ease,
-    box-shadow 0.2s ease;
+    transform var(--duration-micro) var(--tv-ease),
+    border-color var(--duration-base) var(--tv-ease),
+    background-color var(--duration-base) var(--tv-ease);
   /* No permanent will-change — see .card-premium: it blurred text on Windows. */
-}
-.onb-card:hover {
-  transform: translateY(-2px);
 }
 .onb-card:active {
   transform: scale(0.975);
-}
-/* Soft shimmer travelling along the progress bar. */
-.onb-progress-shimmer {
-  opacity: 0.35;
-}
-/* Reveal: logo halo pulse + sequential lines handled inline. */
-.onb-halo {
-  opacity: 0.7;
 }
 /* ══ L'ONBOARDING PORTE L'HABIT DE LA VITRINE ══
  *
@@ -750,103 +741,60 @@ body {
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background-image:
-    linear-gradient(rgb(255 255 255 / 0.022) 1px, transparent 1px),
-    linear-gradient(90deg, rgb(255 255 255 / 0.022) 1px, transparent 1px);
-  background-size: 56px 56px;
-  mask-image: radial-gradient(ellipse 80% 70% at 50% 30%, #000 20%, transparent 80%);
-  -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 30%, #000 20%, transparent 80%);
+  background-image: radial-gradient(circle, rgb(255 255 255 / 0.18) 0 1px, transparent 1.25px);
+  background-size: 46px 46px;
+  mask-image: radial-gradient(ellipse 76% 72% at 50% 45%, #000 8%, transparent 78%);
+  -webkit-mask-image: radial-gradient(ellipse 76% 72% at 50% 45%, #000 8%, transparent 78%);
 }
 /* Le bouton principal de la LP, au pixel près : même coin, même ombre portée
    dans l'accent, même relief au survol. */
 .onb-root .onb-cta {
   border-radius: 10px;
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.18),
-    0 1px 2px rgb(0 0 0 / 0.4),
-    0 8px 28px -12px rgb(var(--tv-accent-rgb) / 0.55);
   transition:
-    background-color 0.16s ease,
-    transform 0.16s cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 0.16s ease;
+    background-color var(--duration-base) var(--tv-ease),
+    transform var(--duration-micro) var(--tv-ease);
 }
 .onb-root .onb-cta:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.22),
-    0 1px 2px rgb(0 0 0 / 0.4),
-    0 12px 34px -12px rgb(var(--tv-accent-rgb) / 0.7);
+  background: var(--tv-cta-hover);
 }
-/* La pastille d'icône de chaque question : une lueur émeraude diffuse dessous,
-   comme le halo des captures de la LP. Elle donne un point d'ancrage à l'écran. */
-.onb-root .onb-badge {
-  position: relative;
-}
-.onb-root .onb-badge::before {
-  content: "";
-  position: absolute;
-  inset: -18px;
-  z-index: -1;
-  border-radius: 999px;
-  background: radial-gradient(closest-side, rgb(var(--tv-accent-rgb) / 0.28), transparent);
-}
-/* Une réponse choisie s'allume : liseré d'accent + lueur courte. */
+/* Une réponse choisie porte le liseré de l'accent, sans rayonner. */
 .onb-root .onb-selected {
-  box-shadow:
-    0 0 0 1px rgb(var(--tv-accent-rgb) / 0.35),
-    0 10px 30px -14px rgb(var(--tv-accent-rgb) / 0.55);
+  box-shadow: inset 0 0 0 1px rgb(var(--tv-accent-rgb) / 0.28);
 }
 @media (prefers-reduced-motion: reduce) {
   .onb-root .onb-cta:hover:not(:disabled) {
     transform: none;
   }
 }
-/* ── Transition d'étape de l'onboarding ──
- *
- * L'étape entre depuis le côté vers lequel on se déplace : en avant elle vient
- * de la droite, en arrière de la gauche. C'est la seule information que le
- * mouvement doit porter ici — d'où un déplacement court (14px) et une durée
- * brève (0.26s) : un assistant se traverse, il ne se contemple pas.
- * Sortie non animée : React démonte l'étape précédente immédiatement.
- */
-@keyframes onb-step-fwd {
-  from {
-    opacity: 0;
-    transform: translate3d(14px, 0, 0);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
+/* Entrée d'étape : le même geste vertical que dans la référence, court et
+   répété. Les détails internes se déploient ensuite via `.onb-in`. */
+.onb-step-enter {
+  animation: fade-in-up var(--duration-panel) var(--tv-ease) both;
 }
-@keyframes onb-step-back {
-  from {
-    opacity: 0;
-    transform: translate3d(-14px, 0, 0);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
+
+/* Accueil final : logo, phrase puis contexte, en trois battements. Chaque
+   mouvement reste sous 300 ms ; seul leur décalage construit la séquence. */
+.onb-launch-logo {
+  animation: scale-in var(--duration-panel) var(--tv-ease) both;
 }
-.onb-step-fwd {
-  animation: onb-step-fwd 0.26s cubic-bezier(0.16, 1, 0.3, 1) both;
+.onb-launch-title {
+  animation: fade-in-up var(--duration-panel) var(--tv-ease) 120ms both;
 }
-.onb-step-back {
-  animation: onb-step-back 0.26s cubic-bezier(0.16, 1, 0.3, 1) both;
+.onb-launch-copy {
+  animation: fade-in var(--duration-base) var(--tv-ease) 260ms both;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .onb-in > *,
-  .onb-progress-shimmer,
-  .onb-halo {
+  .onb-in > * {
     animation: none;
     opacity: 1;
   }
   /* Le changement d'étape reste signalé — par un fondu seul, sans déplacement :
    * supprimer tout retour ferait croire que rien ne s'est passé. */
-  .onb-step-fwd,
-  .onb-step-back {
+  .onb-step-enter,
+  .onb-launch-logo,
+  .onb-launch-title,
+  .onb-launch-copy {
     animation: fade-in 0.2s ease-out both;
   }
 }
@@ -1303,6 +1251,7 @@ h6 {
 /* Tabular figures everywhere numbers carry meaning (prices, R, stats) so digits
  * align in columns and don't jitter as values change. */
 .tabular-nums {
+  font-family: var(--font-figure);
   font-variant-numeric: tabular-nums;
 }
 .font-display,
@@ -1335,6 +1284,9 @@ input[type="number"]::-webkit-outer-spin-button {
 }
 input[type="number"] {
   -moz-appearance: textfield;
+  font-family: var(--font-figure);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
 }
 
 /* Page content entrance: smooth bottom-up reveal, fast, no stagger delays.
@@ -2982,14 +2934,9 @@ a:focus-visible,
  * (vert gagné, rouge perdu), et cela se décide au point d'appel.
  */
 .tv-figure {
-  /* LA POLICE DES CHIFFRES DE LUCID. Relevée sur leurs captures : leur
-     tableau de bord n'embarque AUCUNE police web, il s'écrit dans la police
-     du système — SF Pro sur Apple, Segoe UI sous Windows, Roboto sous
-     Android — en graisse lourde. C'est ce qui donne à « +$4,936 » sa
-     carrure : un chiffre natif, large, dessiné pour l'écran qui l'affiche.
-     On reprend exactement la même pile (`--font-lucid`), donc le même
-     rendu sur chaque appareil, sans un octet de police à télécharger. */
-  font-family: var(--font-lucid);
+  /* Police mesurée sur la référence fournie : Inter ExtraBold en chiffres
+     tabulaires. La famille web rend le nombre identique sur chaque appareil. */
+  font-family: var(--font-figure);
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum";
   font-weight: 800;
@@ -3012,9 +2959,9 @@ a:focus-visible,
  * pour un objectif atteint) : la couleur reste au point d'appel, sinon la
  * classe l'écraserait silencieusement. */
 .tv-label {
-  /* Lucid : « ACCOUNT BALANCE », « TOTAL P&L » — capitales grasses, très
-     espacées, dans la même police système que le chiffre qu'elles nomment. */
-  font-family: var(--font-lucid);
+  /* La même famille que le chiffre, comme « ACCOUNT BALANCE » / « TOTAL P&L »
+     dans la référence : petites capitales grasses et espacées. */
+  font-family: var(--font-figure);
   font-size: var(--tv-t-micro);
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -3832,8 +3779,8 @@ a:focus-visible,
     --tv-text-muted: #7c8594;
     --tv-border: rgba(255, 255, 255, 0.08);
     --tv-border-strong: rgba(255, 255, 255, 0.16);
-    --tv-chart-green: #31d68a;
-    --tv-chart-green-rgb: 49 214 138;
+    --tv-chart-green: #61f8ab;
+    --tv-chart-green-rgb: 97 248 171;
     --tv-accent: #31d68a;
     --tv-accent-rgb: 49 214 138;
 

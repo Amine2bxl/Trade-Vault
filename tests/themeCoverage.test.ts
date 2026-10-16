@@ -209,3 +209,30 @@ describe("le tableau de bord ne connaît que les deux verts du langage", () => {
     expect(code).not.toContain("rgba(16,185,129");
   });
 });
+
+describe("le système de chiffres reste identique sur toutes les surfaces", () => {
+  const styles = readSource(import.meta.dir, "../src/styles.css");
+
+  test("le profit reprend exactement le vert de la référence", () => {
+    expect(styles).toContain("--tv-chart-green: #61f8ab;");
+    expect(styles).toContain("--tv-chart-green-rgb: 97 248 171;");
+    expect(styles).toContain("--color-profit: #61f8ab;");
+  });
+
+  test("figures, nombres tabulaires et saisies numériques partagent la même police", () => {
+    expect(styles).toMatch(/\.tv-figure\s*\{[^}]*font-family:\s*var\(--font-figure\)/s);
+    expect(styles).toMatch(/\.tabular-nums\s*\{[^}]*font-family:\s*var\(--font-figure\)/s);
+    expect(styles).toMatch(/input\[type="number"\]\s*\{[^}]*font-family:\s*var\(--font-figure\)/s);
+  });
+});
+
+describe("la sortie d'onboarding est une transition, pas une coupure", () => {
+  const onboarding = readSource(import.meta.dir, "../src/app/features/onboarding/Onboarding.tsx");
+
+  test("affiche le prénom avant de révéler l'application", () => {
+    expect(onboarding).toContain('c.personalWelcome.replace("{name}"');
+    expect(onboarding).toContain("onb-launch-logo");
+    expect(onboarding).toContain("onb-launch-title");
+    expect(onboarding).toContain("prefers-reduced-motion: reduce");
+  });
+});

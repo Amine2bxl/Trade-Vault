@@ -73,7 +73,7 @@ la marque, le CTA primaire, l'anneau de focus, le lien, l'état actif. Si un
 
 | Token | Valeur | Rôle |
 | --- | --- | --- |
-| `--tv-chart-green` | `#31d68a` | Gagné — **ne bouge avec aucun thème** (le vert de Lucid) |
+| `--tv-chart-green` | `#61f8ab` | Gagné — **ne bouge avec aucun thème** (vert mesuré sur la référence) |
 | `--tv-chart-red` | `#f87171` | Perdu — idem |
 | `--tv-success` / `--tv-warning` / `--tv-danger` | `#10b981` / `#f59e0b` / `#ef4444` | États d'interface |
 

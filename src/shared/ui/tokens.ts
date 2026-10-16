@@ -11,9 +11,8 @@
  *      le signe du P&L. Une surface qui n'est ni l'un ni l'autre est grise.
  *   2. La profondeur vient de la VALEUR, pas de la lumière — une plaque plus
  *      claire est devant. Rien ne rayonne, rien ne flotte sans raison.
- *   3. Le chiffre a sa propre GRAISSE, pas sa propre police — Inter en 800,
- *      chiffres tabulaires. C'est le « Capital » de la Calculatrice de lot,
- *      et c'est la référence de toute donnée chiffrée du produit.
+ *   3. Le chiffre suit la référence produit — Inter en 800, chiffres
+ *      tabulaires — et garde donc la même carrure sur chaque appareil.
  *
  * IMPORTANT: this does not restyle anything. The visual source of truth is the
  * CSS in `src/styles.css` (custom properties + utility classes); these tokens
@@ -33,6 +32,8 @@ export const font = {
   display: '"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif',
   /** Roboto Mono stack for the rare technical spots (codes, session times). */
   mono: '"Roboto Mono",ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace',
+  /** Exact figure stack used by `.tv-figure` and numeric fields. */
+  figure: '"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif',
   /** Utility class for display emphasis (headings + hero metrics). */
   displayClass: "font-display",
   /** Tabular figures for prices / R / stats. */

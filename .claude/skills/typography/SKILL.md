@@ -5,7 +5,7 @@ description: Loi typographique de TradeVault — pile système de Lucid dans l'a
 
 # Typographie — une voix par surface
 
-## La police de Lucid dans l'app, Inter sur la vitrine
+## La police de Lucid dans l'app, Inter pour les chiffres
 
 L'**app connectée** écrit dans la police de Lucid : la **pile système**
 `--font-lucid` (`-apple-system`/SF Pro, Segoe UI, Roboto, Helvetica Neue,
@@ -14,7 +14,9 @@ le chiffre est dessiné pour l'écran qui l'affiche. `body.tv-app-type` (posé
 par `shell/App.tsx`) l'applique au corps et aux titres, modales comprises.
 
 La **vitrine**, les pages légales et la démo gardent **Inter** (`--font-sans`,
-`--font-display`). `.tv-figure` et `.tv-label` portent la pile Lucid partout.
+`--font-display`). Les chiffres et leurs libellés portent **Inter** partout via
+`--font-figure` : c'est la référence fournie, en graisse 800 et chiffres
+tabulaires, avec un rendu identique sur chaque appareil.
 
 Dans chaque surface, une seule famille : la hiérarchie vient de la **taille,
 de la graisse et de l'approche**. `Roboto Mono` (`--font-mono`) est réservé aux
@@ -47,7 +49,7 @@ mention. Rien sous 10px. Du texte réel à lire : 12px minimum.
 ### `.tv-figure` — le chiffre
 
 ```
-font-family: var(--font-lucid); font-variant-numeric: tabular-nums;
+font-family: var(--font-figure); font-variant-numeric: tabular-nums;
 font-weight: 800; letter-spacing: -0.01em;
 ```
 
@@ -59,7 +61,7 @@ ligne. La classe ne fixe **pas** de couleur — la teinte porte le signe.
 ### `.tv-label` — le libellé
 
 ```
-var(--font-lucid) · 10px / 700 / uppercase / letter-spacing: .08em
+var(--font-figure) · 10px / 700 / uppercase / letter-spacing: .08em
 ```
 
 Un libellé **nomme la case**, il ne fait pas une phrase. Il doit pouvoir être
