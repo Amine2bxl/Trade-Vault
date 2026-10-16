@@ -35,9 +35,9 @@ import type { TKey } from "@/app/i18n/translations";
 import { PushNotificationSettings } from "./PushNotificationSettings";
 import { cn } from "@/shared/ui/cn";
 import { Button, Card, FIELD_BASE, Modal, PageContainer, SelectPicker } from "@/shared/ui";
-import AccountSwitcher from "@/app/shell/AccountSwitcher";
+import AccountsManager from "./AccountsManager";
+import { useSubscription } from "@/app/hooks/useSubscription";
 import { useAccounts } from "@/app/contexts/AccountContext";
-import { isCalibrated } from "@/app/trading/accountCalibration";
 import RecalibrateAccountModal from "./RecalibrateAccountModal";
 import CompAccessSection, { useIsAdmin } from "../billing/CompAccessSection";
 import PromoCodeSection from "../billing/PromoCodeSection";
@@ -105,8 +105,9 @@ export default function Settings({
 }: SettingsProps) {
   const { user, deleteAccount } = useAuth();
   const isAdmin = useIsAdmin();
-  const { activeId, activeAccount } = useAccounts();
+  const { activeId } = useAccounts();
   const [recalOpen, setRecalOpen] = useState(false);
+  const canRecal = useSubscription().can("recalibration");
   const { t, setLang } = useT();
   const [language, setLanguage] = useState("en");
   const [startingEquity, setStartingEquity] = useState("25000");
@@ -333,7 +334,9 @@ export default function Settings({
                 icon={<Wallet className="w-4 h-4" />}
                 title={t("settings.paneAccount")}
               />
-              <AccountSwitcher variant="card" />
+              {/* Le gestionnaire complet : principal, sous-comptes, et les
+                  outils qui les relient (transfert, recalibrage). */}
+              <AccountsManager trades={trades} />
             </div>
           )}
 
@@ -451,6 +454,7 @@ export default function Settings({
                 <ActionRow
                   icon={<Scale className="w-4 h-4" />}
                   label={t("recal.action")}
+                  sub={canRecal ? undefined : t("recal.proNote")}
                   onClick={() => setRecalOpen(true)}
                 />
               )}

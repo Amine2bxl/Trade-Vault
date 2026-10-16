@@ -22,6 +22,8 @@ let ranges: [number, number][] = [];
 let eqFilters: Record<string, unknown> = {};
 /** Chemins réellement passés à la suppression du bucket. */
 let removedPaths: string[] = [];
+/** Lignes réellement envoyées à `upsert`. */
+let upserted: Record<string, unknown>[] = [];
 
 /**
  * La suppression : `delete().eq().eq()` doit s'attendre à n'importe quel
@@ -44,6 +46,10 @@ function makeQuery() {
       return q;
     },
     order: () => q,
+    upsert: (row: Record<string, unknown>) => {
+      upserted.push(row);
+      return Promise.resolve({ data: null, error: null });
+    },
     range: (from: number, to: number) => {
       ranges.push([from, to]);
       const slice = allRows.slice(from, to + 1);
@@ -67,7 +73,8 @@ mock.module("@/integrations/supabase/client", () => ({
   },
 }));
 
-const { loadUserTrades, rowToTrade, deleteAllTrades } = await import("../src/app/store/trades");
+const { loadUserTrades, rowToTrade, deleteAllTrades, upsertTrade } =
+  await import("../src/app/store/trades");
 const { setActiveAccountId } = await import("../src/app/store/accounts");
 
 const row = (id: number, over: Record<string, unknown> = {}) => ({
@@ -291,5 +298,53 @@ describe("deleteAllTrades — les captures d'écran suivent les lignes", () => {
     return deleteAllTrades("u1").then(() => {
       expect(removedPaths).toEqual([]);
     });
+  });
+});
+
+describe("exécution d'un trade importé", () => {
+  test("un champ d'exécution VIDÉ s'écrit vide — l'upsert ne garde pas l'ancienne valeur", async () => {
+    upserted = [];
+    const base = rowToTrade({
+      id: "t-1",
+      user_id: "u-1",
+      trade_date: "2026-10-08",
+      symbol: "MNQ",
+      direction: "long",
+      pnl: 47.52,
+      risk_amount: 40,
+      r_multiple: 1.188,
+      quantity: 2,
+      entry_price: 20000,
+      exit_price: 20012.5,
+      fees: 2.48,
+      broker: "tradovate",
+      external_id: "tradovate:900:1",
+    } as never);
+    await upsertTrade("u-1", { ...base, fees: null, quantity: null });
+    const row = upserted.at(-1)!;
+    // Nommées explicitement à `null` : sans la colonne, ON CONFLICT DO UPDATE
+    // conservait les frais et la quantité du broker.
+    expect("fees" in row && row.fees === null).toBe(true);
+    expect("quantity" in row && row.quantity === null).toBe(true);
+    expect(row.entry_price).toBe(20000);
+  });
+
+  test("un trade manuel sans exécution ne nomme toujours aucune de ces colonnes", async () => {
+    upserted = [];
+    const manual = rowToTrade({
+      id: "t-2",
+      user_id: "u-1",
+      trade_date: "2026-10-08",
+      symbol: "ES",
+      direction: "short",
+      pnl: 100,
+      risk_amount: 50,
+      r_multiple: 2,
+    } as never);
+    await upsertTrade("u-1", manual);
+    const row = upserted.at(-1)!;
+    for (const col of ["quantity", "entry_price", "exit_price", "fees"]) {
+      expect(col in row).toBe(false);
+    }
   });
 });

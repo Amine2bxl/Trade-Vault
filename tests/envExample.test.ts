@@ -63,6 +63,11 @@ const DYNAMIC: Record<string, string> = {
 const PLATFORM = new Set([
   "PORT",
   "NITRO_PRESET",
+  // Variables système de Vercel : l'URL du déploiement, de sa branche et du
+  // domaine de production, posées par la plateforme à chaque déploiement.
+  "VERCEL_URL",
+  "VERCEL_BRANCH_URL",
+  "VERCEL_PROJECT_PRODUCTION_URL",
   // Les CONSTANTES DE COMPILATION de Vite. `import.meta.env.DEV` et ses
   // voisines ne sont pas lues dans l'environnement : Vite les REMPLACE
   // textuellement au build, d'après le mode. Les inscrire dans

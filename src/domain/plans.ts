@@ -108,6 +108,14 @@ export const TIERS: TierDef[] = [
       { fr: "Jarvis 20 fois par jour", en: "Jarvis 20 times a day", metered: true },
       { fr: "Rapports mensuels automatiques", en: "Automatic monthly reports" },
       {
+        fr: "Synchro Tradovate, en lecture seule",
+        en: "Tradovate sync, read-only",
+      },
+      {
+        fr: "Transfert et recalibrage entre comptes",
+        en: "Transfer and rescale trades between accounts",
+      },
+      {
         fr: "Jusqu'à 3 comptes (2 sous-comptes)",
         en: "Up to 3 accounts (2 sub-accounts)",
         metered: true,
@@ -202,6 +210,9 @@ export type Capability =
   | "reports"
   | "montecarlo"
   | "seasonality"
+  | "brokerSync"
+  | "accountTransfer"
+  | "recalibration"
   | "patterns"
   | "automation"
   | "pushAlerts"
@@ -221,6 +232,12 @@ export const CAPABILITY_TIER: Record<Capability, Tier> = {
   reports: "pro",
   montecarlo: "pro",
   seasonality: "pro",
+  // Les outils de COMPTE d'un trader de prop firm : ses trades qui arrivent
+  // seuls de Tradovate, et ses comptes qui se répondent (transfert, échelle).
+  // Vérifiés aussi côté serveur : `requireProPlan` et `recalibrate_account`.
+  brokerSync: "pro",
+  accountTransfer: "pro",
+  recalibration: "pro",
   // Elite n'ouvre aucune page : elle enlève les limites.
   patterns: "elite",
   automation: "elite",

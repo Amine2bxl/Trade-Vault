@@ -43,6 +43,7 @@ const loadAppearance = () => import("../features/settings/Appearance");
 const loadSubscription = () => import("../features/billing/Subscription");
 const loadInbox = () => import("../features/inbox/Inbox");
 const loadMonteCarlo = () => import("../features/monte-carlo/MonteCarlo");
+const loadBrokers = () => import("../features/brokers/Brokers");
 
 export const Journal = lazyPage(loadJournal);
 export const Checklist = lazyPage(loadChecklist);
@@ -63,6 +64,7 @@ export const Appearance = lazyPage(loadAppearance);
 export const Subscription = lazyPage(loadSubscription);
 export const Inbox = lazyPage(loadInbox);
 export const MonteCarlo = lazyPage(loadMonteCarlo);
+export const Brokers = lazyPage(loadBrokers);
 
 /** `dashboard` est absent : il vit dans le chunk principal, jamais différé. */
 const LOADERS: Partial<Record<Page, () => Promise<unknown>>> = {
@@ -85,6 +87,7 @@ const LOADERS: Partial<Record<Page, () => Promise<unknown>>> = {
   subscription: loadSubscription,
   inbox: loadInbox,
   montecarlo: loadMonteCarlo,
+  brokers: loadBrokers,
 };
 
 const started = new Set<Page>();

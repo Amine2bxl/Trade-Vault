@@ -74,6 +74,7 @@ export type { SubNavItem } from "./SubNav";
 export { Sheet } from "./Sheet";
 export { EmptyState } from "./EmptyState";
 export { Metric } from "./Metric";
+export { RollingFigure } from "./RollingFigure";
 export type { MetricProps } from "./Metric";
 export { StreakCard } from "./StreakCard";
 export type { StreakCardProps } from "./StreakCard";

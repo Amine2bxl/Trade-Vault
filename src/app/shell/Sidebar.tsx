@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { memo, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import {
   Bell,
@@ -28,7 +28,12 @@ interface SidebarProps {
   totalPnl: number;
 }
 
-export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
+/* MÉMOÏSÉE. La barre est rendue par `App`, qui se re-rend à chaque toast,
+   modale ou frappe dans un formulaire : sans `memo`, tout le rail (et sa
+   mesure de languette) se recalculait pour rien. Ses trois props sont
+   stables — `setPage` est un `useCallback` sans dépendance — donc elle ne se
+   redessine plus que lorsque la page, le P&L ou son propre état changent. */
+export default memo(function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
   const { user, logout } = useAuth();
   const { t } = useT();
   const { activeAccount } = useAccounts();
@@ -59,7 +64,16 @@ export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
     const place = () => {
       const el = nav.querySelector<HTMLElement>('[data-rail-active="true"]');
       if (!el) return setTab(null);
-      setTab({ top: el.offsetTop, height: el.offsetHeight });
+      const top = el.offsetTop;
+      const height = el.offsetHeight;
+      // PERF — on ne pose un nouvel état que si la languette BOUGE. Pendant
+      // le pli, l'observateur se déclenche à chaque frame (la largeur du rail
+      // s'anime) alors que l'ordonnée et la hauteur ne changent pas : un objet
+      // neuf à chaque fois re-rendait toute la barre soixante fois par
+      // seconde, pendant toute l'animation.
+      setTab((prev) =>
+        prev && prev.top === top && prev.height === height ? prev : { top, height },
+      );
     };
     place();
     // Le pli change la largeur du rail, donc la hauteur d'une entrée peut
@@ -67,12 +81,16 @@ export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
     // une autre ligne dans une autre langue).
     const ro = new ResizeObserver(place);
     ro.observe(nav);
-    const id = requestAnimationFrame(() => setReady(true));
-    return () => {
-      ro.disconnect();
-      cancelAnimationFrame(id);
-    };
+    return () => ro.disconnect();
   }, [page, collapsed, unread]);
+
+  // La transition de la languette n'est armée qu'APRÈS la première peinture,
+  // une seule fois : la réarmer à chaque navigation coûtait un rendu de plus
+  // par changement de page.
+  useLayoutEffect(() => {
+    const id = requestAnimationFrame(() => setReady(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
 
   // Infobulle de la barre repliée, rendue en PORTAL (position fixe) : la barre
   // repliée est `overflow-hidden` pour un repli/dépli animé sans débordement de
@@ -116,17 +134,20 @@ export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
       aria-label={label}
       aria-current={active ? "page" : undefined}
       data-rail-active={active ? "true" : undefined}
-      className={cn(
-        "rail-item relative z-[2] w-full",
-        collapsed ? "justify-center px-0" : "px-3",
-        active && "rail-item-active",
-      )}
+      className={cn("rail-item relative z-[2] w-full", active && "rail-item-active")}
     >
       <span className="rail-icon relative">
         {icon}
         {badge}
       </span>
-      {!collapsed && <span className="truncate">{label}</span>}
+      {/* Le libellé RESTE dans le DOM plié ou déplié : il s'efface en fondu
+          pendant que le rail se resserre au lieu de disparaître d'un coup
+          (l'ancien saut de mise en page au premier frame du pli). Plié, il
+          est masqué aux lecteurs d'écran — le bouton porte déjà
+          `aria-label`. */}
+      <span className="rail-label truncate" aria-hidden={collapsed || undefined}>
+        {label}
+      </span>
     </button>
   );
 
@@ -151,12 +172,7 @@ export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
             Déplié : disque blanc + nom à gauche, chevron à droite.
             Plié : le disque seul, centré. Le chevron descend sous la marque,
             car sur 68px de large il n'y a pas de place pour deux objets. */}
-        <div
-          className={cn(
-            "flex shrink-0 items-center gap-2 px-3 pt-3",
-            collapsed ? "justify-center" : "justify-between",
-          )}
-        >
+        <div className="flex shrink-0 items-center justify-between gap-2 pl-[17px] pr-3 pt-3">
           <div className="flex min-w-0 items-center gap-2.5">
             {/* L'ancien sigle, restauré : c'est l'identité de la marque, elle
                 ne se remplace pas à la faveur d'un thème. Le disque blanc qui
@@ -168,7 +184,9 @@ export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
               width={34}
               height={34}
             />
-            {!collapsed && <BrandWord className="truncate text-[15px] text-white" />}
+            <span className="rail-label min-w-0" aria-hidden={collapsed || undefined}>
+              <BrandWord className="truncate text-[15px] text-white" />
+            </span>
           </div>
           {/* Le chevron n'existe en haut que DÉPLIÉ. Plié, la tête du rail est
               le disque de marque et rien d'autre — un second objet sur 68px de
@@ -369,4 +387,4 @@ export default function Sidebar({ page, setPage, totalPnl }: SidebarProps) {
         )}
     </aside>
   );
-}
+});

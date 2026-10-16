@@ -149,3 +149,26 @@ create table if not exists public.accounts (
   created_at       timestamptz not null default now()
 );
 
+
+-- ── Ce que la migration `broker_sync` attend en plus ────────────────────────
+-- Les colonnes d'argent que `recalibrate_account` convertit, l'échelle du
+-- compte, et le déclencheur générique `updated_at`.
+alter table public.trades add column if not exists risk_amount        numeric not null default 0;
+alter table public.trades add column if not exists r_multiple         numeric not null default 0;
+alter table public.trades add column if not exists mae                numeric;
+alter table public.trades add column if not exists mfe                numeric;
+alter table public.trades add column if not exists slippage           numeric;
+alter table public.trades add column if not exists calibration_factor numeric not null default 1;
+alter table public.accounts add column if not exists calibration_scale numeric not null default 1;
+alter table public.accounts add column if not exists original_balance  numeric;
+alter table public.accounts add column if not exists calibrated_at     timestamptz;
+
+create or replace function public.set_updated_at()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;

@@ -227,6 +227,7 @@ describe("routes /api/", () => {
       "../src/backend/pattern-scan.server.ts",
       "../src/backend/economic-calendar.server.ts",
       "../src/backend/goal-reminders.server.ts",
+      "../src/backend/broker-sync.server.ts",
     ]) {
       const code = read(file);
       expect(code, file).toContain("process.env.CRON_SECRET");

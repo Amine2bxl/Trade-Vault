@@ -26,7 +26,7 @@ src/
 │                  Edge Score, comportement, rapport mensuel, règles, plans, entitlement
 ├── modules/       Moteurs purs sans React : events, trading/analysis, discipline,
 │                  automation, notifications, patterns, probability, coaching,
-│                  economic-calendar, voice, ai, ai-provider
+│                  economic-calendar, brokers, voice, ai, ai-provider
 ├── backend/       Frontière serveur : *.functions.ts (appelables par l'UI),
 │                  *.server.ts (internes), ai-tools/, gardes d'accès
 ├── integrations/supabase/  Client typé, middleware d'auth, types GÉNÉRÉS
@@ -122,6 +122,7 @@ moteur pour en brancher un autre.
 | `probability` | Monte Carlo seedable, scénarios, sensibilité, objectifs |
 | `coaching` | Observations d'après-trade et sécurité statistique |
 | `economic-calendar` | Source Forex Factory (fournisseur interchangeable) |
+| `brokers` | Synchro broker : exécutions → allers-retours plat → plat (déterministe), stop initial → risque, ligne de journal ; adaptateur pur par broker (`tradovate.ts`) |
 | `voice` | Voix unique de Jarvis (clips, voix locale, prosodie) |
 | `ai`, `ai-provider` | Plateforme IA — [`AI.md`](AI.md) |
 
