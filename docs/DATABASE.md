@@ -41,7 +41,8 @@ Storage), `trade_date` (→ `Trade.date`), `entry_time`, `exit_time`, `mae`,
 `mfe`, `slippage`, `is_example`, `account_id`, `session_id`, et depuis
 `broker_sync` : `quantity`, `entry_price`, `exit_price`, `fees` (exécution),
 `broker`, `external_id`, `broker_account`, `review_pending` (import broker),
-`copied_from` (transfert entre comptes — une nouvelle copie exige le palier
+`copied_from` (transfert entre comptes — garanti indépendamment du broker par
+`20261016221756_account_transfer_schema` ; une nouvelle copie exige le palier
 Pro, vérifié par le trigger `trades_enforce_copy_pro`). **`(user_id,
 external_id)` est unique** : c'est la déduplication de la synchro. `is_default` sur `accounts`
 désigne le **compte principal**.

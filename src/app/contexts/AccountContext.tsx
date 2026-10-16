@@ -319,12 +319,14 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       if (!known.has(req.sourceAccountId) || !known.has(req.targetAccountId)) {
         throw new Error("Unknown account");
       }
-      const result = await transferTradesRows(user.id, req, onProgress);
-      // Le transfert réécrit des lignes hors du cache : même purge que le
-      // recalibrage, miroir AVANT invalidation (voir plus haut).
-      clearTradesCache(user.id);
-      await queryClient.invalidateQueries({ queryKey: ["trades"] });
-      return result;
+      try {
+        return await transferTradesRows(user.id, req, onProgress);
+      } finally {
+        // Même après un échec réseau tardif, certains lots peuvent être écrits.
+        // Le miroir doit être purgé AVANT la relecture des deux comptes.
+        clearTradesCache(user.id);
+        await queryClient.invalidateQueries({ queryKey: ["trades"] });
+      }
     },
     [user, accounts, queryClient],
   );
