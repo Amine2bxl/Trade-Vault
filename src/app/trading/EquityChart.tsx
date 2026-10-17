@@ -147,11 +147,8 @@ function EquityChart({ data }: { data: EquityPoint[] }) {
 
   return (
     <div className="flex h-full flex-col">
-      {/* LA LÉGENDE EST CENTRÉE, et c'est la règle de la référence.
-          Collée à gauche, elle se lisait comme un titre de carte — or la carte
-          a déjà le sien, juste au-dessus. Centrée, elle devient ce qu'elle est :
-          la clé de lecture du tracé, rattachée au graphe et non à l'en-tête. */}
-      <div className="mb-2 flex items-center justify-center gap-4">
+      {/* La légende suit le même axe gauche que le titre et les données. */}
+      <div className="mb-2 flex items-center justify-start gap-4">
         <span className="flex items-center gap-1.5">
           <span
             className="h-2 w-2 shrink-0 rounded-full"

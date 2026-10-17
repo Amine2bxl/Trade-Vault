@@ -13,7 +13,6 @@ import {
   Minus,
   Download,
   Target,
-  SlidersHorizontal,
   ClipboardCheck,
   Cable,
 } from "@/shared/ui/icons";
@@ -38,7 +37,7 @@ import {
   Button,
   EmptyState,
   Card,
-  Modal,
+  PageControls,
   Kpi,
   KpiGrid,
   SelectPicker,
@@ -254,7 +253,6 @@ export default function Journal({
     );
   };
 
-  const [filtersOpen, setFiltersOpen] = useState(false);
   const jours = useMemo(() => dayNames(intlLocale(lang)), [lang]);
 
   /* Le compteur du bouton « Filtres » ne compte QUE ce qui est dans la
@@ -365,61 +363,62 @@ export default function Journal({
   const headerActions = useMemo(
     () => (
       <div className="flex items-center gap-2 shrink-0">
-        {pendingReview.length > 0 && (
+        <PageControls label={t("common.more")} closeOnAction>
+          {pendingReview.length > 0 && (
+            <Button
+              variant="subtle"
+              size="sm"
+              onClick={() => onEdit(pendingReview[0])}
+              title={t("journal.reviewPending").replace("{n}", String(pendingReview.length))}
+              className="border-[var(--tv-border-accent)] text-[var(--tv-accent)]"
+            >
+              <ClipboardCheck className="h-3.5 w-3.5" />
+              <span className="tv-figure">{pendingReview.length}</span>
+              <span className="hidden md:inline">{t("journal.reviewNow")}</span>
+            </Button>
+          )}
+          {/* Le chemin vers la synchro automatique, là où l'on saisit ses
+            trades à la main : c'est ici qu'on se demande si on pourrait ne
+            plus le faire. */}
           <Button
             variant="subtle"
             size="sm"
-            onClick={() => onEdit(pendingReview[0])}
-            title={t("journal.reviewPending").replace("{n}", String(pendingReview.length))}
-            className="border-[var(--tv-border-accent)] text-[var(--tv-accent)]"
+            onClick={() =>
+              window.dispatchEvent(new CustomEvent("tv:navigate", { detail: { page: "brokers" } }))
+            }
+            title={t("journal.connectBroker")}
           >
-            <ClipboardCheck className="h-3.5 w-3.5" />
-            <span className="tv-figure">{pendingReview.length}</span>
-            <span className="hidden md:inline">{t("journal.reviewNow")}</span>
+            <Cable className="h-3.5 w-3.5" />
+            <span className="hidden lg:inline">{t("nav.brokers")}</span>
           </Button>
-        )}
-        {/* Le chemin vers la synchro automatique, là où l'on saisit ses
-            trades à la main : c'est ici qu'on se demande si on pourrait ne
-            plus le faire. */}
-        <Button
-          variant="subtle"
-          size="sm"
-          onClick={() =>
-            window.dispatchEvent(new CustomEvent("tv:navigate", { detail: { page: "brokers" } }))
-          }
-          title={t("journal.connectBroker")}
-        >
-          <Cable className="h-3.5 w-3.5" />
-          <span className="hidden lg:inline">{t("nav.brokers")}</span>
-        </Button>
-        <Button variant="subtle" size="sm" onClick={() => exportTradesCSV(trades)}>
-          <Download className="w-3.5 h-3.5" />
-          <span className="hidden md:inline">{t("common.exportCsv")}</span>
-        </Button>
-        <Button
-          variant="subtle"
-          size="sm"
-          onClick={onDeleteAll}
-          className="text-slate-400 hover:text-red-300 hover:border-red-500/25"
-        >
-          <Trash className="w-3.5 h-3.5" />
-          <span className="hidden md:inline">{t("common.deleteAll")}</span>
-        </Button>
-        {/* Il vivait au milieu de la RANGÉE DE FILTRES, en vert plein : une
+          <Button variant="subtle" size="sm" onClick={() => exportTradesCSV(trades)}>
+            <Download className="w-3.5 h-3.5" />
+            <span className="hidden md:inline">{t("common.exportCsv")}</span>
+          </Button>
+          <Button
+            variant="subtle"
+            size="sm"
+            onClick={onDeleteAll}
+            className="text-slate-400 hover:text-red-300 hover:border-red-500/25"
+          >
+            <Trash className="w-3.5 h-3.5" />
+            <span className="hidden md:inline">{t("common.deleteAll")}</span>
+          </Button>
+          {/* Il vivait au milieu de la RANGÉE DE FILTRES, en vert plein : une
             navigation posée entre deux listes déroulantes. Sa place est ici,
             avec les autres actions de la page — en `subtle`, parce que la
             barre porte déjà un vert (« ajouter un trade ») et que deux verts
             se disputent. */}
-        <Button variant="subtle" size="sm" onClick={onOpenMissed} title={t("missed.title")}>
-          <Target className="h-3.5 w-3.5" />
-          <span className="hidden md:inline">{t("missed.title")}</span>
-        </Button>
+          <Button variant="subtle" size="sm" onClick={onOpenMissed} title={t("missed.title")}>
+            <Target className="h-3.5 w-3.5" />
+            <span className="hidden md:inline">{t("missed.title")}</span>
+          </Button>
+        </PageControls>
         <Button variant="accent" size="sm" onClick={onAdd} className="hidden md:inline-flex">
           <Plus className="w-4 h-4" /> {t("common.addTrade")}
         </Button>
       </div>
     ),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [trades, pendingReview, onEdit, onDeleteAll, onAdd, onOpenMissed, t],
   );
   usePageActions(headerActions);
@@ -487,76 +486,115 @@ export default function Journal({
           </div>
         )}
 
-        {/* ── LA BARRE DE FILTRES — UNE SEULE RANGÉE ──
-          Elle en occupait DEUX sur bureau, et la seconde portait, en plus de
-          deux listes, le bouton vert « setups manqués » : une NAVIGATION posée
-          au milieu de filtres, du vert au centre de l'écran là où le vert doit
-          rester l'action principale. Ce bouton est remonté dans la barre de
-          tête, avec les autres actions de la page.
-
-          Ce qui a sauté : le filtre de DURÉE. Ses cinq intitulés étaient écrits
-          en français en dur (« Toute durée », « 30 min – 1h »…) dans une
-          application traduite en douze langues, il ne fonctionnait que sur les
-          trades ayant une heure d'entrée ET de sortie, et il répondait à une
-          question que personne ne pose en ouvrant son journal.
-
-          Ce qui a changé : les listes portent leur NOM. Deux pastilles marquées
-          « All » côte à côte ne disent pas ce qu'elles filtrent — il fallait
-          les ouvrir pour savoir laquelle était la période et laquelle la
-          stratégie.
-
-          La bascule passe de `md` à `lg` : sur une tablette, le rail laisse
-          570px de contenu, où cinq contrôles ne tiennent pas sur une ligne. En
-          dessous, la feuille de filtres prend le relais. */}
-        <div className="mb-2.5 flex shrink-0 flex-wrap items-center gap-1.5 md:mb-3">
+        {/* Recherche directe ; tous les critères dans le même panneau sur PC et mobile. */}
+        <div className="mb-2.5 flex shrink-0 items-center gap-2 md:mb-3">
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={t("journal.searchPlaceholder")}
             enterKeyHint="search"
-            className="h-11 min-w-0 flex-1 rounded-xl border border-white/[0.06] bg-white/[0.03] px-3 text-sm text-slate-200 outline-none transition-colors placeholder:text-slate-600 focus:border-[var(--tv-border-accent)] lg:h-9 lg:w-44 lg:flex-none"
+            className="h-11 min-w-0 flex-1 rounded-xl border border-white/[0.06] bg-white/[0.03] px-3 text-sm text-slate-200 outline-none transition-colors placeholder:text-slate-600 focus:border-[var(--tv-border-accent)] md:h-9 md:max-w-sm"
           />
-          {/* Le bouton n'existe que sous `lg` — au-dessus les listes sont
-            directement là, il n'aurait rien à ouvrir. */}
-          <button
-            type="button"
-            onClick={() => setFiltersOpen(true)}
-            aria-haspopup="dialog"
-            className="flex h-11 shrink-0 items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.03] px-3.5 text-sm font-semibold text-slate-300 transition-colors active:bg-white/[0.07] lg:hidden"
-          >
-            <SlidersHorizontal className="h-4 w-4" />
-            {t("common.filters")}
-            {sheetFilterCount > 0 && (
-              <span className="tv-figure tv-accent-fill grid h-5 min-w-[20px] place-items-center rounded-full px-1 text-[11px]">
-                {sheetFilterCount}
-              </span>
-            )}
-          </button>
-
-          <div className="hidden items-center gap-1.5 lg:flex">
-            <RangePicker
-              label={t("common.period")}
-              value={period}
-              presets={periodPresets}
-              onChange={setPeriod}
-              neutralPreset="all"
-              {...rangeText}
-            />
-            <MultiPicker
-              label={t("journal.colStrategy")}
-              values={strategies}
-              options={strategyOptions}
-              onChange={setStrategies}
-              {...pickerText}
-            />
-            <MultiPicker
-              label={t("journal.filterDay")}
-              values={days}
-              options={dayOptions}
-              onChange={setDays}
-              {...pickerText}
-            />
+          <PageControls label={t("common.filters")} count={activeFilterCount}>
+            <div className="space-y-3">
+              <RangePicker
+                inline
+                label={t("common.period")}
+                value={period}
+                presets={periodPresets}
+                onChange={setPeriod}
+                neutralPreset="all"
+                className="[&>div]:p-0"
+                {...rangeText}
+              />
+              {strategyOptions.length > 0 && (
+                <div className="tv-pick-inline">
+                  <span className="tv-label mb-1.5 block text-slate-500">
+                    {t("journal.colStrategy")}
+                  </span>
+                  <div className="tv-pick-chips">
+                    <button
+                      type="button"
+                      aria-pressed={strategies.length === 0}
+                      onClick={() => setStrategies([])}
+                      className={cn("tv-pick-chip", strategies.length === 0 && "tv-pick-chip-on")}
+                    >
+                      {t("common.all")}
+                    </button>
+                    {setupChips.map((o) => {
+                      const on = strategies.includes(o.value);
+                      return (
+                        <button
+                          key={o.value}
+                          type="button"
+                          aria-pressed={on}
+                          onClick={() => toggleSetup(o.value)}
+                          className={cn("tv-pick-chip max-w-full", on && "tv-pick-chip-on")}
+                        >
+                          <span className="truncate">{o.label}</span>
+                          <span className="tv-figure opacity-60">{o.count}</span>
+                        </button>
+                      );
+                    })}
+                    {setupChips.length < strategyOptions.length && (
+                      <button
+                        type="button"
+                        onClick={() => setAllSetups(true)}
+                        className="tv-pick-chip border-dashed"
+                      >
+                        +{strategyOptions.length - setupChips.length}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+              <MultiPicker
+                inline
+                label={t("journal.filterDay")}
+                values={days}
+                options={dayOptions}
+                onChange={setDays}
+                {...pickerText}
+              />
+            </div>
+            <div className="flex items-center gap-1">
+              {(
+                [
+                  { v: "all", label: t("common.all") },
+                  { v: "win", label: t("common.win") },
+                  { v: "loss", label: t("common.loss") },
+                  { v: "be", label: t("common.be") },
+                ] as { v: ResultFilter; label: string }[]
+              ).map((opt) => (
+                <button
+                  key={opt.v}
+                  onClick={() => setResultFilter(opt.v)}
+                  className={cn(
+                    "flex h-11 flex-1 items-center justify-center gap-1.5 rounded-lg px-2 text-xs font-semibold transition lg:h-8 lg:flex-none lg:px-3",
+                    resultFilter === opt.v
+                      ? opt.v === "win"
+                        ? "bg-emerald-500/15 text-emerald-400"
+                        : opt.v === "loss"
+                          ? "bg-red-500/15 text-red-400"
+                          : opt.v === "be"
+                            ? "bg-slate-500/20 text-slate-200"
+                            : "bg-cyan-500/15 text-cyan-400"
+                      : "text-slate-500 hover:text-slate-300",
+                  )}
+                >
+                  {opt.label}
+                  <span
+                    className={cn(
+                      "tv-figure text-[10px]",
+                      resultFilter === opt.v ? "opacity-70" : "text-slate-600",
+                    )}
+                  >
+                    {counts[opt.v]}
+                  </span>
+                </button>
+              ))}
+            </div>
             <SelectPicker
               label={t("sort.label")}
               value={sortChoice}
@@ -564,172 +602,19 @@ export default function Journal({
               onChange={pickSort}
               neutralValue="date-desc"
             />
-          </div>
-
-          {/* Le segment RÉSULTAT — le filtre qu'on touche vraiment, et le seul
-            qui porte des compteurs. */}
-          <div className="flex w-full items-center gap-1 rounded-xl border border-white/[0.06] bg-white/[0.03] p-1 lg:w-auto lg:flex-none">
-            {(
-              [
-                { v: "all", label: t("common.all") },
-                { v: "win", label: t("common.win") },
-                { v: "loss", label: t("common.loss") },
-                { v: "be", label: t("common.be") },
-              ] as { v: ResultFilter; label: string }[]
-            ).map((opt) => (
-              <button
-                key={opt.v}
-                onClick={() => setResultFilter(opt.v)}
-                className={cn(
-                  "flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg px-2 text-xs font-semibold transition lg:h-8 lg:flex-none lg:px-3",
-                  resultFilter === opt.v
-                    ? opt.v === "win"
-                      ? "bg-emerald-500/15 text-emerald-400"
-                      : opt.v === "loss"
-                        ? "bg-red-500/15 text-red-400"
-                        : opt.v === "be"
-                          ? "bg-slate-500/20 text-slate-200"
-                          : "bg-cyan-500/15 text-cyan-400"
-                    : "text-slate-500 hover:text-slate-300",
-                )}
-              >
-                {opt.label}
-                <span
-                  className={cn(
-                    "tv-figure text-[10px]",
-                    resultFilter === opt.v ? "opacity-70" : "text-slate-600",
-                  )}
-                >
-                  {counts[opt.v]}
-                </span>
-              </button>
-            ))}
-          </div>
-
-          {/* Il n'apparaît que s'il y a quelque chose à effacer. */}
-          {activeFilterCount > 0 && (
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => {
                 resetFilters();
                 setResultFilter("all");
                 setSearchQuery("");
               }}
-              className="hidden h-9 shrink-0 items-center gap-1 rounded-xl px-2.5 text-xs font-semibold text-slate-500 transition-colors hover:bg-white/[0.04] hover:text-white lg:inline-flex"
             >
               {t("common.reset")}
-            </button>
-          )}
+            </Button>
+          </PageControls>
         </div>
-
-        {/* LA FEUILLE DE FILTRES — sous `lg`, là où la barre ne tient pas.
-            Elle était montée sous `md` seulement alors que son bouton existe
-            jusqu'à `lg` : sur une tablette, « Filtres » n'ouvrait rien.
-
-            TOUT TIENT SANS DÉFILER, même sur un iPhone SE. Ce qui la faisait
-            défiler : une quinzaine de setups (presets compris, la plupart sans
-            un seul trade), sept jours dont deux jamais tradés, six pastilles de
-            tri et un lien de navigation (« setups manqués », déjà dans la
-            barre de tête). Restent les setups tradés — six d'abord —, les
-            jours ouvrés, et le tri en une liste compacte dans le pied. */}
-        <Modal
-          open={filtersOpen}
-          onClose={() => setFiltersOpen(false)}
-          wrapperClassName="z-[var(--tv-z-modal)] lg:hidden"
-          className="md:max-w-md"
-        >
-          <div className="flex items-center justify-between px-5 pb-1 pt-4">
-            <h2 className="tv-title">{t("common.filters")}</h2>
-            {sheetFilterCount > 0 && (
-              <button
-                type="button"
-                onClick={resetFilters}
-                className="text-[13px] font-semibold text-slate-400 active:text-white"
-              >
-                {t("common.reset")}
-              </button>
-            )}
-          </div>
-          <div className="space-y-3.5 px-4 pb-2 pt-1">
-            <RangePicker
-              inline
-              label={t("common.period")}
-              value={period}
-              presets={periodPresets}
-              onChange={setPeriod}
-              neutralPreset="all"
-              className="[&>div]:p-0"
-              {...rangeText}
-            />
-            {strategyOptions.length > 0 && (
-              <div className="tv-pick-inline">
-                <span className="tv-label mb-1.5 block text-slate-500">
-                  {t("journal.colStrategy")}
-                </span>
-                <div className="tv-pick-chips">
-                  <button
-                    type="button"
-                    aria-pressed={strategies.length === 0}
-                    onClick={() => setStrategies([])}
-                    className={cn("tv-pick-chip", strategies.length === 0 && "tv-pick-chip-on")}
-                  >
-                    {t("common.all")}
-                  </button>
-                  {setupChips.map((o) => {
-                    const on = strategies.includes(o.value);
-                    return (
-                      <button
-                        key={o.value}
-                        type="button"
-                        aria-pressed={on}
-                        onClick={() => toggleSetup(o.value)}
-                        className={cn("tv-pick-chip max-w-full", on && "tv-pick-chip-on")}
-                      >
-                        <span className="truncate">{o.label}</span>
-                        <span className="tv-figure opacity-60">{o.count}</span>
-                      </button>
-                    );
-                  })}
-                  {setupChips.length < strategyOptions.length && (
-                    <button
-                      type="button"
-                      onClick={() => setAllSetups(true)}
-                      className="tv-pick-chip border-dashed"
-                    >
-                      +{strategyOptions.length - setupChips.length}
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
-            <MultiPicker
-              inline
-              label={t("journal.filterDay")}
-              values={days}
-              options={dayOptions}
-              onChange={setDays}
-              {...pickerText}
-            />
-          </div>
-          <div className="flex items-center gap-2 border-t border-[var(--tv-border)] px-4 py-3">
-            <div className="min-w-0 flex-1">
-              <SelectPicker
-                label={t("sort.label")}
-                value={sortChoice}
-                options={sortOptions}
-                onChange={pickSort}
-                neutralValue="date-desc"
-              />
-            </div>
-            <button
-              type="button"
-              onClick={() => setFiltersOpen(false)}
-              className="btn-primary shrink-0 px-5"
-            >
-              {t("common.done")}
-            </button>
-          </div>
-        </Modal>
 
         {/* ── Mobile: Card List ── */}
         <div

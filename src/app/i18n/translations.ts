@@ -872,6 +872,8 @@ const en = {
   "dashboard.tradesToday": "trades today",
   "chart.balance": "Balance",
   "nav.sectionViews": "Go to",
+  "common.viewMode": "View",
+  "common.more": "More",
   "common.filters": "Filters",
   "common.period": "Period",
   "journal.filterDay": "Day",
@@ -1259,6 +1261,7 @@ const en = {
 
   // Trade intent & reflection (Phase 0b)
   "trade.riskUnit": "Risk unit",
+  "trade.detailsNotes": "Options and notes",
   "trade.sectionExecution": "Execution",
   "trade.sectionContext": "Context",
   "trade.sectionReview": "Review",

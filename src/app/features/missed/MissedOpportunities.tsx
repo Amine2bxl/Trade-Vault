@@ -45,7 +45,7 @@ import {
   EmptyState,
   Modal,
   Textarea,
-  FIELD_BASE,
+  Input,
   DateField,
   Kpi,
   KpiGrid,
@@ -611,7 +611,7 @@ export function ScreenshotsView({
   );
 }
 
-function MissedEditor({
+export function MissedEditor({
   value,
   onClose,
   onSave,
@@ -722,18 +722,12 @@ function MissedEditor({
       onClose={onClose}
       // Une saisie en cours ne se referme pas sur un clic à côté.
       closeOnBackdrop={!dirty}
-      className="md:max-w-2xl max-h-[96vh] md:max-h-[92vh] overflow-hidden"
+      className="tv-trade-modal tv-compact-form flex max-h-[86dvh] flex-col overflow-hidden md:max-w-2xl"
       labelledBy="missed-editor-title"
     >
-      {/* Same shell as the Add Trade modal: a 2px accent rule, a 24px-padded
-          header row, a scrolling body and a sticky action footer. The two
-          popups are now literally the same architecture — only the accent
-          colour (amber vs cyan) and the fields differ. */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-amber-400/70 to-transparent" />
-      {/* Header premium — même architecture que New Trade */}
-      <div className="relative flex items-center justify-between px-4 sm:px-6 py-3.5 border-b border-white/[0.06] bg-gradient-to-b from-amber-500/[0.06] to-transparent overflow-hidden">
+      <div className="flex shrink-0 items-center justify-between border-b border-[var(--tv-border)] px-4 py-2.5">
         <div className="relative flex items-center gap-2.5 min-w-0">
-          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-amber-500 to-orange-600">
+          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-[var(--tv-border)] bg-[var(--tv-plate-2)]">
             <Target className="w-4 h-4 text-white" />
           </span>
           <div className="min-w-0">
@@ -749,15 +743,15 @@ function MissedEditor({
         <button
           onClick={onClose}
           aria-label={t("common.close")}
-          className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 transition-colors shrink-0"
+          className="w-11 h-11 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 transition-colors shrink-0"
         >
           <X className="w-4 h-4" />
         </button>
       </div>
-      <div className="overflow-y-auto max-h-[calc(92vh-130px)] px-4 sm:px-6 py-4 space-y-4">
+      <div className="tv-trade-form min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3 space-y-3">
         {/* Grille responsive : 1 colonne sur mobile (jamais empilé/cramé),
             3 sur desktop. La date passe par des bulles de présélection. */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3 [&>div:first-child]:col-span-2 sm:grid-cols-3 sm:[&>div:first-child]:col-span-1">
           <DateBubbles
             value={m.date}
             onChange={(v) => set("date", v)}
@@ -777,39 +771,42 @@ function MissedEditor({
             step="0.1"
           />
         </div>
-        <FieldArea
-          label={t("missed.field.why")}
-          value={m.reasonNotTaken}
-          onChange={(v) => set("reasonNotTaken", v)}
-          placeholder={t("missed.field.whyPh")}
-        />
-        <FieldArea
-          label={t("missed.field.what")}
-          value={m.whatHappened}
-          onChange={(v) => set("whatHappened", v)}
-          placeholder={t("missed.field.whatPh")}
-        />
-        <FieldArea
-          label={t("missed.field.lesson")}
-          value={m.lessonLearned}
-          onChange={(v) => set("lessonLearned", v)}
-          placeholder={t("missed.field.lessonPh")}
-        />
-        <FieldArea
-          label={t("missed.field.next")}
-          value={m.nextTimePlan}
-          onChange={(v) => set("nextTimePlan", v)}
-          placeholder={t("missed.field.nextPh")}
-        />
+        <div className="grid gap-3 sm:grid-cols-2">
+          <FieldArea
+            label={t("missed.field.why")}
+            value={m.reasonNotTaken}
+            onChange={(v) => set("reasonNotTaken", v)}
+            placeholder={t("missed.field.whyPh")}
+          />
+          <FieldArea
+            label={t("missed.field.what")}
+            value={m.whatHappened}
+            onChange={(v) => set("whatHappened", v)}
+            placeholder={t("missed.field.whatPh")}
+          />
+          <FieldArea
+            label={t("missed.field.lesson")}
+            value={m.lessonLearned}
+            onChange={(v) => set("lessonLearned", v)}
+            placeholder={t("missed.field.lessonPh")}
+          />
+          <FieldArea
+            label={t("missed.field.next")}
+            value={m.nextTimePlan}
+            onChange={(v) => set("nextTimePlan", v)}
+            placeholder={t("missed.field.nextPh")}
+          />
+        </div>
 
         <div>
-          <div className="flex items-center justify-between mb-2">
+          <div className="mb-2 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
             <span className={cn(EDITOR_LABEL, "mb-0")}>
               {t("missed.field.screenshots")}{" "}
               <span className="text-slate-600">({(m.screenshots ?? []).length}/3)</span>
             </span>
-            <span className="text-[10px] text-slate-600">
-              {t("missed.field.screenshotsHint")} · {t("common.pasteHint")}
+            <span className="tv-prose text-slate-500">
+              {t("missed.field.screenshotsHint")}
+              <span className="hidden sm:inline"> · {t("common.pasteHint")}</span>
             </span>
           </div>
           <ScreenshotsView
@@ -847,14 +844,11 @@ function MissedEditor({
           )}
         </div>
       </div>
-      <div className="flex justify-end gap-2 px-4 sm:px-6 py-3 border-t border-white/[0.06]">
-        <button
-          onClick={onClose}
-          className="px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-300 bg-white/[0.04] hover:bg-white/[0.08] transition-colors"
-        >
+      <div className="flex shrink-0 justify-end gap-2 border-t border-[var(--tv-border)] px-4 py-2.5">
+        <Button variant="ghost" onClick={onClose}>
           {t("common.cancel")}
-        </button>
-        <button
+        </Button>
+        <Button
           onClick={() => {
             // Enregistré : le brouillon a fait son office.
             savedRef.current = true;
@@ -862,10 +856,9 @@ function MissedEditor({
             onSave(m);
           }}
           disabled={uploading}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-amber-500 to-orange-500 shadow-lg shadow-amber-500/30 hover:from-amber-400 hover:to-orange-400 disabled:opacity-50 transition"
         >
           <Save className="w-4 h-4" /> {t("common.save")}
-        </button>
+        </Button>
       </div>
     </Modal>
   );
@@ -893,13 +886,12 @@ function FieldInput({
   return (
     <label className="block">
       <span className={EDITOR_LABEL}>{label}</span>
-      <input
+      <Input
         type={type}
         value={value}
         step={step}
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
-        className={cn(FIELD_BASE, "h-9 sm:h-11 text-xs sm:text-sm")}
       />
     </label>
   );
@@ -942,47 +934,16 @@ function DateBubbles({
   onChange: (v: string) => void;
 }) {
   const { t, lang } = useT();
-  const iso = (offset: number) => {
-    const d = new Date();
-    d.setDate(d.getDate() - offset);
-    const m = `${d.getMonth() + 1}`.padStart(2, "0");
-    const day = `${d.getDate()}`.padStart(2, "0");
-    return `${d.getFullYear()}-${m}-${day}`;
-  };
-  const presets = [
-    { key: "today", label: t("missed.dateToday"), value: iso(0) },
-    { key: "yesterday", label: t("missed.dateYesterday"), value: iso(1) },
-    { key: "two", label: t("missed.dateTwoDays"), value: iso(2) },
-  ];
   return (
-    <label className="block">
+    <div>
       <span className={EDITOR_LABEL}>{label}</span>
-      <div className="flex items-center gap-1.5 flex-wrap">
-        {presets.map((p) => (
-          <button
-            key={p.key}
-            type="button"
-            onClick={() => onChange(p.value)}
-            className={cn(
-              "h-9 px-3 rounded-full border text-xs font-semibold transition",
-              value === p.value
-                ? "bg-amber-500/15 border-amber-500/40 text-amber-300"
-                : "bg-white/[0.03] border-white/[0.08] text-slate-400 hover:text-white hover:border-white/20",
-            )}
-          >
-            {p.label}
-          </button>
-        ))}
-        {/* Plus `<input type="date">` : le sélecteur natif ouvre un calendrier
-            blanc, hors document, insensible au thème. Voir `DateField`. */}
-        <DateField
-          value={value}
-          onChange={onChange}
-          locale={intlLocale(lang)}
-          todayLabel={t("common.today")}
-          className="h-9 w-auto min-w-[150px] flex-1 px-2.5 text-xs sm:flex-none sm:text-sm"
-        />
-      </div>
-    </label>
+      <DateField
+        value={value}
+        onChange={onChange}
+        locale={intlLocale(lang)}
+        todayLabel={t("common.today")}
+        aria-label={label}
+      />
+    </div>
   );
 }

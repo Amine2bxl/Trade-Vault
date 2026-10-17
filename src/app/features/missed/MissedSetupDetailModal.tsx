@@ -35,36 +35,20 @@ const LOCALE_MAP: Record<string, string> = {
   hi: "hi-IN",
 };
 
+// La hiérarchie vient des libellés et de l'espacement, sans quatre couleurs de rubrique.
+const SECTION_STYLE = {
+  border: "border-[var(--tv-border)]",
+  bg: "bg-[var(--tv-plate-2)]",
+  text: "text-slate-300",
+  iconBg: "bg-[var(--tv-plate-1)]",
+  bar: "bg-[var(--tv-border-strong)]",
+};
 const TONES = {
-  red: {
-    border: "border-red-500/15",
-    bg: "bg-red-500/[0.04]",
-    text: "text-red-400",
-    iconBg: "bg-red-500/10",
-    bar: "bg-red-400/70",
-  },
-  amber: {
-    border: "border-amber-500/15",
-    bg: "bg-amber-500/[0.04]",
-    text: "text-amber-400",
-    iconBg: "bg-amber-500/10",
-    bar: "bg-amber-500/60",
-  },
-  blue: {
-    border: "border-cyan-500/25",
-    bg: "bg-cyan-500/[0.06]",
-    text: "text-cyan-400",
-    iconBg: "bg-cyan-500/10",
-    bar: "bg-cyan-500/70",
-  },
-  emerald: {
-    border: "border-emerald-500/15",
-    bg: "bg-emerald-500/[0.04]",
-    text: "text-emerald-400",
-    iconBg: "bg-emerald-500/10",
-    bar: "bg-emerald-400/70",
-  },
-} as const;
+  red: SECTION_STYLE,
+  amber: SECTION_STYLE,
+  blue: SECTION_STYLE,
+  emerald: SECTION_STYLE,
+};
 
 function Section({
   tone,
@@ -139,17 +123,14 @@ export default function MissedSetupDetailModal({ missed, onClose }: MissedSetupD
     <Modal
       open
       onClose={onClose}
-      backdropClassName="bg-black/70 backdrop-blur-md"
-      className="max-w-2xl max-h-[94vh] md:max-h-[88vh] overflow-hidden flex flex-col"
+      className="tv-trade-modal max-w-2xl max-h-[86dvh] overflow-hidden flex flex-col"
     >
-      <div className="w-10 h-1 rounded-full bg-slate-700 mx-auto mt-2 md:hidden shrink-0" />
-
       {/* Header */}
-      <div className="relative px-4 md:px-7 pt-3 md:pt-6 pb-3.5 md:pb-5 border-b border-white/[0.06] bg-amber-500/[0.035] overflow-hidden shrink-0">
+      <div className="px-4 py-3 border-b border-[var(--tv-border)] shrink-0">
         <div className="relative flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 md:gap-3.5 min-w-0">
-            <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl border border-amber-500/20 bg-amber-500/15 flex items-center justify-center shrink-0">
-              <Target className="w-5 h-5 md:w-6 md:h-6 text-amber-400" />
+            <div className="w-8 h-8 rounded-lg border border-[var(--tv-border)] bg-[var(--tv-plate-2)] flex items-center justify-center shrink-0">
+              <Target className="w-4 h-4 text-slate-400" />
             </div>
             <div className="min-w-0">
               <h2 className="tv-title tracking-tight truncate leading-tight">
@@ -167,7 +148,7 @@ export default function MissedSetupDetailModal({ missed, onClose }: MissedSetupD
             )}
             <button
               onClick={onClose}
-              className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
+              className="w-11 h-11 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -176,7 +157,7 @@ export default function MissedSetupDetailModal({ missed, onClose }: MissedSetupD
       </div>
 
       {/* Body */}
-      <div className="overflow-y-auto flex-1 p-3.5 md:p-7 space-y-3 md:space-y-4 pb-[calc(env(safe-area-inset-bottom,0px)+16px)] md:pb-7">
+      <div className="overflow-y-auto flex-1 p-4 space-y-3 pb-[calc(env(safe-area-inset-bottom,0px)+16px)]">
         <Section
           tone="red"
           icon={Quote}

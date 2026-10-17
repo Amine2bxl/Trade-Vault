@@ -12,7 +12,7 @@ export function ChoiceGroup<V extends string | number>({
 }: {
   label: string;
   value: V | null;
-  options: readonly { value: V; label: string }[];
+  options: readonly { value: V; label: string; icon?: ReactNode; tone?: "positive" | "negative" }[];
   onChange: (value: V) => void;
   className?: string;
 }) {
@@ -51,9 +51,11 @@ export function ChoiceGroup<V extends string | number>({
           role="radio"
           aria-checked={value === o.value}
           tabIndex={value === o.value || (value === null && i === 0) ? 0 : -1}
+          data-tone={o.tone}
           onClick={() => onChange(o.value)}
           className={cn("tv-choice", o.value === value && "tv-choice-on")}
         >
+          {o.icon}
           {o.label}
         </button>
       ))}

@@ -284,24 +284,18 @@ export default function Dashboard({
 
   const headerActions = useMemo(
     () => (
-      /* Le bouton PRINCIPAL du produit : vert plein, texte blanc — la même
-         pièce que « setups manqués » dans le Journal. Il portait la variante
-         `accent` (contour, texte teinté), qui est la grammaire d'une action
-         SECONDAIRE : saisir un trade est l'action que toute l'application
-         existe pour servir, elle ne peut pas se présenter comme un export CSV.
-         Le Journal garde ses actions en `subtle` — il a déjà son propre bouton
-         d'ajout dans sa liste, et deux verts pleins sur une même barre se
-         disputeraient l'attention. */
-      <Button variant="accent" size="sm" onClick={onAddTrade} className="relative hidden md:flex">
-        <Plus className="w-4 h-4" /> {t("common.addTrade")}
+      <div className="hidden shrink-0 items-center gap-2 md:flex">
+        <Button variant="primary" size="sm" onClick={onAddTrade}>
+          <Plus className="h-4 w-4" /> {t("common.addTrade")}
+        </Button>
         {hasDraft && (
-          <span className="tv-label flex items-center gap-1 ml-1 pl-2 border-l border-white/25">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-300" /> {t("trade.draftBadge")}
-          </span>
+          <button type="button" onClick={onAddTrade} className="tv-draft-badge">
+            <span className="h-1.5 w-1.5 rounded-full bg-current" />
+            {t("trade.draftBadge")}
+          </button>
         )}
-      </Button>
+      </div>
     ),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [onAddTrade, hasDraft, t],
   );
   usePageActions(headerActions);

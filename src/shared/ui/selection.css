@@ -34,10 +34,10 @@
   flex-shrink: 0;
   align-items: center;
   gap: 0.4rem;
-  border-radius: 0.75rem;
-  border: 1px solid var(--tv-border);
-  background: var(--tv-plate-2);
-  padding: 0 0.7rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid transparent;
+  background: transparent;
+  padding: 0 8px;
   transition-property: background-color, border-color;
   transition-duration: var(--tv-dur-1);
 }
@@ -62,12 +62,12 @@
 }
 
 .tv-pick-pill-on {
-  border-color: var(--tv-border-accent);
-  background: rgb(var(--tv-accent-rgb) / 0.08);
+  border-color: var(--tv-border);
+  background: var(--tv-plate-2);
 }
 
 .tv-pick-pill-on .tv-pick-pill-value {
-  color: var(--tv-highlight);
+  color: var(--tv-text-primary);
 }
 
 /* La recherche, en tête de longue liste. */
@@ -501,20 +501,21 @@
 }
 
 .tv-time-entry {
-  font-size: var(--tv-t-h2);
+  font-size: var(--tv-t-h3);
 }
 
 .tv-time-columns {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: 8px;
 }
 
 .tv-time-list {
-  height: 220px;
+  height: 184px;
+  touch-action: pan-y;
   overflow-y: auto;
   overscroll-behavior: contain;
-  scrollbar-width: thin;
+  scrollbar-width: none;
   border: 1px solid var(--tv-border);
   border-radius: var(--radius-xl);
   background: var(--tv-plate-1);
@@ -562,6 +563,141 @@
 @media (pointer: coarse) {
   .tv-pop-nav {
     min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+/* Commandes de page : une entrée sobre, les détails seulement à la demande. */
+.tv-page-controls-trigger {
+  display: inline-flex;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 8px;
+  border-radius: var(--radius-lg);
+  color: var(--tv-text-secondary);
+  font-size: var(--tv-t-caption);
+  font-weight: 600;
+}
+.tv-page-controls-trigger:hover,
+.tv-page-controls-trigger[aria-expanded="true"] {
+  background: var(--tv-plate-2);
+  color: var(--tv-text-primary);
+}
+.tv-page-controls-count {
+  min-width: 18px;
+  border-radius: var(--radius-sm);
+  background: var(--tv-plate-3);
+  text-align: center;
+  font-size: var(--tv-t-micro);
+}
+.tv-page-controls-body {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+}
+.tv-page-controls-body .tv-pick-pill {
+  width: 100%;
+  justify-content: space-between;
+  border: 1px solid var(--tv-border);
+  background: var(--tv-plate-1);
+}
+.tv-page-controls-body > button {
+  justify-content: flex-start;
+}
+
+/* La barre native défile sans curseur blanc ni espace réservé à une piste. */
+
+.tv-time-list::-webkit-scrollbar {
+  display: none;
+  width: 0;
+}
+
+/* La densité varie au même endroit pour les deux formulaires. Le tactile
+   conserve ses cibles de 44 px ; le bureau utilise des champs de 36 px. */
+.tv-compact-form {
+  --tv-form-control-height: 36px;
+  --tv-form-control-radius: var(--radius-lg);
+}
+.tv-compact-form .tv-control {
+  height: var(--tv-form-control-height);
+  border-radius: var(--tv-form-control-radius);
+  padding-inline: 10px;
+}
+.tv-compact-form .tv-control-textarea {
+  height: auto;
+  min-height: 64px;
+}
+.tv-compact-form .tv-choice,
+.tv-compact-form .tv-disclosure-toggle,
+.tv-compact-form .tv-trade-form .tv-pick-chip {
+  min-height: var(--tv-form-control-height);
+  border-radius: var(--tv-form-control-radius);
+}
+.tv-compact-form .tv-choice {
+  padding-block: 4px;
+}
+.tv-compact-form .tv-disclosure-toggle {
+  padding: 8px 10px;
+}
+.tv-compact-form .tv-disclosure-body {
+  gap: 10px;
+  padding: 0 10px 10px;
+}
+.tv-compact-form footer button {
+  min-height: var(--tv-form-control-height);
+  height: var(--tv-form-control-height);
+}
+.tv-compact-form .tv-trade-form [data-selection-chip] {
+  min-height: 32px;
+  padding: 4px 8px;
+  font-size: var(--tv-t-caption);
+}
+.tv-direction .tv-choice[data-tone="positive"] svg {
+  color: var(--tv-chart-green);
+}
+.tv-direction .tv-choice[data-tone="negative"] svg {
+  color: var(--tv-chart-red);
+}
+.tv-direction .tv-choice[data-tone="positive"][aria-checked="true"] {
+  border-color: var(--tv-chart-green);
+  background: color-mix(in srgb, var(--tv-chart-green) 8%, var(--tv-plate-1));
+  color: var(--tv-chart-green);
+  box-shadow: none;
+}
+.tv-direction .tv-choice[data-tone="negative"][aria-checked="true"] {
+  border-color: var(--tv-chart-red);
+  background: color-mix(in srgb, var(--tv-chart-red) 8%, var(--tv-plate-1));
+  color: var(--tv-chart-red);
+  box-shadow: none;
+}
+.tv-draft-badge {
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border: 1px solid color-mix(in srgb, var(--tv-warning) 30%, transparent);
+  border-radius: var(--radius-sm);
+  color: var(--tv-warning);
+  font-size: var(--tv-t-micro);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+@media (max-width: 639px) {
+  .tv-page-controls-trigger > span:first-of-type {
+    display: none;
+  }
+}
+@media (pointer: coarse) {
+  .tv-compact-form {
+    --tv-form-control-height: 44px;
+  }
+  .tv-compact-form .tv-trade-form [data-selection-chip],
+  .tv-page-controls-trigger,
+  .tv-draft-badge {
     min-height: 44px;
   }
 }

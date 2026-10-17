@@ -824,6 +824,8 @@ const fr: Dict = {
   "dashboard.tradesToday": "trades aujourd'hui",
   "chart.balance": "Solde",
   "nav.sectionViews": "Aller à",
+  "common.viewMode": "Vue",
+  "common.more": "Actions",
   "common.filters": "Filtres",
   "common.period": "Période",
   "journal.filterDay": "Jour",
@@ -1191,6 +1193,7 @@ const fr: Dict = {
   "common.irreversible": "Cette action est irréversible.",
 
   "trade.riskUnit": "Unité de risque",
+  "trade.detailsNotes": "Options et notes",
   "trade.sectionExecution": "Exécution",
   "trade.sectionContext": "Contexte",
   "trade.sectionReview": "Bilan",

@@ -1,3 +1,4 @@
+import { usePageActions } from "@/app/contexts/PageActionsContext";
 import { useMemo } from "react";
 import {
   BarChart,
@@ -48,7 +49,7 @@ import { Skeleton } from "@/app/components/Skeleton";
 import { usePersistedValue, nsKey, writeJSON } from "@/app/utils/persistence";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { cn } from "@/shared/ui/cn";
-import { PageContainer, Card, Kpi, KpiGrid, SelectPicker } from "@/shared/ui";
+import { PageControls, PageContainer, Card, Kpi, KpiGrid, SelectPicker } from "@/shared/ui";
 import { useIsNarrow } from "@/app/hooks/useIsNarrow";
 import { formatMoney } from "@/shared/currency";
 import { SeasonalEquity } from "./SeasonalEquity";
@@ -107,76 +108,36 @@ function AssetSeasonality({ trades }: { trades: Trade[] }) {
 
   const stats = useMemo(() => computeSeasonalStats(asset, currentMonth), [asset, currentMonth]);
 
-  const setCategory = (c: AssetCategory) => {
-    writeJSON(catKey, c);
-    writeJSON(symKey, "");
-  };
-  const setSymbol = (s: string) => writeJSON(symKey, s);
-
-  return (
-    <div className="animate-fade-in">
-      {/* SUR TÉLÉPHONE, deux sélecteurs côte à côte au lieu de rangées de
-          pastilles empilées : catégorie · actif, sur une seule ligne. */}
-      <div className="mb-5 grid grid-cols-2 gap-2 sm:hidden">
+  const pageControls = useMemo(
+    () => (
+      <PageControls label={t("common.filters")}>
         <SelectPicker
-          variant="field"
           label={t("seasonality.category")}
           value={category}
-          onChange={(v) => setCategory(v as AssetCategory)}
-          className="h-10 text-[13px]"
+          onChange={(v) => {
+            writeJSON(catKey, v);
+            writeJSON(symKey, "");
+          }}
           options={(Object.keys(CATEGORY_LABELS) as AssetCategory[]).map((c) => ({
             value: c,
             label: CATEGORY_LABELS[c],
           }))}
         />
         <SelectPicker
-          variant="field"
           label={t("seasonality.asset")}
           value={asset.symbol}
-          onChange={setSymbol}
-          className="h-10 text-[13px]"
+          onChange={(v) => writeJSON(symKey, v)}
           searchLabel={t("picker.search")}
           options={inCategory.map((a) => ({ value: a.symbol, label: a.symbol, hint: a.name }))}
         />
-      </div>
+      </PageControls>
+    ),
+    [t, category, asset.symbol, inCategory, catKey, symKey],
+  );
+  usePageActions(pageControls);
 
-      {/* Category filter */}
-      <div className="hidden sm:flex flex-wrap gap-1.5 mb-3">
-        {(Object.keys(CATEGORY_LABELS) as AssetCategory[]).map((c) => (
-          <button
-            key={c}
-            onClick={() => setCategory(c)}
-            className={cn(
-              "h-8 px-3 rounded-lg border text-[11px] font-semibold transition",
-              category === c
-                ? "bg-cyan-500/15 border-cyan-500/25 text-cyan-300"
-                : "bg-white/[0.03] border-white/[0.06] text-slate-500 hover:text-slate-300 hover:border-white/[0.12]",
-            )}
-          >
-            {CATEGORY_LABELS[c]}
-          </button>
-        ))}
-      </div>
-
-      {/* Asset selector */}
-      <div className="hidden sm:flex flex-wrap gap-1.5 mb-5">
-        {inCategory.map((a) => (
-          <button
-            key={a.symbol}
-            onClick={() => setSymbol(a.symbol)}
-            className={cn(
-              "h-9 px-3.5 rounded-xl border text-xs font-bold transition",
-              a.symbol === asset.symbol
-                ? "bg-white/[0.06] border-cyan-500/30 text-white shadow-sm"
-                : "bg-white/[0.02] border-white/[0.06] text-slate-500 hover:text-slate-300",
-            )}
-          >
-            {a.symbol}{" "}
-            <span className="hidden sm:inline text-slate-500 font-medium">· {a.name}</span>
-          </button>
-        ))}
-      </div>
-
+  return (
+    <div className="animate-fade-in">
       {/* Highlight cards */}
       <KpiGrid cols={4} className="mb-5">
         <HighlightCard
@@ -333,7 +294,7 @@ function AssetSeasonality({ trades }: { trades: Trade[] }) {
                   asset={a}
                   currentMonth={currentMonth}
                   selected={a.symbol === asset.symbol}
-                  onSelect={() => setSymbol(a.symbol)}
+                  onSelect={() => writeJSON(symKey, a.symbol)}
                   months={months}
                 />
               ))}

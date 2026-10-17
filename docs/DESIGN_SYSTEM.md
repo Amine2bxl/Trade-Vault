@@ -158,7 +158,7 @@ pages, avec les fournisseurs de l'app et sa typographie. `?screen=calendar`,
 `?screen=journal`, `?screen=dashboard`, etc. choisissent une page ; `&empty=1`
 retire les trades de démonstration pour vérifier les états vides. `screen=trade`,
 `screen=controls` et `screen=icons` exposent les bancs dédiés au formulaire,
-aux sélecteurs et au catalogue de glyphes. La route ne
+aux sélecteurs et au catalogue d’icônes. `screen=missedform` couvre la saisie d’un setup manqué. Les actions de page y sont montées comme dans le shell. La route ne
 rend rien dans un build de production. Les pages qui chargent leurs propres
 données demandent une session locale de test ou des réponses simulées.
 
@@ -177,9 +177,10 @@ par le même moteur, y compris dans une modale ou un filtre de période.
 | Date civile, heure civile | `DateField`, `TimeField` |
 | Choix courts visibles | `ChoiceGroup` (radio, clavier, état neutre) |
 | Options avancées | `Disclosure` (titre, commande 44 px, corps espacé) |
+| Filtres ou commandes secondaires d’une page | `PageControls` (déclencheur unique + panneau partagé) |
 | Nouveau type de filtre | `SelectionPanel` + contrôle tiré de `selection.ts` |
 
-**Géométrie :** champ de 44 px, rayon `xl`, texte `body-sm` (13 px), libellé
+**Géométrie :** champ de 44 px ; dans `tv-compact-form` (trades et setups manqués), 36 px sur pointeur fin et 44 px sur écran tactile, rayon `lg`. Texte `body-sm` (13 px), libellé
 `tv-label`, séparation 12 px. Les nombres suivent `tv-figure`. Les sélections
 restent neutres ; l'accent désigne l'action principale et le focus. Le P&L
 et les erreurs gardent leurs couleurs sémantiques. Une page n'impose pas sa
@@ -208,21 +209,12 @@ la valeur. Les minutes importées hors du pas restent disponibles. Pas de
    imbriqué, focus et absence de débordement. Un champ `TimeField` doit
    accepter `09:47` sans arrondi ni attente.
 
-**Formulaire de trade :** trois vues partagent la même grille et le même pied
-fixe : Exécution (ordre, risque, date/heure, calculateur), Contexte (qualité,
-confiance, intention, confluences), Bilan (erreurs, réflexion, captures, notes).
-Tous les champs restent dans un seul état et un seul brouillon ; changer de
-vue ne les efface pas. Le P&L importé et la relation risque/R restent gérés
-par les calculs existants.
+**En-têtes légers :** `app/shell/PageHead.tsx` porte une seule barre principale dans le flux, sans marge négative ni chevauchement. Les filtres secondaires sont regroupés dans `PageControls` ; un compteur indique les critères actifs et Échap ferme le panneau en conservant les valeurs. Analytics et la saisonnalité remontent un unique `PageControls` dans `usePageActions` ; la vue, la période, les jours ou les actifs se choisissent dans ce panneau. Le banc visuel monte le vrai `PageHead`, avec `SectionTabs` et `MobileActions`, pour contrôler leur largeur ensemble. Ne pas ajouter de rangées de pastilles ni de bloc permanent de personnalisation au-dessus du contenu. `SubNav` et `PageToolbar` restent sans plaque extérieure ; les onglets ne se replient pas sur une deuxième ligne.
+
+**Formulaires de trade et de setup manqué :** panneaux de 672 px maximum et 86dvh, espacements compacts, un corps défilant et un pied fixe. Le trade s’ouvre sur ses champs essentiels, sans navigation en trois vues. Un seul volet « Options et notes » regroupe les détails facultatifs. Long, Short et BE ont des flèches/signes explicites ; les états directionnels vert/rouge sont sémantiques. Le badge de brouillon est distinct du bouton d’ajout. Le résultat estimé reste dans le pied plutôt que dans une deuxième case en lecture seule. Les états, brouillons et calculs existants restent uniques. Les setups manqués utilisent la même densité, les dates partagées et une palette neutre.
 
 **Pages contenues :** cadre standard de 1200 px, graphiques moins hauts ;
 Analytics organise tous ses blocs en Synthèse, Exécution et Timing, un groupe
 à la fois. Le calendrier conserve son cadre de référence de 1400 px.
 
-**Icônes :** `src/shared/ui/icons.tsx` est le catalogue commun à la navigation,
-aux pages et aux contrôles. Les glyphes métier sont propres à TradeVault
-(carnet, trajectoires, exécution, risque, saisons) : grille 24 px, trait 1,6,
-`currentColor`, aucune teinte décorative. Importer ce catalogue, jamais
-`lucide-react` directement dans l'app connectée. Les utilitaires moins courants
-restent compatibles avec les noms existants ; tout nouveau glyphe métier se
-dessine ici, jamais dans un écran.
+**Icônes :** `src/shared/ui/icons.tsx` reste le point d’entrée commun. Il réexporte les pictogrammes Lucide familiers : livre pour le journal, calendrier, graphique pour les statistiques, cible pour les objectifs, engrenage pour les réglages. Un symbole doit être compréhensible avant d’être original. Garder le nom de page à côté dans la navigation, le trait 1,6 et `currentColor` ; pas de glyphe métier abstrait ni de variante locale.

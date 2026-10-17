@@ -35,7 +35,8 @@ import { useT } from "@/app/i18n/LanguageContext";
 import {
   EmptyState,
   PageContainer,
-  SubNav,
+  SelectPicker,
+  PageControls,
   Card,
   Kpi,
   KpiGrid,
@@ -62,6 +63,7 @@ import {
   glowActiveDot,
   formatAxisMoney,
 } from "@/app/trading/chartTheme";
+import { usePageActions } from "@/app/contexts/PageActionsContext";
 import EquityChart from "@/app/trading/EquityChart";
 import { formatMoney } from "@/shared/currency";
 
@@ -386,6 +388,80 @@ export default function Analytics({ trades }: AnalyticsProps) {
       .sort((a, b) => a.h - b.h);
   }, [cutoffTrades]);
 
+  const pageControls = useMemo(
+    () => (
+      <div className="flex items-center gap-1">
+        <PageControls
+          label={t("common.filters")}
+          count={days.length + (period.kind === "custom" || period.preset !== "all" ? 1 : 0)}
+        >
+          <SelectPicker
+            inline
+            label={t("common.viewMode")}
+            value={view}
+            onChange={setView}
+            options={[
+              { value: "overview", label: t("analytics.viewOverview") },
+              { value: "execution", label: t("analytics.viewExecution") },
+              { value: "timing", label: t("analytics.viewTiming") },
+            ]}
+          />
+          <RangePicker
+            label={t("common.period")}
+            value={period}
+            onChange={setPeriod}
+            neutralPreset="all"
+            presets={[
+              { value: "all", label: t("common.all") },
+              { value: "7d", label: t("common.7d") },
+              { value: "30d", label: t("common.30d") },
+              { value: "90d", label: t("common.90d") },
+              { value: "1y", label: t("common.1y") },
+            ]}
+            customLabel={t("picker.custom")}
+            fromLabel={t("picker.from")}
+            toLabel={t("picker.to")}
+            applyLabel={t("picker.apply")}
+            todayLabel={t("calendar.today")}
+            locale={locale}
+          />
+          {/* Lundi à vendredi : les marchés que ce produit journalise ne
+            s'échangent pas le week-end. Un jour, plusieurs, ou tous. */}
+          <MultiPicker
+            label={t("journal.filterDay")}
+            values={days}
+            onChange={setDays}
+            options={[1, 2, 3, 4, 5].map((d) => ({
+              value: String(d),
+              label: jours[d].charAt(0).toUpperCase() + jours[d].slice(1),
+              count: periodDayCount[d] ?? 0,
+            }))}
+            allLabel={t("common.all")}
+            clearLabel={t("common.clear")}
+            doneLabel={t("common.done")}
+            countLabel={t("picker.nSelected")}
+          />
+          {(days.length > 0 || period.kind === "custom" || period.preset !== "all") && (
+            <button
+              onClick={() => {
+                setDays([]);
+                setPeriod({ kind: "preset", preset: "all" });
+              }}
+              className="inline-flex h-9 shrink-0 items-center rounded-lg px-2.5 text-xs font-semibold text-slate-500 transition-colors hover:bg-white/[0.04] hover:text-white"
+            >
+              {t("common.reset")}
+            </button>
+          )}
+          <span className="tv-figure text-xs text-slate-500">
+            {cutoffTrades.length} {t("common.trades")}
+          </span>
+        </PageControls>
+      </div>
+    ),
+    [view, t, days, period, locale, jours, periodDayCount, cutoffTrades.length],
+  );
+  usePageActions(trades.length > 0 ? pageControls : null);
+
   if (trades.length === 0)
     return (
       <div className="p-4 md:p-5">
@@ -395,75 +471,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
 
   return (
     <PageContainer>
-      {/* ── LES DEUX FILTRES : LA DURÉE, ET LE JOUR ──
-          La durée était seule. « Mes lundis sur trente jours » n'était pas une
-          question qu'on pouvait poser à cette page ; c'est pourtant celle qui
-          décide si on arrête de trader un jour. Le jour s'ajoute donc en
-          second axe, et il s'applique en amont de tous les calculs. */}
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <RangePicker
-          label={t("common.period")}
-          value={period}
-          onChange={setPeriod}
-          neutralPreset="all"
-          presets={[
-            { value: "all", label: t("common.all") },
-            { value: "7d", label: t("common.7d") },
-            { value: "30d", label: t("common.30d") },
-            { value: "90d", label: t("common.90d") },
-            { value: "1y", label: t("common.1y") },
-          ]}
-          customLabel={t("picker.custom")}
-          fromLabel={t("picker.from")}
-          toLabel={t("picker.to")}
-          applyLabel={t("picker.apply")}
-          todayLabel={t("calendar.today")}
-          locale={locale}
-        />
-        {/* Lundi à vendredi : les marchés que ce produit journalise ne
-            s'échangent pas le week-end. Un jour, plusieurs, ou tous. */}
-        <MultiPicker
-          label={t("journal.filterDay")}
-          values={days}
-          onChange={setDays}
-          options={[1, 2, 3, 4, 5].map((d) => ({
-            value: String(d),
-            label: jours[d].charAt(0).toUpperCase() + jours[d].slice(1),
-            count: periodDayCount[d] ?? 0,
-          }))}
-          allLabel={t("common.all")}
-          clearLabel={t("common.clear")}
-          doneLabel={t("common.done")}
-          countLabel={t("picker.nSelected")}
-        />
-        {(days.length > 0 || period.kind === "custom" || period.preset !== "all") && (
-          <button
-            onClick={() => {
-              setDays([]);
-              setPeriod({ kind: "preset", preset: "all" });
-            }}
-            className="inline-flex h-9 shrink-0 items-center rounded-lg px-2.5 text-xs font-semibold text-slate-500 transition-colors hover:bg-white/[0.04] hover:text-white"
-          >
-            {t("common.reset")}
-          </button>
-        )}
-        <span className="tv-figure ml-auto text-[11px] text-slate-500">
-          {cutoffTrades.length} {t("common.trades")}
-        </span>
-      </div>
-
-      {/* Une question par vue : synthèse, exécution ou timing. */}
       <div className="space-y-3 md:space-y-4">
-        <SubNav
-          ariaLabel={t("nav.analytics")}
-          value={view}
-          onChange={setView}
-          items={[
-            { id: "overview", label: t("analytics.viewOverview") },
-            { id: "execution", label: t("analytics.viewExecution") },
-            { id: "timing", label: t("analytics.viewTiming") },
-          ]}
-        />
         <div
           className={cn(
             "glass animate-fade-in-up stagger-1 rounded-2xl border px-3.5 py-3 md:px-4",

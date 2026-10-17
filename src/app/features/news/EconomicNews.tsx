@@ -13,7 +13,7 @@ import {
 } from "@/shared/ui/icons";
 import { useT } from "@/app/i18n/LanguageContext";
 import { cn } from "@/shared/ui/cn";
-import { PageContainer, Card, MultiPicker } from "@/shared/ui";
+import { PageControls, PageContainer, Card, MultiPicker } from "@/shared/ui";
 import { usePageActions } from "@/app/contexts/PageActionsContext";
 import { useEconomicCalendar } from "./useEconomicCalendar";
 import type { CalendarEvent, EventImpact } from "@/modules/economic-calendar";
@@ -366,123 +366,128 @@ export default function EconomicNews() {
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>
-        <div className="relative flex-1 min-w-0">
-          <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={t("news.searchPlaceholder")}
-            className="w-full h-10 bg-white/[0.03] border border-white/[0.07] rounded-xl pl-9 pr-8 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/40"
-          />
-          {search && (
-            <button
-              onClick={() => setSearch("")}
-              className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-lg flex items-center justify-center text-slate-500 hover:text-white"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          )}
+        <div className="ml-auto">
+          <PageControls label={t("common.filters")} count={activeFilterCount}>
+            <div className="relative flex-1 min-w-0">
+              <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={t("news.searchPlaceholder")}
+                className="w-full h-10 bg-white/[0.03] border border-white/[0.07] rounded-xl pl-9 pr-8 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/40"
+              />
+              {search && (
+                <button
+                  onClick={() => setSearch("")}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-lg flex items-center justify-center text-slate-500 hover:text-white"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+            {!loading && events.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1">
+                {[
+                  {
+                    preset: "today" as DayNavPreset,
+                    label: t("news.today"),
+                    icon: <Clock className="w-3 h-3" />,
+                  },
+                  {
+                    preset: "tomorrow" as DayNavPreset,
+                    label: t("news.tomorrow"),
+                    icon: <ChevronRight className="w-3 h-3" />,
+                  },
+                  {
+                    preset: "week" as DayNavPreset,
+                    label: t("news.thisWeek"),
+                    icon: <CalendarDays className="w-3 h-3" />,
+                  },
+                  { preset: "all" as DayNavPreset, label: t("news.all"), icon: null },
+                ].map(({ preset, label, icon }) => {
+                  const active = dayPreset === preset;
+                  const count =
+                    preset === "today"
+                      ? (days.find((d) => d.iso === todayIso)?.all.length ?? 0)
+                      : preset === "tomorrow"
+                        ? (days.find((d) => d.iso === tomorrowIso)?.all.length ?? 0)
+                        : preset === "week"
+                          ? events.length
+                          : 0;
+                  return (
+                    <button
+                      key={preset}
+                      onClick={() => {
+                        setDayPreset(preset);
+                        if (preset === "today") setCustomDayFilter(null);
+                      }}
+                      className={cn(
+                        "shrink-0 flex items-center gap-1.5 h-9 px-3 rounded-xl border text-xs font-semibold transition",
+                        active
+                          ? "bg-cyan-500/15 border-cyan-500/30 text-cyan-200"
+                          : "bg-white/[0.02] border-white/[0.06] text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]",
+                      )}
+                    >
+                      {icon}
+                      {label}
+                      {preset !== "all" && (
+                        <span
+                          className={cn(
+                            "tv-figure text-[10px]",
+                            active ? "text-cyan-300/70" : "text-slate-600",
+                          )}
+                        >
+                          {count}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+                {/* Impact et devises : le même sélecteur que partout ailleurs —
+              plusieurs choix, « tout » pour lever le filtre. */}
+                <div className="basis-full" />
+                <MultiPicker
+                  label={t("news.impact")}
+                  values={Array.from(impactFilter)}
+                  onChange={(v) => setImpactFilter(new Set(v as EventImpact[]))}
+                  options={IMPACTS.map((i) => ({
+                    value: i,
+                    label: t(IMPACT_KEYS[i as keyof typeof IMPACT_KEYS]),
+                    count: weekCounts[i],
+                  }))}
+                  allLabel={t("common.all")}
+                  clearLabel={t("common.clear")}
+                  doneLabel={t("common.done")}
+                  countLabel={t("picker.nSelected")}
+                />
+                <MultiPicker
+                  label={t("news.currencies")}
+                  values={Array.from(currencyFilter)}
+                  onChange={(v) => setCurrencyFilter(new Set(v))}
+                  options={availableCurrencies.map((c) => ({
+                    value: c,
+                    label: `${flagOf(c)} ${c}`,
+                  }))}
+                  allLabel={t("common.all")}
+                  clearLabel={t("common.clear")}
+                  doneLabel={t("common.done")}
+                  countLabel={t("picker.nSelected")}
+                  searchLabel={t("picker.search")}
+                />
+                {activeFilterCount > 0 && (
+                  <button
+                    onClick={clearFilters}
+                    className="inline-flex h-9 shrink-0 items-center rounded-lg px-2.5 text-xs font-semibold text-slate-500 transition-colors hover:bg-white/[0.04] hover:text-white"
+                  >
+                    {t("common.reset")}
+                  </button>
+                )}
+              </div>
+            )}{" "}
+          </PageControls>
         </div>
       </div>
-
-      {/* Day navigation bar — modern minimal preset-based */}
-      {!loading && events.length > 0 && (
-        <div className="flex flex-wrap items-center gap-1 mb-4">
-          {[
-            {
-              preset: "today" as DayNavPreset,
-              label: t("news.today"),
-              icon: <Clock className="w-3 h-3" />,
-            },
-            {
-              preset: "tomorrow" as DayNavPreset,
-              label: t("news.tomorrow"),
-              icon: <ChevronRight className="w-3 h-3" />,
-            },
-            {
-              preset: "week" as DayNavPreset,
-              label: t("news.thisWeek"),
-              icon: <CalendarDays className="w-3 h-3" />,
-            },
-            { preset: "all" as DayNavPreset, label: t("news.all"), icon: null },
-          ].map(({ preset, label, icon }) => {
-            const active = dayPreset === preset;
-            const count =
-              preset === "today"
-                ? (days.find((d) => d.iso === todayIso)?.all.length ?? 0)
-                : preset === "tomorrow"
-                  ? (days.find((d) => d.iso === tomorrowIso)?.all.length ?? 0)
-                  : preset === "week"
-                    ? events.length
-                    : 0;
-            return (
-              <button
-                key={preset}
-                onClick={() => {
-                  setDayPreset(preset);
-                  if (preset === "today") setCustomDayFilter(null);
-                }}
-                className={cn(
-                  "shrink-0 flex items-center gap-1.5 h-9 px-3 rounded-xl border text-xs font-semibold transition",
-                  active
-                    ? "bg-cyan-500/15 border-cyan-500/30 text-cyan-200"
-                    : "bg-white/[0.02] border-white/[0.06] text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]",
-                )}
-              >
-                {icon}
-                {label}
-                {preset !== "all" && (
-                  <span
-                    className={cn(
-                      "tv-figure text-[10px]",
-                      active ? "text-cyan-300/70" : "text-slate-600",
-                    )}
-                  >
-                    {count}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-          {/* Impact et devises : le même sélecteur que partout ailleurs —
-              plusieurs choix, « tout » pour lever le filtre. */}
-          <div className="mx-1 h-5 w-px shrink-0 bg-white/[0.08]" />
-          <MultiPicker
-            label={t("news.impact")}
-            values={Array.from(impactFilter)}
-            onChange={(v) => setImpactFilter(new Set(v as EventImpact[]))}
-            options={IMPACTS.map((i) => ({
-              value: i,
-              label: t(IMPACT_KEYS[i as keyof typeof IMPACT_KEYS]),
-              count: weekCounts[i],
-            }))}
-            allLabel={t("common.all")}
-            clearLabel={t("common.clear")}
-            doneLabel={t("common.done")}
-            countLabel={t("picker.nSelected")}
-          />
-          <MultiPicker
-            label={t("news.currencies")}
-            values={Array.from(currencyFilter)}
-            onChange={(v) => setCurrencyFilter(new Set(v))}
-            options={availableCurrencies.map((c) => ({ value: c, label: `${flagOf(c)} ${c}` }))}
-            allLabel={t("common.all")}
-            clearLabel={t("common.clear")}
-            doneLabel={t("common.done")}
-            countLabel={t("picker.nSelected")}
-            searchLabel={t("picker.search")}
-          />
-          {activeFilterCount > 0 && (
-            <button
-              onClick={clearFilters}
-              className="inline-flex h-9 shrink-0 items-center rounded-lg px-2.5 text-xs font-semibold text-slate-500 transition-colors hover:bg-white/[0.04] hover:text-white"
-            >
-              {t("common.reset")}
-            </button>
-          )}
-        </div>
-      )}
 
       {/* "All" mode: day picker chips for each day of the week */}
       {dayPreset === "all" && (

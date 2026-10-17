@@ -3162,10 +3162,9 @@ a:focus-visible,
 .section-tabs {
   display: none;
   max-width: 100%;
-  padding: 0.3rem;
-  border-radius: var(--radius-xl);
-  background: var(--tv-plate-1);
-  border: 1px solid var(--tv-border);
+  padding: 0;
+  background: transparent;
+  border: 0;
   box-shadow: none;
 }
 @media (min-width: 1024px) {
@@ -4341,10 +4340,9 @@ a:focus-visible,
   display: flex;
   align-items: center;
   gap: 0.25rem;
-  padding: 0.25rem;
-  border-radius: var(--radius-xl);
-  background: var(--tv-plate-1);
-  border: 1px solid var(--tv-border);
+  padding: 0;
+  background: transparent;
+  border: 0;
   overflow-x: auto;
   overflow-y: hidden;
   flex-wrap: nowrap;
@@ -4356,21 +4354,9 @@ a:focus-visible,
 .tv-subnav::-webkit-scrollbar {
   display: none;
 }
-/* Sur téléphone, les onglets PASSENT À LA LIGNE au lieu de défiler : six
-   parties d'un plan dans 306px en cachaient trois hors du cadre, sans rien
-   qui dise qu'il fallait glisser. Deux rangées se lisent d'un coup d'œil. */
-@media (max-width: 639px) {
-  .tv-subnav {
-    flex-wrap: wrap;
-    overflow: visible;
-    border-radius: 1rem;
-  }
-  .tv-subnav > .tv-subnav-item {
-    flex: 1 1 auto;
-    justify-content: center;
-  }
-}
 .tv-subnav-item {
+  flex-shrink: 0;
+  position: relative;
   scroll-snap-align: start;
   display: inline-flex;
   align-items: center;
@@ -4403,7 +4389,16 @@ a:focus-visible,
 .tv-subnav-item-active,
 .tv-subnav-item-active:hover {
   color: var(--tv-text-primary);
-  background: var(--tv-plate-3);
+  background: transparent;
+}
+.tv-subnav-item-active::after {
+  content: "";
+  position: absolute;
+  inset-inline: 12px;
+  bottom: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--tv-text-secondary);
 }
 .tv-subnav-item:focus-visible {
   outline: 2px solid rgb(var(--tv-accent-rgb) / 0.7);
@@ -4433,16 +4428,9 @@ a:focus-visible,
    simulation ou de plan, on change de vue depuis n'importe quel point du
    défilement, sans remonter. */
 .tv-toolbar {
-  position: sticky;
-  top: 0;
-  z-index: var(--tv-z-rail);
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.375rem 0.5rem;
-  border-radius: var(--radius-2xl);
-  background: var(--tv-plate-1);
-  border: 1px solid var(--tv-border);
+  gap: 8px;
   min-width: 0;
 }
 /* PAS DE PILULE DANS UNE PILULE. La barre EST déjà le cadre du contrôle

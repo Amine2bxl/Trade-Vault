@@ -123,7 +123,6 @@ export function DateField({
     if (!value) return "—";
     const [y, m, d] = partsOf(value);
     return new Intl.DateTimeFormat(locale, {
-      weekday: "short",
       day: "numeric",
       month: "short",
       year: "numeric",

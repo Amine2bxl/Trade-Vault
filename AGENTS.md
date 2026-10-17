@@ -62,7 +62,7 @@ suite ; ne jamais affaiblir une assertion pour passer.
   `.claude/skills/` avant tout travail d'interface. Voir [`docs/DESIGN_SYSTEM.md`](docs/DESIGN_SYSTEM.md).
 - **Champs et filtres** : contrat unique `src/shared/ui/selection.ts`, moteur
   `SelectionPanel.tsx`, composants `Input`, `DateField`, `TimeField`,
-  `SelectPicker` / `MultiPicker` / `RangePicker`. Ne pas recréer de panneau,
+  `SelectPicker` / `MultiPicker` / `RangePicker`, `PageControls` pour les commandes secondaires. Une seule barre légère, pas de rangées de filtres permanentes. Ne pas recréer de panneau,
   de timer de sélection ou de géométrie locale. Icônes via `shared/ui/icons`.
   Règles et recette d’ajout : `docs/DESIGN_SYSTEM.md` §9.
 - **Honnêteté** : jamais de promesse de gain, de faux avis, de chiffre ou de

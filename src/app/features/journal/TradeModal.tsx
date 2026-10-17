@@ -1,5 +1,17 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
-import { X, Plus, CandlestickChart, ImagePlus, ArrowLeft, ArrowRight } from "@/shared/ui/icons";
+import {
+  X,
+  Plus,
+  CandlestickChart,
+  ImagePlus,
+  ArrowLeft,
+  ArrowRight,
+  ArrowUpRight,
+  ArrowDownRight,
+  Minus,
+  FilePenLine,
+  ChevronDown,
+} from "@/shared/ui/icons";
 import { Trade, STRATEGIES, MISTAKE_OPTIONS } from "@/app/types";
 import { POINT_VALUES, calcContracts as calcContractsFor } from "@/app/trading/positionCalc";
 import { generateId } from "@/app/store";
@@ -30,7 +42,6 @@ import {
   TimeField,
   Input,
   Field,
-  SubNav,
   ChoiceGroup,
   Disclosure,
   SelectPicker,
@@ -203,7 +214,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const [section, setSection] = useState<"execution" | "context" | "review">("execution");
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const [showCalc, setShowCalc] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showIntent, setShowIntent] = useState(false);
@@ -570,11 +581,6 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
     !rMultipleError;
 
   const labelClass = "tv-label mb-1.5 block text-slate-500";
-  const tabs = [
-    { id: "execution" as const, label: t("trade.sectionExecution") },
-    { id: "context" as const, label: t("trade.sectionContext") },
-    { id: "review" as const, label: t("trade.sectionReview") },
-  ];
 
   return (
     <>
@@ -583,10 +589,10 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
         onClose={onClose}
         closeOnBackdrop={!dirty}
         labelledBy="trade-form-title"
-        className="tv-trade-modal flex h-[min(90dvh,780px)] max-h-[90dvh] flex-col overflow-hidden md:max-w-3xl"
+        className="tv-trade-modal tv-compact-form flex max-h-[min(86dvh,720px)] flex-col overflow-hidden md:max-w-2xl"
       >
-        <header className="flex shrink-0 items-center gap-3 border-b border-[var(--tv-border)] px-4 py-3 md:px-5">
-          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)] text-slate-400">
+        <header className="flex shrink-0 items-center gap-3 border-b border-[var(--tv-border)] px-4 py-2.5">
+          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)] text-slate-400">
             <CandlestickChart className="h-5 w-5" />
           </span>
           <div className="min-w-0 flex-1">
@@ -602,9 +608,9 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
               type="button"
               onClick={() => void discardDraft()}
               title={t("trade.discardDraft")}
-              className="tv-label rounded-lg border border-[var(--tv-border)] px-2 py-2 text-slate-400"
+              className="tv-draft-badge"
             >
-              {t("trade.draftBadge")}
+              <FilePenLine className="h-3.5 w-3.5" /> {t("trade.draftBadge")}
             </button>
           )}
           <button
@@ -616,319 +622,317 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
             <X className="h-4 w-4" />
           </button>
         </header>
-        <div className="shrink-0 px-4 py-3 md:px-5">
-          <SubNav
-            items={tabs}
-            value={section}
-            onChange={setSection}
-            ariaLabel={t("trade.editTitle")}
-          />
-        </div>
-        <div className="tv-trade-form min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4 md:px-5">
-          {section === "execution" && (
-            <div className="space-y-4" role="region" aria-label={t("trade.sectionExecution")}>
-              {trade?.broker && (
-                <div className="tv-trade-inset space-y-3">
-                  <div>
-                    <p className="tv-label text-slate-400">
-                      {t("trade.importedFrom").replace("{broker}", "Tradovate")}
-                    </p>
-                    {trade.brokerAccount && (
-                      <p className="tv-prose mt-1 text-slate-500">{trade.brokerAccount}</p>
-                    )}
-                  </div>
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                    {(
-                      [
-                        ["quantity", "trade.execContracts", "1"],
-                        ["entryPrice", "trade.execEntry", "0.25"],
-                        ["exitPrice", "trade.execExit", "0.25"],
-                        ["fees", "trade.execFees", "0.01"],
-                      ] as const
-                    ).map(([key, label, step]) => (
-                      <Field key={key} label={t(label)}>
-                        <Input
-                          aria-label={t(label)}
-                          type="number"
-                          step={step}
-                          inputMode="decimal"
-                          value={form[key]}
-                          onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
-                          placeholder="—"
-                        />
-                      </Field>
-                    ))}
-                  </div>
-                  {trade.reviewPending && (
-                    <p className="tv-prose text-slate-500">
-                      {riskDollar > 0 ? t("trade.reviewHint") : t("trade.reviewHintRisk")}
-                    </p>
-                  )}
-                </div>
-              )}
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Field label={t("trade.symbol")}>
-                  <Input
-                    aria-label={t("trade.symbol")}
-                    value={form.symbol}
-                    onChange={(e) => setForm((f) => ({ ...f, symbol: e.target.value }))}
-                    placeholder="NQ"
-                  />
-                </Field>
-                <Field label={t("trade.date")}>
-                  <DateField
-                    value={form.date}
-                    onChange={(date) => setForm((f) => ({ ...f, date }))}
-                    locale={intlLocale(lang)}
-                    todayLabel={t("common.today")}
-                    aria-label={t("trade.date")}
-                  />
-                </Field>
-              </div>
-              <Field label={t("trade.direction")}>
-                <ChoiceGroup
-                  label={t("trade.direction")}
-                  value={form.direction}
-                  options={[
-                    { value: "long", label: t("common.long") },
-                    { value: "short", label: t("common.short") },
-                    { value: "be", label: t("common.be") },
-                  ]}
-                  onChange={(direction) =>
-                    setForm((f) => ({
-                      ...f,
-                      direction,
-                      ...(direction === "be" ? { rMultiple: "0" } : {}),
-                    }))
-                  }
-                />
-              </Field>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Field label={t("trade.riskAmount")}>
-                  <div className="grid grid-cols-[minmax(0,1fr)_72px] gap-2">
-                    <Input
-                      aria-label={t("trade.riskAmount")}
-                      type="number"
-                      step="0.01"
-                      inputMode="decimal"
-                      value={form.riskAmount}
-                      onChange={(e) => setForm((f) => ({ ...f, riskAmount: e.target.value }))}
-                      placeholder="0.00"
-                    />
-                    <SelectPicker
-                      variant="field"
-                      label={t("trade.riskUnit")}
-                      value={form.riskType}
-                      onChange={(riskType) => setForm((f) => ({ ...f, riskType }))}
-                      options={[
-                        { value: "dollar", label: currencySymbol() },
-                        { value: "percent", label: "%" },
-                      ]}
-                    />
-                  </div>
-                </Field>
-                <Field label={t("trade.rrMultiple")} error={rMultipleError}>
-                  {pnlLocked ? (
-                    <Input
-                      aria-label={t("trade.rrMultiple")}
-                      type="number"
-                      step="0.1"
-                      inputMode="decimal"
-                      value={rDraft ?? (riskDollar > 0 ? derivedR.toFixed(2) : "")}
-                      onChange={(e) => editBrokerR(e.target.value)}
-                      onBlur={() => setRDraft(null)}
-                      disabled={!(riskDollar > 0)}
-                      placeholder="—"
-                    />
-                  ) : (
-                    <Input
-                      aria-label={t("trade.rrMultiple")}
-                      type="number"
-                      step="0.1"
-                      inputMode="decimal"
-                      value={form.rMultiple}
-                      onChange={(e) => setForm((f) => ({ ...f, rMultiple: e.target.value }))}
-                      disabled={form.direction === "be"}
-                      placeholder="2.0"
-                    />
-                  )}
-                </Field>
-              </div>
-              <Field label={pnlLocked ? t("trade.brokerPnl") : t("trade.estPnl")}>
-                {pnlLocked ? (
-                  <Input
-                    aria-label={t("trade.brokerPnl")}
-                    type="number"
-                    step="0.01"
-                    inputMode="decimal"
-                    value={form.brokerPnl}
-                    onChange={(e) => {
-                      setRDraft(null);
-                      setForm((f) => ({ ...f, brokerPnl: e.target.value }));
-                    }}
-                    className={cn(
-                      "tv-figure",
-                      calculatedPnl > 0
-                        ? "text-emerald-400"
-                        : calculatedPnl < 0
-                          ? "text-red-400"
-                          : "text-slate-300",
-                    )}
-                  />
-                ) : (
-                  <output
-                    className={cn(
-                      "tv-control tv-figure flex items-center",
-                      calculatedPnl > 0
-                        ? "text-emerald-400"
-                        : calculatedPnl < 0
-                          ? "text-red-400"
-                          : "text-slate-300",
-                    )}
-                  >
-                    {formatMoney(calculatedPnl, { signed: true })}
-                  </output>
-                )}
-              </Field>
-              {form.riskType === "percent" && (
-                <Field label={t("trade.accountBalance")}>
-                  <Input
-                    aria-label={t("trade.accountBalance")}
-                    type="number"
-                    value={accountBalance}
-                    onChange={(e) => {
-                      const value = parseFloat(e.target.value) || 0;
-                      setAccountBalance(value);
-                      saveAccountBalance(userId, value);
-                    }}
-                  />
-                  <p className="tv-prose text-slate-500">
-                    {formatMoney(riskDollar)} {t("dashboard.riskSuffix")}
+        <div className="tv-trade-form min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3">
+          <div className="space-y-3">
+            {trade?.broker && (
+              <div className="tv-trade-inset space-y-3">
+                <div>
+                  <p className="tv-label text-slate-400">
+                    {t("trade.importedFrom").replace("{broker}", "Tradovate")}
                   </p>
-                </Field>
-              )}
-              <Field label={t("trade.strategy")}>
-                <SelectPicker
-                  variant="field"
-                  label={t("trade.strategy")}
-                  value={form.strategy}
-                  onChange={(strategy) => setForm((f) => ({ ...f, strategy }))}
-                  searchLabel={t("picker.search")}
-                  options={Array.from(new Set([...STRATEGIES, form.strategy]))
-                    .filter(Boolean)
-                    .map((value) => ({ value, label: value }))}
-                />
-              </Field>
-              <div className="grid grid-cols-2 gap-3">
-                <Field label={t("trade.entryTime")}>
-                  <TimeField
-                    value={form.entryTime}
-                    onChange={(entryTime) => setForm((f) => ({ ...f, entryTime }))}
-                    locale={intlLocale(lang)}
-                    aria-label={t("trade.entryTime")}
-                    doneLabel={t("common.done")}
-                  />
-                </Field>
-                <Field label={t("trade.exitTime")} error={timeError}>
-                  <TimeField
-                    value={form.exitTime}
-                    onChange={(exitTime) => setForm((f) => ({ ...f, exitTime }))}
-                    locale={intlLocale(lang)}
-                    aria-label={t("trade.exitTime")}
-                    doneLabel={t("common.done")}
-                  />
-                </Field>
-              </div>
-              <SelectPicker
-                inline
-                label={t("trade.timePresets")}
-                value={`${form.entryTime}|${form.exitTime}`}
-                onChange={(value) => {
-                  const [entryTime, exitTime] = value.split("|");
-                  setForm((f) => ({ ...f, entryTime, exitTime }));
-                }}
-                options={[
-                  ["09:30", "10:15"],
-                  ["10:00", "11:00"],
-                  ["15:30", "16:00"],
-                  ["16:00", "17:00"],
-                ].map(([a, b]) => ({ value: `${a}|${b}`, label: `${a} → ${b}` }))}
-              />
-              <Disclosure title={t("trade.positionCalc")} open={showCalc} onChange={setShowCalc}>
-                <SelectPicker
-                  inline
-                  label={t("trade.pointValue")}
-                  value={pointValue}
-                  onChange={setPointValue}
-                  options={POINT_VALUES.map((p) => ({
-                    value: String(p.value),
-                    label: `${p.label} ${p.value}`,
-                  }))}
-                />
-                <div className="grid grid-cols-2 gap-3">
-                  <Field label={t("trade.stopPoints")}>
-                    <Input
-                      aria-label={t("trade.stopPoints")}
-                      type="number"
-                      step="0.25"
-                      min="0"
-                      value={stopPoints}
-                      onChange={(e) => setStopPoints(e.target.value)}
-                    />
-                  </Field>
-                  <Field label={t("trade.pointValue")}>
-                    <Input
-                      aria-label={t("trade.pointValue")}
-                      type="number"
-                      step="0.5"
-                      min="0"
-                      value={pointValue}
-                      onChange={(e) => setPointValue(e.target.value)}
-                    />
-                  </Field>
+                  {trade.brokerAccount && (
+                    <p className="tv-prose mt-1 text-slate-500">{trade.brokerAccount}</p>
+                  )}
                 </div>
-                <p className="tv-prose text-slate-400">
-                  {calcContracts
-                    ? `${calcContracts.contracts} ${t("trade.contracts")} · ${t("trade.effectiveRisk")}: ${formatMoney(calcContracts.effectiveRisk)}`
-                    : t("trade.calcHint")}
-                </p>
-              </Disclosure>
-              <Disclosure
-                title={t("trade.advanced")}
-                open={showAdvanced}
-                onChange={setShowAdvanced}
-              >
-                <div className="grid gap-3 sm:grid-cols-3">
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                   {(
                     [
-                      ["mae", `MAE (${currencySymbol()})`],
-                      ["mfe", `MFE (${currencySymbol()})`],
-                      ["slippage", `${t("trade.slippage")} (${currencySymbol()})`],
+                      ["quantity", "trade.execContracts", "1"],
+                      ["entryPrice", "trade.execEntry", "0.25"],
+                      ["exitPrice", "trade.execExit", "0.25"],
+                      ["fees", "trade.execFees", "0.01"],
                     ] as const
-                  ).map(([key, label]) => (
-                    <Field key={key} label={label}>
+                  ).map(([key, label, step]) => (
+                    <Field key={key} label={t(label)}>
                       <Input
-                        aria-label={label}
+                        aria-label={t(label)}
                         type="number"
-                        step="0.01"
+                        step={step}
+                        inputMode="decimal"
                         value={form[key]}
                         onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
                         placeholder="—"
                       />
-                      {key !== "slippage" && (
-                        <p className="tv-prose text-slate-500">
-                          {t(key === "mae" ? "trade.maeHint" : "trade.mfeHint")}
-                        </p>
-                      )}
                     </Field>
                   ))}
                 </div>
-              </Disclosure>
+                {trade.reviewPending && (
+                  <p className="tv-prose text-slate-500">
+                    {riskDollar > 0 ? t("trade.reviewHint") : t("trade.reviewHintRisk")}
+                  </p>
+                )}
+              </div>
+            )}
+            <div className="grid grid-cols-2 gap-3">
+              <Field label={t("trade.symbol")}>
+                <Input
+                  aria-label={t("trade.symbol")}
+                  value={form.symbol}
+                  onChange={(e) => setForm((f) => ({ ...f, symbol: e.target.value }))}
+                  placeholder="NQ"
+                />
+              </Field>
+              <Field label={t("trade.date")}>
+                <DateField
+                  value={form.date}
+                  onChange={(date) => setForm((f) => ({ ...f, date }))}
+                  locale={intlLocale(lang)}
+                  todayLabel={t("common.today")}
+                  aria-label={t("trade.date")}
+                />
+              </Field>
             </div>
-          )}
-
-          {section === "context" && (
-            <div className="space-y-4" role="region" aria-label={t("trade.sectionContext")}>
+            <Field label={t("trade.direction")} className="tv-direction">
+              <ChoiceGroup
+                label={t("trade.direction")}
+                value={form.direction}
+                options={[
+                  {
+                    value: "long",
+                    label: t("common.long"),
+                    icon: <ArrowUpRight className="h-4 w-4" />,
+                    tone: "positive",
+                  },
+                  {
+                    value: "short",
+                    label: t("common.short"),
+                    icon: <ArrowDownRight className="h-4 w-4" />,
+                    tone: "negative",
+                  },
+                  { value: "be", label: t("common.be"), icon: <Minus className="h-4 w-4" /> },
+                ]}
+                onChange={(direction) =>
+                  setForm((f) => ({
+                    ...f,
+                    direction,
+                    ...(direction === "be" ? { rMultiple: "0" } : {}),
+                  }))
+                }
+              />
+            </Field>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label={t("trade.riskAmount")}>
+                <div className="grid grid-cols-[minmax(0,1fr)_72px] gap-2">
+                  <Input
+                    aria-label={t("trade.riskAmount")}
+                    type="number"
+                    step="0.01"
+                    inputMode="decimal"
+                    value={form.riskAmount}
+                    onChange={(e) => setForm((f) => ({ ...f, riskAmount: e.target.value }))}
+                    placeholder="0.00"
+                  />
+                  <SelectPicker
+                    variant="field"
+                    label={t("trade.riskUnit")}
+                    value={form.riskType}
+                    onChange={(riskType) => setForm((f) => ({ ...f, riskType }))}
+                    options={[
+                      { value: "dollar", label: currencySymbol() },
+                      { value: "percent", label: "%" },
+                    ]}
+                  />
+                </div>
+              </Field>
+              <Field label={t("trade.rrMultiple")} error={rMultipleError}>
+                {pnlLocked ? (
+                  <Input
+                    aria-label={t("trade.rrMultiple")}
+                    type="number"
+                    step="0.1"
+                    inputMode="decimal"
+                    value={rDraft ?? (riskDollar > 0 ? derivedR.toFixed(2) : "")}
+                    onChange={(e) => editBrokerR(e.target.value)}
+                    onBlur={() => setRDraft(null)}
+                    disabled={!(riskDollar > 0)}
+                    placeholder="—"
+                  />
+                ) : (
+                  <Input
+                    aria-label={t("trade.rrMultiple")}
+                    type="number"
+                    step="0.1"
+                    inputMode="decimal"
+                    value={form.rMultiple}
+                    onChange={(e) => setForm((f) => ({ ...f, rMultiple: e.target.value }))}
+                    disabled={form.direction === "be"}
+                    placeholder="2.0"
+                  />
+                )}
+              </Field>
+            </div>
+            {pnlLocked && (
+              <Field label={t("trade.brokerPnl")}>
+                <Input
+                  aria-label={t("trade.brokerPnl")}
+                  type="number"
+                  step="0.01"
+                  inputMode="decimal"
+                  value={form.brokerPnl}
+                  onChange={(e) => {
+                    setRDraft(null);
+                    setForm((f) => ({ ...f, brokerPnl: e.target.value }));
+                  }}
+                  className={cn(
+                    "tv-figure",
+                    calculatedPnl > 0
+                      ? "text-emerald-400"
+                      : calculatedPnl < 0
+                        ? "text-red-400"
+                        : "text-slate-300",
+                  )}
+                />
+              </Field>
+            )}
+            {form.riskType === "percent" && (
+              <Field label={t("trade.accountBalance")}>
+                <Input
+                  aria-label={t("trade.accountBalance")}
+                  type="number"
+                  value={accountBalance}
+                  onChange={(e) => {
+                    const value = parseFloat(e.target.value) || 0;
+                    setAccountBalance(value);
+                    saveAccountBalance(userId, value);
+                  }}
+                />
+                <p className="tv-prose text-slate-500">
+                  {formatMoney(riskDollar)} {t("dashboard.riskSuffix")}
+                </p>
+              </Field>
+            )}
+            <Field label={t("trade.strategy")}>
+              <SelectPicker
+                variant="field"
+                label={t("trade.strategy")}
+                value={form.strategy}
+                onChange={(strategy) => setForm((f) => ({ ...f, strategy }))}
+                searchLabel={t("picker.search")}
+                options={Array.from(new Set([...STRATEGIES, form.strategy]))
+                  .filter(Boolean)
+                  .map((value) => ({ value, label: value }))}
+              />
+            </Field>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label={t("trade.entryTime")}>
+                <TimeField
+                  value={form.entryTime}
+                  onChange={(entryTime) => setForm((f) => ({ ...f, entryTime }))}
+                  locale={intlLocale(lang)}
+                  aria-label={t("trade.entryTime")}
+                  doneLabel={t("common.done")}
+                />
+              </Field>
+              <Field label={t("trade.exitTime")} error={timeError}>
+                <TimeField
+                  value={form.exitTime}
+                  onChange={(exitTime) => setForm((f) => ({ ...f, exitTime }))}
+                  locale={intlLocale(lang)}
+                  aria-label={t("trade.exitTime")}
+                  doneLabel={t("common.done")}
+                />
+              </Field>
+            </div>
+            <SelectPicker
+              label={t("trade.timePresets")}
+              value={`${form.entryTime}|${form.exitTime}`}
+              renderTrigger={({ open, toggle, controls }) => (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={toggle}
+                  aria-haspopup="listbox"
+                  aria-expanded={open}
+                  aria-controls={controls}
+                >
+                  {t("trade.timePresets")} <ChevronDown className="h-3 w-3" />
+                </Button>
+              )}
+              onChange={(value) => {
+                const [entryTime, exitTime] = value.split("|");
+                setForm((f) => ({ ...f, entryTime, exitTime }));
+              }}
+              options={[
+                ["09:30", "10:15"],
+                ["10:00", "11:00"],
+                ["15:30", "16:00"],
+                ["16:00", "17:00"],
+              ].map(([a, b]) => ({ value: `${a}|${b}`, label: `${a} → ${b}` }))}
+            />
+          </div>
+          <Disclosure
+            title={t("trade.detailsNotes")}
+            open={detailsOpen}
+            onChange={setDetailsOpen}
+            className="mt-3"
+          >
+            <Disclosure title={t("trade.positionCalc")} open={showCalc} onChange={setShowCalc}>
+              <SelectPicker
+                inline
+                label={t("trade.pointValue")}
+                value={pointValue}
+                onChange={setPointValue}
+                options={POINT_VALUES.map((p) => ({
+                  value: String(p.value),
+                  label: `${p.label} ${p.value}`,
+                }))}
+              />
+              <div className="grid grid-cols-2 gap-3">
+                <Field label={t("trade.stopPoints")}>
+                  <Input
+                    aria-label={t("trade.stopPoints")}
+                    type="number"
+                    step="0.25"
+                    min="0"
+                    value={stopPoints}
+                    onChange={(e) => setStopPoints(e.target.value)}
+                  />
+                </Field>
+                <Field label={t("trade.pointValue")}>
+                  <Input
+                    aria-label={t("trade.pointValue")}
+                    type="number"
+                    step="0.5"
+                    min="0"
+                    value={pointValue}
+                    onChange={(e) => setPointValue(e.target.value)}
+                  />
+                </Field>
+              </div>
+              <p className="tv-prose text-slate-400">
+                {calcContracts
+                  ? `${calcContracts.contracts} ${t("trade.contracts")} · ${t("trade.effectiveRisk")}: ${formatMoney(calcContracts.effectiveRisk)}`
+                  : t("trade.calcHint")}
+              </p>
+            </Disclosure>
+            <Disclosure title={t("trade.advanced")} open={showAdvanced} onChange={setShowAdvanced}>
+              <div className="grid gap-3 sm:grid-cols-3">
+                {(
+                  [
+                    ["mae", `MAE (${currencySymbol()})`],
+                    ["mfe", `MFE (${currencySymbol()})`],
+                    ["slippage", `${t("trade.slippage")} (${currencySymbol()})`],
+                  ] as const
+                ).map(([key, label]) => (
+                  <Field key={key} label={label}>
+                    <Input
+                      aria-label={label}
+                      type="number"
+                      step="0.01"
+                      value={form[key]}
+                      onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
+                      placeholder="—"
+                    />
+                    {key !== "slippage" && (
+                      <p className="tv-prose text-slate-500">
+                        {t(key === "mae" ? "trade.maeHint" : "trade.mfeHint")}
+                      </p>
+                    )}
+                  </Field>
+                ))}
+              </div>
+            </Disclosure>
+            <div className="space-y-3">
               <Field label={t("trade.setupQuality")}>
                 <ChoiceGroup
                   label={t("trade.setupQuality")}
@@ -1033,10 +1037,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                 </div>
               </Field>
             </div>
-          )}
-
-          {section === "review" && (
-            <div className="space-y-4" role="region" aria-label={t("trade.sectionReview")}>
+            <div className="space-y-3 border-t border-[var(--tv-border)] pt-3">
               <Field label={t("trade.mistakes")}>
                 <div className={CHIP_ROW}>
                   {(showAllMistakes ? MISTAKE_OPTIONS : MISTAKE_OPTIONS.slice(0, 5)).map((m) => (
@@ -1224,9 +1225,9 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                 />
               </Field>
             </div>
-          )}
+          </Disclosure>
         </div>
-        <footer className="shrink-0 border-t border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-4 py-3 md:px-5">
+        <footer className="shrink-0 border-t border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-4 py-2.5">
           {(timeError || rMultipleError) && (
             <p role="alert" className="tv-prose mb-2 text-red-400">
               {timeError || rMultipleError}
@@ -1235,7 +1236,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
           <div className="flex items-center gap-2">
             <div className="min-w-0 flex-1">
               <span className="tv-label block truncate text-slate-500">
-                {form.symbol || t("trade.fillRequired")}
+                {pnlLocked ? t("trade.brokerPnl") : t("trade.estPnl")}
               </span>
               <span
                 className={cn(
