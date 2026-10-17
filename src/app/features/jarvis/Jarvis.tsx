@@ -13,7 +13,7 @@ import { JARVIS_PROFILE_EVENT } from "./prefs";
 import type { JarvisContext } from "./context";
 import CreditsBar from "./components/CreditsBar";
 import ProposalsPanel from "./components/ProposalsPanel";
-import { JarvisOrb } from "@/shared/ui";
+import { PageContainer, JarvisOrb } from "@/shared/ui";
 import { useJarvisActivity } from "./activity";
 import { usePageActions, usePageLead } from "@/app/contexts/PageActionsContext";
 import { stableViewportHeight, topAtRest } from "@/app/hooks/useAvailableHeight";
@@ -210,7 +210,7 @@ export default function Jarvis() {
   );
 
   return (
-    <div ref={boxRef} className="p-3 md:p-4" style={{ height: hauteur }}>
+    <PageContainer ref={boxRef} style={{ height: hauteur }}>
       {/* La plaque du produit, pas un cadre à part : `glass` est la surface que
           porte chaque carte de l'application. */}
       <div className="glass jarvis-stage flex h-full flex-col overflow-hidden rounded-3xl">
@@ -258,6 +258,6 @@ export default function Jarvis() {
           <CreditsBar />
         </div>
       </div>
-    </div>
+    </PageContainer>
   );
 }

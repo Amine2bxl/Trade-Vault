@@ -734,7 +734,7 @@ export default function Journal({
         {/* ── Mobile: Card List ── */}
         <div
           onScroll={onListScroll}
-          className="journal-scroll min-h-0 flex-1 space-y-1.5 overflow-y-auto overscroll-contain md:hidden"
+          className="journal-scroll min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain md:hidden"
         >
           {trades.length === 0 ? (
             <EmptyState
@@ -768,94 +768,97 @@ export default function Journal({
               const be = isBreakEven(trade);
               return (
                 <div key={trade.id} className="glass rounded-xl overflow-hidden trade-card">
-                  <div className="flex items-center gap-2 px-2.5 py-1.5">
-                    <button
-                      type="button"
-                      className="flex-1 min-w-0 flex items-center gap-2.5 text-left active:opacity-70 transition-opacity"
-                      onClick={() => setViewingIdx(i)}
+                  {/* Le montant et l'instrument gardent toute la largeur ; les
+                      actions vivent dessous plutôt que de rogner le symbole. */}
+                  <button
+                    type="button"
+                    className="grid min-h-11 w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-3 pb-2 pt-3 text-left transition-opacity active:opacity-70"
+                    onClick={() => setViewingIdx(i)}
+                  >
+                    <span
+                      className={cn(
+                        "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
+                        be
+                          ? "bg-slate-500/10"
+                          : trade.pnl >= 0
+                            ? "bg-emerald-500/10"
+                            : "bg-red-500/10",
+                      )}
                     >
-                      <div
+                      {be ? (
+                        <Minus className="h-4 w-4 text-slate-300" />
+                      ) : trade.pnl >= 0 ? (
+                        <ArrowUpRight className="h-4 w-4 text-emerald-400" />
+                      ) : (
+                        <ArrowDownRight className="h-4 w-4 text-red-400" />
+                      )}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="flex items-center gap-1.5">
+                        <span className="truncate text-sm font-semibold text-white">
+                          {trade.symbol}
+                        </span>
+                        <span
+                          className={cn(
+                            "shrink-0 rounded px-1.5 py-0.5 text-xs font-semibold leading-none",
+                            directionBadgeClass(trade.direction),
+                          )}
+                        >
+                          {directionLabel(trade.direction)}
+                        </span>
+                      </span>
+                      <span className="tv-prose text-slate-500">{formatShortDate(trade.date)}</span>
+                    </span>
+                    <span className="shrink-0 text-right">
+                      <span
                         className={cn(
-                          "w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
+                          "tv-figure block text-sm leading-tight",
                           be
-                            ? "bg-slate-500/10"
+                            ? "text-slate-300"
                             : trade.pnl >= 0
-                              ? "bg-emerald-500/10"
-                              : "bg-red-500/10",
+                              ? "text-emerald-400"
+                              : "text-red-400",
                         )}
                       >
-                        {be ? (
-                          <Minus className="w-4 h-4 text-slate-300" />
-                        ) : trade.pnl >= 0 ? (
-                          <ArrowUpRight className="w-4 h-4 text-emerald-400" />
-                        ) : (
-                          <ArrowDownRight className="w-4 h-4 text-red-400" />
+                        {formatPnl(trade.pnl)}
+                      </span>
+                      <span
+                        className={cn(
+                          "tv-figure block text-xs",
+                          be
+                            ? "text-slate-400"
+                            : trade.rMultiple >= 0
+                              ? "text-emerald-400/60"
+                              : "text-red-400/60",
                         )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[13px] font-bold text-white truncate">
-                            {trade.symbol}
-                          </span>
-                          <span
-                            className={cn(
-                              "text-[11px] font-bold px-1.5 py-0.5 rounded leading-none",
-                              directionBadgeClass(trade.direction),
-                            )}
-                          >
-                            {directionLabel(trade.direction)}
-                          </span>
-                          {trade.isExample && (
-                            <span className="text-[11px] font-bold px-1.5 py-0.5 rounded leading-none bg-amber-500/15 text-amber-400 border border-amber-500/25">
-                              {t("journal.exampleBadge")}
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-[10px] text-slate-500 truncate">
-                          {trade.strategy} · {formatShortDate(trade.date)}
-                        </div>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <div
-                          className={cn(
-                            "text-[13px] font-bold leading-tight",
-                            be
-                              ? "text-slate-300"
-                              : trade.pnl >= 0
-                                ? "text-emerald-400"
-                                : "text-red-400",
-                          )}
-                        >
-                          {formatPnl(trade.pnl)}
-                        </div>
-                        <div
-                          className={cn(
-                            "text-[10px] font-semibold",
-                            be
-                              ? "text-slate-300/60"
-                              : trade.rMultiple >= 0
-                                ? "text-emerald-400/60"
-                                : "text-red-400/60",
-                          )}
-                        >
-                          {trade.rMultiple.toFixed(1)}R
-                        </div>
-                      </div>
-                    </button>
-                    <div className="flex items-center shrink-0 -mr-1">
+                      >
+                        {trade.rMultiple.toFixed(1)}R
+                      </span>
+                    </span>
+                  </button>
+                  <div className="flex min-w-0 items-center gap-2 border-t border-[var(--tv-border)] px-3">
+                    <span className="tv-prose min-w-0 flex-1 truncate text-slate-500">
+                      {trade.strategy}
+                    </span>
+                    {trade.isExample && (
+                      <span className="tv-label shrink-0 text-amber-400">
+                        {t("journal.exampleBadge")}
+                      </span>
+                    )}
+                    <div className="-mr-2 flex shrink-0 items-center">
                       <button
                         onClick={() => onEdit(trade)}
                         aria-label={t("common.edit")}
-                        className="w-11 h-11 -my-2 rounded-lg flex items-center justify-center text-slate-500 active:bg-cyan-500/10 active:text-cyan-400 transition-colors"
+                        className="flex h-11 w-11 items-center justify-center rounded-lg text-slate-500 transition-colors active:bg-cyan-500/10 active:text-cyan-400"
                       >
-                        <Pencil className="w-3.5 h-3.5" />
+                        <Pencil className="h-3.5 w-3.5" />
                       </button>
                       <button
                         onClick={() => onDelete(trade.id)}
                         aria-label={t("common.delete")}
-                        className="w-11 h-11 -my-2 rounded-lg flex items-center justify-center text-slate-500 active:bg-red-500/10 active:text-red-400 transition-colors"
+                        className="flex h-11 w-11 items-center justify-center rounded-lg text-slate-500 transition-colors active:bg-red-500/10 active:text-red-400"
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <Trash2 className="h-3.5 w-3.5" />
                       </button>
                     </div>
                   </div>
@@ -949,7 +952,7 @@ export default function Journal({
                         <td className="px-4 py-1.5">
                           <span
                             className={cn(
-                              "text-sm font-bold",
+                              "tv-figure text-sm",
                               be
                                 ? "text-slate-300"
                                 : trade.pnl >= 0
@@ -969,7 +972,7 @@ export default function Journal({
                             onCommit={(v) => onQuickEdit?.(trade.id, { rMultiple: v })}
                             title={t("journal.quickEditR")}
                             className={cn(
-                              "text-sm font-bold",
+                              "tv-figure text-sm",
                               be
                                 ? "text-slate-300"
                                 : trade.rMultiple >= 0

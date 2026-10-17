@@ -1,18 +1,18 @@
-import type { HTMLAttributes } from "react";
+import type { ComponentProps } from "react";
 import { cn } from "./cn";
 import { density } from "./tokens";
 
 /**
- * PageContainer — the single page shell. Replaces the
- * `p-4 md:p-8 max-w-[1400px] mx-auto` wrapper that every screen re-declared,
- * so page gutters and max width evolve in one place.
- *
- * Gutters follow the density contract (tighter than the previous md:p-8), which
- * is what makes the product read as a dense tool rather than a marketing page.
+ * Le cadre commun reprend les marges du calendrier. Les pages de lecture
+ * peuvent limiter leur largeur ; les vues mesurées transmettent leur ref
+ * directement au cadre, sans ajouter une deuxième couche de padding.
  */
-export function PageContainer({ className, children, ...rest }: HTMLAttributes<HTMLDivElement>) {
+export function PageContainer({ className, children, ...rest }: ComponentProps<"div">) {
   return (
-    <div className={cn(density.pagePad, "max-w-[1400px] mx-auto", className)} {...rest}>
+    <div
+      className={cn("tv-page mx-auto w-full min-w-0 max-w-[1400px]", density.pagePad, className)}
+      {...rest}
+    >
       {children}
     </div>
   );

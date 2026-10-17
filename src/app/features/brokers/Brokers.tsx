@@ -46,7 +46,7 @@ import {
 } from "@/backend/brokers.functions";
 import { announceBrokerImport, announceBrokersChanged } from "./useBrokerSync";
 import { SyncCelebration, type CelebrationState } from "./SyncCelebration";
-import { Badge, Button, Card, FIELD_BASE, SelectPicker, cn } from "@/shared/ui";
+import { PageContainer, Badge, Button, Card, FIELD_BASE, SelectPicker, cn } from "@/shared/ui";
 import { currencySymbol } from "@/shared/currency";
 
 /**
@@ -598,7 +598,7 @@ export default function Brokers() {
   );
 
   return (
-    <div className="mx-auto max-w-[1040px] space-y-4 p-4 md:p-5">
+    <PageContainer className="max-w-[1040px] space-y-3 md:space-y-4">
       {/* ── PAS ENCORE CONNECTÉ : la promesse, le geste, la confiance ── */}
       {!hasConnections && connections !== null && (
         <Card pad="none" className="animate-fade-in-up overflow-hidden">
@@ -765,7 +765,7 @@ export default function Brokers() {
           window.dispatchEvent(new CustomEvent("tv:navigate", { detail: { page: "journal" } }));
         }}
       />
-    </div>
+    </PageContainer>
   );
 }
 

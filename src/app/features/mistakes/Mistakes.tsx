@@ -18,7 +18,7 @@ import { cn } from "@/shared/ui/cn";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { useT } from "@/app/i18n/LanguageContext";
 import { AXIS_TICK, BAR_RADIUS, CHART_ANIMATION, tooltipStyle } from "@/app/trading/chartTheme";
-import { EmptyState, Card } from "@/shared/ui";
+import { PageContainer, EmptyState, Card } from "@/shared/ui";
 
 interface MistakesProps {
   trades: Trade[];
@@ -163,8 +163,8 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
   }
 
   return (
-    <div className={cn(embedded ? "pt-2" : "p-4 md:p-5 max-w-[1400px] mx-auto")}>
-      <div className="space-y-4 md:space-y-6">
+    <PageContainer className={embedded ? "max-w-none p-0 pt-2 md:p-0 md:pt-2" : undefined}>
+      <div className="space-y-3 md:space-y-4">
         {/* ══ 1 · LE PLAN DE CORRECTION ═══════════════════════════════════
             CE BLOC REMPLACE LE COUPLE « MONTANT PERDU + BARRES DE COÛT ».
 
@@ -193,9 +193,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
             ne l'indique. */}
         <section className="glass animate-fade-in-up overflow-hidden rounded-3xl">
           <header className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-white/[0.05] px-4 py-3.5 sm:px-5">
-            <h2 className="font-display text-lg font-bold tracking-[-0.01em] text-white">
-              {t("mistakes.planTitle")}
-            </h2>
+            <h2 className="tv-title">{t("mistakes.planTitle")}</h2>
             {/* CE QUE LA FENÊTRE PERMET DE DIRE.
                 Sans fenêtre précédente, aucune des flèches de tendance n'est
                 calculable et la colonne « arrêtées » est vide par
@@ -337,9 +335,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
                 barre. Il appartient ici : c'est la progression. */}
         <section className="glass animate-fade-in-up stagger-1 rounded-3xl px-4 py-4 sm:px-5">
           <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-            <h2 className="font-display text-lg font-bold tracking-[-0.01em] text-white">
-              {t("mistakes.progressTitle")}
-            </h2>
+            <h2 className="tv-title">{t("mistakes.progressTitle")}</h2>
             {/* CE QUE LA MESURE VAUT, écrit à côté d'elle. Ces chiffres portent
                 sur ce que le trader a bien voulu COCHER, pas sur sa discipline
                 réelle — et la page ne doit pas laisser croire l'inverse. */}
@@ -500,7 +496,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
         {b.totalIncidents > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Session + day distribution */}
-            <Card hover className="p-4 md:p-5 animate-fade-in-up stagger-6 space-y-4">
+            <Card className="p-4 md:p-5 animate-fade-in-up stagger-6 space-y-4">
               <div>
                 <h3 className="tv-title mb-2">{t("mistakes.bySession")}</h3>
                 <div className="space-y-2">
@@ -549,7 +545,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
           </div>
         )}
       </div>
-    </div>
+    </PageContainer>
   );
 }
 

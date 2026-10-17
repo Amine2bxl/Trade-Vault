@@ -410,7 +410,7 @@ export default function Dashboard({
               ══════════════════════════════════════════════════════════════ */}
           {trades.length === 0 ? (
             /* ── Empty state: first-run experience ── */
-            <div className="glass rounded-3xl p-5 md:p-10 text-center card-premium  relative overflow-hidden">
+            <div className="glass rounded-3xl p-5 md:p-10 text-center  relative overflow-hidden">
               <svg
                 viewBox="0 0 200 80"
                 className="w-48 md:w-64 mx-auto mb-6 opacity-80"
@@ -483,7 +483,7 @@ export default function Dashboard({
               {/* ── 1. LE CHIFFRE ── */}
               <div className={cn(density.sectionGap)}>
                 {/* Performance */}
-                <div className="relative stat-card-elevated card-premium overflow-hidden p-4 md:p-5">
+                <div className="relative stat-card-elevated overflow-hidden p-4 md:p-5">
                   <div className="flex items-center justify-between gap-3 mb-3">
                     <div>
                       <div className="tv-label flex items-center gap-2 text-slate-500 mb-1">

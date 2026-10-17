@@ -457,7 +457,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
           avant la seule image qui dise si le compte monte. Une colonne flex
           (`gap`, pas `space-y` : l'espacement ne dépend plus de l'ordre du
           DOM) la remonte juste sous les mesures, sans rien changer au bureau. */}
-      <div className="flex flex-col gap-4 md:gap-6">
+      <div className="flex flex-col gap-3 md:gap-4">
         {/* ══ LE PROFIT FACTOR — UNE BANDE, PLUS UNE CARTE HÉROS ══════════
             Il occupait une carte de 108px sur desktop (titre, sous-titre,
             trois colonnes centrées, un badge, une barre) et se DÉDOUBLAIT sur
@@ -616,7 +616,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
         {trades.length >= 3 && <SeasonalitySection trades={cutoffTrades} />}
 
         {/* Performance by setup */}
-        <Card hover className="overflow-hidden animate-fade-in-up stagger-2">
+        <Card className="overflow-hidden animate-fade-in-up stagger-2">
           <div className="px-4 md:px-5 py-3 border-b border-white/[0.06]">
             <h3 className="tv-title">{t("analytics.setupTable")}</h3>
           </div>
@@ -734,7 +734,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
 
         {/* Session × weekday heatmap + win rate by hour */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Card hover className="p-4 md:p-5 animate-fade-in-up stagger-2">
+          <Card className="p-4 md:p-5 animate-fade-in-up stagger-2">
             <h3 className="tv-title mb-1">{t("analytics.heatmap")}</h3>
             <p className="tv-hint mb-3">{t("analytics.heatmapSub")}</p>
             <div className="grid gap-1" style={{ gridTemplateColumns: "auto repeat(5, 1fr)" }}>
@@ -800,7 +800,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
               ))}
             </div>
           </Card>
-          <Card hover className="p-4 md:p-5 animate-fade-in-up stagger-3">
+          <Card className="p-4 md:p-5 animate-fade-in-up stagger-3">
             <h3 className="tv-title mb-1">{t("analytics.byHour")}</h3>
             <p className="tv-hint mb-3">{t("analytics.byHourSub")}</p>
             {hourData.length > 0 ? (
@@ -855,13 +855,13 @@ export default function Analytics({ trades }: AnalyticsProps) {
 
         {/* Equity + Pie — remontée sous les mesures sur téléphone. */}
         <div className="grid grid-cols-1 gap-4 max-md:order-[-1] md:grid-cols-3">
-          <div className="relative md:col-span-2 glass rounded-3xl p-4 md:p-5 card-premium animate-fade-in-up stagger-2 overflow-hidden">
+          <div className="relative md:col-span-2 glass rounded-2xl p-4 md:p-5 animate-fade-in-up stagger-2 overflow-hidden">
             <h3 className="tv-title mb-4">{t("analytics.equityCurve")}</h3>
             <div className="h-56 md:h-80 chart-draw">
               <EquityChart data={stats.equityCurve} />
             </div>
           </div>
-          <Card hover className="p-4 md:p-5 animate-fade-in-up stagger-3">
+          <Card className="p-4 md:p-5 animate-fade-in-up stagger-3">
             <h3 className="tv-title mb-3">{t("analytics.winLoss")}</h3>
             <div className="h-40 md:h-56">
               <ResponsiveContainer width="100%" height="100%">
@@ -913,7 +913,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
         </div>
 
         {/* Monthly Performance */}
-        <Card hover className="p-4 md:p-5 animate-fade-in-up stagger-4">
+        <Card className="p-4 md:p-5 animate-fade-in-up stagger-4">
           <h3 className="tv-title mb-1">{t("analytics.monthlyPerformance")}</h3>
           <p className="tv-hint mb-3">{t("analytics.monthlyPerformanceSub")}</p>
           {monthlyData.length > 0 ? (
@@ -999,7 +999,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
 
         {/* Day of Week + Strategy */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Card hover className="p-4 md:p-5 animate-fade-in-up stagger-5">
+          <Card className="p-4 md:p-5 animate-fade-in-up stagger-5">
             <h3 className="tv-title mb-3">{t("analytics.pnlWinRateByDay")}</h3>
             <div className="h-48 md:h-64">
               <ResponsiveContainer width="100%" height="100%">
@@ -1043,7 +1043,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
               </ResponsiveContainer>
             </div>
           </Card>
-          <Card hover className="p-4 md:p-5 animate-fade-in-up stagger-6">
+          <Card className="p-4 md:p-5 animate-fade-in-up stagger-6">
             <h3 className="tv-title mb-3">{t("analytics.pnlByStrategy")}</h3>
             <div className="h-48 md:h-64">
               <ResponsiveContainer width="100%" height="100%">
@@ -1080,7 +1080,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
 
         {/* Distribution + Symbol */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Card hover className="p-4 md:p-5 animate-fade-in-up stagger-7">
+          <Card className="p-4 md:p-5 animate-fade-in-up stagger-7">
             <h3 className="tv-title mb-3">{t("analytics.pnlDistribution")}</h3>
             <div className="h-48 md:h-64">
               <ResponsiveContainer width="100%" height="100%">
@@ -1106,7 +1106,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
               </ResponsiveContainer>
             </div>
           </Card>
-          <Card hover className="p-4 md:p-5 animate-fade-in-up stagger-8">
+          <Card className="p-4 md:p-5 animate-fade-in-up stagger-8">
             <h3 className="tv-title mb-3">{t("analytics.symbolPerformance")}</h3>
             <div className="space-y-1.5 max-h-48 md:max-h-64 overflow-y-auto">
               {symbolData.map((s) => (

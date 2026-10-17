@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { useT } from "@/app/i18n/LanguageContext";
 import { cn } from "@/shared/ui/cn";
-import { Card, MultiPicker } from "@/shared/ui";
+import { PageContainer, Card, MultiPicker } from "@/shared/ui";
 import { usePageActions } from "@/app/contexts/PageActionsContext";
 import { useEconomicCalendar } from "./useEconomicCalendar";
 import type { CalendarEvent, EventImpact } from "@/modules/economic-calendar";
@@ -322,7 +322,7 @@ export default function EconomicNews() {
   usePageActions(headerActions);
 
   return (
-    <div className="p-4 md:p-5 max-w-[1400px] mx-auto">
+    <PageContainer>
       {(isFallback || stale) && !loading && (
         <div className="mb-4 flex items-start gap-2 rounded-xl border border-amber-500/25 bg-amber-500/[0.07] px-3 py-2.5 text-xs text-amber-200/90">
           <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
@@ -704,6 +704,6 @@ export default function EconomicNews() {
           </>
         )}
       </div>
-    </div>
+    </PageContainer>
   );
 }

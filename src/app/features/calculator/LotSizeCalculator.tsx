@@ -20,7 +20,7 @@ import {
 import { useAccounts } from "@/app/contexts/AccountContext";
 import { useT } from "@/app/i18n/LanguageContext";
 import { cn } from "@/shared/ui/cn";
-import { FIELD_BASE, Button } from "@/shared/ui";
+import { PageContainer, FIELD_BASE, Button } from "@/shared/ui";
 import type { Page } from "@/app/types";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { loadUserPref, saveUserPref } from "@/app/utils/userPrefs";
@@ -190,7 +190,7 @@ export default function LotSizeCalculator({ onAddTrade }: LotSizeCalculatorProps
   const gaugePct = Math.max(0, Math.min(100, (riskPctNum / RECOMMENDED_RISK_PCT) * 100));
 
   return (
-    <div className="p-4 md:p-5 max-w-[1400px] mx-auto">
+    <PageContainer>
       {/* Deux colonnes à partir de `lg`, et une piste `minmax(0, 1fr)`. Un `1fr`
           nu ne descend jamais sous la largeur minimale de son contenu : sur
           tablette (768px, dont ~230 pour le rail), `1fr + 320px` débordait de
@@ -524,7 +524,7 @@ export default function LotSizeCalculator({ onAddTrade }: LotSizeCalculatorProps
           )}
         </div>
       </div>
-    </div>
+    </PageContainer>
   );
 }
 

@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useT } from "@/app/i18n/LanguageContext";
-import { PageToolbar, SubNav, Textarea, type SubNavItem } from "@/shared/ui";
+import { PageContainer, PageToolbar, SubNav, Textarea, type SubNavItem } from "@/shared/ui";
 import { cn } from "@/shared/ui/cn";
 import type { Page } from "@/app/types";
 import {
@@ -186,16 +186,16 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
 
   if (loading) {
     return (
-      <div className="p-4 md:p-5 max-w-[1400px] mx-auto">
+      <PageContainer>
         <div className="glass rounded-3xl p-10 flex justify-center">
           <Loader2 className="w-6 h-6 text-cyan-400 animate-spin" />
         </div>
-      </div>
+      </PageContainer>
     );
   }
 
   return (
-    <div className="mx-auto max-w-[1000px] space-y-3 p-4 md:p-5">
+    <PageContainer className="max-w-[1000px] space-y-3">
       {/* ══ LA BARRE DU PLAN ═════════════════════════════════════════════
           Les six parties à gauche, l'état d'enregistrement à droite. Elle est
           collante : on passe de « Risque » à « Setups » depuis n'importe quel
@@ -527,7 +527,7 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
         </span>
         <ChevronRight className="h-4 w-4 shrink-0 text-slate-500" />
       </button>
-    </div>
+    </PageContainer>
   );
 }
 

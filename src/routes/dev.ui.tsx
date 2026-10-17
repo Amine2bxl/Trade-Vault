@@ -1,4 +1,5 @@
-import { lazy, Suspense, useState } from "react";
+import { PageContainer } from "@/shared/ui";
+import { lazy, Suspense, useState, useEffect } from "react";
 import { createFileRoute, ClientOnly } from "@tanstack/react-router";
 import { ThemeProvider } from "@/app/contexts/ThemeContext";
 import { AuthProvider } from "@/app/contexts/AuthContext";
@@ -27,6 +28,21 @@ import type { Trade } from "@/app/types";
  * poignée de lignes.
  */
 
+const CalendarPage = lazy(() => import("@/app/features/calendar/CalendarPage"));
+const Dashboard = lazy(() => import("@/app/features/dashboard/Dashboard"));
+const Journal = lazy(() => import("@/app/features/journal/Journal"));
+const Checklist = lazy(() => import("@/app/features/checklist/Checklist"));
+const LotSizeCalculator = lazy(() => import("@/app/features/calculator/LotSizeCalculator"));
+const EconomicNews = lazy(() => import("@/app/features/news/EconomicNews"));
+const MissedOpportunities = lazy(() => import("@/app/features/missed/MissedOpportunities"));
+const Seasonality = lazy(() => import("@/app/features/seasonality/Seasonality"));
+const Reports = lazy(() => import("@/app/features/reports/Reports"));
+const Settings = lazy(() => import("@/app/features/settings/Settings"));
+const Profile = lazy(() => import("@/app/features/settings/Profile"));
+const Appearance = lazy(() => import("@/app/features/settings/Appearance"));
+const Brokers = lazy(() => import("@/app/features/brokers/Brokers"));
+const Jarvis = lazy(() => import("@/app/features/jarvis/Jarvis"));
+
 const MonteCarlo = lazy(() => import("@/app/features/monte-carlo/MonteCarlo"));
 const Analytics = lazy(() => import("@/app/features/analytics/Analytics"));
 const Mistakes = lazy(() => import("@/app/features/mistakes/Mistakes"));
@@ -39,6 +55,20 @@ const GoalsPlan = lazy(() =>
 );
 
 const IDS = [
+  "calendar",
+  "dashboard",
+  "journal",
+  "checklist",
+  "calculator",
+  "news",
+  "missed",
+  "seasonality",
+  "reports",
+  "settings",
+  "profile",
+  "appearance",
+  "brokers",
+  "jarvis",
   "montecarlo",
   "analytics",
   "mistakes",
@@ -61,16 +91,26 @@ function DevUiPage() {
      re-cliquer avant chaque capture. */
   const [ecran, setEcran] = useState<EcranId>(() => {
     try {
-      const v = localStorage.getItem("tv.devUi");
+      const v =
+        new URLSearchParams(location.search).get("screen") ?? localStorage.getItem("tv.devUi");
       return (IDS as readonly string[]).includes(v ?? "") ? (v as EcranId) : "montecarlo";
     } catch {
       return "montecarlo";
     }
   });
 
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    const already = document.body.classList.contains("tv-app-type");
+    document.body.classList.add("tv-app-type");
+    return () => {
+      if (!already) document.body.classList.remove("tv-app-type");
+    };
+  }, []);
+
   if (!import.meta.env.DEV) return null;
 
-  const trades = previewTrades();
+  const trades = new URLSearchParams(location.search).get("empty") === "1" ? [] : previewTrades();
 
   return (
     <ThemeProvider>
@@ -81,7 +121,10 @@ function DevUiPage() {
               <ConfirmProvider>
                 <PageActionsProvider setActions={() => {}}>
                   <div className="min-h-screen bg-[var(--tv-bg)]">
-                    <div className="flex flex-wrap items-center gap-1.5 border-b border-[var(--tv-border)] px-3 py-2">
+                    <div
+                      data-dev-ui-navigation
+                      className="flex flex-wrap items-center gap-1.5 border-b border-[var(--tv-border)] px-3 py-2"
+                    >
                       {IDS.map((id) => (
                         <button
                           key={id}
@@ -100,6 +143,40 @@ function DevUiPage() {
                       ))}
                     </div>
                     <Suspense fallback={<div className="p-6 text-sm text-slate-500">…</div>}>
+                      {ecran === "calendar" && <CalendarPage trades={trades} />}
+                      {ecran === "dashboard" && <Dashboard trades={trades} onAddTrade={() => {}} />}
+                      {ecran === "journal" && (
+                        <Journal
+                          trades={trades}
+                          onEdit={() => {}}
+                          onDelete={() => {}}
+                          onDeleteAll={() => {}}
+                          onAdd={() => {}}
+                          onOpenMissed={() => {}}
+                        />
+                      )}
+                      {ecran === "checklist" && (
+                        <Checklist trades={trades} setPage={() => {}} onAddTrade={() => {}} />
+                      )}
+                      {ecran === "calculator" && (
+                        <LotSizeCalculator onAddTrade={() => {}} setPage={() => {}} />
+                      )}
+                      {ecran === "news" && <EconomicNews />}
+                      {ecran === "missed" && <MissedOpportunities />}
+                      {ecran === "seasonality" && <Seasonality trades={trades} />}
+                      {ecran === "reports" && <Reports trades={trades} />}
+                      {ecran === "settings" && (
+                        <Settings
+                          trades={trades}
+                          onDeleteAll={() => {}}
+                          onOpenImport={() => {}}
+                          onOpenReports={() => {}}
+                        />
+                      )}
+                      {ecran === "profile" && <Profile trades={trades} />}
+                      {ecran === "appearance" && <Appearance />}
+                      {ecran === "brokers" && <Brokers />}
+                      {ecran === "jarvis" && <Jarvis />}
                       {ecran === "montecarlo" && <MonteCarlo trades={trades} />}
                       {ecran === "analytics" && <Analytics trades={trades} />}
                       {ecran === "mistakes" && <Mistakes trades={trades} />}
@@ -144,7 +221,7 @@ function PlanHarness({ trades }: { trades: Trade[] }) {
     tasksDone: {},
   };
   return (
-    <div className="mx-auto max-w-[1000px] p-4 md:p-5">
+    <PageContainer className="max-w-[1000px]">
       <GoalsPlan
         plan={plan}
         ctx={ctx}
@@ -156,6 +233,6 @@ function PlanHarness({ trades }: { trades: Trade[] }) {
         onManualValue={() => {}}
         forecast={null}
       />
-    </div>
+    </PageContainer>
   );
 }

@@ -242,7 +242,7 @@ function CopilotBlock({
       : null;
 
   return (
-    <div className="relative glass rounded-3xl p-4 md:p-5 card-premium animate-fade-in-up stagger-1 overflow-hidden">
+    <div className="relative glass rounded-3xl p-4 md:p-5 animate-fade-in-up stagger-1 overflow-hidden">
       <div className="tv-label flex items-center gap-2 text-cyan-400/80 mb-2">
         <Sparkles className="w-3.5 h-3.5" />
         <span>{t("copilot.title")}</span>

@@ -103,7 +103,7 @@ export function SeasonalEquity({
   return (
     <div className="mb-5 grid gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
       {/* ── 1. LA SAISON MOYENNE ─────────────────────────────────────── */}
-      <section className="glass card-premium rounded-3xl p-4 md:p-5">
+      <section className="glass rounded-3xl p-4 md:p-5">
         <header className="mb-3 flex items-start justify-between gap-3">
           <div className="min-w-0">
             <h3 className="tv-title mb-0.5 flex items-center gap-2">
@@ -269,7 +269,7 @@ export function SeasonalEquity({
       </section>
 
       {/* ── 2. L'EQUITY RÉELLE DU TRADER SUR CET ACTIF ──────────────── */}
-      <section className="glass card-premium flex min-w-0 flex-col rounded-3xl p-4 md:p-5">
+      <section className="glass flex min-w-0 flex-col rounded-3xl p-4 md:p-5">
         <header className="mb-3 flex items-start justify-between gap-3">
           <div className="min-w-0">
             <h3 className="tv-title mb-0.5 flex items-center gap-2">

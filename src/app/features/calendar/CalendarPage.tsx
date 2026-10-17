@@ -14,7 +14,7 @@ import { todayLocalDate } from "@/shared/calendar-date";
 import TradeDetailModal from "@/app/features/journal/TradeDetailModal";
 import MissedSetupDetailModal from "@/app/features/missed/MissedSetupDetailModal";
 import { useT } from "@/app/i18n/LanguageContext";
-import { Kpi, KpiGrid } from "@/shared/ui";
+import { PageContainer, Kpi, KpiGrid } from "@/shared/ui";
 import { useAvailableHeight } from "@/app/hooks/useAvailableHeight";
 import { formatMoney } from "@/shared/currency";
 
@@ -364,10 +364,10 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
     // place : `flex-1` étire les lignes jusqu'à remplir la hauteur. Quand il
     // n'y a plus la place, les cellules s'arrêtent à leur plancher et le cadre
     // défile, au lieu de comprimer la grille.
-    <div
+    <PageContainer
       ref={boxRef}
       style={height ? { minHeight: height } : undefined}
-      className="mx-auto flex h-full max-w-[1400px] flex-col overflow-y-auto px-3 py-2 md:px-5 md:py-3"
+      className="flex h-full flex-col overflow-y-auto"
     >
       {/* Summary Cards */}
       <KpiGrid className="tv-flat shrink-0">
@@ -752,6 +752,6 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
       {selectedMissed && (
         <MissedSetupDetailModal missed={selectedMissed} onClose={() => setSelectedMissed(null)} />
       )}
-    </div>
+    </PageContainer>
   );
 }

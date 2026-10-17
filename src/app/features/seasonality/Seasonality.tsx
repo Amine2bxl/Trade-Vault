@@ -210,7 +210,7 @@ function AssetSeasonality({ trades }: { trades: Trade[] }) {
       </KpiGrid>
 
       {/* Monthly avg return chart */}
-      <div className="glass rounded-3xl p-4 md:p-5 card-premium mb-5">
+      <div className="glass rounded-3xl p-4 md:p-5 mb-5">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="tv-title mb-0.5">
@@ -298,7 +298,7 @@ function AssetSeasonality({ trades }: { trades: Trade[] }) {
       />
 
       {/* Category heatmap */}
-      <div className="glass rounded-3xl p-4 md:p-5 card-premium">
+      <div className="glass rounded-3xl p-4 md:p-5">
         <div className="flex items-center gap-2 mb-4">
           <Layers className="w-4 h-4 text-cyan-400/70" />
           <div>
@@ -591,7 +591,7 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
         />
       </KpiGrid>
 
-      <div className="glass rounded-3xl p-4 md:p-5 card-premium mb-5">
+      <div className="glass rounded-3xl p-4 md:p-5 mb-5">
         <h3 className="tv-title mb-0.5">{t("seasonality.monthly")}</h3>
         <p className="tv-hint mb-4">{t("seasonality.monthlySub")}</p>
         <div className="h-56 md:h-64">
@@ -637,7 +637,7 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
         </div>
       </div>
 
-      <div className="glass rounded-3xl p-4 md:p-5 card-premium mb-5">
+      <div className="glass rounded-3xl p-4 md:p-5 mb-5">
         <h3 className="tv-title mb-0.5">{t("seasonality.heatmap")}</h3>
         <p className="tv-hint mb-4">{t("seasonality.heatmapSub")}</p>
         <div className="space-y-3">
@@ -662,7 +662,7 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
       </div>
 
       <div className="grid md:grid-cols-2 gap-5">
-        <div className="glass rounded-3xl p-4 md:p-5 card-premium">
+        <div className="glass rounded-3xl p-4 md:p-5">
           <h3 className="tv-title mb-0.5">{t("seasonality.weekday")}</h3>
           <p className="tv-hint mb-4">{t("seasonality.weekdaySub")}</p>
           <div className="h-48">
@@ -691,7 +691,7 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
           </div>
         </div>
 
-        <div className="glass rounded-3xl p-4 md:p-5 card-premium">
+        <div className="glass rounded-3xl p-4 md:p-5">
           <h3 className="tv-title mb-0.5">{t("seasonality.hourly")}</h3>
           <p className="tv-hint mb-4">{t("seasonality.hourlySub")}</p>
           <div className="h-48">

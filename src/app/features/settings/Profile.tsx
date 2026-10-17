@@ -1,3 +1,4 @@
+import { PageContainer } from "@/shared/ui";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { Trade, SUPPORT_EMAIL } from "@/app/types";
 import { computeStats, formatPnl, formatPct } from "@/domain/tradeCalcs";
@@ -48,7 +49,7 @@ export default function Profile({ trades }: ProfileProps) {
   if (!user) return null;
 
   return (
-    <div className="mx-auto max-w-5xl space-y-3 p-4 md:p-5">
+    <PageContainer className="max-w-5xl space-y-3">
       {/* ── L'IDENTITÉ, ET LE BILAN QUI VA AVEC ────────────────────────── */}
       <section className="glass animate-fade-in-up flex flex-wrap items-center gap-x-6 gap-y-4 rounded-3xl px-4 py-4 sm:px-5">
         {/* `basis-[240px]` : la rangée peut passer à la ligne, encore
@@ -143,7 +144,7 @@ export default function Profile({ trades }: ProfileProps) {
           </div>
         </section>
       </div>
-    </div>
+    </PageContainer>
   );
 }
 

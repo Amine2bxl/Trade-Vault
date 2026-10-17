@@ -121,7 +121,7 @@ export default function TradingRulesSection() {
   const kindLabel = (k: RuleKind) => t(`rules.kind.${k}` as Parameters<typeof t>[0]);
 
   return (
-    <div className="glass-strong rounded-3xl p-5 space-y-4">
+    <div className="glass rounded-2xl p-4 md:p-5 space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold text-white uppercase tracking-wider flex items-center gap-2">
           <ShieldCheck className="w-4 h-4 text-cyan-400" />

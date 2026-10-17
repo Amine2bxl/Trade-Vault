@@ -28,7 +28,7 @@ import {
   type PaidPlan,
 } from "@/app/utils/pricing";
 import { usePageLead } from "@/app/contexts/PageActionsContext";
-import { Kpi, KpiGrid } from "@/shared/ui";
+import { PageContainer, Kpi, KpiGrid } from "@/shared/ui";
 import SubscriptionSection from "./SubscriptionSection";
 import PlanMatrix from "./PlanMatrix";
 import PlanScaleBlock from "./PlanScaleBlock";
@@ -139,7 +139,7 @@ export default function Subscription({ trades = [] }: { trades?: Trade[] } = {})
   const fin = sub?.currentPeriodEnd ? dateFmt(sub.currentPeriodEnd) : null;
 
   return (
-    <div className="mx-auto max-w-[1000px] space-y-3 p-4 md:p-5">
+    <PageContainer className="max-w-[1000px] space-y-3">
       {/* ══ 1 · MON ADHÉSION — UNE SEULE CARTE ══════════════════════════════
           Quatre blocs disaient la même chose en quatre surfaces : une bande
           d'état, une grille de quatre cases d'un mot chacune, une carte de
@@ -320,7 +320,7 @@ export default function Subscription({ trades = [] }: { trades?: Trade[] } = {})
           );
         })}
       </div>
-    </div>
+    </PageContainer>
   );
 }
 

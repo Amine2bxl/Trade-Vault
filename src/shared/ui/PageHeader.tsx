@@ -3,10 +3,8 @@ import { cn } from "./cn";
 import { density, type } from "./tokens";
 
 /**
- * PageHeader — the single page-title pattern of the app. Encodes the exact
- * gradient headline + muted subtitle markup that was previously duplicated at
- * the top of ~15 pages, so every screen shares one hierarchy and future
- * evolutions (density, type scale) happen in one place.
+ * Le même titre compact que dans le calendrier ; les actions se replient
+ * sur téléphone pour laisser le titre et les commandes entièrement lisibles.
  */
 export function PageHeader({
   title,
@@ -31,7 +29,7 @@ export function PageHeader({
     <div
       className={cn(
         density.sectionGap,
-        "animate-fade-in-up flex items-start justify-between gap-3",
+        "animate-fade-in-up flex flex-wrap items-center justify-between gap-3",
         className,
       )}
     >

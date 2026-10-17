@@ -26,7 +26,7 @@ import { useAuth } from "@/app/contexts/AuthContext";
 import { useT } from "@/app/i18n/LanguageContext";
 import type { TKey } from "@/app/i18n/translations";
 import { usePageActions, usePageLead } from "@/app/contexts/PageActionsContext";
-import { Button } from "@/shared/ui";
+import { PageContainer, Button } from "@/shared/ui";
 import { useAvailableHeight } from "@/app/hooks/useAvailableHeight";
 import { cn } from "@/shared/ui/cn";
 import { CATEGORY_LABEL, notificationTarget, WHY_KEY } from "./notificationMeta";
@@ -293,10 +293,10 @@ export default function Inbox() {
   }, [rest, t]);
 
   return (
-    <div
+    <PageContainer
       ref={boxRef}
       style={height ? { height } : undefined}
-      className="mx-auto flex h-full max-w-3xl flex-col overflow-hidden px-3 py-2 md:px-5 md:py-3"
+      className="flex h-full max-w-3xl flex-col overflow-hidden"
     >
       {/* ── LES FILTRES — fixes en tête, la liste défile dessous. */}
       {notifs.length > 0 && (
@@ -372,7 +372,7 @@ export default function Inbox() {
           </div>
         )}
       </div>
-    </div>
+    </PageContainer>
   );
 }
 

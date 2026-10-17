@@ -6,7 +6,7 @@ composant, une navigation ou un texte de landing) sont les skills de
 [`../.claude/skills/`](../.claude/skills) : `theme`, `typography`, `motion`,
 `ui-design`, `ux-navigation`, `landing-copy`, et l'orchestrateur `ship-ui`.
 
-## 1. Le langage Lucid
+## 1. Le langage Lucid — le calendrier comme référence
 
 Référence esthétique assumée : captures de Lucid Trading
 ([`assets/lucid/`](assets/lucid)). **On copie la grammaire** — noir profond,
@@ -14,6 +14,24 @@ un seul vert menthe, cartes plates à grand rayon, libellés en petites capitale
 espacées, chiffres énormes et tabulaires, segmented controls, calendrier
 teinté, barre mobile flottante — **jamais** le logo, la marque, les textes ni
 le produit de Lucid.
+
+La page Calendrier (`features/calendar/CalendarPage.tsx`) est la référence de
+composition de **toute l'app connectée** : plaques plates, cases compactes,
+liserés discrets, titres de panneau à 14 px, chiffres tabulaires. Les anciens
+jetons `--tv-relief-*` restent compatibles mais ne peignent plus de relief.
+L'élévation est réservée aux modales et menus ; une carte de graphique ou de
+statistique ne change plus de fond au survol.
+
+`PageContainer` porte les marges communes (`px-3 py-2 md:px-5 md:py-3`) et le
+maximum de 1400 px, y compris pour les pages à hauteur mesurée (ref transmise
+directement). Une page de lecture ou de réglages peut garder une largeur plus
+étroite. La disposition reste propre à l'usage : courbe dominante au Dashboard,
+tableau sur ordinateur et cartes à deux rangées sur mobile dans le Journal
+(instrument et P&L au-dessus, contexte et actions dessous), colonnes de saisie
+dans le Calculateur, conversation
+plein cadre dans Jarvis. Les navigations segmentées et barres d'outils partagent
+les angles adoucis du calendrier. La checklist utilise le même fond calme,
+sans champ de particules ni flash plein écran.
 
 **Deux verts qui ne se confondent pas :**
 1. L'**accent** (`--tv-accent` `#31d68a`, relevé pixel par pixel sur le
@@ -106,8 +124,10 @@ Réutiliser avant de restyler. Graphes : `app/trading/chartTheme.ts` +
   l'ordre d'une séance : Dashboard · Préparation · Journal · Analyse · Coach ·
   Stratégie (+ Réglages). Les entrées du rail sont des **carrés** aux angles
   adoucis (`--radius-lg`), comme chez Lucid — plus de pilules.
-- **Pages plein écran** (Calendar, Inbox, Jarvis, Journal, Monte Carlo) :
-  `hooks/useAvailableHeight`, jamais de défilement de page.
+- **Pages à hauteur mesurée** (Calendar, Inbox, Jarvis, Journal, Monte Carlo) :
+  `hooks/useAvailableHeight`. Calendrier et Monte Carlo utilisent un minimum
+  de hauteur et peuvent défiler si leur contenu dépasse ; Journal, Inbox et
+  Jarvis conservent leur défilement interne.
 - **États** : chargement par squelette à la géométrie finale ; état vide qui
   guide vers l'action ; erreur honnête (un `PageErrorBoundary` par page).
 - **Formulaires** : écriture optimiste, brouillons autosauvegardés
@@ -130,3 +150,12 @@ Jarvis → Erreurs / cas d'usage → Excel/Notion → Tarifs → CTA.
 - Copy anglaise honnête, courte, concrète ; jamais de promesse de gain, de faux
   témoignage, de logo ou de compteur inventé. Détail : skill `landing-copy` et
   [`PRODUCT.md`](PRODUCT.md).
+
+## 8. Vérification visuelle
+
+`/dev/ui` (développement uniquement) monte les vrais composants de toutes les
+pages, avec les fournisseurs de l'app et sa typographie. `?screen=calendar`,
+`?screen=journal`, `?screen=dashboard`, etc. choisissent une page ; `&empty=1`
+retire les trades de démonstration pour vérifier les états vides. La route ne
+rend rien dans un build de production. Les pages qui chargent leurs propres
+données demandent une session locale de test ou des réponses simulées.

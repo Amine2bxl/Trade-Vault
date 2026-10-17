@@ -12,12 +12,9 @@ import { density } from "./tokens";
  *   inset                 → plaque 2 — un bloc DANS une carte
  *   glass-strong          → plaque 2 + ombre — ce qui flotte (modale, menu)
  *
- * Toutes portent le RELIEF (`--tv-relief-*` dans styles.css) : filet de
- * lumière sur l'arête haute et contact sombre dessous pour une carte, bloc
- * creusé pour `inset`.
- *
- * `hover` ajoute `.card-premium` : la carte s'ÉCLAIRCIT au survol, elle ne se
- * soulève plus et ne s'allume plus.
+ * La matière est celle du calendrier : plate, opaque, délimitée d'un liseré.
+ * `hover` est réservé à une carte cliquable ; un graphique ou un résumé
+ * statique conserve sa surface au passage du pointeur.
  */
 
 export type CardVariant = "glass" | "glass-strong" | "plain" | "solid" | "inset";

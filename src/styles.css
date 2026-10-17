@@ -567,18 +567,12 @@
    * menus, docks), et `--tv-glow-accent` ne vaut plus rien du tout :
    * l'accent est une couleur, pas une source de lumière. */
   --tv-elev-1: none;
-  /* LE RELIEF DES CARTES — trois gestes, jamais de dégradé ni de halo.
-   *   edge : un filet de lumière d'un pixel sur l'arête haute (la plaque
-   *          accroche la lumière du dessus, elle n'en émet pas) ;
-   *   lift : un contact sombre serré + une ombre longue très diffuse, qui
-   *          décolle la carte du fond sans la faire flotter ;
-   *   sink : l'inverse, pour un bloc CREUSÉ dans une carte.
-   * Les plaques plates « carrés gris » se lisaient toutes au même plan ; le
-   * relief rend la hiérarchie fond → carte → bloc visible sans ajouter de
-   * couleur. Le Calendrier reste plat (`.tv-flat`). */
-  --tv-relief-edge: inset 0 1px 0 rgb(255 255 255 / 0.055);
-  --tv-relief-lift: 0 1px 1px rgb(0 0 0 / 0.45), 0 14px 30px -18px rgb(0 0 0 / 0.9);
-  --tv-relief-sink: inset 0 1px 2px rgb(0 0 0 / 0.38), inset 0 0 0 1px rgb(0 0 0 / 0.12);
+  /* Le calendrier est la référence : les cartes sont plates partout.
+   * Les anciens noms restent des alias pour les composants existants ;
+   * seules les surfaces flottantes conservent leur élévation. */
+  --tv-relief-edge: 0 0 0 transparent;
+  --tv-relief-lift: 0 0 0 transparent;
+  --tv-relief-sink: none;
   --tv-elev-2: 0 8px 24px -14px rgb(0 0 0 / 0.75);
   --tv-elev-3: 0 24px 60px -28px rgb(0 0 0 / 0.85);
   --tv-glow-accent: none;
@@ -1461,19 +1455,12 @@ input[type="number"] {
   background: var(--tv-plate-2);
   border: 1px solid var(--tv-border-strong);
 }
-/* Premium card hover — transition only the properties that change (never `all`,
- * which would also animate layout). A layered shadow lifts the card while a
- * hairline accent ring + a faint white top-edge highlight give the subtle glow
- * of a physical, backlit surface. */
+/* Même réponse que les cellules du calendrier : le liseré répond,
+ * la surface reste stable. Réservé aux cartes réellement interactives. */
 .card-premium {
-  transition-property: transform, box-shadow, border-color;
-  transition-duration: var(--duration-panel);
-  transition-timing-function: var(--ease-standard);
-  /* No permanent `will-change: transform`: it forces every card onto its own
-   * GPU layer, and Chrome on Windows then rasterises the text to a texture that
-   * lands on a fractional device pixel → blurry copy. On Retina/macOS it's
-   * invisible; on Windows it made the whole app look soft. The hover lift stays
-   * perfectly smooth without it. */
+  transition-property: background-color, border-color;
+  transition-duration: var(--tv-dur-1);
+  transition-timing-function: var(--tv-ease);
 }
 @media (hover: hover) {
   .card-premium:hover {
@@ -1487,11 +1474,10 @@ input[type="number"] {
   }
 }
 
-/* Les cartes portent le RELIEF (filet haut + contact sombre), pas une ombre
-   de flottement : l'ombre longue et marquée reste réservée à ce qui flotte
-   vraiment — modales, menus, docks. */
+/* Les plaques suivent le calendrier ; l'ombre est réservée aux modales
+   et aux menus, qui flottent réellement devant le contenu. */
 .glass {
-  box-shadow: var(--tv-relief-edge), var(--tv-relief-lift);
+  box-shadow: none;
 }
 .glass-strong {
   box-shadow: var(--tv-elev-3);
@@ -1507,19 +1493,18 @@ input[type="number"] {
 .panel {
   background: var(--tv-plate-1);
   border: 1px solid var(--tv-border);
-  box-shadow: var(--tv-relief-edge), var(--tv-relief-lift);
+  box-shadow: none;
 }
-/* Un bloc posé DANS une carte : un cran plus clair et creusé, pour que la
-   carte et son contenu ne se lisent plus au même plan. */
+/* Un bloc dans une carte se distingue par une valeur plus claire. */
 .tv-relief-inset {
   background: var(--tv-plate-2);
   box-shadow: var(--tv-relief-sink);
 }
 /* Une surface en relief hors des classes de carte (sections de modale…). */
 .tv-relief {
-  box-shadow: var(--tv-relief-edge), var(--tv-relief-lift);
+  box-shadow: none;
 }
-/* Le Calendrier garde sa sobriété : aucune ombre, la grille seule. */
+/* Alias historique du calendrier : la matière plate est désormais commune. */
 .tv-flat,
 .tv-flat .tv-kpi {
   box-shadow: none !important;
@@ -3177,7 +3162,7 @@ a:focus-visible,
   display: none;
   max-width: 100%;
   padding: 0.3rem;
-  border-radius: 9999px;
+  border-radius: var(--radius-xl);
   background: var(--tv-plate-1);
   border: 1px solid var(--tv-border);
   box-shadow: none;
@@ -3212,7 +3197,7 @@ a:focus-visible,
   gap: 0.5rem;
   height: 2.25rem;
   padding: 0 0.9rem;
-  border-radius: 9999px;
+  border-radius: var(--radius-lg);
   font-size: 0.82rem;
   font-weight: 600;
   line-height: 1;
@@ -4663,9 +4648,7 @@ a:focus-visible,
   border: 1px solid var(--tv-border);
   border-radius: 0.75rem;
   background: var(--tv-plate-1);
-  box-shadow:
-    var(--tv-relief-edge),
-    0 1px 1px rgb(0 0 0 / 0.4);
+  box-shadow: none;
 }
 @media (min-width: 768px) {
   .tv-kpi {
@@ -4742,7 +4725,7 @@ a:focus-visible,
   align-items: center;
   gap: 0.25rem;
   padding: 0.25rem;
-  border-radius: 9999px;
+  border-radius: var(--radius-xl);
   background: var(--tv-plate-1);
   border: 1px solid var(--tv-border);
   overflow-x: auto;
@@ -4777,8 +4760,8 @@ a:focus-visible,
   gap: 0.4rem;
   height: 2rem;
   padding: 0 0.75rem;
-  border-radius: 9999px;
-  font-size: 12.5px;
+  border-radius: var(--radius-lg);
+  font-size: var(--tv-t-caption);
   font-weight: 600;
   line-height: 1;
   white-space: nowrap;
@@ -4809,6 +4792,12 @@ a:focus-visible,
   outline: 2px solid rgb(var(--tv-accent-rgb) / 0.7);
   outline-offset: -2px;
 }
+@media (pointer: coarse) {
+  .tv-subnav-item {
+    min-height: 44px;
+  }
+}
+
 /* Le compteur d'un onglet (nombre d'éléments) — jamais une pastille colorée :
    un chiffre suffit, et six pastilles dans une rangée font un sapin. */
 .tv-subnav-count {
@@ -4834,8 +4823,8 @@ a:focus-visible,
   align-items: center;
   gap: 0.5rem;
   padding: 0.375rem 0.5rem;
-  border-radius: 9999px;
-  background: var(--tv-plate-0);
+  border-radius: var(--radius-2xl);
+  background: var(--tv-plate-1);
   border: 1px solid var(--tv-border);
   min-width: 0;
 }
@@ -6657,7 +6646,7 @@ body::after {
   border: 1px solid var(--tv-border);
   border-radius: 18px;
   background: var(--tv-plate-1);
-  box-shadow: var(--tv-relief-edge), var(--tv-relief-lift);
+  box-shadow: none;
 }
 .calc-market-thumb {
   position: absolute;

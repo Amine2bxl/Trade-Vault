@@ -55,7 +55,7 @@ import EquityChart from "@/app/trading/EquityChart";
 import MarkdownAnswer from "@/app/components/MarkdownAnswer";
 import { cn } from "@/shared/ui/cn";
 import type { Trade } from "@/app/types";
-import { Button, Kpi, SelectPicker } from "@/shared/ui";
+import { PageContainer, Button, Kpi, SelectPicker } from "@/shared/ui";
 import { usePageActions } from "@/app/contexts/PageActionsContext";
 
 const LOCALE_MAP: Record<string, string> = {
@@ -285,7 +285,7 @@ export default function Reports({ trades }: { trades: Trade[] }) {
   usePageActions(headerActions);
 
   return (
-    <div className="mx-auto max-w-[1000px] p-4 md:p-5">
+    <PageContainer className="max-w-[1000px]">
       {loading ? (
         <div className="space-y-3" aria-busy="true">
           <Skeleton className="h-11 rounded-2xl" />
@@ -383,7 +383,7 @@ export default function Reports({ trades }: { trades: Trade[] }) {
           )}
         </div>
       )}
-    </div>
+    </PageContainer>
   );
 }
 

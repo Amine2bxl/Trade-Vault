@@ -64,7 +64,6 @@ function Radial({ pct, color, center }: { pct: number; color: string; center?: s
           strokeLinecap="round"
           strokeDasharray={C}
           strokeDashoffset={C * (1 - p)}
-          style={{ transition: "stroke-dashoffset 800ms cubic-bezier(0.16,1,0.3,1)" }}
         />
       </svg>
       {center && (
@@ -144,8 +143,8 @@ export function Metric({
 }: MetricProps) {
   return (
     <div
-      className={cn("metric-tile stat-card card-premium animate-fade-in-up", density.cardPad)}
-      style={{ animationDelay: `${delay}ms` }}
+      className={cn("metric-tile stat-card animate-fade-in-up", density.cardPadTight)}
+      style={{ animationDelay: `${Math.min(delay, 60)}ms` }}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">

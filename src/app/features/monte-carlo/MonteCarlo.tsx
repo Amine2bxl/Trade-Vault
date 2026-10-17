@@ -34,7 +34,7 @@ import { useAccounts } from "@/app/contexts/AccountContext";
 import { cn } from "@/shared/ui/cn";
 import { usePageActions } from "@/app/contexts/PageActionsContext";
 import { useAvailableHeight } from "@/app/hooks/useAvailableHeight";
-import { Kpi, KpiGrid, Modal } from "@/shared/ui";
+import { PageContainer, Kpi, KpiGrid, Modal } from "@/shared/ui";
 import {
   pathBands,
   samplePaths,
@@ -481,10 +481,10 @@ export default function MonteCarloPage({ trades }: Props) {
   const resume = `${formatMoney(solde)} · ${formatMoney(risque)}/${t("mc.tradeWord")} · ${horizon} ${t("mc.days")} · +${objectifPct}% / −${limitePct}%`;
 
   return (
-    <div
+    <PageContainer
       ref={boxRef}
       style={height ? { minHeight: height } : undefined}
-      className="mx-auto flex h-full max-w-[1400px] flex-col overflow-y-auto p-3 md:p-4"
+      className="flex h-full flex-col overflow-y-auto"
     >
       {/* ══ LE LANCEMENT — CE QUE ÇA FAIT, SUR QUOI, ET LE BOUTON ═════════════
           La page s'ouvrait sur un formulaire : on ne savait ni ce qu'elle
@@ -779,7 +779,7 @@ export default function MonteCarloPage({ trades }: Props) {
           </div>
         </div>
       </Modal>
-    </div>
+    </PageContainer>
   );
 }
 
