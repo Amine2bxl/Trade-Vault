@@ -748,35 +748,25 @@ body {
 .onb-card:active {
   transform: scale(0.975);
 }
-/* ══ L'ONBOARDING PORTE L'HABIT DE LA VITRINE ══
+/* ══ L'ONBOARDING — UNE SÉQUENCE, PAS UN FORMULAIRE ══
  *
- * On y arrive depuis la landing, en venant de cliquer « Get Started ». Il
- * portait jusqu'ici le thème de l'app (graphite, accent de thème) : le visiteur
- * passait d'une page émeraude, lumineuse, tramée, à un écran gris et plat, et
- * lisait la rupture comme « je suis sorti du produit que j'ai choisi ».
- *
- * `.tv-public` (posée sur la racine) lui rend les jetons émeraude de la LP ;
- * ce bloc lui rend son FOND : la menthe très haut, l'indigo qui donne au noir
- * une température, et la trame d'un pixel qui s'efface vers le bas — les mêmes
- * valeurs que `.landing-root::before/::after`. La règle « rien ne rayonne » de
- * l'app ne s'applique pas ici : c'est encore la vitrine. */
+ * C'est la seule surface de l'application connectée qui a le droit d'être
+ * cinématique : on y entre une fois, et c'est là que le trader décide si
+ * TradeVault est fait pour lui. D'où son exception documentée à la loi du
+ * mouvement (`docs/DESIGN_SYSTEM.md`) : des entrées jusqu'à ~600 ms et une
+ * séquence d'allumage. Le reste de la loi tient :
+ *   • `transform` et `opacity` uniquement (le seul `stroke-dashoffset` est le
+ *     tracé, l'une des huit keyframes autorisées) ;
+ *   • rien ne boucle sans raison — le curseur clignote tant qu'on écrit,
+ *     la pastille « en direct » est le seul pouls ;
+ *   • rien ne rayonne : pas de halo, pas d'ombre, pas de dégradé. La
+ *     profondeur vient des plaques et des liserés, la couleur du thème du
+ *     trader (choisie à l'écran 10, appliquée À CHAUD à toute la séquence) ;
+ *   • sous `prefers-reduced-motion`, tout devient un fondu ou rien.
+ */
 .onb-root {
   isolation: isolate;
-}
-.onb-root::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background: radial-gradient(
-    56rem 32rem at 58% 22%,
-    rgb(var(--tv-accent-rgb) / 0.055),
-    transparent 68%
-  );
-}
-.onb-root::after {
-  content: none;
+  background: var(--tv-bg);
 }
 .onb-data-field {
   z-index: -1;
@@ -788,21 +778,21 @@ body {
   z-index: -1;
   opacity: 0.62;
 }
-/* Le bouton principal de la LP, au pixel près : même coin, même ombre portée
-   dans l'accent, même relief au survol. */
 .onb-root .onb-cta {
-  border-radius: 10px;
+  border-radius: 12px;
   transition:
     background-color var(--duration-base) var(--tv-ease),
-    transform var(--duration-micro) var(--tv-ease);
+    transform var(--duration-micro) var(--tv-ease),
+    opacity var(--duration-base) var(--tv-ease);
 }
 .onb-root .onb-cta:hover:not(:disabled) {
   background: var(--tv-cta-hover);
 }
-/* Une réponse choisie porte le liseré de l'accent, sans rayonner. */
-.onb-root .onb-selected {
-  box-shadow: inset 0 0 0 1px rgb(var(--tv-accent-rgb) / 0.28);
+.onb-root .onb-cta:active:not(:disabled) {
+  transform: scale(0.985);
 }
+
+/* Le tracé d'un liseré (carte choisie, garde-fou armé, courbe) : `draw`. */
 @keyframes onb-lock-sweep {
   from {
     stroke-dashoffset: 1;
@@ -818,86 +808,213 @@ body {
   animation: onb-lock-sweep 520ms var(--tv-ease) forwards;
 }
 .onb-pulse-trace {
-  animation-duration: 1100ms;
+  animation-duration: 1.6s;
 }
 @keyframes onb-status-pulse {
   50% {
-    opacity: 0.28;
+    opacity: 0.35;
   }
 }
 .onb-status-dot {
   animation: onb-status-pulse 1.8s ease-in-out infinite;
 }
-@media (prefers-reduced-motion: reduce) {
-  .onb-root .onb-cta:hover:not(:disabled) {
-    transform: none;
-  }
-}
-/* Entrée d'étape : le même geste vertical que dans la référence, court et
-   répété. Les détails internes se déploient ensuite via `.onb-in`. */
-.onb-step-enter {
-  animation: onb-calibration-enter 480ms var(--tv-ease) both;
-}
-@keyframes onb-calibration-enter {
+
+/* ── Entrée d'une scène, puis de ses éléments, en cascade ── */
+@keyframes onb-scene-in {
   from {
     opacity: 0;
-    filter: blur(5px);
-    transform: translateY(12px);
+    transform: translateY(18px) scale(0.992);
   }
   to {
     opacity: 1;
-    filter: blur(0);
     transform: none;
   }
+}
+@keyframes onb-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.onb-scene {
+  animation: onb-scene-in 560ms var(--tv-ease) both;
+}
+.onb-rise {
+  animation: onb-rise 520ms var(--tv-ease) both;
+  animation-delay: calc(90ms + var(--i, 0) * 55ms);
 }
 
-/* Accueil final : logo, phrase puis contexte, en trois battements. Chaque
-   mouvement reste sous 300 ms ; seul leur décalage construit la séquence. */
+/* ── Les cartes de réponse ── */
+.onb-tile {
+  position: relative;
+  border: 1px solid var(--tv-border);
+  background: var(--tv-plate-1);
+  border-radius: 16px;
+  transition:
+    border-color var(--duration-base) var(--tv-ease),
+    background-color var(--duration-base) var(--tv-ease),
+    transform var(--duration-micro) var(--tv-ease);
+}
+.onb-tile:hover {
+  border-color: var(--tv-border-strong);
+  background: var(--tv-plate-2);
+}
+.onb-tile:active {
+  transform: scale(0.985);
+}
+.onb-tile[aria-pressed="true"],
+.onb-tile[aria-checked="true"],
+.onb-tile[data-on="true"] {
+  border-color: var(--tv-border-accent);
+  background: var(--tv-plate-2);
+}
+.onb-tile:focus-visible {
+  outline: 2px solid var(--tv-accent);
+  outline-offset: 2px;
+}
+/* La vignette d'icône : plaque sourde, icône dans l'accent clair. Choisie,
+   elle prend le plein du CTA — un seul accent plein à l'écran. */
+.onb-glyph {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  border: 1px solid var(--tv-border);
+  background: var(--tv-plate-0);
+  color: var(--tv-highlight);
+  border-radius: 12px;
+  transition:
+    background-color var(--duration-base) var(--tv-ease),
+    color var(--duration-base) var(--tv-ease),
+    border-color var(--duration-base) var(--tv-ease);
+}
+.onb-tile[aria-pressed="true"] .onb-glyph,
+.onb-tile[aria-checked="true"] .onb-glyph,
+.onb-tile[data-on="true"] .onb-glyph {
+  background: var(--tv-cta);
+  border-color: transparent;
+  color: #fff;
+}
+/* Vignette d'un garde-fou : elle reste sourde même armée (voir l'écran 8). */
+.onb-tile[data-on="true"] .onb-glyph-quiet {
+  background: var(--tv-plate-0);
+  border-color: var(--tv-border-accent);
+  color: var(--tv-highlight);
+}
+.onb-kbd {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1;
+  padding: 3px 5px;
+  border-radius: 5px;
+  border: 1px solid var(--tv-border);
+  color: var(--tv-text-muted);
+}
+
+/* ── La ligne de Jarvis : un curseur qui ne clignote QUE pendant l'écriture ── */
+@keyframes onb-caret {
+  50% {
+    opacity: 0;
+  }
+}
+.onb-caret {
+  display: inline-block;
+  width: 7px;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: -0.15em;
+  background: var(--tv-highlight);
+  animation: onb-caret 0.9s steps(1) infinite;
+}
+
+/* ── L'allumage ── */
+@keyframes onb-scan {
+  from {
+    transform: translateY(-2px) scaleX(0.2);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+    transform: translateY(0) scaleX(1);
+  }
+  to {
+    transform: translateY(100dvh) scaleX(1);
+    opacity: 0;
+  }
+}
+@keyframes onb-line-in {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+.onb-boot-line {
+  transform-origin: center;
+  animation: onb-line-in 900ms var(--tv-ease) 120ms both;
+}
+.onb-boot-ring {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: onb-lock-sweep 1.4s var(--tv-ease-out) 200ms forwards;
+}
+.onb-boot-mark {
+  animation: scale-in 700ms var(--tv-ease) 450ms both;
+}
+.onb-scanline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 1px;
+  background: var(--tv-accent);
+  transform-origin: center;
+  animation: onb-scan 1.1s var(--tv-ease-out) forwards;
+}
+.onb-igniting .onb-boot-content {
+  transition:
+    opacity 600ms var(--tv-ease),
+    transform 900ms var(--tv-ease);
+  opacity: 0;
+  transform: scale(1.03);
+}
+
+/* ── Calibration ── */
+@keyframes onb-pop {
+  from {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+.onb-pop {
+  animation: onb-pop 360ms var(--tv-ease) both;
+}
+.onb-bar {
+  transform-origin: left center;
+  transition: transform 420ms var(--tv-ease);
+}
+
+/* ── Le lancement : logo, prénom, puis l'espace qui se révèle ── */
 .onb-launch-logo {
-  animation: scale-in var(--duration-panel) var(--tv-ease) both;
+  animation: scale-in 520ms var(--tv-ease) both;
 }
 .onb-launch-title {
-  animation: fade-in-up var(--duration-panel) var(--tv-ease) 120ms both;
+  animation: onb-rise 600ms var(--tv-ease) 160ms both;
 }
 .onb-launch-copy {
-  animation: fade-in var(--duration-base) var(--tv-ease) 260ms both;
-}
-.onb-launch-recap {
-  animation: fade-in-up var(--duration-panel) var(--tv-ease) 460ms both;
-}
-.onb-launch-recap > * {
-  animation: fade-in-up var(--duration-panel) var(--tv-ease) both;
-  animation-delay: calc(500ms + var(--onb-order, 0) * 70ms);
+  animation: fade-in 400ms var(--tv-ease) 360ms both;
 }
 .onb-dashboard-reveal {
-  animation: onb-dashboard-enter 620ms var(--tv-ease) 780ms both;
+  animation: onb-scene-in 700ms var(--tv-ease) 620ms both;
   transform-origin: top center;
-}
-@keyframes onb-dashboard-enter {
-  from {
-    opacity: 0;
-    filter: blur(7px);
-    transform: translateY(14px) scale(0.985);
-  }
-  to {
-    opacity: 1;
-    filter: blur(0);
-    transform: none;
-  }
-}
-@keyframes onb-radar-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-.onb-radar::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: 999px;
-  border-top: 1px solid var(--tv-accent);
-  border-right: 1px solid transparent;
-  animation: onb-radar-spin 1.8s linear infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -905,23 +1022,35 @@ body {
     animation: none;
     opacity: 1;
   }
-  /* Le changement d'étape reste signalé — par un fondu seul, sans déplacement :
-   * supprimer tout retour ferait croire que rien ne s'est passé. */
-  .onb-step-enter,
+  /* Le changement d'étape reste signalé — par un fondu seul, sans
+   * déplacement : supprimer tout retour ferait croire que rien ne s'est passé. */
+  .onb-scene,
+  .onb-rise,
+  .onb-boot-mark,
   .onb-launch-logo,
   .onb-launch-title,
   .onb-launch-copy,
-  .onb-launch-recap,
-  .onb-launch-recap > *,
-  .onb-dashboard-reveal {
+  .onb-dashboard-reveal,
+  .onb-pop {
     animation: fade-in 0.2s ease-out both;
   }
   .onb-lock-sweep,
   .onb-pulse-trace,
-  .onb-status-dot,
-  .onb-radar::after {
+  .onb-boot-ring {
     animation: none;
     stroke-dashoffset: 0;
+  }
+  .onb-boot-line,
+  .onb-status-dot,
+  .onb-caret,
+  .onb-scanline {
+    animation: none;
+  }
+  .onb-scanline {
+    display: none;
+  }
+  .onb-igniting .onb-boot-content {
+    transform: none;
   }
 }
 

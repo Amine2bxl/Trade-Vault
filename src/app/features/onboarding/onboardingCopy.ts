@@ -1,52 +1,113 @@
-// Self-contained onboarding copy in every supported language. Kept out of the
-// main i18n dictionary so the flow's strings stay together and reviewable.
-// English is the source; each locale supplies a full set. Missing keys fall
-// back to English via the spread in `oc()`.
+// La copie de l'onboarding, regroupée pour rester relisable d'un bloc.
+//
+// L'anglais est la source et définit TOUTES les clés ; le français est
+// complet. Les dix autres langues gardent leurs traductions pour les clés dont
+// le sens n'a pas changé (marchés, styles, niveaux, missions, angles morts…)
+// et retombent sur l'anglais pour le reste, via la fusion de `oc()`.
+//
+// Chaque écran porte une ligne « pourquoi » (`why*`) : ce que la réponse
+// CHANGE dans l'application. C'est elle qui fait d'une question un réglage —
+// et chacune décrit une fonctionnalité qui existe (`docs/FEATURES.md`), sans
+// chiffre ni promesse de résultat (`docs/PRODUCT.md`).
 import type { Lang } from "@/app/i18n/translations";
 
 export interface OnboardingCopy {
-  langTitle: string;
-  langSub: string;
-  welcomeTitle: string;
+  // ── Cadre ──
   personalWelcome: string;
   systemModules: string;
   systemCalibrating: string;
   systemComplete: string;
-  welcomeSub: string;
-  feat1T: string;
-  feat1D: string;
-  feat2T: string;
-  feat2D: string;
-  feat3T: string;
-  feat3D: string;
-  welcomeCta: string;
-  welcomeSkip: string;
   cont: string;
   skip: string;
-  skipAdd: string;
+  back: string;
+  soundOn: string;
+  soundOff: string;
+  skipSetup: string;
+  stepWord: string;
+  // ── Allumage ──
+  bootKicker: string;
+  bootTitleA: string;
+  bootTitleB: string;
+  bootSub: string;
+  bootCta: string;
+  bootHint: string;
+  bootP1: string;
+  bootP2: string;
+  bootP3: string;
+  // ── Dossier trader (le panneau qui se remplit) ──
+  fileTitle: string;
+  fileLive: string;
+  fileEmpty: string;
+  fTrader: string;
+  fArena: string;
+  fAccount: string;
+  fMarkets: string;
+  fStyle: string;
+  fExp: string;
+  fLeak: string;
+  fRules: string;
+  fMission: string;
+  rulesCount: string;
+  // ── 1 · Identité ──
+  idTitle: string;
+  whyId: string;
+  idPlaceholder: string;
+  langTitle: string;
+  // ── 2 · Arène ──
+  arenaTitle: string;
+  whyArena: string;
+  arProp: string;
+  arPropD: string;
+  arFunded: string;
+  arFundedD: string;
+  arPersonal: string;
+  arPersonalD: string;
+  arDemo: string;
+  arDemoD: string;
+  // ── 3 · Compte ──
+  firmTitle: string;
+  capTitle: string;
+  capTitleDemo: string;
+  whyAccount: string;
+  firmLabel: string;
+  firmOther: string;
+  sizeLabel: string;
+  capitalLabel: string;
+  capOther: string;
+  currencyLabel: string;
+  acctPersonal: string;
+  acctDemo: string;
+  acctFunded: string;
+  acctProp: string;
+  // ── 4 · Marchés ──
   assetsTitle: string;
-  assetsSub: string;
+  whyMarkets: string;
   aFutures: string;
+  aFuturesD: string;
   aForex: string;
+  aForexD: string;
   aStocks: string;
-  aOptions: string;
+  aStocksD: string;
   aCrypto: string;
+  aCryptoD: string;
+  aOptions: string;
+  aOptionsD: string;
+  ictTitle: string;
+  ictSub: string;
+  ictYes: string;
+  ictNo: string;
+  // ── 5 · Style ──
   styleTitle: string;
-  styleSub: string;
+  whyStyle: string;
   sScalper: string;
   sScalperD: string;
   sDay: string;
   sDayD: string;
   sSwing: string;
   sSwingD: string;
-  sPos: string;
-  sPosD: string;
-  ictTitle: string;
-  ictSub: string;
-  ictYes: string;
-  ictNo: string;
+  // ── 6 · Expérience ──
   expTitle: string;
-  expSub: string;
+  whyExp: string;
   eNew: string;
   eNewD: string;
   eInt: string;
@@ -55,336 +116,502 @@ export interface OnboardingCopy {
   eSeaD: string;
   eFund: string;
   eFundD: string;
+  // ── 7 · Angle mort ──
+  painTitle: string;
+  whyPain: string;
+  pEmo: string;
+  pEmoD: string;
+  pOver: string;
+  pOverD: string;
+  pRisk: string;
+  pRiskD: string;
+  pCons: string;
+  pConsD: string;
+  pJour: string;
+  pJourD: string;
+  ackEmo: string;
+  ackOver: string;
+  ackRisk: string;
+  ackCons: string;
+  ackJour: string;
+  // ── 8 · Garde-fous ──
+  grTitle: string;
+  whyGuard: string;
+  grRisk: string;
+  grRiskUnit: string;
+  grTrades: string;
+  grTradesUnit: string;
+  grStop: string;
+  grStopUnit: string;
+  grDaily: string;
+  grForYou: string;
+  grArmed: string;
+  grOff: string;
+  grNotify: string;
+  grNotifyOn: string;
+  grNotifyBlocked: string;
+  ruleRisk: string;
+  ruleTrades: string;
+  ruleStop: string;
+  ruleDaily: string;
+  // ── 9 · Mission ──
   goalTitle: string;
-  goalSub: string;
-  gCons: string;
-  gConsD: string;
+  whyGoal: string;
   gProp: string;
   gPropD: string;
   gFull: string;
   gFullD: string;
-  gSide: string;
-  gSideD: string;
+  gCons: string;
+  gConsD: string;
   gDisc: string;
   gDiscD: string;
-  painTitle: string;
-  painSub: string;
-  pCons: string;
-  pConsD: string;
-  pEmo: string;
-  pEmoD: string;
-  pRisk: string;
-  pRiskD: string;
-  pJour: string;
-  pJourD: string;
-  pOver: string;
-  pOverD: string;
-  brokersTitle: string;
-  brokersSub: string;
+  gSide: string;
+  gSideD: string;
+  targetLabel: string;
+  targetNone: string;
+  // ── 10 · Apparence ──
+  lookTitle: string;
+  whyLook: string;
+  // ── Calibration ──
+  calTitle: string;
+  calAccount: string;
+  calMarkets: string;
+  calRules: string;
+  calChecklist: string;
+  calJarvis: string;
+  calLook: string;
+  calHonest: string;
+  calError: string;
+  calRetry: string;
   revealTitle: string;
-  revealJournal: string;
-  revealPain: string;
-  revealIct: string;
-  revealLang: string;
-  revealBrokers: string;
-  revealCta: string;
-  revealSaving: string;
-  yourMarkets: string;
-  missionCons: string;
-  missionProp: string;
-  missionFull: string;
-  missionSide: string;
-  missionDisc: string;
-  // Quick-start step (optional per locale — falls back to English via oc()).
-  startTitle?: string;
-  startSub?: string;
-  startImport?: string;
-  startImportD?: string;
-  startDemo?: string;
-  startDemoD?: string;
-  startFresh?: string;
-  startWorking?: string;
-  // Profile step Q3 — realistic monthly target (optional per locale).
-  targetTitle?: string;
-  targetSub?: string;
-  // Settings step — the two figures and the theme shortcut. Ces cinq libellés
-  // étaient écrits EN FRANÇAIS DANS LE JSX (« Objectif mensuel », « Capital de
-  // départ », « Modifiable à tout moment depuis tes paramètres »…) : les onze
-  // autres langues affichaient donc du français au milieu de leur propre
-  // écran. Ils rejoignent la copie, comme le reste du flux.
-  targetLabel?: string;
-  capitalLabel?: string;
-  settingsHint?: string;
-  themeCustomCta?: string;
-  themeCustomName?: string;
+  // ── Lancement ──
+  startTitle: string;
+  startSub: string;
+  startImport: string;
+  startImportD: string;
+  startBroker: string;
+  startBrokerD: string;
+  startDemo: string;
+  startDemoD: string;
+  startFresh: string;
+  startWorking: string;
+  launchSub: string;
 }
 
 const en: OnboardingCopy = {
-  langTitle: "Choose your language",
-  langSub: "The whole app will be in this language.",
-  welcomeTitle: "Welcome to TradeVault",
   personalWelcome: "Welcome, {name}.",
-  systemModules: "Calibration modules",
+  systemModules: "Calibration",
   systemCalibrating: "Calibrating",
   systemComplete: "Calibration complete",
-  welcomeSub:
-    "Your trading journal, built to find your edge. Log every trade, see what's actually working, and fix the leaks before they cost you.",
-  feat1T: "Journal every trade",
-  feat1D: "Entries, exits, screenshots, mistakes — one clean log.",
-  feat2T: "See your real edge",
-  feat2D: "Win rate, R-multiples, and analytics that don't lie.",
-  feat3T: "AI insights + checklist",
-  feat3D: "Spot patterns and lock in your process before the bell.",
-  welcomeCta: "Set it up — takes 30 seconds",
-  welcomeSkip: "Skip, I'll explore on my own",
   cont: "Continue",
   skip: "Skip",
-  skipAdd: "Skip, I'll add later",
+  back: "Back",
+  soundOn: "Sound on",
+  soundOff: "Sound off",
+  skipSetup: "Skip — I'll set it up later",
+  stepWord: "Step",
+
+  bootKicker: "TradeVault · calibration terminal",
+  bootTitleA: "Your trading,",
+  bootTitleB: "decoded.",
+  bootSub:
+    "Sixty seconds. A few honest answers. TradeVault rebuilds itself around the way you trade — your account, your rules, your blind spot.",
+  bootCta: "Start calibration",
+  bootHint: "Best with sound on",
+  bootP1: "Your account and risk limits, pre-wired",
+  bootP2: "Your rules checked on every trade you log",
+  bootP3: "Jarvis briefed on your biggest leak",
+
+  fileTitle: "Trader file",
+  fileLive: "Live",
+  fileEmpty: "Your answers write themselves here.",
+  fTrader: "Trader",
+  fArena: "Arena",
+  fAccount: "Account",
+  fMarkets: "Markets",
+  fStyle: "Style",
+  fExp: "Experience",
+  fLeak: "Watching",
+  fRules: "Guardrails",
+  fMission: "Mission",
+  rulesCount: "{n} armed",
+
+  idTitle: "First — what should Jarvis call you?",
+  whyId: "Jarvis is your coach inside TradeVault. He uses your name in every debrief.",
+  idPlaceholder: "Your first name",
+  langTitle: "Language",
+
+  arenaTitle: "Where are you trading right now?",
+  whyArena:
+    "Sets up your account, your drawdown guard and the rules your trades are checked against.",
+  arProp: "Prop firm challenge",
+  arPropD: "Passing an evaluation",
+  arFunded: "Funded account",
+  arFundedD: "Keeping a funded account alive",
+  arPersonal: "My own capital",
+  arPersonalD: "A personal broker account",
+  arDemo: "Demo / paper",
+  arDemoD: "Practising before going live",
+
+  firmTitle: "Which firm, and what size?",
+  capTitle: "How much capital is in this account?",
+  capTitleDemo: "What balance are you practising with?",
+  whyAccount:
+    "Your account opens at this size, in this currency — every % and every drawdown is right from your first trade.",
+  firmLabel: "Firm",
+  firmOther: "Other",
+  sizeLabel: "Account size",
+  capitalLabel: "Starting balance",
+  capOther: "Other amount",
+  currencyLabel: "Currency",
+  acctPersonal: "Personal",
+  acctDemo: "Demo",
+  acctFunded: "Funded",
+  acctProp: "Prop",
+
   assetsTitle: "What do you trade?",
-  assetsSub: "Pick all that apply. We'll talk in your units.",
+  whyMarkets: "Your pre-market checklist and Jarvis are tuned to your markets.",
   aFutures: "Futures",
+  aFuturesD: "NQ · ES · CL",
   aForex: "Forex",
+  aForexD: "EUR/USD · GBP/USD",
   aStocks: "Stocks",
-  aOptions: "Options",
+  aStocksD: "Equities · ETFs",
   aCrypto: "Crypto",
-  styleTitle: "How do you trade it?",
-  styleSub: "Your checklist, your stats and Jarvis all adapt to it.",
-  sScalper: "Scalper",
-  sScalperD: "In and out. Seconds to minutes.",
-  sDay: "Day Trader",
-  sDayD: "Flat by the close. No overnight risk.",
-  sSwing: "Swing",
-  sSwingD: "Days to weeks. Riding the bigger move.",
-  sPos: "Position",
-  sPosD: "Weeks to months. Macro conviction.",
+  aCryptoD: "BTC · ETH",
+  aOptions: "Options",
+  aOptionsD: "Calls · Puts",
   ictTitle: "Do you trade ICT / SMC concepts?",
-  ictSub: "Order blocks, liquidity, FVGs, killzones.",
-  ictYes: "Yes, that's me",
-  ictNo: "Not really",
+  ictSub: "Adds liquidity and FVG checks to your checklist.",
+  ictYes: "Yes",
+  ictNo: "No",
+
+  styleTitle: "How long do you usually hold a trade?",
+  whyStyle: "Sets your trades-per-day guardrail and the shape of your session checklist.",
+  sScalper: "Scalping",
+  sScalperD: "Seconds to minutes",
+  sDay: "Day trading",
+  sDayD: "Flat by the close",
+  sSwing: "Swing",
+  sSwingD: "Days to weeks",
+
   expTitle: "How long have you been trading?",
-  expSub: "No judgment — this just tunes what we show you.",
-  eNew: "Just started",
+  whyExp: "Jarvis adapts how he talks to you — more guidance early on, straight numbers later.",
+  eNew: "Just starting",
   eNewD: "Under a year",
-  eInt: "Getting reps in",
-  eIntD: "1–3 years",
-  eSea: "Seasoned",
-  eSeaD: "3 years+",
-  eFund: "Funded / Prop",
-  eFundD: "Trading allocated capital",
-  goalTitle: "What's the mission right now?",
-  goalSub: "The real reason you're here. Everything we show you points at it.",
-  gCons: "Get consistent",
-  gConsD: "Stop giving back the winners.",
-  gProp: "Pass a prop challenge",
-  gPropD: "Hit the target, respect the rules.",
-  gFull: "Go full-time",
-  gFullD: "Replace the paycheck.",
-  gSide: "Side income",
-  gSideD: "Stack extra, low stress.",
-  gDisc: "Build discipline",
-  gDiscD: "Master the mind, not just the charts.",
-  painTitle: "What's costing you the most?",
-  painSub: "Be honest. Jarvis starts digging here on day one.",
-  pCons: "Consistency",
-  pConsD: "Green week, red week, repeat.",
-  pEmo: "Emotional control",
-  pEmoD: "Revenge trades, FOMO, tilt.",
-  pRisk: "Risk management",
-  pRiskD: "One trade wrecks the month.",
-  pJour: "Journaling",
-  pJourD: "I don't log, so I don't learn.",
+  eInt: "Finding my rhythm",
+  eIntD: "1 to 3 years",
+  eSea: "Experienced",
+  eSeaD: "3+ years",
+  eFund: "Funded",
+  eFundD: "Payouts already",
+
+  painTitle: "Be honest. What costs you the most money?",
+  whyPain: "This is the blind spot Jarvis watches first, on every trade you log.",
+  pEmo: "Revenge trading",
+  pEmoD: "One red trade turns into three",
   pOver: "Overtrading",
-  pOverD: "Can't sit on my hands.",
-  brokersTitle: "Where do you execute?",
-  brokersSub: "For one-tap CSV import later. No login now — just the name.",
-  revealTitle: "Your vault is live.",
-  revealJournal: "Journal set up for {assets}",
-  revealPain: "We'll start with your biggest leak: {pain}",
-  revealIct: "ICT / SMC confluence checklist loaded",
-  revealLang: "Language set to {lang}",
-  revealBrokers: "{brokers} import ready in Settings",
-  revealCta: "Enter TradeVault →",
-  revealSaving: "Setting up…",
-  yourMarkets: "your markets",
-  missionCons: "On a mission for consistency.",
-  missionProp: "Chasing the payout.",
-  missionFull: "Going full-time.",
-  missionSide: "Stacking on the side.",
-  missionDisc: "Building discipline.",
-  startTitle: "Fill your vault in seconds",
-  startSub: "Log a few trades and Jarvis starts reading your patterns.",
-  startImport: "Import my trades (CSV)",
-  startImportD:
-    "Bring your history from your broker or another journal — the fastest way to see your real edge.",
-  startDemo: "Show me a demo",
-  startDemoD:
-    "We drop in 3 realistic sample trades (marked “Example”) so you can explore everything instantly.",
-  startFresh: "Start from zero — I'll log my first trade myself",
-  startWorking: "Preparing your vault…",
-  targetTitle: "Realistic monthly target?",
-  targetSub: "In % — it anchors your daily checklist. Honest beats heroic.",
-  targetLabel: "Monthly target",
-  capitalLabel: "Starting capital",
-  settingsHint: "You can change both any time in your settings.",
-  themeCustomCta: "Customise my theme",
-  themeCustomName: "My theme",
+  pOverD: "Taking setups that aren't setups",
+  pRisk: "Oversizing",
+  pRiskD: "One trade wipes out a week",
+  pCons: "Breaking my plan",
+  pConsD: "I know my rules. I don't follow them",
+  pJour: "Never reviewing",
+  pJourD: "Same mistakes, every week",
+  ackEmo: "Understood. After a losing day starts, I'll be watching your next entry.",
+  ackOver: "Understood. Every trade past your daily limit gets flagged.",
+  ackRisk: "Understood. Any trade above your risk cap gets flagged the moment you log it.",
+  ackCons: "Understood. Your plan becomes rules — and I'll measure how often you keep them.",
+  ackJour: "Understood. Your checklist will close every session with a review.",
+
+  grTitle: "Your guardrails.",
+  whyGuard:
+    "Built from your answers. Every trade you log is checked against them — you know the moment you break one.",
+  grRisk: "Max risk per trade",
+  grRiskUnit: "% of account",
+  grTrades: "Max trades per day",
+  grTradesUnit: "trades",
+  grStop: "Stop for the day after",
+  grStopUnit: "losses",
+  grDaily: "Daily loss limit",
+  grForYou: "For your blind spot",
+  grArmed: "Armed",
+  grOff: "Off",
+  grNotify: "Alert me when I break one",
+  grNotifyOn: "Alerts on",
+  grNotifyBlocked: "Blocked by your browser — you can allow it later in Settings.",
+  ruleRisk: "Never risk more than {v}% of my account on one trade.",
+  ruleTrades: "No more than {v} trades per day.",
+  ruleStop: "Stop trading for the day after {v} losses.",
+  ruleDaily: "Daily loss limit: {v}. When I hit it, I stop.",
+
+  goalTitle: "What does winning look like in 90 days?",
+  whyGoal: "Jarvis anchors his advice to this mission.",
+  gProp: "Pass my challenge",
+  gPropD: "Hit the target, keep every rule",
+  gFull: "Get paid every month",
+  gFullD: "Consistent payouts",
+  gCons: "One consistent month",
+  gConsD: "Stop giving gains back",
+  gDisc: "Zero broken rules",
+  gDiscD: "Process first, P&L second",
+  gSide: "A steady side income",
+  gSideD: "Without the stress",
+  targetLabel: "Monthly target — optional",
+  targetNone: "None",
+
+  lookTitle: "Last touch — make it yours.",
+  whyLook: "Your colour runs through the whole app. Profit stays green, loss stays red — always.",
+
+  calTitle: "Calibrating your vault",
+  calAccount: "Opening {account}",
+  calMarkets: "Tuning to {markets}",
+  calRules: "Arming {n} guardrails",
+  calChecklist: "Building your pre-market checklist",
+  calJarvis: "Briefing Jarvis: {leak}",
+  calLook: "Applying your colour",
+  calHonest:
+    "No statistics yet — Jarvis starts measuring from your first logged trades, and never shows a number without enough data.",
+  calError: "We couldn't save your setup. Your answers are kept — try again.",
+  calRetry: "Try again",
+  revealTitle: "Your vault is ready.",
+
+  startTitle: "How do you want to start?",
+  startSub: "Your first trade is where Jarvis starts learning.",
+  startImport: "Import my history",
+  startImportD: "A CSV from your broker or prop firm — Jarvis reads all of it.",
+  startBroker: "Connect Tradovate",
+  startBrokerD: "Your trades sync on their own, read-only (Pro).",
+  startDemo: "Explore with sample trades",
+  startDemoD: "Three clearly-marked examples, to see the app come alive.",
+  startFresh: "Start with an empty journal",
+  startWorking: "Opening…",
+  launchSub: "Your vault is calibrated.",
 };
 
 const fr: OnboardingCopy = {
-  langTitle: "Choisis ta langue",
-  langSub: "Toute l'application sera dans cette langue.",
-  welcomeTitle: "Bienvenue sur TradeVault",
   personalWelcome: "Bienvenue, {name}.",
-  systemModules: "Modules de calibration",
+  systemModules: "Calibration",
   systemCalibrating: "Calibration",
   systemComplete: "Calibration terminée",
-  welcomeSub:
-    "Ton journal de trading, pensé pour trouver ton edge. Note chaque trade, vois ce qui marche vraiment, et corrige les fuites avant qu'elles ne coûtent cher.",
-  feat1T: "Journalise chaque trade",
-  feat1D: "Entrées, sorties, captures, erreurs — un seul journal clair.",
-  feat2T: "Vois ton vrai edge",
-  feat2D: "Taux de réussite, R-multiples et analyses qui ne mentent pas.",
-  feat3T: "Insights IA + checklist",
-  feat3D: "Repère les patterns et verrouille ton process avant l'ouverture.",
-  welcomeCta: "Configurer — 30 secondes",
-  welcomeSkip: "Passer, je découvre seul",
   cont: "Continuer",
   skip: "Passer",
-  skipAdd: "Passer, j'ajouterai plus tard",
+  back: "Retour",
+  soundOn: "Son activé",
+  soundOff: "Son coupé",
+  skipSetup: "Passer — je configurerai plus tard",
+  stepWord: "Étape",
+
+  bootKicker: "TradeVault · terminal de calibration",
+  bootTitleA: "Ton trading,",
+  bootTitleB: "décodé.",
+  bootSub:
+    "Soixante secondes. Quelques réponses honnêtes. TradeVault se reconstruit autour de ta façon de trader — ton compte, tes règles, ton angle mort.",
+  bootCta: "Lancer la calibration",
+  bootHint: "Meilleur avec le son",
+  bootP1: "Ton compte et tes limites de risque, déjà câblés",
+  bootP2: "Tes règles vérifiées sur chaque trade loggé",
+  bootP3: "Jarvis briefé sur ta plus grosse fuite",
+
+  fileTitle: "Dossier trader",
+  fileLive: "En direct",
+  fileEmpty: "Tes réponses s'inscrivent ici.",
+  fTrader: "Trader",
+  fArena: "Terrain",
+  fAccount: "Compte",
+  fMarkets: "Marchés",
+  fStyle: "Style",
+  fExp: "Expérience",
+  fLeak: "Sous surveillance",
+  fRules: "Garde-fous",
+  fMission: "Mission",
+  rulesCount: "{n} activés",
+
+  idTitle: "D'abord — comment Jarvis doit-il t'appeler ?",
+  whyId: "Jarvis est ton coach dans TradeVault. Il utilise ton prénom dans chaque débrief.",
+  idPlaceholder: "Ton prénom",
+  langTitle: "Langue",
+
+  arenaTitle: "Sur quoi trades-tu en ce moment ?",
+  whyArena:
+    "Ça configure ton compte, ta garde de drawdown et les règles contre lesquelles tes trades sont vérifiés.",
+  arProp: "Challenge prop firm",
+  arPropD: "Je passe une évaluation",
+  arFunded: "Compte financé",
+  arFundedD: "Je dois garder mon compte en vie",
+  arPersonal: "Mon propre capital",
+  arPersonalD: "Un compte chez mon broker",
+  arDemo: "Démo / papier",
+  arDemoD: "Je m'entraîne avant le réel",
+
+  firmTitle: "Quelle prop firm, et quelle taille ?",
+  capTitle: "Combien de capital sur ce compte ?",
+  capTitleDemo: "Avec quel solde t'entraînes-tu ?",
+  whyAccount:
+    "Ton compte s'ouvre à cette taille, dans cette devise — chaque % et chaque drawdown est juste dès ton premier trade.",
+  firmLabel: "Prop firm",
+  firmOther: "Autre",
+  sizeLabel: "Taille du compte",
+  capitalLabel: "Solde de départ",
+  capOther: "Autre montant",
+  currencyLabel: "Devise",
+  acctPersonal: "Personnel",
+  acctDemo: "Démo",
+  acctFunded: "Financé",
+  acctProp: "Prop",
+
   assetsTitle: "Que trades-tu ?",
-  assetsSub: "Choisis tout ce qui s'applique. On parlera dans tes unités.",
+  whyMarkets: "Ta checklist pré-market et Jarvis sont réglés sur tes marchés.",
   aFutures: "Futures",
+  aFuturesD: "NQ · ES · CL",
   aForex: "Forex",
+  aForexD: "EUR/USD · GBP/USD",
   aStocks: "Actions",
-  aOptions: "Options",
+  aStocksD: "Titres · ETF",
   aCrypto: "Crypto",
-  styleTitle: "Comment tu les trades ?",
-  styleSub: "Ta checklist, tes stats et Jarvis s'y adaptent.",
-  sScalper: "Scalpeur",
-  sScalperD: "Dedans, dehors. Secondes à minutes.",
-  sDay: "Day Trader",
-  sDayD: "À plat à la clôture. Pas de risque overnight.",
-  sSwing: "Swing",
-  sSwingD: "Jours à semaines. Sur le mouvement de fond.",
-  sPos: "Position",
-  sPosD: "Semaines à mois. Conviction macro.",
+  aCryptoD: "BTC · ETH",
+  aOptions: "Options",
+  aOptionsD: "Calls · Puts",
   ictTitle: "Tu trades les concepts ICT / SMC ?",
-  ictSub: "Order blocks, liquidité, FVG, killzones.",
-  ictYes: "Oui, c'est moi",
-  ictNo: "Pas vraiment",
-  expTitle: "Tu trades depuis combien de temps ?",
-  expSub: "Aucun jugement — ça ajuste juste ce qu'on t'affiche.",
+  ictSub: "Ajoute les vérifications liquidité et FVG à ta checklist.",
+  ictYes: "Oui",
+  ictNo: "Non",
+
+  styleTitle: "Combien de temps tiens-tu un trade, en général ?",
+  whyStyle: "Règle ta limite de trades par jour et la forme de ta checklist de session.",
+  sScalper: "Scalping",
+  sScalperD: "Secondes à minutes",
+  sDay: "Day trading",
+  sDayD: "À plat à la clôture",
+  sSwing: "Swing",
+  sSwingD: "Jours à semaines",
+
+  expTitle: "Depuis combien de temps trades-tu ?",
+  whyExp:
+    "Jarvis adapte sa façon de te parler — plus de guidage au début, des chiffres bruts ensuite.",
   eNew: "Je débute",
   eNewD: "Moins d'un an",
-  eInt: "Je prends du volume",
+  eInt: "Je trouve mon rythme",
   eIntD: "1 à 3 ans",
-  eSea: "Aguerri",
+  eSea: "Expérimenté",
   eSeaD: "3 ans et plus",
-  eFund: "Financé / Prop",
-  eFundD: "Je trade un capital alloué",
-  goalTitle: "C'est quoi la mission, là ?",
-  goalSub: "La vraie raison de ta présence ici. Tout ce qu'on te montre y mène.",
-  gCons: "Devenir régulier",
-  gConsD: "Arrêter de rendre les gains.",
-  gProp: "Passer un challenge prop",
-  gPropD: "Atteindre l'objectif, respecter les règles.",
-  gFull: "Passer à plein temps",
-  gFullD: "Remplacer le salaire.",
-  gSide: "Revenu d'appoint",
-  gSideD: "Un plus, sans stress.",
-  gDisc: "Construire la discipline",
-  gDiscD: "Maîtriser le mental, pas que les charts.",
-  painTitle: "Qu'est-ce qui te coûte le plus ?",
-  painSub: "Sois honnête. Jarvis commence à creuser ici dès le premier jour.",
-  pCons: "Régularité",
-  pConsD: "Semaine verte, semaine rouge, en boucle.",
-  pEmo: "Contrôle émotionnel",
-  pEmoD: "Revenge trades, FOMO, tilt.",
-  pRisk: "Gestion du risque",
-  pRiskD: "Un trade flingue le mois.",
-  pJour: "Tenue du journal",
-  pJourD: "Je ne note pas, donc je n'apprends pas.",
-  pOver: "Surtrading",
-  pOverD: "Impossible de rester les mains dans les poches.",
-  brokersTitle: "Où exécutes-tu ?",
-  brokersSub: "Pour l'import CSV en un clic plus tard. Pas de login — juste le nom.",
-  revealTitle: "Ton vault est en ligne.",
-  revealJournal: "Journal configuré pour {assets}",
-  revealPain: "On commence par ta plus grosse fuite : {pain}",
-  revealIct: "Checklist de confluences ICT / SMC chargée",
-  revealLang: "Langue réglée sur {lang}",
-  revealBrokers: "Import {brokers} prêt dans les Réglages",
-  revealCta: "Entrer dans TradeVault →",
-  revealSaving: "Configuration…",
-  yourMarkets: "tes marchés",
-  missionCons: "En mission pour la régularité.",
-  missionProp: "À la chasse au payout.",
-  missionFull: "Direction plein temps.",
-  missionSide: "Un revenu en plus.",
-  missionDisc: "Construire la discipline.",
-  startTitle: "Remplis ton vault en quelques secondes",
-  startSub: "Quelques trades suffisent pour que Jarvis commence à lire tes schémas.",
-  startImport: "Importer mes trades (CSV)",
-  startImportD:
-    "Récupère ton historique depuis ton broker ou un autre journal — le moyen le plus rapide de voir ton vrai edge.",
-  startDemo: "Voir une démo",
-  startDemoD:
-    "On insère 3 trades d'exemple réalistes (marqués « Exemple ») pour tout explorer instantanément.",
-  startFresh: "Partir de zéro — je note mon premier trade moi-même",
-  startWorking: "Préparation de ton vault…",
-  targetTitle: "Objectif mensuel réaliste ?",
-  targetSub: "En % — il ancre ta checklist quotidienne. Honnête vaut mieux qu'héroïque.",
-  targetLabel: "Objectif mensuel",
-  capitalLabel: "Capital de départ",
-  settingsHint: "Modifiable à tout moment depuis tes paramètres.",
-  themeCustomCta: "Personnaliser mon thème",
-  themeCustomName: "Mon thème",
+  eFund: "Financé",
+  eFundD: "Déjà des payouts",
+
+  painTitle: "Sois honnête. Qu'est-ce qui te coûte le plus d'argent ?",
+  whyPain: "C'est l'angle mort que Jarvis surveille en premier, sur chaque trade que tu logges.",
+  pEmo: "Le revenge trading",
+  pEmoD: "Un trade perdant en appelle trois",
+  pOver: "L'overtrading",
+  pOverD: "Je prends des setups qui n'en sont pas",
+  pRisk: "Le sur-risque",
+  pRiskD: "Un trade efface une semaine",
+  pCons: "Je casse mon plan",
+  pConsD: "Je connais mes règles. Je ne les suis pas",
+  pJour: "Je ne relis jamais",
+  pJourD: "Les mêmes erreurs, chaque semaine",
+  ackEmo: "Compris. Dès qu'une journée part dans le rouge, je surveille ta prochaine entrée.",
+  ackOver: "Compris. Chaque trade au-delà de ta limite du jour sera signalé.",
+  ackRisk: "Compris. Tout trade au-dessus de ton risque max sera signalé dès que tu le logges.",
+  ackCons: "Compris. Ton plan devient des règles — et je mesure combien de fois tu les tiens.",
+  ackJour: "Compris. Ta checklist terminera chaque session par une revue.",
+
+  grTitle: "Tes garde-fous.",
+  whyGuard:
+    "Construits à partir de tes réponses. Chaque trade loggé est vérifié contre eux — tu sais à l'instant où tu en casses un.",
+  grRisk: "Risque max. par trade",
+  grRiskUnit: "% du compte",
+  grTrades: "Trades max. par jour",
+  grTradesUnit: "trades",
+  grStop: "Stop pour la journée après",
+  grStopUnit: "pertes",
+  grDaily: "Perte max. du jour",
+  grForYou: "Pour ton angle mort",
+  grArmed: "Activé",
+  grOff: "Désactivé",
+  grNotify: "M'alerter quand j'en casse un",
+  grNotifyOn: "Alertes activées",
+  grNotifyBlocked: "Bloquées par ton navigateur — tu pourras les autoriser dans les Réglages.",
+  ruleRisk: "Jamais plus de {v} % du compte risqués sur un trade.",
+  ruleTrades: "Pas plus de {v} trades par jour.",
+  ruleStop: "J'arrête pour la journée après {v} pertes.",
+  ruleDaily: "Perte max. du jour : {v}. Quand je l'atteins, j'arrête.",
+
+  goalTitle: "À quoi ressemble la victoire dans 90 jours ?",
+  whyGoal: "Jarvis ancre ses conseils sur cette mission.",
+  gProp: "Passer mon challenge",
+  gPropD: "Atteindre l'objectif, tenir chaque règle",
+  gFull: "Être payé chaque mois",
+  gFullD: "Des payouts réguliers",
+  gCons: "Un mois régulier",
+  gConsD: "Arrêter de rendre mes gains",
+  gDisc: "Zéro règle cassée",
+  gDiscD: "Le process d'abord, le P&L ensuite",
+  gSide: "Un revenu d'appoint stable",
+  gSideD: "Sans le stress",
+  targetLabel: "Objectif mensuel — facultatif",
+  targetNone: "Aucun",
+
+  lookTitle: "Dernière touche — fais-le tien.",
+  whyLook: "Ta couleur traverse toute l'app. Le gain reste vert, la perte rouge — toujours.",
+
+  calTitle: "Calibration de ton espace",
+  calAccount: "Ouverture de {account}",
+  calMarkets: "Réglage sur {markets}",
+  calRules: "Activation de {n} garde-fous",
+  calChecklist: "Construction de ta checklist pré-market",
+  calJarvis: "Briefing de Jarvis : {leak}",
+  calLook: "Application de ta couleur",
+  calHonest:
+    "Aucune statistique pour l'instant — Jarvis commence à mesurer dès tes premiers trades loggés, et n'affiche jamais un chiffre sans assez de données.",
+  calError: "Impossible d'enregistrer ta configuration. Tes réponses sont gardées — réessaie.",
+  calRetry: "Réessayer",
+  revealTitle: "Ton espace est prêt.",
+
+  startTitle: "Comment veux-tu commencer ?",
+  startSub: "Ton premier trade, c'est là que Jarvis commence à apprendre.",
+  startImport: "Importer mon historique",
+  startImportD: "Un CSV de ton broker ou de ta prop firm — Jarvis lit tout.",
+  startBroker: "Connecter Tradovate",
+  startBrokerD: "Tes trades se synchronisent seuls, en lecture seule (Pro).",
+  startDemo: "Explorer avec des trades d'exemple",
+  startDemoD: "Trois exemples bien signalés, pour voir l'app prendre vie.",
+  startFresh: "Commencer avec un journal vide",
+  startWorking: "Ouverture…",
+  launchSub: "Ton espace est calibré.",
 };
 
-const es: OnboardingCopy = {
-  langTitle: "Elige tu idioma",
-  langSub: "Toda la app estará en este idioma.",
-  welcomeTitle: "Bienvenido a TradeVault",
+// ── Les dix autres langues ──
+// Seules les clés dont le SENS n'a pas changé sont conservées ; le reste
+// retombe sur l'anglais (voir `oc()`). L'ancien parcours les traduisait
+// toutes, mais ses écrans n'existent plus.
+
+const es: Partial<OnboardingCopy> = {
   personalWelcome: "Bienvenido, {name}.",
   systemModules: "Módulos de calibración",
   systemCalibrating: "Calibrando",
   systemComplete: "Calibración completa",
-  welcomeSub:
-    "Tu diario de trading, hecho para encontrar tu edge. Registra cada operación, ve qué funciona de verdad y corrige las fugas antes de que te cuesten.",
-  feat1T: "Registra cada operación",
-  feat1D: "Entradas, salidas, capturas, errores — un diario limpio.",
-  feat2T: "Ve tu edge real",
-  feat2D: "Win rate, R-múltiples y analíticas que no mienten.",
-  feat3T: "Insights de IA + checklist",
-  feat3D: "Detecta patrones y fija tu proceso antes de la apertura.",
-  welcomeCta: "Configurar — 30 segundos",
-  welcomeSkip: "Omitir, exploro por mi cuenta",
   cont: "Continuar",
   skip: "Omitir",
-  skipAdd: "Omitir, lo añado luego",
-  assetsTitle: "¿Qué operas?",
-  assetsSub: "Elige todo lo que aplique. Hablaremos en tus unidades.",
+  langTitle: "Elige tu idioma",
   aFutures: "Futuros",
   aForex: "Forex",
   aStocks: "Acciones",
   aOptions: "Opciones",
   aCrypto: "Cripto",
+  assetsTitle: "¿Qué operas?",
   styleTitle: "¿Cómo lo operas?",
-  styleSub: "Tu pan de cada día.",
   sScalper: "Scalper",
   sScalperD: "Dentro y fuera. Segundos a minutos.",
   sDay: "Day Trader",
   sDayD: "Plano al cierre. Sin riesgo overnight.",
   sSwing: "Swing",
   sSwingD: "Días a semanas. Al movimiento mayor.",
-  sPos: "Posición",
-  sPosD: "Semanas a meses. Convicción macro.",
   ictTitle: "¿Operas conceptos ICT / SMC?",
   ictSub: "Order blocks, liquidez, FVG, killzones.",
   ictYes: "Sí, soy yo",
   ictNo: "La verdad no",
   expTitle: "¿Cuánto llevas en esto?",
-  expSub: "Sin juicios — solo ajusta lo que te mostramos.",
   eNew: "Recién empiezo",
   eNewD: "Menos de un año",
   eInt: "Agarrando ritmo",
@@ -394,7 +621,6 @@ const es: OnboardingCopy = {
   eFund: "Fondeado / Prop",
   eFundD: "Opero capital asignado",
   goalTitle: "¿Cuál es la misión ahora?",
-  goalSub: "La verdadera razón por la que abriste este diario.",
   gCons: "Ser consistente",
   gConsD: "Dejar de devolver las ganancias.",
   gProp: "Pasar un challenge prop",
@@ -406,7 +632,6 @@ const es: OnboardingCopy = {
   gDisc: "Construir disciplina",
   gDiscD: "Dominar la mente, no solo los charts.",
   painTitle: "¿Qué es lo que más te cuesta?",
-  painSub: "Sé honesto — aquí es donde empezamos.",
   pCons: "Consistencia",
   pConsD: "Semana verde, semana roja, repetir.",
   pEmo: "Control emocional",
@@ -417,68 +642,35 @@ const es: OnboardingCopy = {
   pJourD: "No registro, así que no aprendo.",
   pOver: "Sobreoperar",
   pOverD: "No puedo quedarme quieto.",
-  brokersTitle: "¿Dónde ejecutas?",
-  brokersSub: "Para importar CSV en un toque luego. Sin login — solo el nombre.",
   revealTitle: "Tu vault está listo.",
-  revealJournal: "Diario configurado para {assets}",
-  revealPain: "Empezamos por tu mayor fuga: {pain}",
-  revealIct: "Checklist de confluencias ICT / SMC cargada",
-  revealLang: "Idioma configurado en {lang}",
-  revealBrokers: "Import de {brokers} listo en Ajustes",
-  revealCta: "Entrar a TradeVault →",
-  revealSaving: "Configurando…",
-  yourMarkets: "tus mercados",
-  missionCons: "En misión por la consistencia.",
-  missionProp: "Cazando el payout.",
-  missionFull: "Rumbo a tiempo completo.",
-  missionSide: "Un ingreso extra.",
-  missionDisc: "Construyendo disciplina.",
 };
 
-const pt: OnboardingCopy = {
-  langTitle: "Escolha seu idioma",
-  langSub: "Todo o app ficará neste idioma.",
-  welcomeTitle: "Bem-vindo ao TradeVault",
+const pt: Partial<OnboardingCopy> = {
   personalWelcome: "Bem-vindo, {name}.",
   systemModules: "Módulos de calibração",
   systemCalibrating: "Calibrando",
   systemComplete: "Calibração concluída",
-  welcomeSub:
-    "Seu diário de trading, feito para achar seu edge. Registre cada trade, veja o que funciona de verdade e corrija os vazamentos antes que custem caro.",
-  feat1T: "Registre cada trade",
-  feat1D: "Entradas, saídas, prints, erros — um diário limpo.",
-  feat2T: "Veja seu edge real",
-  feat2D: "Win rate, R-múltiplos e análises que não mentem.",
-  feat3T: "Insights de IA + checklist",
-  feat3D: "Ache padrões e trave seu processo antes da abertura.",
-  welcomeCta: "Configurar — 30 segundos",
-  welcomeSkip: "Pular, vou explorar sozinho",
   cont: "Continuar",
   skip: "Pular",
-  skipAdd: "Pular, adiciono depois",
-  assetsTitle: "O que você opera?",
-  assetsSub: "Escolha tudo que se aplica. Falaremos nas suas unidades.",
+  langTitle: "Escolha seu idioma",
   aFutures: "Futuros",
   aForex: "Forex",
   aStocks: "Ações",
   aOptions: "Opções",
   aCrypto: "Cripto",
+  assetsTitle: "O que você opera?",
   styleTitle: "Como você opera?",
-  styleSub: "Seu feijão com arroz.",
   sScalper: "Scalper",
   sScalperD: "Entra e sai. Segundos a minutos.",
   sDay: "Day Trader",
   sDayD: "Zerado no fechamento. Sem risco overnight.",
   sSwing: "Swing",
   sSwingD: "Dias a semanas. No movimento maior.",
-  sPos: "Posição",
-  sPosD: "Semanas a meses. Convicção macro.",
   ictTitle: "Você opera conceitos ICT / SMC?",
   ictSub: "Order blocks, liquidez, FVG, killzones.",
   ictYes: "Sim, sou eu",
   ictNo: "Nem tanto",
   expTitle: "Há quanto tempo nisso?",
-  expSub: "Sem julgamento — só ajusta o que mostramos.",
   eNew: "Comecei agora",
   eNewD: "Menos de um ano",
   eInt: "Pegando o ritmo",
@@ -488,7 +680,6 @@ const pt: OnboardingCopy = {
   eFund: "Financiado / Prop",
   eFundD: "Opero capital alocado",
   goalTitle: "Qual é a missão agora?",
-  goalSub: "O verdadeiro motivo de você abrir este diário.",
   gCons: "Ficar consistente",
   gConsD: "Parar de devolver os ganhos.",
   gProp: "Passar num challenge prop",
@@ -500,7 +691,6 @@ const pt: OnboardingCopy = {
   gDisc: "Construir disciplina",
   gDiscD: "Dominar a mente, não só os gráficos.",
   painTitle: "O que mais te custa?",
-  painSub: "Seja honesto — é aqui que começamos.",
   pCons: "Consistência",
   pConsD: "Semana verde, semana vermelha, repete.",
   pEmo: "Controle emocional",
@@ -511,68 +701,35 @@ const pt: OnboardingCopy = {
   pJourD: "Não registro, então não aprendo.",
   pOver: "Overtrading",
   pOverD: "Não consigo ficar parado.",
-  brokersTitle: "Onde você executa?",
-  brokersSub: "Para importar CSV num toque depois. Sem login — só o nome.",
   revealTitle: "Seu vault está pronto.",
-  revealJournal: "Diário configurado para {assets}",
-  revealPain: "Vamos começar pelo seu maior vazamento: {pain}",
-  revealIct: "Checklist de confluências ICT / SMC carregada",
-  revealLang: "Idioma definido para {lang}",
-  revealBrokers: "Importação {brokers} pronta nas Configurações",
-  revealCta: "Entrar no TradeVault →",
-  revealSaving: "Configurando…",
-  yourMarkets: "seus mercados",
-  missionCons: "Em missão pela consistência.",
-  missionProp: "Atrás do payout.",
-  missionFull: "Rumo ao tempo integral.",
-  missionSide: "Uma renda a mais.",
-  missionDisc: "Construindo disciplina.",
 };
 
-const de: OnboardingCopy = {
-  langTitle: "Wähle deine Sprache",
-  langSub: "Die ganze App wird in dieser Sprache sein.",
-  welcomeTitle: "Willkommen bei TradeVault",
+const de: Partial<OnboardingCopy> = {
   personalWelcome: "Willkommen, {name}.",
   systemModules: "Kalibrierungsmodule",
   systemCalibrating: "Kalibrierung",
   systemComplete: "Kalibrierung abgeschlossen",
-  welcomeSub:
-    "Dein Trading-Journal, gebaut um deinen Edge zu finden. Logge jeden Trade, sieh was wirklich funktioniert und stopfe die Lecks, bevor sie teuer werden.",
-  feat1T: "Jeden Trade journalen",
-  feat1D: "Entries, Exits, Screenshots, Fehler — ein sauberes Log.",
-  feat2T: "Deinen echten Edge sehen",
-  feat2D: "Trefferquote, R-Multiples und Analysen, die nicht lügen.",
-  feat3T: "KI-Insights + Checkliste",
-  feat3D: "Muster erkennen und deinen Prozess vor der Eröffnung fixieren.",
-  welcomeCta: "Einrichten — 30 Sekunden",
-  welcomeSkip: "Überspringen, ich schau selbst",
   cont: "Weiter",
   skip: "Überspringen",
-  skipAdd: "Überspringen, später hinzufügen",
-  assetsTitle: "Was tradest du?",
-  assetsSub: "Wähle alles Zutreffende. Wir sprechen in deinen Einheiten.",
+  langTitle: "Wähle deine Sprache",
   aFutures: "Futures",
   aForex: "Forex",
   aStocks: "Aktien",
   aOptions: "Optionen",
   aCrypto: "Krypto",
+  assetsTitle: "Was tradest du?",
   styleTitle: "Wie tradest du?",
-  styleSub: "Dein Brot-und-Butter-Stil.",
   sScalper: "Scalper",
   sScalperD: "Rein und raus. Sekunden bis Minuten.",
   sDay: "Day Trader",
   sDayD: "Glatt zum Close. Kein Overnight-Risiko.",
   sSwing: "Swing",
   sSwingD: "Tage bis Wochen. Auf der größeren Bewegung.",
-  sPos: "Position",
-  sPosD: "Wochen bis Monate. Makro-Überzeugung.",
   ictTitle: "Tradest du ICT / SMC Konzepte?",
   ictSub: "Order Blocks, Liquidität, FVGs, Killzones.",
   ictYes: "Ja, das bin ich",
   ictNo: "Eher nicht",
   expTitle: "Wie lange machst du das schon?",
-  expSub: "Kein Urteil — das justiert nur, was wir dir zeigen.",
   eNew: "Grade angefangen",
   eNewD: "Unter einem Jahr",
   eInt: "Sammle Reps",
@@ -582,7 +739,6 @@ const de: OnboardingCopy = {
   eFund: "Funded / Prop",
   eFundD: "Ich trade zugewiesenes Kapital",
   goalTitle: "Was ist gerade die Mission?",
-  goalSub: "Der echte Grund, warum du dieses Journal geöffnet hast.",
   gCons: "Konstant werden",
   gConsD: "Aufhören, Gewinne zurückzugeben.",
   gProp: "Prop-Challenge bestehen",
@@ -594,7 +750,6 @@ const de: OnboardingCopy = {
   gDisc: "Disziplin aufbauen",
   gDiscD: "Den Kopf meistern, nicht nur die Charts.",
   painTitle: "Was kostet dich am meisten?",
-  painSub: "Sei ehrlich — hier fangen wir an.",
   pCons: "Konstanz",
   pConsD: "Grüne Woche, rote Woche, Wiederholung.",
   pEmo: "Emotionskontrolle",
@@ -605,68 +760,35 @@ const de: OnboardingCopy = {
   pJourD: "Ich logge nicht, also lerne ich nicht.",
   pOver: "Overtrading",
   pOverD: "Kann nicht stillhalten.",
-  brokersTitle: "Wo führst du aus?",
-  brokersSub: "Für späteren CSV-Import per Tap. Kein Login — nur der Name.",
   revealTitle: "Dein Vault ist bereit.",
-  revealJournal: "Journal eingerichtet für {assets}",
-  revealPain: "Wir starten mit deinem größten Leck: {pain}",
-  revealIct: "ICT / SMC Konfluenz-Checkliste geladen",
-  revealLang: "Sprache auf {lang} gesetzt",
-  revealBrokers: "{brokers} Import bereit in den Einstellungen",
-  revealCta: "TradeVault betreten →",
-  revealSaving: "Wird eingerichtet…",
-  yourMarkets: "deine Märkte",
-  missionCons: "Auf Mission für Konstanz.",
-  missionProp: "Auf der Jagd nach dem Payout.",
-  missionFull: "Auf dem Weg zu Vollzeit.",
-  missionSide: "Ein Extra-Einkommen.",
-  missionDisc: "Disziplin aufbauen.",
 };
 
-const it: OnboardingCopy = {
-  langTitle: "Scegli la lingua",
-  langSub: "Tutta l'app sarà in questa lingua.",
-  welcomeTitle: "Benvenuto su TradeVault",
+const it: Partial<OnboardingCopy> = {
   personalWelcome: "Benvenuto, {name}.",
   systemModules: "Moduli di calibrazione",
   systemCalibrating: "Calibrazione",
   systemComplete: "Calibrazione completata",
-  welcomeSub:
-    "Il tuo diario di trading, fatto per trovare il tuo edge. Registra ogni trade, vedi cosa funziona davvero e tappa le falle prima che costino.",
-  feat1T: "Registra ogni trade",
-  feat1D: "Entrate, uscite, screenshot, errori — un diario pulito.",
-  feat2T: "Vedi il tuo vero edge",
-  feat2D: "Win rate, R-multipli e analisi che non mentono.",
-  feat3T: "Insight IA + checklist",
-  feat3D: "Trova i pattern e fissa il tuo processo prima dell'apertura.",
-  welcomeCta: "Configura — 30 secondi",
-  welcomeSkip: "Salta, esploro da solo",
   cont: "Continua",
   skip: "Salta",
-  skipAdd: "Salta, aggiungo dopo",
-  assetsTitle: "Cosa tradi?",
-  assetsSub: "Scegli tutto ciò che si applica. Parleremo nelle tue unità.",
+  langTitle: "Scegli la lingua",
   aFutures: "Futures",
   aForex: "Forex",
   aStocks: "Azioni",
   aOptions: "Opzioni",
   aCrypto: "Cripto",
+  assetsTitle: "Cosa tradi?",
   styleTitle: "Come lo tradi?",
-  styleSub: "Il tuo pane quotidiano.",
   sScalper: "Scalper",
   sScalperD: "Dentro e fuori. Secondi o minuti.",
   sDay: "Day Trader",
   sDayD: "Flat alla chiusura. Nessun rischio overnight.",
   sSwing: "Swing",
   sSwingD: "Giorni o settimane. Sul movimento maggiore.",
-  sPos: "Position",
-  sPosD: "Settimane o mesi. Convinzione macro.",
   ictTitle: "Tradi i concetti ICT / SMC?",
   ictSub: "Order block, liquidità, FVG, killzone.",
   ictYes: "Sì, sono io",
   ictNo: "Non proprio",
   expTitle: "Da quanto lo fai?",
-  expSub: "Nessun giudizio — regola solo ciò che ti mostriamo.",
   eNew: "Appena iniziato",
   eNewD: "Meno di un anno",
   eInt: "Prendo ritmo",
@@ -676,7 +798,6 @@ const it: OnboardingCopy = {
   eFund: "Funded / Prop",
   eFundD: "Trado capitale allocato",
   goalTitle: "Qual è la missione ora?",
-  goalSub: "Il vero motivo per cui hai aperto questo diario.",
   gCons: "Diventare costante",
   gConsD: "Smettere di restituire i profitti.",
   gProp: "Passare una challenge prop",
@@ -688,7 +809,6 @@ const it: OnboardingCopy = {
   gDisc: "Costruire disciplina",
   gDiscD: "Dominare la mente, non solo i grafici.",
   painTitle: "Cosa ti costa di più?",
-  painSub: "Sii onesto — è da qui che partiamo.",
   pCons: "Costanza",
   pConsD: "Settimana verde, settimana rossa, ripeti.",
   pEmo: "Controllo emotivo",
@@ -699,68 +819,35 @@ const it: OnboardingCopy = {
   pJourD: "Non registro, quindi non imparo.",
   pOver: "Overtrading",
   pOverD: "Non riesco a stare fermo.",
-  brokersTitle: "Dove esegui?",
-  brokersSub: "Per import CSV in un tap più tardi. Niente login — solo il nome.",
   revealTitle: "Il tuo vault è pronto.",
-  revealJournal: "Diario configurato per {assets}",
-  revealPain: "Partiamo dalla tua falla più grande: {pain}",
-  revealIct: "Checklist di confluenze ICT / SMC caricata",
-  revealLang: "Lingua impostata su {lang}",
-  revealBrokers: "Import {brokers} pronto nelle Impostazioni",
-  revealCta: "Entra in TradeVault →",
-  revealSaving: "Configurazione…",
-  yourMarkets: "i tuoi mercati",
-  missionCons: "In missione per la costanza.",
-  missionProp: "A caccia del payout.",
-  missionFull: "Verso il full-time.",
-  missionSide: "Un'entrata in più.",
-  missionDisc: "Costruire disciplina.",
 };
 
-const nl: OnboardingCopy = {
-  langTitle: "Kies je taal",
-  langSub: "De hele app komt in deze taal.",
-  welcomeTitle: "Welkom bij TradeVault",
+const nl: Partial<OnboardingCopy> = {
   personalWelcome: "Welkom, {name}.",
   systemModules: "Kalibratiemodules",
   systemCalibrating: "Kalibreren",
   systemComplete: "Kalibratie voltooid",
-  welcomeSub:
-    "Je trading-journal, gebouwd om je edge te vinden. Log elke trade, zie wat écht werkt en dicht de lekken voor ze je geld kosten.",
-  feat1T: "Log elke trade",
-  feat1D: "Entries, exits, screenshots, fouten — één schoon logboek.",
-  feat2T: "Zie je echte edge",
-  feat2D: "Win rate, R-multiples en analyses die niet liegen.",
-  feat3T: "AI-inzichten + checklist",
-  feat3D: "Herken patronen en zet je proces vast vóór de open.",
-  welcomeCta: "Instellen — 30 seconden",
-  welcomeSkip: "Overslaan, ik kijk zelf",
   cont: "Doorgaan",
   skip: "Overslaan",
-  skipAdd: "Overslaan, later toevoegen",
-  assetsTitle: "Wat trade je?",
-  assetsSub: "Kies alles wat van toepassing is. We praten in jouw eenheden.",
+  langTitle: "Kies je taal",
   aFutures: "Futures",
   aForex: "Forex",
   aStocks: "Aandelen",
   aOptions: "Opties",
   aCrypto: "Crypto",
+  assetsTitle: "Wat trade je?",
   styleTitle: "Hoe trade je het?",
-  styleSub: "Je dagelijkse brood.",
   sScalper: "Scalper",
   sScalperD: "Erin en eruit. Seconden tot minuten.",
   sDay: "Day Trader",
   sDayD: "Vlak bij de close. Geen overnight-risico.",
   sSwing: "Swing",
   sSwingD: "Dagen tot weken. Op de grotere beweging.",
-  sPos: "Positie",
-  sPosD: "Weken tot maanden. Macro-overtuiging.",
   ictTitle: "Trade je ICT / SMC concepten?",
   ictSub: "Order blocks, liquiditeit, FVG's, killzones.",
   ictYes: "Ja, dat ben ik",
   ictNo: "Niet echt",
   expTitle: "Hoe lang doe je dit al?",
-  expSub: "Geen oordeel — dit stemt alleen af wat we tonen.",
   eNew: "Net begonnen",
   eNewD: "Minder dan een jaar",
   eInt: "Reps aan het maken",
@@ -770,7 +857,6 @@ const nl: OnboardingCopy = {
   eFund: "Funded / Prop",
   eFundD: "Ik trade toegewezen kapitaal",
   goalTitle: "Wat is nu de missie?",
-  goalSub: "De echte reden dat je dit journal opende.",
   gCons: "Consistent worden",
   gConsD: "Stop met winst teruggeven.",
   gProp: "Een prop-challenge halen",
@@ -782,7 +868,6 @@ const nl: OnboardingCopy = {
   gDisc: "Discipline opbouwen",
   gDiscD: "Beheers de geest, niet alleen de charts.",
   painTitle: "Wat kost je het meest?",
-  painSub: "Wees eerlijk — hier beginnen we.",
   pCons: "Consistentie",
   pConsD: "Groene week, rode week, herhaal.",
   pEmo: "Emotiecontrole",
@@ -793,68 +878,35 @@ const nl: OnboardingCopy = {
   pJourD: "Ik log niet, dus ik leer niet.",
   pOver: "Overtrading",
   pOverD: "Kan niet stilzitten.",
-  brokersTitle: "Waar voer je uit?",
-  brokersSub: "Voor latere CSV-import met één tik. Geen login — alleen de naam.",
   revealTitle: "Je vault is klaar.",
-  revealJournal: "Journal ingesteld voor {assets}",
-  revealPain: "We beginnen bij je grootste lek: {pain}",
-  revealIct: "ICT / SMC confluentie-checklist geladen",
-  revealLang: "Taal ingesteld op {lang}",
-  revealBrokers: "{brokers} import klaar in Instellingen",
-  revealCta: "TradeVault binnengaan →",
-  revealSaving: "Instellen…",
-  yourMarkets: "jouw markten",
-  missionCons: "Op missie voor consistentie.",
-  missionProp: "Op jacht naar de payout.",
-  missionFull: "Op weg naar fulltime.",
-  missionSide: "Een extra inkomen.",
-  missionDisc: "Discipline opbouwen.",
 };
 
-const ru: OnboardingCopy = {
-  langTitle: "Выбери язык",
-  langSub: "Всё приложение будет на этом языке.",
-  welcomeTitle: "Добро пожаловать в TradeVault",
+const ru: Partial<OnboardingCopy> = {
   personalWelcome: "Добро пожаловать, {name}.",
   systemModules: "Модули калибровки",
   systemCalibrating: "Калибровка",
   systemComplete: "Калибровка завершена",
-  welcomeSub:
-    "Твой торговый журнал, чтобы найти своё преимущество. Записывай каждую сделку, смотри что реально работает и закрывай утечки, пока они не стоили дорого.",
-  feat1T: "Записывай каждую сделку",
-  feat1D: "Входы, выходы, скриншоты, ошибки — один чистый журнал.",
-  feat2T: "Увидь своё реальное преимущество",
-  feat2D: "Винрейт, R-мультипликаторы и честная аналитика.",
-  feat3T: "ИИ-инсайты + чек-лист",
-  feat3D: "Находи паттерны и фиксируй процесс до открытия.",
-  welcomeCta: "Настроить — 30 секунд",
-  welcomeSkip: "Пропустить, разберусь сам",
   cont: "Продолжить",
   skip: "Пропустить",
-  skipAdd: "Пропустить, добавлю позже",
-  assetsTitle: "Чем ты торгуешь?",
-  assetsSub: "Выбери всё подходящее. Будем говорить в твоих единицах.",
+  langTitle: "Выбери язык",
   aFutures: "Фьючерсы",
   aForex: "Форекс",
   aStocks: "Акции",
   aOptions: "Опционы",
   aCrypto: "Крипта",
+  assetsTitle: "Чем ты торгуешь?",
   styleTitle: "Как ты торгуешь?",
-  styleSub: "Твой основной стиль.",
   sScalper: "Скальпер",
   sScalperD: "Вошёл-вышел. Секунды-минуты.",
   sDay: "Дейтрейдер",
   sDayD: "К закрытию без позиций. Без риска овернайт.",
   sSwing: "Свинг",
   sSwingD: "Дни-недели. На крупном движении.",
-  sPos: "Позиционный",
-  sPosD: "Недели-месяцы. Макро-убеждённость.",
   ictTitle: "Торгуешь по ICT / SMC?",
   ictSub: "Order blocks, ликвидность, FVG, killzones.",
   ictYes: "Да, это про меня",
   ictNo: "Не особо",
   expTitle: "Сколько ты в этом?",
-  expSub: "Без осуждения — это лишь настроит, что тебе показать.",
   eNew: "Только начал",
   eNewD: "Меньше года",
   eInt: "Набираю опыт",
@@ -864,7 +916,6 @@ const ru: OnboardingCopy = {
   eFund: "Funded / Prop",
   eFundD: "Торгую выделенный капитал",
   goalTitle: "Какая сейчас цель?",
-  goalSub: "Настоящая причина, почему ты открыл этот журнал.",
   gCons: "Стать стабильным",
   gConsD: "Перестать отдавать прибыль.",
   gProp: "Пройти prop-челлендж",
@@ -876,7 +927,6 @@ const ru: OnboardingCopy = {
   gDisc: "Построить дисциплину",
   gDiscD: "Освоить ум, а не только графики.",
   painTitle: "Что стоит тебе дороже всего?",
-  painSub: "Честно — отсюда и начнём.",
   pCons: "Стабильность",
   pConsD: "Зелёная неделя, красная неделя, по кругу.",
   pEmo: "Контроль эмоций",
@@ -887,68 +937,35 @@ const ru: OnboardingCopy = {
   pJourD: "Не записываю — значит не учусь.",
   pOver: "Овертрейдинг",
   pOverD: "Не могу сидеть на руках.",
-  brokersTitle: "Где исполняешь?",
-  brokersSub: "Для импорта CSV в один тап потом. Без логина — только название.",
   revealTitle: "Твой vault готов.",
-  revealJournal: "Журнал настроен под {assets}",
-  revealPain: "Начнём с твоей главной утечки: {pain}",
-  revealIct: "Чек-лист конфлюэнсов ICT / SMC загружен",
-  revealLang: "Язык установлен: {lang}",
-  revealBrokers: "Импорт {brokers} готов в Настройках",
-  revealCta: "Войти в TradeVault →",
-  revealSaving: "Настройка…",
-  yourMarkets: "твои рынки",
-  missionCons: "На пути к стабильности.",
-  missionProp: "В погоне за выплатой.",
-  missionFull: "Курс на фултайм.",
-  missionSide: "Доход сверху.",
-  missionDisc: "Строим дисциплину.",
 };
 
-const zh: OnboardingCopy = {
-  langTitle: "选择你的语言",
-  langSub: "整个应用将使用这种语言。",
-  welcomeTitle: "欢迎来到 TradeVault",
+const zh: Partial<OnboardingCopy> = {
   personalWelcome: "欢迎，{name}。",
   systemModules: "校准模块",
   systemCalibrating: "正在校准",
   systemComplete: "校准完成",
-  welcomeSub:
-    "你的交易日志，专为找到你的优势而生。记录每一笔交易，看清什么真正有效，在漏洞变贵之前补上它。",
-  feat1T: "记录每一笔交易",
-  feat1D: "入场、出场、截图、错误——一份干净的记录。",
-  feat2T: "看清你真正的优势",
-  feat2D: "胜率、R 倍数，以及不会骗人的分析。",
-  feat3T: "AI 洞察 + 清单",
-  feat3D: "发现规律，在开盘前锁定你的流程。",
-  welcomeCta: "开始设置——30 秒",
-  welcomeSkip: "跳过，我自己探索",
   cont: "继续",
   skip: "跳过",
-  skipAdd: "跳过，稍后添加",
-  assetsTitle: "你交易什么？",
-  assetsSub: "选择所有适用项。我们会用你的单位来沟通。",
+  langTitle: "选择你的语言",
   aFutures: "期货",
   aForex: "外汇",
   aStocks: "股票",
   aOptions: "期权",
   aCrypto: "加密货币",
+  assetsTitle: "你交易什么？",
   styleTitle: "你怎么交易？",
-  styleSub: "你的看家本领。",
   sScalper: "剥头皮",
   sScalperD: "快进快出。几秒到几分钟。",
   sDay: "日内交易者",
   sDayD: "收盘前平仓。无隔夜风险。",
   sSwing: "波段",
   sSwingD: "几天到几周。抓更大的行情。",
-  sPos: "头寸",
-  sPosD: "几周到几月。宏观信念。",
   ictTitle: "你交易 ICT / SMC 概念吗？",
   ictSub: "订单块、流动性、FVG、killzone。",
   ictYes: "是的，就是我",
   ictNo: "不太算",
   expTitle: "你做多久了？",
-  expSub: "没有评判——这只是调整我们给你展示的内容。",
   eNew: "刚起步",
   eNewD: "不到一年",
   eInt: "正在积累",
@@ -958,7 +975,6 @@ const zh: OnboardingCopy = {
   eFund: "受资 / Prop",
   eFundD: "交易分配的资金",
   goalTitle: "现在的目标是什么？",
-  goalSub: "你打开这个日志的真正原因。",
   gCons: "变得稳定",
   gConsD: "别再把利润还回去。",
   gProp: "通过 prop 挑战",
@@ -970,7 +986,6 @@ const zh: OnboardingCopy = {
   gDisc: "建立纪律",
   gDiscD: "掌控心态，而不只是图表。",
   painTitle: "什么让你损失最大？",
-  painSub: "说实话——我们从这里开始。",
   pCons: "稳定性",
   pConsD: "绿一周，红一周，反复循环。",
   pEmo: "情绪控制",
@@ -981,68 +996,35 @@ const zh: OnboardingCopy = {
   pJourD: "不记录，所以学不到东西。",
   pOver: "过度交易",
   pOverD: "闲不住手。",
-  brokersTitle: "你在哪里执行？",
-  brokersSub: "方便以后一键导入 CSV。现在不用登录——只要名字。",
   revealTitle: "你的 vault 已就绪。",
-  revealJournal: "日志已为 {assets} 配置好",
-  revealPain: "我们先从你最大的漏洞开始：{pain}",
-  revealIct: "ICT / SMC 汇合清单已加载",
-  revealLang: "语言已设为 {lang}",
-  revealBrokers: "{brokers} 导入已在设置中就绪",
-  revealCta: "进入 TradeVault →",
-  revealSaving: "正在设置…",
-  yourMarkets: "你的市场",
-  missionCons: "为稳定而战。",
-  missionProp: "追逐分成。",
-  missionFull: "迈向全职。",
-  missionSide: "多一份收入。",
-  missionDisc: "建立纪律。",
 };
 
-const ja: OnboardingCopy = {
-  langTitle: "言語を選ぶ",
-  langSub: "アプリ全体がこの言語になります。",
-  welcomeTitle: "TradeVault へようこそ",
+const ja: Partial<OnboardingCopy> = {
   personalWelcome: "ようこそ、{name}。",
   systemModules: "キャリブレーション",
   systemCalibrating: "調整中",
   systemComplete: "調整完了",
-  welcomeSub:
-    "あなたのエッジを見つけるためのトレード日誌。すべてのトレードを記録し、本当に効いているものを見極め、コストになる前に穴を塞ぐ。",
-  feat1T: "全トレードを記録",
-  feat1D: "エントリー、エグジット、スクショ、ミス——一つのきれいなログ。",
-  feat2T: "本当のエッジを見る",
-  feat2D: "勝率、R倍率、嘘をつかない分析。",
-  feat3T: "AIインサイト + チェックリスト",
-  feat3D: "パターンを見つけ、寄り付き前にプロセスを固める。",
-  welcomeCta: "設定する——30秒",
-  welcomeSkip: "スキップ、自分で見る",
   cont: "続ける",
   skip: "スキップ",
-  skipAdd: "スキップ、後で追加",
-  assetsTitle: "何をトレードする？",
-  assetsSub: "該当するものをすべて選択。あなたの単位で話します。",
+  langTitle: "言語を選ぶ",
   aFutures: "先物",
   aForex: "FX",
   aStocks: "株式",
   aOptions: "オプション",
   aCrypto: "暗号資産",
+  assetsTitle: "何をトレードする？",
   styleTitle: "どうトレードする？",
-  styleSub: "あなたの得意技。",
   sScalper: "スキャルパー",
   sScalperD: "入って出る。数秒〜数分。",
   sDay: "デイトレーダー",
   sDayD: "引けまでにフラット。オーバーナイトなし。",
   sSwing: "スイング",
   sSwingD: "数日〜数週間。大きな動きに乗る。",
-  sPos: "ポジション",
-  sPosD: "数週間〜数ヶ月。マクロの確信。",
   ictTitle: "ICT / SMC を使う？",
   ictSub: "オーダーブロック、流動性、FVG、キルゾーン。",
   ictYes: "はい、まさに",
   ictNo: "あまり",
   expTitle: "どれくらいやってる？",
-  expSub: "評価はしません——表示内容を調整するだけ。",
   eNew: "始めたばかり",
   eNewD: "1年未満",
   eInt: "経験を積み中",
@@ -1052,7 +1034,6 @@ const ja: OnboardingCopy = {
   eFund: "ファンデッド / Prop",
   eFundD: "割り当て資金でトレード",
   goalTitle: "今のミッションは？",
-  goalSub: "この日誌を開いた本当の理由。",
   gCons: "安定する",
   gConsD: "勝ち分を返すのをやめる。",
   gProp: "propチャレンジ突破",
@@ -1064,7 +1045,6 @@ const ja: OnboardingCopy = {
   gDisc: "規律を築く",
   gDiscD: "チャートだけでなくメンタルを制す。",
   painTitle: "一番コストになっているのは？",
-  painSub: "正直に——ここから始めます。",
   pCons: "一貫性",
   pConsD: "勝ち週、負け週、繰り返し。",
   pEmo: "感情のコントロール",
@@ -1075,68 +1055,35 @@ const ja: OnboardingCopy = {
   pJourD: "記録しないから学べない。",
   pOver: "オーバートレード",
   pOverD: "手を止められない。",
-  brokersTitle: "どこで執行する？",
-  brokersSub: "後でCSVをワンタップ取込するため。ログイン不要——名前だけ。",
   revealTitle: "あなたの vault が準備完了。",
-  revealJournal: "{assets} 向けに日誌を設定",
-  revealPain: "まずは一番の穴から：{pain}",
-  revealIct: "ICT / SMC コンフルエンスのチェックリストを読込",
-  revealLang: "言語を {lang} に設定",
-  revealBrokers: "{brokers} の取込を設定に用意",
-  revealCta: "TradeVault に入る →",
-  revealSaving: "設定中…",
-  yourMarkets: "あなたの市場",
-  missionCons: "一貫性を目指して。",
-  missionProp: "ペイアウトを狙う。",
-  missionFull: "専業へ。",
-  missionSide: "副収入を上乗せ。",
-  missionDisc: "規律を築く。",
 };
 
-const ar: OnboardingCopy = {
-  langTitle: "اختر لغتك",
-  langSub: "سيكون التطبيق بالكامل بهذه اللغة.",
-  welcomeTitle: "مرحبًا بك في TradeVault",
+const ar: Partial<OnboardingCopy> = {
   personalWelcome: "مرحبًا، {name}.",
   systemModules: "وحدات المعايرة",
   systemCalibrating: "جارٍ الضبط",
   systemComplete: "اكتملت المعايرة",
-  welcomeSub:
-    "مذكرة تداولك، مصمّمة لإيجاد ميزتك. سجّل كل صفقة، وشاهد ما ينجح فعلًا، وأغلق الثغرات قبل أن تكلّفك.",
-  feat1T: "سجّل كل صفقة",
-  feat1D: "الدخول، الخروج، لقطات الشاشة، الأخطاء — سجل واحد نظيف.",
-  feat2T: "شاهد ميزتك الحقيقية",
-  feat2D: "معدل الربح، مضاعفات R، وتحليلات لا تكذب.",
-  feat3T: "رؤى الذكاء الاصطناعي + قائمة",
-  feat3D: "اكتشف الأنماط وثبّت خطتك قبل الافتتاح.",
-  welcomeCta: "الإعداد — 30 ثانية",
-  welcomeSkip: "تخطٍّ، سأستكشف بنفسي",
   cont: "متابعة",
   skip: "تخطٍّ",
-  skipAdd: "تخطٍّ، سأضيف لاحقًا",
-  assetsTitle: "ماذا تتداول؟",
-  assetsSub: "اختر كل ما ينطبق. سنتحدث بوحداتك.",
+  langTitle: "اختر لغتك",
   aFutures: "العقود الآجلة",
   aForex: "الفوركس",
   aStocks: "الأسهم",
   aOptions: "الخيارات",
   aCrypto: "الكريبتو",
+  assetsTitle: "ماذا تتداول؟",
   styleTitle: "كيف تتداولها؟",
-  styleSub: "أسلوبك الأساسي.",
   sScalper: "مضارب سريع",
   sScalperD: "دخول وخروج. ثوانٍ إلى دقائق.",
   sDay: "متداول يومي",
   sDayD: "بلا مراكز عند الإغلاق. لا مخاطر ليلية.",
   sSwing: "سوينغ",
   sSwingD: "أيام إلى أسابيع. على الحركة الأكبر.",
-  sPos: "مراكز",
-  sPosD: "أسابيع إلى أشهر. قناعة كلية.",
   ictTitle: "هل تتداول مفاهيم ICT / SMC؟",
   ictSub: "أوردر بلوك، السيولة، FVG، الكيل زون.",
   ictYes: "نعم، هذا أنا",
   ictNo: "ليس تمامًا",
   expTitle: "منذ متى وأنت في هذا؟",
-  expSub: "بلا أحكام — هذا فقط يضبط ما نعرضه لك.",
   eNew: "بدأت للتو",
   eNewD: "أقل من سنة",
   eInt: "أكتسب خبرة",
@@ -1146,7 +1093,6 @@ const ar: OnboardingCopy = {
   eFund: "ممول / Prop",
   eFundD: "أتداول رأس مال مخصّص",
   goalTitle: "ما المهمة الآن؟",
-  goalSub: "السبب الحقيقي لفتحك هذه المذكرة.",
   gCons: "أصبح ثابتًا",
   gConsD: "توقف عن إعادة الأرباح.",
   gProp: "اجتياز تحدي prop",
@@ -1158,7 +1104,6 @@ const ar: OnboardingCopy = {
   gDisc: "بناء الانضباط",
   gDiscD: "أتقن العقل، لا الرسوم فقط.",
   painTitle: "ما الذي يكلّفك أكثر؟",
-  painSub: "كن صادقًا — من هنا نبدأ.",
   pCons: "الثبات",
   pConsD: "أسبوع أخضر، أسبوع أحمر، وتكرار.",
   pEmo: "التحكم العاطفي",
@@ -1169,68 +1114,35 @@ const ar: OnboardingCopy = {
   pJourD: "لا أسجّل، فلا أتعلّم.",
   pOver: "الإفراط في التداول",
   pOverD: "لا أستطيع الجلوس مكتوف اليدين.",
-  brokersTitle: "أين تنفّذ؟",
-  brokersSub: "لاستيراد CSV بنقرة لاحقًا. بلا تسجيل دخول — الاسم فقط.",
   revealTitle: "خزنتك جاهزة.",
-  revealJournal: "تم إعداد المذكرة لـ {assets}",
-  revealPain: "سنبدأ بأكبر ثغرة لديك: {pain}",
-  revealIct: "تم تحميل قائمة تقاطعات ICT / SMC",
-  revealLang: "تم ضبط اللغة على {lang}",
-  revealBrokers: "استيراد {brokers} جاهز في الإعدادات",
-  revealCta: "ادخل TradeVault →",
-  revealSaving: "جارٍ الإعداد…",
-  yourMarkets: "أسواقك",
-  missionCons: "في مهمة نحو الثبات.",
-  missionProp: "سعيًا وراء الدفع.",
-  missionFull: "نحو التفرّغ الكامل.",
-  missionSide: "دخل إضافي.",
-  missionDisc: "بناء الانضباط.",
 };
 
-const hi: OnboardingCopy = {
-  langTitle: "अपनी भाषा चुनें",
-  langSub: "पूरा ऐप इसी भाषा में होगा।",
-  welcomeTitle: "TradeVault में आपका स्वागत है",
+const hi: Partial<OnboardingCopy> = {
   personalWelcome: "स्वागत है, {name}।",
   systemModules: "कैलिब्रेशन मॉड्यूल",
   systemCalibrating: "कैलिब्रेशन जारी",
   systemComplete: "कैलिब्रेशन पूरा",
-  welcomeSub:
-    "आपका ट्रेडिंग जर्नल, आपकी एज ढूँढने के लिए बना। हर ट्रेड लॉग करें, देखें क्या वाकई काम करता है, और लीक महँगे पड़ने से पहले भरें।",
-  feat1T: "हर ट्रेड लॉग करें",
-  feat1D: "एंट्री, एग्ज़िट, स्क्रीनशॉट, गलतियाँ — एक साफ़ लॉग।",
-  feat2T: "अपनी असली एज देखें",
-  feat2D: "विन रेट, R-मल्टिपल्स और झूठ न बोलने वाला एनालिटिक्स।",
-  feat3T: "AI इनसाइट्स + चेकलिस्ट",
-  feat3D: "पैटर्न पकड़ें और ओपन से पहले अपना प्रोसेस लॉक करें।",
-  welcomeCta: "सेट करें — 30 सेकंड",
-  welcomeSkip: "छोड़ें, मैं खुद देख लूँगा",
   cont: "जारी रखें",
   skip: "छोड़ें",
-  skipAdd: "छोड़ें, बाद में जोड़ूँगा",
-  assetsTitle: "आप क्या ट्रेड करते हैं?",
-  assetsSub: "जो लागू हो सब चुनें। हम आपकी इकाइयों में बात करेंगे।",
+  langTitle: "अपनी भाषा चुनें",
   aFutures: "फ्यूचर्स",
   aForex: "फॉरेक्स",
   aStocks: "स्टॉक्स",
   aOptions: "ऑप्शन्स",
   aCrypto: "क्रिप्टो",
+  assetsTitle: "आप क्या ट्रेड करते हैं?",
   styleTitle: "आप इसे कैसे ट्रेड करते हैं?",
-  styleSub: "आपका मुख्य तरीका।",
   sScalper: "स्कैल्पर",
   sScalperD: "अंदर और बाहर। सेकंड से मिनट।",
   sDay: "डे ट्रेडर",
   sDayD: "क्लोज़ तक फ्लैट। कोई ओवरनाइट रिस्क नहीं।",
   sSwing: "स्विंग",
   sSwingD: "दिन से हफ्ते। बड़े मूव पर।",
-  sPos: "पोज़िशन",
-  sPosD: "हफ्ते से महीने। मैक्रो भरोसा।",
   ictTitle: "क्या आप ICT / SMC कॉन्सेप्ट ट्रेड करते हैं?",
   ictSub: "ऑर्डर ब्लॉक, लिक्विडिटी, FVG, किलज़ोन।",
   ictYes: "हाँ, बिल्कुल मैं",
   ictNo: "ज़्यादा नहीं",
   expTitle: "आप कब से यह कर रहे हैं?",
-  expSub: "कोई जजमेंट नहीं — यह बस तय करता है कि हम क्या दिखाएँ।",
   eNew: "अभी शुरू किया",
   eNewD: "एक साल से कम",
   eInt: "अनुभव बढ़ा रहा हूँ",
@@ -1240,7 +1152,6 @@ const hi: OnboardingCopy = {
   eFund: "फंडेड / Prop",
   eFundD: "आवंटित पूँजी ट्रेड करता हूँ",
   goalTitle: "अभी मिशन क्या है?",
-  goalSub: "इस जर्नल को खोलने की असली वजह।",
   gCons: "निरंतर बनना",
   gConsD: "मुनाफ़ा वापस देना बंद करें।",
   gProp: "prop चैलेंज पास करना",
@@ -1252,7 +1163,6 @@ const hi: OnboardingCopy = {
   gDisc: "अनुशासन बनाना",
   gDiscD: "सिर्फ़ चार्ट नहीं, दिमाग पर काबू।",
   painTitle: "सबसे ज़्यादा किस चीज़ की कीमत चुका रहे हैं?",
-  painSub: "ईमानदार रहें — यहीं से शुरू करते हैं।",
   pCons: "निरंतरता",
   pConsD: "हरा हफ्ता, लाल हफ्ता, दोहराव।",
   pEmo: "भावनाओं पर नियंत्रण",
@@ -1263,33 +1173,31 @@ const hi: OnboardingCopy = {
   pJourD: "लॉग नहीं करता, तो सीखता नहीं।",
   pOver: "ओवरट्रेडिंग",
   pOverD: "हाथ पर हाथ धरे नहीं बैठ सकता।",
-  brokersTitle: "आप कहाँ एग्ज़िक्यूट करते हैं?",
-  brokersSub: "बाद में एक-टैप CSV इम्पोर्ट के लिए। अभी लॉगिन नहीं — बस नाम।",
   revealTitle: "आपका vault तैयार है।",
-  revealJournal: "{assets} के लिए जर्नल सेट हो गया",
-  revealPain: "हम आपकी सबसे बड़ी लीक से शुरू करेंगे: {pain}",
-  revealIct: "ICT / SMC कॉन्फ्लुएंस चेकलिस्ट लोड हुई",
-  revealLang: "भाषा {lang} पर सेट",
-  revealBrokers: "{brokers} इम्पोर्ट सेटिंग्स में तैयार",
-  revealCta: "TradeVault में जाएँ →",
-  revealSaving: "सेट हो रहा है…",
-  yourMarkets: "आपके बाज़ार",
-  missionCons: "निरंतरता के मिशन पर।",
-  missionProp: "पेआउट की तलाश में।",
-  missionFull: "फुल-टाइम की ओर।",
-  missionSide: "एक अतिरिक्त आय।",
-  missionDisc: "अनुशासन बनाना।",
 };
 
-const ALL: Record<Lang, OnboardingCopy> = { en, fr, es, pt, de, it, nl, ru, zh, ja, ar, hi };
+const ALL: Record<Lang, Partial<OnboardingCopy>> = {
+  en,
+  fr,
+  es,
+  pt,
+  de,
+  it,
+  nl,
+  ru,
+  zh,
+  ja,
+  ar,
+  hi,
+};
 
-export function oc(lang: Lang): Required<OnboardingCopy> {
-  // `en` defines every key (including the optional quick-start ones), so the
-  // merged object is always complete — locales only override what they have.
-  return { ...en, ...ALL[lang] } as Required<OnboardingCopy>;
+export function oc(lang: Lang): OnboardingCopy {
+  // `en` définit chaque clé : la fusion est toujours complète, chaque langue
+  // ne remplace que ce qu'elle a.
+  return { ...en, ...ALL[lang] };
 }
 
-/** Fills {placeholder} tokens. */
+/** Remplit les jetons `{nom}`. */
 export function fmt(tpl: string, vars: Record<string, string>): string {
   return tpl.replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? `{${k}}`);
 }

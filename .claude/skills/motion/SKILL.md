@@ -54,7 +54,10 @@ jamais.
 
 **Plafond dur : 300 ms dans l'app.** Au-delà, l'utilisateur attend
 l'animation au lieu de l'ignorer. Seule la landing dépasse (jusqu'à ~700 ms
-sur une entrée de héros).
+sur une entrée de héros) — et l'**onboarding**, surface cinématique vue une
+seule fois (entrées ~600 ms, allumage ~1,2 s, keyframes `onb-*`, son Web
+Audio). Il garde tout le reste de cette loi ; détail et justification :
+`docs/DESIGN_SYSTEM.md` §4.
 
 Une **sortie** dure ~70 % de son entrée. Une modale qui met autant de temps à
 partir qu'à arriver donne une impression de lourdeur.

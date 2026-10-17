@@ -426,6 +426,36 @@ function SectionHead({ title, sub }: { title: React.ReactNode; sub?: string }) {
  * cette section, ce qui se lit comme un bug de navigation.
  */
 
+/**
+ * L'intention d'authentification portée par l'adresse (`?auth=…`, ou l'erreur
+ * d'un retour OAuth). Lue une seule fois par document, puis retirée de
+ * l'adresse (`replaceState`) : recharger après avoir fermé le formulaire ne le
+ * rouvre pas, et une erreur passée ne se réaffiche pas.
+ */
+type IntentionAuth = { mode: "login" | "signup"; error?: string };
+let intentionAuth: IntentionAuth | null | undefined;
+
+function lireIntentionAuth(): IntentionAuth | null {
+  if (intentionAuth !== undefined) return intentionAuth;
+  if (typeof window === "undefined") return null;
+  const url = new URL(window.location.href);
+  const voulu = url.searchParams.get("auth");
+  const erreur = oauthErrorFromUrl(url.search, url.hash);
+  if (!voulu && !erreur) {
+    intentionAuth = null;
+    return null;
+  }
+  intentionAuth = { mode: voulu === "signup" ? "signup" : "login", error: erreur ?? undefined };
+  for (const k of ["auth", "error", "error_code", "error_description"]) url.searchParams.delete(k);
+  const propre = erreur ? "" : url.hash;
+  window.history.replaceState(window.history.state, "", url.pathname + url.search + propre);
+  return intentionAuth;
+}
+
+function oublierIntentionAuth() {
+  intentionAuth = null;
+}
+
 /* ─────────────────────────── LANDING ─────────────────────────── */
 function LandingPage() {
   const { t, lang } = useLandingT();
@@ -571,31 +601,17 @@ function LandingPage() {
    * l'adresse porte `error=…` et le visiteur retombait sur la vitrine sans
    * un mot. Il retrouve maintenant le formulaire, avec la raison.
    *
-   * Les paramètres sont retirés de l'adresse aussitôt lus (`replaceState`) :
-   * recharger la page ne doit pas rouvrir le formulaire, ni réafficher une
-   * erreur passée. */
-  /* Lu À LA TRAME SUIVANTE, pas au montage : sur `/`, la vitrine rendue par
-   * le serveur est un repli remplacé juste après l'hydratation par celle de
-   * l'application. Lue au montage, l'adresse était consommée (et nettoyée)
-   * par l'instance qui disparaît — le formulaire ne s'ouvrait jamais. Une
-   * instance démontée avant la trame annule sa lecture. */
+   * L'intention est lue UNE fois (`lireIntentionAuth`) et gardée jusqu'à la
+   * fermeture du formulaire : sur `/`, la vitrine est montée plusieurs fois
+   * pendant le chargement (rendu serveur, attente du code, application), et
+   * c'est la DERNIÈRE instance qui doit l'ouvrir. */
   useEffect(() => {
-    const frame = requestAnimationFrame(() => {
-      const url = new URL(window.location.href);
-      const voulu = url.searchParams.get("auth");
-      const erreur = oauthErrorFromUrl(url.search, url.hash);
-      if (!voulu && !erreur) return;
-      setAuthMode(voulu === "signup" ? "signup" : "login");
-      setAuthPlan(undefined);
-      setAuthError(erreur ?? undefined);
-      setAuth(true);
-      for (const k of ["auth", "error", "error_code", "error_description"]) {
-        url.searchParams.delete(k);
-      }
-      const propre = erreur ? "" : url.hash;
-      window.history.replaceState(window.history.state, "", url.pathname + url.search + propre);
-    });
-    return () => cancelAnimationFrame(frame);
+    const intention = lireIntentionAuth();
+    if (!intention) return;
+    setAuthMode(intention.mode);
+    setAuthPlan(undefined);
+    setAuthError(intention.error);
+    setAuth(true);
   }, []);
   const go = (id: string) => {
     setActiveSec(id);
@@ -1248,7 +1264,10 @@ function LandingPage() {
             initialMode={authMode}
             plan={authPlan}
             initialError={authError}
-            onClose={() => setAuth(false)}
+            onClose={() => {
+              oublierIntentionAuth();
+              setAuth(false);
+            }}
           />
         </Suspense>
       )}

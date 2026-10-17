@@ -112,7 +112,8 @@ import { useEconomicCalendar } from "../features/news/useEconomicCalendar";
 import { startOfWeek } from "../features/news/economicEvents";
 import { computeRuleAdherence } from "../trading/ruleAdherence";
 import type { OnboardingAction } from "../features/onboarding/Onboarding";
-import { AuthProvider, hasLikelySession, useAuth } from "../contexts/AuthContext";
+import { AuthProvider, useAuth } from "../contexts/AuthContext";
+import { hasLikelySession } from "../utils/sessionHint";
 import { clearCurrencyCache, setCurrency, useCurrency } from "@/shared/currency";
 import { AccountProvider, useAccounts } from "../contexts/AccountContext";
 import { PageActionsProvider } from "../contexts/PageActionsContext";
@@ -902,7 +903,8 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
   const handleOpenMissed = useCallback(() => setPage("missed"), []);
 
   // Onboarding hand-off: "import" opens the CSV modal right away; "demo"
-  // seeds three example trades so Dashboard/Analytics light up instantly.
+  // seeds three example trades so Dashboard/Analytics light up instantly;
+  // "broker" opens the Tradovate connection page.
   const handleOnboardingDone = useCallback(
     async (action?: OnboardingAction) => {
       setOnboarding("done");
@@ -910,6 +912,12 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
       rememberOnboarded(user.id);
       if (action === "import") {
         setImportOpen(true);
+        return;
+      }
+      // « Connecter Tradovate » : la page Brokers (Pro) porte la connexion,
+      // et son propre verrou explique l'offre si le trader n'y a pas accès.
+      if (action === "broker") {
+        setPage("brokers");
         return;
       }
       if (action === "demo") {
@@ -924,7 +932,7 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
         }
       }
     },
-    [user, t, toast],
+    [user, t, toast, setPage],
   );
 
   // Import CSV : écriture par lots séquentiels, avec progression réelle et

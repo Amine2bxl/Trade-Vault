@@ -117,6 +117,25 @@ keyframes du prix animé (`prix-entre`/`prix-sort`), aucune nouvelle keyframe.
 Le rail se plie en 260 ms : seule sa largeur s'anime, les icônes ne bougent
 pas, les libellés s'effacent en fondu. Détail : skill `motion`.
 
+**Changement de page** : un seul mouvement. L'enveloppe (`.page-in`) fond en
+180 ms sans se déplacer ; seules les cartes portent `fade-in-up` (6 px). Deux
+glissements superposés se lisaient comme un « zoom en deux temps ». Les pages
+plein écran mesurent leur hauteur AVANT la peinture (`useAvailableHeight` :
+effet de mise en page, `offsetTop` insensible aux `transform`,
+`ResizeObserver` synchrone) et la barre de tête se remplit avant la peinture
+(`usePageActions`/`usePageLead`) : la première image est la bonne.
+
+**Exception : l'onboarding** (`features/onboarding/`). C'est la seule surface
+connectée autorisée à être cinématique — on y passe une fois, et c'est là que
+le trader décide si TradeVault est fait pour lui. Elle peut dépasser 300 ms
+(entrées jusqu'à ~600 ms, allumage ~1,2 s) et porte ses propres keyframes
+`onb-*`, mais garde le reste de la loi : `transform`/`opacity` (plus le tracé
+`stroke-dashoffset`), aucune boucle décorative, rien ne rayonne, tout se
+réduit à un fondu sous `prefers-reduced-motion`. Elle a aussi le seul **son**
+du produit, synthétisé en Web Audio (`onboardingSound.ts`) : jamais avant un
+geste, coupable et mémorisé, silencieux en cas d'échec. Le thème choisi à
+l'écran « apparence » s'applique à chaud à la séquence elle-même.
+
 ## 5. Primitives (`src/shared/ui`)
 
 Import unique : `import { … } from "@/shared/ui"`. `shared/ui` n'importe jamais

@@ -34,7 +34,7 @@ Chemins relatifs à `src/app/` sauf mention contraire.
 
 | Feature | Dossier | Note |
 | --- | --- | --- |
-| Onboarding | `features/onboarding/` | Chargé par `shell/App.tsx` au premier lancement |
+| Onboarding | `features/onboarding/` | Chargé par `shell/App.tsx` au premier lancement (frontière d'erreur dédiée). `Onboarding.tsx` (séquence, enregistrement), `onboardingPlan.ts` (pur : réponses → compte principal, règles `trading_rules`, profil lu par la checklist et Jarvis), `onboardingCopy.ts`, `onboardingSound.ts` (Web Audio), `OnboardingParts.tsx`. Diffuse `tv-rules-updated` |
 | Séance de trading | `features/session/SessionPanel.tsx` | Complète mais **montée nulle part** — signalé par `tests/reachability.test.ts` |
 | Simulateur de probabilités | `features/simulator/Simulator.tsx` | Page **non montée** (absente de `PAGES`) ; `modules/probability` |
 | Cadre de l'app | `shell/` | `App.tsx` (état global, écriture optimiste, bootstrap des moteurs, file de relecture des trades importés), `navigation.ts`, `Sidebar`, `MobileNav`, `CommandPalette`, `AccountSwitcher` (compte principal + sous-comptes), `TransferTradesModal` (copier/déplacer des trades entre comptes ← `trading/tradeTransfer` + `store/tradeTransfer`) |

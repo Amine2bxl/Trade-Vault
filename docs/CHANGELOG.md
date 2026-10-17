@@ -3,6 +3,22 @@
 Journal des changements **structurels** (pas des features ni des correctifs,
 qui vivent dans l'historique git et les PR).
 
+## 2026-10-17 — Application montée une fois, onboarding qui configure
+
+- `App` est hébergée une seule fois par la racine (`AppHost`, `routes/__root.tsx`) ;
+  `/` et `/$page` ne rendent plus que leur contenu serveur. Avant, chaque
+  passage par le tableau de bord démontait toute l'application.
+- Stockage refusé : repli mémoire de `localStorage`/`sessionStorage` installé
+  avant tout module (`__root.tsx`). Voile avant peinture pour un trader déjà
+  connecté.
+- Erreurs d'authentification classées en codes (`utils/authErrors.ts`) et
+  traduites par chaque surface. Alias `/login`, `/signup`, `/register`… vers
+  `/?auth=…` (`utils/pageUrl.ts`).
+- Onboarding refondu : séquence cinématique avec son, et chaque réponse écrit
+  un réglage réel — compte principal (nom, type, capital, devise), règles de
+  trading, profil (une seule faiblesse, vocabulaire de la checklist), thème,
+  langue (`features/onboarding/onboardingPlan.ts`).
+
 ## 2026-10-16 — Chiffres de référence et entrée d'onboarding
 
 - Toutes les valeurs chiffrées et leurs libellés utilisent désormais Inter
