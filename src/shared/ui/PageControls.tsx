@@ -8,11 +8,15 @@ export function PageControls({
   label,
   count = 0,
   closeOnAction = false,
+  icon,
+  iconOnly = false,
   children,
 }: {
   label: string;
   count?: number;
   closeOnAction?: boolean;
+  icon?: ReactNode;
+  iconOnly?: boolean;
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
@@ -27,8 +31,8 @@ export function PageControls({
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
       >
-        <SlidersHorizontal className="h-4 w-4" />
-        <span>{label}</span>
+        {icon ?? <SlidersHorizontal className="h-4 w-4" />}
+        <span className={iconOnly ? "sr-only" : undefined}>{label}</span>
         {count > 0 && <span className="tv-figure tv-page-controls-count">{count}</span>}
       </button>
       <SelectionPanel

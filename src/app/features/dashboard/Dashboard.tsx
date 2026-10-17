@@ -285,7 +285,7 @@ export default function Dashboard({
   const headerActions = useMemo(
     () => (
       <div className="hidden shrink-0 items-center gap-2 md:flex">
-        <Button variant="primary" size="sm" onClick={onAddTrade}>
+        <Button variant="entry" size="sm" onClick={onAddTrade}>
           <Plus className="h-4 w-4" /> {t("common.addTrade")}
         </Button>
         {hasDraft && (
@@ -582,13 +582,20 @@ export default function Dashboard({
                 )}
               >
                 <Metric
+                  compact
                   title={t("dashboard.netR")}
                   value={`${netR >= 0 ? "+" : "−"}${Math.abs(netR).toFixed(1)}R`}
                   valueClass={netR >= 0 ? "text-emerald-400" : "text-red-400"}
                   delay={0}
                 />
-                <Metric title={t("stats.trades")} value={String(stats.totalTrades)} delay={40} />
                 <Metric
+                  compact
+                  title={t("stats.trades")}
+                  value={String(stats.totalTrades)}
+                  delay={40}
+                />
+                <Metric
+                  compact
                   title={t("stats.winRate")}
                   value={formatPct(stats.winRate)}
                   valueClass={stats.winRate >= 0.5 ? "text-emerald-400" : "text-red-400"}
@@ -601,6 +608,7 @@ export default function Dashboard({
                   delay={80}
                 />
                 <Metric
+                  compact
                   title={t("dashboard.profitFactor")}
                   value={stats.profitFactor >= 99 ? "99+" : stats.profitFactor.toFixed(2)}
                   valueClass={

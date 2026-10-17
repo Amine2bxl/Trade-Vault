@@ -280,6 +280,7 @@
 }
 
 .tv-pick-foot-main {
+  justify-content: center;
   background: var(--tv-accent);
   color: #04120b;
 }
@@ -377,6 +378,12 @@
   transition:
     border-color var(--tv-dur-1) var(--tv-ease),
     background-color var(--tv-dur-1) var(--tv-ease);
+}
+
+/* Les champs avec pictogramme réservent son emplacement : la peau de base
+   ne doit pas écraser le retrait demandé par le contrôle. */
+.tv-control.pl-10 {
+  padding-inline-start: 2.5rem;
 }
 
 .tv-control::placeholder {
@@ -569,6 +576,7 @@
 
 /* Commandes de page : une entrée sobre, les détails seulement à la demande. */
 .tv-page-controls-trigger {
+  min-width: 36px;
   display: inline-flex;
   height: 36px;
   align-items: center;
@@ -700,4 +708,8 @@
   .tv-draft-badge {
     min-height: 44px;
   }
+}
+
+@media (pointer: coarse) {
+  .tv-page-controls-trigger { min-width: 44px; }
 }

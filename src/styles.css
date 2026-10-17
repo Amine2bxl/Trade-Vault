@@ -3162,9 +3162,10 @@ a:focus-visible,
 .section-tabs {
   display: none;
   max-width: 100%;
-  padding: 0;
-  background: transparent;
-  border: 0;
+  padding: 3px;
+  border-radius: var(--radius-xl);
+  background: var(--tv-plate-1);
+  border: 1px solid var(--tv-border-strong);
   box-shadow: none;
 }
 @media (min-width: 1024px) {
@@ -4340,9 +4341,10 @@ a:focus-visible,
   display: flex;
   align-items: center;
   gap: 0.25rem;
-  padding: 0;
-  background: transparent;
-  border: 0;
+  padding: 3px;
+  border-radius: var(--radius-xl);
+  background: var(--tv-plate-1);
+  border: 1px solid var(--tv-border-strong);
   overflow-x: auto;
   overflow-y: hidden;
   flex-wrap: nowrap;
@@ -4389,16 +4391,7 @@ a:focus-visible,
 .tv-subnav-item-active,
 .tv-subnav-item-active:hover {
   color: var(--tv-text-primary);
-  background: transparent;
-}
-.tv-subnav-item-active::after {
-  content: "";
-  position: absolute;
-  inset-inline: 12px;
-  bottom: 0;
-  height: 2px;
-  border-radius: 2px;
-  background: var(--tv-text-secondary);
+  background: var(--tv-plate-3);
 }
 .tv-subnav-item:focus-visible {
   outline: 2px solid rgb(var(--tv-accent-rgb) / 0.7);
@@ -4432,6 +4425,10 @@ a:focus-visible,
   align-items: center;
   gap: 8px;
   min-width: 0;
+  padding: 4px;
+  border: 1px solid var(--tv-border-strong);
+  border-radius: var(--radius-xl);
+  background: var(--tv-plate-1);
 }
 /* PAS DE PILULE DANS UNE PILULE. La barre EST déjà le cadre du contrôle
    segmenté : lui laisser le sien dessinait deux ovales concentriques, et
@@ -6386,4 +6383,116 @@ body.tv-app-type svg.lucide {
 }
 .tv-trade-modal footer button {
   border-radius: var(--radius-xl);
+}
+
+/* Saisie d'un trade : une commande rectangulaire, brève, identifiable. */
+.btn-primary.tv-entry-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 36px;
+  border-radius: var(--radius-lg);
+  padding: 0 14px;
+  font-size: var(--tv-t-body-sm);
+  font-weight: 600;
+  box-shadow: none;
+}
+.tv-entry-button > svg {
+  width: 16px;
+  height: 16px;
+}
+.metric-tile.metric-tile-compact {
+  padding: 10px 12px;
+}
+.metric-tile-compact .metric-radial {
+  width: 32px;
+  height: 32px;
+}
+.metric-tile-compact .metric-radial span {
+  font-size: var(--tv-t-micro);
+}
+.metric-tile-compact .tv-figure {
+  line-height: 1.15;
+}
+.metric-tile-compact .metric-main-value {
+  font-size: var(--tv-t-h2);
+}
+.metric-tile-compact .metric-label-row {
+  margin-bottom: 4px;
+}
+@media (pointer: coarse) {
+  .btn-primary.tv-entry-button {
+    min-height: 44px;
+  }
+}
+
+.tv-trade-modal .tv-trade-symbol {
+  font-size: var(--tv-t-h2);
+  font-weight: 700;
+}
+.tv-trade-modal .tv-trade-number {
+  font-size: var(--tv-t-h2);
+}
+.tv-trade-modal .tv-direction .tv-choice {
+  min-height: 44px;
+}
+.tv-account-list {
+  overflow: hidden;
+  border: 1px solid var(--tv-border-strong);
+  border-radius: var(--radius-xl);
+  background: var(--tv-plate-1);
+}
+.tv-account-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  border-bottom: 1px solid var(--tv-border);
+}
+.tv-account-row:last-child {
+  border-bottom: 0;
+}
+.tv-account-row-active {
+  background: var(--tv-plate-2);
+}
+.tv-account-select {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+.tv-account-icon {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--tv-border-strong);
+  border-radius: var(--radius-lg);
+  color: var(--tv-text-secondary);
+}
+.tv-account-row-active .tv-account-icon {
+  color: var(--tv-highlight);
+  border-color: var(--tv-border-accent);
+}
+@media (max-width: 639px) {
+  .tv-account-select {
+    grid-template-columns: 32px minmax(0, 1fr);
+    row-gap: 4px;
+  }
+  .tv-account-select > .tv-figure {
+    grid-column: 2;
+    text-align: left;
+  }
+  .tv-account-icon {
+    grid-row: span 2;
+  }
+}
+
+@media (max-width: 639px) {
+  .section-picker-count {
+    display: none;
+  }
 }

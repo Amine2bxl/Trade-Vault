@@ -1261,7 +1261,10 @@ const en = {
 
   // Trade intent & reflection (Phase 0b)
   "trade.riskUnit": "Risk unit",
-  "trade.detailsNotes": "Options and notes",
+  "trade.timing": "Times",
+  "account.limitReached": "Account limit reached",
+  "account.manage": "Manage",
+  "trade.detailsNotes": "Notes and review",
   "trade.sectionExecution": "Execution",
   "trade.sectionContext": "Context",
   "trade.sectionReview": "Review",

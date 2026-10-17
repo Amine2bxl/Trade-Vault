@@ -51,6 +51,7 @@ const EconomicNews = lazy(() => import("@/app/features/news/EconomicNews"));
 const MissedEditor = lazy(() =>
   import("@/app/features/missed/MissedOpportunities").then((m) => ({ default: m.MissedEditor })),
 );
+const AccountsManager = lazy(() => import("@/app/features/settings/AccountsManager"));
 const MissedOpportunities = lazy(() => import("@/app/features/missed/MissedOpportunities"));
 const Seasonality = lazy(() => import("@/app/features/seasonality/Seasonality"));
 const Reports = lazy(() => import("@/app/features/reports/Reports"));
@@ -88,6 +89,7 @@ const IDS = [
   "seasonality",
   "reports",
   "settings",
+  "accounts",
   "profile",
   "appearance",
   "brokers",
@@ -211,6 +213,11 @@ function DevUiPage() {
                       {ecran === "missed" && <MissedOpportunities />}
                       {ecran === "seasonality" && <Seasonality trades={trades} />}
                       {ecran === "reports" && <Reports trades={trades} />}
+                      {ecran === "accounts" && (
+                        <PageContainer className="max-w-3xl">
+                          <AccountsManager trades={trades} />
+                        </PageContainer>
+                      )}
                       {ecran === "settings" && (
                         <Settings
                           trades={trades}

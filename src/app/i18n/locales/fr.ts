@@ -1193,7 +1193,10 @@ const fr: Dict = {
   "common.irreversible": "Cette action est irréversible.",
 
   "trade.riskUnit": "Unité de risque",
-  "trade.detailsNotes": "Options et notes",
+  "trade.timing": "Horaires",
+  "account.limitReached": "Limite de comptes atteinte",
+  "account.manage": "Gérer",
+  "trade.detailsNotes": "Notes et bilan",
   "trade.sectionExecution": "Exécution",
   "trade.sectionContext": "Contexte",
   "trade.sectionReview": "Bilan",

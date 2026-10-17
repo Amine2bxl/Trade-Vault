@@ -831,13 +831,13 @@ function SetupCard({
 function CompletionRing({ value, label }: { value: number; label: string }) {
   const pct = Math.round(value * 100);
   return (
-    <div className="animate-fade-in-up w-full min-w-[168px] max-w-[260px] shrink-0 sm:w-auto">
+    <div className="animate-fade-in-up w-10 shrink-0 sm:w-44">
       <div className="mb-1.5 flex items-baseline justify-between gap-3">
-        <span className="tv-label text-slate-500">{label}</span>
+        <span className="tv-label hidden text-slate-500 sm:inline">{label}</span>
         <span className="tv-figure text-sm leading-none text-white">{pct}%</span>
       </div>
       <div
-        className="h-2 w-full overflow-hidden rounded-full bg-white/[0.07]"
+        className="h-1.5 w-full overflow-hidden rounded-full bg-white/[0.07]"
         role="progressbar"
         aria-valuenow={pct}
         aria-valuemin={0}
@@ -845,11 +845,10 @@ function CompletionRing({ value, label }: { value: number; label: string }) {
         aria-label={label}
       >
         <div
-          className="h-full rounded-full transition-[width] duration-500 ease-[cubic-bezier(0.33,1,0.68,1)]"
+          className="h-full rounded-full transition-[width] duration-200 ease-[cubic-bezier(0.33,1,0.68,1)]"
           style={{
             width: `${Math.max(value > 0 ? 4 : 0, pct)}%`,
-            background: "linear-gradient(90deg, var(--tv-accent) 0%, var(--tv-highlight) 100%)",
-            boxShadow: value > 0 ? "inset -1px 0 0 rgb(255 255 255 / 0.35)" : undefined,
+            background: "var(--tv-accent)",
           }}
         />
       </div>

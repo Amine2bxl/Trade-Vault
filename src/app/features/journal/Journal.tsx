@@ -414,9 +414,11 @@ export default function Journal({
             <span className="hidden md:inline">{t("missed.title")}</span>
           </Button>
         </PageControls>
-        <Button variant="accent" size="sm" onClick={onAdd} className="hidden md:inline-flex">
-          <Plus className="w-4 h-4" /> {t("common.addTrade")}
-        </Button>
+        <div className="hidden md:block">
+          <Button variant="entry" size="sm" onClick={onAdd}>
+            <Plus className="w-4 h-4" /> {t("common.addTrade")}
+          </Button>
+        </div>
       </div>
     ),
     [trades, pendingReview, onEdit, onDeleteAll, onAdd, onOpenMissed, t],
