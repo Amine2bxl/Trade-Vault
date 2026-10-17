@@ -334,6 +334,77 @@ const M: Record<string, Msg> = {
     en: "Reset link sent. Check your inbox.",
     fr: "Lien de réinitialisation envoyé. Vérifie ta boîte mail.",
   },
+  "auth.info.confirmEmail": {
+    en: "Almost there — confirm your email from the link we just sent, then sign in.",
+    fr: "Presque fini — confirme ton e-mail via le lien qu'on vient d'envoyer, puis connecte-toi.",
+  },
+  "auth.info.entering": { en: "Opening your vault…", fr: "Ouverture de ton espace…" },
+  "auth.err.missing_fields": {
+    en: "Fill in every field to continue.",
+    fr: "Remplis tous les champs pour continuer.",
+  },
+  "auth.err.invalid_email": {
+    en: "That email address doesn't look right.",
+    fr: "Cette adresse e-mail ne semble pas valide.",
+  },
+  "auth.err.weak_password": {
+    en: "Use at least 6 characters for your password.",
+    fr: "Ton mot de passe doit faire au moins 6 caractères.",
+  },
+  "auth.err.invalid_credentials": {
+    en: "Wrong email or password. Try again, or reset your password.",
+    fr: "E-mail ou mot de passe incorrect. Réessaie, ou réinitialise ton mot de passe.",
+  },
+  "auth.err.email_not_confirmed": {
+    en: "Confirm your email first — the link is in your inbox.",
+    fr: "Confirme d'abord ton e-mail — le lien est dans ta boîte mail.",
+  },
+  "auth.err.user_exists": {
+    en: "An account already uses this email. Sign in instead.",
+    fr: "Un compte utilise déjà cet e-mail. Connecte-toi plutôt.",
+  },
+  "auth.err.rate_limited": {
+    en: "Too many attempts. Wait a minute, then try again.",
+    fr: "Trop de tentatives. Attends une minute, puis réessaie.",
+  },
+  "auth.err.network": {
+    en: "Can't reach TradeVault. Check your connection and try again.",
+    fr: "Impossible de joindre TradeVault. Vérifie ta connexion et réessaie.",
+  },
+  "auth.err.oauth_failed": {
+    en: "Google sign-in didn't go through. Try again, or use your email.",
+    fr: "La connexion Google n'a pas abouti. Réessaie, ou passe par ton e-mail.",
+  },
+  "auth.err.link_expired": {
+    en: "This link has expired or was already used. Request a new one.",
+    fr: "Ce lien a expiré ou a déjà servi. Demandes-en un nouveau.",
+  },
+  "auth.err.same_password": {
+    en: "Pick a password different from your current one.",
+    fr: "Choisis un mot de passe différent de l'actuel.",
+  },
+  "auth.err.generic": {
+    en: "Something went wrong. Try again in a moment.",
+    fr: "Un souci est survenu. Réessaie dans un instant.",
+  },
+  "reset.title": { en: "Choose a new password", fr: "Choisis un nouveau mot de passe" },
+  "reset.sub": {
+    en: "One step and you're back in your journal.",
+    fr: "Une étape et tu retrouves ton journal.",
+  },
+  "reset.verifying": { en: "Checking your reset link…", fr: "Vérification du lien…" },
+  "reset.new": { en: "New password", fr: "Nouveau mot de passe" },
+  "reset.confirm": { en: "Confirm new password", fr: "Confirme le mot de passe" },
+  "reset.mismatch": {
+    en: "The two passwords don't match.",
+    fr: "Les deux mots de passe ne correspondent pas.",
+  },
+  "reset.submit": { en: "Update password", fr: "Mettre à jour" },
+  "reset.done": {
+    en: "Password updated. Opening your journal…",
+    fr: "Mot de passe mis à jour. Ouverture de ton journal…",
+  },
+  "reset.back": { en: "Back to TradeVault", fr: "Retour à TradeVault" },
   "nav.product": { en: "Product", fr: "Produit" },
   "nav.resources": { en: "Resources", fr: "Ressources" },
   "nav.problem": { en: "Problem", fr: "Problème" },

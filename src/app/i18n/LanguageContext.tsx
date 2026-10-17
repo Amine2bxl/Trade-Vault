@@ -28,8 +28,15 @@ function readInitialLang(): Lang {
   // picks one in Settings (persisted to localStorage / their profile). We do NOT
   // auto-detect the browser locale — that caused unwanted Spanish/other defaults.
   if (typeof window === "undefined") return "en";
-  const stored = window.localStorage.getItem(STORAGE_KEY);
-  if (stored && stored in LANG_NAMES) return stored as Lang;
+  // Stockage refusé (navigation privée stricte, cookies bloqués) : la lecture
+  // LÈVE, et elle le faisait dans l'initialiseur d'état — écran 500 au
+  // lancement. On retombe sur l'anglais par défaut.
+  try {
+    const stored = window.localStorage.getItem(STORAGE_KEY);
+    if (stored && stored in LANG_NAMES) return stored as Lang;
+  } catch {
+    /* stockage indisponible */
+  }
   return "en";
 }
 

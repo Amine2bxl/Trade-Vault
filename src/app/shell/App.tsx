@@ -4,11 +4,15 @@ import {
   useState,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
+  Component,
   Suspense,
   startTransition,
+  type ReactNode,
 } from "react";
+import { reportAppError } from "@/shared/error-reporting";
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
 import Sidebar from "./Sidebar";
@@ -108,7 +112,7 @@ import { useEconomicCalendar } from "../features/news/useEconomicCalendar";
 import { startOfWeek } from "../features/news/economicEvents";
 import { computeRuleAdherence } from "../trading/ruleAdherence";
 import type { OnboardingAction } from "../features/onboarding/Onboarding";
-import { AuthProvider, useAuth } from "../contexts/AuthContext";
+import { AuthProvider, hasLikelySession, useAuth } from "../contexts/AuthContext";
 import { clearCurrencyCache, setCurrency, useCurrency } from "@/shared/currency";
 import { AccountProvider, useAccounts } from "../contexts/AccountContext";
 import { PageActionsProvider } from "../contexts/PageActionsContext";
@@ -125,7 +129,36 @@ import { ToastProvider, useToast } from "../contexts/ToastContext";
 import { ConfirmProvider, useConfirm } from "../contexts/ConfirmContext";
 import { ThemeProvider } from "../contexts/ThemeContext";
 
-function AppContent() {
+/** Clé locale « ce trader a terminé l'onboarding » — voir la garde plus bas. */
+const onboardedKey = (userId: string) => `tv.onboarded.${userId}`;
+function readOnboarded(userId: string): boolean {
+  try {
+    return window.localStorage.getItem(onboardedKey(userId)) === "1";
+  } catch {
+    return false;
+  }
+}
+function rememberOnboarded(userId: string): void {
+  try {
+    window.localStorage.setItem(onboardedKey(userId), "1");
+  } catch {
+    /* best-effort */
+  }
+}
+
+/** Retire le voile posé avant hydratation sur la vitrine (`__root.tsx`). */
+function liftSessionVeil(): void {
+  document.getElementById("tv-session-veil")?.remove();
+}
+
+interface PublicSlots {
+  /** La vitrine déjà rendue par la route (sur `/`) : reprise telle quelle. */
+  publicPage?: ReactNode;
+  /** Ce qu'on montre pendant le chargement de la vitrine à la demande. */
+  publicFallback?: ReactNode;
+}
+
+function AppContent({ publicPage, publicFallback }: PublicSlots) {
   const { user, isAuthenticated, loading } = useAuth();
   const { activeId, ready: accountsReady, activeAccount } = useAccounts();
   const { t, lang } = useT();
@@ -380,6 +413,10 @@ function AppContent() {
   // First-run gate: 'loading' until we know, 'needed' shows onboarding, 'done'
   // lets the app render. `onboarded_at` on the profile is the source of truth.
   const [onboarding, setOnboarding] = useState<"loading" | "needed" | "done">("loading");
+  // Au-delà de 6 s sans réponse sur `onboarded_at`, on cesse d'attendre et le
+  // shell s'affiche ; si la réponse dit finalement « à faire », l'onboarding
+  // prend la place à son arrivée.
+  const [onboardingSlow, setOnboardingSlow] = useState(false);
 
   // Deep link from the monthly-report push notification: /?report=YYYY-MM
   // opens the Reports page directly (the page itself expands that month).
@@ -425,6 +462,17 @@ function AppContent() {
     if (new URLSearchParams(window.location.search).get("upgrade")) setPage("profile");
   }, []);
 
+  // `/login` & co. redirigent vers `/?auth=…` (voir `pageUrl.ts`). Un trader
+  // DÉJÀ connecté qui suit un tel lien arrive sur son tableau de bord : le
+  // paramètre n'a plus d'objet, on le retire de l'adresse.
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has("auth")) return;
+    url.searchParams.delete("auth");
+    window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
+  }, [isAuthenticated]);
+
   // Cmd/Ctrl+K toggles the command palette
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -443,16 +491,23 @@ function AppContent() {
       return;
     }
     let active = true;
+    setOnboardingSlow(false);
+    const slow = window.setTimeout(() => {
+      if (active) setOnboardingSlow(true);
+    }, 6_000);
     loadOnboarding(user.id)
       .then((o) => {
+        if (o.onboardedAt) rememberOnboarded(user.id);
         if (active) setOnboarding(o.onboardedAt ? "done" : "needed");
       })
       .catch(() => {
         // If the check fails, don't block the app — fall through to it.
         if (active) setOnboarding("done");
-      });
+      })
+      .finally(() => window.clearTimeout(slow));
     return () => {
       active = false;
+      window.clearTimeout(slow);
     };
   }, [user?.id]);
 
@@ -852,6 +907,7 @@ function AppContent() {
     async (action?: OnboardingAction) => {
       setOnboarding("done");
       if (!user) return;
+      rememberOnboarded(user.id);
       if (action === "import") {
         setImportOpen(true);
         return;
@@ -927,22 +983,61 @@ function AppContent() {
     return () => document.body.classList.remove("tv-app-type");
   }, [isAuthenticated]);
 
+  /* LE PREMIER ÉCRAN NE CLIGNOTE PLUS.
+   *
+   * Sur `/`, un visiteur voyait : la vitrine (rendu serveur) → « Vérification
+   * du compte… » → un écran VIDE (la vitrine, chargée à la demande, suspendait)
+   * → la vitrine à nouveau. Trois changements d'écran pour arriver au même.
+   *
+   *   • Sans session stockée, l'auth ne peut rien rendre d'autre que « non
+   *     connecté » : on peint la vitrine tout de suite au lieu d'attendre.
+   *   • Sur `/`, la racine fournit la vitrine déjà chargée (`publicPage`) :
+   *     plus de suspension, donc plus de trou. Ailleurs, le squelette public
+   *     reste affiché le temps qu'elle arrive (`publicFallback`).
+   *   • Avec une session, l'écran d'attente reste — c'est un trader qui
+   *     arrive, et la vitrine serait le mauvais écran à lui montrer. */
+  const showPublic = !isAuthenticated && (!loading || !hasLikelySession());
+  // Le voile ne couvre que le rendu SERVEUR, jusqu'à ce que l'application
+  // monte : dès qu'elle peint quoi que ce soit, il n'a plus d'objet.
+  useLayoutEffect(() => liftSessionVeil(), []);
+
+  if (showPublic) {
+    // Signed-out visitors get the public landing page (its CTAs open the auth
+    // screen). Signed-in users fall through straight into the product.
+    return (
+      publicPage ?? (
+        <Suspense fallback={publicFallback ?? null}>
+          <Landing />
+        </Suspense>
+      )
+    );
+  }
+
   if (loading) {
     return <LoadingScreen message={t("app.checkingAccount")} />;
   }
 
-  // Signed-out visitors get the public landing page (its CTAs open the auth
-  // screen). Signed-in users fall through straight into the product.
-  if (!isAuthenticated) return <Landing />;
+  /* LA GARDE D'ONBOARDING NE MONTRE PLUS LE TABLEAU DE BORD À UN NOUVEAU.
+   *
+   * Pendant que `onboarded_at` se chargeait, le shell était peint : un compte
+   * tout neuf voyait son tableau de bord vide une fraction de seconde, puis
+   * l'onboarding le remplaçait. Un trader déjà passé par l'onboarding sur cet
+   * appareil (mémorisé localement) garde le shell immédiat ; tous les autres
+   * attendent la réponse sur l'écran de chargement. */
+  if (onboarding === "loading" && user && !onboardingSlow && !readOnboarded(user.id)) {
+    return <LoadingScreen message={t("app.checkingAccount")} />;
+  }
 
   // First-time users get the onboarding; everyone else goes straight into the
   // shell (no intermediate loading screen — the dashboard is visible as soon
   // as auth resolves; data streams in behind the already-painted frame).
   if (onboarding === "needed" && user) {
     return (
-      <Suspense fallback={<LoadingScreen message={t("app.loadingOnboarding")} />}>
-        <Onboarding userId={user.id} onDone={handleOnboardingDone} />
-      </Suspense>
+      <OnboardingBoundary onFail={() => setOnboarding("done")}>
+        <Suspense fallback={<LoadingScreen message={t("app.loadingOnboarding")} />}>
+          <Onboarding userId={user.id} onDone={handleOnboardingDone} />
+        </Suspense>
+      </OnboardingBoundary>
     );
   }
 
@@ -1159,7 +1254,31 @@ function AppContent() {
   );
 }
 
-export default function App() {
+/**
+ * LE FILET DE L'ONBOARDING.
+ *
+ * L'onboarding est le premier écran d'un compte, et il était le seul monté
+ * SANS frontière d'erreur : une panne de rendu y remontait jusqu'à la racine
+ * — l'écran 500, à la seconde où le trader vient de s'inscrire. En cas de
+ * panne, on le signale et on laisse entrer dans l'application : réglages et
+ * personnalisation restent accessibles depuis le profil, l'inscription n'est
+ * jamais perdue.
+ */
+class OnboardingBoundary extends Component<{ children: ReactNode; onFail: () => void }> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  componentDidCatch(error: Error) {
+    reportAppError(error, { boundary: "onboarding_boundary" });
+    this.props.onFail();
+  }
+  render() {
+    return this.state.failed ? null : this.props.children;
+  }
+}
+
+export default function App({ publicPage, publicFallback }: PublicSlots = {}) {
   useEffect(() => {
     initNotificationListeners();
     initAutomationListeners();
@@ -1172,7 +1291,7 @@ export default function App() {
           <LanguageProvider>
             <ToastProvider>
               <ConfirmProvider>
-                <AppContent />
+                <AppContent publicPage={publicPage} publicFallback={publicFallback} />
               </ConfirmProvider>
             </ToastProvider>
           </LanguageProvider>

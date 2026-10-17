@@ -375,12 +375,20 @@ export async function saveOnboarding(
 // synchronisée en base (profiles.checklist_config jsonb). BEST-EFFORT : si la
 // colonne n'existe pas (migration non appliquée), le localStorage continue de
 // fonctionner — jamais d'erreur bloquante.
+//
+// UNE REQUÊTE NEUVE À CHAQUE APPEL — plus un constructeur partagé.
+// `supabase.from("profiles")` était évalué AU CHARGEMENT DU MODULE : il créait
+// le client Supabase à l'import du magasin, et un stockage refusé (navigation
+// privée stricte) faisait lever l'import entier — écran 500 au lancement. Et
+// postgrest-js fait partager l'URL du constructeur à ses filtres : chaque
+// appel y ajoutait son `id=eq.…`, un second compte dans le même onglet
+// cumulait deux identifiants contradictoires.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const profilesAny = supabase.from("profiles") as any;
+const profilesAny = () => supabase.from("profiles") as any;
 
 export async function saveChecklistConfig(userId: string, config: unknown): Promise<void> {
   try {
-    await profilesAny.update({ checklist_config: config }).eq("id", userId);
+    await profilesAny().update({ checklist_config: config }).eq("id", userId);
   } catch (e) {
     // Migration absente → on garde le localStorage, silencieux.
     console.error("[checklist-config] DB write skipped", e);
@@ -389,7 +397,7 @@ export async function saveChecklistConfig(userId: string, config: unknown): Prom
 
 export async function loadChecklistConfig(userId: string): Promise<unknown> {
   try {
-    const { data, error } = await profilesAny
+    const { data, error } = await profilesAny()
       .select("checklist_config")
       .eq("id", userId)
       .maybeSingle();

@@ -16,7 +16,7 @@ import ProposalsPanel from "./components/ProposalsPanel";
 import { PageContainer, JarvisOrb } from "@/shared/ui";
 import { useJarvisActivity } from "./activity";
 import { usePageActions, usePageLead } from "@/app/contexts/PageActionsContext";
-import { stableViewportHeight, topAtRest } from "@/app/hooks/useAvailableHeight";
+import { observeLayout, stableViewportHeight, topAtRest } from "@/app/hooks/useAvailableHeight";
 
 const ConversationWorkspace = lazyPage(() => import("./workspaces/ConversationWorkspace"));
 
@@ -129,22 +129,20 @@ export default function Jarvis() {
       // Mesure indépendante du défilement : voir `topAtRest`.
       const haut = topAtRest(el);
       const basse = window.innerWidth < 768 ? 84 : 16;
-      setHauteur(Math.max(420, Math.round(stableViewportHeight() - haut - basse)));
+      const h = Math.max(420, Math.round(stableViewportHeight() - haut - basse));
+      setHauteur((prev) => (prev === h ? prev : h));
     };
-    /* TROIS MESURES, ET C'EST NÉCESSAIRE.
-       La première tombe trop tôt : `usePageLead` et `usePageActions` posent
-       leur contenu dans la barre de tête via un effet, DONC APRÈS cette
-       mesure. La barre est alors vide, plus courte, et le panneau se croit
-       plus haut qu'il ne peut l'être — il déborde ensuite par le bas, et le
-       compteur de crédits se fait couper. La trame suivante et un dernier
-       filet à 200 ms rattrapent la barre une fois garnie. */
+    /* UNE MESURE, PUIS L'OBSERVATION — plus de rattrapage à 200 ms.
+       La barre de tête se remplit maintenant avant la peinture
+       (`usePageLead`/`usePageActions` en effet de mise en page) ; un
+       changement ultérieur de sa taille, ou de la fenêtre, est capté par
+       `observeLayout` dans la même image. Le panneau ne change plus de
+       hauteur sous les yeux du trader. */
     mesurer();
-    const trame = requestAnimationFrame(mesurer);
-    const filet = setTimeout(mesurer, 200);
+    const stop = observeLayout(el, mesurer);
     window.addEventListener("resize", mesurer);
     return () => {
-      cancelAnimationFrame(trame);
-      clearTimeout(filet);
+      stop();
       window.removeEventListener("resize", mesurer);
     };
   }, []);

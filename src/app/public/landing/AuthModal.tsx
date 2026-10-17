@@ -7,16 +7,20 @@
  * de vente anglaise et tombait sur un formulaire français au moment exact de la
  * conversion : le seul écran où l'on demande quelque chose. */
 import { FormEvent, useEffect, useState } from "react";
-import { EnsureAuthProvider, useAuth } from "@/app/contexts/AuthContext";
+import { EnsureAuthProvider, useAuth, useIsStandaloneAuth } from "@/app/contexts/AuthContext";
+import { classifyAuthError } from "@/app/utils/authErrors";
 import logoSrc from "@/assets/tradevault-logo-128.png";
 import { Icon } from "./Icon";
 import { useLandingT } from "./i18n";
+import type { LandingKey } from "./i18n";
 import { TRUSTPILOT_URL } from "@/shared/site";
 
 interface AuthModalProps {
   onClose: () => void;
   initialMode?: "login" | "signup";
   plan?: string;
+  /** Un code d'erreur à afficher dès l'ouverture (retour d'OAuth raté). */
+  initialError?: string;
 }
 
 /**
@@ -42,17 +46,35 @@ export function AuthModal(props: AuthModalProps) {
   );
 }
 
-function AuthModalInterne({ onClose, initialMode = "signup", plan }: AuthModalProps) {
+function AuthModalInterne({ onClose, initialMode = "signup", plan, initialError }: AuthModalProps) {
   const { t } = useLandingT();
-  const { login, signup, loginWithGoogle, requestPasswordReset } = useAuth();
+  const { user, login, signup, loginWithGoogle, requestPasswordReset } = useAuth();
+  const standalone = useIsStandaloneAuth();
+  /** Un code de `AuthContext` → une phrase de la langue de la vitrine. */
+  const errorText = (code: string): string =>
+    t(`auth.err.${classifyAuthError(code)}` as LandingKey);
   const [mode, setMode] = useState<"login" | "signup">(initialMode);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(() => (initialError ? errorText(initialError) : ""));
   const [info, setInfo] = useState("");
   const [loading, setLoading] = useState(false);
+
+  /* HORS DE L'APPLICATION, LA CONNEXION DOIT MENER QUELQUE PART.
+   *
+   * Sur `/`, l'application tient la session et remplace la vitrine dès que
+   * le trader est connecté. Sur `/fr` et `/pricing`, personne ne la recevait :
+   * le bouton restait sur « Un instant… » pour toujours. On y emmène donc le
+   * trader dans l'application dès que la session existe — y compris s'il
+   * était déjà connecté en ouvrant la modale. `replace` : « retour » ne doit
+   * pas ramener à une modale de connexion devenue sans objet. */
+  useEffect(() => {
+    if (!standalone || !user) return;
+    setInfo(t("auth.info.entering"));
+    window.location.replace("/");
+  }, [standalone, user, t]);
 
   useEffect(() => {
     const el = document.documentElement;
@@ -76,20 +98,22 @@ function AuthModalInterne({ onClose, initialMode = "signup", plan }: AuthModalPr
     if (mode === "login") {
       const err = await login(email, password);
       if (err) {
-        setError(err);
+        setError(errorText(err));
         setLoading(false);
       }
     } else {
       const err = await signup(name, email, password);
-      if (err) {
-        setError(err);
+      if (err === "confirm_email") {
+        // Inscription réussie, confirmation d'e-mail requise : une INFO, pas
+        // une erreur — et la suite logique est de se connecter.
+        setInfo(t("auth.info.confirmEmail"));
+        setMode("login");
+        setPassword("");
         setLoading(false);
-      } else {
-        const le = await login(email, password);
-        if (le) {
-          setError(le);
-          setLoading(false);
-        }
+      } else if (err) {
+        setError(errorText(err));
+        if (err === "user_exists") setMode("login");
+        setLoading(false);
       }
     }
   };
@@ -100,7 +124,7 @@ function AuthModalInterne({ onClose, initialMode = "signup", plan }: AuthModalPr
     setLoading(true);
     const err = await loginWithGoogle();
     if (err) {
-      setError(err);
+      setError(errorText(err));
       setLoading(false);
     }
   };
@@ -113,7 +137,7 @@ function AuthModalInterne({ onClose, initialMode = "signup", plan }: AuthModalPr
       return;
     }
     const err = await requestPasswordReset(email);
-    if (err) setError(err);
+    if (err) setError(errorText(err));
     else setInfo(t("auth.info.resetSent"));
   };
 

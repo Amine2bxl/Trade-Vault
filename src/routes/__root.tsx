@@ -1,6 +1,7 @@
-import { reloadForStaleChunk } from "@/shared/lazy-page";
+import { lazyPage, reloadForStaleChunk } from "@/shared/lazy-page";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
+  ClientOnly,
   Outlet,
   createRootRouteWithContext,
   useRouter,
@@ -9,7 +10,7 @@ import {
   Scripts,
   type ErrorComponentProps,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { Suspense, useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { absoluteUrl, DEFAULT_OG_IMAGE, SITE_NAME, structuredData } from "../shared/seo";
@@ -32,6 +33,92 @@ const GOOGLE_FONTS_URL =
   "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Mono:wght@400;500;600;700&display=swap";
 
 import { lockZoom } from "../shared/lock-zoom";
+import { PAGES } from "@/app/types";
+import { pageFromPath } from "@/app/utils/pageUrl";
+
+/**
+ * L'APPLICATION EST MONTÉE UNE FOIS, ICI — PAS PAR CHAQUE ROUTE.
+ *
+ * `/` (le tableau de bord) et `/$page` (tout le reste) sont deux routes, et
+ * chacune montait SA copie de `App`. L'application change de page par
+ * `history.pushState` ; le routeur l'intercepte, passe de l'une à l'autre…
+ * et React, voyant deux composants différents, démontait toute l'application
+ * pour la remonter : session revérifiée, comptes et abonnement rechargés,
+ * moteurs relancés, écran « Vérification du compte… » — à CHAQUE aller-retour
+ * vers le tableau de bord. C'était le « mini freeze » à l'arrivée sur une page.
+ *
+ * La racine, elle, ne se démonte jamais : elle héberge l'instance unique.
+ * Les deux routes ne rendent plus que leur contenu SERVEUR (la vitrine, ou le
+ * squelette public), affiché pendant l'hydratation et le chargement du code.
+ */
+const loadApp = () => import("@/app/shell/App");
+const App = lazyPage(loadApp);
+const isAppPath = (pathname: string) => pageFromPath(pathname) !== null;
+// Le code de l'application part dès l'évaluation de ce module, en parallèle de
+// l'hydratation — pas après elle.
+if (typeof window !== "undefined" && isAppPath(window.location.pathname)) void loadApp();
+
+function AppHost({ pathname }: { pathname: string }) {
+  // Sur `/`, le contenu serveur EST la vitrine : l'application la reprend
+  // telle quelle au lieu d'en recharger une copie.
+  const surVitrine = pathname === "/";
+  return (
+    <ClientOnly fallback={<Outlet />}>
+      <Suspense fallback={<Outlet />}>
+        <App publicPage={surVitrine ? <Outlet /> : undefined} publicFallback={<Outlet />} />
+      </Suspense>
+    </ClientOnly>
+  );
+}
+
+/**
+ * LE VOILE DU TRADER CONNECTÉ — posé avant la première peinture.
+ *
+ * La session vit dans `localStorage` : le serveur ne peut pas la voir, et il
+ * sert donc la vitrine (`/`) ou son squelette public (`/journal`…) à tout le
+ * monde. Un trader connecté qui rouvrait TradeVault voyait ainsi la page de
+ * vente une fraction de seconde, puis son application la remplaçait.
+ *
+ * Ce script lit la présence d'une session (sans réseau) et, sur les seules
+ * adresses où l'application va monter, masque la vitrine jusqu'à ce que
+ * `App` prenne la main — il retire lui-même le voile s'il finit par afficher
+ * la vitrine (session expirée). Filet : le voile tombe seul après 10 s, pour
+ * qu'une panne de JavaScript ne laisse jamais un écran vide.
+ */
+const APP_PATHS = JSON.stringify(["/", ...PAGES.map((p) => `/${p}`)]);
+
+/**
+ * LE STOCKAGE REFUSÉ NE FAIT PLUS TOMBER L'APPLICATION.
+ *
+ * Cookies bloqués, navigateur intégré d'Instagram ou de TikTok, politique
+ * d'entreprise : `window.localStorage` y LÈVE une `SecurityError` dès qu'on le
+ * lit — et `typeof localStorage`, la garde utilisée à une vingtaine
+ * d'endroits du code, le lit. Le thème, la langue, le client Supabase
+ * levaient pendant le premier rendu : écran 500 au lancement, avant même la
+ * vitrine.
+ *
+ * Ce script s'exécute AVANT tout module : si un stockage est inaccessible, il
+ * est remplacé par un stockage en mémoire du même contrat. Rien n'est
+ * persisté d'une visite à l'autre — exactement ce que le visiteur a demandé
+ * à son navigateur — mais tout fonctionne.
+ */
+const STORAGE_FALLBACK_SCRIPT =
+  "(function(){function mk(){var d={};return{get length(){return Object.keys(d).length}," +
+  "key:function(i){var k=Object.keys(d);return i<k.length?k[i]:null}," +
+  "getItem:function(k){return Object.prototype.hasOwnProperty.call(d,k)?d[k]:null}," +
+  "setItem:function(k,v){d[k]=String(v)},removeItem:function(k){delete d[k]},clear:function(){d={}}}}" +
+  "['localStorage','sessionStorage'].forEach(function(n){try{window[n].getItem('__tv')}catch(e){" +
+  "try{Object.defineProperty(window,n,{value:mk(),configurable:true})}catch(_){}}})})()";
+const SESSION_VEIL_SCRIPT =
+  "(function(){try{var p=location.pathname.replace(/\\/+$/,'')||'/';" +
+  `if(${APP_PATHS}.indexOf(p)<0)return;var s=false;` +
+  "if(/[?&#](code|access_token)=/.test(location.search+location.hash))s=true;" +
+  "for(var i=0;!s&&i<localStorage.length;i++){var k=localStorage.key(i);if(k&&/^sb-.+-auth-token$/.test(k))s=true}" +
+  "if(!s)return;var st=document.createElement('style');st.id='tv-session-veil';" +
+  "st.textContent='.landing-root,.public-shell{visibility:hidden!important}" +
+  'body::after{content:"TradeVault";position:fixed;inset:0;display:grid;place-items:center;pointer-events:none;' +
+  "font:700 15px/1 Inter,system-ui,sans-serif;letter-spacing:-.01em;color:rgb(226 232 240/.85)}';" +
+  "document.head.appendChild(st);setTimeout(function(){st.remove()},10000)}catch(e){}})()";
 import ErrorScreen from "../app/shell/ErrorScreen";
 import { SSR_LANG, langForPath } from "@/shared/lang";
 
@@ -211,6 +298,8 @@ function RootShell({ children }: { children: ReactNode }) {
          * Ce script s'exécute à l'analyse du document et bascule le lien dès
          * que le CSS arrive, typiquement bien avant l'hydratation. L'effet
          * React reste en place comme filet : la bascule est idempotente. */}
+        <script dangerouslySetInnerHTML={{ __html: STORAGE_FALLBACK_SCRIPT }} />
+        <script dangerouslySetInnerHTML={{ __html: SESSION_VEIL_SCRIPT }} />
         <script
           dangerouslySetInnerHTML={{
             __html:
@@ -230,6 +319,7 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   useEffect(() => lockZoom(), []);
 
@@ -287,8 +377,10 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes.
+          Les adresses de l'application passent par `AppHost`, qui rend
+          lui-même l'`<Outlet />` (contenu serveur) avant que `App` ne monte. */}
+      {isAppPath(pathname) ? <AppHost pathname={pathname} /> : <Outlet />}
     </QueryClientProvider>
   );
 }

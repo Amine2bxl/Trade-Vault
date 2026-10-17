@@ -26,11 +26,29 @@ function createSupabaseClient() {
 
   return createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     auth: {
-      storage: typeof window !== "undefined" ? localStorage : undefined,
+      // Stockage REFUSÉ (navigation privée stricte, cookies bloqués) : lire
+      // `localStorage` lève. Le lire ici sans garde faisait échouer la création
+      // du client — donc tout l'écran, en 500. `undefined` laisse supabase-js
+      // retomber sur son stockage en mémoire : la session tient le temps de
+      // l'onglet.
+      storage: safeLocalStorage(),
       persistSession: true,
       autoRefreshToken: true,
     },
   });
+}
+
+function safeLocalStorage(): Storage | undefined {
+  if (typeof window === "undefined") return undefined;
+  try {
+    const storage = window.localStorage;
+    const probe = "__tv_probe__";
+    storage.setItem(probe, probe);
+    storage.removeItem(probe);
+    return storage;
+  } catch {
+    return undefined;
+  }
 }
 
 let _supabase: ReturnType<typeof createSupabaseClient> | undefined;

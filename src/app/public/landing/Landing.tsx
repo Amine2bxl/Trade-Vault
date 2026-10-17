@@ -42,6 +42,7 @@ import { RESEAUX_ACTIFS } from "@/shared/socials";
 import { lireLePassage, positionDeReprise } from "./langSwap";
 import { YEARLY_PER_MONTH, eur } from "@/app/utils/pricing";
 import { LandingLangProvider, useLandingT, type LandingKey, type LandingLang } from "./i18n";
+import { oauthErrorFromUrl } from "@/app/utils/authErrors";
 import "./landing.css";
 
 /**
@@ -432,6 +433,7 @@ function LandingPage() {
   const [demo, setDemo] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "signup">("signup");
   const [authPlan, setAuthPlan] = useState<string | undefined>();
+  const [authError, setAuthError] = useState<string | undefined>();
   const [faq, setFaq] = useState<number | null>(0);
   const [activeSec, setActiveSec] = useState("");
   /* `collee` est le SEUL état que le défilement fait remonter à React, et il
@@ -553,8 +555,48 @@ function LandingPage() {
   const open = (mode: "login" | "signup", plan?: string) => {
     setAuthMode(mode);
     setAuthPlan(plan);
+    setAuthError(undefined);
     setAuth(true);
   };
+
+  /* LES ADRESSES QUI OUVRENT LE FORMULAIRE.
+   *
+   * `/login`, `/signup`, `/register`… répondaient 404 : ce sont pourtant les
+   * adresses qu'un trader tape de mémoire, et celles qu'on colle dans un
+   * e-mail ou une bio. Elles redirigent ici avec `?auth=login|signup`
+   * (`utils/pageUrl.ts`) et la vitrine s'ouvre directement sur le bon
+   * formulaire.
+   *
+   * Même geste au retour d'un Google raté (accès refusé, lien expiré) :
+   * l'adresse porte `error=…` et le visiteur retombait sur la vitrine sans
+   * un mot. Il retrouve maintenant le formulaire, avec la raison.
+   *
+   * Les paramètres sont retirés de l'adresse aussitôt lus (`replaceState`) :
+   * recharger la page ne doit pas rouvrir le formulaire, ni réafficher une
+   * erreur passée. */
+  /* Lu À LA TRAME SUIVANTE, pas au montage : sur `/`, la vitrine rendue par
+   * le serveur est un repli remplacé juste après l'hydratation par celle de
+   * l'application. Lue au montage, l'adresse était consommée (et nettoyée)
+   * par l'instance qui disparaît — le formulaire ne s'ouvrait jamais. Une
+   * instance démontée avant la trame annule sa lecture. */
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      const url = new URL(window.location.href);
+      const voulu = url.searchParams.get("auth");
+      const erreur = oauthErrorFromUrl(url.search, url.hash);
+      if (!voulu && !erreur) return;
+      setAuthMode(voulu === "signup" ? "signup" : "login");
+      setAuthPlan(undefined);
+      setAuthError(erreur ?? undefined);
+      setAuth(true);
+      for (const k of ["auth", "error", "error_code", "error_description"]) {
+        url.searchParams.delete(k);
+      }
+      const propre = erreur ? "" : url.hash;
+      window.history.replaceState(window.history.state, "", url.pathname + url.search + propre);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, []);
   const go = (id: string) => {
     setActiveSec(id);
     if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
@@ -1202,7 +1244,12 @@ function LandingPage() {
 
       {auth && (
         <Suspense fallback={null}>
-          <AuthModal initialMode={authMode} plan={authPlan} onClose={() => setAuth(false)} />
+          <AuthModal
+            initialMode={authMode}
+            plan={authPlan}
+            initialError={authError}
+            onClose={() => setAuth(false)}
+          />
         </Suspense>
       )}
       {demo && (

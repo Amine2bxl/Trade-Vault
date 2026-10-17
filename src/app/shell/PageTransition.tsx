@@ -67,8 +67,9 @@ export function DeferredFallback({
  * class, force a reflow, add it back — which is the only reliable way to replay
  * a CSS animation without touching React's tree.
  *
- * The animation itself is defined in `styles.css` (`.page-in`): 180ms, opacity
- * 0.55→1 and a 4px rise, compositor-only, disabled under `prefers-reduced-motion`.
+ * The animation itself is defined in `styles.css` (`.page-in`): a 180ms opacity
+ * fade, no movement (the cards carry the only rise), compositor-only, disabled
+ * under `prefers-reduced-motion`.
  */
 export function PageTransition({ page, children }: { page: string; children: ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);

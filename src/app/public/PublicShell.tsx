@@ -30,24 +30,18 @@ import logoSrc from "@/assets/tradevault-logo-128.png";
  * servir la landing complète en SSR.
  */
 export default function PublicShell() {
+  /* SANS TEXTE À TRADUIRE, SANS CYAN.
+     Il affichait « Journal de trading et coach IA. » et un bouton
+     « Découvrir TradeVault » — en français pour tout le monde, alors que la
+     langue servie par défaut est l'anglais (`SSR_LANG`), et dans le cyan de
+     l'ancienne identité. Cet écran ne vit que le temps de l'hydratation : la
+     marque suffit, et elle reste un lien vers l'accueil pour qui n'exécute
+     pas JavaScript. */
   return (
-    <div className="min-h-dvh flex flex-col items-center justify-center gap-5 bg-[var(--tv-bg)] px-6 text-center">
-      <img
-        src={logoSrc}
-        alt="TradeVault"
-        width={56}
-        height={56}
-        className="h-14 w-14 rounded-2xl"
-      />
-      <div className="space-y-1.5">
-        <p className="text-xl font-bold tracking-tight text-white">TradeVault</p>
-        <p className="text-sm text-slate-400">Journal de trading et coach IA.</p>
-      </div>
-      <a
-        href="/"
-        className="rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-4 py-2 text-sm font-semibold text-cyan-300"
-      >
-        Découvrir TradeVault
+    <div className="public-shell min-h-dvh flex flex-col items-center justify-center gap-4 bg-[var(--tv-bg)] px-6 text-center">
+      <a href="/" className="flex flex-col items-center gap-4" aria-label="TradeVault">
+        <img src={logoSrc} alt="" width={56} height={56} className="h-14 w-14 rounded-2xl" />
+        <span className="text-xl font-bold tracking-tight text-white">TradeVault</span>
       </a>
     </div>
   );

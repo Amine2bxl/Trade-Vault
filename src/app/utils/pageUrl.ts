@@ -89,5 +89,41 @@ export function resolveLocation(
   // L'ancien format gagne sur le chemin : `/?p=journal` doit mener au journal,
   // pas au tableau de bord. C'est exactement la forme des liens déjà partagés.
   if (legacy) return { page: legacy, redirectTo: buildPageUrl(legacy, search) };
+  const alias = authAliasRedirect(pathname);
+  if (alias) return { page: DEFAULT_PAGE, redirectTo: alias };
   return { page: pageFromPath(pathname), redirectTo: null };
+}
+
+/**
+ * LES ADRESSES DE CONNEXION QU'UN TRADER TAPE DE MÉMOIRE.
+ *
+ * `/login`, `/signup`, `/register`, `/app`… répondaient 404 — l'écran
+ * « This page slipped the market » au moment précis où quelqu'un essaie
+ * d'entrer. Elles mènent maintenant à `/`, avec le formulaire déjà ouvert
+ * (`?auth=…`, lu par la vitrine). Un trader déjà connecté arrive simplement
+ * sur son tableau de bord : l'application ignore le paramètre.
+ */
+const AUTH_ALIASES: Record<string, "login" | "signup" | null> = {
+  login: "login",
+  "log-in": "login",
+  signin: "login",
+  "sign-in": "login",
+  connexion: "login",
+  auth: "login",
+  signup: "signup",
+  "sign-up": "signup",
+  register: "signup",
+  inscription: "signup",
+  join: "signup",
+  "get-started": "signup",
+  start: "signup",
+  app: null,
+  home: null,
+};
+
+export function authAliasRedirect(pathname: string): string | null {
+  const seg = pathname.replace(/^\/+|\/+$/g, "").toLowerCase();
+  if (!(seg in AUTH_ALIASES)) return null;
+  const mode = AUTH_ALIASES[seg];
+  return mode ? `/?auth=${mode}` : "/";
 }

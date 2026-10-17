@@ -3097,39 +3097,26 @@ body.tv-app-type :is(.tv-figure, .tv-num, .tabular-nums) {
 /* ══════════════════════════════════════════════════════════════════════
  * PAGE TRANSITION
  *
- * Deliberately almost nothing: 180ms, opacity 0.55→1 plus a 4px rise. It is
- * enough to signal "the view changed" and short enough that it never sits
- * between the trader and the data. It starts at 0.55 rather than 0 so the
- * page is legible for the whole animation — a from-zero fade reads as a
- * flash of blank screen, which is exactly what made navigation feel slow.
+ * Deliberately almost nothing: a 180ms opacity fade. Enough to signal "the
+ * view changed", short enough that it never sits between the trader and the
+ * data. The rise belongs to the cards themselves (`animate-fade-in-up`).
  *
  * Applied by toggling `.page-in` on a wrapper that is NEVER remounted, so
  * scroll position, filters and expanded rows survive the transition.
  * ══════════════════════════════════════════════════════════════════════ */
-@keyframes pageIn {
-  from {
-    opacity: 0;
-    transform: translate3d(0, 10px, 0);
-  }
-  to {
-    opacity: 1;
-    transform: translate3d(0, 0, 0);
-  }
-}
 .page-in {
-  /* 260 ms, pas 180 : en dessous de ~220 ms une transition n'est pas perçue
-     comme un mouvement, seulement comme un scintillement — elle coûtait donc
-     son prix sans rien rendre. Assez longue pour être lue, assez courte pour
-     ne jamais se mettre entre le trader et sa donnée. */
-  /* `backwards`, PAS `both`. Avec `both`, l'état final restait appliqué :
-     `transform: translate3d(0,0,0)` pour toujours. Or TOUT `transform`
-     (même nul) fait de l'élément le bloc conteneur de ses descendants
-     `position: fixed`. Chaque couche plein écran d'une page (le fond de la
-     Checklist, une modale rendue dans la page…) se calait alors sur la page
-     et non sur la fenêtre : décalée de la largeur du rail, et la fenêtre de
-     contenu débordait de 249px. `backwards` applique l'état de départ avant
-     l'animation et ne laisse RIEN après elle. */
-  animation: pageIn var(--tv-dur-3) var(--tv-ease-out) backwards;
+  /* UN SEUL MOUVEMENT PAR CHANGEMENT DE PAGE — un fondu, sans déplacement.
+     L'enveloppe montait de 10 px sur 260 ms PENDANT que chaque carte de la
+     page montait de 6 px sur 150 ms (`animate-fade-in-up`) : deux courses de
+     longueurs et de durées différentes, additionnées. Le contenu arrivait,
+     s'arrêtait presque, puis finissait sa course — un geste en deux temps,
+     lu comme un « zoom » qui s'y reprend. `fade-in-up` reste LA seule entrée
+     (skill motion) ; l'enveloppe ne fait plus que fondre.
+
+     `backwards` : l'état de départ s'applique avant l'animation et rien ne
+     reste après elle (un `transform` résiduel faisait de la page le bloc
+     conteneur de ses couches `position: fixed`). */
+  animation: fade-in var(--tv-dur-2) var(--tv-ease-out) backwards;
 }
 @media (prefers-reduced-motion: reduce) {
   .page-in {

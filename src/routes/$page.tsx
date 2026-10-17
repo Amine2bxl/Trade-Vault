@@ -1,6 +1,4 @@
-import { lazyPage } from "@/shared/lazy-page";
-import { createFileRoute, ClientOnly, redirect, notFound } from "@tanstack/react-router";
-import App from "@/app/shell/App";
+import { createFileRoute, redirect, notFound } from "@tanstack/react-router";
 import PublicShell from "@/app/public/PublicShell";
 import { pageSeo } from "../shared/seo";
 import { isPage } from "@/app/types";
@@ -30,7 +28,17 @@ export const Route = createFileRoute("/$page")({
   // côté serveur, donc sans clignotement pour l'utilisateur.
   beforeLoad: ({ params, location }) => {
     const { page, redirectTo } = resolveLocation(`/${params.page}`, location.searchStr ?? "");
-    if (redirectTo) throw redirect({ to: redirectTo, replace: true });
+    if (redirectTo) {
+      // Chemin ET paramètres séparés : passé tel quel dans `to`, un
+      // `/?auth=login` perdait sa requête et la vitrine ne savait plus
+      // qu'il fallait ouvrir le formulaire.
+      const cible = new URL(redirectTo, "http://tradevault.local");
+      throw redirect({
+        to: cible.pathname,
+        search: Object.fromEntries(cible.searchParams),
+        replace: true,
+      });
+    }
     if (!page) throw notFound();
   },
   head: ({ params }) => {
@@ -49,8 +57,6 @@ export const Route = createFileRoute("/$page")({
 });
 
 function AppPage() {
-  // Le shell authentifié ne monte que côté client, une fois l'auth résolue.
-  //
   // Le repli SSR n'est PLUS la landing complète. Elle était importée ici en
   // statique, ce que le build disait noir sur blanc : « Landing.tsx is
   // dynamically imported by App.tsx but also statically imported by
@@ -63,9 +69,9 @@ function AppPage() {
   // vraie landing : `App` la rend, chargée à la demande. Ces routes sont en
   // `noindex`, donc rien n'est perdu côté référencement — la landing complète
   // reste servie en SSR sur `/`.
-  return (
-    <ClientOnly fallback={<PublicShell />}>
-      <App />
-    </ClientOnly>
-  );
+  //
+  // `App` elle-même est montée par la RACINE (`AppHost`, `routes/__root.tsx`),
+  // une seule fois pour `/` et `/$page` : montée ici, elle était démontée à
+  // chaque passage par le tableau de bord.
+  return <PublicShell />;
 }

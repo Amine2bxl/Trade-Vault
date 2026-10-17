@@ -5,8 +5,10 @@ import {
   pageFromLegacySearch,
   buildPageUrl,
   resolveLocation,
+  authAliasRedirect,
   DEFAULT_PAGE,
 } from "../pageUrl";
+import { PAGES } from "../../types";
 
 describe("pathForPage", () => {
   it("le tableau de bord vit à la racine", () => {
@@ -81,5 +83,27 @@ describe("buildPageUrl", () => {
     for (const page of ["journal", "analytics", "settings", "goals", "dashboard"] as const) {
       expect(pageFromPath(buildPageUrl(page, ""))).toBe(page);
     }
+  });
+});
+
+describe("adresses de connexion tapées de mémoire", () => {
+  it("`/login`, `/signup`, `/register` ouvrent le bon formulaire au lieu d'un 404", () => {
+    expect(resolveLocation("/login", "").redirectTo).toBe("/?auth=login");
+    expect(resolveLocation("/sign-in/", "").redirectTo).toBe("/?auth=login");
+    expect(resolveLocation("/signup", "").redirectTo).toBe("/?auth=signup");
+    expect(resolveLocation("/Register", "").redirectTo).toBe("/?auth=signup");
+  });
+
+  it("`/app` mène simplement à l'accueil", () => {
+    expect(authAliasRedirect("/app")).toBe("/");
+  });
+
+  it("aucun alias ne masque une vraie page", () => {
+    for (const page of PAGES) expect(authAliasRedirect(`/${page}`)).toBeNull();
+  });
+
+  it("une adresse inconnue reste un 404", () => {
+    expect(resolveLocation("/nimporte-quoi", "").page).toBeNull();
+    expect(resolveLocation("/nimporte-quoi", "").redirectTo).toBeNull();
   });
 });

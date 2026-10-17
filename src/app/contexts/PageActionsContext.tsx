@@ -1,4 +1,16 @@
-import { createContext, useContext, useEffect, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useLayoutEffect, type ReactNode } from "react";
+
+/**
+ * AVANT LA PEINTURE, pas après.
+ *
+ * Les deux emplacements étaient remplis par un `useEffect` : la page se
+ * peignait sous une barre de tête VIDE, puis la barre se garnissait — elle
+ * changeait de hauteur et tout le contenu glissait d'autant. Les pages plein
+ * écran le payaient deux fois (voir `useAvailableHeight`). En effet de mise
+ * en page, la barre est remplie dans le même passage que la page : la
+ * première image est la bonne.
+ */
+const useIsomorphicLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 /**
  * L'en-tête de la page courante, remonté dans la barre de tête (App.tsx) pour
@@ -35,7 +47,7 @@ export function PageActionsProvider({
 /** Déclare les BOUTONS d'en-tête de la page courante (emplacement droit). */
 export function usePageActions(actions: ReactNode | null) {
   const set = useContext(PageActionsContext);
-  useEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     set("actions", actions);
     return () => set("actions", null);
   }, [set, actions]);
@@ -44,7 +56,7 @@ export function usePageActions(actions: ReactNode | null) {
 /** Déclare le RÉSUMÉ d'en-tête de la page courante (emplacement gauche). */
 export function usePageLead(lead: ReactNode | null) {
   const set = useContext(PageActionsContext);
-  useEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     set("lead", lead);
     return () => set("lead", null);
   }, [set, lead]);

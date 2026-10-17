@@ -1,6 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ClientOnly } from "@tanstack/react-router";
-import App from "@/app/shell/App";
 import { LANDING_ALTERNATES, pageSeo } from "../shared/seo";
 import Landing from "@/app/public/landing/Landing";
 
@@ -39,10 +37,11 @@ function Index() {
   // Le HTML initial contient DIRECTEMENT la landing publique (SSR) : les
   // moteurs IA (ChatGPT, Claude, Gemini, Perplexity…) et les crawlers SEO
   // lisent le contenu sans exécuter JavaScript → meilleur GEO + LCP.
-  // Le shell authentifié (App) ne monte que côté client, une fois l'auth résolue.
-  return (
-    <ClientOnly fallback={<Landing />}>
-      <App />
-    </ClientOnly>
-  );
+  //
+  // L'application (`App`) n'est PLUS montée ici : la racine l'héberge une
+  // seule fois pour `/` et `/$page` (voir `AppHost`, `routes/__root.tsx`),
+  // sinon chaque passage par le tableau de bord la démontait. Cette vitrine
+  // reste ce que voit le serveur, et l'application la reprend telle quelle
+  // pour un visiteur non connecté.
+  return <Landing />;
 }
