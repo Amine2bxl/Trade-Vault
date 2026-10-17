@@ -1,10 +1,10 @@
 import { useMemo, useState } from "react";
-import { Palette } from "lucide-react";
+import { Palette } from "@/shared/ui/icons";
 import { useT } from "@/app/i18n/LanguageContext";
 import { useTheme } from "@/app/contexts/ThemeContext";
 import ThemeSettings from "./ThemeSettings";
 import ThemeStudioModal from "./ThemeStudioModal";
-import { Button } from "@/shared/ui";
+import { PageContainer, Button } from "@/shared/ui";
 import { usePageActions, usePageLead } from "@/app/contexts/PageActionsContext";
 
 export default function Appearance() {
@@ -61,13 +61,13 @@ export default function Appearance() {
   usePageActions(actions);
 
   return (
-    <div className="mx-auto max-w-[1000px] space-y-3 p-4 md:p-5">
+    <PageContainer className="max-w-[1000px] space-y-3">
       <div className="animate-fade-in-up stagger-1">
         <ThemeSettings />
       </div>
       {/* `draft` : ouvert depuis « créer un thème », donc annulable pour de
           vrai — la fenêtre supprime le thème si le trader renonce. */}
       {studioId && <ThemeStudioModal themeId={studioId} draft onClose={() => setStudioId(null)} />}
-    </div>
+    </PageContainer>
   );
 }

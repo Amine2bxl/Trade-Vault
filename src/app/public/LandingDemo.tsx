@@ -181,7 +181,7 @@ export function LandingDemo({ mode, onClose }: { mode: Mode; onClose: () => void
 
         {/* Footer */}
         <div className="flex items-center justify-between gap-3 px-5 py-4 border-t border-white/[0.06]">
-          <div className="tv-figure text-[11px] text-slate-600">
+          <div className="tv-figure tv-figure-secondary text-[11px] text-slate-600">
             {idx + 1} / {total}
           </div>
           {mode === "guide" ? (
@@ -282,12 +282,17 @@ function JournalMock() {
             </div>
           </div>
           <div className="text-right">
-            <div className={cn("tv-figure text-xs", r.win ? "text-emerald-400" : "text-red-400")}>
+            <div
+              className={cn(
+                "tv-figure tv-figure-secondary text-xs",
+                r.win ? "text-emerald-400" : "text-red-400",
+              )}
+            >
               {r.r}
             </div>
             <div
               className={cn(
-                "tv-figure text-[10px]",
+                "tv-figure tv-figure-secondary text-[10px]",
                 r.win ? "text-emerald-300/80" : "text-red-300/80",
               )}
             >

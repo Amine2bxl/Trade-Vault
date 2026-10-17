@@ -1,4 +1,4 @@
-import { Loader2 } from "lucide-react";
+import { Loader2 } from "@/shared/ui/icons";
 
 export default function LoadingScreen({ message = "Loading…" }: { message?: string }) {
   return (

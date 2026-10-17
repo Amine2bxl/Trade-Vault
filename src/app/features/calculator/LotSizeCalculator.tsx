@@ -10,7 +10,7 @@ import {
   TrendingUp,
   BarChart3,
   Layers,
-} from "lucide-react";
+} from "@/shared/ui/icons";
 import {
   POINT_VALUES,
   FOREX_PAIRS,
@@ -20,7 +20,7 @@ import {
 import { useAccounts } from "@/app/contexts/AccountContext";
 import { useT } from "@/app/i18n/LanguageContext";
 import { cn } from "@/shared/ui/cn";
-import { FIELD_BASE, Button } from "@/shared/ui";
+import { PageContainer, FIELD_BASE, Button } from "@/shared/ui";
 import type { Page } from "@/app/types";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { loadUserPref, saveUserPref } from "@/app/utils/userPrefs";
@@ -190,7 +190,7 @@ export default function LotSizeCalculator({ onAddTrade }: LotSizeCalculatorProps
   const gaugePct = Math.max(0, Math.min(100, (riskPctNum / RECOMMENDED_RISK_PCT) * 100));
 
   return (
-    <div className="p-4 md:p-5 max-w-[1400px] mx-auto">
+    <PageContainer>
       {/* Deux colonnes à partir de `lg`, et une piste `minmax(0, 1fr)`. Un `1fr`
           nu ne descend jamais sous la largeur minimale de son contenu : sur
           tablette (768px, dont ~230 pour le rail), `1fr + 320px` débordait de
@@ -297,7 +297,7 @@ export default function LotSizeCalculator({ onAddTrade }: LotSizeCalculatorProps
                     <span className="tv-figure block text-sm">{p}%</span>
                     <span
                       className={cn(
-                        "tv-figure mt-0.5 block text-[10px] font-medium",
+                        "tv-figure tv-figure-secondary mt-0.5 block text-[10px] font-medium",
                         active ? "text-[var(--tv-highlight)]" : "text-slate-500",
                       )}
                     >
@@ -314,7 +314,9 @@ export default function LotSizeCalculator({ onAddTrade }: LotSizeCalculatorProps
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
                   {t("calc.riskBudget")}
                 </span>
-                <span className="tv-figure text-[10px] text-slate-500">{riskPctNum}%</span>
+                <span className="tv-figure tv-figure-secondary text-[10px] text-slate-500">
+                  {riskPctNum}%
+                </span>
               </div>
               <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
                 <div
@@ -400,7 +402,8 @@ export default function LotSizeCalculator({ onAddTrade }: LotSizeCalculatorProps
                           : "bg-white/[0.03] border-white/[0.06] text-slate-500 hover:text-slate-300",
                       )}
                     >
-                      {p.label} <span className="font-medium text-slate-500">${p.value}</span>
+                      {p.label}{" "}
+                      <span className="tv-num font-medium text-slate-500">${p.value}</span>
                     </button>
                   ))}
                 </div>
@@ -502,7 +505,7 @@ export default function LotSizeCalculator({ onAddTrade }: LotSizeCalculatorProps
                 <span className="text-[10px] text-slate-500 uppercase tracking-wider">
                   {t("calc.riskBudget")}
                 </span>
-                <span className="tv-figure text-xs text-[var(--tv-highlight)]">
+                <span className="tv-figure tv-figure-secondary text-xs text-[var(--tv-highlight)]">
                   ${riskDollar.toFixed(2)} · {riskPctNum || 0}% {t("calc.riskOfAccount")}
                 </span>
               </div>
@@ -524,7 +527,7 @@ export default function LotSizeCalculator({ onAddTrade }: LotSizeCalculatorProps
           )}
         </div>
       </div>
-    </div>
+    </PageContainer>
   );
 }
 

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { Page, SectionId } from "../types";
-import { Check, ChevronDown, Lock } from "lucide-react";
+import { Check, ChevronDown, Lock } from "@/shared/ui/icons";
 import { PAGE_META, pagesOfSection } from "./navigation";
 import { useSubscription } from "../hooks/useSubscription";
 import { canAccessPage } from "../utils/pricing";
@@ -181,7 +181,7 @@ export default function SectionTabs({ section, page, setPage }: SectionTabsProps
         >
           <ActiveIcon className="h-4 w-4 shrink-0 text-[var(--tv-accent)]" strokeWidth={2.1} />
           <span className="min-w-0 flex-1 truncate text-left">{t(activeLabelKey)}</span>
-          <span className="section-picker-count">
+          <span className="tv-num section-picker-count">
             {activeIndex + 1}/{pages.length}
           </span>
           <ChevronDown

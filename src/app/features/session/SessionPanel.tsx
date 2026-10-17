@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Play, Square, Activity } from "lucide-react";
+import { Play, Square, Activity } from "@/shared/ui/icons";
 import type { Trade } from "@/app/types";
 import {
   closeSession,
@@ -172,7 +172,7 @@ export default function SessionPanel({
             {session?.readinessScore ?? preview.score ?? "—"}
             <span className="text-xs font-bold text-slate-500">/100</span>
           </div>
-          <p className="tv-hint">
+          <p className="tv-num tv-hint">
             {t("session.readiness")} · {checklistDone}/{checklistTotal} ·{" "}
             {t("session.rulesShort").replace("{n}", String(ruleCount))}
           </p>

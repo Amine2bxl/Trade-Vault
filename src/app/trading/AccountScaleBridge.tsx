@@ -1,4 +1,4 @@
-import { ArrowRight } from "lucide-react";
+import { ArrowRight } from "@/shared/ui/icons";
 import { cn } from "@/shared/ui";
 import { formatMoney } from "@/shared/currency";
 import { fmtFactor } from "./accountCalibration";
@@ -39,7 +39,7 @@ export function AccountScaleBridge({
       <div className="flex flex-col items-center gap-1 px-1" aria-hidden>
         <span
           className={cn(
-            "tv-figure rounded-md border px-1.5 py-0.5 text-[12px] font-bold",
+            "tv-figure tv-figure-secondary rounded-md border px-1.5 py-0.5 text-[12px] font-bold",
             scaled
               ? "border-[var(--tv-border-accent)] bg-[rgb(var(--tv-accent-rgb)/0.1)] text-[var(--tv-accent)]"
               : "border-[var(--tv-border)] text-slate-500",

@@ -15,7 +15,7 @@ import {
   TrendingUp,
   User,
   Zap,
-} from "lucide-react";
+} from "@/shared/ui/icons";
 import type { Account, AccountType } from "../store";
 
 /**

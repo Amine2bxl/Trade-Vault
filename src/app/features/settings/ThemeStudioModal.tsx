@@ -1,5 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Palette, RotateCcw, Check, ChevronDown, ArrowLeft, ArrowRight, Link2 } from "lucide-react";
+import {
+  Palette,
+  RotateCcw,
+  Check,
+  ChevronDown,
+  ArrowLeft,
+  ArrowRight,
+  Link2,
+} from "@/shared/ui/icons";
 import { Modal, FIELD_BASE, ColorPicker, type ColorPickerLabels } from "@/shared/ui";
 import { useTheme } from "@/app/contexts/ThemeContext";
 import { useT } from "@/app/i18n/LanguageContext";
@@ -170,6 +178,7 @@ export default function ThemeStudioModal({
                 />
                 <span
                   className={cn(
+                    "tv-num",
                     "text-[11px] font-semibold",
                     i === step ? "text-white" : "text-slate-500",
                   )}

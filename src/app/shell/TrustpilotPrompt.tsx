@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Star, X } from "lucide-react";
+import { Star, X } from "@/shared/ui/icons";
 import { useAuth } from "../contexts/AuthContext";
 import { useT } from "../i18n/LanguageContext";
 import {

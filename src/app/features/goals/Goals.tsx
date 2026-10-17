@@ -1,6 +1,7 @@
+import { PageContainer } from "@/shared/ui";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import MonthCelebration from "./MonthCelebration";
-import { Loader2, Flag } from "lucide-react";
+import { Loader2, Flag } from "@/shared/ui/icons";
 import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useAccounts } from "@/app/contexts/AccountContext";
@@ -220,16 +221,16 @@ export default function Goals({ trades }: { trades: Trade[] }) {
 
   if (loading) {
     return (
-      <div className="p-4 md:p-5 max-w-[1400px] mx-auto">
+      <PageContainer>
         <div className="glass rounded-3xl p-10 flex justify-center">
           <Loader2 className="w-6 h-6 text-cyan-400 animate-spin" />
         </div>
-      </div>
+      </PageContainer>
     );
   }
 
   return (
-    <div className="p-4 md:p-5 max-w-[1400px] mx-auto">
+    <PageContainer>
       {!plan ? (
         <GoalPicker ctx={ctx} fr={fr} busy={busy} onGenerate={generate} />
       ) : (
@@ -249,7 +250,7 @@ export default function Goals({ trades }: { trades: Trade[] }) {
       {fete && (
         <MonthCelebration mois={fete.mois} total={fete.total} onDone={() => setFete(null)} />
       )}
-    </div>
+    </PageContainer>
   );
 }
 

@@ -60,6 +60,7 @@ export function SubNav<T extends string>({
           ? items.length - 1
           : (i + delta + items.length) % items.length;
     onChange(items[next].id);
+    e.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]')[next]?.focus();
   };
 
   return (
@@ -84,7 +85,7 @@ export function SubNav<T extends string>({
           >
             {it.icon}
             <span>{it.label}</span>
-            {it.count !== undefined && <span className="tv-subnav-count">{it.count}</span>}
+            {it.count !== undefined && <span className="tv-num tv-subnav-count">{it.count}</span>}
           </button>
         );
       })}

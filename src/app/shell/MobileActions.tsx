@@ -1,4 +1,4 @@
-import { Bell, Settings } from "lucide-react";
+import { Bell, Settings } from "@/shared/ui/icons";
 import type { Page } from "../types";
 import { preloadPage } from "./pageModules";
 import { cn } from "@/shared/ui/cn";

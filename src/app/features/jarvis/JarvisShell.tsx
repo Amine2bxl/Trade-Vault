@@ -1,5 +1,5 @@
 import { Suspense, useState, type ReactNode } from "react";
-import { MessageSquare, PanelLeft, Settings2, X } from "lucide-react";
+import { MessageSquare, PanelLeft, Settings2, X } from "@/shared/ui/icons";
 import { cn } from "@/shared/ui/cn";
 import { useT } from "@/app/i18n/LanguageContext";
 import { JarvisOrb, Modal, SubNav, type SubNavItem } from "@/shared/ui";

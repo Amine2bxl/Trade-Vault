@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef } from "react";
-import { ArrowUp, Mic, MicOff } from "lucide-react";
+import { ArrowUp, Mic, MicOff } from "@/shared/ui/icons";
 import { useT } from "@/app/i18n/LanguageContext";
 import { cn } from "@/shared/ui/cn";
 
@@ -71,7 +71,7 @@ export default function Composer({
       <div
         /* Le compositeur s'allume quand on écrit : liseré d'accent et halo
            discret, pour que le champ se lise comme l'endroit où tout commence. */
-        className="jarvis-composer flex items-end gap-1.5 p-1.5"
+        className="jarvis-composer flex items-end gap-1.5 p-2"
       >
         {micAvailable && onMic && (
           <button
@@ -80,7 +80,7 @@ export default function Composer({
             aria-label={t("common.voiceInput")}
             aria-pressed={!!listening}
             className={cn(
-              "grid h-9 w-9 shrink-0 place-items-center rounded-xl transition-colors",
+              "jarvis-composer-action grid shrink-0 place-items-center rounded-lg transition-colors",
               listening
                 ? "bg-red-500/15 text-red-400"
                 : "text-slate-400 hover:bg-white/[0.07] hover:text-white",
@@ -116,7 +116,7 @@ export default function Composer({
           disabled={!pret}
           aria-label={t("jarvis.send")}
           className={cn(
-            "grid h-9 w-9 shrink-0 place-items-center rounded-xl transition",
+            "jarvis-composer-action grid shrink-0 place-items-center rounded-lg transition-colors",
             pret
               ? "tv-accent-fill jarvis-send-ready active:scale-95"
               : "cursor-not-allowed bg-white/[0.05] text-slate-600",
@@ -126,7 +126,7 @@ export default function Composer({
         </button>
       </div>
 
-      <p className="tv-hint mt-1.5 px-1">{t("jarvis.composerHint")}</p>
+      <p className="tv-hint jarvis-composer-hint mt-1.5 px-1">{t("jarvis.composerHint")}</p>
     </div>
   );
 }

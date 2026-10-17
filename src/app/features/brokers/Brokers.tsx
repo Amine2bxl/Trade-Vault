@@ -18,7 +18,7 @@ import {
   Trash2,
   TriangleAlert,
   Wrench,
-} from "lucide-react";
+} from "@/shared/ui/icons";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useAccounts } from "@/app/contexts/AccountContext";
 import { useToast } from "@/app/contexts/ToastContext";
@@ -46,7 +46,7 @@ import {
 } from "@/backend/brokers.functions";
 import { announceBrokerImport, announceBrokersChanged } from "./useBrokerSync";
 import { SyncCelebration, type CelebrationState } from "./SyncCelebration";
-import { Badge, Button, Card, FIELD_BASE, SelectPicker, cn } from "@/shared/ui";
+import { PageContainer, Badge, Button, Card, FIELD_BASE, SelectPicker, cn } from "@/shared/ui";
 import { currencySymbol } from "@/shared/currency";
 
 /**
@@ -598,7 +598,7 @@ export default function Brokers() {
   );
 
   return (
-    <div className="mx-auto max-w-[1040px] space-y-4 p-4 md:p-5">
+    <PageContainer className="max-w-[1040px] space-y-3 md:space-y-4">
       {/* ── PAS ENCORE CONNECTÉ : la promesse, le geste, la confiance ── */}
       {!hasConnections && connections !== null && (
         <Card pad="none" className="animate-fade-in-up overflow-hidden">
@@ -765,7 +765,7 @@ export default function Brokers() {
           window.dispatchEvent(new CustomEvent("tv:navigate", { detail: { page: "journal" } }));
         }}
       />
-    </div>
+    </PageContainer>
   );
 }
 
@@ -863,7 +863,9 @@ function Steps({ t }: { t: T }) {
           key={title}
           className="rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-2)] px-3 py-2.5"
         >
-          <span className="tv-figure text-[11px] font-bold text-[var(--tv-accent)]">0{i + 1}</span>
+          <span className="tv-figure tv-figure-secondary text-[11px] font-bold text-[var(--tv-accent)]">
+            0{i + 1}
+          </span>
           <div className="mt-0.5 text-[13px] font-semibold text-slate-100">{t(title)}</div>
           <div className="text-xs leading-snug text-slate-500">{t(body)}</div>
         </li>

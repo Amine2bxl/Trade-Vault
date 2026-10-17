@@ -12,7 +12,7 @@ import {
   Brain,
   Calendar,
   Lock,
-} from "lucide-react";
+} from "@/shared/ui/icons";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { usePushNotifications } from "@/app/hooks/usePushNotifications";

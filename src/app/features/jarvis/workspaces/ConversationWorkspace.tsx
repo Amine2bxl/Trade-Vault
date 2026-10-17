@@ -1,8 +1,20 @@
 import { getCurrency } from "@/shared/currency";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowUpRight, Check, Eraser, RotateCcw, Square, Volume2, Zap } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUpRight,
+  Check,
+  Eraser,
+  RotateCcw,
+  Square,
+  Volume2,
+  Zap,
+} from "@/shared/ui/icons";
 import { JarvisMark, JarvisOrb, type JarvisOrbState } from "@/shared/ui";
 import Composer from "../Composer";
+import { responseTextOf } from "../responseText";
+import { ResponseActions } from "../components/ResponseActions";
+import { numericText } from "@/shared/ui/NumericText";
 import TypedAnswer from "../TypedAnswer";
 import { setJarvisActivity } from "../activity";
 import { useJarvisVoice } from "../jarvisVoice";
@@ -399,6 +411,22 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
   const lastQuestionRef = useRef<string>("");
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const followRef = useRef(true);
+  const [showLatest, setShowLatest] = useState(false);
+  const scrollToLatest = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    followRef.current = true;
+    setShowLatest(false);
+    el.scrollTo({
+      top: el.scrollHeight,
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+    });
+  }, []);
+  useEffect(() => {
+    followRef.current = true;
+    setShowLatest(false);
+  }, [context.conversationId]);
   // Mémoire persistante chargée UNE fois par utilisateur, hors du chemin de la
   // question : la sélection par intention se fait ensuite en local, à coût nul.
   // Charger au moment de l'envoi ajouterait un aller-retour réseau à CHAQUE
@@ -537,7 +565,8 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
   );
 
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    const el = scrollRef.current;
+    if (el && followRef.current) el.scrollTop = el.scrollHeight;
   }, [messages, loading]);
 
   // Seed Jarvis's long-term memory from the profile the first time the
@@ -897,7 +926,7 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
   }, [SpeechRecognitionCtor, listening, lang]);
 
   return (
-    <div className="flex flex-col flex-1 min-h-0">
+    <div className="jarvis-conversation relative flex flex-col flex-1 min-h-0">
       {/* LA BANDE D'OUTILS N'EXISTE QUE QUAND ELLE PORTE QUELQUE CHOSE.
           Elle occupait une hauteur pleine pour afficher le mot
           « Conversation » — un titre qui répète ce que la page est déjà, sur
@@ -925,18 +954,24 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
           nouveaux messages, pas le re-rendu de tout le fil. */}
       <div
         ref={scrollRef}
+        onScroll={(e) => {
+          const el = e.currentTarget;
+          const near = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+          followRef.current = near;
+          setShowLatest(!near);
+        }}
         /* `grid place-items-center` UNIQUEMENT sur la conversation vide : le
            bloc d'accueil se pose alors au milieu du panneau au lieu de
            s'accrocher au coin haut-gauche. Dès qu'il y a des messages, on
            repasse en flux normal — un fil de discussion se lit du haut. */
         className={
           messages.length === 0 && loaded
-            ? "grid flex-1 place-items-center overflow-y-auto px-4 py-5 md:px-8"
-            : "flex-1 space-y-5 overflow-y-auto px-4 py-5 md:px-8"
+            ? "jarvis-thread jarvis-thread-empty grid flex-1 place-items-center overflow-y-auto"
+            : "jarvis-thread flex-1 overflow-y-auto"
         }
         aria-live="polite"
         aria-relevant="additions"
-        aria-busy={loading}
+        aria-busy={loading || typingId !== null}
       >
         {!loaded ? (
           /* Chargement de la conversation — squelette, jamais de texte gris. */
@@ -998,7 +1033,7 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
             m.role === "user" ? (
               /* L'utilisateur garde la bulle : l'asymétrie devient le repère de
                  tour, sans enfermer le contenu analytique de Jarvis. */
-              <div key={m.id} className="flex justify-end">
+              <div key={m.id} className="jarvis-user-turn flex justify-end">
                 {/* LA BULLE N'EST PLUS VERTE. Chaque question du trader
                     s'affichait en vert plein : dans une conversation de dix
                     messages, la couleur d'action du produit se retrouvait
@@ -1006,13 +1041,13 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
                     est une plaque neutre — l'asymétrie suffit à dire qui
                     parle, et le vert reste à Jarvis et aux boutons. */}
                 <div className="jarvis-bubble-user max-w-[85%] whitespace-pre-wrap">
-                  {textOf(m) || ""}
+                  {numericText(textOf(m) || "")}
                 </div>
               </div>
             ) : (
               /* Jarvis : CANVAS pleine largeur. Plus de bulle autour des cartes
                  — fin des cartes-dans-une-carte, les blocs respirent enfin. */
-              <div key={m.id} className="jarvis-turn animate-fade-in-up">
+              <div key={m.id} className="jarvis-turn animate-fade-in-up" data-message-id={m.id}>
                 <div className="mb-2.5 flex items-center gap-2">
                   {/* La réponse EN COURS DE LECTURE porte l'orbe qui parle ;
                       les autres, la marque au repos. */}
@@ -1026,28 +1061,13 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
                   <span className="tv-label text-[var(--tv-highlight)]">
                     {t("assistant.title")}
                   </span>
-                  {m.role === "assistant" && typingId !== m.id && spokenOf(m) && (
-                    <button
-                      type="button"
-                      onClick={() => readAloud(m)}
-                      className="jarvis-listen ml-auto"
-                      aria-pressed={readingId === m.id}
-                    >
-                      {readingId === m.id ? (
-                        <Square className="h-3 w-3" aria-hidden />
-                      ) : (
-                        <Volume2 className="h-3.5 w-3.5" aria-hidden />
-                      )}
-                      {readingId === m.id ? t("jarvis.stopListening") : t("jarvis.listen")}
-                    </button>
-                  )}
                 </div>
                 {m.role === "assistant" && typingId === m.id ? (
                   <TypedAnswer
                     content={textOf(m)}
                     onProgress={() => {
                       const el = scrollRef.current;
-                      if (el) el.scrollTop = el.scrollHeight;
+                      if (el && followRef.current) el.scrollTop = el.scrollHeight;
                     }}
                     onDone={() => {
                       setTypingId(null);
@@ -1069,6 +1089,25 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
                     )}
                   </div>
                 )}
+                {m.role === "assistant" && typingId !== m.id && (
+                  <ResponseActions text={responseTextOf(m)}>
+                    {m.role === "assistant" && typingId !== m.id && spokenOf(m) && (
+                      <button
+                        type="button"
+                        onClick={() => readAloud(m)}
+                        className="jarvis-listen"
+                        aria-pressed={readingId === m.id}
+                      >
+                        {readingId === m.id ? (
+                          <Square className="h-3 w-3" aria-hidden />
+                        ) : (
+                          <Volume2 className="h-3.5 w-3.5" aria-hidden />
+                        )}
+                        {readingId === m.id ? t("jarvis.stopListening") : t("jarvis.listen")}
+                      </button>
+                    )}
+                  </ResponseActions>
+                )}
               </div>
             ),
           )
@@ -1080,7 +1119,9 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
              au lieu d'un squelette gris qui ne dit rien. */
           <div className="jarvis-turn animate-fade-in">
             <div className="mb-3 flex items-center gap-2.5">
-              <JarvisOrb state="thinking" size={28} label={t("jarvis.thinking")} />
+              <span className="jarvis-thinking-mark">
+                <JarvisMark className="h-4 w-4" />
+              </span>
               <span className="tv-label text-[var(--tv-highlight)]">{t("jarvis.thinking")}</span>
             </div>
             <ThinkingSteps
@@ -1093,8 +1134,30 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
         )}
       </div>
 
+      {showLatest && (
+        <button type="button" className="jarvis-latest" onClick={scrollToLatest}>
+          <ArrowDown className="h-3.5 w-3.5" />
+          {t("jarvis.latest")}
+        </button>
+      )}
       {/* Saisie */}
-      <div className="p-3 md:p-4 border-t border-white/[0.06] shrink-0">
+      <div className="jarvis-composer-dock shrink-0">
+        {typingId && (
+          <div className="jarvis-generation-controls">
+            <span role="status">{t("jarvis.generating")}</span>
+            <button
+              type="button"
+              onClick={() => {
+                const message = messages.find((m) => m.id === typingId);
+                setTypingId(null);
+                if (message && readAutoSpeak()) readAloud(message);
+              }}
+            >
+              {t("jarvis.showFull")}
+            </button>
+          </div>
+        )}
+
         {(quotaBanner || exceedsDailyLimit(userId, dailyLimit)) && (
           /* La limite du jour : le message et l'offre dépendent du palier —
              un abonné Pro ne se voit jamais proposer « Pro ». */
@@ -1124,7 +1187,11 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
         <Composer
           value={question}
           onChange={setQuestion}
-          onSubmit={() => ask(question)}
+          onSubmit={() => {
+            followRef.current = true;
+            setShowLatest(false);
+            void ask(question);
+          }}
           disabled={loading}
           listening={listening}
           onMic={toggleMic}

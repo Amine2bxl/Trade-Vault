@@ -18,8 +18,8 @@ import {
   FileText,
   ShieldCheck,
   Coins,
-} from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+} from "@/shared/ui/icons";
+import type { LucideIcon } from "@/shared/ui/icons";
 import { Trade, LANGUAGES } from "@/app/types";
 import {
   loadLanguage,
@@ -253,7 +253,7 @@ export default function Settings({
           par un vide. C'est ce qui fait la différence entre une page de
           réglages et une pile de widgets. */}
       <Card
-        variant="glass-strong"
+        variant="glass"
         className="animate-fade-in-up stagger-0 overflow-hidden lg:grid lg:grid-cols-[244px_1fr]"
       >
         {/* ── RAIL DES RUBRIQUES ── */}

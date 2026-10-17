@@ -1,57 +1,23 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Clock } from "lucide-react";
+import { useId, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Clock, ChevronDown } from "@/shared/ui/icons";
 import { cn } from "./cn";
 import { FIELD_BASE } from "./Input";
-import { usePopPlacement } from "./usePopPlacement";
-
-/**
- * LE CHAMP D'HEURE — celui du produit, plus celui du navigateur.
- *
- * Même histoire que `DateField` : `<input type="time">` ouvre un minuteur natif
- * blanc, hors document, insensible au thème.
- *
- * ── DEUX ROUES, CHAQUE MINUTE ──
- * La version précédente proposait les minutes de 5 en 5 (un trade entré à
- * 09:47 ne pouvait pas être saisi à 09:47) dans deux listes à barre de
- * défilement blanche. Ce sont maintenant deux roues :
- *   • toutes les minutes, 00 → 59 ;
- *   • la valeur se pose au CENTRE, sous une bande qui la désigne — on voit
- *     d'un coup d'œil ce qui est choisi ;
- *   • molette, trackpad et doigt font défiler (aimantation `scroll-snap`),
- *     un clic amène une valeur au centre, et les flèches ↑ ↓ (Page ↑ ↓ pour
- *     sauter de 5) règlent la colonne qui a le focus ;
- *   • aucune barre de défilement visible.
- *
- * `value` est `HH:MM` en 24 heures — le format de stockage. Seul l'AFFICHAGE du
- * champ suit la locale (12 ou 24 heures) ; ce qui remonte par `onChange` reste
- * `HH:MM`.
- */
-
-const HEURES = Array.from({ length: 24 }, (_, i) => i);
+import { SelectionPanel } from "./SelectionPanel";
+import { formatTimeValue, minuteOptions, normalizeTimeDraft, parseTimeValue } from "./timeValue";
 
 export interface TimeFieldProps {
-  /** Heure `HH:MM` (24 h). */
   value: string;
   onChange: (hhmm: string) => void;
   locale?: string;
   className?: string;
   disabled?: boolean;
-  /** Pas des minutes proposées. 1 par défaut : chaque minute se saisit. */
   step?: number;
-  /** Libellé du bouton qui ferme la roue (traduit par l'appelant). */
   doneLabel?: string;
   "aria-label"?: string;
 }
 
-function parse(v: string): { h: number; m: number } | null {
-  const match = /^(\d{1,2}):(\d{2})$/.exec(v ?? "");
-  if (!match) return null;
-  const h = Number(match[1]);
-  const m = Number(match[2]);
-  if (h > 23 || m > 59) return null;
-  return { h, m };
-}
-
+/** Le défilement reste natif. Seul un clic, une touche ou une heure valide
+ * saisie change la valeur : aucun debounce, aucune boucle scroll → état → scroll. */
 export function TimeField({
   value,
   onChange,
@@ -62,255 +28,182 @@ export function TimeField({
   doneLabel = "OK",
   ...aria
 }: TimeFieldProps) {
-  const [ouvert, setOuvert] = useState(false);
-  const boiteRef = useRef<HTMLDivElement | null>(null);
-  const panRef = useRef<HTMLDivElement | null>(null);
-  const pose = usePopPlacement(panRef, ouvert);
-
-  const courant = parse(value);
-  const minutes = useMemo(() => {
-    const out: number[] = [];
-    for (let m = 0; m < 60; m += step) out.push(m);
-    // Une minute saisie hors du pas (12:37 importé d'un CSV) doit rester
-    // sélectionnable, sinon l'ouvrir la ferait perdre.
-    if (courant && !out.includes(courant.m)) out.push(courant.m);
-    return out.sort((a, b) => a - b);
-  }, [step, courant]);
-
-  useEffect(() => {
-    if (!ouvert) return;
-    const dehors = (e: MouseEvent) => {
-      if (boiteRef.current && !boiteRef.current.contains(e.target as Node)) setOuvert(false);
-    };
-    const touche = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.stopPropagation();
-        setOuvert(false);
-      }
-    };
-    document.addEventListener("mousedown", dehors);
-    document.addEventListener("keydown", touche, true);
-    return () => {
-      document.removeEventListener("mousedown", dehors);
-      document.removeEventListener("keydown", touche, true);
-    };
-  }, [ouvert]);
-
-  const affichage = useMemo(() => {
-    if (!courant) return "—";
-    return new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit" }).format(
-      new Date(2024, 0, 1, courant.h, courant.m),
-    );
-  }, [courant, locale]);
-
-  const poser = (h: number, m: number) =>
-    onChange(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
-
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState(value);
+  const anchorRef = useRef<HTMLDivElement>(null);
+  const id = useId();
+  const current = parseTimeValue(value);
+  const minute = current?.minute;
+  const minutes = useMemo(() => minuteOptions(step, minute), [step, minute]);
+  const display = current
+    ? new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit" }).format(
+        new Date(2024, 0, 1, current.hour, current.minute),
+      )
+    : "—";
+  const choose = (hour: number, minute: number) => {
+    const next = formatTimeValue(hour, minute);
+    setDraft(next);
+    onChange(next);
+  };
+  const valid = parseTimeValue(draft);
   return (
-    <div ref={boiteRef} className="relative">
+    <div ref={anchorRef} className="relative min-w-0">
       <button
         type="button"
         disabled={disabled}
-        onClick={() => setOuvert((o) => !o)}
-        aria-haspopup="dialog"
-        aria-expanded={ouvert}
         aria-label={aria["aria-label"]}
-        className={cn(
-          FIELD_BASE,
-          "flex items-center gap-2 text-left disabled:opacity-50",
-          ouvert && "border-[var(--tv-border-accent)]",
-          className,
-        )}
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        aria-controls={open ? id : undefined}
+        onClick={() => {
+          setDraft(value);
+          setOpen((v) => !v);
+        }}
+        className={cn(FIELD_BASE, "flex items-center gap-2 text-left", className)}
       >
-        <Clock className="h-3.5 w-3.5 shrink-0 text-slate-500" />
-        <span className="tv-figure min-w-0 flex-1 truncate">{affichage}</span>
+        <Clock className="h-4 w-4 shrink-0 text-slate-500" />
+        <span className="tv-figure min-w-0 flex-1 truncate">{display}</span>
+        <ChevronDown className="h-3.5 w-3.5 shrink-0 text-slate-500" />
       </button>
-
-      {ouvert && (
-        <div
-          ref={panRef}
-          role="dialog"
-          aria-label={aria["aria-label"]}
-          className={cn(
-            "tv-pop absolute z-[var(--tv-z-nav)] w-[12rem] p-2",
-            pose.align === "end" ? "right-0" : "left-0",
-            pose.side === "top" ? "bottom-full mb-1.5" : "top-full mt-1.5",
-          )}
-        >
-          <div className="tv-wheel">
-            <span className="tv-wheel-band" aria-hidden />
-            <WheelColumn
+      <SelectionPanel
+        open={open}
+        onClose={() => setOpen(false)}
+        anchorRef={anchorRef}
+        label={aria["aria-label"] ?? "HH:MM"}
+        width="18rem"
+      >
+        <div id={id} className="min-h-0 p-3 pt-1">
+          <input
+            value={draft}
+            onChange={(e) => {
+              const next = normalizeTimeDraft(e.target.value);
+              setDraft(next);
+              if (parseTimeValue(next)) onChange(next);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && valid) {
+                onChange(formatTimeValue(valid.hour, valid.minute));
+                setOpen(false);
+              }
+            }}
+            aria-label={`${aria["aria-label"] ?? "HH:MM"} · HH:MM`}
+            aria-invalid={draft.length > 0 && !valid}
+            placeholder="HH:MM"
+            inputMode="numeric"
+            maxLength={5}
+            className={cn(FIELD_BASE, "tv-time-entry tv-figure text-center")}
+          />
+          <div className="tv-time-columns mt-3">
+            <TimeColumn
+              id={`${id}-hours`}
               label="h"
-              values={HEURES}
-              selected={courant?.h ?? null}
-              onSelect={(h) => poser(h, courant?.m ?? 0)}
+              values={HOURS}
+              selected={current?.hour ?? null}
+              onSelect={(h) => choose(h, current?.minute ?? 0)}
             />
-            <span className="tv-wheel-sep" aria-hidden>
-              :
-            </span>
-            <WheelColumn
+            <TimeColumn
+              id={`${id}-minutes`}
               label="min"
               values={minutes}
-              selected={courant?.m ?? null}
-              onSelect={(m) => poser(courant?.h ?? 0, m)}
+              selected={current?.minute ?? null}
+              onSelect={(m) => choose(current?.hour ?? 0, m)}
             />
           </div>
-          <button type="button" onClick={() => setOuvert(false)} className="tv-wheel-done">
+          <button
+            type="button"
+            disabled={!valid}
+            onClick={() => setOpen(false)}
+            className="tv-pick-foot tv-pick-foot-main mt-3 w-full"
+          >
             {doneLabel}
           </button>
         </div>
-      )}
+      </SelectionPanel>
     </div>
   );
 }
-
-/** Hauteur d'une ligne de roue, en px — doit suivre `.tv-wheel-item`. */
-const ROW = 32;
-
-/**
- * Une roue. La valeur choisie est celle qui s'arrête au centre : le défilement
- * (molette, trackpad, doigt) décide, puis la valeur est lue une fois la roue
- * immobile. Un clic ou une flèche fait l'inverse — la valeur change, et la
- * roue vient la poser au centre.
- */
-function WheelColumn({
+const HOURS = Array.from({ length: 24 }, (_, i) => i);
+function TimeColumn({
+  id,
   label,
   values,
   selected,
   onSelect,
 }: {
+  id: string;
   label: string;
   values: number[];
   selected: number | null;
-  onSelect: (v: number) => void;
+  onSelect: (value: number) => void;
 }) {
-  const ref = useRef<HTMLDivElement | null>(null);
-  const settle = useRef<number | null>(null);
-  // La dernière valeur venue DU DÉFILEMENT : elle ne doit pas relancer un
-  // défilement vers elle-même.
-  const fromScroll = useRef<number | null>(null);
-  const index = selected === null ? 0 : Math.max(0, values.indexOf(selected));
-  const indexRef = useRef(index);
-  indexRef.current = index;
-
-  // À l'ouverture : posée sur la valeur, sans animation.
+  const list = useRef<HTMLDivElement>(null);
+  const initialIndex = useRef(Math.max(0, values.indexOf(selected ?? values[0])));
   useLayoutEffect(() => {
-    if (ref.current) ref.current.scrollTop = index * ROW;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (list.current)
+      list.current.scrollTop = Math.max(
+        0,
+        initialIndex.current * 44 - (list.current.clientHeight - 44) / 2,
+      );
   }, []);
-
-  // Valeur changée par un clic ou une flèche : la roue la rejoint.
-  useEffect(() => {
-    if (selected === null || fromScroll.current === selected) return;
-    ref.current?.scrollTo({ top: index * ROW, behavior: "smooth" });
-  }, [selected, index]);
-
-  useEffect(
-    () => () => {
-      if (settle.current !== null) window.clearTimeout(settle.current);
-    },
-    [],
-  );
-
-  const onScroll = () => {
-    if (settle.current !== null) window.clearTimeout(settle.current);
-    settle.current = window.setTimeout(() => {
-      const el = ref.current;
-      if (!el) return;
-      const i = Math.min(values.length - 1, Math.max(0, Math.round(el.scrollTop / ROW)));
-      const v = values[i];
-      if (v !== selected) {
-        fromScroll.current = v;
-        onSelect(v);
-      }
-    }, 90);
+  // Un choix direct doit rester visible. Le scroll ne modifie jamais l'état,
+  // donc cette synchronisation instantanée ne peut pas boucler sur la molette.
+  useLayoutEffect(() => {
+    const el = list.current;
+    if (!el || selected === null) return;
+    const top = Math.max(0, values.indexOf(selected)) * 44;
+    if (top < el.scrollTop) el.scrollTop = top;
+    else if (top + 44 > el.scrollTop + el.clientHeight) el.scrollTop = top + 44 - el.clientHeight;
+  }, [selected, values]);
+  const move = (e: React.KeyboardEvent) => {
+    const i = values.indexOf(selected ?? values[0]);
+    const delta =
+      e.key === "ArrowDown"
+        ? 1
+        : e.key === "ArrowUp"
+          ? -1
+          : e.key === "PageDown"
+            ? 5
+            : e.key === "PageUp"
+              ? -5
+              : 0;
+    if (!delta && e.key !== "Home" && e.key !== "End") return;
+    e.preventDefault();
+    const next =
+      e.key === "Home"
+        ? 0
+        : e.key === "End"
+          ? values.length - 1
+          : Math.max(0, Math.min(values.length - 1, i + delta));
+    onSelect(values[next]);
+    const el = list.current?.querySelector<HTMLElement>(`[data-time-value="${values[next]}"]`);
+    el?.focus({ preventScroll: true });
+    if (list.current) {
+      const top = next * 44;
+      if (top < list.current.scrollTop) list.current.scrollTop = top;
+      else if (top + 44 > list.current.scrollTop + list.current.clientHeight)
+        list.current.scrollTop = top + 44 - list.current.clientHeight;
+    }
   };
-
-  const step = (delta: number) => {
-    const i = Math.min(values.length - 1, Math.max(0, indexRef.current + delta));
-    if (values[i] === values[indexRef.current] && selected !== null) return;
-    fromScroll.current = null;
-    indexRef.current = i;
-    onSelect(values[i]);
-  };
-  const stepRef = useRef(step);
-  stepRef.current = step;
-
-  /* UN CRAN DE MOLETTE = UNE UNITÉ. Le défilement natif faisait sauter
-     plusieurs lignes par cran (un cran de souris vaut ~100 px, une ligne
-     32). La molette et le trackpad passent donc par un accumulateur : chaque
-     tranche de ~40 px de défilement vaut exactement une minute (ou une
-     heure), et la roue glisse jusqu'à la valeur suivante. Le doigt, lui,
-     garde le défilement natif aimanté. */
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    let acc = 0;
-    let lastAt = 0;
-    const onWheel = (e: WheelEvent) => {
-      e.preventDefault();
-      const now = performance.now();
-      if (now - lastAt > 220) acc = 0; // un nouveau geste repart de zéro
-      lastAt = now;
-      const px = e.deltaMode === 1 ? e.deltaY * 40 : e.deltaMode === 2 ? e.deltaY * 400 : e.deltaY;
-      acc += px;
-      const THRESHOLD = 40;
-      while (Math.abs(acc) >= THRESHOLD) {
-        const dir = acc > 0 ? 1 : -1;
-        acc -= dir * THRESHOLD;
-        stepRef.current(dir);
-        // Un cran de souris (100 px) ne doit JAMAIS valoir deux unités.
-        if (Math.abs(px) >= 80) {
-          acc = 0;
-          break;
-        }
-      }
-    };
-    el.addEventListener("wheel", onWheel, { passive: false });
-    return () => el.removeEventListener("wheel", onWheel);
-  }, []);
-
   return (
-    <div
-      ref={ref}
-      role="listbox"
-      tabIndex={0}
-      aria-label={label}
-      aria-activedescendant={selected === null ? undefined : `wheel-${label}-${selected}`}
-      onScroll={onScroll}
-      onKeyDown={(e) => {
-        const d =
-          e.key === "ArrowDown"
-            ? 1
-            : e.key === "ArrowUp"
-              ? -1
-              : e.key === "PageDown"
-                ? 5
-                : e.key === "PageUp"
-                  ? -5
-                  : 0;
-        if (d) {
-          e.preventDefault();
-          step(d);
-        }
-      }}
-      className="tv-wheel-col"
-    >
-      {values.map((v) => (
-        <div
-          key={v}
-          id={`wheel-${label}-${v}`}
-          role="option"
-          aria-selected={v === selected}
-          onClick={() => {
-            fromScroll.current = null;
-            onSelect(v);
-          }}
-          className="tv-wheel-item"
-        >
-          {String(v).padStart(2, "0")}
-        </div>
-      ))}
+    <div className="min-w-0">
+      <div className="tv-label mb-1.5 text-center text-slate-500">{label}</div>
+      <div ref={list} role="listbox" aria-label={label} onKeyDown={move} className="tv-time-list">
+        {values.map((v) => (
+          <button
+            key={v}
+            id={`${id}-${v}`}
+            data-time-value={v}
+            type="button"
+            role="option"
+            aria-selected={v === selected}
+            tabIndex={v === (selected ?? values[0]) ? 0 : -1}
+            onClick={() => onSelect(v)}
+            className={cn("tv-time-option tv-figure", v === selected && "tv-choice-on")}
+          >
+            {String(v).padStart(2, "0")}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Check, X, Lightbulb } from "lucide-react";
+import { Check, X, Lightbulb } from "@/shared/ui/icons";
 import { useT } from "@/app/i18n/LanguageContext";
 import { useToast } from "@/app/contexts/ToastContext";
 import {
@@ -100,7 +100,7 @@ export default function ProposalsPanel({ userId }: { userId: string }) {
       <div className="flex items-center gap-2">
         <span className="tv-label shrink-0 text-slate-400">{t("proposal.sectionTitle")}</span>
         <span aria-hidden className="rp-rule h-px flex-1" />
-        <span className="tv-figure shrink-0 text-[10px] text-slate-600">
+        <span className="tv-figure tv-figure-secondary shrink-0 text-[10px] text-slate-600">
           {duMois.length}/{MAX_PAR_MOIS}
         </span>
       </div>

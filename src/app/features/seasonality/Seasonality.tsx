@@ -1,3 +1,4 @@
+import { usePageActions } from "@/app/contexts/PageActionsContext";
 import { useMemo } from "react";
 import {
   BarChart,
@@ -19,7 +20,7 @@ import {
   Info,
   Sparkles,
   Layers,
-} from "lucide-react";
+} from "@/shared/ui/icons";
 import { Trade } from "@/app/types";
 import { formatPnl } from "@/domain/tradeCalcs";
 import { MIN_BUCKET_SAMPLE } from "@/domain/quantStats";
@@ -30,7 +31,7 @@ import {
   BAR_RADIUS,
   CHART_GREEN,
   CHART_RED,
-  CHART_ANIMATION,
+  useChartAnimation,
   EQUITY_GRID,
   moneyAxisProps,
   tooltipStyle,
@@ -48,7 +49,15 @@ import { Skeleton } from "@/app/components/Skeleton";
 import { usePersistedValue, nsKey, writeJSON } from "@/app/utils/persistence";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { cn } from "@/shared/ui/cn";
-import { PageContainer, Card, Kpi, KpiGrid, SelectPicker } from "@/shared/ui";
+import {
+  FilterControls,
+  FilterSection,
+  PageContainer,
+  Card,
+  Kpi,
+  KpiGrid,
+  SelectPicker,
+} from "@/shared/ui";
 import { useIsNarrow } from "@/app/hooks/useIsNarrow";
 import { formatMoney } from "@/shared/currency";
 import { SeasonalEquity } from "./SeasonalEquity";
@@ -71,6 +80,7 @@ export default function Seasonality({ trades }: SeasonalityProps) {
  * ============================================================ */
 
 function AssetSeasonality({ trades }: { trades: Trade[] }) {
+  const chartAnimation = useChartAnimation();
   const { t, lang } = useT();
   const { user } = useAuth();
   const catKey = nsKey(user?.id, "seasonality.cat");
@@ -107,76 +117,55 @@ function AssetSeasonality({ trades }: { trades: Trade[] }) {
 
   const stats = useMemo(() => computeSeasonalStats(asset, currentMonth), [asset, currentMonth]);
 
-  const setCategory = (c: AssetCategory) => {
-    writeJSON(catKey, c);
-    writeJSON(symKey, "");
-  };
-  const setSymbol = (s: string) => writeJSON(symKey, s);
+  const pageControls = useMemo(
+    () => (
+      <FilterControls
+        label={t("common.filters")}
+        summary={`${CATEGORY_LABELS[category]} · ${asset.symbol}`}
+        count={category !== "indices" || asset.symbol !== inCategory[0]?.symbol ? 1 : 0}
+        onReset={() => {
+          writeJSON(catKey, "indices");
+          writeJSON(symKey, "");
+        }}
+        resetLabel={t("common.reset")}
+        doneLabel={t("common.done")}
+        liveLabel={t("filters.live")}
+      >
+        <FilterSection label={t("seasonality.category")} summary={CATEGORY_LABELS[category]}>
+          <SelectPicker
+            inline
+            label={t("seasonality.category")}
+            value={category}
+            onChange={(v) => {
+              writeJSON(catKey, v);
+              writeJSON(symKey, "");
+            }}
+            options={(Object.keys(CATEGORY_LABELS) as AssetCategory[]).map((c) => ({
+              value: c,
+              label: CATEGORY_LABELS[c],
+            }))}
+          />
+        </FilterSection>
+        <FilterSection label={t("seasonality.asset")} summary={asset.symbol} defaultOpen>
+          <SelectPicker
+            inline
+            label={t("seasonality.asset")}
+            value={asset.symbol}
+            onChange={(v) => writeJSON(symKey, v)}
+            searchLabel={t("picker.search")}
+            moreLabel={t("filters.more")}
+            lessLabel={t("filters.less")}
+            options={inCategory.map((a) => ({ value: a.symbol, label: a.symbol, hint: a.name }))}
+          />
+        </FilterSection>
+      </FilterControls>
+    ),
+    [t, category, asset.symbol, inCategory, catKey, symKey],
+  );
+  usePageActions(pageControls);
 
   return (
     <div className="animate-fade-in">
-      {/* SUR TÉLÉPHONE, deux sélecteurs côte à côte au lieu de rangées de
-          pastilles empilées : catégorie · actif, sur une seule ligne. */}
-      <div className="mb-5 grid grid-cols-2 gap-2 sm:hidden">
-        <SelectPicker
-          variant="field"
-          label={t("seasonality.category")}
-          value={category}
-          onChange={(v) => setCategory(v as AssetCategory)}
-          className="h-10 text-[13px]"
-          options={(Object.keys(CATEGORY_LABELS) as AssetCategory[]).map((c) => ({
-            value: c,
-            label: CATEGORY_LABELS[c],
-          }))}
-        />
-        <SelectPicker
-          variant="field"
-          label={t("seasonality.asset")}
-          value={asset.symbol}
-          onChange={setSymbol}
-          className="h-10 text-[13px]"
-          searchLabel={t("picker.search")}
-          options={inCategory.map((a) => ({ value: a.symbol, label: a.symbol, hint: a.name }))}
-        />
-      </div>
-
-      {/* Category filter */}
-      <div className="hidden sm:flex flex-wrap gap-1.5 mb-3">
-        {(Object.keys(CATEGORY_LABELS) as AssetCategory[]).map((c) => (
-          <button
-            key={c}
-            onClick={() => setCategory(c)}
-            className={cn(
-              "h-8 px-3 rounded-lg border text-[11px] font-semibold transition",
-              category === c
-                ? "bg-cyan-500/15 border-cyan-500/25 text-cyan-300"
-                : "bg-white/[0.03] border-white/[0.06] text-slate-500 hover:text-slate-300 hover:border-white/[0.12]",
-            )}
-          >
-            {CATEGORY_LABELS[c]}
-          </button>
-        ))}
-      </div>
-
-      {/* Asset selector */}
-      <div className="hidden sm:flex flex-wrap gap-1.5 mb-5">
-        {inCategory.map((a) => (
-          <button
-            key={a.symbol}
-            onClick={() => setSymbol(a.symbol)}
-            className={cn(
-              "h-9 px-3.5 rounded-xl border text-xs font-bold transition",
-              a.symbol === asset.symbol
-                ? "bg-white/[0.06] border-cyan-500/30 text-white shadow-sm"
-                : "bg-white/[0.02] border-white/[0.06] text-slate-500 hover:text-slate-300",
-            )}
-          >
-            {a.symbol}{" "}
-            <span className="hidden sm:inline text-slate-500 font-medium">· {a.name}</span>
-          </button>
-        ))}
-      </div>
-
       {/* Highlight cards */}
       <KpiGrid cols={4} className="mb-5">
         <HighlightCard
@@ -210,7 +199,7 @@ function AssetSeasonality({ trades }: { trades: Trade[] }) {
       </KpiGrid>
 
       {/* Monthly avg return chart */}
-      <div className="glass rounded-3xl p-4 md:p-5 card-premium mb-5">
+      <div className="glass rounded-3xl p-4 md:p-5 mb-5">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="tv-title mb-0.5">
@@ -218,7 +207,7 @@ function AssetSeasonality({ trades }: { trades: Trade[] }) {
             </h3>
             <p className="tv-hint">{t("seasonality.monthlyBiasSub")}</p>
           </div>
-          <span className="tv-figure text-[10px] text-slate-500 shrink-0">
+          <span className="tv-figure tv-figure-secondary text-[10px] text-slate-500 shrink-0">
             {asset.years} {t("seasonality.years")}
           </span>
         </div>
@@ -253,7 +242,7 @@ function AssetSeasonality({ trades }: { trades: Trade[] }) {
                 }
               />
               <ReferenceLine y={0} stroke="rgba(148,163,184,0.25)" />
-              <Bar dataKey="avg" radius={BAR_RADIUS} {...CHART_ANIMATION}>
+              <Bar dataKey="avg" radius={BAR_RADIUS} {...chartAnimation}>
                 {chartData.map((d, i) => (
                   <Cell
                     key={i}
@@ -273,7 +262,7 @@ function AssetSeasonality({ trades }: { trades: Trade[] }) {
               <div className="text-[11px] text-slate-600 font-semibold">{d.month.slice(0, 1)}</div>
               <div
                 className={cn(
-                  "tv-figure text-[11px]",
+                  "tv-figure tv-figure-secondary text-[11px]",
                   d.win >= 60
                     ? "text-emerald-400"
                     : d.win >= 50
@@ -298,7 +287,7 @@ function AssetSeasonality({ trades }: { trades: Trade[] }) {
       />
 
       {/* Category heatmap */}
-      <div className="glass rounded-3xl p-4 md:p-5 card-premium">
+      <div className="glass rounded-3xl p-4 md:p-5">
         <div className="flex items-center gap-2 mb-4">
           <Layers className="w-4 h-4 text-cyan-400/70" />
           <div>
@@ -333,7 +322,7 @@ function AssetSeasonality({ trades }: { trades: Trade[] }) {
                   asset={a}
                   currentMonth={currentMonth}
                   selected={a.symbol === asset.symbol}
-                  onSelect={() => setSymbol(a.symbol)}
+                  onSelect={() => writeJSON(symKey, a.symbol)}
                   months={months}
                 />
               ))}
@@ -384,7 +373,7 @@ function AssetHeatRow({
       <button
         onClick={onSelect}
         className={cn(
-          "tv-figure flex items-center text-[10px] truncate pr-1 transition-colors",
+          "tv-figure tv-figure-secondary flex items-center text-[10px] truncate pr-1 transition-colors",
           selected ? "text-cyan-300" : "text-slate-400 hover:text-white",
         )}
       >
@@ -402,7 +391,7 @@ function AssetHeatRow({
             key={i}
             title={`${asset.symbol} ${MONTHS_SHORT[i]}: ${v >= 0 ? "+" : ""}${v.toFixed(1)}%`}
             className={cn(
-              "tv-figure h-8 rounded-md flex items-center justify-center text-[11px] cursor-default transition-transform hover:scale-[1.08]",
+              "tv-figure tv-figure-secondary h-8 rounded-md flex items-center justify-center text-[11px] cursor-default transition-transform hover:scale-[1.08]",
               i === currentMonth && "ring-1 ring-cyan-400/50",
             )}
             style={{ background: bg, color: "#f1f5f9" }}
@@ -436,6 +425,7 @@ const MONTH_KEYS = [
 ];
 
 function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
+  const chartAnimation = useChartAnimation();
   const { t, lang } = useT();
   const monthRows = useMonthRows();
 
@@ -591,7 +581,7 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
         />
       </KpiGrid>
 
-      <div className="glass rounded-3xl p-4 md:p-5 card-premium mb-5">
+      <div className="glass rounded-3xl p-4 md:p-5 mb-5">
         <h3 className="tv-title mb-0.5">{t("seasonality.monthly")}</h3>
         <p className="tv-hint mb-4">{t("seasonality.monthlySub")}</p>
         <div className="h-56 md:h-64">
@@ -616,7 +606,7 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
                 }
               />
               <ReferenceLine y={0} stroke="rgba(148,163,184,0.25)" />
-              <Bar dataKey="pnl" radius={BAR_RADIUS} {...CHART_ANIMATION}>
+              <Bar dataKey="pnl" radius={BAR_RADIUS} {...chartAnimation}>
                 {monthly.map((m, i) => (
                   <Cell
                     key={i}
@@ -637,7 +627,7 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
         </div>
       </div>
 
-      <div className="glass rounded-3xl p-4 md:p-5 card-premium mb-5">
+      <div className="glass rounded-3xl p-4 md:p-5 mb-5">
         <h3 className="tv-title mb-0.5">{t("seasonality.heatmap")}</h3>
         <p className="tv-hint mb-4">{t("seasonality.heatmapSub")}</p>
         <div className="space-y-3">
@@ -662,7 +652,7 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
       </div>
 
       <div className="grid md:grid-cols-2 gap-5">
-        <div className="glass rounded-3xl p-4 md:p-5 card-premium">
+        <div className="glass rounded-3xl p-4 md:p-5">
           <h3 className="tv-title mb-0.5">{t("seasonality.weekday")}</h3>
           <p className="tv-hint mb-4">{t("seasonality.weekdaySub")}</p>
           <div className="h-48">
@@ -681,7 +671,7 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
                   }
                 />
                 <ReferenceLine y={0} stroke="rgba(148,163,184,0.25)" />
-                <Bar dataKey="pnl" radius={BAR_RADIUS} {...CHART_ANIMATION}>
+                <Bar dataKey="pnl" radius={BAR_RADIUS} {...chartAnimation}>
                   {weekdays.map((d, i) => (
                     <Cell key={i} fill={d.pnl >= 0 ? BAR_FILL_GREEN : BAR_FILL_RED} />
                   ))}
@@ -691,7 +681,7 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
           </div>
         </div>
 
-        <div className="glass rounded-3xl p-4 md:p-5 card-premium">
+        <div className="glass rounded-3xl p-4 md:p-5">
           <h3 className="tv-title mb-0.5">{t("seasonality.hourly")}</h3>
           <p className="tv-hint mb-4">{t("seasonality.hourlySub")}</p>
           <div className="h-48">
@@ -710,7 +700,7 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
                   }
                 />
                 <ReferenceLine y={0} stroke="rgba(148,163,184,0.25)" />
-                <Bar dataKey="pnl" radius={BAR_RADIUS} {...CHART_ANIMATION}>
+                <Bar dataKey="pnl" radius={BAR_RADIUS} {...chartAnimation}>
                   {hours.map((h, i) => (
                     <Cell key={i} fill={h.pnl >= 0 ? BAR_FILL_GREEN : BAR_FILL_RED} />
                   ))}
@@ -737,7 +727,9 @@ function YearRow({
 }) {
   return (
     <>
-      <div className="tv-figure flex items-center text-[10px] text-slate-400">{year}</div>
+      <div className="tv-figure tv-figure-secondary flex items-center text-[10px] text-slate-400">
+        {year}
+      </div>
       {months.map((i) => {
         const v = values[i] ?? 0;
         const intensity = Math.min(Math.abs(v) / heatMax, 1);
@@ -751,7 +743,7 @@ function YearRow({
           <div
             key={i}
             title={v === 0 ? "—" : formatMoney(v)}
-            className="tv-figure h-9 rounded-lg flex items-center justify-center text-[11px] transition-transform hover:scale-[1.06] cursor-default"
+            className="tv-figure tv-figure-secondary h-9 rounded-lg flex items-center justify-center text-[11px] transition-transform hover:scale-[1.06] cursor-default"
             style={{ background: bg, color: v === 0 ? "#475569" : "#f1f5f9" }}
           >
             {v === 0 ? "" : `${v > 0 ? "+" : ""}${Math.round(v)}`}

@@ -9,7 +9,7 @@ import {
   LineChart,
   BookOpen,
   Sparkles,
-} from "lucide-react";
+} from "@/shared/ui/icons";
 import { Trade, isBreakEven } from "@/app/types";
 import {
   computeStats,
@@ -284,24 +284,21 @@ export default function Dashboard({
 
   const headerActions = useMemo(
     () => (
-      /* Le bouton PRINCIPAL du produit : vert plein, texte blanc — la même
-         pièce que « setups manqués » dans le Journal. Il portait la variante
-         `accent` (contour, texte teinté), qui est la grammaire d'une action
-         SECONDAIRE : saisir un trade est l'action que toute l'application
-         existe pour servir, elle ne peut pas se présenter comme un export CSV.
-         Le Journal garde ses actions en `subtle` — il a déjà son propre bouton
-         d'ajout dans sa liste, et deux verts pleins sur une même barre se
-         disputeraient l'attention. */
-      <Button variant="accent" size="sm" onClick={onAddTrade} className="relative hidden md:flex">
-        <Plus className="w-4 h-4" /> {t("common.addTrade")}
-        {hasDraft && (
-          <span className="tv-label flex items-center gap-1 ml-1 pl-2 border-l border-white/25">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-300" /> {t("trade.draftBadge")}
+      <div className="hidden shrink-0 items-center gap-2 md:flex">
+        <Button variant="entry" size="sm" onClick={onAddTrade} className="tv-dashboard-add">
+          <span className="tv-dashboard-add-icon">
+            <Plus className="h-3.5 w-3.5" />
           </span>
+          <span>{t("common.addTrade")}</span>
+        </Button>
+        {hasDraft && (
+          <button type="button" onClick={onAddTrade} className="tv-draft-badge">
+            <span className="h-1.5 w-1.5 rounded-full bg-current" />
+            {t("trade.draftBadge")}
+          </button>
         )}
-      </Button>
+      </div>
     ),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [onAddTrade, hasDraft, t],
   );
   usePageActions(headerActions);
@@ -350,7 +347,7 @@ export default function Dashboard({
             >
               {formatPnl(jour.pnl)}
             </span>
-            <span className="tv-row-label shrink-0">
+            <span className="tv-num tv-row-label shrink-0">
               {jour.n} {jour.n > 1 ? t("dashboard.tradesToday") : t("dashboard.tradeToday")}
             </span>
           </>
@@ -378,7 +375,7 @@ export default function Dashboard({
               — c'est-à-dire qu'il promettait une mise en page qui n'existe
               plus, et le contenu réel sautait par-dessus en arrivant. */}
           <div className={cn(density.sectionGap)}>
-            <div className="stat-card h-72 skeleton md:h-80" />
+            <div className="stat-card h-60 skeleton md:h-72" />
           </div>
           <div className={cn("grid grid-cols-2 md:grid-cols-4", density.gridGap)}>
             {Array.from({ length: 4 }).map((_, i) => (
@@ -410,7 +407,7 @@ export default function Dashboard({
               ══════════════════════════════════════════════════════════════ */}
           {trades.length === 0 ? (
             /* ── Empty state: first-run experience ── */
-            <div className="glass rounded-3xl p-5 md:p-10 text-center card-premium  relative overflow-hidden">
+            <div className="glass rounded-3xl p-5 md:p-10 text-center  relative overflow-hidden">
               <svg
                 viewBox="0 0 200 80"
                 className="w-48 md:w-64 mx-auto mb-6 opacity-80"
@@ -468,11 +465,11 @@ export default function Dashboard({
                       </span>
                       <span className="text-[10px] text-slate-600">Silver Bullet</span>
                     </div>
-                    <div className="text-[10px] text-slate-600">
+                    <div className="tv-num text-[10px] text-slate-600">
                       10:03 · 2R · {formatMoney(150, { whole: true })} {t("dashboard.riskSuffix")}
                     </div>
                   </div>
-                  <div className="text-sm font-bold text-emerald-400">
+                  <div className="tv-num text-sm font-bold text-emerald-400">
                     {formatMoney(300, { signed: true })}
                   </div>
                 </div>
@@ -483,7 +480,7 @@ export default function Dashboard({
               {/* ── 1. LE CHIFFRE ── */}
               <div className={cn(density.sectionGap)}>
                 {/* Performance */}
-                <div className="relative stat-card-elevated card-premium overflow-hidden p-4 md:p-5">
+                <div className="relative stat-card-elevated overflow-hidden p-4 md:p-5">
                   <div className="flex items-center justify-between gap-3 mb-3">
                     <div>
                       <div className="tv-label flex items-center gap-2 text-slate-500 mb-1">
@@ -493,7 +490,7 @@ export default function Dashboard({
                       <div className="flex items-baseline gap-3 flex-wrap">
                         <span
                           className={cn(
-                            "tv-figure text-3xl md:text-4xl",
+                            "tv-figure text-2xl md:text-3xl",
                             gain ? "text-emerald-400" : "text-red-400",
                           )}
                         >
@@ -503,7 +500,7 @@ export default function Dashboard({
                         {periodPct !== null && (
                           <span
                             className={cn(
-                              "tv-figure text-xs md:text-sm px-2 py-0.5 rounded-lg",
+                              "tv-figure tv-figure-secondary text-xs md:text-sm px-2 py-0.5 rounded-lg",
                               gain
                                 ? "bg-emerald-500/10 text-emerald-400"
                                 : "bg-red-500/10 text-red-400",
@@ -541,7 +538,7 @@ export default function Dashboard({
                     </div>
                   </div>
                   {stats.equityCurve.length > 0 ? (
-                    <div className="h-56 md:h-72 chart-draw">
+                    <div className="h-44 md:h-56 chart-draw">
                       <Suspense
                         fallback={
                           <div className="h-full w-full animate-pulse rounded-lg bg-white/[0.03]" />
@@ -551,7 +548,7 @@ export default function Dashboard({
                       </Suspense>
                     </div>
                   ) : (
-                    <div className="h-56 md:h-72 flex items-center justify-center text-slate-600 text-sm">
+                    <div className="h-44 md:h-56 flex items-center justify-center text-slate-600 text-sm">
                       {t("dashboard.noTradesInPeriod")}
                     </div>
                   )}
@@ -588,13 +585,20 @@ export default function Dashboard({
                 )}
               >
                 <Metric
+                  compact
                   title={t("dashboard.netR")}
                   value={`${netR >= 0 ? "+" : "−"}${Math.abs(netR).toFixed(1)}R`}
                   valueClass={netR >= 0 ? "text-emerald-400" : "text-red-400"}
                   delay={0}
                 />
-                <Metric title={t("stats.trades")} value={String(stats.totalTrades)} delay={40} />
                 <Metric
+                  compact
+                  title={t("stats.trades")}
+                  value={String(stats.totalTrades)}
+                  delay={40}
+                />
+                <Metric
+                  compact
                   title={t("stats.winRate")}
                   value={formatPct(stats.winRate)}
                   valueClass={stats.winRate >= 0.5 ? "text-emerald-400" : "text-red-400"}
@@ -607,6 +611,7 @@ export default function Dashboard({
                   delay={80}
                 />
                 <Metric
+                  compact
                   title={t("dashboard.profitFactor")}
                   value={stats.profitFactor >= 99 ? "99+" : stats.profitFactor.toFixed(2)}
                   valueClass={
@@ -628,7 +633,7 @@ export default function Dashboard({
               {/* ── 3. LA DISCIPLINE ── */}
               {/* Copilot block + série de checklist — le focus du jour + la discipline
                 dans la durée, côte à côte. */}
-              <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,0.65fr)] gap-4 md:gap-5 mb-4 md:mb-6">
+              <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,0.65fr)] gap-3 md:gap-4 mb-3 md:mb-4">
                 <CopilotBlock
                   edge={edge}
                   edgeDelta={edgeDelta}
@@ -774,7 +779,7 @@ export default function Dashboard({
                                   {trade.strategy}
                                 </span>
                               </div>
-                              <div className="text-[11px] text-slate-500">
+                              <div className="tv-num text-[11px] text-slate-500">
                                 {formatShortDate(trade.date)} · {trade.rMultiple.toFixed(1)}R
                               </div>
                             </div>
@@ -791,7 +796,7 @@ export default function Dashboard({
                               >
                                 {formatPnl(trade.pnl)}
                               </div>
-                              <div className="text-[10px] text-slate-500">
+                              <div className="tv-num text-[10px] text-slate-500">
                                 {formatMoney(trade.riskAmount, { whole: true })}{" "}
                                 {t("dashboard.riskSuffix")}
                               </div>

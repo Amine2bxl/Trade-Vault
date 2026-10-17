@@ -53,6 +53,7 @@ export function Chip({
   return (
     <button
       type="button"
+      data-selection-chip
       onClick={onClick}
       aria-pressed={selected}
       className={cn(CHIP_BASE, "px-3 py-1.5", selected ? SELECTED[tone] : IDLE, className)}
@@ -84,7 +85,7 @@ export function RemovableChip({
   children: ReactNode;
 }) {
   return (
-    <div className={cn("group", CHIP_BASE, selected ? SELECTED[tone] : IDLE)}>
+    <div data-selection-chip className={cn("group", CHIP_BASE, selected ? SELECTED[tone] : IDLE)}>
       <button
         type="button"
         onClick={onClick}

@@ -1,23 +1,18 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import {
   X,
-  Star,
-  ChevronDown,
-  ChevronUp,
-  ImagePlus,
   Plus,
-  Wallet,
-  Calculator,
-  SlidersHorizontal,
   CandlestickChart,
-  Brain,
-  ClipboardCheck,
+  ImagePlus,
   ArrowLeft,
   ArrowRight,
-} from "lucide-react";
+  ArrowUpRight,
+  ArrowDownRight,
+  Minus,
+  FilePenLine,
+  ChevronDown,
+} from "@/shared/ui/icons";
 import { Trade, STRATEGIES, MISTAKE_OPTIONS } from "@/app/types";
-import { getSession } from "@/domain/quantStats";
-import { getDuration } from "@/domain/tradeCalcs";
 import { POINT_VALUES, calcContracts as calcContractsFor } from "@/app/trading/positionCalc";
 import { generateId } from "@/app/store";
 import {
@@ -38,7 +33,6 @@ import { useDraftAutosave } from "@/app/hooks/useDraftAutosave";
 import Lightbox from "@/app/components/Lightbox";
 import {
   Modal,
-  FIELD_BASE,
   Textarea,
   Button,
   Chip,
@@ -46,6 +40,10 @@ import {
   CHIP_ROW,
   DateField,
   TimeField,
+  Input,
+  Field,
+  ChoiceGroup,
+  Disclosure,
   SelectPicker,
 } from "@/shared/ui";
 import { intlLocale } from "@/app/i18n/locale";
@@ -210,19 +208,14 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
     return { ...defaultForm };
   });
 
-  // Couleur de la jauge de confiance = celle du badge de statut (cohérence).
-  const confidenceColor = useMemo(() => {
-    if (form.confidence >= 75) return { from: "#5bf0ab", to: "#22e08a", text: "text-emerald-400" };
-    if (form.confidence >= 50) return { from: "#fbbf24", to: "#f59e0b", text: "text-amber-400" };
-    return { from: "#f87171", to: "#ef4444", text: "text-red-400" };
-  }, [form.confidence]);
-
   // Flag the restored-draft badge on first mount (post-state, avoids SSR mismatch).
   useEffect(() => {
     if (readJSON<TradeDraft | null>(draftKey, null)) setDraftRestored(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [timingOpen, setTimingOpen] = useState(false);
   const [showCalc, setShowCalc] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showIntent, setShowIntent] = useState(false);
@@ -311,8 +304,6 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
     () => calcContractsFor(riskDollar, parseFloat(stopPoints) || 0, parseFloat(pointValue) || 0),
     [riskDollar, stopPoints, pointValue],
   );
-
-  const session = getSession(form.entryTime);
 
   // Screenshots upload straight to Supabase Storage (bucket path stored on the
   // trade) instead of inlining base64 into the row. Uploads made in this modal
@@ -590,266 +581,135 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
     !timeError &&
     !rMultipleError;
 
-  // Shared visual base so every field reads as one system. `inputClass` locks a
-  // single control height (h-11 / 44px touch target) so text, number, date, time
-  // and select inputs line up pixel-perfect across every row; `textareaClass`
-  // reuses the same skin but stays auto-height for multiline notes.
-  const fieldBase = FIELD_BASE;
-  // UNE ÉCHELLE, CELLE DES CHAMPS DATE/HEURE : 40 px et 13 px sur téléphone,
-  // 44 px et 14 px au-delà. Chaque champ, chaque sélecteur, chaque puce du
-  // formulaire s'aligne dessus — rien de plus petit que 11 px nulle part.
-  const inputClass = cn(fieldBase, "h-10 sm:h-11 text-[13px] sm:text-sm");
-  const textareaClass = cn(fieldBase, "py-2.5");
-  const labelClass = "tv-label block text-slate-400 mb-1.5";
+  const labelClass = "tv-label mb-1.5 block text-slate-500";
 
   return (
     <>
       <Modal
         open
         onClose={onClose}
-        // Un clic à côté ne referme JAMAIS une saisie en cours : c'est le
-        // geste accidentel qui faisait perdre une note écrite d'un jet. Sans
-        // modification en attente, le comportement habituel reste.
         closeOnBackdrop={!dirty}
-        className="md:max-w-2xl max-h-[96vh] md:max-h-[92vh] overflow-hidden"
+        labelledBy="trade-form-title"
+        className="tv-trade-modal tv-compact-form flex max-h-[min(86dvh,680px)] flex-col overflow-hidden md:max-w-xl"
       >
-        {/* Le liseré du haut dit le SIGNE de la saisie en cours : vert si elle
-            est gagnante, rouge si elle est perdante. L'information est juste,
-            son exécution ne l'était pas — c'était un dégradé qui s'éteignait
-            aux deux bouts, une décoration d'ancienne identité. Un trait plein
-            de deux pixels dit la même chose sans effet. */}
-        <div
-          className={cn(
-            "pointer-events-none absolute inset-x-0 top-0 h-[2px] transition-colors duration-300",
-            form.direction === "be"
-              ? "bg-slate-500/40"
-              : calculatedPnl > 0
-                ? "bg-[var(--tv-chart-green)]"
-                : calculatedPnl < 0
-                  ? "bg-[var(--tv-chart-red)]"
-                  : "bg-[var(--tv-border-strong)]",
-          )}
-        />
-        <div className="relative flex items-center justify-between border-b border-white/[0.06] px-4 py-3.5 sm:px-6">
-          <div className="relative flex min-w-0 items-center gap-2.5">
-            {/* La pastille portait un HALO FLOUTÉ (`blur-md`) et un dégradé
-                bicolore — les deux derniers effets de ce genre dans un
-                formulaire du produit. Elle garde sa couleur, qui est une
-                information, et perd les deux, qui n'en sont pas. */}
-            <span
-              className={cn(
-                "grid h-9 w-9 shrink-0 place-items-center rounded-xl border transition-colors",
-                form.direction === "be"
-                  ? "border-slate-500/25 bg-slate-500/15 text-slate-300"
-                  : calculatedPnl > 0
-                    ? "border-emerald-400/25 bg-emerald-400/15 text-emerald-400"
-                    : calculatedPnl < 0
-                      ? "border-red-400/25 bg-red-400/15 text-red-400"
-                      : "border-[var(--tv-border-strong)] bg-white/[0.05] text-slate-300",
-              )}
-            >
-              <CandlestickChart className="h-[18px] w-[18px]" />
-            </span>
-            <div className="min-w-0">
-              <h2 className="tv-title leading-tight">
-                {trade ? t("trade.editTitle") : t("trade.newTitle")}
-              </h2>
-              <p className="tv-row-label truncate">
-                {form.symbol ? `${form.symbol} · ` : ""}
-                {form.direction === "long"
-                  ? "Long"
-                  : form.direction === "short"
-                    ? "Short"
-                    : "Break-even"}
-              </p>
-            </div>
-            {!trade && draftRestored && (
-              <button
-                onClick={() => void discardDraft()}
-                title={t("trade.discardDraft")}
-                className="tv-label group flex items-center gap-1.5 px-2 py-1 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-400 transition hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-400"
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 group-hover:bg-red-400" />
-                {t("trade.draftBadge")}
-                <X className="w-3 h-3" />
-              </button>
-            )}
+        <header className="flex shrink-0 items-center gap-3 border-b border-[var(--tv-border)] px-4 py-2.5">
+          <CandlestickChart className="h-5 w-5 shrink-0 text-[var(--tv-highlight)]" />
+          <div className="min-w-0 flex-1">
+            <h2 id="trade-form-title" className="tv-title">
+              {trade ? t("trade.editTitle") : t("trade.newTitle")}
+            </h2>
           </div>
+          {!trade && draftRestored && (
+            <button
+              type="button"
+              onClick={() => void discardDraft()}
+              title={t("trade.discardDraft")}
+              className="tv-draft-badge"
+            >
+              <FilePenLine className="h-3.5 w-3.5" /> {t("trade.draftBadge")}
+            </button>
+          )}
           <button
+            type="button"
             onClick={onClose}
             aria-label={t("common.close")}
-            className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
+            className="grid h-11 w-11 shrink-0 place-items-center rounded-xl text-slate-400 hover:bg-white/5"
           >
-            <X className="w-4 h-4" />
+            <X className="h-4 w-4" />
           </button>
-        </div>
-
-        <div className="overflow-y-auto max-h-[calc(92vh-130px)] px-4 sm:px-6 py-4 space-y-3.5">
-          {/* TRADE IMPORTÉ — ce que le broker a réellement exécuté, en clair.
-              Le trader voit d'où vient le trade et ce qui est déjà rempli ;
-              il ne lui reste que le jugement (setup, erreurs, notes,
-              captures). */}
-          {trade?.broker && (
-            <div className="rounded-xl border border-[var(--tv-border-accent)] bg-[rgb(var(--tv-accent-rgb)/0.06)] px-3.5 py-3">
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                <span className="tv-label text-[var(--tv-accent)]">
-                  {t("trade.importedFrom").replace("{broker}", "Tradovate")}
-                </span>
-                {trade.brokerAccount && (
-                  <span className="text-xs font-semibold text-slate-300">
-                    {trade.brokerAccount}
-                  </span>
-                )}
-              </div>
-              {/* L'exécution, préremplie et corrigeable : contrats, prix,
-                  frais. Rien ici n'est recalculé derrière le trader. */}
-              <div className="mt-2.5 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                {(
-                  [
-                    ["quantity", "trade.execContracts", "1"],
-                    ["entryPrice", "trade.execEntry", "0.25"],
-                    ["exitPrice", "trade.execExit", "0.25"],
-                    ["fees", "trade.execFees", "0.01"],
-                  ] as const
-                ).map(([key, label, step]) => (
-                  <label key={key} className="block min-w-0">
-                    <span className="tv-label mb-1 block text-slate-500">{t(label)}</span>
-                    <input
-                      type="number"
-                      step={step}
-                      inputMode="decimal"
-                      value={form[key]}
-                      onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
-                      placeholder="—"
-                      className={cn(inputClass, "tv-figure")}
-                    />
-                  </label>
-                ))}
-              </div>
-              {trade.reviewPending && (
-                <p className="mt-1.5 text-xs leading-snug text-slate-500">
-                  {riskDollar > 0 ? t("trade.reviewHint") : t("trade.reviewHintRisk")}
-                </p>
-              )}
+        </header>
+        <form
+          id="trade-entry-form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (isValid) handleSave();
+          }}
+          className="tv-trade-form min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3"
+        >
+          <div className="space-y-3">
+            {trade?.broker && (
+              <p className="tv-prose text-slate-500">
+                {t("trade.importedFrom").replace("{broker}", "Tradovate")}
+              </p>
+            )}
+            <div className="grid grid-cols-2 gap-3">
+              <Field label={t("trade.symbol")}>
+                <Input
+                  aria-label={t("trade.symbol")}
+                  className="tv-trade-symbol"
+                  value={form.symbol}
+                  onChange={(e) => setForm((f) => ({ ...f, symbol: e.target.value }))}
+                  placeholder="NQ"
+                />
+              </Field>
+              <Field label={t("trade.date")}>
+                <DateField
+                  value={form.date}
+                  onChange={(date) => setForm((f) => ({ ...f, date }))}
+                  locale={intlLocale(lang)}
+                  todayLabel={t("common.today")}
+                  aria-label={t("trade.date")}
+                />
+              </Field>
             </div>
-          )}
-          {/* Row 1: Symbol, Direction, Date */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <label className={labelClass}>{t("trade.symbol")}</label>
-              <input
-                type="text"
-                value={form.symbol}
-                onChange={(e) => setForm((f) => ({ ...f, symbol: e.target.value }))}
-                placeholder="TSLA"
-                className={inputClass}
+            <Field label={t("trade.direction")} className="tv-direction">
+              <ChoiceGroup
+                label={t("trade.direction")}
+                value={form.direction}
+                options={[
+                  {
+                    value: "long",
+                    label: t("common.long"),
+                    icon: <ArrowUpRight className="h-4 w-4" />,
+                    tone: "positive",
+                  },
+                  {
+                    value: "short",
+                    label: t("common.short"),
+                    icon: <ArrowDownRight className="h-4 w-4" />,
+                    tone: "negative",
+                  },
+                  { value: "be", label: t("common.be"), icon: <Minus className="h-4 w-4" /> },
+                ]}
+                onChange={(direction) =>
+                  setForm((f) => ({
+                    ...f,
+                    direction,
+                    ...(direction === "be" ? { rMultiple: "0" } : {}),
+                  }))
+                }
               />
-            </div>
-            <div>
-              <label className={labelClass}>{t("trade.direction")}</label>
-              <div className="grid grid-cols-3 gap-2">
-                {(["long", "short", "be"] as const).map((dir) => {
-                  const activeClass =
-                    dir === "long"
-                      ? "bg-emerald-500/15 border-emerald-500/25 text-emerald-400"
-                      : dir === "short"
-                        ? "bg-red-500/15 border-red-500/25 text-red-400"
-                        : "bg-slate-500/15 border-slate-500/25 text-slate-300";
-                  const label =
-                    dir === "be"
-                      ? t("common.be")
-                      : dir === "long"
-                        ? t("common.long")
-                        : t("common.short");
-                  const shortLabel = dir === "long" ? "L" : dir === "short" ? "S" : "BE";
-                  return (
-                    <button
-                      key={dir}
-                      onClick={() =>
-                        setForm((f) => ({
-                          ...f,
-                          direction: dir,
-                          ...(dir === "be" ? { rMultiple: "0" } : {}),
-                        }))
-                      }
-                      className={cn(
-                        "w-full h-9 sm:h-11 flex items-center justify-center rounded-xl text-xs sm:text-sm font-semibold transition border",
-                        form.direction === dir
-                          ? activeClass
-                          : "bg-white/[0.03] border-white/[0.06] text-slate-500 hover:text-slate-300",
-                      )}
-                    >
-                      {/* Compact single-letter labels on mobile, full words on ≥sm */}
-                      <span className="sm:hidden">{shortLabel}</span>
-                      <span className="hidden sm:inline">{label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-            <div>
-              <label className={labelClass}>{t("trade.date")}</label>
-              {/* Plus `<input type="date">` : voir `DateField`. Le sélecteur
-                  natif ouvrait un calendrier BLANC, hors document, insensible
-                  au thème — la page d'un autre site au milieu de celle-ci. */}
-              <DateField
-                value={form.date}
-                onChange={(iso) => setForm((f) => ({ ...f, date: iso }))}
-                locale={intlLocale(lang)}
-                todayLabel={t("common.today")}
-                aria-label={t("trade.date")}
-                className={inputClass}
-              />
-            </div>
-          </div>
-
-          {/* Row 2: Risk Amount + R:R + P&L */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <label className={labelClass}>{t("trade.riskAmount")}</label>
-              <div className="flex gap-1.5">
-                <div className="relative flex-1">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">
-                    {form.riskType === "dollar" ? currencySymbol() : ""}
-                  </span>
-                  <input
+            </Field>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label={t("trade.riskAmount")}>
+                <div className="grid grid-cols-[minmax(0,1fr)_72px] gap-2">
+                  <Input
+                    aria-label={t("trade.riskAmount")}
+                    className="tv-trade-number tv-figure"
                     type="number"
                     step="0.01"
+                    inputMode="decimal"
                     value={form.riskAmount}
                     onChange={(e) => setForm((f) => ({ ...f, riskAmount: e.target.value }))}
-                    placeholder={form.riskType === "dollar" ? "0.00" : "1.0"}
-                    className={inputClass}
-                    style={{
-                      paddingLeft:
-                        form.riskType === "dollar"
-                          ? `${1.1 + currencySymbol().length * 0.55}rem`
-                          : undefined,
-                    }}
+                    placeholder="0.00"
                   />
-                  {form.riskType === "percent" && (
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">
-                      %
-                    </span>
-                  )}
+                  <SelectPicker
+                    variant="field"
+                    label={t("trade.riskUnit")}
+                    value={form.riskType}
+                    onChange={(riskType) => setForm((f) => ({ ...f, riskType }))}
+                    options={[
+                      { value: "dollar", label: currencySymbol() },
+                      { value: "percent", label: "%" },
+                    ]}
+                  />
                 </div>
-                <button
-                  onClick={() =>
-                    setForm((f) => ({
-                      ...f,
-                      riskType: f.riskType === "dollar" ? "percent" : "dollar",
-                    }))
-                  }
-                  className="px-3 rounded-xl border border-white/[0.08] text-xs font-bold text-slate-400 hover:text-white hover:bg-white/5 transition shrink-0"
-                >
-                  {form.riskType === "dollar" ? currencySymbol() : "%"}
-                </button>
-              </div>
-            </div>
-            <div>
-              <label className={labelClass}>{t("trade.rrMultiple")}</label>
-              {pnlLocked ? (
-                <>
-                  <input
+              </Field>
+              <Field label={t("trade.rrMultiple")} error={rMultipleError}>
+                {pnlLocked ? (
+                  <Input
+                    aria-label={t("trade.rrMultiple")}
+                    className="tv-trade-number tv-figure"
                     type="number"
                     step="0.1"
                     inputMode="decimal"
@@ -858,35 +718,26 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                     onBlur={() => setRDraft(null)}
                     disabled={!(riskDollar > 0)}
                     placeholder="—"
-                    aria-describedby="trade-r-derived"
-                    className={cn(inputClass, "tv-figure")}
                   />
-                  <div id="trade-r-derived" className="text-[11px] text-slate-600 mt-1">
-                    {t("trade.rDerivedHint")}
-                  </div>
-                </>
-              ) : (
-                <>
-                  <input
+                ) : (
+                  <Input
+                    aria-label={t("trade.rrMultiple")}
+                    className="tv-trade-number tv-figure"
                     type="number"
                     step="0.1"
+                    inputMode="decimal"
                     value={form.rMultiple}
                     onChange={(e) => setForm((f) => ({ ...f, rMultiple: e.target.value }))}
+                    disabled={form.direction === "be"}
                     placeholder="2.0"
-                    className={inputClass}
                   />
-                  <div className="text-[11px] text-slate-600 mt-1">{t("trade.rrHint")}</div>
-                </>
-              )}
+                )}
+              </Field>
             </div>
-            <div>
-              <label className={labelClass} htmlFor={pnlLocked ? "trade-broker-pnl" : undefined}>
-                {pnlLocked ? t("trade.brokerPnl") : t("trade.estPnl")}
-              </label>
-              {pnlLocked ? (
-                // P&L net du broker, corrigeable : le R se recalcule dessus.
-                <input
-                  id="trade-broker-pnl"
+            {pnlLocked && (
+              <Field label={t("trade.brokerPnl")}>
+                <Input
+                  aria-label={t("trade.brokerPnl")}
                   type="number"
                   step="0.01"
                   inputMode="decimal"
@@ -896,7 +747,6 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                     setForm((f) => ({ ...f, brokerPnl: e.target.value }));
                   }}
                   className={cn(
-                    inputClass,
                     "tv-figure",
                     calculatedPnl > 0
                       ? "text-emerald-400"
@@ -905,532 +755,363 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                         : "text-slate-300",
                   )}
                 />
-              ) : (
-                <div
-                  className={cn(
-                    "tv-figure w-full h-11 flex items-center rounded-xl px-3 text-sm border",
-                    calculatedPnl > 0
-                      ? "bg-emerald-500/10 border-emerald-500/15 text-emerald-400"
-                      : calculatedPnl < 0
-                        ? "bg-red-500/10 border-red-500/15 text-red-400"
-                        : "bg-white/[0.03] border-white/[0.06] text-slate-400",
-                  )}
-                >
-                  {calculatedPnl >= 0 ? "+" : ""}
-                  {calculatedPnl.toFixed(2)}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Account Balance (for % risk) */}
-          {form.riskType === "percent" && (
-            <div className="flex items-center gap-3 bg-white/[0.02] rounded-xl p-3 border border-white/[0.04]">
-              <Wallet className="w-4 h-4 text-slate-500 shrink-0" />
-              <span className="text-xs text-slate-500 shrink-0">{t("trade.accountBalance")}</span>
-              <input
-                type="number"
-                value={accountBalance}
-                onChange={(e) => {
-                  const v = parseFloat(e.target.value) || 0;
-                  setAccountBalance(v);
-                  saveAccountBalance(userId, v);
-                }}
-                className="flex-1 bg-transparent text-sm text-white focus:outline-none"
-              />
-              <span className="text-xs text-slate-600">
-                → {formatMoney(riskDollar)} {t("dashboard.riskSuffix")}
-              </span>
-            </div>
-          )}
-
-          {/* Position size calculator */}
-          <div className="bg-white/[0.02] rounded-xl border border-white/[0.04]">
-            <button
-              type="button"
-              onClick={() => setShowCalc((v) => !v)}
-              className="w-full flex items-center gap-2 px-3 py-2.5 text-xs font-semibold text-slate-400 hover:text-white transition-colors"
-            >
-              <Calculator className="w-3.5 h-3.5 text-cyan-400/70" />
-              {t("trade.positionCalc")}
-              {showCalc ? (
-                <ChevronUp className="w-3 h-3 ml-auto" />
-              ) : (
-                <ChevronDown className="w-3 h-3 ml-auto" />
-              )}
-            </button>
-            {showCalc && (
-              <div className="px-3 pb-3 space-y-2.5">
-                <div className="flex flex-wrap gap-1.5">
-                  {POINT_VALUES.map((p) => (
-                    <button
-                      key={p.label}
-                      type="button"
-                      onClick={() => setPointValue(String(p.value))}
-                      className={cn(
-                        "px-2.5 py-1 rounded-lg text-[11px] font-bold transition border",
-                        pointValue === String(p.value)
-                          ? "bg-cyan-500/15 border-cyan-500/25 text-cyan-300"
-                          : "bg-white/[0.03] border-white/[0.06] text-slate-500 hover:text-slate-300",
-                      )}
-                    >
-                      {p.label} ${p.value}
-                    </button>
-                  ))}
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <div>
-                    <label className={labelClass}>{t("trade.stopPoints")}</label>
-                    <input
-                      type="number"
-                      step="0.25"
-                      min="0"
-                      value={stopPoints}
-                      onChange={(e) => setStopPoints(e.target.value)}
-                      placeholder="10"
-                      className={inputClass}
-                    />
-                  </div>
-                  <div>
-                    <label className={labelClass}>{t("trade.pointValue")}</label>
-                    <input
-                      type="number"
-                      step="0.5"
-                      min="0"
-                      value={pointValue}
-                      onChange={(e) => setPointValue(e.target.value)}
-                      className={inputClass}
-                    />
-                  </div>
-                </div>
-                <div
-                  className={cn(
-                    "rounded-xl px-3 py-2.5 text-xs font-semibold border flex items-center justify-between",
-                    calcContracts
-                      ? "bg-cyan-500/[0.06] border-cyan-500/15 text-cyan-300"
-                      : "bg-white/[0.02] border-white/[0.04] text-slate-500",
-                  )}
-                >
-                  {calcContracts ? (
-                    <>
-                      <span>
-                        {calcContracts.contracts} {t("trade.contracts")}
-                      </span>
-                      <span className="text-slate-400">
-                        {t("trade.effectiveRisk")}: {formatMoney(calcContracts.effectiveRisk)}
-                      </span>
-                    </>
-                  ) : (
-                    <span>{t("trade.calcHint")}</span>
-                  )}
-                </div>
-              </div>
+              </Field>
             )}
-          </div>
-
-          {/* Entry/Exit Time + Strategy — temps en un tap (presets) ou picker */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <label className={labelClass}>{t("trade.entryTime")}</label>
-              <TimeField
-                value={form.entryTime}
-                onChange={(v) => setForm((f) => ({ ...f, entryTime: v }))}
-                locale={intlLocale(lang)}
-                aria-label={t("trade.entryTime")}
-                doneLabel={t("common.done")}
-                className={inputClass}
-              />
-            </div>
-            <div>
-              <label className={labelClass}>{t("trade.exitTime")}</label>
-              <TimeField
-                value={form.exitTime}
-                onChange={(v) => setForm((f) => ({ ...f, exitTime: v }))}
-                locale={intlLocale(lang)}
-                aria-label={t("trade.exitTime")}
-                doneLabel={t("common.done")}
-                className={cn(inputClass, timeError && "border-red-500/50")}
-              />
-              {/* L'erreur se lit SOUS le champ fautif, pas seulement en pied. */}
-              {timeError && (
-                <p role="alert" className="mt-1 text-[11px] text-red-400">
-                  {timeError}
+            {form.riskType === "percent" && (
+              <Field label={t("trade.accountBalance")}>
+                <Input
+                  aria-label={t("trade.accountBalance")}
+                  type="number"
+                  value={accountBalance}
+                  onChange={(e) => {
+                    const value = parseFloat(e.target.value) || 0;
+                    setAccountBalance(value);
+                    saveAccountBalance(userId, value);
+                  }}
+                />
+                <p className="tv-num tv-prose text-slate-500">
+                  {formatMoney(riskDollar)} {t("dashboard.riskSuffix")}
                 </p>
-              )}
-            </div>
-            <div>
-              <label className={labelClass}>{t("trade.strategy")}</label>
+              </Field>
+            )}
+            <Disclosure
+              title={`${t("trade.timing")} · ${form.entryTime || "—"} → ${form.exitTime || "—"}`}
+              open={timingOpen}
+              onChange={setTimingOpen}
+            >
+              <div className="grid grid-cols-2 gap-3">
+                <Field label={t("trade.entryTime")}>
+                  <TimeField
+                    value={form.entryTime}
+                    onChange={(entryTime) => setForm((f) => ({ ...f, entryTime }))}
+                    locale={intlLocale(lang)}
+                    aria-label={t("trade.entryTime")}
+                    doneLabel={t("common.done")}
+                  />
+                </Field>
+                <Field label={t("trade.exitTime")} error={timeError}>
+                  <TimeField
+                    value={form.exitTime}
+                    onChange={(exitTime) => setForm((f) => ({ ...f, exitTime }))}
+                    locale={intlLocale(lang)}
+                    aria-label={t("trade.exitTime")}
+                    doneLabel={t("common.done")}
+                  />
+                </Field>
+              </div>
+              <SelectPicker
+                label={t("trade.timePresets")}
+                value={`${form.entryTime}|${form.exitTime}`}
+                renderTrigger={({ open, toggle, controls }) => (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={toggle}
+                    aria-haspopup="listbox"
+                    aria-expanded={open}
+                    aria-controls={controls}
+                  >
+                    {t("trade.timePresets")} <ChevronDown className="h-3 w-3" />
+                  </Button>
+                )}
+                onChange={(value) => {
+                  const [entryTime, exitTime] = value.split("|");
+                  setForm((f) => ({ ...f, entryTime, exitTime }));
+                }}
+                options={[
+                  ["09:30", "10:15"],
+                  ["10:00", "11:00"],
+                  ["15:30", "16:00"],
+                  ["16:00", "17:00"],
+                ].map(([a, b]) => ({ value: `${a}|${b}`, label: `${a} → ${b}` }))}
+              />
+            </Disclosure>
+          </div>
+          <Disclosure
+            title={t("trade.detailsNotes")}
+            open={detailsOpen}
+            onChange={setDetailsOpen}
+            className="mt-3"
+          >
+            <Field label={t("trade.notes")}>
+              <Textarea
+                aria-label={t("trade.notes")}
+                value={form.notes}
+                onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+                placeholder={t("trade.notesPlaceholder")}
+                rows={3}
+              />
+            </Field>
+            <Field label={t("trade.strategy")}>
               <SelectPicker
                 variant="field"
                 label={t("trade.strategy")}
                 value={form.strategy}
-                onChange={(v) => setForm((f) => ({ ...f, strategy: v }))}
-                className={inputClass}
+                onChange={(strategy) => setForm((f) => ({ ...f, strategy }))}
                 searchLabel={t("picker.search")}
                 options={Array.from(new Set([...STRATEGIES, form.strategy]))
                   .filter(Boolean)
-                  .map((s) => ({ value: s, label: s }))}
+                  .map((value) => ({ value, label: value }))}
               />
-            </div>
-          </div>
-
-          {/* Presets d'heure — un tap remplit entrée + sortie (puis ajustables) */}
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="tv-label text-slate-500 mr-0.5">{t("trade.timePresets")}</span>
-            {[
-              { t: "09:30", v: "10:15" },
-              { t: "10:00", v: "11:00" },
-              { t: "15:30", v: "16:00" },
-              { t: "16:00", v: "17:00" },
-            ].map((p) => (
-              <button
-                key={p.t}
-                type="button"
-                onClick={() => setForm((f) => ({ ...f, entryTime: p.t, exitTime: p.v }))}
-                className="h-8 px-2.5 rounded-lg text-[11px] font-bold border transition bg-white/[0.03] border-white/[0.06] text-slate-500 hover:text-slate-300 hover:border-[var(--tv-border-accent)]"
-              >
-                {p.t} → {p.v}
-              </button>
-            ))}
-          </div>
-
-          {/* Setup Quality — jauges d'étoiles premium dans un conteneur */}
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className={labelClass + " mb-0"}>{t("trade.setupQuality")}</label>
-              <span
-                className={cn(
-                  "tv-label px-2 py-0.5 rounded-full border",
-                  form.setupQuality <= 1 && "text-red-300 bg-red-500/10 border-red-500/25",
-                  form.setupQuality === 2 && "text-amber-300 bg-amber-500/10 border-amber-500/25",
-                  form.setupQuality === 3 && "text-slate-200 bg-white/[0.05] border-white/[0.1]",
-                  form.setupQuality === 4 && "text-cyan-300 bg-cyan-500/10 border-cyan-500/25",
-                  form.setupQuality >= 5 &&
-                    "text-emerald-300 bg-emerald-500/10 border-emerald-500/25",
+            </Field>
+            {trade?.broker && (
+              <div className="tv-trade-inset space-y-3">
+                <div>
+                  <p className="tv-label text-slate-400">
+                    {t("trade.importedFrom").replace("{broker}", "Tradovate")}
+                  </p>
+                  {trade.brokerAccount && (
+                    <p className="tv-prose mt-1 text-slate-500">{trade.brokerAccount}</p>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  {(
+                    [
+                      ["quantity", "trade.execContracts", "1"],
+                      ["entryPrice", "trade.execEntry", "0.25"],
+                      ["exitPrice", "trade.execExit", "0.25"],
+                      ["fees", "trade.execFees", "0.01"],
+                    ] as const
+                  ).map(([key, label, step]) => (
+                    <Field key={key} label={t(label)}>
+                      <Input
+                        aria-label={t(label)}
+                        type="number"
+                        step={step}
+                        inputMode="decimal"
+                        value={form[key]}
+                        onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
+                        placeholder="—"
+                      />
+                    </Field>
+                  ))}
+                </div>
+                {trade.reviewPending && (
+                  <p className="tv-prose text-slate-500">
+                    {riskDollar > 0 ? t("trade.reviewHint") : t("trade.reviewHintRisk")}
+                  </p>
                 )}
-              >
-                {
+              </div>
+            )}
+            <Disclosure title={t("trade.positionCalc")} open={showCalc} onChange={setShowCalc}>
+              <SelectPicker
+                inline
+                label={t("trade.pointValue")}
+                value={pointValue}
+                onChange={setPointValue}
+                options={POINT_VALUES.map((p) => ({
+                  value: String(p.value),
+                  label: `${p.label} ${p.value}`,
+                }))}
+              />
+              <div className="grid grid-cols-2 gap-3">
+                <Field label={t("trade.stopPoints")}>
+                  <Input
+                    aria-label={t("trade.stopPoints")}
+                    type="number"
+                    step="0.25"
+                    min="0"
+                    value={stopPoints}
+                    onChange={(e) => setStopPoints(e.target.value)}
+                  />
+                </Field>
+                <Field label={t("trade.pointValue")}>
+                  <Input
+                    aria-label={t("trade.pointValue")}
+                    type="number"
+                    step="0.5"
+                    min="0"
+                    value={pointValue}
+                    onChange={(e) => setPointValue(e.target.value)}
+                  />
+                </Field>
+              </div>
+              <p className="tv-num tv-prose text-slate-400">
+                {calcContracts
+                  ? `${calcContracts.contracts} ${t("trade.contracts")} · ${t("trade.effectiveRisk")}: ${formatMoney(calcContracts.effectiveRisk)}`
+                  : t("trade.calcHint")}
+              </p>
+            </Disclosure>
+            <Disclosure title={t("trade.advanced")} open={showAdvanced} onChange={setShowAdvanced}>
+              <div className="grid gap-3 sm:grid-cols-3">
+                {(
                   [
-                    t("trade.quality1"),
-                    t("trade.quality2"),
-                    t("trade.quality3"),
-                    t("trade.quality4"),
-                    t("trade.quality5"),
-                  ][form.setupQuality - 1]
-                }
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              {[1, 2, 3, 4, 5].map((n) => {
-                const on = n <= form.setupQuality;
-                return (
-                  <button
-                    key={n}
-                    onClick={() => setForm((f) => ({ ...f, setupQuality: n }))}
-                    aria-label={`${n} / 5`}
-                    className={cn(
-                      "flex-1 flex items-center justify-center gap-1 rounded-full border px-2 py-1.5 transition active:scale-95",
-                      on
-                        ? "bg-amber-500/15 border-amber-500/30"
-                        : "bg-white/[0.03] border-white/[0.08] hover:bg-white/[0.06]",
-                    )}
-                  >
-                    <Star
-                      className={cn(
-                        "w-4 h-4 transition duration-200",
-                        on ? "text-amber-400 fill-amber-400" : "text-slate-600",
-                      )}
-                      strokeWidth={on ? 2 : 1.75}
+                    ["mae", `MAE (${currencySymbol()})`],
+                    ["mfe", `MFE (${currencySymbol()})`],
+                    ["slippage", `${t("trade.slippage")} (${currencySymbol()})`],
+                  ] as const
+                ).map(([key, label]) => (
+                  <Field key={key} label={label}>
+                    <Input
+                      aria-label={label}
+                      type="number"
+                      step="0.01"
+                      value={form[key]}
+                      onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
+                      placeholder="—"
                     />
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Confidence — jauge RADIALE premium + slider */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className={labelClass + " mb-0"}>{t("trade.confidence")}</label>
-              <span
-                className={cn(
-                  "tv-label px-2 py-0.5 rounded-full border",
-                  form.confidence >= 75 &&
-                    "text-emerald-300 bg-emerald-500/10 border-emerald-500/25",
-                  form.confidence >= 50 &&
-                    form.confidence < 75 &&
-                    "text-amber-300 bg-amber-500/10 border-amber-500/25",
-                  form.confidence < 50 && "text-red-300 bg-red-500/10 border-red-500/25",
-                )}
-              >
-                {form.confidence >= 75
-                  ? t("trade.confHigh")
-                  : form.confidence >= 50
-                    ? t("trade.confMid")
-                    : t("trade.confLow")}
-              </span>
-            </div>
-            <div className="flex items-center gap-4">
-              {/* Jauge radiale — la couleur suit le niveau, comme le badge */}
-              <div className="relative shrink-0">
-                <svg
-                  width="68"
-                  height="68"
-                  viewBox="0 0 68 68"
-                  className="-rotate-90"
-                  style={{ overflow: "visible" }}
-                >
-                  <circle
-                    cx="34"
-                    cy="34"
-                    r="27"
-                    fill="none"
-                    stroke="rgba(255,255,255,0.06)"
-                    strokeWidth="8"
+                    {key !== "slippage" && (
+                      <p className="tv-prose text-slate-500">
+                        {t(key === "mae" ? "trade.maeHint" : "trade.mfeHint")}
+                      </p>
+                    )}
+                  </Field>
+                ))}
+              </div>
+            </Disclosure>
+            <div className="space-y-3">
+              <Field label={t("trade.setupQuality")}>
+                <ChoiceGroup
+                  label={t("trade.setupQuality")}
+                  value={form.setupQuality}
+                  options={[1, 2, 3, 4, 5].map((value) => ({ value, label: String(value) }))}
+                  onChange={(setupQuality) => setForm((f) => ({ ...f, setupQuality }))}
+                />
+                <p className="tv-prose text-slate-500">
+                  {t(`trade.quality${form.setupQuality}` as never)}
+                </p>
+              </Field>
+              <Field label={t("trade.confidence")}>
+                <div className="tv-trade-inset flex min-h-11 items-center gap-4">
+                  <input
+                    aria-label={t("trade.confidence")}
+                    type="range"
+                    min="1"
+                    max="100"
+                    value={form.confidence}
+                    onChange={(e) => setForm((f) => ({ ...f, confidence: Number(e.target.value) }))}
+                    className="min-w-0 flex-1"
                   />
-                  <circle
-                    cx="34"
-                    cy="34"
-                    r="27"
-                    fill="none"
-                    stroke={confidenceColor.from}
-                    strokeWidth="8"
-                    strokeLinecap="round"
-                    strokeDasharray={2 * Math.PI * 27}
-                    strokeDashoffset={2 * Math.PI * 27 * (1 - form.confidence / 100)}
-                    opacity="0.25"
-                    filter="url(#confGlow)"
-                    className="transition-[stroke-dashoffset] duration-250"
-                  />
-                  <circle
-                    cx="34"
-                    cy="34"
-                    r="27"
-                    fill="none"
-                    stroke={`url(#confGrad)`}
-                    strokeWidth="8"
-                    strokeLinecap="round"
-                    strokeDasharray={2 * Math.PI * 27}
-                    strokeDashoffset={2 * Math.PI * 27 * (1 - form.confidence / 100)}
-                    className="transition-[stroke-dashoffset] duration-250"
-                  />
-                  <defs>
-                    <linearGradient id="confGrad" x1="0" y1="0" x2="1" y2="1">
-                      <stop offset="0%" stopColor={confidenceColor.from} />
-                      <stop offset="100%" stopColor={confidenceColor.to} />
-                    </linearGradient>
-                    <filter id="confGlow" x="-40%" y="-40%" width="180%" height="180%">
-                      <feGaussianBlur stdDeviation="4" />
-                    </filter>
-                  </defs>
-                </svg>
-                <div className="absolute inset-0 grid place-items-center">
-                  <span className={cn("tv-figure text-base", confidenceColor.text)}>
+                  <span className="tv-figure w-12 shrink-0 text-right text-sm text-white">
                     {form.confidence}%
                   </span>
                 </div>
-              </div>
-              {/* Slider */}
-              <input
-                type="range"
-                min="1"
-                max="100"
-                value={form.confidence}
-                onChange={(e) => setForm((f) => ({ ...f, confidence: parseInt(e.target.value) }))}
-                className="flex-1 min-w-0"
-              />
-            </div>
-          </div>
-
-          {/* Intention — avant le trade (optionnel, ~5 s) */}
-          <div className="bg-white/[0.02] rounded-xl border border-white/[0.04]">
-            <button
-              type="button"
-              onClick={() => setShowIntent((v) => !v)}
-              className="w-full flex items-center gap-2 px-3 py-2.5 text-xs font-semibold text-slate-400 hover:text-white transition-colors"
-            >
-              <Brain className="w-3.5 h-3.5 text-cyan-400/70" />
-              {t("trade.intent")}
-              {showIntent ? (
-                <ChevronUp className="w-3 h-3 ml-auto" />
-              ) : (
-                <ChevronDown className="w-3 h-3 ml-auto" />
-              )}
-            </button>
-            {showIntent && (
-              <div className="px-3 pb-3 space-y-2.5">
-                <div>
-                  <label className={labelClass}>{t("trade.intentEmotion")}</label>
-                  <div className="flex flex-wrap gap-1.5">
-                    {EMOTIONAL_STATES.map((s) => (
+              </Field>
+              <Disclosure title={t("trade.intent")} open={showIntent} onChange={setShowIntent}>
+                <Field label={t("trade.intentEmotion")}>
+                  <div className={CHIP_ROW}>
+                    {EMOTIONAL_STATES.map((value) => (
                       <Chip
-                        key={s}
-                        selected={form.intentEmotion === s}
+                        key={value}
+                        selected={form.intentEmotion === value}
                         onClick={() =>
                           setForm((f) => ({
                             ...f,
-                            intentEmotion: f.intentEmotion === s ? null : s,
+                            intentEmotion: f.intentEmotion === value ? null : value,
                           }))
                         }
                       >
-                        {t(EMOTION_LABELS[s] as never)}
+                        {t(EMOTION_LABELS[value] as never)}
                       </Chip>
                     ))}
                   </div>
-                </div>
-                <div>
-                  <label className={labelClass}>{t("trade.intentReasoning")}</label>
+                </Field>
+                <Field label={t("trade.intentReasoning")}>
                   <Textarea
+                    aria-label={t("trade.intentReasoning")}
                     value={form.intentReasoning}
                     onChange={(e) => setForm((f) => ({ ...f, intentReasoning: e.target.value }))}
                     placeholder={t("trade.intentReasoningPh")}
                     rows={2}
-                    className={cn(textareaClass, "text-xs sm:text-sm")}
                   />
-                </div>
-                <div>
-                  <label className={labelClass}>{t("trade.intentPlan")}</label>
+                </Field>
+                <Field label={t("trade.intentPlan")}>
                   <Textarea
+                    aria-label={t("trade.intentPlan")}
                     value={form.intentPlan}
                     onChange={(e) => setForm((f) => ({ ...f, intentPlan: e.target.value }))}
                     placeholder={t("trade.intentPlanPh")}
                     rows={2}
-                    className={cn(textareaClass, "text-xs sm:text-sm")}
                   />
+                </Field>
+              </Disclosure>
+              <Field label={t("trade.confluences")}>
+                <div className={CHIP_ROW}>
+                  {userConfluences.map((c) => (
+                    <RemovableChip
+                      key={c}
+                      selected={form.confluences.includes(c)}
+                      onClick={() => toggleConfluence(c)}
+                      onRemove={() => removeConfluence(c)}
+                      removeLabel={t("common.remove")}
+                    >
+                      {c}
+                    </RemovableChip>
+                  ))}
                 </div>
-              </div>
-            )}
-          </div>
-
-          {/* Confluences (customizable) and Mistakes below both render the one
-              shared `Chip` from the design system — same size, shape, spacing
-              and states, here and in the Missed Setup modal. */}
-          <div>
-            <label className={labelClass}>{t("trade.confluences")}</label>
-            <div className={cn(CHIP_ROW, "mb-2")}>
-              {userConfluences.map((c) => (
-                <RemovableChip
-                  key={c}
-                  selected={form.confluences.includes(c)}
-                  onClick={() => toggleConfluence(c)}
-                  onRemove={() => removeConfluence(c)}
-                  removeLabel={t("common.remove")}
-                >
-                  {c}
-                </RemovableChip>
-              ))}
-            </div>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={newConfluence}
-                onChange={(e) => setNewConfluence(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addConfluence())}
-                placeholder={t("trade.addConfluencePlaceholder")}
-                className={cn(inputClass, "flex-1 py-2 text-xs")}
-              />
-              <button
-                onClick={addConfluence}
-                aria-label={t("common.add")}
-                className="px-3 rounded-xl border border-white/[0.08] text-cyan-400 hover:bg-cyan-500/10 transition"
-              >
-                <Plus className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-
-          {/* Mistakes */}
-          <div>
-            <label className={labelClass}>{t("trade.mistakes")}</label>
-            <div className={CHIP_ROW}>
-              {(showAllMistakes ? MISTAKE_OPTIONS : MISTAKE_OPTIONS.slice(0, 5)).map((m) => (
-                <Chip
-                  key={m}
-                  tone="danger"
-                  selected={form.mistakes.includes(m)}
-                  onClick={() =>
-                    setForm((f) => ({
-                      ...f,
-                      mistakes: f.mistakes.includes(m)
-                        ? f.mistakes.filter((x) => x !== m)
-                        : [...f.mistakes, m],
-                    }))
-                  }
-                >
-                  {m}
-                </Chip>
-              ))}
-              <button
-                onClick={() => setShowAllMistakes(!showAllMistakes)}
-                aria-label={showAllMistakes ? t("common.showLess") : t("common.showMore")}
-                className="flex h-8 min-w-[32px] items-center justify-center gap-1 px-2 text-xs text-slate-500 hover:text-slate-300"
-              >
-                {showAllMistakes ? (
-                  <ChevronUp className="w-3 h-3" />
-                ) : (
-                  <ChevronDown className="w-3 h-3" />
-                )}
-              </button>
-            </div>
-          </div>
-
-          {/* Réflexion — après le trade (optionnel, 2 clics) */}
-          <div className="bg-white/[0.02] rounded-xl border border-white/[0.04]">
-            <button
-              type="button"
-              onClick={() => setShowReflection((v) => !v)}
-              className="w-full flex items-center gap-2 px-3 py-2.5 text-xs font-semibold text-slate-400 hover:text-white transition-colors"
-            >
-              <ClipboardCheck className="w-3.5 h-3.5 text-cyan-400/70" />
-              {t("trade.reflection")}
-              {showReflection ? (
-                <ChevronUp className="w-3 h-3 ml-auto" />
-              ) : (
-                <ChevronDown className="w-3 h-3 ml-auto" />
-              )}
-            </button>
-            {showReflection && (
-              <div className="px-3 pb-3 space-y-2.5">
-                <div>
-                  <label className={labelClass}>{t("trade.reflectionPlanRespected")}</label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {(["yes", "partial", "no"] as const).map((p) => {
-                      const label =
-                        p === "yes"
-                          ? t("trade.reflectionYes")
-                          : p === "partial"
-                            ? t("trade.reflectionPartial")
-                            : t("trade.reflectionNo");
-                      return (
-                        <button
-                          key={p}
-                          type="button"
-                          onClick={() =>
-                            setForm((f) => ({
-                              ...f,
-                              reflectionPlan: f.reflectionPlan === p ? null : p,
-                            }))
-                          }
-                          className={cn(
-                            "h-9 sm:h-10 rounded-xl text-xs font-semibold border transition",
-                            form.reflectionPlan === p
-                              ? p === "yes"
-                                ? "bg-emerald-500/15 border-emerald-500/25 text-emerald-400"
-                                : p === "partial"
-                                  ? "bg-amber-500/15 border-amber-500/25 text-amber-400"
-                                  : "bg-red-500/15 border-red-500/25 text-red-400"
-                              : "bg-white/[0.03] border-white/[0.06] text-slate-500 hover:text-slate-300",
-                          )}
-                        >
-                          {label}
-                        </button>
-                      );
-                    })}
-                  </div>
+                <div className="flex gap-2">
+                  <Input
+                    aria-label={t("trade.confluences")}
+                    value={newConfluence}
+                    onChange={(e) => setNewConfluence(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        addConfluence();
+                      }
+                    }}
+                    placeholder={t("trade.addConfluencePlaceholder")}
+                  />
+                  <Button
+                    type="button"
+                    variant="subtle"
+                    onClick={addConfluence}
+                    aria-label={t("common.add")}
+                    className="h-11 w-11 shrink-0 px-0"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
                 </div>
-                <div>
-                  <label className={labelClass}>{t("trade.reflectionReason")}</label>
-                  <div className="flex flex-wrap gap-1.5">
+              </Field>
+            </div>
+            <div className="space-y-3 border-t border-[var(--tv-border)] pt-3">
+              <Field label={t("trade.mistakes")}>
+                <div className={CHIP_ROW}>
+                  {(showAllMistakes ? MISTAKE_OPTIONS : MISTAKE_OPTIONS.slice(0, 5)).map((m) => (
+                    <Chip
+                      key={m}
+                      selected={form.mistakes.includes(m)}
+                      onClick={() =>
+                        setForm((f) => ({
+                          ...f,
+                          mistakes: f.mistakes.includes(m)
+                            ? f.mistakes.filter((x) => x !== m)
+                            : [...f.mistakes, m],
+                        }))
+                      }
+                    >
+                      {m}
+                    </Chip>
+                  ))}
+                  <Button variant="ghost" size="sm" onClick={() => setShowAllMistakes((v) => !v)}>
+                    {showAllMistakes ? t("common.showLess") : t("common.showMore")}
+                  </Button>
+                </div>
+              </Field>
+              <Disclosure
+                title={t("trade.reflection")}
+                open={showReflection}
+                onChange={setShowReflection}
+              >
+                <Field label={t("trade.reflectionPlanRespected")}>
+                  <ChoiceGroup
+                    label={t("trade.reflectionPlanRespected")}
+                    value={form.reflectionPlan}
+                    options={[
+                      { value: "yes", label: t("trade.reflectionYes") },
+                      { value: "partial", label: t("trade.reflectionPartial") },
+                      { value: "no", label: t("trade.reflectionNo") },
+                    ]}
+                    onChange={(value) =>
+                      setForm((f) => ({
+                        ...f,
+                        reflectionPlan: f.reflectionPlan === value ? null : value,
+                      }))
+                    }
+                  />
+                </Field>
+                <Field label={t("trade.reflectionReason")}>
+                  <div className={CHIP_ROW}>
                     {REFLECTION_REASONS.map((r) => (
                       <Chip
                         key={r}
@@ -1446,254 +1127,159 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                       </Chip>
                     ))}
                   </div>
-                </div>
-                <div>
-                  <label className={labelClass}>{t("trade.reflectionNote")}</label>
+                </Field>
+                <Field label={t("trade.reflectionNote")}>
                   <Textarea
+                    aria-label={t("trade.reflectionNote")}
                     value={form.reflectionNote}
                     onChange={(e) => setForm((f) => ({ ...f, reflectionNote: e.target.value }))}
                     placeholder={t("trade.reflectionNotePh")}
                     rows={2}
-                    className={cn(textareaClass, "text-xs sm:text-sm")}
                   />
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Screenshots */}
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className={labelClass + " mb-0"}>{t("trade.screenshots")}</label>
-              <span className="text-[11px] text-slate-600 flex items-center gap-1">
-                {t("common.pasteHint")}
-              </span>
-            </div>
-            <div className="flex gap-3 flex-wrap items-start">
-              {form.screenshots.map((shot, i) => (
-                <div
-                  key={shot || i}
-                  draggable
-                  onDragStart={() => {
-                    dragIndex.current = i;
-                  }}
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    if (dragIndex.current !== null) moveScreenshot(dragIndex.current, i);
-                    dragIndex.current = null;
-                  }}
-                  onDragEnd={() => {
-                    dragIndex.current = null;
-                  }}
-                  className="relative w-24 h-24 rounded-xl overflow-hidden border border-white/[0.08] group cursor-grab active:cursor-grabbing"
-                >
-                  <button
-                    type="button"
-                    onClick={() => setLightboxIndex(i)}
-                    className="block w-full h-full"
-                  >
-                    {screenshotUrls[shot] ? (
-                      <img
-                        src={screenshotUrls[shot]}
-                        alt={`Screenshot ${i + 1}`}
-                        className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                        onError={() => {
-                          invalidateScreenshot(shot);
-                        }}
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <div className="w-4 h-4 border-2 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin" />
-                      </div>
-                    )}
-                  </button>
-                  {/* Rang + flèches de réordonnancement (tactile). */}
-                  <span className="absolute top-1 left-1 grid h-5 w-5 place-items-center rounded-md bg-black/70 text-[11px] font-bold text-white">
-                    {i + 1}
+                </Field>
+              </Disclosure>
+              {/* Screenshots */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className={labelClass + " mb-0"}>{t("trade.screenshots")}</label>
+                  <span className="text-xs text-slate-600 flex items-center gap-1">
+                    {t("common.pasteHint")}
                   </span>
-                  {form.screenshots.length > 1 && (
-                    <div className="absolute inset-x-0 bottom-0 flex justify-between bg-black/60 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                </div>
+                <div className="flex gap-3 flex-wrap items-start">
+                  {form.screenshots.map((shot, i) => (
+                    <div
+                      key={shot || i}
+                      draggable
+                      onDragStart={() => {
+                        dragIndex.current = i;
+                      }}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        if (dragIndex.current !== null) moveScreenshot(dragIndex.current, i);
+                        dragIndex.current = null;
+                      }}
+                      onDragEnd={() => {
+                        dragIndex.current = null;
+                      }}
+                      className="relative w-24 h-24 rounded-xl overflow-hidden border border-white/[0.08] group cursor-grab active:cursor-grabbing"
+                    >
                       <button
                         type="button"
-                        disabled={i === 0}
-                        onClick={() => moveScreenshot(i, i - 1)}
-                        aria-label={t("trade.moveScreenshotLeft")}
-                        className="flex-1 py-1 grid place-items-center text-white disabled:opacity-25"
+                        onClick={() => setLightboxIndex(i)}
+                        className="block w-full h-full"
                       >
-                        <ArrowLeft className="w-3.5 h-3.5" />
+                        {screenshotUrls[shot] ? (
+                          <img
+                            src={screenshotUrls[shot]}
+                            alt={`Screenshot ${i + 1}`}
+                            className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                            onError={() => {
+                              invalidateScreenshot(shot);
+                            }}
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <div className="w-4 h-4 border-2 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin" />
+                          </div>
+                        )}
                       </button>
+                      {/* Rang + flèches de réordonnancement (tactile). */}
+                      <span className="tv-num absolute top-1 left-1 grid h-5 w-5 place-items-center rounded-md bg-black/70 text-xs font-bold text-white">
+                        {i + 1}
+                      </span>
+                      {form.screenshots.length > 1 && (
+                        <div className="absolute inset-x-0 bottom-0 flex justify-between bg-black/60 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                          <button
+                            type="button"
+                            disabled={i === 0}
+                            onClick={() => moveScreenshot(i, i - 1)}
+                            aria-label={t("trade.moveScreenshotLeft")}
+                            className="flex-1 py-1 grid place-items-center text-white disabled:opacity-25"
+                          >
+                            <ArrowLeft className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            disabled={i === form.screenshots.length - 1}
+                            onClick={() => moveScreenshot(i, i + 1)}
+                            aria-label={t("trade.moveScreenshotRight")}
+                            className="flex-1 py-1 grid place-items-center text-white disabled:opacity-25"
+                          >
+                            <ArrowRight className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      )}
                       <button
-                        type="button"
-                        disabled={i === form.screenshots.length - 1}
-                        onClick={() => moveScreenshot(i, i + 1)}
-                        aria-label={t("trade.moveScreenshotRight")}
-                        className="flex-1 py-1 grid place-items-center text-white disabled:opacity-25"
+                        onClick={() => removeScreenshot(i)}
+                        aria-label={t("common.remove")}
+                        className="absolute top-1 right-1 w-6 h-6 bg-[var(--tv-plate-3)] rounded-full flex items-center justify-center opacity-60 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
                       >
-                        <ArrowRight className="w-3.5 h-3.5" />
+                        <X className="w-3 h-3 text-white" />
                       </button>
                     </div>
+                  ))}
+                  {form.screenshots.length < 3 && (
+                    <label className="w-24 h-24 rounded-xl border-2 border-dashed border-white/[0.08] flex flex-col items-center justify-center cursor-pointer hover:border-[var(--tv-border-accent)] hover:bg-cyan-500/[0.03] transition">
+                      {uploading ? (
+                        <div className="w-5 h-5 border-2 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin" />
+                      ) : (
+                        <>
+                          <ImagePlus className="w-5 h-5 text-slate-600" />
+                          <span className="text-xs text-slate-600 mt-1">{t("trade.upload")}</span>
+                        </>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={(e) => handleScreenshotUpload(e.target.files)}
+                        className="hidden"
+                      />
+                    </label>
                   )}
-                  <button
-                    onClick={() => removeScreenshot(i)}
-                    aria-label={t("common.remove")}
-                    className="absolute top-1 right-1 w-6 h-6 bg-red-500/80 rounded-full flex items-center justify-center opacity-60 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
-                  >
-                    <X className="w-3 h-3 text-white" />
-                  </button>
-                </div>
-              ))}
-              {form.screenshots.length < 3 && (
-                <label className="w-24 h-24 rounded-xl border-2 border-dashed border-white/[0.08] flex flex-col items-center justify-center cursor-pointer hover:border-[var(--tv-border-accent)] hover:bg-cyan-500/[0.03] transition">
-                  {uploading ? (
-                    <div className="w-5 h-5 border-2 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin" />
-                  ) : (
-                    <>
-                      <ImagePlus className="w-5 h-5 text-slate-600" />
-                      <span className="text-[11px] text-slate-600 mt-1">{t("trade.upload")}</span>
-                    </>
-                  )}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    onChange={(e) => handleScreenshotUpload(e.target.files)}
-                    className="hidden"
-                  />
-                </label>
-              )}
-            </div>
-          </div>
-
-          {/* Advanced: MAE / MFE / slippage */}
-          <div className="bg-white/[0.02] rounded-xl border border-white/[0.04]">
-            <button
-              type="button"
-              onClick={() => setShowAdvanced((v) => !v)}
-              className="w-full flex items-center gap-2 px-3 py-2.5 text-xs font-semibold text-slate-400 hover:text-white transition-colors"
-            >
-              <SlidersHorizontal className="w-3.5 h-3.5 text-cyan-400/70" />
-              {t("trade.advanced")}
-              {showAdvanced ? (
-                <ChevronUp className="w-3 h-3 ml-auto" />
-              ) : (
-                <ChevronDown className="w-3 h-3 ml-auto" />
-              )}
-            </button>
-            {showAdvanced && (
-              <div className="px-3 pb-3 grid grid-cols-3 gap-2">
-                <div>
-                  <label className={labelClass}>MAE ({currencySymbol()})</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={form.mae}
-                    onChange={(e) => setForm((f) => ({ ...f, mae: e.target.value }))}
-                    placeholder="—"
-                    className={inputClass}
-                  />
-                  <div className="text-[11px] text-slate-600 mt-1">{t("trade.maeHint")}</div>
-                </div>
-                <div>
-                  <label className={labelClass}>MFE ({currencySymbol()})</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={form.mfe}
-                    onChange={(e) => setForm((f) => ({ ...f, mfe: e.target.value }))}
-                    placeholder="—"
-                    className={inputClass}
-                  />
-                  <div className="text-[11px] text-slate-600 mt-1">{t("trade.mfeHint")}</div>
-                </div>
-                <div>
-                  <label className={labelClass}>
-                    {t("trade.slippage")} ({currencySymbol()})
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={form.slippage}
-                    onChange={(e) => setForm((f) => ({ ...f, slippage: e.target.value }))}
-                    placeholder="—"
-                    className={inputClass}
-                  />
                 </div>
               </div>
-            )}
-          </div>
-
-          {/* Notes */}
-          <div>
-            <label className={labelClass}>{t("trade.notes")}</label>
-            <Textarea
-              value={form.notes}
-              onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
-              rows={3}
-              placeholder={t("trade.notesPlaceholder")}
-              className={textareaClass}
-            />
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 md:gap-3 px-4 md:px-6 py-3 md:py-4 border-t border-white/[0.06]">
-          {/* Live recap: what will be saved */}
-          <div className="flex-1 min-w-0 flex items-center gap-2 text-[11px] text-slate-500 overflow-hidden">
-            {isValid ? (
-              <>
-                <span className="font-bold text-white shrink-0">{form.symbol.toUpperCase()}</span>
-                {session && (
-                  <span className="tv-label hidden sm:inline px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 shrink-0">
-                    {t(`session.${session}` as never)}
-                  </span>
+            </div>
+          </Disclosure>
+        </form>
+        <footer className="shrink-0 border-t border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-4 py-2.5">
+          {(timeError || rMultipleError) && (
+            <p role="alert" className="tv-prose mb-2 text-red-400">
+              {timeError || rMultipleError}
+            </p>
+          )}
+          <div className="flex items-center gap-2">
+            <div className="min-w-0 flex-1">
+              <span className="tv-label block truncate text-slate-500">
+                {pnlLocked ? t("trade.brokerPnl") : t("trade.estPnl")}
+              </span>
+              <span
+                className={cn(
+                  "tv-figure block truncate text-xl",
+                  calculatedPnl > 0
+                    ? "text-emerald-400"
+                    : calculatedPnl < 0
+                      ? "text-red-400"
+                      : "text-slate-400",
                 )}
-                <span className="hidden sm:inline shrink-0">
-                  {getDuration(form.entryTime, form.exitTime)}
-                </span>
-                <span
-                  className={cn(
-                    "tv-figure shrink-0",
-                    form.direction === "be"
-                      ? "text-slate-300"
-                      : calculatedPnl >= 0
-                        ? "text-emerald-400"
-                        : "text-red-400",
-                  )}
-                >
-                  {form.direction === "be" ? "BE" : formatMoney(calculatedPnl, { signed: true })}
-                </span>
-              </>
-            ) : (
-              <span className="truncate">{t("trade.fillRequired")}</span>
-            )}
+              >
+                {formatMoney(calculatedPnl, { signed: true })}
+              </span>
+            </div>
+            <Button
+              variant="entry"
+              type="submit"
+              form="trade-entry-form"
+              disabled={!isValid}
+              className="h-11"
+            >
+              {trade ? t("trade.updateTrade") : t("trade.saveTrade")}
+            </Button>
           </div>
-        </div>
-        {(timeError || rMultipleError) && (
-          <div className="px-4 md:px-6 pb-2 space-y-1">
-            {timeError && <p className="tv-prose text-red-400">{timeError}</p>}
-            {rMultipleError && <p className="tv-prose text-red-400">{rMultipleError}</p>}
-          </div>
-        )}
-        <div className="sticky bottom-0 bg-[var(--tv-plate-1)] border-t border-white/[.06] px-4 md:px-6 py-3 md:py-4 flex items-center justify-end gap-2 z-10">
-          <button
-            onClick={onClose}
-            className="px-4 md:px-5 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-colors shrink-0"
-          >
-            {t("common.cancel")}
-          </button>
-          <Button
-            onClick={handleSave}
-            disabled={!isValid}
-            className={cn(
-              "px-6 py-2.5 rounded-xl text-sm font-bold transition",
-              isValid ? "tv-accent-fill" : "bg-slate-800 text-slate-500 cursor-not-allowed",
-            )}
-          >
-            {trade ? t("trade.updateTrade") : t("trade.saveTrade")}
-          </Button>
-        </div>
+        </footer>
       </Modal>
-
       {lightboxIndex !== null && (
         <Lightbox
           images={form.screenshots.map((s) => screenshotUrls[s] || "")}

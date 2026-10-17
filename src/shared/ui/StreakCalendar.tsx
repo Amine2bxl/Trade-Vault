@@ -1,4 +1,4 @@
-import { Flame } from "lucide-react";
+import { Flame } from "@/shared/ui/icons";
 import { cn } from "./cn";
 import { localDateOf } from "@/shared/calendar-date";
 

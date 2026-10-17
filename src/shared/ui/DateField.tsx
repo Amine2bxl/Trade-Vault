@@ -1,8 +1,8 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
-import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight } from "@/shared/ui/icons";
 import { cn } from "./cn";
 import { FIELD_BASE } from "./Input";
-import { usePopPlacement } from "./usePopPlacement";
+import { SelectionPanel } from "./SelectionPanel";
 
 /**
  * LE CHAMP DE DATE — celui du produit, plus celui du navigateur.
@@ -73,8 +73,6 @@ export function DateField({
 }: DateFieldProps) {
   const [ouvert, setOuvert] = useState(false);
   const boiteRef = useRef<HTMLDivElement | null>(null);
-  const panRef = useRef<HTMLDivElement | null>(null);
-  const pose = usePopPlacement(panRef, ouvert);
   const id = useId();
 
   // Le mois affiché — il suit la valeur tant qu'on ne navigue pas.
@@ -88,27 +86,6 @@ export function DateField({
       setAncre([y, m]);
     }
   }, [value, ouvert]);
-
-  // Fermeture au clic dehors et à Échap — les deux, jamais l'une sans l'autre :
-  // un panneau qu'on ne peut fermer qu'à la souris piège la navigation clavier.
-  useEffect(() => {
-    if (!ouvert) return;
-    const dehors = (e: MouseEvent) => {
-      if (boiteRef.current && !boiteRef.current.contains(e.target as Node)) setOuvert(false);
-    };
-    const touche = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.stopPropagation();
-        setOuvert(false);
-      }
-    };
-    document.addEventListener("mousedown", dehors);
-    document.addEventListener("keydown", touche, true);
-    return () => {
-      document.removeEventListener("mousedown", dehors);
-      document.removeEventListener("keydown", touche, true);
-    };
-  }, [ouvert]);
 
   const [ay, am] = ancre;
 
@@ -146,7 +123,6 @@ export function DateField({
     if (!value) return "—";
     const [y, m, d] = partsOf(value);
     return new Intl.DateTimeFormat(locale, {
-      weekday: "short",
       day: "numeric",
       month: "short",
       year: "numeric",
@@ -169,6 +145,7 @@ export function DateField({
         onClick={() => setOuvert((o) => !o)}
         aria-haspopup="dialog"
         aria-expanded={ouvert}
+        aria-controls={ouvert ? id : undefined}
         aria-label={aria["aria-label"]}
         className={cn(
           FIELD_BASE,
@@ -181,18 +158,14 @@ export function DateField({
         <span className="min-w-0 flex-1 truncate">{affichage}</span>
       </button>
 
-      {ouvert && (
-        <div
-          ref={panRef}
-          role="dialog"
-          aria-label={aria["aria-label"]}
-          id={id}
-          className={cn(
-            "tv-pop absolute z-[var(--tv-z-nav)] w-[max(100%,17rem)] p-3",
-            pose.align === "end" ? "right-0" : "left-0",
-            pose.side === "top" ? "bottom-full mb-1.5" : "top-full mt-1.5",
-          )}
-        >
+      <SelectionPanel
+        open={ouvert}
+        onClose={() => setOuvert(false)}
+        anchorRef={boiteRef}
+        label={aria["aria-label"] ?? todayLabel}
+        width="19rem"
+      >
+        <div id={id} className="p-3 pt-1">
           <div className="mb-2 flex items-center gap-1">
             <button
               type="button"
@@ -237,6 +210,7 @@ export function DateField({
                       }}
                       aria-current={iso === value ? "date" : undefined}
                       className={cn(
+                        "tv-num",
                         "tv-pop-day",
                         iso === value && "tv-pop-day-on",
                         iso === aujourdhui && iso !== value && "tv-pop-day-today",
@@ -256,12 +230,13 @@ export function DateField({
               onChange(aujourdhui);
               setOuvert(false);
             }}
-            className="mt-2 w-full rounded-xl border border-white/[0.08] py-1.5 text-xs font-semibold text-slate-300 transition hover:bg-white/[0.05] hover:text-white"
+            disabled={!!horsBornes(aujourdhui)}
+            className="tv-pick-foot mt-2 w-full"
           >
             {todayLabel}
           </button>
         </div>
-      )}
+      </SelectionPanel>
     </div>
   );
 }

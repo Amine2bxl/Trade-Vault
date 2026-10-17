@@ -12,7 +12,7 @@ import {
   Play,
   Dices,
   Pencil,
-} from "lucide-react";
+} from "@/shared/ui/icons";
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -34,7 +34,7 @@ import { useAccounts } from "@/app/contexts/AccountContext";
 import { cn } from "@/shared/ui/cn";
 import { usePageActions } from "@/app/contexts/PageActionsContext";
 import { useAvailableHeight } from "@/app/hooks/useAvailableHeight";
-import { Kpi, KpiGrid, Modal } from "@/shared/ui";
+import { PageContainer, Kpi, KpiGrid, Modal } from "@/shared/ui";
 import {
   pathBands,
   samplePaths,
@@ -481,10 +481,10 @@ export default function MonteCarloPage({ trades }: Props) {
   const resume = `${formatMoney(solde)} · ${formatMoney(risque)}/${t("mc.tradeWord")} · ${horizon} ${t("mc.days")} · +${objectifPct}% / −${limitePct}%`;
 
   return (
-    <div
+    <PageContainer
       ref={boxRef}
       style={height ? { minHeight: height } : undefined}
-      className="mx-auto flex h-full max-w-[1400px] flex-col overflow-y-auto p-3 md:p-4"
+      className="flex h-full flex-col overflow-y-auto"
     >
       {/* ══ LE LANCEMENT — CE QUE ÇA FAIT, SUR QUOI, ET LE BOUTON ═════════════
           La page s'ouvrait sur un formulaire : on ne savait ni ce qu'elle
@@ -547,8 +547,8 @@ export default function MonteCarloPage({ trades }: Props) {
           <ol className="mc-steps">
             {(["mc.step1", "mc.step2", "mc.step3"] as const).map((k, i) => (
               <li key={k}>
-                <span className="mc-step-n">{i + 1}</span>
-                <span>
+                <span className="tv-num mc-step-n">{i + 1}</span>
+                <span className="tv-num">
                   {t(k)
                     .replace("{n}", String(journalSamples.length))
                     .replace("{runs}", TIRAGES.toLocaleString())}
@@ -691,7 +691,7 @@ export default function MonteCarloPage({ trades }: Props) {
                         label={t("mc.failed")}
                         value={`${(result.failRate * 100).toFixed(0)}%`}
                       />
-                      <span className="tv-hint ml-auto">
+                      <span className="tv-num tv-hint ml-auto">
                         {TIRAGES.toLocaleString()} {t("mc.paths")} · {stats.totalSamples}{" "}
                         {t("mc.dataTrades").toLowerCase()}
                       </span>
@@ -779,7 +779,7 @@ export default function MonteCarloPage({ trades }: Props) {
           </div>
         </div>
       </Modal>
-    </div>
+    </PageContainer>
   );
 }
 
@@ -1881,7 +1881,9 @@ function Legende({ cls, label, value }: { cls: string; label: string; value?: st
     <span className="flex items-center gap-1.5">
       <span aria-hidden className={cn("h-2 w-2 shrink-0 rounded-full", cls)} />
       <span className="tv-row-label">{label}</span>
-      {value && <span className="tv-figure text-[11px] text-slate-300">{value}</span>}
+      {value && (
+        <span className="tv-figure tv-figure-secondary text-[11px] text-slate-300">{value}</span>
+      )}
     </span>
   );
 }

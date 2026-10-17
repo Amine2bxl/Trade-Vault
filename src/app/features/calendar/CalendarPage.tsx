@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, type CSSProperties } from "react";
-import { ChevronLeft, ChevronRight, Target } from "lucide-react";
+import { ChevronLeft, ChevronRight, Target } from "@/shared/ui/icons";
 import { Trade, MissedOpportunity } from "@/app/types";
 import { loadMissedOpportunities } from "@/app/store";
 import { useAuth } from "@/app/contexts/AuthContext";
@@ -14,7 +14,7 @@ import { todayLocalDate } from "@/shared/calendar-date";
 import TradeDetailModal from "@/app/features/journal/TradeDetailModal";
 import MissedSetupDetailModal from "@/app/features/missed/MissedSetupDetailModal";
 import { useT } from "@/app/i18n/LanguageContext";
-import { Kpi, KpiGrid } from "@/shared/ui";
+import { PageContainer, Kpi, KpiGrid } from "@/shared/ui";
 import { useAvailableHeight } from "@/app/hooks/useAvailableHeight";
 import { formatMoney } from "@/shared/currency";
 
@@ -285,7 +285,7 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
             title={`${missedCount} ${t("missed.title")}`}
           >
             <Target className="h-2.5 w-2.5" />
-            <span className="hidden md:inline">{missedCount}</span>
+            <span className="tv-num hidden md:inline">{missedCount}</span>
           </span>
         )}
         <span
@@ -307,7 +307,7 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
         {data && (
           <span
             className={cn(
-              "tv-figure max-w-full truncate text-[10px] font-bold leading-none sm:text-[11px] md:text-[14px]",
+              "tv-figure tv-figure-secondary max-w-full truncate text-[10px] font-bold leading-none sm:text-[11px] md:text-[14px]",
               out && "opacity-70",
               isAllBE
                 ? "text-slate-400"
@@ -364,10 +364,10 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
     // place : `flex-1` étire les lignes jusqu'à remplir la hauteur. Quand il
     // n'y a plus la place, les cellules s'arrêtent à leur plancher et le cadre
     // défile, au lieu de comprimer la grille.
-    <div
+    <PageContainer
       ref={boxRef}
       style={height ? { minHeight: height } : undefined}
-      className="mx-auto flex h-full max-w-[1400px] flex-col overflow-y-auto px-3 py-2 md:px-5 md:py-3"
+      className="flex h-full max-w-[1400px] flex-col overflow-y-auto"
     >
       {/* Summary Cards */}
       <KpiGrid className="tv-flat shrink-0">
@@ -469,7 +469,7 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
             <button onClick={prevMonth} aria-label={t("common.previous")} className="cal-nav-btn">
               <ChevronLeft className="h-4 w-4" />
             </button>
-            <span className="tv-title min-w-[8.5rem] text-center tracking-tight">
+            <span className="tv-num tv-title min-w-[8.5rem] text-center tracking-tight">
               {MONTHS[month]} {year}
             </span>
             <button onClick={nextMonth} aria-label={t("common.next")} className="cal-nav-btn">
@@ -527,12 +527,14 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
                       weekHasTrades ? "cursor-pointer" : "opacity-45",
                     )}
                   >
-                    <span className="tv-label mb-0.5 text-slate-500">{weekLabel}</span>
+                    <span className="tv-num tv-label mb-0.5 text-slate-500">{weekLabel}</span>
                     <span className={cn("tv-figure text-sm leading-none", weekTone)}>
                       {weekValue}
                     </span>
                     {week.trades > 0 && (
-                      <span className="tv-figure mt-1 text-[10px] text-slate-500">{weekCount}</span>
+                      <span className="tv-figure tv-figure-secondary mt-1 text-[10px] text-slate-500">
+                        {weekCount}
+                      </span>
                     )}
                   </button>
                 </div>
@@ -593,13 +595,13 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
                       weDays.length === 0 && "opacity-60",
                     )}
                   >
-                    <span className="tv-figure text-[10px] leading-none text-slate-500">
+                    <span className="tv-figure tv-figure-secondary text-[10px] leading-none text-slate-500">
                       {sat.day}·{sun.day}
                     </span>
                     {weDays.length > 0 && (
                       <span
                         className={cn(
-                          "tv-figure text-[10px] font-bold leading-none",
+                          "tv-figure tv-figure-secondary text-[10px] font-bold leading-none",
                           wePnl > 0
                             ? "text-[var(--tv-chart-green)]"
                             : wePnl < 0
@@ -752,6 +754,6 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
       {selectedMissed && (
         <MissedSetupDetailModal missed={selectedMissed} onClose={() => setSelectedMissed(null)} />
       )}
-    </div>
+    </PageContainer>
   );
 }

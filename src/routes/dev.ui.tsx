@@ -1,4 +1,17 @@
-import { lazy, Suspense, useState } from "react";
+import {
+  PageContainer,
+  Button,
+  Input,
+  Field,
+  DateField,
+  TimeField,
+  SelectPicker,
+  MultiPicker,
+  RangePicker,
+  type RangeValue,
+} from "@/shared/ui";
+import { PAGE_META } from "@/app/shell/navigation";
+import { lazy, Suspense, useState, useEffect, useMemo, useCallback, type ReactNode } from "react";
 import { createFileRoute, ClientOnly } from "@tanstack/react-router";
 import { ThemeProvider } from "@/app/contexts/ThemeContext";
 import { AuthProvider } from "@/app/contexts/AuthContext";
@@ -10,7 +23,8 @@ import { PageActionsProvider } from "@/app/contexts/PageActionsContext";
 import { previewTrades } from "@/app/utils/previewTrades";
 import { computeStats } from "@/domain/tradeCalcs";
 import { computeQuantStats } from "@/domain/quantStats";
-import type { Trade } from "@/app/types";
+import { isPage, type Trade } from "@/app/types";
+import PageHead from "@/app/shell/PageHead";
 
 /**
  * BANC D'ESSAI VISUEL — `/dev/ui`, EN DÉVELOPPEMENT UNIQUEMENT.
@@ -27,6 +41,26 @@ import type { Trade } from "@/app/types";
  * poignée de lignes.
  */
 
+const TradeModal = lazy(() => import("@/app/features/journal/TradeModal"));
+const CalendarPage = lazy(() => import("@/app/features/calendar/CalendarPage"));
+const Dashboard = lazy(() => import("@/app/features/dashboard/Dashboard"));
+const Journal = lazy(() => import("@/app/features/journal/Journal"));
+const Checklist = lazy(() => import("@/app/features/checklist/Checklist"));
+const LotSizeCalculator = lazy(() => import("@/app/features/calculator/LotSizeCalculator"));
+const EconomicNews = lazy(() => import("@/app/features/news/EconomicNews"));
+const MissedEditor = lazy(() =>
+  import("@/app/features/missed/MissedOpportunities").then((m) => ({ default: m.MissedEditor })),
+);
+const AccountsManager = lazy(() => import("@/app/features/settings/AccountsManager"));
+const MissedOpportunities = lazy(() => import("@/app/features/missed/MissedOpportunities"));
+const Seasonality = lazy(() => import("@/app/features/seasonality/Seasonality"));
+const Reports = lazy(() => import("@/app/features/reports/Reports"));
+const Settings = lazy(() => import("@/app/features/settings/Settings"));
+const Profile = lazy(() => import("@/app/features/settings/Profile"));
+const Appearance = lazy(() => import("@/app/features/settings/Appearance"));
+const Brokers = lazy(() => import("@/app/features/brokers/Brokers"));
+const Jarvis = lazy(() => import("@/app/features/jarvis/Jarvis"));
+
 const MonteCarlo = lazy(() => import("@/app/features/monte-carlo/MonteCarlo"));
 const Analytics = lazy(() => import("@/app/features/analytics/Analytics"));
 const Mistakes = lazy(() => import("@/app/features/mistakes/Mistakes"));
@@ -38,7 +72,28 @@ const GoalsPlan = lazy(() =>
   import("@/app/features/goals/views").then((m) => ({ default: m.PlanView })),
 );
 
+const noop = () => {};
+
 const IDS = [
+  "trade",
+  "missedform",
+  "controls",
+  "icons",
+  "calendar",
+  "dashboard",
+  "journal",
+  "checklist",
+  "calculator",
+  "news",
+  "missed",
+  "seasonality",
+  "reports",
+  "settings",
+  "accounts",
+  "profile",
+  "appearance",
+  "brokers",
+  "jarvis",
   "montecarlo",
   "analytics",
   "mistakes",
@@ -61,16 +116,37 @@ function DevUiPage() {
      re-cliquer avant chaque capture. */
   const [ecran, setEcran] = useState<EcranId>(() => {
     try {
-      const v = localStorage.getItem("tv.devUi");
+      const v =
+        new URLSearchParams(location.search).get("screen") ?? localStorage.getItem("tv.devUi");
       return (IDS as readonly string[]).includes(v ?? "") ? (v as EcranId) : "montecarlo";
     } catch {
       return "montecarlo";
     }
   });
 
-  if (!import.meta.env.DEV) return null;
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    const already = document.body.classList.contains("tv-app-type");
+    document.body.classList.add("tv-app-type");
+    return () => {
+      if (!already) document.body.classList.remove("tv-app-type");
+    };
+  }, []);
 
-  const trades = previewTrades();
+  const [head, setHead] = useState<{ actions: ReactNode; lead: ReactNode }>({
+    actions: null,
+    lead: null,
+  });
+  const setHeader = useCallback((slot: "actions" | "lead", node: ReactNode) => {
+    setHead((previous) => ({ ...previous, [slot]: node }));
+  }, []);
+
+  const trades = useMemo(
+    () => (new URLSearchParams(location.search).get("empty") === "1" ? [] : previewTrades()),
+    [],
+  );
+  if (!import.meta.env.DEV) return null;
+  const previewPage = ecran === "jarvis" ? "insights" : ecran === "goalsplan" ? "goals" : ecran;
 
   return (
     <ThemeProvider>
@@ -79,9 +155,12 @@ function DevUiPage() {
           <LanguageProvider>
             <ToastProvider>
               <ConfirmProvider>
-                <PageActionsProvider setActions={() => {}}>
+                <PageActionsProvider setActions={setHeader}>
                   <div className="min-h-screen bg-[var(--tv-bg)]">
-                    <div className="flex flex-wrap items-center gap-1.5 border-b border-[var(--tv-border)] px-3 py-2">
+                    <div
+                      data-dev-ui-navigation
+                      className="flex flex-wrap items-center gap-1.5 border-b border-[var(--tv-border)] px-3 py-2"
+                    >
                       {IDS.map((id) => (
                         <button
                           key={id}
@@ -99,13 +178,64 @@ function DevUiPage() {
                         </button>
                       ))}
                     </div>
+                    {isPage(previewPage) && (
+                      <PageHead
+                        page={previewPage}
+                        setPage={noop}
+                        actions={head.actions}
+                        lead={head.lead}
+                      />
+                    )}
                     <Suspense fallback={<div className="p-6 text-sm text-slate-500">…</div>}>
+                      {ecran === "trade" && <TradeHarness />}
+                      {ecran === "missedform" && <MissedHarness />}
+                      {ecran === "controls" && <ControlHarness />}
+                      {ecran === "icons" && <IconHarness />}
+                      {ecran === "calendar" && <CalendarPage trades={trades} />}
+                      {ecran === "dashboard" && <DashboardHarness trades={trades} />}
+                      {ecran === "journal" && (
+                        <Journal
+                          trades={trades}
+                          onEdit={noop}
+                          onDelete={noop}
+                          onDeleteAll={noop}
+                          onAdd={noop}
+                          onOpenMissed={noop}
+                        />
+                      )}
+                      {ecran === "checklist" && (
+                        <Checklist trades={trades} setPage={noop} onAddTrade={noop} />
+                      )}
+                      {ecran === "calculator" && (
+                        <LotSizeCalculator onAddTrade={noop} setPage={noop} />
+                      )}
+                      {ecran === "news" && <EconomicNews />}
+                      {ecran === "missed" && <MissedOpportunities />}
+                      {ecran === "seasonality" && <Seasonality trades={trades} />}
+                      {ecran === "reports" && <Reports trades={trades} />}
+                      {ecran === "accounts" && (
+                        <PageContainer className="max-w-3xl">
+                          <AccountsManager trades={trades} />
+                        </PageContainer>
+                      )}
+                      {ecran === "settings" && (
+                        <Settings
+                          trades={trades}
+                          onDeleteAll={noop}
+                          onOpenImport={noop}
+                          onOpenReports={noop}
+                        />
+                      )}
+                      {ecran === "profile" && <Profile trades={trades} />}
+                      {ecran === "appearance" && <Appearance />}
+                      {ecran === "brokers" && <Brokers />}
+                      {ecran === "jarvis" && <Jarvis />}
                       {ecran === "montecarlo" && <MonteCarlo trades={trades} />}
                       {ecran === "analytics" && <Analytics trades={trades} />}
                       {ecran === "mistakes" && <Mistakes trades={trades} />}
                       {ecran === "goals" && <Goals trades={trades} />}
                       {ecran === "goalsplan" && <PlanHarness trades={trades} />}
-                      {ecran === "tradingplan" && <TradingPlan setPage={() => {}} />}
+                      {ecran === "tradingplan" && <TradingPlan setPage={noop} />}
                       {ecran === "subscription" && <Subscription />}
                       {ecran === "inbox" && <Inbox />}
                     </Suspense>
@@ -144,18 +274,175 @@ function PlanHarness({ trades }: { trades: Trade[] }) {
     tasksDone: {},
   };
   return (
-    <div className="mx-auto max-w-[1000px] p-4 md:p-5">
+    <PageContainer className="max-w-[1000px]">
       <GoalsPlan
         plan={plan}
         ctx={ctx}
         fr={false}
         lang="en"
         busy={false}
-        onDelete={() => {}}
-        onToggleTask={() => {}}
-        onManualValue={() => {}}
+        onDelete={noop}
+        onToggleTask={noop}
+        onManualValue={noop}
         forecast={null}
       />
-    </div>
+    </PageContainer>
+  );
+}
+
+/** Le vrai déclencheur ouvre le vrai formulaire, sans écriture de compte. */
+function DashboardHarness({ trades }: { trades: Trade[] }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <Dashboard trades={trades} onAddTrade={() => setOpen(true)} />
+      {open && (
+        <TradeModal trade={null} onClose={() => setOpen(false)} onSave={() => setOpen(false)} />
+      )}
+    </>
+  );
+}
+
+function TradeHarness() {
+  const [open, setOpen] = useState(true);
+  const [saved, setSaved] = useState<unknown>(null);
+  const params = new URLSearchParams(location.search);
+  const imported = params.has("broker");
+  const existing = params.has("edit") || imported;
+  const trade = existing
+    ? {
+        ...previewTrades()[0],
+        screenshots: [],
+        ...(imported
+          ? {
+              broker: "tradovate",
+              quantity: 2,
+              entryPrice: 20000,
+              exitPrice: 20010,
+              fees: 4,
+              reviewPending: true,
+            }
+          : {}),
+      }
+    : null;
+  return (
+    <PageContainer>
+      <Button onClick={() => setOpen(true)}>Open trade</Button>
+      <pre data-trade-saved>{saved ? JSON.stringify(saved) : ""}</pre>
+      {open && (
+        <TradeModal
+          trade={trade}
+          onClose={() => setOpen(false)}
+          onSave={(trade, meta) => {
+            setSaved({ trade, meta });
+            setOpen(false);
+          }}
+        />
+      )}
+    </PageContainer>
+  );
+}
+function ControlHarness() {
+  const [time, setTime] = useState("09:30");
+  const [date, setDate] = useState("2026-10-17");
+  const [value, setValue] = useState("a");
+  const [days, setDays] = useState<string[]>([]);
+  const [range, setRange] = useState<RangeValue<"all" | "7d">>({ kind: "preset", preset: "all" });
+  return (
+    <PageContainer className="max-w-md space-y-4">
+      <Field label="Name">
+        <Input aria-label="Name" />
+      </Field>
+      <Field label="Time">
+        <TimeField value={time} onChange={setTime} aria-label="Time" doneLabel="Done" />
+      </Field>
+      <Field label="Date">
+        <DateField value={date} onChange={setDate} aria-label="Date" />
+      </Field>
+      <SelectPicker
+        label="Strategy"
+        variant="field"
+        value={value}
+        onChange={setValue}
+        options={Array.from({ length: 12 }, (_, i) => ({
+          value: String.fromCharCode(97 + i),
+          label: `Strategy ${i + 1}`,
+        }))}
+      />
+      <MultiPicker
+        label="Days"
+        values={days}
+        onChange={setDays}
+        options={[
+          { value: "mon", label: "Monday" },
+          { value: "tue", label: "Tuesday" },
+        ]}
+        allLabel="All"
+      />
+      <RangePicker
+        customLabel="Custom"
+        fromLabel="From"
+        toLabel="To"
+        applyLabel="Apply"
+        label="Period"
+        value={range}
+        onChange={setRange}
+        presets={[
+          { value: "all", label: "All" },
+          { value: "7d", label: "7 days" },
+        ]}
+      />
+      <output data-control-values className="tv-prose">
+        {JSON.stringify({ time, date, value, days, range })}
+      </output>
+    </PageContainer>
+  );
+}
+function IconHarness() {
+  return (
+    <PageContainer>
+      <div className="grid grid-cols-3 gap-3 sm:grid-cols-7">
+        {Object.entries(PAGE_META).map(([key, item]) => {
+          const Icon = item.icon;
+          return (
+            <div key={key} className="glass flex flex-col items-center gap-3 rounded-xl p-4">
+              <Icon className="h-7 w-7 text-slate-300" />
+              <span className="tv-prose text-slate-500">{key}</span>
+            </div>
+          );
+        })}
+      </div>
+    </PageContainer>
+  );
+}
+
+function MissedHarness() {
+  const [open, setOpen] = useState(true);
+  const [saved, setSaved] = useState<unknown>(null);
+  return (
+    <PageContainer>
+      <Button onClick={() => setOpen(true)}>Open missed setup</Button>
+      <pre data-missed-saved>{saved ? JSON.stringify(saved) : ""}</pre>
+      {open && (
+        <MissedEditor
+          value={{
+            id: "preview-missed",
+            date: "2026-10-17",
+            symbol: "",
+            estimatedR: 0,
+            reasonNotTaken: "",
+            whatHappened: "",
+            lessonLearned: "",
+            nextTimePlan: "",
+            screenshots: [],
+          }}
+          onClose={() => setOpen(false)}
+          onSave={(value) => {
+            setSaved(value);
+            setOpen(false);
+          }}
+        />
+      )}
+    </PageContainer>
   );
 }

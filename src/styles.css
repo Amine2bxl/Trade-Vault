@@ -1,6 +1,7 @@
 @import "tailwindcss" source(none);
 @source "../src";
 @import "tw-animate-css";
+@import "./shared/ui/selection.css";
 
 /*
  * Design system definition.
@@ -350,7 +351,7 @@
   --font-lucid:
     -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto,
     "Helvetica Neue", Arial, sans-serif;
-  /* La voix des données de la référence fournie : Inter ExtraBold, chargée
+  /* La voix des données de la référence fournie : Inter Bold, chargée
      une seule fois par la racine. Contrairement à la pile système, elle garde
      exactement la même carrure sur Mac, Windows et mobile. */
   --font-figure:
@@ -567,18 +568,12 @@
    * menus, docks), et `--tv-glow-accent` ne vaut plus rien du tout :
    * l'accent est une couleur, pas une source de lumière. */
   --tv-elev-1: none;
-  /* LE RELIEF DES CARTES — trois gestes, jamais de dégradé ni de halo.
-   *   edge : un filet de lumière d'un pixel sur l'arête haute (la plaque
-   *          accroche la lumière du dessus, elle n'en émet pas) ;
-   *   lift : un contact sombre serré + une ombre longue très diffuse, qui
-   *          décolle la carte du fond sans la faire flotter ;
-   *   sink : l'inverse, pour un bloc CREUSÉ dans une carte.
-   * Les plaques plates « carrés gris » se lisaient toutes au même plan ; le
-   * relief rend la hiérarchie fond → carte → bloc visible sans ajouter de
-   * couleur. Le Calendrier reste plat (`.tv-flat`). */
-  --tv-relief-edge: inset 0 1px 0 rgb(255 255 255 / 0.055);
-  --tv-relief-lift: 0 1px 1px rgb(0 0 0 / 0.45), 0 14px 30px -18px rgb(0 0 0 / 0.9);
-  --tv-relief-sink: inset 0 1px 2px rgb(0 0 0 / 0.38), inset 0 0 0 1px rgb(0 0 0 / 0.12);
+  /* Le calendrier est la référence : les cartes sont plates partout.
+   * Les anciens noms restent des alias pour les composants existants ;
+   * seules les surfaces flottantes conservent leur élévation. */
+  --tv-relief-edge: 0 0 0 transparent;
+  --tv-relief-lift: 0 0 0 transparent;
+  --tv-relief-sink: none;
   --tv-elev-2: 0 8px 24px -14px rgb(0 0 0 / 0.75);
   --tv-elev-3: 0 24px 60px -28px rgb(0 0 0 / 0.85);
   --tv-glow-accent: none;
@@ -1461,19 +1456,12 @@ input[type="number"] {
   background: var(--tv-plate-2);
   border: 1px solid var(--tv-border-strong);
 }
-/* Premium card hover — transition only the properties that change (never `all`,
- * which would also animate layout). A layered shadow lifts the card while a
- * hairline accent ring + a faint white top-edge highlight give the subtle glow
- * of a physical, backlit surface. */
+/* Même réponse que les cellules du calendrier : le liseré répond,
+ * la surface reste stable. Réservé aux cartes réellement interactives. */
 .card-premium {
-  transition-property: transform, box-shadow, border-color;
-  transition-duration: var(--duration-panel);
-  transition-timing-function: var(--ease-standard);
-  /* No permanent `will-change: transform`: it forces every card onto its own
-   * GPU layer, and Chrome on Windows then rasterises the text to a texture that
-   * lands on a fractional device pixel → blurry copy. On Retina/macOS it's
-   * invisible; on Windows it made the whole app look soft. The hover lift stays
-   * perfectly smooth without it. */
+  transition-property: background-color, border-color;
+  transition-duration: var(--tv-dur-1);
+  transition-timing-function: var(--tv-ease);
 }
 @media (hover: hover) {
   .card-premium:hover {
@@ -1487,11 +1475,10 @@ input[type="number"] {
   }
 }
 
-/* Les cartes portent le RELIEF (filet haut + contact sombre), pas une ombre
-   de flottement : l'ombre longue et marquée reste réservée à ce qui flotte
-   vraiment — modales, menus, docks. */
+/* Les plaques suivent le calendrier ; l'ombre est réservée aux modales
+   et aux menus, qui flottent réellement devant le contenu. */
 .glass {
-  box-shadow: var(--tv-relief-edge), var(--tv-relief-lift);
+  box-shadow: none;
 }
 .glass-strong {
   box-shadow: var(--tv-elev-3);
@@ -1507,19 +1494,18 @@ input[type="number"] {
 .panel {
   background: var(--tv-plate-1);
   border: 1px solid var(--tv-border);
-  box-shadow: var(--tv-relief-edge), var(--tv-relief-lift);
+  box-shadow: none;
 }
-/* Un bloc posé DANS une carte : un cran plus clair et creusé, pour que la
-   carte et son contenu ne se lisent plus au même plan. */
+/* Un bloc dans une carte se distingue par une valeur plus claire. */
 .tv-relief-inset {
   background: var(--tv-plate-2);
   box-shadow: var(--tv-relief-sink);
 }
 /* Une surface en relief hors des classes de carte (sections de modale…). */
 .tv-relief {
-  box-shadow: var(--tv-relief-edge), var(--tv-relief-lift);
+  box-shadow: none;
 }
-/* Le Calendrier garde sa sobriété : aucune ombre, la grille seule. */
+/* Alias historique du calendrier : la matière plate est désormais commune. */
 .tv-flat,
 .tv-flat .tv-kpi {
   box-shadow: none !important;
@@ -1590,7 +1576,7 @@ input[type="number"] {
 .metric-display {
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum";
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--tv-text-primary);
   line-height: 1;
@@ -3004,12 +2990,12 @@ a:focus-visible,
  *     text-2xl md:text-3xl font-extrabold tabular-nums text-white
  *
  * Autrement dit : Inter — la police du produit, pas une seconde famille —
- * en graisse 800, avec les chiffres TABULAIRES.
+ * en graisse 700, avec les chiffres TABULAIRES.
  *
  * Le tabulaire est le seul point qui compte vraiment, et il ne se voit pas
  * tant qu'on ne l'enlève pas : il donne à chaque chiffre la même largeur.
  * Deux montants alignés en colonne le restent, et un total qui passe de 999
- * à 1 000 ne fait plus glisser sa ligne. La graisse 800, elle, est ce qui
+ * à 1 000 ne fait plus glisser sa ligne. La graisse 700, elle, est ce qui
  * fait qu'on lit le nombre AVANT son libellé.
  *
  * Une parenthèse fermée : le produit est passé un temps en chasse fixe pour
@@ -3020,16 +3006,45 @@ a:focus-visible,
  * La classe ne fixe pas de COULEUR : la teinte d'un chiffre porte son signe
  * (vert gagné, rouge perdu), et cela se décide au point d'appel.
  */
+/* Deux poids de données, indépendants de la taille et de la couleur. */
 .tv-figure {
-  /* Police mesurée sur la référence fournie : Inter ExtraBold en chiffres
-     tabulaires. La famille web rend le nombre identique sur chaque appareil. */
   font-family: var(--font-figure);
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum";
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: -0.01em;
 }
-
+.tv-num,
+.tv-figure-secondary,
+.tabular-nums,
+input:is(
+  [type="number"],
+  [inputmode="decimal"],
+  [inputmode="numeric"],
+  [type="date"],
+  [type="time"]
+),
+time,
+.recharts-cartesian-axis-tick-value,
+.recharts-label,
+.recharts-default-tooltip {
+  font-family: var(--font-figure);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+  font-weight: 600;
+}
+body.tv-app-type :is(.tv-figure, .tv-num, .tabular-nums) {
+  font-family: var(--font-figure);
+}
+.tv-figure.tv-figure-secondary {
+  font-weight: 600;
+}
+/* Les données de tableau et de calendrier restent denses, les totaux portent 700. */
+.tv-app-type :is(.cal-cell-day, .tv-pop-day, .tv-time-option, .recharts-text, .tv-chk-step) {
+  font-family: var(--font-figure);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
 /* ══ LE LIBELLÉ ══
  *
  * Petites capitales espacées : le vocabulaire d'étiquetage de Topstep
@@ -3176,10 +3191,10 @@ a:focus-visible,
 .section-tabs {
   display: none;
   max-width: 100%;
-  padding: 0.3rem;
-  border-radius: 9999px;
+  padding: 3px;
+  border-radius: var(--radius-xl);
   background: var(--tv-plate-1);
-  border: 1px solid var(--tv-border);
+  border: 1px solid var(--tv-border-strong);
   box-shadow: none;
 }
 @media (min-width: 1024px) {
@@ -3212,7 +3227,7 @@ a:focus-visible,
   gap: 0.5rem;
   height: 2.25rem;
   padding: 0 0.9rem;
-  border-radius: 9999px;
+  border-radius: var(--radius-lg);
   font-size: 0.82rem;
   font-weight: 600;
   line-height: 1;
@@ -4022,7 +4037,7 @@ a:focus-visible,
     align-items: center;
     gap: 0.45rem;
     font-size: 12pt;
-    font-weight: 800;
+    font-weight: 700;
     letter-spacing: -0.02em;
     color: #f4f6f8 !important;
   }
@@ -4119,390 +4134,6 @@ a:focus-visible,
    (`DateField`, `TimeField`) : ils héritent des jetons du thème, suivent
    l'accent, et se ferment au clic dehors comme à Échap.
    ────────────────────────────────────────────────────────────────────────── */
-
-.tv-pop {
-  border-radius: 1rem;
-  border: 1px solid var(--tv-border-strong);
-  background: var(--tv-plate-3);
-  box-shadow: var(--tv-elev-3);
-}
-
-/* ══ LES SÉLECTEURS (`shared/ui/Picker.tsx`) ══════════════════════════════
-   La même plaque que le calendrier et la roue d'heure (`.tv-pop`) : on
-   reconnaît un sélecteur TradeVault à sa surface, pas à sa place. */
-.tv-pick-in {
-  animation: tv-pick-in var(--tv-dur-2) var(--tv-ease) both;
-}
-@keyframes tv-pick-in {
-  from {
-    opacity: 0;
-    transform: translateY(4px) scale(0.985);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .tv-pick-in {
-    animation: none;
-  }
-}
-.tv-pick-veil {
-  background: rgb(0 0 0 / 0.55);
-}
-
-/* Le déclencheur « pastille » : le NOM du filtre, puis sa valeur. */
-.tv-pick-pill {
-  display: inline-flex;
-  height: 2.25rem;
-  max-width: 100%;
-  flex-shrink: 0;
-  align-items: center;
-  gap: 0.4rem;
-  border-radius: 0.75rem;
-  border: 1px solid var(--tv-border);
-  background: var(--tv-plate-2);
-  padding: 0 0.7rem;
-  transition-property: background-color, border-color;
-  transition-duration: var(--tv-dur-1);
-}
-.tv-pick-pill:hover:not(:disabled) {
-  border-color: var(--tv-border-strong);
-}
-.tv-pick-pill-open {
-  border-color: var(--tv-border-strong);
-  background: var(--tv-plate-3);
-}
-.tv-pick-pill-value {
-  max-width: 9rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--tv-text-secondary);
-}
-.tv-pick-pill-on {
-  border-color: var(--tv-border-accent);
-  background: rgb(var(--tv-accent-rgb) / 0.08);
-}
-.tv-pick-pill-on .tv-pick-pill-value {
-  color: var(--tv-highlight);
-}
-
-/* La recherche, en tête de longue liste. */
-.tv-pick-search {
-  display: flex;
-  height: 2.25rem;
-  align-items: center;
-  gap: 0.5rem;
-  border-radius: 0.7rem;
-  border: 1px solid var(--tv-border);
-  background: var(--tv-plate-2);
-  padding: 0 0.65rem;
-}
-.tv-pick-search:focus-within {
-  border-color: var(--tv-border-accent);
-}
-.tv-pick-search:focus {
-  border-color: var(--tv-border-accent);
-}
-
-/* ── Le sélecteur de couleur : même famille que les autres sélecteurs ──
-   Le déclencheur est une rangée en relief (pastille + nom + famille), les
-   pastilles de la palette sont des plaques colorées avec un liseré interne
-   pour qu'un ton sombre ne se perde pas sur le panneau. */
-.tv-color-trigger {
-  border: 1px solid var(--tv-border);
-  border-radius: 0.875rem;
-  background: var(--tv-plate-2);
-  padding: 0.55rem 0.75rem 0.55rem 0.55rem;
-  box-shadow: var(--tv-relief-edge);
-  transition: border-color var(--tv-dur-1) var(--tv-ease);
-}
-.tv-color-trigger:hover {
-  border-color: var(--tv-border-strong);
-}
-.tv-color-trigger.is-open {
-  border-color: var(--tv-border-accent);
-}
-.tv-color-chip {
-  border-radius: 0.625rem;
-  box-shadow:
-    inset 0 0 0 1px rgb(255 255 255 / 0.14),
-    0 1px 2px rgb(0 0 0 / 0.45);
-}
-.tv-color-swatch {
-  display: grid;
-  place-items: center;
-  border-radius: 0.625rem;
-  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.1);
-  transition:
-    transform var(--tv-dur-1) var(--tv-ease),
-    box-shadow var(--tv-dur-1) var(--tv-ease);
-}
-@media (hover: hover) {
-  .tv-color-swatch:hover {
-    transform: scale(1.06);
-  }
-}
-.tv-color-swatch.is-on {
-  box-shadow:
-    inset 0 0 0 1px rgb(255 255 255 / 0.2),
-    0 0 0 2px var(--tv-plate-2),
-    0 0 0 3.5px var(--tv-text-primary, #f4f6f8);
-}
-
-/* Une option : la case (ou le point), le libellé, le compte. */
-.tv-pick-opt {
-  display: flex;
-  width: 100%;
-  min-height: 2.25rem;
-  align-items: center;
-  gap: 0.6rem;
-  border-radius: 0.6rem;
-  padding: 0.35rem 0.6rem;
-  text-align: left;
-  font-size: 0.8125rem;
-  color: var(--tv-text-secondary);
-  transition-property: background-color, color;
-  transition-duration: var(--tv-dur-1);
-}
-.tv-pick-opt:hover,
-.tv-pick-opt:focus-visible {
-  outline: none;
-  background: rgb(255 255 255 / 0.06);
-  color: var(--tv-text-primary);
-}
-.tv-pick-opt-on {
-  color: var(--tv-text-primary);
-}
-.tv-pick-box,
-.tv-pick-dot {
-  display: grid;
-  height: 1.05rem;
-  width: 1.05rem;
-  flex-shrink: 0;
-  place-items: center;
-  border: 1px solid var(--tv-border-strong);
-  background: var(--tv-plate-1);
-  color: #04120b;
-  transition-property: background-color, border-color;
-  transition-duration: var(--tv-dur-1);
-}
-.tv-pick-box {
-  border-radius: 0.3rem;
-}
-.tv-pick-dot {
-  border-radius: 999px;
-}
-.tv-pick-box.is-on,
-.tv-pick-dot.is-on {
-  border-color: var(--tv-accent);
-  background: var(--tv-accent);
-}
-
-/* Les pastilles à plat : raccourcis de période, filtres d'une feuille. */
-.tv-pick-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-}
-.tv-pick-chip {
-  display: inline-flex;
-  height: 2rem;
-  align-items: center;
-  gap: 0.35rem;
-  border-radius: 0.6rem;
-  border: 1px solid var(--tv-border);
-  background: var(--tv-plate-2);
-  padding: 0 0.7rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--tv-text-secondary);
-  transition-property: background-color, border-color, color;
-  transition-duration: var(--tv-dur-1);
-}
-.tv-pick-chip:hover {
-  border-color: var(--tv-border-strong);
-  color: var(--tv-text-primary);
-}
-.tv-pick-chip-on,
-.tv-pick-chip-on:hover {
-  border-color: var(--tv-border-accent);
-  background: rgb(var(--tv-accent-rgb) / 0.12);
-  color: var(--tv-highlight);
-}
-
-/* Le pied d'un panneau : effacer, valider. */
-.tv-pick-foot {
-  display: inline-flex;
-  height: 2rem;
-  align-items: center;
-  border-radius: 0.6rem;
-  padding: 0 0.8rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--tv-text-secondary);
-  transition-property: background-color, color;
-  transition-duration: var(--tv-dur-1);
-}
-.tv-pick-foot:hover:not(:disabled) {
-  background: rgb(255 255 255 / 0.05);
-  color: var(--tv-text-primary);
-}
-.tv-pick-foot-main,
-.tv-pick-foot-main:hover:not(:disabled) {
-  background: var(--tv-accent);
-  color: #04120b;
-}
-
-.tv-pop-nav {
-  display: grid;
-  place-items: center;
-  width: 2rem;
-  height: 2rem;
-  border-radius: 0.6rem;
-  color: var(--tv-text-secondary);
-  transition:
-    background 140ms ease,
-    color 140ms ease;
-}
-.tv-pop-nav:hover {
-  background: rgb(255 255 255 / 0.06);
-  color: var(--tv-text-primary);
-}
-
-/* La case d'un jour. 2rem de côté : trente-cinq cases dans un panneau de
-   17rem, et une cible qui reste cliquable au doigt. */
-.tv-pop-day {
-  display: grid;
-  place-items: center;
-  height: 2rem;
-  border-radius: 0.55rem;
-  font-size: 0.78rem;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  color: var(--tv-text-secondary);
-  transition:
-    background 140ms ease,
-    color 140ms ease;
-}
-.tv-pop-day:hover:not(:disabled) {
-  background: rgb(255 255 255 / 0.07);
-  color: var(--tv-text-primary);
-}
-.tv-pop-day:disabled {
-  opacity: 0.25;
-  cursor: not-allowed;
-}
-.tv-pop-day-on {
-  background: var(--tv-accent);
-  color: #fff;
-}
-.tv-pop-day-on:hover {
-  background: var(--tv-accent);
-  color: #fff;
-}
-/* Aujourd'hui : un point sous le chiffre, pas un cadre. Un cadre entrerait en
-   concurrence avec la sélection, qui est la seule chose qu'on cherche. */
-.tv-pop-day-today {
-  position: relative;
-  color: var(--tv-text-primary);
-}
-.tv-pop-day-today::after {
-  content: "";
-  position: absolute;
-  bottom: 0.25rem;
-  left: 50%;
-  width: 3px;
-  height: 3px;
-  margin-left: -1.5px;
-  border-radius: 999px;
-  background: var(--tv-highlight);
-}
-
-/* Les colonnes du sélecteur d'heure. */
-/* ── LA ROUE D'HEURE (`TimeField`) ─────────────────────────────────────────
-   Deux roues aimantées : la valeur s'arrête au centre, sous la bande. Pas de
-   barre de défilement, un fondu en haut et en bas pour dire « ça continue ». */
-.tv-wheel {
-  position: relative;
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-}
-.tv-wheel-band {
-  position: absolute;
-  inset-inline: 0;
-  top: 50%;
-  height: 2rem;
-  transform: translateY(-50%);
-  border: 1px solid var(--tv-border);
-  border-radius: 0.6rem;
-  background: rgb(255 255 255 / 0.05);
-  pointer-events: none;
-  transition: border-color 140ms ease;
-}
-.tv-wheel:focus-within .tv-wheel-band {
-  border-color: var(--tv-border-accent);
-}
-.tv-wheel-sep {
-  position: relative;
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: var(--tv-text-muted);
-}
-.tv-wheel-col {
-  position: relative;
-  height: 10rem;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  scroll-snap-type: y mandatory;
-  scrollbar-width: none;
-  padding-block: 4rem;
-  outline: none;
-  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 32%, #000 68%, transparent);
-  mask-image: linear-gradient(to bottom, transparent, #000 32%, #000 68%, transparent);
-}
-.tv-wheel-col::-webkit-scrollbar {
-  display: none;
-}
-.tv-wheel-item {
-  display: flex;
-  height: 2rem;
-  align-items: center;
-  justify-content: center;
-  scroll-snap-align: center;
-  cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 400;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.01em;
-  color: var(--tv-text-muted);
-  transition:
-    color 140ms ease,
-    font-size 140ms ease;
-}
-.tv-wheel-item:hover {
-  color: var(--tv-text-secondary);
-}
-.tv-wheel-item[aria-selected="true"] {
-  font-size: 1rem;
-  font-weight: 500;
-  color: var(--tv-text-primary);
-}
-.tv-wheel-done {
-  margin-top: 0.5rem;
-  width: 100%;
-  min-height: 2.25rem;
-  border-radius: 0.6rem;
-  background: rgb(255 255 255 / 0.06);
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--tv-text-primary);
-  transition: background-color 140ms ease;
-}
-.tv-wheel-done:hover {
-  background: rgb(255 255 255 / 0.1);
-}
 
 /* ══ UN RÉGLAGE MONTE-CARLO = UNE SEULE LIGNE ══
  *
@@ -4663,9 +4294,7 @@ a:focus-visible,
   border: 1px solid var(--tv-border);
   border-radius: 0.75rem;
   background: var(--tv-plate-1);
-  box-shadow:
-    var(--tv-relief-edge),
-    0 1px 1px rgb(0 0 0 / 0.4);
+  box-shadow: none;
 }
 @media (min-width: 768px) {
   .tv-kpi {
@@ -4684,7 +4313,7 @@ a:focus-visible,
 .tv-kpi-value {
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum";
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1.1;
   font-size: 15px;
@@ -4741,10 +4370,10 @@ a:focus-visible,
   display: flex;
   align-items: center;
   gap: 0.25rem;
-  padding: 0.25rem;
-  border-radius: 9999px;
+  padding: 3px;
+  border-radius: var(--radius-xl);
   background: var(--tv-plate-1);
-  border: 1px solid var(--tv-border);
+  border: 1px solid var(--tv-border-strong);
   overflow-x: auto;
   overflow-y: hidden;
   flex-wrap: nowrap;
@@ -4756,29 +4385,17 @@ a:focus-visible,
 .tv-subnav::-webkit-scrollbar {
   display: none;
 }
-/* Sur téléphone, les onglets PASSENT À LA LIGNE au lieu de défiler : six
-   parties d'un plan dans 306px en cachaient trois hors du cadre, sans rien
-   qui dise qu'il fallait glisser. Deux rangées se lisent d'un coup d'œil. */
-@media (max-width: 639px) {
-  .tv-subnav {
-    flex-wrap: wrap;
-    overflow: visible;
-    border-radius: 1rem;
-  }
-  .tv-subnav > .tv-subnav-item {
-    flex: 1 1 auto;
-    justify-content: center;
-  }
-}
 .tv-subnav-item {
+  flex-shrink: 0;
+  position: relative;
   scroll-snap-align: start;
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
   height: 2rem;
   padding: 0 0.75rem;
-  border-radius: 9999px;
-  font-size: 12.5px;
+  border-radius: var(--radius-lg);
+  font-size: var(--tv-t-caption);
   font-weight: 600;
   line-height: 1;
   white-space: nowrap;
@@ -4809,6 +4426,12 @@ a:focus-visible,
   outline: 2px solid rgb(var(--tv-accent-rgb) / 0.7);
   outline-offset: -2px;
 }
+@media (pointer: coarse) {
+  .tv-subnav-item {
+    min-height: 44px;
+  }
+}
+
 /* Le compteur d'un onglet (nombre d'éléments) — jamais une pastille colorée :
    un chiffre suffit, et six pastilles dans une rangée font un sapin. */
 .tv-subnav-count {
@@ -4827,17 +4450,14 @@ a:focus-visible,
    simulation ou de plan, on change de vue depuis n'importe quel point du
    défilement, sans remonter. */
 .tv-toolbar {
-  position: sticky;
-  top: 0;
-  z-index: var(--tv-z-rail);
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.375rem 0.5rem;
-  border-radius: 9999px;
-  background: var(--tv-plate-0);
-  border: 1px solid var(--tv-border);
+  gap: 8px;
   min-width: 0;
+  padding: 4px;
+  border: 1px solid var(--tv-border-strong);
+  border-radius: var(--radius-xl);
+  background: var(--tv-plate-1);
 }
 /* PAS DE PILULE DANS UNE PILULE. La barre EST déjà le cadre du contrôle
    segmenté : lui laisser le sien dessinait deux ovales concentriques, et
@@ -5067,120 +4687,41 @@ a:focus-visible,
    La P&L garde ses propres couleurs ; rien ici ne touche au contenu. */
 .jarvis-stage {
   isolation: isolate;
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.06),
-    0 0 0 1px rgb(var(--tv-accent-rgb) / 0.08),
-    0 40px 120px -30px rgb(0 0 0 / 0.75),
-    0 0 90px -40px rgb(var(--tv-accent-rgb) / 0.35);
+  background: var(--tv-plate-0);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
 }
-.jarvis-stage::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  border-radius: inherit;
-  background:
-    radial-gradient(60% 45% at 50% -8%, rgb(var(--tv-accent-rgb) / 0.16), transparent 70%),
-    radial-gradient(40% 35% at 100% 100%, rgb(var(--tv-accent-rgb) / 0.06), transparent 70%),
-    radial-gradient(35% 30% at 0% 70%, rgb(120 130 255 / 0.05), transparent 70%);
-}
+.jarvis-stage::before,
 .jarvis-stage::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  border-radius: inherit;
-  background-image:
-    linear-gradient(rgb(255 255 255 / 0.028) 1px, transparent 1px),
-    linear-gradient(90deg, rgb(255 255 255 / 0.028) 1px, transparent 1px);
-  background-size: 28px 28px;
-  -webkit-mask-image: radial-gradient(80% 60% at 50% 0%, #000 20%, transparent 75%);
-  mask-image: radial-gradient(80% 60% at 50% 0%, #000 20%, transparent 75%);
+  content: none;
 }
-/* Les bandes de la scène laissent passer la lumière : verre sombre, et un
-   filet d'accent qui s'éteint vers les bords au lieu d'une bordure grise. */
 .jarvis-stage .tv-jarvis-bar {
-  position: relative;
-  background: rgb(8 10 12 / 0.55);
-  -webkit-backdrop-filter: blur(14px) saturate(140%);
-  backdrop-filter: blur(14px) saturate(140%);
+  background: var(--tv-plate-1);
+  border-color: var(--tv-border);
+  backdrop-filter: none;
 }
-.jarvis-stage .tv-jarvis-bar-top {
-  border-bottom-color: transparent;
-}
-.jarvis-stage .tv-jarvis-bar-top::after,
-.jarvis-stage .tv-jarvis-bar-bottom::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgb(var(--tv-accent-rgb) / 0.35) 50%,
-    transparent
-  );
-}
-.jarvis-stage .tv-jarvis-bar-top::after {
-  bottom: -1px;
-}
-.jarvis-stage .tv-jarvis-bar-bottom {
-  border-top-color: transparent;
-}
-.jarvis-stage .tv-jarvis-bar-bottom::before {
-  top: -1px;
-}
-
-/* ── UN TOUR DE PAROLE ─────────────────────────────────────────────────────
-   Chaque réponse de Jarvis est posée sur sa propre plaque, éclairée par le
-   haut, avec un liseré d'accent qui s'estompe : on lit une suite d'échanges,
-   pas une colonne de texte. */
 .jarvis-turn {
   position: relative;
-  border: 1px solid rgb(255 255 255 / 0.06);
-  border-radius: 1.125rem;
-  background:
-    linear-gradient(180deg, rgb(var(--tv-accent-rgb) / 0.045), transparent 55%),
-    rgb(255 255 255 / 0.018);
-  padding: 0.9rem 1rem 1rem;
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.05),
-    0 18px 40px -28px rgb(0 0 0 / 0.8);
+  min-width: 0;
+  border: 1px solid var(--tv-border);
+  border-radius: var(--radius-xl);
+  background: var(--tv-plate-1);
+  padding: 16px;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.025);
+  overflow-wrap: anywhere;
 }
 .jarvis-turn::before {
-  content: "";
-  position: absolute;
-  left: 1rem;
-  right: 1rem;
-  top: -1px;
-  height: 1px;
-  background: linear-gradient(90deg, rgb(var(--tv-accent-rgb) / 0.55), transparent 70%);
+  content: none;
 }
-@media (min-width: 768px) {
-  .jarvis-turn {
-    padding: 1.1rem 1.25rem 1.2rem;
-  }
-}
-/* La question du trader : une bulle en relief, teintée d'accent, qui se
-   distingue de la plaque de Jarvis sans reprendre la couleur d'action pleine. */
 .jarvis-bubble-user {
-  border: 1px solid rgb(var(--tv-accent-rgb) / 0.22);
-  border-radius: 1.125rem 1.125rem 0.375rem 1.125rem;
-  background: linear-gradient(
-    160deg,
-    rgb(var(--tv-accent-rgb) / 0.16),
-    rgb(var(--tv-accent-rgb) / 0.05)
-  );
-  padding: 0.625rem 1rem;
-  font-size: 0.875rem;
-  line-height: 1.55;
+  min-width: 0;
+  border: 1px solid var(--tv-border-strong);
+  border-radius: var(--radius-xl) var(--radius-xl) var(--radius-sm) var(--radius-xl);
+  background: var(--tv-plate-3);
+  padding: 10px 14px;
+  font-size: var(--tv-t-body);
+  line-height: 1.6;
   color: var(--tv-text-primary);
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.06),
-    0 10px 30px -18px rgb(var(--tv-accent-rgb) / 0.55);
+  overflow-wrap: anywhere;
 }
 
 /* ── L'ÉCRITURE EN DIRECT ── un curseur au bout du texte qui s'écrit. */
@@ -5193,7 +4734,7 @@ a:focus-visible,
   vertical-align: -0.15em;
   border-radius: 2px;
   background: var(--tv-accent);
-  box-shadow: 0 0 12px rgb(var(--tv-accent-rgb) / 0.8);
+  box-shadow: none;
 }
 .jarvis-typing {
   cursor: pointer;
@@ -5234,10 +4775,8 @@ a:focus-visible,
   color: #07080a;
 }
 .jarvis-step[data-state="active"] .jarvis-step-dot {
-  border-color: rgb(var(--tv-accent-rgb) / 0.8);
-  box-shadow:
-    0 0 0 3px rgb(var(--tv-accent-rgb) / 0.15),
-    0 0 14px rgb(var(--tv-accent-rgb) / 0.6);
+  border-color: var(--tv-accent);
+  background: rgb(var(--tv-accent-rgb) / 0.1);
 }
 .jarvis-step[data-state="done"] .jarvis-step-dot {
   border-color: transparent;
@@ -5246,26 +4785,20 @@ a:focus-visible,
 
 /* ── LE COMPOSITEUR ── il s'allume quand on écrit. */
 .jarvis-composer {
-  border: 1px solid rgb(255 255 255 / 0.09);
-  border-radius: 1.125rem;
-  background:
-    linear-gradient(180deg, rgb(255 255 255 / 0.035), rgb(255 255 255 / 0.01)), rgb(10 12 14 / 0.7);
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.05),
-    0 16px 40px -24px rgb(0 0 0 / 0.9);
+  border: 1px solid var(--tv-border-strong);
+  border-radius: var(--radius-xl);
+  background: var(--tv-plate-2);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
   transition:
-    border-color 0.18s ease,
-    box-shadow 0.18s ease;
+    border-color var(--tv-dur-1),
+    box-shadow var(--tv-dur-1);
 }
 .jarvis-composer:focus-within {
-  border-color: rgb(var(--tv-accent-rgb) / 0.5);
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.06),
-    0 0 0 3px rgb(var(--tv-accent-rgb) / 0.12),
-    0 0 40px -12px rgb(var(--tv-accent-rgb) / 0.45);
+  border-color: var(--tv-border-accent);
+  box-shadow: 0 0 0 2px rgb(var(--tv-accent-rgb) / 0.06);
 }
 .jarvis-send-ready {
-  box-shadow: 0 0 20px -4px rgb(var(--tv-accent-rgb) / 0.7);
+  box-shadow: none;
 }
 
 /* ── RÉGLAGES ── des cartes en relief, comme les tours de parole. */
@@ -5501,34 +5034,12 @@ a:focus-visible,
   .jarvis-typing .insights-md > :last-child::after {
     animation: jarvis-caret 1s steps(2, start) infinite;
   }
-  .jarvis-step[data-state="active"] .jarvis-step-dot {
-    animation: jarvis-step-pulse 1.4s ease-in-out infinite;
-  }
-  .jarvis-stage::before {
-    animation: jarvis-ambient 9s ease-in-out infinite alternate;
-  }
 }
 @keyframes jarvis-caret {
   to {
     visibility: hidden;
   }
 }
-@keyframes jarvis-step-pulse {
-  50% {
-    box-shadow:
-      0 0 0 5px rgb(var(--tv-accent-rgb) / 0.08),
-      0 0 20px rgb(var(--tv-accent-rgb) / 0.8);
-  }
-}
-@keyframes jarvis-ambient {
-  from {
-    opacity: 0.75;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
 /* ═══════════════════════════════════════════════════════════════════════════
    LE DOCK DE JARVIS — l'orbite
    ═══════════════════════════════════════════════════════════════════════════
@@ -6064,13 +5575,9 @@ body::after {
     transform: none;
   }
 }
-/* La fenêtre de Jarvis garde sa lumière propre par-dessus le dialogue commun. */
 .tv-dialog.jarvis-stage {
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.06),
-    0 0 0 1px rgb(var(--tv-accent-rgb) / 0.08),
-    0 40px 120px -30px rgb(0 0 0 / 0.75),
-    0 0 90px -40px rgb(var(--tv-accent-rgb) / 0.35);
+  background: var(--tv-plate-0);
+  box-shadow: var(--tv-elev-3);
 }
 /* La feuille (`Sheet`) : carte centrée sur téléphone, panneau latéral sur
    bureau — le même langage que `.tv-dialog`. */
@@ -6657,7 +6164,7 @@ body::after {
   border: 1px solid var(--tv-border);
   border-radius: 18px;
   background: var(--tv-plate-1);
-  box-shadow: var(--tv-relief-edge), var(--tv-relief-lift);
+  box-shadow: none;
 }
 .calc-market-thumb {
   position: absolute;
@@ -6730,4 +6237,581 @@ body::after {
 .mst-lane-tab:focus-visible {
   outline: 2px solid rgb(var(--tv-accent-rgb) / 0.7);
   outline-offset: 1px;
+}
+
+.tv-trade-modal {
+  background: var(--tv-plate-1);
+}
+.tv-trade-form {
+  font-size: var(--tv-t-body-sm);
+}
+.tv-trade-inset {
+  padding: 12px;
+  border: 1px solid var(--tv-border);
+  border-radius: var(--radius-xl);
+  background: var(--tv-plate-0);
+}
+.tv-trade-form [data-selection-chip] {
+  min-height: 36px;
+  border-radius: var(--radius-lg);
+  border-color: var(--tv-border);
+  background: var(--tv-plate-2);
+  color: var(--tv-text-secondary);
+  font-size: var(--tv-t-body-sm);
+}
+.tv-trade-form [data-selection-chip][aria-pressed="true"],
+.tv-trade-form [data-selection-chip]:has([aria-pressed="true"]),
+.tv-trade-form .tv-pick-chip-on {
+  border-color: var(--tv-border-strong);
+  background: var(--tv-plate-3);
+  color: var(--tv-text-primary);
+}
+.tv-trade-form input[type="range"] {
+  accent-color: var(--tv-text-secondary);
+}
+.tv-trade-form .tv-pick-chips {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.tv-trade-form .tv-pick-chip {
+  justify-content: center;
+  min-height: 44px;
+  font-size: var(--tv-t-body-sm);
+}
+.tv-trade-form .tv-disclosure .tv-pick-chips {
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+}
+@media (pointer: coarse) {
+  .tv-trade-form [data-selection-chip] {
+    min-height: 44px;
+  }
+}
+.tv-trade-form input[type="range"]::-webkit-slider-thumb {
+  background: var(--tv-text-secondary);
+  border-color: var(--tv-text-secondary);
+}
+.tv-trade-form input[type="range"]::-moz-range-thumb {
+  background: var(--tv-text-secondary);
+  border-color: var(--tv-text-secondary);
+}
+body.tv-app-type svg.lucide {
+  stroke-width: 1.6;
+}
+.tv-trade-modal footer button {
+  border-radius: var(--radius-xl);
+}
+
+/* Saisie d'un trade : une commande rectangulaire, brève, identifiable. */
+.btn-primary.tv-entry-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 36px;
+  border-radius: var(--radius-lg);
+  padding: 0 14px;
+  font-size: var(--tv-t-body-sm);
+  font-weight: 600;
+  box-shadow: none;
+}
+.tv-entry-button > svg {
+  width: 16px;
+  height: 16px;
+}
+.metric-tile.metric-tile-compact {
+  padding: 10px 12px;
+}
+.metric-tile-compact .metric-radial {
+  width: 32px;
+  height: 32px;
+}
+.metric-tile-compact .metric-radial span {
+  font-size: var(--tv-t-micro);
+}
+.metric-tile-compact .tv-figure {
+  line-height: 1.15;
+}
+.metric-tile-compact .metric-main-value {
+  font-size: var(--tv-t-h2);
+}
+.metric-tile-compact .metric-label-row {
+  margin-bottom: 4px;
+}
+@media (pointer: coarse) {
+  .btn-primary.tv-entry-button {
+    min-height: 44px;
+  }
+}
+
+.tv-trade-modal .tv-trade-symbol {
+  font-size: var(--tv-t-h2);
+  font-weight: 700;
+}
+.tv-trade-modal .tv-trade-number {
+  font-size: var(--tv-t-h2);
+}
+.tv-trade-modal .tv-direction .tv-choice {
+  min-height: 44px;
+}
+.tv-account-list {
+  overflow: hidden;
+  border: 1px solid var(--tv-border-strong);
+  border-radius: var(--radius-xl);
+  background: var(--tv-plate-1);
+}
+.tv-account-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  border-bottom: 1px solid var(--tv-border);
+}
+.tv-account-row:last-child {
+  border-bottom: 0;
+}
+.tv-account-row-active {
+  background: var(--tv-plate-2);
+}
+.tv-account-select {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+.tv-account-icon {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--tv-border-strong);
+  border-radius: var(--radius-lg);
+  color: var(--tv-text-secondary);
+}
+.tv-account-row-active .tv-account-icon {
+  color: var(--tv-highlight);
+  border-color: var(--tv-border-accent);
+}
+@media (max-width: 639px) {
+  .tv-account-select {
+    grid-template-columns: 32px minmax(0, 1fr);
+    row-gap: 4px;
+  }
+  .tv-account-select > .tv-figure {
+    grid-column: 2;
+    text-align: left;
+  }
+  .tv-account-icon {
+    grid-row: span 2;
+  }
+}
+
+@media (max-width: 639px) {
+  .section-picker-count {
+    display: none;
+  }
+}
+
+/* La conversation a sa propre mesure de lecture, en page comme en fenêtre. */
+.jarvis-thread {
+  min-height: 0;
+  padding: 20px max(16px, calc((100% - 760px) / 2));
+  scroll-behavior: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+.jarvis-thread > * + * {
+  margin-top: 20px;
+}
+.jarvis-thread-empty > * + * {
+  margin-top: 0;
+}
+.jarvis-thread > [data-message-id] {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 240px;
+}
+.jarvis-thread .insights-md {
+  font-size: var(--tv-t-body);
+  line-height: 1.75;
+  color: var(--tv-text-secondary);
+}
+.jarvis-thread .insights-md :is(p, li, td, th) {
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.jarvis-thread .insights-md :is(h1, h2, h3) {
+  font-size: var(--tv-t-h3);
+  line-height: 1.5;
+  letter-spacing: 0;
+}
+.jarvis-thread .insights-md pre {
+  max-width: 100%;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.jarvis-data-table {
+  max-width: 100%;
+  overflow: hidden;
+}
+.jarvis-data-table td,
+.jarvis-data-table th {
+  overflow-wrap: anywhere;
+  padding: 8px;
+}
+.jarvis-thread .jarvis-avatar {
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--tv-border-accent);
+  border-radius: var(--radius-sm);
+  background: var(--tv-plate-2);
+}
+.jarvis-thread .jarvis-turn > .space-y-4 > .panel {
+  background: var(--tv-plate-2);
+}
+.jarvis-response-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 14px;
+  padding-top: 8px;
+  border-top: 1px solid var(--tv-border);
+}
+.jarvis-response-actions .jarvis-listen {
+  min-height: 32px;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  font-size: var(--tv-t-caption);
+  color: var(--tv-text-muted);
+  background: transparent;
+}
+.jarvis-response-actions .jarvis-listen:hover {
+  color: var(--tv-text-primary);
+  background: var(--tv-plate-2);
+}
+.jarvis-composer-dock {
+  padding: 12px max(16px, calc((100% - 760px) / 2));
+  border-top: 1px solid var(--tv-border);
+  background: var(--tv-plate-0);
+}
+.jarvis-composer-action {
+  width: 36px;
+  height: 36px;
+  transition:
+    transform var(--tv-dur-1),
+    background-color var(--tv-dur-1);
+}
+.jarvis-composer-action:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+.jarvis-composer-action:active:not(:disabled) {
+  transform: scale(0.96);
+}
+.jarvis-composer-hint {
+  text-align: center;
+}
+.jarvis-thinking-mark {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  color: var(--tv-highlight);
+  border: 1px solid var(--tv-border-accent);
+  border-radius: var(--radius-sm);
+}
+.jarvis-thread .jarvis-step[data-state="todo"] {
+  display: none;
+}
+.jarvis-latest {
+  align-self: center;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: -42px;
+  margin-bottom: 6px;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--tv-border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--tv-plate-3);
+  color: var(--tv-text-primary);
+  font-size: var(--tv-t-caption);
+  box-shadow: var(--tv-elev-2);
+}
+/* Une création de trade compacte, repérable par son signe d'ajout encadré. */
+.btn-primary.tv-dashboard-add {
+  padding: 0 12px 0 6px;
+  gap: 8px;
+  border: 1px solid var(--tv-border-accent);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--tv-accent) 14%, var(--tv-plate-2));
+  color: var(--tv-text-primary);
+  transition:
+    background-color var(--tv-dur-1),
+    border-color var(--tv-dur-1),
+    transform var(--tv-dur-1);
+}
+.tv-dashboard-add-icon {
+  display: grid;
+  place-items: center;
+  height: 24px;
+  width: 24px;
+  border-radius: var(--radius-sm);
+  background: var(--tv-accent);
+  color: var(--tv-plate-0);
+  transition: transform var(--tv-dur-1);
+}
+.btn-primary.tv-dashboard-add:hover {
+  background: color-mix(in srgb, var(--tv-accent) 22%, var(--tv-plate-2));
+  border-color: var(--tv-accent);
+}
+.btn-primary.tv-dashboard-add:hover .tv-dashboard-add-icon {
+  transform: rotate(90deg);
+}
+.btn-primary.tv-dashboard-add:active {
+  transform: scale(0.98);
+}
+.tv-trade-modal {
+  transform-origin: 50% 15%;
+}
+/* Inbox : une seule anatomie compacte, l'urgence est un liseré discret. */
+.tv-inbox-list {
+  overflow: hidden;
+  border: 1px solid var(--tv-border);
+  border-radius: var(--radius-xl);
+  background: var(--tv-plate-1);
+}
+.tv-inbox-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  border-left: 2px solid transparent;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 100px;
+  transition: background-color var(--tv-dur-1);
+}
+.tv-inbox-row + .tv-inbox-row {
+  border-top: 1px solid var(--tv-border);
+}
+.tv-inbox-row:hover {
+  background: var(--tv-plate-2);
+}
+.tv-inbox-row[data-unread] {
+  background: color-mix(in srgb, var(--tv-plate-2) 40%, var(--tv-plate-1));
+}
+.tv-inbox-row[data-priority][data-severity="error"] {
+  border-left-color: var(--tv-chart-red);
+}
+.tv-inbox-row[data-priority][data-severity="warning"] {
+  border-left-color: var(--tv-warning);
+}
+.tv-inbox-open {
+  min-width: 0;
+  display: flex;
+  flex: 1;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  text-align: left;
+}
+.tv-inbox-icon {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  background: var(--tv-plate-2);
+}
+.tv-inbox-copy {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+.tv-inbox-title {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: var(--tv-t-body-sm);
+  line-height: 1.5;
+  color: var(--tv-text-secondary);
+}
+.tv-inbox-row[data-unread] .tv-inbox-title {
+  font-weight: 600;
+  color: var(--tv-text-primary);
+}
+.tv-inbox-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  align-self: center;
+}
+.tv-inbox-body {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: var(--tv-t-caption);
+  line-height: 1.6;
+  color: var(--tv-text-secondary);
+  overflow-wrap: anywhere;
+}
+.tv-inbox-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
+  font-size: var(--tv-t-micro);
+  line-height: 1.8;
+  color: var(--tv-text-muted);
+}
+.tv-inbox-actions {
+  display: flex;
+  padding-right: 8px;
+  flex-shrink: 0;
+}
+.tv-inbox-actions > button {
+  display: grid;
+  place-items: center;
+  height: 32px;
+  width: 32px;
+  color: var(--tv-text-muted);
+  border-radius: var(--radius-sm);
+}
+.tv-inbox-actions > .tv-inbox-cta {
+  color: var(--tv-highlight);
+}
+.tv-inbox-actions > button:hover {
+  background: var(--tv-plate-3);
+  color: var(--tv-text-primary);
+}
+.tv-inbox-unread-filter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  font-size: var(--tv-t-body-sm);
+}
+.tv-inbox-unread-filter input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--tv-accent);
+}
+.tv-inbox-skeleton {
+  display: flex;
+  gap: 10px;
+  padding: 12px;
+  height: 100px;
+  border-top: 1px solid var(--tv-border);
+}
+.tv-inbox-skeleton > div:first-child {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-sm);
+  background: var(--tv-plate-2);
+}
+.tv-inbox-skeleton > div:last-child {
+  flex: 1;
+  display: grid;
+  gap: 8px;
+  align-content: start;
+}
+.tv-inbox-skeleton span {
+  height: 13px;
+  width: 70%;
+  border-radius: 4px;
+  background: var(--tv-plate-2);
+}
+.tv-inbox-skeleton span:last-child {
+  width: 90%;
+}
+@media (pointer: coarse) {
+  .jarvis-composer-action,
+  .jarvis-response-actions .jarvis-listen {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  .tv-inbox-actions {
+    flex-direction: column;
+    padding-right: 4px;
+  }
+  .tv-inbox-actions > button {
+    width: 44px;
+    height: 44px;
+  }
+  .tv-dashboard-add-icon {
+    width: 28px;
+    height: 28px;
+  }
+}
+@media (max-width: 639px) {
+  .jarvis-thread {
+    padding: 16px 12px;
+    scrollbar-gutter: auto;
+  }
+  .jarvis-thread > * + * {
+    margin-top: 16px;
+  }
+  .jarvis-turn {
+    padding: 12px;
+  }
+  .jarvis-bubble-user {
+    max-width: 92%;
+  }
+  .jarvis-composer-dock {
+    padding: 10px 12px;
+  }
+  .jarvis-composer-hint {
+    display: none;
+  }
+  .tv-inbox-open {
+    padding: 10px;
+    gap: 8px;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .tv-inbox-skeleton {
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .jarvis-composer-action,
+  .btn-primary.tv-dashboard-add,
+  .tv-dashboard-add-icon {
+    transition: none;
+    transform: none !important;
+  }
+  .jarvis-thread .animate-fade-in-up,
+  .jarvis-thread .animate-fade-in {
+    animation: none;
+  }
+}
+
+.jarvis-generation-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 36px;
+  margin-bottom: 8px;
+  font-size: var(--tv-t-caption);
+  color: var(--tv-text-muted);
+}
+.jarvis-generation-controls > button {
+  min-height: 36px;
+  padding: 4px 8px;
+  border: 1px solid var(--tv-border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--tv-text-primary);
+  background: var(--tv-plate-2);
+}
+@media (pointer: coarse) {
+  .jarvis-generation-controls > button {
+    min-height: 44px;
+  }
 }

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Palette, Check, Star, Copy, Pencil, Trash2, Plus, ChevronDown } from "lucide-react";
+import { Palette, Check, Star, Copy, Pencil, Trash2, Plus, ChevronDown } from "@/shared/ui/icons";
 import { useTheme } from "@/app/contexts/ThemeContext";
 import { useT } from "@/app/i18n/LanguageContext";
 import { useConfirm } from "@/app/contexts/ConfirmContext";
@@ -123,14 +123,10 @@ export default function ThemeSettings() {
         className={cn(
           "group relative rounded-2xl p-3 border transition cursor-pointer overflow-hidden",
           isActive
-            ? "bg-white/[0.05] border-transparent shadow-lg"
+            ? "bg-[var(--tv-plate-2)]"
             : "bg-white/[0.02] border-white/[0.06] hover:border-white/[0.12]",
         )}
-        style={
-          isActive
-            ? { boxShadow: `0 0 0 1.5px ${th.primary}, 0 8px 26px -8px ${th.primary}55` }
-            : undefined
-        }
+        style={isActive ? { borderColor: th.primary } : undefined}
         onClick={() => setActive(th.id)}
       >
         <div className="rounded-xl overflow-hidden bg-black/30 mb-2.5">
@@ -183,7 +179,7 @@ export default function ThemeSettings() {
        sur le même écran : dans l'onglet de section, dans le titre de page, et
        ici. Il ne l'est plus qu'une fois, dans la barre de tête, avec la phrase
        qui explique à quoi sert la page. */
-    <div className="glass-strong space-y-4 rounded-3xl p-5">
+    <div className="glass space-y-4 rounded-2xl p-4 md:p-5">
       <Section
         title={t("appearance.presets")}
         count={presets.length}
@@ -264,7 +260,7 @@ function Section({
         <span className="tv-label text-slate-500 group-hover:text-slate-300 transition-colors">
           {title}
         </span>
-        <span className="tv-figure text-[10px] text-slate-600">{count}</span>
+        <span className="tv-figure tv-figure-secondary text-[10px] text-slate-600">{count}</span>
         <span className="flex-1 h-px bg-white/[0.06]" />
         <ChevronDown
           className={cn(

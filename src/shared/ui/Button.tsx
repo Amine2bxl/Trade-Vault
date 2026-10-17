@@ -10,12 +10,13 @@ import { cn } from "./cn";
  * `className` is merged last (twMerge), so any caller override wins.
  */
 
-export type ButtonVariant = "primary" | "ghost" | "subtle" | "danger" | "accent";
+export type ButtonVariant = "primary" | "ghost" | "subtle" | "danger" | "accent" | "entry";
 export type ButtonSize = "md" | "sm";
 
 const VARIANT: Record<ButtonVariant, string> = {
   // Reuse the existing global classes verbatim — identical output.
   primary: "btn-primary",
+  entry: "btn-primary tv-entry-button",
   ghost: "btn-ghost",
   // Named versions of the recurring inline styles — calm, hairline-bordered.
   subtle:

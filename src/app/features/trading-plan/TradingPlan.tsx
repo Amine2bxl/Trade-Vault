@@ -14,10 +14,10 @@ import {
   X,
   ChevronRight,
   Scale,
-} from "lucide-react";
+} from "@/shared/ui/icons";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useT } from "@/app/i18n/LanguageContext";
-import { PageToolbar, SubNav, Textarea, type SubNavItem } from "@/shared/ui";
+import { PageContainer, PageToolbar, SubNav, Textarea, type SubNavItem } from "@/shared/ui";
 import { cn } from "@/shared/ui/cn";
 import type { Page } from "@/app/types";
 import {
@@ -186,16 +186,16 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
 
   if (loading) {
     return (
-      <div className="p-4 md:p-5 max-w-[1400px] mx-auto">
+      <PageContainer>
         <div className="glass rounded-3xl p-10 flex justify-center">
           <Loader2 className="w-6 h-6 text-cyan-400 animate-spin" />
         </div>
-      </div>
+      </PageContainer>
     );
   }
 
   return (
-    <div className="mx-auto max-w-[1000px] space-y-3 p-4 md:p-5">
+    <PageContainer className="max-w-[1000px] space-y-3">
       {/* ══ LA BARRE DU PLAN ═════════════════════════════════════════════
           Les six parties à gauche, l'état d'enregistrement à droite. Elle est
           collante : on passe de « Risque » à « Setups » depuis n'importe quel
@@ -313,7 +313,7 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
           action={
             <span
               className={cn(
-                "tv-figure inline-flex h-6 shrink-0 items-center rounded-lg border px-2 text-[11px]",
+                "tv-figure tv-figure-secondary inline-flex h-6 shrink-0 items-center rounded-lg border px-2 text-[11px]",
                 plan.setups.length >= MAX_SETUPS
                   ? "border-amber-500/25 bg-amber-500/10 text-amber-300"
                   : "border-[var(--tv-border)] bg-[var(--tv-plate-2)] text-slate-400",
@@ -527,7 +527,7 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
         </span>
         <ChevronRight className="h-4 w-4 shrink-0 text-slate-500" />
       </button>
-    </div>
+    </PageContainer>
   );
 }
 
@@ -772,7 +772,7 @@ function SetupCard({
   return (
     <div className="rounded-2xl bg-white/[0.03] border border-white/[0.07] p-4 space-y-2.5">
       <div className="flex items-center gap-2.5">
-        <span className="w-6 h-6 rounded-lg bg-cyan-500/15 text-cyan-300 text-[11px] font-bold flex items-center justify-center shrink-0">
+        <span className="tv-num w-6 h-6 rounded-lg bg-cyan-500/15 text-cyan-300 text-[11px] font-bold flex items-center justify-center shrink-0">
           {index + 1}
         </span>
         <input
@@ -831,13 +831,13 @@ function SetupCard({
 function CompletionRing({ value, label }: { value: number; label: string }) {
   const pct = Math.round(value * 100);
   return (
-    <div className="animate-fade-in-up w-full min-w-[168px] max-w-[260px] shrink-0 sm:w-auto">
+    <div className="animate-fade-in-up w-10 shrink-0 sm:w-44">
       <div className="mb-1.5 flex items-baseline justify-between gap-3">
-        <span className="tv-label text-slate-500">{label}</span>
+        <span className="tv-label hidden text-slate-500 sm:inline">{label}</span>
         <span className="tv-figure text-sm leading-none text-white">{pct}%</span>
       </div>
       <div
-        className="h-2 w-full overflow-hidden rounded-full bg-white/[0.07]"
+        className="h-1.5 w-full overflow-hidden rounded-full bg-white/[0.07]"
         role="progressbar"
         aria-valuenow={pct}
         aria-valuemin={0}
@@ -845,11 +845,10 @@ function CompletionRing({ value, label }: { value: number; label: string }) {
         aria-label={label}
       >
         <div
-          className="h-full rounded-full transition-[width] duration-500 ease-[cubic-bezier(0.33,1,0.68,1)]"
+          className="h-full rounded-full transition-[width] duration-200 ease-[cubic-bezier(0.33,1,0.68,1)]"
           style={{
             width: `${Math.max(value > 0 ? 4 : 0, pct)}%`,
-            background: "linear-gradient(90deg, var(--tv-accent) 0%, var(--tv-highlight) 100%)",
-            boxShadow: value > 0 ? "inset -1px 0 0 rgb(255 255 255 / 0.35)" : undefined,
+            background: "var(--tv-accent)",
           }}
         />
       </div>

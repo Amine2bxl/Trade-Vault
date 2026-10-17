@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from "react";
-import { X, Upload, FileSpreadsheet, Check, Loader2, AlertCircle } from "lucide-react";
+import { X, Upload, FileSpreadsheet, Check, Loader2, AlertCircle } from "@/shared/ui/icons";
 import { Trade } from "@/app/types";
 import { formatPnl } from "@/domain/tradeCalcs";
 import { cn } from "@/shared/ui/cn";
@@ -196,17 +196,17 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
                 <AlertCircle className="w-7 h-7 text-red-400" />
               )}
             </div>
-            <div className="text-sm font-bold text-white mb-1">
+            <div className="tv-num text-sm font-bold text-white mb-1">
               {result.imported} {t("import.imported")}
             </div>
             <div className="text-xs text-slate-500">
               {result.duplicates > 0 && (
-                <span>
+                <span className="tv-num">
                   {result.duplicates} {t("import.duplicatesSkipped")} ·{" "}
                 </span>
               )}
               {result.invalid > 0 && (
-                <span>
+                <span className="tv-num">
                   {result.invalid} {t("import.invalidSkipped")}
                 </span>
               )}
@@ -273,7 +273,7 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
         ) : (
           <>
             <div className="flex items-center justify-between gap-2 flex-wrap">
-              <div className="text-xs text-slate-400">
+              <div className="tv-num text-xs text-slate-400">
                 {parsed.rows.length} {t("import.rowsDetected")}
                 {parsed.format && (
                   <span className="ml-2 px-2 py-0.5 rounded-lg bg-cyan-500/10 text-cyan-400 text-[10px] font-bold">
@@ -346,7 +346,7 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
 
             {/* Preview */}
             <div>
-              <div className="tv-label text-slate-400 mb-2">
+              <div className="tv-num tv-label text-slate-400 mb-2">
                 {t("import.preview")} · {mappedTrades.valid.length} {t("import.validRows")}
                 {mappedTrades.invalid > 0
                   ? ` · ${mappedTrades.invalid} ${t("import.invalidSkipped")}`

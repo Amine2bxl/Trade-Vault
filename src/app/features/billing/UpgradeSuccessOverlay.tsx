@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { CheckCircle2, Sparkles, X } from "lucide-react";
+import { CheckCircle2, Sparkles, X } from "@/shared/ui/icons";
 import { useT } from "@/app/i18n/LanguageContext";
 
 /**

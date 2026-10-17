@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from "react";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle } from "@/shared/ui/icons";
 import { cn } from "@/shared/ui/cn";
 import { useT } from "../i18n/LanguageContext";
 import { Modal } from "@/shared/ui";

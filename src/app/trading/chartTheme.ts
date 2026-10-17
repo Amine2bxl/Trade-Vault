@@ -1,29 +1,35 @@
+import { useSyncExternalStore } from "react";
 import { formatMoney } from "@/shared/currency";
 // Shared Recharts theming so every chart across the app (Dashboard, Analytics,
 // Mistakes, Calendar) animates and looks the same — one place to tune "premium feel".
 
-// Same signature ease-out-with-a-touch-of-overshoot curve used by .card-premium /
-// .animate-fade-in-up in styles.css, so chart reveals feel like one motion language
-// with the rest of the UI instead of recharts' default linear-ish easing.
+// Une entrée courte, commune aux graphiques. La préférence système est lue
+// par le hook ci-dessous : aucun calcul animé ne tourne en mode réduit.
 const ORGANIC_EASING = "cubic-bezier(0.16,1,0.3,1)";
-
 export const CHART_ANIMATION = {
-  // Slightly longer than the CSS draw-reveal (1.35s) so recharts' own line growth
-  // settles just as the wipe completes — one continuous, natural motion.
-  animationDuration: 1300,
-  // react-smooth (recharts' animation engine) accepts any cubic-bezier string at
-  // runtime; its TS union only lists the 5 named presets, so we cast past that.
+  animationDuration: 260,
   animationEasing: ORGANIC_EASING as unknown as "ease-out",
 };
-
-// Equity-curve reveal. Deliberately restrained: a single, quick, decelerating
-// draw. Institutional charting tools (Topstep, Lucid) animate once and get out
-// of the way — a long cinematic wipe reads as a marketing effect, not a tool.
 export const EQUITY_ANIMATION = {
-  animationDuration: 900,
-  animationBegin: 40,
+  animationDuration: 260,
+  animationBegin: 0,
   animationEasing: "cubic-bezier(0.33,1,0.68,1)" as unknown as "ease-out",
 };
+
+const motionQuery = "(prefers-reduced-motion: reduce)";
+const subscribeMotion = (onChange: () => void) => {
+  const media = window.matchMedia(motionQuery);
+  media.addEventListener("change", onChange);
+  return () => media.removeEventListener("change", onChange);
+};
+const reducedSnapshot = () => window.matchMedia(motionQuery).matches;
+const staticSnapshot = () => true;
+
+/** Même durée courte partout ; aucune animation si le système la réduit. */
+export function useChartAnimation(equity = false) {
+  const reduced = useSyncExternalStore(subscribeMotion, reducedSnapshot, staticSnapshot);
+  return { ...(equity ? EQUITY_ANIMATION : CHART_ANIMATION), isAnimationActive: !reduced };
+}
 
 // Le trait d'equity, partagé par le tableau de bord et Analytics : épais,
 // bouts ronds, aucun halo. Il passe de 2 à 3px — sur une courbe très lissée,
@@ -215,7 +221,12 @@ export const BAR_RADIUS_H: [number, number, number, number] = [0, 6, 6, 0];
 // Axis ticks — one muted slate, one size, everywhere. `--tv-text-muted` is the
 // same token the rest of the UI uses for de-emphasised text, so an axis label
 // and a caption are the same grey by construction rather than by coincidence.
-export const AXIS_TICK = { fill: "var(--tv-text-muted)", fontSize: 11 } as const;
+export const AXIS_TICK = {
+  fill: "var(--tv-text-muted)",
+  fontSize: 11,
+  fontFamily: "var(--font-figure)",
+  fontWeight: 600,
+} as const;
 
 // Compact money labels ($1.2k) so the Y axis stays narrow and readable at any
 // account size instead of wrapping five-digit numbers.

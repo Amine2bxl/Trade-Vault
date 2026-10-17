@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { SelectPicker } from "@/shared/ui";
-import { User, Brain, SlidersHorizontal, Pencil, Trash2, X } from "lucide-react";
+import { User, Brain, SlidersHorizontal, Pencil, Trash2, X } from "@/shared/ui/icons";
 import { useT } from "@/app/i18n/LanguageContext";
 import { useAuth } from "@/app/contexts/AuthContext";
 import {

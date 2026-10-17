@@ -1,15 +1,6 @@
-import {
-  useEffect,
-  useId,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-  useSyncExternalStore,
-  type ReactNode,
-} from "react";
-import { createPortal } from "react-dom";
-import { Check, ChevronDown, Search, X } from "lucide-react";
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
+import { Check, ChevronDown, Search } from "@/shared/ui/icons";
+import { numericText } from "./NumericText";
 import { cn } from "./cn";
 import { FIELD_BASE } from "./Input";
 import { DateField } from "./DateField";
@@ -50,178 +41,9 @@ export interface PickerOption<V extends string = string> {
 
 type Variant = "pill" | "field";
 
-/* ── Le point de rupture, sans dépendre de `app/` ── */
-const NARROW = "(max-width: 639px)";
-const useIsoLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
-function subscribeNarrow(cb: () => void) {
-  if (typeof window === "undefined" || !window.matchMedia) return () => {};
-  const mq = window.matchMedia(NARROW);
-  mq.addEventListener("change", cb);
-  return () => mq.removeEventListener("change", cb);
-}
-function useNarrow(): boolean {
-  return useSyncExternalStore(
-    subscribeNarrow,
-    () => typeof window !== "undefined" && !!window.matchMedia?.(NARROW).matches,
-    () => false,
-  );
-}
-
-/* ── Le panneau : ancré (bureau) ou centré (téléphone) ──
-   Exporté pour les autres membres de la famille (sélecteur de couleur). */
-export function PickerPanel({
-  open,
-  onClose,
-  anchorRef,
-  label,
-  width = "17rem",
-  overflowVisible = false,
-  children,
-}: {
-  open: boolean;
-  onClose: () => void;
-  anchorRef: React.RefObject<HTMLElement | null>;
-  label: string;
-  width?: string;
-  /** Laisse déborder un sous-panneau (le calendrier d'un champ de date). */
-  overflowVisible?: boolean;
-  children: ReactNode;
-}) {
-  const narrow = useNarrow();
-  const panRef = useRef<HTMLDivElement | null>(null);
-  const [pos, setPos] = useState<{
-    left: number;
-    top?: number;
-    bottom?: number;
-    width: number;
-    maxHeight: number;
-  } | null>(null);
-
-  /* La place : sous le déclencheur s'il y en a assez, sinon au-dessus ; à
-     gauche du champ, sinon aligné sur son bord droit. Recalculée au
-     défilement (le déclencheur bouge) et au redimensionnement. */
-  useIsoLayoutEffect(() => {
-    if (!open || narrow) {
-      setPos(null);
-      return;
-    }
-    const place = () => {
-      const a = anchorRef.current?.getBoundingClientRect();
-      if (!a) return;
-      const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
-      const want = width.endsWith("rem") ? parseFloat(width) * rem : parseFloat(width) || 272;
-      const w = Math.min(Math.max(a.width, want), window.innerWidth - 16);
-      const left = a.left + w > window.innerWidth - 8 ? Math.max(8, a.right - w) : a.left;
-      const below = window.innerHeight - a.bottom - 12;
-      const above = a.top - 12;
-      const cap = Math.min(26 * rem, window.innerHeight * 0.7);
-      if (below >= Math.min(cap, 320) || below >= above) {
-        setPos({ left, top: a.bottom + 6, width: w, maxHeight: Math.min(cap, below) });
-      } else {
-        setPos({
-          left,
-          bottom: window.innerHeight - a.top + 6,
-          width: w,
-          maxHeight: Math.min(cap, above),
-        });
-      }
-    };
-    place();
-    // Le défilement de la liste du panneau lui-même ne déplace rien.
-    const onScroll = (e: Event) => {
-      if (panRef.current?.contains(e.target as Node)) return;
-      place();
-    };
-    window.addEventListener("resize", place);
-    window.addEventListener("scroll", onScroll, true);
-    return () => {
-      window.removeEventListener("resize", place);
-      window.removeEventListener("scroll", onScroll, true);
-    };
-  }, [open, narrow, anchorRef, width]);
-
-  useEffect(() => {
-    if (!open) return;
-    const outside = (e: MouseEvent | TouchEvent) => {
-      const t = e.target as Node;
-      if (panRef.current?.contains(t) || anchorRef.current?.contains(t)) return;
-      onClose();
-    };
-    const key = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        // Une modale en dessous ne doit pas se fermer avec le sélecteur.
-        e.stopPropagation();
-        onClose();
-      }
-    };
-    document.addEventListener("mousedown", outside);
-    document.addEventListener("touchstart", outside, { passive: true });
-    document.addEventListener("keydown", key, true);
-    return () => {
-      document.removeEventListener("mousedown", outside);
-      document.removeEventListener("touchstart", outside);
-      document.removeEventListener("keydown", key, true);
-    };
-  }, [open, onClose, anchorRef]);
-
-  if (!open) return null;
-
-  if (narrow && typeof document !== "undefined") {
-    return createPortal(
-      <div className="tv-pick-wrap fixed inset-0 z-[var(--tv-z-modal-top)] flex items-center justify-center p-4">
-        <div className="tv-pick-veil absolute inset-0" aria-hidden />
-        <div
-          ref={panRef}
-          role="dialog"
-          aria-label={label}
-          className={cn(
-            "tv-pop tv-pick-in relative flex w-full max-w-sm flex-col",
-            !overflowVisible && "max-h-[78dvh] overflow-hidden",
-          )}
-        >
-          <div className="flex shrink-0 items-center justify-between px-4 pb-1 pt-3.5">
-            <span className="tv-label text-slate-400">{label}</span>
-            <button type="button" onClick={onClose} className="tv-pop-nav -mr-1.5" aria-label="×">
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-          {children}
-        </div>
-      </div>,
-      document.body,
-    );
-  }
-
-  /* SUR BUREAU, LE PANNEAU EST PORTÉ AU NIVEAU DU DOCUMENT, en position fixe
-     calée sur son déclencheur. Posé en absolu à côté du champ, il était rogné
-     par le premier ancêtre qui masque son débordement — dans une modale, le
-     corps qui défile : le bas de la palette de couleurs du créateur de thème
-     débordait sous la modale et le voile interceptait les clics (mesuré en
-     E2E). En position fixe, rien ne le rogne. */
-  if (typeof document === "undefined" || !pos) return null;
-  return createPortal(
-    <div
-      ref={panRef}
-      role="dialog"
-      aria-label={label}
-      style={{
-        position: "fixed",
-        left: pos.left,
-        top: pos.top,
-        bottom: pos.bottom,
-        width: pos.width,
-        maxHeight: overflowVisible ? undefined : pos.maxHeight,
-      }}
-      className={cn(
-        "tv-pop tv-pick-in z-[var(--tv-z-modal-top)] flex flex-col",
-        !overflowVisible && "overflow-hidden",
-      )}
-    >
-      {children}
-    </div>,
-    document.body,
-  );
-}
+export { SelectionPanel as PickerPanel } from "./SelectionPanel";
+import { SelectionPanel as PickerPanel } from "./SelectionPanel";
+import { selection } from "./selection";
 
 /* ── Le déclencheur ── */
 function Trigger({
@@ -259,13 +81,13 @@ function Trigger({
         aria-controls={id}
         className={cn(
           FIELD_BASE,
-          "flex h-11 items-center gap-2 text-left disabled:opacity-50",
+          "flex items-center gap-2 text-left disabled:opacity-50",
           open && "border-[var(--tv-border-accent)]",
           className,
         )}
       >
         {icon}
-        <span className="min-w-0 flex-1 truncate">{display}</span>
+        <span className="min-w-0 flex-1 truncate">{numericText(display)}</span>
         <ChevronDown
           className={cn(
             "h-3.5 w-3.5 shrink-0 text-slate-500 transition-transform",
@@ -292,7 +114,7 @@ function Trigger({
     >
       {icon}
       <span className="tv-label shrink-0 text-slate-500">{label}</span>
-      <span className="tv-pick-pill-value">{display}</span>
+      <span className="tv-pick-pill-value">{numericText(display)}</span>
       <ChevronDown
         className={cn("h-3 w-3 shrink-0 text-slate-500 transition-transform", open && "rotate-180")}
       />
@@ -318,7 +140,7 @@ function OptionList<V extends string>({
 }) {
   const [q, setQ] = useState("");
   const listRef = useRef<HTMLUListElement | null>(null);
-  const searchable = options.length > 8;
+  const searchable = options.length > selection.searchThreshold;
   const shown = useMemo(() => {
     const n = q.trim().toLowerCase();
     return n
@@ -334,12 +156,20 @@ function OptionList<V extends string>({
   }, [searchable]);
 
   const move = (e: React.KeyboardEvent) => {
-    if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+    if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(e.key)) return;
     e.preventDefault();
     const items = Array.from(listRef.current?.querySelectorAll<HTMLElement>("button") ?? []);
     const i = items.indexOf(document.activeElement as HTMLElement);
     const next =
-      items[e.key === "ArrowDown" ? Math.min(items.length - 1, i + 1) : Math.max(0, i - 1)];
+      items[
+        e.key === "Home"
+          ? 0
+          : e.key === "End"
+            ? items.length - 1
+            : e.key === "ArrowDown"
+              ? Math.min(items.length - 1, i + 1)
+              : Math.max(0, i - 1)
+      ];
     next?.focus();
   };
 
@@ -350,7 +180,6 @@ function OptionList<V extends string>({
           <label className="tv-pick-search">
             <Search className="h-3.5 w-3.5 shrink-0 text-slate-500" />
             <input
-              autoFocus
               value={q}
               onChange={(e) => setQ(e.target.value)}
               onKeyDown={(e) => {
@@ -392,13 +221,15 @@ function OptionList<V extends string>({
                   {on && <Check className="h-3 w-3" strokeWidth={3} />}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate">{o.label}</span>
+                  <span className="block truncate">{numericText(o.label)}</span>
                   {o.hint && (
                     <span className="block truncate text-[11px] text-slate-500">{o.hint}</span>
                   )}
                 </span>
                 {o.count !== undefined && (
-                  <span className="tv-figure text-[11px] text-slate-500">{o.count}</span>
+                  <span className="tv-figure tv-figure-secondary text-[11px] text-slate-500">
+                    {o.count}
+                  </span>
                 )}
               </button>
             </li>
@@ -406,6 +237,80 @@ function OptionList<V extends string>({
         })}
         {shown.length === 0 && <li className="px-3 py-4 text-center text-xs text-slate-500">—</li>}
       </ul>
+    </>
+  );
+}
+
+/** Choix courts directement accessibles ; les sélections restent toujours
+ * visibles, même parmi les options supplémentaires d'une longue liste. */
+function InlineChoices<V extends string>({
+  options,
+  isOn,
+  onPick,
+  searchLabel,
+  moreLabel,
+  lessLabel,
+  leading,
+}: {
+  options: PickerOption<V>[];
+  isOn: (v: V) => boolean;
+  onPick: (v: V) => void;
+  searchLabel: string;
+  moreLabel: string;
+  lessLabel: string;
+  leading?: ReactNode;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const [query, setQuery] = useState("");
+  const long = options.length > selection.searchThreshold;
+  const shown = options.filter((o, i) =>
+    query.trim()
+      ? `${o.label} ${o.hint ?? ""}`.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())
+      : !long || expanded || i < 6 || isOn(o.value),
+  );
+  return (
+    <>
+      {long && expanded && (
+        <label className="tv-pick-search mb-2">
+          <Search className="h-3.5 w-3.5 shrink-0" />
+          <input
+            className="w-full min-w-0 bg-transparent text-sm outline-none"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={searchLabel}
+            aria-label={searchLabel}
+          />
+        </label>
+      )}
+      <div className="tv-pick-chips">
+        {leading}
+        {shown.map((o) => (
+          <button
+            type="button"
+            key={o.value}
+            aria-pressed={isOn(o.value)}
+            onClick={() => onPick(o.value)}
+            className={cn("tv-pick-chip", isOn(o.value) && "tv-pick-chip-on")}
+          >
+            {isOn(o.value) && <Check className="h-3 w-3 shrink-0" />}
+            <span className="truncate">{numericText(o.label)}</span>
+            {o.count !== undefined && <span className="tv-num opacity-60">{o.count}</span>}
+          </button>
+        ))}
+        {long && (
+          <button
+            type="button"
+            className="tv-pick-chip tv-filter-more"
+            aria-expanded={expanded}
+            onClick={() => {
+              setExpanded((v) => !v);
+              setQuery("");
+            }}
+          >
+            {expanded ? lessLabel : `${moreLabel} +${options.length - shown.length}`}
+          </button>
+        )}
+      </div>
     </>
   );
 }
@@ -424,6 +329,8 @@ export interface SelectPickerProps<V extends string> {
   searchLabel?: string;
   /** Rend le corps à plat, sans déclencheur ni panneau flottant. */
   inline?: boolean;
+  moreLabel?: string;
+  lessLabel?: string;
   disabled?: boolean;
   className?: string;
   icon?: ReactNode;
@@ -441,6 +348,8 @@ export function SelectPicker<V extends string>({
   variant = "pill",
   neutralValue,
   searchLabel = "Search",
+  moreLabel = "More options",
+  lessLabel = "Fewer options",
   inline,
   disabled,
   className,
@@ -457,20 +366,14 @@ export function SelectPicker<V extends string>({
     return (
       <div className={cn("tv-pick-inline", className)}>
         <span className="tv-label mb-1.5 block text-slate-500">{label}</span>
-        <div className="tv-pick-chips">
-          {options.map((o) => (
-            <button
-              key={o.value}
-              type="button"
-              aria-pressed={o.value === value}
-              onClick={() => onChange(o.value)}
-              className={cn("tv-pick-chip", o.value === value && "tv-pick-chip-on")}
-            >
-              {o.label}
-              {o.count !== undefined && <span className="tv-figure opacity-60">{o.count}</span>}
-            </button>
-          ))}
-        </div>
+        <InlineChoices
+          options={options}
+          isOn={(v) => v === value}
+          onPick={onChange}
+          searchLabel={searchLabel}
+          moreLabel={moreLabel}
+          lessLabel={lessLabel}
+        />
       </div>
     );
   }
@@ -537,6 +440,8 @@ export interface MultiPickerProps<V extends string> {
   searchLabel?: string;
   variant?: Variant;
   inline?: boolean;
+  moreLabel?: string;
+  lessLabel?: string;
   disabled?: boolean;
   className?: string;
   icon?: ReactNode;
@@ -567,6 +472,8 @@ export function MultiPicker<V extends string>({
   countLabel,
   searchLabel = "Search",
   variant = "pill",
+  moreLabel = "More options",
+  lessLabel = "Fewer options",
   inline,
   disabled,
   className,
@@ -585,32 +492,24 @@ export function MultiPicker<V extends string>({
     return (
       <div className={cn("tv-pick-inline", className)}>
         <span className="tv-label mb-1.5 block text-slate-500">{label}</span>
-        <div className="tv-pick-chips">
-          <button
-            type="button"
-            aria-pressed={all}
-            onClick={() => onChange([])}
-            className={cn("tv-pick-chip", all && "tv-pick-chip-on")}
-          >
-            {allLabel}
-          </button>
-          {options.map((o) => {
-            const on = values.includes(o.value);
-            return (
-              <button
-                key={o.value}
-                type="button"
-                aria-pressed={on}
-                onClick={() => toggle(o.value)}
-                className={cn("tv-pick-chip", on && "tv-pick-chip-on")}
-              >
-                {on && <Check className="h-3 w-3" strokeWidth={3} />}
-                {o.label}
-                {o.count !== undefined && <span className="tv-figure opacity-60">{o.count}</span>}
-              </button>
-            );
-          })}
-        </div>
+        <InlineChoices
+          options={options}
+          isOn={(v) => values.includes(v)}
+          onPick={toggle}
+          searchLabel={searchLabel}
+          moreLabel={moreLabel}
+          lessLabel={lessLabel}
+          leading={
+            <button
+              type="button"
+              aria-pressed={all}
+              onClick={() => onChange([])}
+              className={cn("tv-pick-chip", all && "tv-pick-chip-on")}
+            >
+              {allLabel}
+            </button>
+          }
+        />
       </div>
     );
   }
@@ -703,6 +602,8 @@ export interface RangePickerProps<P extends string> {
   neutralPreset?: P;
   variant?: Variant;
   inline?: boolean;
+  moreLabel?: string;
+  lessLabel?: string;
   className?: string;
   icon?: ReactNode;
 }
@@ -778,7 +679,7 @@ export function RangePicker<P extends string>({
               }}
               className={cn("tv-pick-chip", on && "tv-pick-chip-on")}
             >
-              {p.label}
+              {numericText(p.label)}
             </button>
           );
         })}
@@ -863,7 +764,6 @@ export function RangePicker<P extends string>({
         anchorRef={anchorRef}
         label={label}
         width="19rem"
-        overflowVisible
       >
         <div id={id}>{body}</div>
       </PickerPanel>

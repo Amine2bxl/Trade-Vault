@@ -3,6 +3,9 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { BlockRenderer } from "@/app/features/jarvis/BlockRenderer";
 import type { JarvisBlock } from "@/app/features/jarvis/blocks";
 
+// Vérifier le texte mesuré tout en autorisant le balisage typographique des nombres.
+const sansSpans = (html: string) => html.replace(/<\/?span(?:\s[^>]*)?>/g, "");
+
 const hero: JarvisBlock = {
   type: "hero",
   lines: [
@@ -32,28 +35,29 @@ const mission: JarvisBlock = {
 describe("BlockRenderer — hero", () => {
   it("rend les 4 lignes, l'action en callout", () => {
     const html = renderToStaticMarkup(<BlockRenderer block={hero} />);
-    expect(html).toContain("analysé tes 22 derniers trades.");
-    expect(html).toContain("augmentes ton risque de 25%");
-    expect(html).toContain("coûté 1100 $");
-    expect(html).toContain("Pause de 15 minutes après -1R");
+    expect(html).toContain('class="tv-num"');
+    expect(sansSpans(html)).toContain("analysé tes 22 derniers trades.");
+    expect(sansSpans(html)).toContain("augmentes ton risque de 25%");
+    expect(sansSpans(html)).toContain("coûté 1100 $");
+    expect(sansSpans(html)).toContain("Pause de 15 minutes après -1R");
   });
 });
 
 describe("BlockRenderer — insight", () => {
   it("rend le label, les métriques et l'impact", () => {
     const html = renderToStaticMarkup(<BlockRenderer block={insight} />);
-    expect(html).toContain("Risque après perte");
-    expect(html).toContain("+25%");
-    expect(html).toContain("Impact estimé : 1100 $");
+    expect(sansSpans(html)).toContain("Risque après perte");
+    expect(sansSpans(html)).toContain("+25%");
+    expect(sansSpans(html)).toContain("Impact estimé : 1100 $");
   });
 });
 
 describe("BlockRenderer — mission", () => {
   it("rend le titre et les items cochables", () => {
     const html = renderToStaticMarkup(<BlockRenderer block={mission} />);
-    expect(html).toContain("Mission du jour");
-    expect(html).toContain("Pause de 15 minutes après -1R");
-    expect(html).toContain("✓");
+    expect(sansSpans(html)).toContain("Mission du jour");
+    expect(sansSpans(html)).toContain("Pause de 15 minutes après -1R");
+    expect(sansSpans(html)).toContain("✓");
   });
 });
 

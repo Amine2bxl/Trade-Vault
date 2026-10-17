@@ -9,7 +9,7 @@ import {
   MoveRight,
   Repeat2,
   X,
-} from "lucide-react";
+} from "@/shared/ui/icons";
 import { useAuth } from "../contexts/AuthContext";
 import { useAccounts } from "../contexts/AccountContext";
 import { useToast } from "../contexts/ToastContext";
@@ -541,7 +541,7 @@ export default function TransferTradesModal({
                           className={cn(FIELD_BASE, "h-10 pl-7 tv-figure")}
                         />
                       </div>
-                      <p className="text-xs leading-snug text-slate-500">
+                      <p className="tv-num text-xs leading-snug text-slate-500">
                         {source && target
                           ? t("transfer.scaleHint")
                               .replace(
@@ -636,7 +636,7 @@ export default function TransferTradesModal({
                         >
                           <RollingFigure value={formatMoney(summary.pnlAfter, { signed: true })} />
                         </div>
-                        <div className="text-xs text-slate-500">
+                        <div className="tv-num text-xs text-slate-500">
                           {factor !== 1
                             ? t("transfer.pnlWas").replace(
                                 "{pnl}",

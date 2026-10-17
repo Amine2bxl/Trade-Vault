@@ -33,6 +33,8 @@ export interface MetricProps {
   valueClass?: string;
   /** Entrance stagger delay in ms. */
   delay?: number;
+  /** Densité réduite pour les quatre indicateurs du dashboard. */
+  compact?: boolean;
 }
 
 /* La couleur du chiffre est le SIGNE, rien d'autre. Sans tendance il reste
@@ -51,7 +53,7 @@ function Radial({ pct, color, center }: { pct: number; color: string; center?: s
   const C = 2 * Math.PI * R;
   const p = Math.max(0, Math.min(1, pct));
   return (
-    <div className="relative h-11 w-11 shrink-0 sm:h-14 sm:w-14">
+    <div className="metric-radial relative h-11 w-11 shrink-0 sm:h-14 sm:w-14">
       <svg viewBox="0 0 64 64" className="w-full h-full -rotate-90">
         <circle cx="32" cy="32" r={R} fill="none" stroke="rgba(255,255,255,0.09)" strokeWidth="6" />
         <circle
@@ -64,12 +66,13 @@ function Radial({ pct, color, center }: { pct: number; color: string; center?: s
           strokeLinecap="round"
           strokeDasharray={C}
           strokeDashoffset={C * (1 - p)}
-          style={{ transition: "stroke-dashoffset 800ms cubic-bezier(0.16,1,0.3,1)" }}
         />
       </svg>
       {center && (
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="tv-figure hidden text-[11px] text-slate-300 sm:inline">{center}</span>
+          <span className="tv-figure tv-figure-secondary hidden text-[11px] text-slate-300 sm:inline">
+            {center}
+          </span>
         </div>
       )}
     </div>
@@ -141,21 +144,26 @@ export function Metric({
   footer,
   valueClass,
   delay = 0,
+  compact = false,
 }: MetricProps) {
   return (
     <div
-      className={cn("metric-tile stat-card card-premium animate-fade-in-up", density.cardPad)}
-      style={{ animationDelay: `${delay}ms` }}
+      className={cn(
+        "metric-tile stat-card animate-fade-in-up",
+        density.cardPadTight,
+        compact && "metric-tile-compact",
+      )}
+      style={{ animationDelay: `${Math.min(delay, 60)}ms` }}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5 mb-1.5">
+          <div className="metric-label-row flex items-center gap-1.5 mb-1.5">
             {icon && <span className="shrink-0 text-slate-500">{icon}</span>}
             <span className={cn(type.label, "text-slate-500 truncate")}>{title}</span>
           </div>
           {/* LE CHIFFRE. Chasse fixe (voir `.tv-figure`) : c'est la tuile qui
               porte la signature typographique du produit. */}
-          <div className={cn(type.figure, valueClass ?? trendClass(trend))}>
+          <div className={cn("metric-main-value", type.figure, valueClass ?? trendClass(trend))}>
             {/* Le chiffre roule quand il change (l'effet compteur de Lucid). */}
             <RollingFigure value={value} />
           </div>
@@ -172,7 +180,12 @@ export function Metric({
       {footer && (
         <div className="mt-3 pt-2.5 border-t border-[var(--tv-border)] flex items-center justify-between">
           <span className={cn(type.label, "text-slate-500")}>{footer.label}</span>
-          <span className={cn("tv-figure text-xs", footer.className ?? "text-slate-300")}>
+          <span
+            className={cn(
+              "tv-figure tv-figure-secondary text-xs",
+              footer.className ?? "text-slate-300",
+            )}
+          >
             {footer.value}
           </span>
         </div>

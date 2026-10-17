@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Command } from "cmdk";
-import { Plus, Download, Search, Upload } from "lucide-react";
+import { Plus, Download, Search, Upload } from "@/shared/ui/icons";
 import { Trade, Page } from "../types";
 import { NAV_ITEMS } from "./navigation";
 import { formatPnl, formatShortDate } from "@/domain/tradeCalcs";
@@ -114,12 +114,12 @@ export default function CommandPalette({
                     )}
                   />
                   <span className="font-bold text-white">{tr.symbol}</span>
-                  <span className="text-[10px] text-slate-500">
+                  <span className="tv-num text-[10px] text-slate-500">
                     {formatShortDate(tr.date)} · {tr.strategy}
                   </span>
                   <span
                     className={cn(
-                      "tv-figure ml-auto text-xs",
+                      "tv-figure tv-figure-secondary ml-auto text-xs",
                       tr.direction === "be"
                         ? "text-slate-300"
                         : tr.pnl >= 0

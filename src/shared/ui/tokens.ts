@@ -122,13 +122,13 @@ export const density = {
   /** Tighter variant for list rows and compact tiles. */
   cardPadTight: "p-3.5",
   /** Roomier variant, reserved for hero/feature surfaces. */
-  cardPadLoose: "p-6 md:p-7",
+  cardPadLoose: "p-5 md:p-6",
   /** Page gutters — mobile reste un cran plus serré, l'écran est étroit. */
-  pagePad: "p-4 md:p-6",
+  pagePad: "px-3 py-2 md:px-5 md:py-3",
   /** Vertical rhythm between page sections. */
-  sectionGap: "mb-5 md:mb-6",
+  sectionGap: "mb-3 md:mb-4",
   /** Grid gap between sibling cards. */
-  gridGap: "gap-4 md:gap-5",
+  gridGap: "gap-3 md:gap-4",
 } as const;
 
 /**
@@ -150,7 +150,7 @@ export const type = {
   /** Hero / display — titres d'en-tête à très forte présence. */
   display: "font-display text-[30px] md:text-[34px] font-bold tracking-[-0.025em]",
   /** Page title — calm, not massive. */
-  h1: "text-[26px] md:text-[30px] font-bold tracking-[-0.02em]",
+  h1: "tv-title",
   /** Titre de section — même rôle que le titre de carte. Le produit n'a plus
    *  qu'UN titre : la calculatrice n'en tient qu'un, à 14px, et ça suffit. */
   h2: "tv-title",
@@ -178,7 +178,7 @@ export const type = {
    *  Calculatrice de lot, appliqué à TOUTE donnée chiffrée du produit. */
   fin: "tv-figure text-base",
   /** Le même chiffre, taille de tuile KPI. */
-  figure: "tv-figure text-xl md:text-[26px] leading-none",
+  figure: "tv-figure text-lg md:text-xl leading-none",
   /** Le même chiffre, taille héros (P&L du mois, solde du compte). */
   figureLg: "tv-figure text-[30px] md:text-[38px] leading-none",
   /** Navigation (rail, onglets). */

@@ -15,7 +15,7 @@ import {
   RotateCcw,
   Wand2,
   Sparkles,
-} from "lucide-react";
+} from "@/shared/ui/icons";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useT } from "@/app/i18n/LanguageContext";
 import { cn } from "@/shared/ui/cn";
@@ -57,7 +57,7 @@ import {
   todayKey,
   hydrateConfig,
 } from "./helpers";
-import { Button, PageToolbar, TimeField, SelectPicker } from "@/shared/ui";
+import { PageContainer, Button, PageToolbar, TimeField, SelectPicker } from "@/shared/ui";
 import { intlLocale } from "@/app/i18n/locale";
 
 /* ════════════════════════════════════════════════════════════════
@@ -253,7 +253,6 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
   const [countdownVal, setCountdownVal] = useState<number | null>(null);
   const [lockOverlay, setLockOverlay] = useState(false);
   const [execTime, setExecTime] = useState("—");
-  const [flash, setFlash] = useState(0);
   const [voice, setVoice] = useState<{ text: string; speaking: boolean; show: boolean }>({
     text: "—",
     speaking: false,
@@ -321,9 +320,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
     void syncWizardRules(user?.id, r.items);
   };
 
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
-  const canvasStateRef = useRef<(k: string) => void>(() => {});
   const audioOnRef = useRef(false);
   const langRef = useRef(lang);
   langRef.current = lang;
@@ -825,109 +822,12 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
     setTimeout(() => say("activate"), 750);
   }, [powerUp, say]);
 
-  /* ══ Canvas particle field — fixed, covers the whole viewport ══
-     Kept (it IS the page's identity) but calmed: skipped entirely when the
-     visitor asked for reduced motion or is on a small screen, where a
-     permanent rAF loop costs battery for pure ambience. */
-  useEffect(() => {
-    const c = canvasRef.current;
-    if (!c) return;
-    const reduced =
-      typeof window !== "undefined" &&
-      (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches || window.innerWidth < 768);
-    if (reduced) return;
-    const ctx = c.getContext("2d");
-    if (!ctx) return;
-    let W = 0;
-    let H = 0;
-    let raf = 0;
-    let pts: { x: number; y: number; vx: number; vy: number; r: number }[] = [];
-    const COLORS: Record<string, { r: number; g: number; b: number; a: number }> = {
-      neutral: { r: 34, g: 211, b: 238, a: 0.4 },
-      calm: { r: 34, g: 211, b: 238, a: 0.55 },
-      focus: { r: 45, g: 212, b: 191, a: 0.55 },
-      imp: { r: 251, g: 191, b: 36, a: 0.5 },
-      fomo: { r: 255, g: 85, b: 102, a: 0.65 },
-      locked: { r: 34, g: 211, b: 238, a: 0.8 },
-    };
-    const STATE = { r: 0, g: 0, b: 0, a: 0 };
-    let TARGET = COLORS.neutral;
-    canvasStateRef.current = (k: string) => {
-      TARGET = COLORS[k] || COLORS.neutral;
-    };
-    const init = () => {
-      pts = [];
-      // Calmer field: ~40% fewer particles than before (same look, less work).
-      const n = Math.min(90, Math.floor((W * H) / 30000));
-      for (let i = 0; i < n; i++)
-        pts.push({
-          x: Math.random() * W,
-          y: Math.random() * H,
-          vx: (Math.random() - 0.5) * 0.28,
-          vy: (Math.random() - 0.5) * 0.28,
-          r: Math.random() * 1.5 + 0.5,
-        });
-    };
-    const resize = () => {
-      W = c.width = window.innerWidth;
-      H = c.height = window.innerHeight;
-      init();
-    };
-    const lerp = (a: number, b: number, t2: number) => a + (b - a) * t2;
-    const draw = () => {
-      ctx.clearRect(0, 0, W, H);
-      STATE.r = lerp(STATE.r, TARGET.r, 0.018);
-      STATE.g = lerp(STATE.g, TARGET.g, 0.018);
-      STATE.b = lerp(STATE.b, TARGET.b, 0.018);
-      STATE.a = lerp(STATE.a, TARGET.a, 0.018);
-      const cr = Math.round(STATE.r);
-      const cg = Math.round(STATE.g);
-      const cb = Math.round(STATE.b);
-      for (let i = 0; i < pts.length; i++) {
-        const p = pts[i];
-        p.x += p.vx;
-        p.y += p.vy;
-        if (p.x < 0) p.x = W;
-        if (p.x > W) p.x = 0;
-        if (p.y < 0) p.y = H;
-        if (p.y > H) p.y = 0;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${cr},${cg},${cb},${STATE.a * 0.9})`;
-        ctx.fill();
-        for (let j = i + 1; j < pts.length; j++) {
-          const q = pts[j];
-          const dx = p.x - q.x;
-          const dy = p.y - q.y;
-          const d = Math.sqrt(dx * dx + dy * dy);
-          if (d < 120) {
-            ctx.beginPath();
-            ctx.moveTo(p.x, p.y);
-            ctx.lineTo(q.x, q.y);
-            ctx.strokeStyle = `rgba(${cr},${cg},${cb},${STATE.a * (1 - d / 120) * 0.35})`;
-            ctx.lineWidth = 0.5;
-            ctx.stroke();
-          }
-        }
-      }
-      raf = requestAnimationFrame(draw);
-    };
-    resize();
-    draw();
-    window.addEventListener("resize", resize);
-    return () => {
-      cancelAnimationFrame(raf);
-      window.removeEventListener("resize", resize);
-    };
-  }, []);
-
   /* ══ Clock tick ══ */
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
 
-  /* ══ HUD fonts (Rajdhani / Orbitron / JetBrains Mono) — loaded once ══ */
   /* ══ Derived scoring ══ */
   const winOpen = isWindowOpen(config, new Date(now));
   // Only enabled items take part in the daily run — a disabled item is neither
@@ -964,7 +864,6 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
     if (gates.win && !prev.win) say("win");
     prevGatesRef.current = gates;
     if (allGates && !wasAllRef.current && !day.locked) {
-      setFlash((f) => f + 1);
       chime();
       if (!disciplineRef.current) {
         say("discipline");
@@ -973,14 +872,6 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
     }
     wasAllRef.current = allGates;
   }, [gates, allGates, day.locked, blip, say, chime]);
-
-  /* canvas mood */
-  useEffect(() => {
-    if (day.locked) canvasStateRef.current("locked");
-    else if (allGates) canvasStateRef.current("calm");
-    else if (day.fomo >= 0) canvasStateRef.current(["calm", "focus", "imp", "fomo"][day.fomo]);
-    else canvasStateRef.current("neutral");
-  }, [day.locked, allGates, day.fomo]);
 
   /* ══ Série de complétion ══
      Jours de BOURSE consécutifs avec checklist verrouillée. La logique vit
@@ -1349,19 +1240,9 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
 
   return (
     <div ref={wrapRef} onMouseOver={onHover} onPointerDown={autoStartAudio} className="relative">
-      {/* Light holographic identity: a faint drifting grid, a slow scanline and
-          ambient particles — a discreet nod to the original Pre-Trade OS. */}
-      <canvas ref={canvasRef} className="pointer-events-none fixed inset-0 -z-10 opacity-[0.12]" />
-      {/* Subtle validation pulse — reuses the global fade, no HUD flash. */}
-      <div
-        key={flash}
-        className={cn(
-          "pointer-events-none fixed inset-0 -z-10 bg-[rgb(var(--tv-accent-rgb)/0.05)]",
-          flash > 0 ? "animate-fade-in" : "opacity-0",
-        )}
-      />
-
-      <div className="p-4 md:p-5 max-w-[1400px] mx-auto space-y-4">
+      {/* La préparation partage le fond calme du calendrier ; les retours
+          de validation restent sur les contrôles concernés. */}
+      <PageContainer className="space-y-3 md:space-y-4">
         {day.locked && (
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 rounded-xl border border-[rgb(var(--tv-accent-rgb)/0.25)] bg-[rgb(var(--tv-accent-rgb)/0.10)] px-3 py-2 text-xs font-semibold text-[var(--tv-highlight)] animate-fade-in-up">
             <span className="w-1.5 h-1.5 rounded-full bg-[var(--tv-accent)] animate-pulse" />
@@ -1390,7 +1271,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
             Ça défile, et c'est très bien — ce n'est pas ce qu'on cherche à
             mi-parcours. Une ligne de texte, plus trois pastilles encadrées. */}
         <div className="animate-fade-in-up flex flex-wrap items-center gap-x-2 gap-y-1">
-          <span className="tv-figure text-[11px] text-slate-400">
+          <span className="tv-figure tv-figure-secondary text-[11px] text-slate-400">
             {dateStr} · {clockStr}
           </span>
           <span aria-hidden className="h-3 w-px bg-[var(--tv-border)]" />
@@ -1407,7 +1288,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
               <span aria-hidden className="h-3 w-px bg-[var(--tv-border)]" />
               <span
                 title={t("chk.streakHint")}
-                className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-300"
+                className="tv-num inline-flex items-center gap-1 text-[11px] font-bold text-amber-300"
               >
                 <Flame className="h-3 w-3" /> {streak} {t("chk.streakSuffix")}
               </span>
@@ -1478,7 +1359,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
             {/* L'AVANCEMENT — le chiffre, puis la jauge. La jauge seule ne dit
                 pas combien il reste ; le chiffre seul ne se lit pas d'un coup
                 d'œil. */}
-            <span className="tv-figure shrink-0 text-[11px] text-white">
+            <span className="tv-figure tv-figure-secondary shrink-0 text-[11px] text-white">
               {nChecked}/{nActive}
             </span>
             <span
@@ -1499,7 +1380,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
 
         {/* ══ CUSTOMIZATION PANEL ══ */}
         {showConfig && (
-          <div className="glass-strong rounded-2xl p-4 md:p-5 space-y-4 animate-fade-in-up">
+          <div className="glass rounded-2xl p-4 md:p-5 space-y-4 animate-fade-in-up">
             <div className="flex items-start gap-2.5">
               <span className="w-8 h-8 rounded-xl bg-[rgb(var(--tv-accent-rgb)/0.10)] border border-[rgb(var(--tv-accent-rgb)/0.20)] text-[var(--tv-highlight)] flex items-center justify-center shrink-0">
                 <SlidersHorizontal className="w-4 h-4" />
@@ -1600,7 +1481,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
                       className="inline-flex items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-xs text-slate-300 hover:border-[rgb(var(--tv-accent-rgb)/0.30)] hover:text-white transition"
                     >
                       <span className="font-semibold">{tp.name}</span>
-                      <span className="text-[10px] text-[var(--tv-highlight)]">
+                      <span className="tv-num text-[10px] text-[var(--tv-highlight)]">
                         {tp.items.length} ✓
                       </span>
                     </button>
@@ -1653,7 +1534,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
                   </div>
                 )}
 
-                <div className="tv-label text-slate-500">
+                <div className="tv-num tv-label text-slate-500">
                   {t("chk.cfgChecklist")} ({nActive}/{config.items.length})
                 </div>
                 <div className="text-[11px] text-slate-500">{t("chk.cfgDragHint")}</div>
@@ -2083,14 +1964,14 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
             </div>
           </>
         )}
-      </div>
+      </PageContainer>
 
       {/* ══ VOICE WIDGET — Jarvis speaking indicator ══
           `--tv-z-fab` + bottom-28 on mobile keeps it clear of (and above) the bottom
           nav and the FAB; a floating pill, never hidden. */}
       {voice.show && (
         <div className="fixed z-[var(--tv-z-fab)] left-1/2 -translate-x-1/2 bottom-28 md:bottom-8 w-[min(360px,calc(100vw-2rem))] animate-slide-up">
-          <div className="relative flex items-center gap-3 rounded-2xl border border-[rgb(var(--tv-accent-rgb)/0.25)] glass-strong px-3.5 py-3">
+          <div className="relative flex items-center gap-3 rounded-2xl border border-[var(--tv-border)] glass px-3.5 py-3">
             <div className="pointer-events-none absolute -inset-px rounded-2xl tv-accent-fill opacity-60" />
             <span className="relative flex items-center justify-center w-8 h-8 rounded-lg tv-accent-fill shrink-0">
               {voice.speaking && (

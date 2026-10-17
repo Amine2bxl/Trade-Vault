@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Tag, Plus, Trash2, ShieldCheck, Users, Power, ChevronDown } from "lucide-react";
+import { Tag, Plus, Trash2, ShieldCheck, Users, Power, ChevronDown } from "@/shared/ui/icons";
 import { supabase } from "@/integrations/supabase/client";
 import { useT } from "@/app/i18n/LanguageContext";
 import { useToast } from "@/app/contexts/ToastContext";
@@ -348,7 +348,7 @@ export default function PromoCodeSection() {
                                 ? "Invite"
                                 : `-${p.discount_percent ?? 0}%`}
                           </span>
-                          <span className="tv-figure text-[10px] text-slate-600">
+                          <span className="tv-figure tv-figure-secondary text-[10px] text-slate-600">
                             {new Date(r.created_at).toLocaleDateString()}
                           </span>
                           <button

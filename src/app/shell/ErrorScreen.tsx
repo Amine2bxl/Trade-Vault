@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Home, RotateCw } from "lucide-react";
+import { Home, RotateCw } from "@/shared/ui/icons";
 import logoSrc from "@/assets/tradevault-logo-128.png";
 
 /**

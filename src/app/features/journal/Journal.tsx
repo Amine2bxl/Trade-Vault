@@ -13,10 +13,9 @@ import {
   Minus,
   Download,
   Target,
-  SlidersHorizontal,
   ClipboardCheck,
   Cable,
-} from "lucide-react";
+} from "@/shared/ui/icons";
 import { Trade, isBreakEven } from "@/app/types";
 import {
   computeStats,
@@ -38,7 +37,9 @@ import {
   Button,
   EmptyState,
   Card,
-  Modal,
+  PageControls,
+  FilterControls,
+  FilterSection,
   Kpi,
   KpiGrid,
   SelectPicker,
@@ -254,7 +255,6 @@ export default function Journal({
     );
   };
 
-  const [filtersOpen, setFiltersOpen] = useState(false);
   const jours = useMemo(() => dayNames(intlLocale(lang)), [lang]);
 
   /* Le compteur du bouton « Filtres » ne compte QUE ce qui est dans la
@@ -299,15 +299,6 @@ export default function Journal({
       .filter((i) => (i >= 1 && i <= 5 ? true : traded.has(i) || days.includes(String(i))))
       .map((i) => ({ value: String(i), label: jours[i] }));
   }, [jours, trades, days]);
-  /* Sur téléphone, six setups d'abord ; les autres derrière « +N ». */
-  const [allSetups, setAllSetups] = useState(false);
-  const SETUPS_FIRST = 6;
-  const setupChips =
-    allSetups || strategyOptions.length <= SETUPS_FIRST + 1
-      ? strategyOptions
-      : strategyOptions.slice(0, SETUPS_FIRST);
-  const toggleSetup = (v: string) =>
-    setStrategies(strategies.includes(v) ? strategies.filter((x) => x !== v) : [...strategies, v]);
   const periodPresets: { value: PeriodPreset; label: string }[] = [
     { value: "all", label: t("common.all") },
     { value: "7d", label: t("common.7d") },
@@ -365,61 +356,64 @@ export default function Journal({
   const headerActions = useMemo(
     () => (
       <div className="flex items-center gap-2 shrink-0">
-        {pendingReview.length > 0 && (
+        <PageControls label={t("common.more")} closeOnAction>
+          {pendingReview.length > 0 && (
+            <Button
+              variant="subtle"
+              size="sm"
+              onClick={() => onEdit(pendingReview[0])}
+              title={t("journal.reviewPending").replace("{n}", String(pendingReview.length))}
+              className="border-[var(--tv-border-accent)] text-[var(--tv-accent)]"
+            >
+              <ClipboardCheck className="h-3.5 w-3.5" />
+              <span className="tv-figure">{pendingReview.length}</span>
+              <span className="hidden md:inline">{t("journal.reviewNow")}</span>
+            </Button>
+          )}
+          {/* Le chemin vers la synchro automatique, là où l'on saisit ses
+            trades à la main : c'est ici qu'on se demande si on pourrait ne
+            plus le faire. */}
           <Button
             variant="subtle"
             size="sm"
-            onClick={() => onEdit(pendingReview[0])}
-            title={t("journal.reviewPending").replace("{n}", String(pendingReview.length))}
-            className="border-[var(--tv-border-accent)] text-[var(--tv-accent)]"
+            onClick={() =>
+              window.dispatchEvent(new CustomEvent("tv:navigate", { detail: { page: "brokers" } }))
+            }
+            title={t("journal.connectBroker")}
           >
-            <ClipboardCheck className="h-3.5 w-3.5" />
-            <span className="tv-figure">{pendingReview.length}</span>
-            <span className="hidden md:inline">{t("journal.reviewNow")}</span>
+            <Cable className="h-3.5 w-3.5" />
+            <span className="hidden lg:inline">{t("nav.brokers")}</span>
           </Button>
-        )}
-        {/* Le chemin vers la synchro automatique, là où l'on saisit ses
-            trades à la main : c'est ici qu'on se demande si on pourrait ne
-            plus le faire. */}
-        <Button
-          variant="subtle"
-          size="sm"
-          onClick={() =>
-            window.dispatchEvent(new CustomEvent("tv:navigate", { detail: { page: "brokers" } }))
-          }
-          title={t("journal.connectBroker")}
-        >
-          <Cable className="h-3.5 w-3.5" />
-          <span className="hidden lg:inline">{t("nav.brokers")}</span>
-        </Button>
-        <Button variant="subtle" size="sm" onClick={() => exportTradesCSV(trades)}>
-          <Download className="w-3.5 h-3.5" />
-          <span className="hidden md:inline">{t("common.exportCsv")}</span>
-        </Button>
-        <Button
-          variant="subtle"
-          size="sm"
-          onClick={onDeleteAll}
-          className="text-slate-400 hover:text-red-300 hover:border-red-500/25"
-        >
-          <Trash className="w-3.5 h-3.5" />
-          <span className="hidden md:inline">{t("common.deleteAll")}</span>
-        </Button>
-        {/* Il vivait au milieu de la RANGÉE DE FILTRES, en vert plein : une
+          <Button variant="subtle" size="sm" onClick={() => exportTradesCSV(trades)}>
+            <Download className="w-3.5 h-3.5" />
+            <span className="hidden md:inline">{t("common.exportCsv")}</span>
+          </Button>
+          <Button
+            variant="subtle"
+            size="sm"
+            onClick={onDeleteAll}
+            className="text-slate-400 hover:text-red-300 hover:border-red-500/25"
+          >
+            <Trash className="w-3.5 h-3.5" />
+            <span className="hidden md:inline">{t("common.deleteAll")}</span>
+          </Button>
+          {/* Il vivait au milieu de la RANGÉE DE FILTRES, en vert plein : une
             navigation posée entre deux listes déroulantes. Sa place est ici,
             avec les autres actions de la page — en `subtle`, parce que la
             barre porte déjà un vert (« ajouter un trade ») et que deux verts
             se disputent. */}
-        <Button variant="subtle" size="sm" onClick={onOpenMissed} title={t("missed.title")}>
-          <Target className="h-3.5 w-3.5" />
-          <span className="hidden md:inline">{t("missed.title")}</span>
-        </Button>
-        <Button variant="accent" size="sm" onClick={onAdd} className="hidden md:inline-flex">
-          <Plus className="w-4 h-4" /> {t("common.addTrade")}
-        </Button>
+          <Button variant="subtle" size="sm" onClick={onOpenMissed} title={t("missed.title")}>
+            <Target className="h-3.5 w-3.5" />
+            <span className="hidden md:inline">{t("missed.title")}</span>
+          </Button>
+        </PageControls>
+        <div className="hidden md:block">
+          <Button variant="entry" size="sm" onClick={onAdd}>
+            <Plus className="w-4 h-4" /> {t("common.addTrade")}
+          </Button>
+        </div>
       </div>
     ),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [trades, pendingReview, onEdit, onDeleteAll, onAdd, onOpenMissed, t],
   );
   usePageActions(headerActions);
@@ -440,7 +434,7 @@ export default function Journal({
     <div className="py-3 text-center">
       <button
         onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
-        className="rounded-xl border border-white/[0.08] bg-white/[0.04] px-5 py-2.5 text-xs font-semibold text-slate-300 transition hover:bg-white/[0.08]"
+        className="tv-num rounded-xl border border-white/[0.08] bg-white/[0.04] px-5 py-2.5 text-xs font-semibold text-slate-300 transition hover:bg-white/[0.08]"
       >
         {t("journal.loadMore")} ({filtered.length - visibleCount})
       </button>
@@ -475,7 +469,7 @@ export default function Journal({
         {/* Deep-link filter actif — un chip qui permet de revenir à la vue complète */}
         {deepFilter.trades && deepFilter.trades.length > 0 && (
           <div className="mb-2.5 md:mb-3 flex shrink-0 items-center gap-2 rounded-xl border border-cyan-500/20 bg-cyan-500/[0.06] px-3 py-2 text-xs">
-            <span className="text-cyan-300 font-semibold">
+            <span className="tv-num text-cyan-300 font-semibold">
               {deepFilter.trades.length} {t("common.trades")} · {t("journal.fromJarvis")}
             </span>
             <button
@@ -487,254 +481,125 @@ export default function Journal({
           </div>
         )}
 
-        {/* ── LA BARRE DE FILTRES — UNE SEULE RANGÉE ──
-          Elle en occupait DEUX sur bureau, et la seconde portait, en plus de
-          deux listes, le bouton vert « setups manqués » : une NAVIGATION posée
-          au milieu de filtres, du vert au centre de l'écran là où le vert doit
-          rester l'action principale. Ce bouton est remonté dans la barre de
-          tête, avec les autres actions de la page.
-
-          Ce qui a sauté : le filtre de DURÉE. Ses cinq intitulés étaient écrits
-          en français en dur (« Toute durée », « 30 min – 1h »…) dans une
-          application traduite en douze langues, il ne fonctionnait que sur les
-          trades ayant une heure d'entrée ET de sortie, et il répondait à une
-          question que personne ne pose en ouvrant son journal.
-
-          Ce qui a changé : les listes portent leur NOM. Deux pastilles marquées
-          « All » côte à côte ne disent pas ce qu'elles filtrent — il fallait
-          les ouvrir pour savoir laquelle était la période et laquelle la
-          stratégie.
-
-          La bascule passe de `md` à `lg` : sur une tablette, le rail laisse
-          570px de contenu, où cinq contrôles ne tiennent pas sur une ligne. En
-          dessous, la feuille de filtres prend le relais. */}
-        <div className="mb-2.5 flex shrink-0 flex-wrap items-center gap-1.5 md:mb-3">
+        {/* Recherche directe ; tous les critères dans le même panneau sur PC et mobile. */}
+        <div className="mb-2.5 flex shrink-0 items-center gap-2 md:mb-3">
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={t("journal.searchPlaceholder")}
             enterKeyHint="search"
-            className="h-11 min-w-0 flex-1 rounded-xl border border-white/[0.06] bg-white/[0.03] px-3 text-sm text-slate-200 outline-none transition-colors placeholder:text-slate-600 focus:border-[var(--tv-border-accent)] lg:h-9 lg:w-44 lg:flex-none"
+            className="h-11 min-w-0 flex-1 rounded-xl border border-white/[0.06] bg-white/[0.03] px-3 text-sm text-slate-200 outline-none transition-colors placeholder:text-slate-600 focus:border-[var(--tv-border-accent)] md:h-9 md:max-w-sm"
           />
-          {/* Le bouton n'existe que sous `lg` — au-dessus les listes sont
-            directement là, il n'aurait rien à ouvrir. */}
-          <button
-            type="button"
-            onClick={() => setFiltersOpen(true)}
-            aria-haspopup="dialog"
-            className="flex h-11 shrink-0 items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.03] px-3.5 text-sm font-semibold text-slate-300 transition-colors active:bg-white/[0.07] lg:hidden"
+          <FilterControls
+            label={t("common.filters")}
+            count={activeFilterCount}
+            summary={[
+              period.kind === "custom"
+                ? `${period.from} – ${period.to}`
+                : period.preset !== "all"
+                  ? periodPresets.find((p) => p.value === period.preset)?.label
+                  : "",
+              resultFilter !== "all" ? t(`common.${resultFilter}`) : "",
+              ...strategies,
+              ...days.map((d) => jours[Number(d)]),
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+            onReset={() => {
+              resetFilters();
+              setResultFilter("all");
+              setSearchQuery("");
+            }}
+            resetLabel={t("common.reset")}
+            doneLabel={t("common.done")}
+            liveLabel={t("filters.live")}
           >
-            <SlidersHorizontal className="h-4 w-4" />
-            {t("common.filters")}
-            {sheetFilterCount > 0 && (
-              <span className="tv-figure tv-accent-fill grid h-5 min-w-[20px] place-items-center rounded-full px-1 text-[11px]">
-                {sheetFilterCount}
-              </span>
-            )}
-          </button>
-
-          <div className="hidden items-center gap-1.5 lg:flex">
-            <RangePicker
+            <FilterSection
               label={t("common.period")}
-              value={period}
-              presets={periodPresets}
-              onChange={setPeriod}
-              neutralPreset="all"
-              {...rangeText}
-            />
-            <MultiPicker
-              label={t("journal.colStrategy")}
-              values={strategies}
-              options={strategyOptions}
-              onChange={setStrategies}
-              {...pickerText}
-            />
-            <MultiPicker
-              label={t("journal.filterDay")}
-              values={days}
-              options={dayOptions}
-              onChange={setDays}
-              {...pickerText}
-            />
-            <SelectPicker
-              label={t("sort.label")}
-              value={sortChoice}
-              options={sortOptions}
-              onChange={pickSort}
-              neutralValue="date-desc"
-            />
-          </div>
-
-          {/* Le segment RÉSULTAT — le filtre qu'on touche vraiment, et le seul
-            qui porte des compteurs. */}
-          <div className="flex w-full items-center gap-1 rounded-xl border border-white/[0.06] bg-white/[0.03] p-1 lg:w-auto lg:flex-none">
-            {(
-              [
-                { v: "all", label: t("common.all") },
-                { v: "win", label: t("common.win") },
-                { v: "loss", label: t("common.loss") },
-                { v: "be", label: t("common.be") },
-              ] as { v: ResultFilter; label: string }[]
-            ).map((opt) => (
-              <button
-                key={opt.v}
-                onClick={() => setResultFilter(opt.v)}
-                className={cn(
-                  "flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg px-2 text-xs font-semibold transition lg:h-8 lg:flex-none lg:px-3",
-                  resultFilter === opt.v
-                    ? opt.v === "win"
-                      ? "bg-emerald-500/15 text-emerald-400"
-                      : opt.v === "loss"
-                        ? "bg-red-500/15 text-red-400"
-                        : opt.v === "be"
-                          ? "bg-slate-500/20 text-slate-200"
-                          : "bg-cyan-500/15 text-cyan-400"
-                    : "text-slate-500 hover:text-slate-300",
-                )}
-              >
-                {opt.label}
-                <span
-                  className={cn(
-                    "tv-figure text-[10px]",
-                    resultFilter === opt.v ? "opacity-70" : "text-slate-600",
-                  )}
-                >
-                  {counts[opt.v]}
-                </span>
-              </button>
-            ))}
-          </div>
-
-          {/* Il n'apparaît que s'il y a quelque chose à effacer. */}
-          {activeFilterCount > 0 && (
-            <button
-              type="button"
-              onClick={() => {
-                resetFilters();
-                setResultFilter("all");
-                setSearchQuery("");
-              }}
-              className="hidden h-9 shrink-0 items-center gap-1 rounded-xl px-2.5 text-xs font-semibold text-slate-500 transition-colors hover:bg-white/[0.04] hover:text-white lg:inline-flex"
+              summary={
+                period.kind === "custom"
+                  ? `${period.from} – ${period.to}`
+                  : periodPresets.find((p) => p.value === period.preset)?.label
+              }
+              defaultOpen
             >
-              {t("common.reset")}
-            </button>
-          )}
-        </div>
-
-        {/* LA FEUILLE DE FILTRES — sous `lg`, là où la barre ne tient pas.
-            Elle était montée sous `md` seulement alors que son bouton existe
-            jusqu'à `lg` : sur une tablette, « Filtres » n'ouvrait rien.
-
-            TOUT TIENT SANS DÉFILER, même sur un iPhone SE. Ce qui la faisait
-            défiler : une quinzaine de setups (presets compris, la plupart sans
-            un seul trade), sept jours dont deux jamais tradés, six pastilles de
-            tri et un lien de navigation (« setups manqués », déjà dans la
-            barre de tête). Restent les setups tradés — six d'abord —, les
-            jours ouvrés, et le tri en une liste compacte dans le pied. */}
-        <Modal
-          open={filtersOpen}
-          onClose={() => setFiltersOpen(false)}
-          wrapperClassName="z-[var(--tv-z-modal)] lg:hidden"
-          className="md:max-w-md"
-        >
-          <div className="flex items-center justify-between px-5 pb-1 pt-4">
-            <h2 className="tv-title">{t("common.filters")}</h2>
-            {sheetFilterCount > 0 && (
-              <button
-                type="button"
-                onClick={resetFilters}
-                className="text-[13px] font-semibold text-slate-400 active:text-white"
-              >
-                {t("common.reset")}
-              </button>
-            )}
-          </div>
-          <div className="space-y-3.5 px-4 pb-2 pt-1">
-            <RangePicker
-              inline
-              label={t("common.period")}
-              value={period}
-              presets={periodPresets}
-              onChange={setPeriod}
-              neutralPreset="all"
-              className="[&>div]:p-0"
-              {...rangeText}
-            />
-            {strategyOptions.length > 0 && (
-              <div className="tv-pick-inline">
-                <span className="tv-label mb-1.5 block text-slate-500">
-                  {t("journal.colStrategy")}
-                </span>
-                <div className="tv-pick-chips">
-                  <button
-                    type="button"
-                    aria-pressed={strategies.length === 0}
-                    onClick={() => setStrategies([])}
-                    className={cn("tv-pick-chip", strategies.length === 0 && "tv-pick-chip-on")}
-                  >
-                    {t("common.all")}
-                  </button>
-                  {setupChips.map((o) => {
-                    const on = strategies.includes(o.value);
-                    return (
-                      <button
-                        key={o.value}
-                        type="button"
-                        aria-pressed={on}
-                        onClick={() => toggleSetup(o.value)}
-                        className={cn("tv-pick-chip max-w-full", on && "tv-pick-chip-on")}
-                      >
-                        <span className="truncate">{o.label}</span>
-                        <span className="tv-figure opacity-60">{o.count}</span>
-                      </button>
-                    );
-                  })}
-                  {setupChips.length < strategyOptions.length && (
-                    <button
-                      type="button"
-                      onClick={() => setAllSetups(true)}
-                      className="tv-pick-chip border-dashed"
-                    >
-                      +{strategyOptions.length - setupChips.length}
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
-            <MultiPicker
-              inline
-              label={t("journal.filterDay")}
-              values={days}
-              options={dayOptions}
-              onChange={setDays}
-              {...pickerText}
-            />
-          </div>
-          <div className="flex items-center gap-2 border-t border-[var(--tv-border)] px-4 py-3">
-            <div className="min-w-0 flex-1">
+              <RangePicker
+                inline
+                label={t("common.period")}
+                value={period}
+                presets={periodPresets}
+                onChange={setPeriod}
+                neutralPreset="all"
+                {...rangeText}
+              />
+            </FilterSection>
+            <FilterSection
+              label={t("tradeDetail.result")}
+              summary={resultFilter === "all" ? t("common.all") : t(`common.${resultFilter}`)}
+            >
               <SelectPicker
+                inline
+                label={t("tradeDetail.result")}
+                value={resultFilter}
+                onChange={setResultFilter}
+                options={(["all", "win", "loss", "be"] as const).map((v) => ({
+                  value: v,
+                  label: t(`common.${v}`),
+                  count: counts[v],
+                }))}
+              />
+            </FilterSection>
+            {strategyOptions.length > 0 && (
+              <FilterSection
+                label={t("journal.colStrategy")}
+                summary={strategies.length ? strategies.join(", ") : t("common.all")}
+              >
+                <MultiPicker
+                  inline
+                  label={t("journal.colStrategy")}
+                  values={strategies}
+                  options={strategyOptions}
+                  onChange={setStrategies}
+                  {...pickerText}
+                  moreLabel={t("filters.more")}
+                  lessLabel={t("filters.less")}
+                />
+              </FilterSection>
+            )}
+            <FilterSection
+              label={t("journal.filterDay")}
+              summary={days.length ? days.map((d) => jours[Number(d)]).join(", ") : t("common.all")}
+            >
+              <MultiPicker
+                inline
+                label={t("journal.filterDay")}
+                values={days}
+                options={dayOptions}
+                onChange={setDays}
+                {...pickerText}
+              />
+            </FilterSection>
+            <FilterSection
+              label={t("sort.label")}
+              summary={sortOptions.find((o) => o.value === sortChoice)?.label}
+            >
+              <SelectPicker
+                inline
                 label={t("sort.label")}
                 value={sortChoice}
                 options={sortOptions}
                 onChange={pickSort}
                 neutralValue="date-desc"
               />
-            </div>
-            <button
-              type="button"
-              onClick={() => setFiltersOpen(false)}
-              className="btn-primary shrink-0 px-5"
-            >
-              {t("common.done")}
-            </button>
-          </div>
-        </Modal>
+            </FilterSection>
+          </FilterControls>
+        </div>
 
         {/* ── Mobile: Card List ── */}
         <div
           onScroll={onListScroll}
-          className="journal-scroll min-h-0 flex-1 space-y-1.5 overflow-y-auto overscroll-contain md:hidden"
+          className="journal-scroll min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain md:hidden"
         >
           {trades.length === 0 ? (
             <EmptyState
@@ -768,94 +633,99 @@ export default function Journal({
               const be = isBreakEven(trade);
               return (
                 <div key={trade.id} className="glass rounded-xl overflow-hidden trade-card">
-                  <div className="flex items-center gap-2 px-2.5 py-1.5">
-                    <button
-                      type="button"
-                      className="flex-1 min-w-0 flex items-center gap-2.5 text-left active:opacity-70 transition-opacity"
-                      onClick={() => setViewingIdx(i)}
+                  {/* Le montant et l'instrument gardent toute la largeur ; les
+                      actions vivent dessous plutôt que de rogner le symbole. */}
+                  <button
+                    type="button"
+                    className="grid min-h-11 w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-3 pb-2 pt-3 text-left transition-opacity active:opacity-70"
+                    onClick={() => setViewingIdx(i)}
+                  >
+                    <span
+                      className={cn(
+                        "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
+                        be
+                          ? "bg-slate-500/10"
+                          : trade.pnl >= 0
+                            ? "bg-emerald-500/10"
+                            : "bg-red-500/10",
+                      )}
                     >
-                      <div
+                      {be ? (
+                        <Minus className="h-4 w-4 text-slate-300" />
+                      ) : trade.pnl >= 0 ? (
+                        <ArrowUpRight className="h-4 w-4 text-emerald-400" />
+                      ) : (
+                        <ArrowDownRight className="h-4 w-4 text-red-400" />
+                      )}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="flex items-center gap-1.5">
+                        <span className="truncate text-sm font-semibold text-white">
+                          {trade.symbol}
+                        </span>
+                        <span
+                          className={cn(
+                            "shrink-0 rounded px-1.5 py-0.5 text-xs font-semibold leading-none",
+                            directionBadgeClass(trade.direction),
+                          )}
+                        >
+                          {directionLabel(trade.direction)}
+                        </span>
+                      </span>
+                      <span className="tv-num tv-prose text-slate-500">
+                        {formatShortDate(trade.date)}
+                      </span>
+                    </span>
+                    <span className="shrink-0 text-right">
+                      <span
                         className={cn(
-                          "w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
+                          "tv-figure block text-sm leading-tight",
                           be
-                            ? "bg-slate-500/10"
+                            ? "text-slate-300"
                             : trade.pnl >= 0
-                              ? "bg-emerald-500/10"
-                              : "bg-red-500/10",
+                              ? "text-emerald-400"
+                              : "text-red-400",
                         )}
                       >
-                        {be ? (
-                          <Minus className="w-4 h-4 text-slate-300" />
-                        ) : trade.pnl >= 0 ? (
-                          <ArrowUpRight className="w-4 h-4 text-emerald-400" />
-                        ) : (
-                          <ArrowDownRight className="w-4 h-4 text-red-400" />
+                        {formatPnl(trade.pnl)}
+                      </span>
+                      <span
+                        className={cn(
+                          "tv-figure tv-figure-secondary block text-xs",
+                          be
+                            ? "text-slate-400"
+                            : trade.rMultiple >= 0
+                              ? "text-emerald-400/60"
+                              : "text-red-400/60",
                         )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[13px] font-bold text-white truncate">
-                            {trade.symbol}
-                          </span>
-                          <span
-                            className={cn(
-                              "text-[11px] font-bold px-1.5 py-0.5 rounded leading-none",
-                              directionBadgeClass(trade.direction),
-                            )}
-                          >
-                            {directionLabel(trade.direction)}
-                          </span>
-                          {trade.isExample && (
-                            <span className="text-[11px] font-bold px-1.5 py-0.5 rounded leading-none bg-amber-500/15 text-amber-400 border border-amber-500/25">
-                              {t("journal.exampleBadge")}
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-[10px] text-slate-500 truncate">
-                          {trade.strategy} · {formatShortDate(trade.date)}
-                        </div>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <div
-                          className={cn(
-                            "text-[13px] font-bold leading-tight",
-                            be
-                              ? "text-slate-300"
-                              : trade.pnl >= 0
-                                ? "text-emerald-400"
-                                : "text-red-400",
-                          )}
-                        >
-                          {formatPnl(trade.pnl)}
-                        </div>
-                        <div
-                          className={cn(
-                            "text-[10px] font-semibold",
-                            be
-                              ? "text-slate-300/60"
-                              : trade.rMultiple >= 0
-                                ? "text-emerald-400/60"
-                                : "text-red-400/60",
-                          )}
-                        >
-                          {trade.rMultiple.toFixed(1)}R
-                        </div>
-                      </div>
-                    </button>
-                    <div className="flex items-center shrink-0 -mr-1">
+                      >
+                        {trade.rMultiple.toFixed(1)}R
+                      </span>
+                    </span>
+                  </button>
+                  <div className="flex min-w-0 items-center gap-2 border-t border-[var(--tv-border)] px-3">
+                    <span className="tv-prose min-w-0 flex-1 truncate text-slate-500">
+                      {trade.strategy}
+                    </span>
+                    {trade.isExample && (
+                      <span className="tv-label shrink-0 text-amber-400">
+                        {t("journal.exampleBadge")}
+                      </span>
+                    )}
+                    <div className="-mr-2 flex shrink-0 items-center">
                       <button
                         onClick={() => onEdit(trade)}
                         aria-label={t("common.edit")}
-                        className="w-11 h-11 -my-2 rounded-lg flex items-center justify-center text-slate-500 active:bg-cyan-500/10 active:text-cyan-400 transition-colors"
+                        className="flex h-11 w-11 items-center justify-center rounded-lg text-slate-500 transition-colors active:bg-cyan-500/10 active:text-cyan-400"
                       >
-                        <Pencil className="w-3.5 h-3.5" />
+                        <Pencil className="h-3.5 w-3.5" />
                       </button>
                       <button
                         onClick={() => onDelete(trade.id)}
                         aria-label={t("common.delete")}
-                        className="w-11 h-11 -my-2 rounded-lg flex items-center justify-center text-slate-500 active:bg-red-500/10 active:text-red-400 transition-colors"
+                        className="flex h-11 w-11 items-center justify-center rounded-lg text-slate-500 transition-colors active:bg-red-500/10 active:text-red-400"
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <Trash2 className="h-3.5 w-3.5" />
                       </button>
                     </div>
                   </div>
@@ -934,7 +804,7 @@ export default function Journal({
                         className="group cursor-pointer transition-colors hover:bg-white/[0.03]"
                         onClick={() => setViewingIdx(i)}
                       >
-                        <td className="px-4 py-1.5 text-sm text-slate-300">
+                        <td className="tv-num px-4 py-1.5 text-sm text-slate-300">
                           {formatShortDate(trade.date)}
                         </td>
                         <td className="px-4 py-1.5">
@@ -949,7 +819,7 @@ export default function Journal({
                         <td className="px-4 py-1.5">
                           <span
                             className={cn(
-                              "text-sm font-bold",
+                              "tv-figure text-sm",
                               be
                                 ? "text-slate-300"
                                 : trade.pnl >= 0
@@ -969,7 +839,7 @@ export default function Journal({
                             onCommit={(v) => onQuickEdit?.(trade.id, { rMultiple: v })}
                             title={t("journal.quickEditR")}
                             className={cn(
-                              "text-sm font-bold",
+                              "tv-figure text-sm",
                               be
                                 ? "text-slate-300"
                                 : trade.rMultiple >= 0
@@ -1113,7 +983,7 @@ function QuickEditCell({
 
   if (disabled) {
     return (
-      <span className={className}>
+      <span className={`tv-num ${className ?? ""}`}>
         {prefix}
         {value.toFixed(decimals)}
         {suffix}
@@ -1156,6 +1026,7 @@ function QuickEditCell({
          c'est la zone qui s'ouvre, et le `-mx-1 -my-1` empêche la colonne de
          s'élargir pour autant. */
       className={cn(
+        "tv-num",
         className,
         "-mx-1 -my-1 inline-flex h-8 items-center rounded-md px-1 text-left transition-colors",
         "hover:bg-white/[0.08] hover:ring-1 hover:ring-cyan-500/30",

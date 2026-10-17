@@ -8,7 +8,7 @@ import {
   Bitcoin,
   Lock,
   Infinity as Infini,
-} from "lucide-react";
+} from "@/shared/ui/icons";
 import { cn } from "@/shared/ui/cn";
 import PrixAnime from "./PrixAnime";
 import { LIMITS } from "@/domain/plans";
@@ -128,7 +128,7 @@ export default function PricingPlans({
             >
               {value === "monthly" ? (fr ? "Mensuel" : "Monthly") : fr ? "Annuel" : "Yearly"}
               {value === "yearly" && (
-                <span className="ml-1.5 text-[11px] font-bold text-emerald-400">
+                <span className="tv-num ml-1.5 text-[11px] font-bold text-emerald-400">
                   −{monthsFree("pro")} {fr ? "mois" : "mo."}
                 </span>
               )}
@@ -272,7 +272,7 @@ function PlanColumn({
             {fr ? "facturé" : "billed"} {eur(tier.yearly, lang)}
             {fr ? "/an" : "/yr"}
             {!current && (
-              <span className="ml-2 text-emerald-400">
+              <span className="tv-num ml-2 text-emerald-400">
                 {monthsFree(tier.id)} {fr ? "mois offerts" : "mo. free"}
               </span>
             )}

@@ -15,7 +15,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Dices, ShieldAlert, Target, TrendingDown, Info, Scale } from "lucide-react";
+import { Dices, ShieldAlert, Target, TrendingDown, Info, Scale } from "@/shared/ui/icons";
 import type { Trade } from "@/app/types";
 import { useT } from "@/app/i18n/LanguageContext";
 import { useAccounts } from "@/app/contexts/AccountContext";
@@ -319,7 +319,7 @@ export default function Simulator({ trades }: { trades: Trade[] }) {
                         {t(`sim.dd.${s.rules.drawdownType ?? "static"}` as never)}
                       </span>
                       {s.lastRiskOfRuin !== null && (
-                        <span className="tv-figure block text-[11px] text-slate-500">
+                        <span className="tv-figure tv-figure-secondary block text-[11px] text-slate-500">
                           {t("sim.ruinShort")} {pct(s.lastRiskOfRuin)}
                           {s.lastSampleSize !== null && ` · n=${s.lastSampleSize}`}
                         </span>

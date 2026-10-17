@@ -1,0 +1,863 @@
+/* Contrat visuel commun à tous les champs et sélecteurs.
+   Comportement : SelectionPanel.tsx. API : selection.ts. */
+.tv-pop {
+  border-radius: 1rem;
+  border: 1px solid var(--tv-border-strong);
+  background: var(--tv-plate-3);
+  box-shadow: var(--tv-elev-3);
+}
+
+/* ══ LES SÉLECTEURS (`shared/ui/Picker.tsx`) ══════════════════════════════
+   La même plaque que le calendrier et la roue d'heure (`.tv-pop`) : on
+   reconnaît un sélecteur TradeVault à sa surface, pas à sa place. */
+
+.tv-pick-in {
+  animation: fade-in var(--tv-dur-1) var(--tv-ease) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tv-pick-in {
+    animation: none;
+  }
+}
+
+.tv-pick-veil {
+  background: rgb(0 0 0 / 0.55);
+}
+
+/* Le déclencheur « pastille » : le NOM du filtre, puis sa valeur. */
+
+.tv-pick-pill {
+  display: inline-flex;
+  height: 2.25rem;
+  max-width: 100%;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid transparent;
+  background: transparent;
+  padding: 0 8px;
+  transition-property: background-color, border-color;
+  transition-duration: var(--tv-dur-1);
+}
+
+.tv-pick-pill:hover:not(:disabled) {
+  border-color: var(--tv-border-strong);
+}
+
+.tv-pick-pill-open {
+  border-color: var(--tv-border-strong);
+  background: var(--tv-plate-3);
+}
+
+.tv-pick-pill-value {
+  max-width: 9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--tv-text-secondary);
+}
+
+.tv-pick-pill-on {
+  border-color: var(--tv-border);
+  background: var(--tv-plate-2);
+}
+
+.tv-pick-pill-on .tv-pick-pill-value {
+  color: var(--tv-text-primary);
+}
+
+/* La recherche, en tête de longue liste. */
+
+.tv-pick-search {
+  display: flex;
+  height: 2.25rem;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 0.7rem;
+  border: 1px solid var(--tv-border);
+  background: var(--tv-plate-2);
+  padding: 0 0.65rem;
+}
+
+.tv-pick-search:focus-within {
+  border-color: var(--tv-border-accent);
+}
+
+.tv-pick-search:focus {
+  border-color: var(--tv-border-accent);
+}
+
+/* ── Le sélecteur de couleur : même famille que les autres sélecteurs ──
+   Le déclencheur est une rangée en relief (pastille + nom + famille), les
+   pastilles de la palette sont des plaques colorées avec un liseré interne
+   pour qu'un ton sombre ne se perde pas sur le panneau. */
+
+.tv-color-trigger {
+  border: 1px solid var(--tv-border);
+  border-radius: 0.875rem;
+  background: var(--tv-plate-2);
+  padding: 0.55rem 0.75rem 0.55rem 0.55rem;
+  box-shadow: var(--tv-relief-edge);
+  transition: border-color var(--tv-dur-1) var(--tv-ease);
+}
+
+.tv-color-trigger:hover {
+  border-color: var(--tv-border-strong);
+}
+
+.tv-color-trigger.is-open {
+  border-color: var(--tv-border-accent);
+}
+
+.tv-color-chip {
+  border-radius: 0.625rem;
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.14),
+    0 1px 2px rgb(0 0 0 / 0.45);
+}
+
+.tv-color-swatch {
+  display: grid;
+  place-items: center;
+  border-radius: 0.625rem;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.1);
+  transition:
+    transform var(--tv-dur-1) var(--tv-ease),
+    box-shadow var(--tv-dur-1) var(--tv-ease);
+}
+
+@media (hover: hover) {
+  .tv-color-swatch:hover {
+    transform: scale(1.06);
+  }
+}
+
+.tv-color-swatch.is-on {
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.2),
+    0 0 0 2px var(--tv-plate-2),
+    0 0 0 3.5px var(--tv-text-primary, #f4f6f8);
+}
+
+/* Une option : la case (ou le point), le libellé, le compte. */
+
+.tv-pick-opt {
+  display: flex;
+  width: 100%;
+  min-height: 2.25rem;
+  align-items: center;
+  gap: 0.6rem;
+  border-radius: 0.6rem;
+  padding: 0.35rem 0.6rem;
+  text-align: left;
+  font-size: 0.8125rem;
+  color: var(--tv-text-secondary);
+  transition-property: background-color, color;
+  transition-duration: var(--tv-dur-1);
+}
+
+.tv-pick-opt:hover {
+  outline: none;
+  background: rgb(255 255 255 / 0.06);
+  color: var(--tv-text-primary);
+}
+
+.tv-pick-opt:focus-visible {
+  outline: none;
+  background: rgb(255 255 255 / 0.06);
+  color: var(--tv-text-primary);
+}
+
+.tv-pick-opt-on {
+  background: var(--tv-plate-3);
+  border-color: var(--tv-border-strong);
+  color: var(--tv-text-primary);
+}
+
+.tv-pick-box {
+  display: grid;
+  height: 1.05rem;
+  width: 1.05rem;
+  flex-shrink: 0;
+  place-items: center;
+  border: 1px solid var(--tv-border-strong);
+  background: var(--tv-plate-1);
+  color: #04120b;
+  transition-property: background-color, border-color;
+  transition-duration: var(--tv-dur-1);
+  border-radius: 0.3rem;
+}
+
+.tv-pick-dot {
+  display: grid;
+  height: 1.05rem;
+  width: 1.05rem;
+  flex-shrink: 0;
+  place-items: center;
+  border: 1px solid var(--tv-border-strong);
+  background: var(--tv-plate-1);
+  color: #04120b;
+  transition-property: background-color, border-color;
+  transition-duration: var(--tv-dur-1);
+  border-radius: 999px;
+}
+
+.tv-pick-box.is-on {
+  border-color: var(--tv-text-secondary);
+  background: var(--tv-text-secondary);
+  color: var(--tv-plate-0);
+}
+
+.tv-pick-dot.is-on {
+  border-color: var(--tv-text-secondary);
+  background: var(--tv-text-secondary);
+  color: var(--tv-plate-0);
+}
+
+/* Les pastilles à plat : raccourcis de période, filtres d'une feuille. */
+
+.tv-pick-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.tv-pick-chip {
+  display: inline-flex;
+  height: 2rem;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 0.6rem;
+  border: 1px solid var(--tv-border);
+  background: var(--tv-plate-2);
+  padding: 0 0.7rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--tv-text-secondary);
+  transition-property: background-color, border-color, color;
+  transition-duration: var(--tv-dur-1);
+}
+
+.tv-pick-chip:hover {
+  border-color: var(--tv-border-strong);
+  color: var(--tv-text-primary);
+}
+
+.tv-pick-chip-on {
+  background: var(--tv-plate-3);
+  border-color: var(--tv-border-strong);
+  color: var(--tv-text-primary);
+}
+
+.tv-pick-chip-on:hover {
+  background: var(--tv-plate-3);
+  border-color: var(--tv-border-strong);
+  color: var(--tv-text-primary);
+}
+
+/* Le pied d'un panneau : effacer, valider. */
+
+.tv-pick-foot {
+  display: inline-flex;
+  height: 2rem;
+  align-items: center;
+  border-radius: 0.6rem;
+  padding: 0 0.8rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--tv-text-secondary);
+  transition-property: background-color, color;
+  transition-duration: var(--tv-dur-1);
+}
+
+.tv-pick-foot:hover:not(:disabled) {
+  background: rgb(255 255 255 / 0.05);
+  color: var(--tv-text-primary);
+}
+
+.tv-pick-foot-main {
+  justify-content: center;
+  background: var(--tv-accent);
+  color: #04120b;
+}
+
+.tv-pick-foot-main:hover:not(:disabled) {
+  background: var(--tv-accent);
+  color: #04120b;
+}
+
+.tv-pop-nav {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.6rem;
+  color: var(--tv-text-secondary);
+  transition:
+    background 140ms ease,
+    color 140ms ease;
+}
+
+.tv-pop-nav:hover {
+  background: rgb(255 255 255 / 0.06);
+  color: var(--tv-text-primary);
+}
+
+/* La case d'un jour. 2rem de côté : trente-cinq cases dans un panneau de
+   17rem, et une cible qui reste cliquable au doigt. */
+
+.tv-pop-day {
+  display: grid;
+  place-items: center;
+  height: 2rem;
+  border-radius: 0.55rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--tv-text-secondary);
+  transition:
+    background 140ms ease,
+    color 140ms ease;
+}
+
+.tv-pop-day:hover:not(:disabled) {
+  background: rgb(255 255 255 / 0.07);
+  color: var(--tv-text-primary);
+}
+
+.tv-pop-day:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
+
+.tv-pop-day-on {
+  background: var(--tv-accent);
+  color: #fff;
+}
+
+.tv-pop-day-on:hover {
+  background: var(--tv-accent);
+  color: #fff;
+}
+
+/* Aujourd'hui : un point sous le chiffre, pas un cadre. Un cadre entrerait en
+   concurrence avec la sélection, qui est la seule chose qu'on cherche. */
+
+.tv-pop-day-today {
+  position: relative;
+  color: var(--tv-text-primary);
+}
+
+.tv-pop-day-today::after {
+  content: "";
+  position: absolute;
+  bottom: 0.25rem;
+  left: 50%;
+  width: 3px;
+  height: 3px;
+  margin-left: -1.5px;
+  border-radius: 999px;
+  background: var(--tv-highlight);
+}
+
+.tv-control {
+  width: 100%;
+  min-width: 0;
+  height: 44px;
+  border: 1px solid var(--tv-border);
+  border-radius: var(--radius-xl);
+  background: var(--tv-plate-2);
+  padding-inline: 12px;
+  font-size: var(--tv-t-body-sm);
+  font-weight: 400;
+  color: var(--tv-text-primary);
+  transition:
+    border-color var(--tv-dur-1) var(--tv-ease),
+    background-color var(--tv-dur-1) var(--tv-ease);
+}
+
+/* Les champs avec pictogramme réservent son emplacement : la peau de base
+   ne doit pas écraser le retrait demandé par le contrôle. */
+.tv-control.pl-10 {
+  padding-inline-start: 2.5rem;
+}
+
+.tv-control::placeholder {
+  color: var(--tv-text-muted);
+}
+
+.tv-control:focus {
+  outline: 2px solid rgb(var(--tv-accent-rgb) / 0.16);
+  outline-offset: 0;
+  border-color: var(--tv-border-accent);
+}
+
+.tv-control[aria-expanded="true"] {
+  outline: 2px solid rgb(var(--tv-accent-rgb) / 0.16);
+  outline-offset: 0;
+  border-color: var(--tv-border-accent);
+}
+
+.tv-control:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.tv-control-textarea {
+  height: auto;
+  min-height: 88px;
+}
+
+.tv-selection-panel {
+  background: var(--tv-plate-2);
+}
+
+.tv-selection-heading {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 8px 6px 12px;
+  border-bottom: 1px solid var(--tv-border);
+}
+
+.tv-selection-panel .tv-pick-opt {
+  min-height: 44px;
+  font-size: var(--tv-t-body-sm);
+}
+
+.tv-selection-panel .tv-pop-nav {
+  width: 36px;
+  height: 36px;
+}
+
+.tv-choice-group {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 6px;
+}
+
+.tv-choice {
+  min-width: 0;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--tv-border);
+  border-radius: var(--radius-xl);
+  background: var(--tv-plate-2);
+  padding: 6px 10px;
+  color: var(--tv-text-secondary);
+  font-size: var(--tv-t-body-sm);
+  font-weight: 600;
+  transition:
+    border-color var(--tv-dur-1),
+    background-color var(--tv-dur-1);
+}
+
+.tv-choice:hover {
+  border-color: var(--tv-border-strong);
+}
+
+.tv-choice-on {
+  border-color: var(--tv-border-strong);
+  background: var(--tv-plate-3);
+  color: var(--tv-text-primary);
+}
+
+.tv-choice[aria-checked="true"] {
+  box-shadow: inset 0 -2px 0 var(--tv-text-secondary);
+}
+
+.tv-disclosure {
+  border: 1px solid var(--tv-border);
+  border-radius: var(--radius-xl);
+  background: var(--tv-plate-1);
+}
+
+.tv-disclosure-toggle {
+  width: 100%;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  color: var(--tv-text-secondary);
+  font-size: var(--tv-t-body-sm);
+  font-weight: 600;
+  text-align: left;
+}
+
+.tv-disclosure-toggle svg {
+  transition: transform var(--tv-dur-1) var(--tv-ease);
+}
+
+.tv-disclosure-body {
+  padding: 12px;
+  padding-top: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.tv-time-entry {
+  font-size: var(--tv-t-h3);
+}
+
+.tv-time-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.tv-time-list {
+  height: 184px;
+  touch-action: pan-y;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  border: 1px solid var(--tv-border);
+  border-radius: var(--radius-xl);
+  background: var(--tv-plate-1);
+  padding: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tv-time-option.tv-figure {
+  display: block;
+  width: 100%;
+  height: 44px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-lg);
+  text-align: center;
+  font-size: var(--tv-t-body-sm);
+  color: var(--tv-text-secondary);
+  font-weight: 600;
+}
+
+.tv-time-option:hover {
+  background: var(--tv-plate-2);
+}
+
+.tv-time-option[aria-selected="true"] {
+  background: var(--tv-plate-3);
+  color: var(--tv-text-primary);
+  border-color: var(--tv-border-strong);
+  font-weight: 700;
+}
+
+@media (pointer: coarse) {
+  .tv-pick-pill,
+  .tv-pick-chip,
+  .tv-pick-foot,
+  .tv-pop-day {
+    min-height: 44px;
+  }
+}
+
+.tv-control.tv-figure {
+  font-family: var(--font-figure);
+  font-weight: 600;
+}
+
+@media (pointer: coarse) {
+  .tv-pop-nav {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+/* Commandes de page : une entrée sobre, les détails seulement à la demande. */
+.tv-page-controls-trigger {
+  min-width: 36px;
+  display: inline-flex;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 8px;
+  border-radius: var(--radius-lg);
+  color: var(--tv-text-secondary);
+  font-size: var(--tv-t-caption);
+  font-weight: 600;
+}
+.tv-page-controls-trigger:hover,
+.tv-page-controls-trigger[aria-expanded="true"] {
+  background: var(--tv-plate-2);
+  color: var(--tv-text-primary);
+}
+.tv-page-controls-count {
+  min-width: 18px;
+  border-radius: var(--radius-sm);
+  background: var(--tv-plate-3);
+  text-align: center;
+  font-size: var(--tv-t-micro);
+}
+.tv-page-controls-body {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+}
+.tv-page-controls-body .tv-pick-pill {
+  width: 100%;
+  justify-content: space-between;
+  border: 1px solid var(--tv-border);
+  background: var(--tv-plate-1);
+}
+.tv-page-controls-body > button {
+  justify-content: flex-start;
+}
+
+/* La barre native défile sans curseur blanc ni espace réservé à une piste. */
+
+.tv-time-list::-webkit-scrollbar {
+  display: none;
+  width: 0;
+}
+
+/* La densité varie au même endroit pour les deux formulaires. Le tactile
+   conserve ses cibles de 44 px ; le bureau utilise des champs de 36 px. */
+.tv-compact-form {
+  --tv-form-control-height: 36px;
+  --tv-form-control-radius: var(--radius-lg);
+}
+.tv-compact-form .tv-control {
+  height: var(--tv-form-control-height);
+  border-radius: var(--tv-form-control-radius);
+  padding-inline: 10px;
+}
+.tv-compact-form .tv-control-textarea {
+  height: auto;
+  min-height: 64px;
+}
+.tv-compact-form .tv-choice,
+.tv-compact-form .tv-disclosure-toggle,
+.tv-compact-form .tv-trade-form .tv-pick-chip {
+  min-height: var(--tv-form-control-height);
+  border-radius: var(--tv-form-control-radius);
+}
+.tv-compact-form .tv-choice {
+  padding-block: 4px;
+}
+.tv-compact-form .tv-disclosure-toggle {
+  padding: 8px 10px;
+}
+.tv-compact-form .tv-disclosure-body {
+  gap: 10px;
+  padding: 0 10px 10px;
+}
+.tv-compact-form footer button {
+  min-height: var(--tv-form-control-height);
+  height: var(--tv-form-control-height);
+}
+.tv-compact-form .tv-trade-form [data-selection-chip] {
+  min-height: 32px;
+  padding: 4px 8px;
+  font-size: var(--tv-t-caption);
+}
+.tv-direction .tv-choice[data-tone="positive"] svg {
+  color: var(--tv-chart-green);
+}
+.tv-direction .tv-choice[data-tone="negative"] svg {
+  color: var(--tv-chart-red);
+}
+.tv-direction .tv-choice[data-tone="positive"][aria-checked="true"] {
+  border-color: var(--tv-chart-green);
+  background: color-mix(in srgb, var(--tv-chart-green) 8%, var(--tv-plate-1));
+  color: var(--tv-chart-green);
+  box-shadow: none;
+}
+.tv-direction .tv-choice[data-tone="negative"][aria-checked="true"] {
+  border-color: var(--tv-chart-red);
+  background: color-mix(in srgb, var(--tv-chart-red) 8%, var(--tv-plate-1));
+  color: var(--tv-chart-red);
+  box-shadow: none;
+}
+.tv-draft-badge {
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border: 1px solid color-mix(in srgb, var(--tv-warning) 30%, transparent);
+  border-radius: var(--radius-sm);
+  color: var(--tv-warning);
+  font-size: var(--tv-t-micro);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+@media (max-width: 639px) {
+  .tv-page-controls-trigger > span:first-of-type {
+    display: none;
+  }
+}
+@media (pointer: coarse) {
+  .tv-compact-form {
+    --tv-form-control-height: 44px;
+  }
+  .tv-compact-form .tv-trade-form [data-selection-chip],
+  .tv-page-controls-trigger,
+  .tv-draft-badge {
+    min-height: 44px;
+  }
+}
+
+@media (pointer: coarse) {
+  .tv-page-controls-trigger {
+    min-width: 44px;
+  }
+}
+
+/* Filtres de page : valeur active dans l'accès, sections directes et pied fixe.
+   Aucun second menu pour choisir un jour, une catégorie ou un setup. */
+.tv-filter-controls {
+  min-width: 0;
+  flex-shrink: 0;
+  max-width: 100%;
+}
+.tv-filter-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  max-width: 100%;
+  padding: 0 10px;
+  border: 1px solid var(--tv-border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--tv-plate-1);
+  color: var(--tv-text-secondary);
+  font-size: var(--tv-t-caption);
+  font-weight: 600;
+  transition:
+    border-color var(--tv-dur-1),
+    background-color var(--tv-dur-1);
+}
+.tv-filter-trigger:hover,
+.tv-filter-trigger[aria-expanded="true"] {
+  background: var(--tv-plate-2);
+  color: var(--tv-text-primary);
+}
+.tv-filter-trigger[data-active] {
+  border-color: var(--tv-border-accent);
+  color: var(--tv-text-primary);
+}
+.tv-filter-trigger[data-active] > svg {
+  color: var(--tv-highlight);
+}
+.tv-filter-summary {
+  max-width: 14rem;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.tv-filter-body {
+  display: grid;
+  padding: 4px 12px;
+}
+.tv-filter-body > .tv-pick-search {
+  margin-block: 8px;
+}
+.tv-filter-section + .tv-filter-section {
+  border-top: 1px solid var(--tv-border);
+}
+.tv-filter-section > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  cursor: pointer;
+  list-style: none;
+  font-size: var(--tv-t-body-sm);
+  font-weight: 600;
+}
+.tv-filter-section > summary::-webkit-details-marker {
+  display: none;
+}
+.tv-filter-section > summary > svg {
+  color: var(--tv-text-muted);
+  transition: transform var(--tv-dur-1);
+}
+.tv-filter-section[open] > summary > svg {
+  transform: rotate(180deg);
+}
+.tv-filter-section-value {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: right;
+  color: var(--tv-text-secondary);
+  font-size: var(--tv-t-caption);
+  font-weight: 400;
+}
+.tv-filter-section-body {
+  padding: 0 0 12px;
+  animation: fade-in var(--tv-dur-1) var(--tv-ease);
+}
+.tv-filter-section-body .tv-pick-inline > .tv-label {
+  display: none;
+}
+.tv-filter-section-body .tv-pick-inline > div {
+  padding: 0;
+}
+.tv-filter-section-body .tv-pick-chip {
+  max-width: 100%;
+}
+.tv-filter-section-body .tv-pick-chip-on {
+  border-color: var(--tv-border-accent);
+  background: color-mix(in srgb, var(--tv-accent) 8%, var(--tv-plate-1));
+}
+.tv-filter-section-body .tv-pick-chip-on > svg {
+  color: var(--tv-highlight);
+}
+.tv-filter-more {
+  border-style: dashed;
+}
+.tv-filter-footer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+  border-top: 1px solid var(--tv-border);
+  flex-shrink: 0;
+}
+.tv-filter-footer .tv-pick-foot {
+  gap: 6px;
+}
+.tv-filter-footer .tv-pick-foot:disabled {
+  opacity: 0.4;
+}
+.tv-filter-footer > :last-child {
+  margin-left: auto;
+}
+.tv-filter-live {
+  color: var(--tv-text-muted);
+  font-size: var(--tv-t-micro);
+}
+@media (max-width: 639px) {
+  .tv-filter-summary {
+    max-width: 7.5rem;
+  }
+}
+@media (pointer: coarse) {
+  .tv-filter-trigger {
+    height: 44px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tv-filter-section-body {
+    animation: none;
+  }
+  .tv-filter-section > summary > svg {
+    transition: none;
+  }
+}

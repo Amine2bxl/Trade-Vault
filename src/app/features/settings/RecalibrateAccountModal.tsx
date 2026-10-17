@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowRight, Loader2, Lock, RotateCcw, Scale, ShieldCheck, X } from "lucide-react";
+import { ArrowRight, Loader2, Lock, RotateCcw, Scale, ShieldCheck, X } from "@/shared/ui/icons";
 import { Badge, Button, Chip, CHIP_ROW, FIELD_BASE, Modal, SelectPicker, cn } from "@/shared/ui";
 import { useT } from "@/app/i18n/LanguageContext";
 import { useAuth } from "@/app/contexts/AuthContext";

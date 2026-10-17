@@ -1,7 +1,7 @@
 import { useId, useMemo, useRef, useState } from "react";
-import { Check, ChevronDown, Pipette } from "lucide-react";
+import { Check, ChevronDown, Pipette } from "@/shared/ui/icons";
 import { cn } from "./cn";
-import { PickerPanel } from "./Picker";
+import { SelectionPanel as PickerPanel } from "./SelectionPanel";
 
 /**
  * LE SÉLECTEUR DE COULEUR TRADEVAULT.

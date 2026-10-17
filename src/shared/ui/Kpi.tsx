@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { cn } from "./cn";
+import { numericText } from "./NumericText";
 import { RollingFigure } from "./RollingFigure";
 import { type } from "./tokens";
 
@@ -61,12 +62,12 @@ export function Kpi({
         <span className={cn(type.label, "min-w-0 flex-1 truncate text-slate-500")}>{label}</span>
         {adornment}
       </div>
-      <div className={cn("tv-kpi-value", TONE[tone])}>
+      <div className={cn("tv-figure tv-kpi-value", TONE[tone])}>
         <RollingFigure value={value} />
       </div>
       {hint !== undefined && hint !== null && (
         <div className={cn("tv-row-label mt-0.5", wrapHint ? "leading-snug" : "truncate")}>
-          {hint}
+          {numericText(hint)}
         </div>
       )}
     </div>

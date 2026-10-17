@@ -1,5 +1,5 @@
 import { createContext, useContext, type CSSProperties, type ReactNode } from "react";
-import { Lock, ArrowRight, Eye } from "lucide-react";
+import { Lock, ArrowRight, Eye } from "@/shared/ui/icons";
 import { useT } from "@/app/i18n/LanguageContext";
 import { useSubscription } from "@/app/hooks/useSubscription";
 import { cn } from "@/shared/ui/cn";
@@ -126,7 +126,7 @@ export function PreviewWall({
                 <span className="tv-figure text-white">{perMonth}</span>
                 {fr ? "/mois" : "/month"}
                 {freeMonths > 0 && (
-                  <span className="ml-1 text-emerald-400">
+                  <span className="tv-num ml-1 text-emerald-400">
                     · {freeMonths} {fr ? "mois offerts" : "mo. free"}
                   </span>
                 )}

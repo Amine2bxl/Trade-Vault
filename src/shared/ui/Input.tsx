@@ -22,15 +22,12 @@ import { Label } from "./Typography";
  * que soit le thème actif.
  */
 
-export const FIELD_BASE =
-  "w-full bg-[var(--tv-plate-2)] border border-[var(--tv-border)] rounded-2xl px-3.5 text-sm " +
-  "text-white placeholder-slate-500 transition focus:outline-none " +
-  "focus:border-[var(--tv-border-accent)] focus:ring-2 focus:ring-[rgb(var(--tv-accent-rgb)/0.18)]";
+export const FIELD_BASE = "tv-control";
 
 export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(
   function Input({ className, ...rest }, ref) {
-    // Compact mobile (h-9) / confort desktop (h-10) — champs fins, plus denses.
-    return <input ref={ref} className={cn(FIELD_BASE, "h-9 sm:h-10", className)} {...rest} />;
+    // Une seule géométrie : 44 px, sur téléphone comme sur ordinateur.
+    return <input ref={ref} className={cn(FIELD_BASE, className)} {...rest} />;
   },
 );
 
@@ -92,7 +89,12 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
         grow();
         onChange?.(e);
       }}
-      className={cn(FIELD_BASE, "py-2.5 leading-relaxed", autoGrow && "resize-none", className)}
+      className={cn(
+        FIELD_BASE,
+        "tv-control-textarea py-2.5 leading-relaxed",
+        autoGrow && "resize-none",
+        className,
+      )}
       {...rest}
     />
   );
@@ -100,7 +102,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
 
 export const Select = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSelectElement>>(
   function Select({ className, ...rest }, ref) {
-    return <select ref={ref} className={cn(FIELD_BASE, "h-9 sm:h-10", className)} {...rest} />;
+    return <select ref={ref} className={cn(FIELD_BASE, className)} {...rest} />;
   },
 );
 

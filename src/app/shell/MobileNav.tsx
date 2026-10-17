@@ -1,4 +1,4 @@
-import { LayoutDashboard, Plus } from "lucide-react";
+import { LayoutDashboard, Plus } from "@/shared/ui/icons";
 import type { Page } from "../types";
 import { preloadPage } from "./pageModules";
 import { MOBILE_SECTIONS, SECTION_META, defaultPageOfSection, sectionForPage } from "./navigation";

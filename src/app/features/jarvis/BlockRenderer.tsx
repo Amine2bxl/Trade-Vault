@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { Check, Plus, Loader2, ArrowRight, BarChart3, Info, Lightbulb } from "lucide-react";
+import { numericText } from "@/shared/ui/NumericText";
+import { memo, useState } from "react";
+import { Check, Plus, Loader2, ArrowRight, BarChart3, Info, Lightbulb } from "@/shared/ui/icons";
 import MarkdownAnswer from "@/app/components/MarkdownAnswer";
 import { Kpi, KpiGrid, type KpiTone } from "@/shared/ui";
 import { encodeFilter } from "@/app/trading/tradeFilter";
@@ -50,19 +51,19 @@ function HeroView({ block }: { block: JarvisHeroBlock }) {
           case "context":
             return (
               <p key={i} className="text-sm text-slate-300 leading-relaxed">
-                {line.text}
+                {numericText(line.text)}
               </p>
             );
           case "observation":
             return (
               <p key={i} className="text-sm text-white font-semibold leading-relaxed">
-                {line.text}
+                {numericText(line.text)}
               </p>
             );
           case "impact":
             return (
               <p key={i} className="text-sm text-red-300/90 font-medium leading-relaxed">
-                {line.text}
+                {numericText(line.text)}
               </p>
             );
           case "action":
@@ -71,7 +72,7 @@ function HeroView({ block }: { block: JarvisHeroBlock }) {
                 key={i}
                 className="mt-1 rounded-xl border border-[rgb(var(--tv-accent-rgb)/0.25)] bg-[rgb(var(--tv-accent-rgb)/0.07)] px-3.5 py-2.5 text-sm text-[var(--tv-text-primary)] font-medium leading-relaxed"
               >
-                {line.text}
+                {numericText(line.text)}
               </div>
             );
         }
@@ -115,7 +116,7 @@ function InsightView({ block }: { block: JarvisInsightBlock }) {
         <ul className="space-y-1.5">
           {block.lines.map((line, i) => (
             <li key={i} className="text-sm text-slate-300 leading-relaxed">
-              {line}
+              {numericText(line)}
             </li>
           ))}
         </ul>
@@ -127,7 +128,9 @@ function InsightView({ block }: { block: JarvisInsightBlock }) {
           ))}
         </KpiGrid>
       )}
-      {block.impact && <p className="tv-prose text-slate-300 font-semibold">{block.impact}</p>}
+      {block.impact && (
+        <p className="tv-prose text-slate-300 font-semibold">{numericText(block.impact)}</p>
+      )}
       {/* Claim → evidence : le lien vers les données qui ont servi à conclure. */}
       {showButton && (
         <button
@@ -154,7 +157,7 @@ function MissionView({ block, onTool }: { block: JarvisMissionBlock; onTool?: Bl
             <span className="mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full bg-[rgb(var(--tv-accent-rgb)/0.2)] text-[10px] font-bold text-[var(--tv-highlight)]">
               ✓
             </span>
-            {item}
+            <span className="min-w-0">{numericText(item)}</span>
           </li>
         ))}
       </ul>
@@ -236,7 +239,7 @@ function AlertView({ block }: { block: Extract<JarvisBlock, { type: "alert" }> }
           : "border-[rgb(var(--tv-accent-rgb)/0.25)] bg-[rgb(var(--tv-accent-rgb)/0.07)] text-[var(--tv-text-primary)]";
   return (
     <div className={"rounded-xl border px-3.5 py-2.5 text-sm font-medium " + tone}>
-      {block.message}
+      {numericText(block.message)}
     </div>
   );
 }
@@ -294,7 +297,7 @@ function CardView({ block }: { block: Extract<JarvisBlock, { type: "card" }> }) 
           <h3 className="card-header-title">{block.title}</h3>
         </div>
       </header>
-      <p className="text-sm text-slate-300 leading-relaxed">{block.body}</p>
+      <p className="text-sm text-slate-300 leading-relaxed">{numericText(block.body)}</p>
     </div>
   );
 }
@@ -338,7 +341,9 @@ export function BlockRenderer({
   }
 }
 
-export function BlockList({
+/** Les blocs des anciens tours sont stables : taper une question ne doit pas
+ * reparcourir tous leurs tableaux et leur Markdown. */
+export const BlockList = memo(function BlockList({
   blocks,
   onTool,
 }: {
@@ -352,4 +357,4 @@ export function BlockList({
       ))}
     </div>
   );
-}
+});
