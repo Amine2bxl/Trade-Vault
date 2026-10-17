@@ -76,14 +76,28 @@ rendent la **même** plaque ; seule la valeur change.
 — la **pile système** `--font-lucid` (SF Pro sur Apple, Segoe UI sous Windows,
 Roboto sous Android), relevée sur leurs captures, sans police web à charger ;
 `body.tv-app-type` (posé par `shell/App.tsx`) l'applique, modales comprises.
-La vitrine, les pages légales et la démo gardent **Inter**. `.tv-figure`
-(chiffres, P&L) et `.tv-label` (petites capitales grasses espacées) portent
-**Inter** via `--font-figure`, identique sur tous les appareils. Utiliser
-`700` pour les valeurs principales (`tv-figure`) et `600` pour les valeurs
-secondaires (`tv-num`, `tv-figure-secondary`, champs, dates, heures, axes).
+La vitrine, les pages légales et la démo gardent **Inter** pour les lettres.
+Tous les chiffres utilisent **Inter ExtraBold (800)**. Le sous-ensemble local
+`public/fonts/tradevault-numerals-800.v1.woff` fixe le même dessin sur toutes
+les surfaces, sans dépendre de Google Fonts ni de la police système.
+`TradeVault Numerals` précède chaque pile (corps, titres, monospace, landing)
+et ne remplace que les chiffres et les signes monétaires. `TradeVault Figures`
+réutilise le même fichier avec ses séparateurs dans `--font-figure`.
+Les deux faces couvrent les graisses 100–900 avec les mêmes contours 800 :
+un chiffre inclus dans une phrase légère ne devient pas plus fin. Les lettres
+conservent leur police et leur graisse. Le fichier est dérivé d’Inter, version
+4.001, limité aux chiffres, monnaies et séparateurs. Les glyphes tabulaires sont
+fixés dans le fichier : une option OpenType héritée ne peut pas changer le
+dessin du « 1 ». La police est renommée et livrée avec
+`public/fonts/OFL-Inter.txt` (licence SIL OFL).
+
+`--tv-numeric-weight: 800` règle les valeurs balisées ; `tv-num` et
+`tv-figure-secondary` restent des alias compatibles, sans poids distinct.
 Ne jamais augmenter une taille pour renforcer un chiffre ; conserver sa
-couleur sémantique et `tabular-nums`. `numericText` balise les nombres inclus
-dans le Markdown, les notifications et les libellés sans modifier le texte. Échelle à rôles `--tv-t-*` : `display`, `h1`, `h2`,
+couleur sémantique et `tabular-nums` pour les colonnes, montants et axes.
+`numericText` reste utile pour les nombres inclus dans le Markdown et les
+notifications ; la couverture des chiffres ne dépend plus de ce balisage.
+Échelle à rôles `--tv-t-*` : `display`, `h1`, `h2`,
 `h3`, `body`, `body-sm`, `caption`, `micro`. Chiffres : `.tv-figure`
 (tabulaires). Libellés : `.tv-label` (petites capitales espacées). Détail :
 skill `typography`.

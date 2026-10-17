@@ -9,14 +9,21 @@ description: "Loi typographique de TradeVault — pile système de Lucid dans l'
 
 L'**app connectée** écrit dans la police de Lucid : la **pile système**
 `--font-lucid` (`-apple-system`/SF Pro, Segoe UI, Roboto, Helvetica Neue,
-Arial), relevée sur les captures de leur tableau de bord — aucune police web,
-le chiffre est dessiné pour l'écran qui l'affiche. `body.tv-app-type` (posé
+Arial) pour les lettres. Les chiffres utilisent le fichier local décrit
+ci-dessous. `body.tv-app-type` (posé
 par `shell/App.tsx`) l'applique au corps et aux titres, modales comprises.
 
 La **vitrine**, les pages légales et la démo gardent **Inter** (`--font-sans`,
 `--font-display`). Les chiffres et leurs libellés portent **Inter** partout via
-`--font-figure` : c'est la référence fournie, en graisses 600–700 et chiffres
-tabulaires, avec un rendu identique sur chaque appareil.
+`--font-figure` : c'est la référence fournie, en graisse 800, avec le même fichier local sur chaque appareil.
+`TradeVault Numerals` précède toutes les piles et ne remplace que les chiffres
+et signes monétaires ; les lettres gardent leur famille. `--font-figure` utilise
+`TradeVault Figures`, le même fichier avec ses séparateurs. La face locale
+couvre 100–900 avec les mêmes contours ExtraBold pour empêcher qu’un chiffre
+non balisé hérite d’une graisse plus faible. Les glyphes tabulaires sont fixés
+dans la police : aucune option OpenType ne change le dessin du « 1 ». Les
+chiffres restent droits dans une phrase en italique. Le fichier est préchargé dans
+`__root.tsx` et sa licence est conservée dans `public/fonts/OFL-Inter.txt`.
 
 Dans chaque surface, une seule famille : la hiérarchie vient de la **taille,
 de la graisse et de l'approche**. `Roboto Mono` (`--font-mono`) est réservé aux
@@ -50,13 +57,14 @@ mention. Rien sous 10px. Du texte réel à lire : 12px minimum.
 
 ```
 font-family: var(--font-figure); font-variant-numeric: tabular-nums;
-font-weight: 700; letter-spacing: -0.01em;
+font-weight: var(--tv-numeric-weight); letter-spacing: -0.01em;
 ```
 
-**Utiliser `tv-figure` (700)** pour un total, un KPI principal ou le P&L héros.
-**Utiliser `tv-num` / `tv-figure-secondary` (600)** pour un prix secondaire,
-une date, une heure, un compte ou un axe. Ne jamais grossir un chiffre pour
-le rendre plus visible. Centraliser le contrat dans `styles.css` et
+**Tous les chiffres portent les mêmes contours Inter ExtraBold (800)**,
+principaux comme secondaires. Utiliser `tv-figure`, `tv-num` ou
+`tv-figure-secondary` pour une valeur : ces classes partagent
+`--tv-numeric-weight: 800`. Ne jamais grossir un chiffre pour le rendre plus
+visible. Centraliser le contrat dans `styles.css` et
 `docs/DESIGN_SYSTEM.md` §3 ; les couleurs de profit/perte restent fixes.
 Utiliser `numericText` pour des nombres mêlés à une phrase ou une réponse. Le
 tabulaire donne à chaque chiffre la même largeur : une colonne de montants
@@ -87,7 +95,7 @@ libellé**, **le reste**. Si un bloc a un titre, un sous-titre, une étiquette,
 une valeur et une note, quelque chose doit disparaître.
 
 Graisses utiles : `400` (corps), `600` (titre de carte, libellé), `700`
-(titre de section), `700` (valeur principale), `600` (valeur secondaire). Pas de `500` décoratif, pas de faux-gras.
+(titre de section), `800` (tous les chiffres). Pas de `500` décoratif, pas de faux-gras.
 
 ## Titrage marketing (landing uniquement)
 
