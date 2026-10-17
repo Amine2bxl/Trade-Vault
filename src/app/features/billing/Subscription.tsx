@@ -13,7 +13,7 @@ import {
   PauseCircle,
   Sparkles,
   ExternalLink,
-} from "lucide-react";
+} from "@/shared/ui/icons";
 import { useT } from "@/app/i18n/LanguageContext";
 import type { TKey } from "@/app/i18n/translations";
 import { useSubscription } from "@/app/hooks/useSubscription";

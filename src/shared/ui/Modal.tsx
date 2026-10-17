@@ -1,6 +1,7 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "./cn";
+import { acquireBodyScrollLock } from "./scrollLock";
 
 /**
  * Modal — the single dialog primitive. Replaces the hand-rolled
@@ -72,12 +73,11 @@ export function Modal({
       if (e.key === "Escape") onClose();
     };
     document.addEventListener("keydown", onKey);
-    const prevOverflow = document.body.style.overflow;
-    if (lockScroll) document.body.style.overflow = "hidden";
+    const releaseScroll = lockScroll ? acquireBodyScrollLock() : () => {};
     if (focusPanel) panelRef.current?.focus();
     return () => {
       document.removeEventListener("keydown", onKey);
-      if (lockScroll) document.body.style.overflow = prevOverflow;
+      releaseScroll();
     };
   }, [open, onClose, lockScroll, focusPanel]);
 

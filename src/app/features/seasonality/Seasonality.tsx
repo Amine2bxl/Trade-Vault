@@ -19,7 +19,7 @@ import {
   Info,
   Sparkles,
   Layers,
-} from "lucide-react";
+} from "@/shared/ui/icons";
 import { Trade } from "@/app/types";
 import { formatPnl } from "@/domain/tradeCalcs";
 import { MIN_BUCKET_SAMPLE } from "@/domain/quantStats";

@@ -1,6 +1,6 @@
 import { getCurrency } from "@/shared/currency";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowUpRight, Check, Eraser, RotateCcw, Square, Volume2, Zap } from "lucide-react";
+import { ArrowUpRight, Check, Eraser, RotateCcw, Square, Volume2, Zap } from "@/shared/ui/icons";
 import { JarvisMark, JarvisOrb, type JarvisOrbState } from "@/shared/ui";
 import Composer from "../Composer";
 import TypedAnswer from "../TypedAnswer";

@@ -10,7 +10,7 @@ import { density } from "./tokens";
 export function PageContainer({ className, children, ...rest }: ComponentProps<"div">) {
   return (
     <div
-      className={cn("tv-page mx-auto w-full min-w-0 max-w-[1400px]", density.pagePad, className)}
+      className={cn("tv-page mx-auto w-full min-w-0 max-w-[1200px]", density.pagePad, className)}
       {...rest}
     >
       {children}

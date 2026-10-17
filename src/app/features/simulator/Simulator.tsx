@@ -15,7 +15,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Dices, ShieldAlert, Target, TrendingDown, Info, Scale } from "lucide-react";
+import { Dices, ShieldAlert, Target, TrendingDown, Info, Scale } from "@/shared/ui/icons";
 import type { Trade } from "@/app/types";
 import { useT } from "@/app/i18n/LanguageContext";
 import { useAccounts } from "@/app/contexts/AccountContext";

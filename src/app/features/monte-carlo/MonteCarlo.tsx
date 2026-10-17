@@ -12,7 +12,7 @@ import {
   Play,
   Dices,
   Pencil,
-} from "lucide-react";
+} from "@/shared/ui/icons";
 import {
   ResponsiveContainer,
   ComposedChart,

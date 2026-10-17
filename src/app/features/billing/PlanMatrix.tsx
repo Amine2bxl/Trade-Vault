@@ -1,5 +1,5 @@
 import { Fragment, type ReactNode } from "react";
-import { Check, Crown, Infinity as InfinityIcon, Minus, Sparkles } from "lucide-react";
+import { Check, Crown, Infinity as InfinityIcon, Minus, Sparkles } from "@/shared/ui/icons";
 import { LIMITS, TIERS, TIER_RANK, yearlyPerMonth, type Tier } from "@/domain/plans";
 import { useT } from "@/app/i18n/LanguageContext";
 import { useSubscription } from "@/app/hooks/useSubscription";

@@ -3,7 +3,14 @@ import { useAuth } from "@/app/contexts/AuthContext";
 import { useTradingRules } from "@/app/trading/useTradingRules";
 import { useGoalProgress } from "../goals/useGoalProgress";
 import { computeRuleAdherence, ADHERENCE_WINDOW_DAYS } from "@/app/trading/ruleAdherence";
-import { TrendingDown, CheckCircle2, Ban, Wrench, TrendingUp, ChevronDown } from "lucide-react";
+import {
+  TrendingDown,
+  CheckCircle2,
+  Ban,
+  Wrench,
+  TrendingUp,
+  ChevronDown,
+} from "@/shared/ui/icons";
 import { Trade } from "@/app/types";
 import { computeBehavioral } from "@/domain/behavioral";
 import {

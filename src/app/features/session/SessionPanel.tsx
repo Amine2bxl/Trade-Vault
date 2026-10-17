@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Play, Square, Activity } from "lucide-react";
+import { Play, Square, Activity } from "@/shared/ui/icons";
 import type { Trade } from "@/app/types";
 import {
   closeSession,

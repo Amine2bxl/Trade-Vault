@@ -16,7 +16,7 @@ import {
   SlidersHorizontal,
   ClipboardCheck,
   Cable,
-} from "lucide-react";
+} from "@/shared/ui/icons";
 import { Trade, isBreakEven } from "@/app/types";
 import {
   computeStats,

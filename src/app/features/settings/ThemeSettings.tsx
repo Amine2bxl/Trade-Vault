@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Palette, Check, Star, Copy, Pencil, Trash2, Plus, ChevronDown } from "lucide-react";
+import { Palette, Check, Star, Copy, Pencil, Trash2, Plus, ChevronDown } from "@/shared/ui/icons";
 import { useTheme } from "@/app/contexts/ThemeContext";
 import { useT } from "@/app/i18n/LanguageContext";
 import { useConfirm } from "@/app/contexts/ConfirmContext";

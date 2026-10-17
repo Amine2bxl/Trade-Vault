@@ -1,6 +1,6 @@
 import { lazyPage } from "@/shared/lazy-page";
 import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Eraser } from "lucide-react";
+import { Eraser } from "@/shared/ui/icons";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useAccounts } from "@/app/contexts/AccountContext";
 import { useTrades } from "@/app/trading/useTrades";

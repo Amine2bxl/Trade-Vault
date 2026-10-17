@@ -1,7 +1,7 @@
 import { PageContainer } from "@/shared/ui";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import MonthCelebration from "./MonthCelebration";
-import { Loader2, Flag } from "lucide-react";
+import { Loader2, Flag } from "@/shared/ui/icons";
 import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useAccounts } from "@/app/contexts/AccountContext";

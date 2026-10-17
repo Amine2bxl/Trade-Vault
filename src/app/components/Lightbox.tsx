@@ -1,6 +1,6 @@
 import { useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { X, ChevronLeft, ChevronRight } from "lucide-react";
+import { X, ChevronLeft, ChevronRight } from "@/shared/ui/icons";
 import { useT } from "../i18n/LanguageContext";
 
 interface LightboxProps {

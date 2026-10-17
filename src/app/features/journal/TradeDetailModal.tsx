@@ -10,7 +10,7 @@ import {
   Target,
   ChevronLeft,
   ChevronRight,
-} from "lucide-react";
+} from "@/shared/ui/icons";
 import { Trade, MissedOpportunity, isBreakEven } from "@/app/types";
 import { formatPnl, getDuration, directionLabel, directionBadgeClass } from "@/domain/tradeCalcs";
 import { getSession, getMacroEvents } from "@/domain/quantStats";

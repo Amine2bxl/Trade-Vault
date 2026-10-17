@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Check, X, Lightbulb } from "lucide-react";
+import { Check, X, Lightbulb } from "@/shared/ui/icons";
 import { useT } from "@/app/i18n/LanguageContext";
 import { useToast } from "@/app/contexts/ToastContext";
 import {

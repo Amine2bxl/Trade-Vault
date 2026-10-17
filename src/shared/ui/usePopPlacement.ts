@@ -37,6 +37,7 @@ function cadreDe(el: HTMLElement): DOMRect {
   return new DOMRect(0, 0, window.innerWidth, window.innerHeight);
 }
 
+/** @deprecated Les nouveaux sélecteurs utilisent SelectionPanel, qui gère aussi les portails et le focus. */
 export function usePopPlacement(ref: RefObject<HTMLElement | null>, ouvert: boolean): PopPlacement {
   const [pose, setPose] = useState<PopPlacement>({ align: "start", side: "bottom" });
 

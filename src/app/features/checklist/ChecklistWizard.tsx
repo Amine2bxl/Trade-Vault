@@ -10,7 +10,7 @@ import {
   Crosshair,
   Brain,
   LineChart,
-} from "lucide-react";
+} from "@/shared/ui/icons";
 import { cn } from "@/shared/ui/cn";
 import type { ChkItem } from "./checklistDefaults";
 import { Button, TimeField } from "@/shared/ui";

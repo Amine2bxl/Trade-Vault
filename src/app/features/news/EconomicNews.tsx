@@ -10,7 +10,7 @@ import {
   Clock,
   ChevronDown,
   Check,
-} from "lucide-react";
+} from "@/shared/ui/icons";
 import { useT } from "@/app/i18n/LanguageContext";
 import { cn } from "@/shared/ui/cn";
 import { PageContainer, Card, MultiPicker } from "@/shared/ui";

@@ -12,7 +12,7 @@ import {
   Lock,
   Crown,
   Repeat2,
-} from "lucide-react";
+} from "@/shared/ui/icons";
 import { useAccounts } from "../contexts/AccountContext";
 import { useT } from "../i18n/LanguageContext";
 import { useToast } from "../contexts/ToastContext";

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Gift, Plus, Trash2, ShieldCheck } from "lucide-react";
+import { Gift, Plus, Trash2, ShieldCheck } from "@/shared/ui/icons";
 import { supabase } from "@/integrations/supabase/client";
 import { useT } from "@/app/i18n/LanguageContext";
 import { useToast } from "@/app/contexts/ToastContext";

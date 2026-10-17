@@ -9,7 +9,7 @@ import {
   LineChart,
   BookOpen,
   Sparkles,
-} from "lucide-react";
+} from "@/shared/ui/icons";
 import { Trade, isBreakEven } from "@/app/types";
 import {
   computeStats,
@@ -378,7 +378,7 @@ export default function Dashboard({
               — c'est-à-dire qu'il promettait une mise en page qui n'existe
               plus, et le contenu réel sautait par-dessus en arrivant. */}
           <div className={cn(density.sectionGap)}>
-            <div className="stat-card h-72 skeleton md:h-80" />
+            <div className="stat-card h-60 skeleton md:h-72" />
           </div>
           <div className={cn("grid grid-cols-2 md:grid-cols-4", density.gridGap)}>
             {Array.from({ length: 4 }).map((_, i) => (
@@ -493,7 +493,7 @@ export default function Dashboard({
                       <div className="flex items-baseline gap-3 flex-wrap">
                         <span
                           className={cn(
-                            "tv-figure text-3xl md:text-4xl",
+                            "tv-figure text-2xl md:text-3xl",
                             gain ? "text-emerald-400" : "text-red-400",
                           )}
                         >
@@ -541,7 +541,7 @@ export default function Dashboard({
                     </div>
                   </div>
                   {stats.equityCurve.length > 0 ? (
-                    <div className="h-56 md:h-72 chart-draw">
+                    <div className="h-44 md:h-56 chart-draw">
                       <Suspense
                         fallback={
                           <div className="h-full w-full animate-pulse rounded-lg bg-white/[0.03]" />
@@ -551,7 +551,7 @@ export default function Dashboard({
                       </Suspense>
                     </div>
                   ) : (
-                    <div className="h-56 md:h-72 flex items-center justify-center text-slate-600 text-sm">
+                    <div className="h-44 md:h-56 flex items-center justify-center text-slate-600 text-sm">
                       {t("dashboard.noTradesInPeriod")}
                     </div>
                   )}
@@ -628,7 +628,7 @@ export default function Dashboard({
               {/* ── 3. LA DISCIPLINE ── */}
               {/* Copilot block + série de checklist — le focus du jour + la discipline
                 dans la durée, côte à côte. */}
-              <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,0.65fr)] gap-4 md:gap-5 mb-4 md:mb-6">
+              <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,0.65fr)] gap-3 md:gap-4 mb-3 md:mb-4">
                 <CopilotBlock
                   edge={edge}
                   edgeDelta={edgeDelta}

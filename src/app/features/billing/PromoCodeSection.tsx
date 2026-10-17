@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Tag, Plus, Trash2, ShieldCheck, Users, Power, ChevronDown } from "lucide-react";
+import { Tag, Plus, Trash2, ShieldCheck, Users, Power, ChevronDown } from "@/shared/ui/icons";
 import { supabase } from "@/integrations/supabase/client";
 import { useT } from "@/app/i18n/LanguageContext";
 import { useToast } from "@/app/contexts/ToastContext";

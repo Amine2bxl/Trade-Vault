@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, Sparkles, Zap, Lock, ArrowRight, X } from "lucide-react";
+import { Check, Sparkles, Zap, Lock, ArrowRight, X } from "@/shared/ui/icons";
 import { Modal } from "@/shared/ui";
 import { cn } from "@/shared/ui/cn";
 import { useT } from "@/app/i18n/LanguageContext";

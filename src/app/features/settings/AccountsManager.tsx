@@ -1,5 +1,5 @@
 import { Suspense, lazy, useState, type ReactNode } from "react";
-import { Crown, Lock, Pencil, Plus, Repeat2, Scale, Trash2 } from "lucide-react";
+import { Crown, Lock, Pencil, Plus, Repeat2, Scale, Trash2 } from "@/shared/ui/icons";
 import { useAccounts } from "@/app/contexts/AccountContext";
 import { useToast } from "@/app/contexts/ToastContext";
 import { useSubscription } from "@/app/hooks/useSubscription";

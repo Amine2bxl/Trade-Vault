@@ -7,7 +7,7 @@ import {
   LogOut,
   Settings as SettingsIcon,
   User,
-} from "lucide-react";
+} from "@/shared/ui/icons";
 import { Page, SECTIONS } from "../types";
 import { SECTION_META, defaultPageOfSection, sectionForPage } from "./navigation";
 import { preloadPage } from "./pageModules";

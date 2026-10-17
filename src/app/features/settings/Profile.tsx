@@ -10,7 +10,7 @@ import {
   Handshake,
   Lightbulb,
   ChevronRight,
-} from "lucide-react";
+} from "@/shared/ui/icons";
 import { useT } from "@/app/i18n/LanguageContext";
 import { cn } from "@/shared/ui/cn";
 

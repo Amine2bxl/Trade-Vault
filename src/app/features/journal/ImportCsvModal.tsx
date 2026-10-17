@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from "react";
-import { X, Upload, FileSpreadsheet, Check, Loader2, AlertCircle } from "lucide-react";
+import { X, Upload, FileSpreadsheet, Check, Loader2, AlertCircle } from "@/shared/ui/icons";
 import { Trade } from "@/app/types";
 import { formatPnl } from "@/domain/tradeCalcs";
 import { cn } from "@/shared/ui/cn";

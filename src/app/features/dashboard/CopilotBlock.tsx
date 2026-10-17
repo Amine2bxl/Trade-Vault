@@ -1,6 +1,14 @@
 import { memo } from "react";
 import { CHART_GREEN, CHART_RED } from "@/app/trading/chartTheme";
-import { Sparkles, ClipboardCheck, Check, ChevronRight, Target, Flag, Bot } from "lucide-react";
+import {
+  Sparkles,
+  ClipboardCheck,
+  Check,
+  ChevronRight,
+  Target,
+  Flag,
+  Bot,
+} from "@/shared/ui/icons";
 import { cn } from "@/shared/ui/cn";
 import { formatPnl } from "@/domain/tradeCalcs";
 import { useT } from "@/app/i18n/LanguageContext";

@@ -60,6 +60,7 @@ export function SubNav<T extends string>({
           ? items.length - 1
           : (i + delta + items.length) % items.length;
     onChange(items[next].id);
+    e.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]')[next]?.focus();
   };
 
   return (

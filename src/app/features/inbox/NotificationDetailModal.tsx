@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Bot, X, ArrowRight, CheckCircle2, Lightbulb } from "lucide-react";
+import { Bot, X, ArrowRight, CheckCircle2, Lightbulb } from "@/shared/ui/icons";
 import { Modal } from "@/shared/ui";
 import { useT } from "@/app/i18n/LanguageContext";
 import { cn } from "@/shared/ui/cn";

@@ -18,8 +18,8 @@ import {
   FileText,
   ShieldCheck,
   Coins,
-} from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+} from "@/shared/ui/icons";
+import type { LucideIcon } from "@/shared/ui/icons";
 import { Trade, LANGUAGES } from "@/app/types";
 import {
   loadLanguage,

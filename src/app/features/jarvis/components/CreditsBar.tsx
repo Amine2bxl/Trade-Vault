@@ -1,5 +1,5 @@
 import { useEffect, useReducer } from "react";
-import { ArrowUpRight, Crown, Sparkles, Zap } from "lucide-react";
+import { ArrowUpRight, Crown, Sparkles, Zap } from "@/shared/ui/icons";
 import { useT } from "@/app/i18n/LanguageContext";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { AI_USAGE_EVENT, aiUsageToday, jarvisDailyLimit } from "../aiUsage";

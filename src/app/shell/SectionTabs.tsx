@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { Page, SectionId } from "../types";
-import { Check, ChevronDown, Lock } from "lucide-react";
+import { Check, ChevronDown, Lock } from "@/shared/ui/icons";
 import { PAGE_META, pagesOfSection } from "./navigation";
 import { useSubscription } from "../hooks/useSubscription";
 import { canAccessPage } from "../utils/pricing";

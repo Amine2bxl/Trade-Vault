@@ -1,5 +1,15 @@
 import { useState } from "react";
-import { Plus, History, Pin, PinOff, Pencil, Check, X, Trash2, CheckCheck } from "lucide-react";
+import {
+  Plus,
+  History,
+  Pin,
+  PinOff,
+  Pencil,
+  Check,
+  X,
+  Trash2,
+  CheckCheck,
+} from "@/shared/ui/icons";
 import { useT } from "@/app/i18n/LanguageContext";
 import { cn } from "@/shared/ui/cn";
 import AccountSwitcher from "@/app/shell/AccountSwitcher";

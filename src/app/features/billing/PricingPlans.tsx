@@ -8,7 +8,7 @@ import {
   Bitcoin,
   Lock,
   Infinity as Infini,
-} from "lucide-react";
+} from "@/shared/ui/icons";
 import { cn } from "@/shared/ui/cn";
 import PrixAnime from "./PrixAnime";
 import { LIMITS } from "@/domain/plans";

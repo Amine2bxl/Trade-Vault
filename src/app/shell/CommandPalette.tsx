@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Command } from "cmdk";
-import { Plus, Download, Search, Upload } from "lucide-react";
+import { Plus, Download, Search, Upload } from "@/shared/ui/icons";
 import { Trade, Page } from "../types";
 import { NAV_ITEMS } from "./navigation";
 import { formatPnl, formatShortDate } from "@/domain/tradeCalcs";

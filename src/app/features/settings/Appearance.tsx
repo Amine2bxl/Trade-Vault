@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Palette } from "lucide-react";
+import { Palette } from "@/shared/ui/icons";
 import { useT } from "@/app/i18n/LanguageContext";
 import { useTheme } from "@/app/contexts/ThemeContext";
 import ThemeSettings from "./ThemeSettings";

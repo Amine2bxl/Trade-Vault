@@ -13,7 +13,7 @@ import {
   ShieldAlert,
   Clock,
   Sparkles,
-} from "lucide-react";
+} from "@/shared/ui/icons";
 import {
   loadNotifications,
   markAllNotificationsRead,

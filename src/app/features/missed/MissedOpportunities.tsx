@@ -14,7 +14,7 @@ import {
   Download,
   ArrowLeft,
   ArrowRight,
-} from "lucide-react";
+} from "@/shared/ui/icons";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useAccounts } from "@/app/contexts/AccountContext";
 import { MissedOpportunity } from "@/app/types";

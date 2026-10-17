@@ -1,5 +1,5 @@
 import { createContext, useContext, type CSSProperties, type ReactNode } from "react";
-import { Lock, ArrowRight, Eye } from "lucide-react";
+import { Lock, ArrowRight, Eye } from "@/shared/ui/icons";
 import { useT } from "@/app/i18n/LanguageContext";
 import { useSubscription } from "@/app/hooks/useSubscription";
 import { cn } from "@/shared/ui/cn";

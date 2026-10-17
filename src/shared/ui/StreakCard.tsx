@@ -1,5 +1,5 @@
 import * as React from "react";
-import { CheckCircle2, ChevronDown, Flame, RefreshCcw } from "lucide-react";
+import { CheckCircle2, ChevronDown, Flame, RefreshCcw } from "@/shared/ui/icons";
 import { cn } from "./cn";
 import { StreakCalendar, type StreakPeriod } from "./StreakCalendar";
 

@@ -20,7 +20,7 @@ import {
   User,
   Shuffle,
   Cable,
-} from "lucide-react";
+} from "@/shared/ui/icons";
 import { PAGES, SECTIONS, type Page, type SectionId } from "../types";
 import type { TKey } from "../i18n/translations";
 

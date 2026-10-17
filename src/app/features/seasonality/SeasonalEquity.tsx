@@ -10,7 +10,7 @@ import {
   YAxis,
   CartesianGrid,
 } from "recharts";
-import { Activity, LineChart as LineIcon } from "lucide-react";
+import { Activity, LineChart as LineIcon } from "@/shared/ui/icons";
 import type { Trade } from "@/app/types";
 import { useT } from "@/app/i18n/LanguageContext";
 import { Kpi, KpiGrid } from "@/shared/ui";

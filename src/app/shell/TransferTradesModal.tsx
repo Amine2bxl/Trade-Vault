@@ -9,7 +9,7 @@ import {
   MoveRight,
   Repeat2,
   X,
-} from "lucide-react";
+} from "@/shared/ui/icons";
 import { useAuth } from "../contexts/AuthContext";
 import { useAccounts } from "../contexts/AccountContext";
 import { useToast } from "../contexts/ToastContext";

@@ -100,3 +100,6 @@ export type {
   RangePickerProps,
   RangeValue,
 } from "./Picker";
+export { SelectionPanel } from "./SelectionPanel";
+export { ChoiceGroup, Disclosure } from "./FormControls";
+export { selection } from "./selection";

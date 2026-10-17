@@ -14,7 +14,7 @@ import {
   X,
   ChevronRight,
   Scale,
-} from "lucide-react";
+} from "@/shared/ui/icons";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useT } from "@/app/i18n/LanguageContext";
 import { PageContainer, PageToolbar, SubNav, Textarea, type SubNavItem } from "@/shared/ui";

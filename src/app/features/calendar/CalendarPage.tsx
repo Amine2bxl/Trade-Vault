@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, type CSSProperties } from "react";
-import { ChevronLeft, ChevronRight, Target } from "lucide-react";
+import { ChevronLeft, ChevronRight, Target } from "@/shared/ui/icons";
 import { Trade, MissedOpportunity } from "@/app/types";
 import { loadMissedOpportunities } from "@/app/store";
 import { useAuth } from "@/app/contexts/AuthContext";
@@ -367,7 +367,7 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
     <PageContainer
       ref={boxRef}
       style={height ? { minHeight: height } : undefined}
-      className="flex h-full flex-col overflow-y-auto"
+      className="flex h-full max-w-[1400px] flex-col overflow-y-auto"
     >
       {/* Summary Cards */}
       <KpiGrid className="tv-flat shrink-0">

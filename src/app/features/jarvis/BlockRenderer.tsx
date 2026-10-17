@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, Plus, Loader2, ArrowRight, BarChart3, Info, Lightbulb } from "lucide-react";
+import { Check, Plus, Loader2, ArrowRight, BarChart3, Info, Lightbulb } from "@/shared/ui/icons";
 import MarkdownAnswer from "@/app/components/MarkdownAnswer";
 import { Kpi, KpiGrid, type KpiTone } from "@/shared/ui";
 import { encodeFilter } from "@/app/trading/tradeFilter";

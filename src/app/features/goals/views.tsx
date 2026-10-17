@@ -16,7 +16,7 @@ import {
   Loader2,
   Trash2,
   ChevronDown,
-} from "lucide-react";
+} from "@/shared/ui/icons";
 import { cn } from "@/shared/ui/cn";
 import {
   type GoalDef,

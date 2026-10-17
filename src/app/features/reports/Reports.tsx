@@ -25,7 +25,7 @@ import {
   ChevronRight,
   ChevronDown,
   Clock3,
-} from "lucide-react";
+} from "@/shared/ui/icons";
 import logoSrc from "@/assets/tradevault-logo-128.png";
 import { SITE_URL } from "@/shared/site";
 import { useAuth } from "@/app/contexts/AuthContext";

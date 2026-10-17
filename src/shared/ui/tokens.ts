@@ -178,7 +178,7 @@ export const type = {
    *  Calculatrice de lot, appliqué à TOUTE donnée chiffrée du produit. */
   fin: "tv-figure text-base",
   /** Le même chiffre, taille de tuile KPI. */
-  figure: "tv-figure text-xl md:text-[26px] leading-none",
+  figure: "tv-figure text-lg md:text-xl leading-none",
   /** Le même chiffre, taille héros (P&L du mois, solde du compte). */
   figureLg: "tv-figure text-[30px] md:text-[38px] leading-none",
   /** Navigation (rail, onglets). */

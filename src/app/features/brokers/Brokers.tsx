@@ -18,7 +18,7 @@ import {
   Trash2,
   TriangleAlert,
   Wrench,
-} from "lucide-react";
+} from "@/shared/ui/icons";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useAccounts } from "@/app/contexts/AccountContext";
 import { useToast } from "@/app/contexts/ToastContext";

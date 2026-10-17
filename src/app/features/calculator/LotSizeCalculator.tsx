@@ -10,7 +10,7 @@ import {
   TrendingUp,
   BarChart3,
   Layers,
-} from "lucide-react";
+} from "@/shared/ui/icons";
 import {
   POINT_VALUES,
   FOREX_PAIRS,

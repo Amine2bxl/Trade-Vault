@@ -15,7 +15,7 @@ import {
   RotateCcw,
   Wand2,
   Sparkles,
-} from "lucide-react";
+} from "@/shared/ui/icons";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useT } from "@/app/i18n/LanguageContext";
 import { cn } from "@/shared/ui/cn";

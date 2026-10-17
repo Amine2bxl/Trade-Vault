@@ -8,7 +8,7 @@ import {
   Compass,
   Image as ImageIcon,
   TrendingUp,
-} from "lucide-react";
+} from "@/shared/ui/icons";
 import { MissedOpportunity } from "@/app/types";
 import { cn } from "@/shared/ui/cn";
 import { ScreenshotsView } from "./MissedOpportunities";

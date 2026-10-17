@@ -1,4 +1,4 @@
-import { ArrowRight } from "lucide-react";
+import { ArrowRight } from "@/shared/ui/icons";
 import { cn } from "@/shared/ui";
 import { formatMoney } from "@/shared/currency";
 import { fmtFactor } from "./accountCalibration";

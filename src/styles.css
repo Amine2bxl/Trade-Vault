@@ -1,6 +1,7 @@
 @import "tailwindcss" source(none);
 @source "../src";
 @import "tw-animate-css";
+@import "./shared/ui/selection.css";
 
 /*
  * Design system definition.
@@ -4105,390 +4106,6 @@ a:focus-visible,
    l'accent, et se ferment au clic dehors comme à Échap.
    ────────────────────────────────────────────────────────────────────────── */
 
-.tv-pop {
-  border-radius: 1rem;
-  border: 1px solid var(--tv-border-strong);
-  background: var(--tv-plate-3);
-  box-shadow: var(--tv-elev-3);
-}
-
-/* ══ LES SÉLECTEURS (`shared/ui/Picker.tsx`) ══════════════════════════════
-   La même plaque que le calendrier et la roue d'heure (`.tv-pop`) : on
-   reconnaît un sélecteur TradeVault à sa surface, pas à sa place. */
-.tv-pick-in {
-  animation: tv-pick-in var(--tv-dur-2) var(--tv-ease) both;
-}
-@keyframes tv-pick-in {
-  from {
-    opacity: 0;
-    transform: translateY(4px) scale(0.985);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .tv-pick-in {
-    animation: none;
-  }
-}
-.tv-pick-veil {
-  background: rgb(0 0 0 / 0.55);
-}
-
-/* Le déclencheur « pastille » : le NOM du filtre, puis sa valeur. */
-.tv-pick-pill {
-  display: inline-flex;
-  height: 2.25rem;
-  max-width: 100%;
-  flex-shrink: 0;
-  align-items: center;
-  gap: 0.4rem;
-  border-radius: 0.75rem;
-  border: 1px solid var(--tv-border);
-  background: var(--tv-plate-2);
-  padding: 0 0.7rem;
-  transition-property: background-color, border-color;
-  transition-duration: var(--tv-dur-1);
-}
-.tv-pick-pill:hover:not(:disabled) {
-  border-color: var(--tv-border-strong);
-}
-.tv-pick-pill-open {
-  border-color: var(--tv-border-strong);
-  background: var(--tv-plate-3);
-}
-.tv-pick-pill-value {
-  max-width: 9rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--tv-text-secondary);
-}
-.tv-pick-pill-on {
-  border-color: var(--tv-border-accent);
-  background: rgb(var(--tv-accent-rgb) / 0.08);
-}
-.tv-pick-pill-on .tv-pick-pill-value {
-  color: var(--tv-highlight);
-}
-
-/* La recherche, en tête de longue liste. */
-.tv-pick-search {
-  display: flex;
-  height: 2.25rem;
-  align-items: center;
-  gap: 0.5rem;
-  border-radius: 0.7rem;
-  border: 1px solid var(--tv-border);
-  background: var(--tv-plate-2);
-  padding: 0 0.65rem;
-}
-.tv-pick-search:focus-within {
-  border-color: var(--tv-border-accent);
-}
-.tv-pick-search:focus {
-  border-color: var(--tv-border-accent);
-}
-
-/* ── Le sélecteur de couleur : même famille que les autres sélecteurs ──
-   Le déclencheur est une rangée en relief (pastille + nom + famille), les
-   pastilles de la palette sont des plaques colorées avec un liseré interne
-   pour qu'un ton sombre ne se perde pas sur le panneau. */
-.tv-color-trigger {
-  border: 1px solid var(--tv-border);
-  border-radius: 0.875rem;
-  background: var(--tv-plate-2);
-  padding: 0.55rem 0.75rem 0.55rem 0.55rem;
-  box-shadow: var(--tv-relief-edge);
-  transition: border-color var(--tv-dur-1) var(--tv-ease);
-}
-.tv-color-trigger:hover {
-  border-color: var(--tv-border-strong);
-}
-.tv-color-trigger.is-open {
-  border-color: var(--tv-border-accent);
-}
-.tv-color-chip {
-  border-radius: 0.625rem;
-  box-shadow:
-    inset 0 0 0 1px rgb(255 255 255 / 0.14),
-    0 1px 2px rgb(0 0 0 / 0.45);
-}
-.tv-color-swatch {
-  display: grid;
-  place-items: center;
-  border-radius: 0.625rem;
-  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.1);
-  transition:
-    transform var(--tv-dur-1) var(--tv-ease),
-    box-shadow var(--tv-dur-1) var(--tv-ease);
-}
-@media (hover: hover) {
-  .tv-color-swatch:hover {
-    transform: scale(1.06);
-  }
-}
-.tv-color-swatch.is-on {
-  box-shadow:
-    inset 0 0 0 1px rgb(255 255 255 / 0.2),
-    0 0 0 2px var(--tv-plate-2),
-    0 0 0 3.5px var(--tv-text-primary, #f4f6f8);
-}
-
-/* Une option : la case (ou le point), le libellé, le compte. */
-.tv-pick-opt {
-  display: flex;
-  width: 100%;
-  min-height: 2.25rem;
-  align-items: center;
-  gap: 0.6rem;
-  border-radius: 0.6rem;
-  padding: 0.35rem 0.6rem;
-  text-align: left;
-  font-size: 0.8125rem;
-  color: var(--tv-text-secondary);
-  transition-property: background-color, color;
-  transition-duration: var(--tv-dur-1);
-}
-.tv-pick-opt:hover,
-.tv-pick-opt:focus-visible {
-  outline: none;
-  background: rgb(255 255 255 / 0.06);
-  color: var(--tv-text-primary);
-}
-.tv-pick-opt-on {
-  color: var(--tv-text-primary);
-}
-.tv-pick-box,
-.tv-pick-dot {
-  display: grid;
-  height: 1.05rem;
-  width: 1.05rem;
-  flex-shrink: 0;
-  place-items: center;
-  border: 1px solid var(--tv-border-strong);
-  background: var(--tv-plate-1);
-  color: #04120b;
-  transition-property: background-color, border-color;
-  transition-duration: var(--tv-dur-1);
-}
-.tv-pick-box {
-  border-radius: 0.3rem;
-}
-.tv-pick-dot {
-  border-radius: 999px;
-}
-.tv-pick-box.is-on,
-.tv-pick-dot.is-on {
-  border-color: var(--tv-accent);
-  background: var(--tv-accent);
-}
-
-/* Les pastilles à plat : raccourcis de période, filtres d'une feuille. */
-.tv-pick-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-}
-.tv-pick-chip {
-  display: inline-flex;
-  height: 2rem;
-  align-items: center;
-  gap: 0.35rem;
-  border-radius: 0.6rem;
-  border: 1px solid var(--tv-border);
-  background: var(--tv-plate-2);
-  padding: 0 0.7rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--tv-text-secondary);
-  transition-property: background-color, border-color, color;
-  transition-duration: var(--tv-dur-1);
-}
-.tv-pick-chip:hover {
-  border-color: var(--tv-border-strong);
-  color: var(--tv-text-primary);
-}
-.tv-pick-chip-on,
-.tv-pick-chip-on:hover {
-  border-color: var(--tv-border-accent);
-  background: rgb(var(--tv-accent-rgb) / 0.12);
-  color: var(--tv-highlight);
-}
-
-/* Le pied d'un panneau : effacer, valider. */
-.tv-pick-foot {
-  display: inline-flex;
-  height: 2rem;
-  align-items: center;
-  border-radius: 0.6rem;
-  padding: 0 0.8rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--tv-text-secondary);
-  transition-property: background-color, color;
-  transition-duration: var(--tv-dur-1);
-}
-.tv-pick-foot:hover:not(:disabled) {
-  background: rgb(255 255 255 / 0.05);
-  color: var(--tv-text-primary);
-}
-.tv-pick-foot-main,
-.tv-pick-foot-main:hover:not(:disabled) {
-  background: var(--tv-accent);
-  color: #04120b;
-}
-
-.tv-pop-nav {
-  display: grid;
-  place-items: center;
-  width: 2rem;
-  height: 2rem;
-  border-radius: 0.6rem;
-  color: var(--tv-text-secondary);
-  transition:
-    background 140ms ease,
-    color 140ms ease;
-}
-.tv-pop-nav:hover {
-  background: rgb(255 255 255 / 0.06);
-  color: var(--tv-text-primary);
-}
-
-/* La case d'un jour. 2rem de côté : trente-cinq cases dans un panneau de
-   17rem, et une cible qui reste cliquable au doigt. */
-.tv-pop-day {
-  display: grid;
-  place-items: center;
-  height: 2rem;
-  border-radius: 0.55rem;
-  font-size: 0.78rem;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  color: var(--tv-text-secondary);
-  transition:
-    background 140ms ease,
-    color 140ms ease;
-}
-.tv-pop-day:hover:not(:disabled) {
-  background: rgb(255 255 255 / 0.07);
-  color: var(--tv-text-primary);
-}
-.tv-pop-day:disabled {
-  opacity: 0.25;
-  cursor: not-allowed;
-}
-.tv-pop-day-on {
-  background: var(--tv-accent);
-  color: #fff;
-}
-.tv-pop-day-on:hover {
-  background: var(--tv-accent);
-  color: #fff;
-}
-/* Aujourd'hui : un point sous le chiffre, pas un cadre. Un cadre entrerait en
-   concurrence avec la sélection, qui est la seule chose qu'on cherche. */
-.tv-pop-day-today {
-  position: relative;
-  color: var(--tv-text-primary);
-}
-.tv-pop-day-today::after {
-  content: "";
-  position: absolute;
-  bottom: 0.25rem;
-  left: 50%;
-  width: 3px;
-  height: 3px;
-  margin-left: -1.5px;
-  border-radius: 999px;
-  background: var(--tv-highlight);
-}
-
-/* Les colonnes du sélecteur d'heure. */
-/* ── LA ROUE D'HEURE (`TimeField`) ─────────────────────────────────────────
-   Deux roues aimantées : la valeur s'arrête au centre, sous la bande. Pas de
-   barre de défilement, un fondu en haut et en bas pour dire « ça continue ». */
-.tv-wheel {
-  position: relative;
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-}
-.tv-wheel-band {
-  position: absolute;
-  inset-inline: 0;
-  top: 50%;
-  height: 2rem;
-  transform: translateY(-50%);
-  border: 1px solid var(--tv-border);
-  border-radius: 0.6rem;
-  background: rgb(255 255 255 / 0.05);
-  pointer-events: none;
-  transition: border-color 140ms ease;
-}
-.tv-wheel:focus-within .tv-wheel-band {
-  border-color: var(--tv-border-accent);
-}
-.tv-wheel-sep {
-  position: relative;
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: var(--tv-text-muted);
-}
-.tv-wheel-col {
-  position: relative;
-  height: 10rem;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  scroll-snap-type: y mandatory;
-  scrollbar-width: none;
-  padding-block: 4rem;
-  outline: none;
-  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 32%, #000 68%, transparent);
-  mask-image: linear-gradient(to bottom, transparent, #000 32%, #000 68%, transparent);
-}
-.tv-wheel-col::-webkit-scrollbar {
-  display: none;
-}
-.tv-wheel-item {
-  display: flex;
-  height: 2rem;
-  align-items: center;
-  justify-content: center;
-  scroll-snap-align: center;
-  cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 400;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.01em;
-  color: var(--tv-text-muted);
-  transition:
-    color 140ms ease,
-    font-size 140ms ease;
-}
-.tv-wheel-item:hover {
-  color: var(--tv-text-secondary);
-}
-.tv-wheel-item[aria-selected="true"] {
-  font-size: 1rem;
-  font-weight: 500;
-  color: var(--tv-text-primary);
-}
-.tv-wheel-done {
-  margin-top: 0.5rem;
-  width: 100%;
-  min-height: 2.25rem;
-  border-radius: 0.6rem;
-  background: rgb(255 255 255 / 0.06);
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--tv-text-primary);
-  transition: background-color 140ms ease;
-}
-.tv-wheel-done:hover {
-  background: rgb(255 255 255 / 0.1);
-}
-
 /* ══ UN RÉGLAGE MONTE-CARLO = UNE SEULE LIGNE ══
  *
  * Le réglage occupait quatre lignes : libellé, boîte de saisie de 36px,
@@ -6719,4 +6336,66 @@ body::after {
 .mst-lane-tab:focus-visible {
   outline: 2px solid rgb(var(--tv-accent-rgb) / 0.7);
   outline-offset: 1px;
+}
+
+.tv-trade-modal {
+  background: var(--tv-plate-1);
+}
+.tv-trade-form {
+  font-size: var(--tv-t-body-sm);
+}
+.tv-trade-inset {
+  padding: 12px;
+  border: 1px solid var(--tv-border);
+  border-radius: var(--radius-xl);
+  background: var(--tv-plate-0);
+}
+.tv-trade-form [data-selection-chip] {
+  min-height: 36px;
+  border-radius: var(--radius-lg);
+  border-color: var(--tv-border);
+  background: var(--tv-plate-2);
+  color: var(--tv-text-secondary);
+  font-size: var(--tv-t-body-sm);
+}
+.tv-trade-form [data-selection-chip][aria-pressed="true"],
+.tv-trade-form [data-selection-chip]:has([aria-pressed="true"]),
+.tv-trade-form .tv-pick-chip-on {
+  border-color: var(--tv-border-strong);
+  background: var(--tv-plate-3);
+  color: var(--tv-text-primary);
+}
+.tv-trade-form input[type="range"] {
+  accent-color: var(--tv-text-secondary);
+}
+.tv-trade-form .tv-pick-chips {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.tv-trade-form .tv-pick-chip {
+  justify-content: center;
+  min-height: 44px;
+  font-size: var(--tv-t-body-sm);
+}
+.tv-trade-form .tv-disclosure .tv-pick-chips {
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+}
+@media (pointer: coarse) {
+  .tv-trade-form [data-selection-chip] {
+    min-height: 44px;
+  }
+}
+.tv-trade-form input[type="range"]::-webkit-slider-thumb {
+  background: var(--tv-text-secondary);
+  border-color: var(--tv-text-secondary);
+}
+.tv-trade-form input[type="range"]::-moz-range-thumb {
+  background: var(--tv-text-secondary);
+  border-color: var(--tv-text-secondary);
+}
+body.tv-app-type svg.lucide {
+  stroke-width: 1.6;
+}
+.tv-trade-modal footer button {
+  border-radius: var(--radius-xl);
 }

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Loader2, TriangleAlert } from "lucide-react";
+import { Loader2, TriangleAlert } from "@/shared/ui/icons";
 import { useT } from "@/app/i18n/LanguageContext";
 import type { TKey } from "@/app/i18n/translations";
 import { Button, Modal, cn } from "@/shared/ui";

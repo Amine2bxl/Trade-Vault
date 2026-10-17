@@ -1,4 +1,4 @@
-import { ChevronRight, X } from "lucide-react";
+import { ChevronRight, X } from "@/shared/ui/icons";
 import { Modal } from "@/shared/ui";
 import { formatMoney } from "@/shared/currency";
 import { isBreakEven, type Trade } from "@/app/types";

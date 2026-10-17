@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CreditCard, ExternalLink, X } from "lucide-react";
+import { CreditCard, ExternalLink, X } from "@/shared/ui/icons";
 import { useT } from "@/app/i18n/LanguageContext";
 import { useSubscription } from "@/app/hooks/useSubscription";
 import PricingPlans from "./PricingPlans";

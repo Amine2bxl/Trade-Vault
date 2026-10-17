@@ -980,6 +980,9 @@ const en = {
   "analytics.title": "Analytics",
   "analytics.subtitle": "Deep dive into your trading patterns",
   "analytics.noTrades": "Add trades to see analytics",
+  "analytics.viewOverview": "Overview",
+  "analytics.viewExecution": "Execution",
+  "analytics.viewTiming": "Timing",
   "analytics.profitFactor": "Profit Factor",
   "analytics.profitsOverLosses": "Total Profits ÷ Total Losses",
   "analytics.profits": "Profits",
@@ -1255,6 +1258,10 @@ const en = {
   "common.irreversible": "This action cannot be undone.",
 
   // Trade intent & reflection (Phase 0b)
+  "trade.riskUnit": "Risk unit",
+  "trade.sectionExecution": "Execution",
+  "trade.sectionContext": "Context",
+  "trade.sectionReview": "Review",
   "trade.intent": "Before the trade (optional)",
   "trade.intentEmotion": "How I felt",
   "trade.intentReasoning": "Why am I taking this trade?",

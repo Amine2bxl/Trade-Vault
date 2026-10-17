@@ -31,7 +31,7 @@ import {
   Coins,
   LockKeyhole,
   Radio,
-} from "lucide-react";
+} from "@/shared/ui/icons";
 import { cn } from "@/shared/ui/cn";
 import { useT } from "@/app/i18n/LanguageContext";
 import { useTheme } from "@/app/contexts/ThemeContext";

@@ -23,7 +23,7 @@ L'élévation est réservée aux modales et menus ; une carte de graphique ou de
 statistique ne change plus de fond au survol.
 
 `PageContainer` porte les marges communes (`px-3 py-2 md:px-5 md:py-3`) et le
-maximum de 1400 px, y compris pour les pages à hauteur mesurée (ref transmise
+maximum de 1200 px (1400 px pour le calendrier), y compris pour les pages à hauteur mesurée (ref transmise
 directement). Une page de lecture ou de réglages peut garder une largeur plus
 étroite. La disposition reste propre à l'usage : courbe dominante au Dashboard,
 tableau sur ordinateur et cartes à deux rangées sur mobile dans le Journal
@@ -106,7 +106,7 @@ Import unique : `import { … } from "@/shared/ui"`. `shared/ui` n'importe jamai
 | --- | --- |
 | Typographie | `Display`, `Heading`, `Text`, `Label` |
 | Actions | `Button`, `Chip`, `RemovableChip` |
-| Saisie | `Input`, `Textarea`, `Select`, `Field`, `DateField`, `TimeField`, `SelectPicker`, `MultiPicker`, `RangePicker`, `ColorPicker` |
+| Saisie | `Input`, `Textarea`, `Select`, `Field`, `DateField`, `TimeField`, `SelectPicker`, `MultiPicker`, `RangePicker`, `ColorPicker`, `ChoiceGroup`, `Disclosure` |
 | Surfaces | `Card` (+ `CardHeader/Title/Body`), `Modal`, `Sheet`, `PageContainer` |
 | Structure de page | `PageHeader`, `SectionHeader`, `SubNav`, `PageToolbar` |
 | Données | `Kpi`, `KpiGrid`, `Metric`, `Table` (+ `THead`, `TBody`, `TR`, `TH`, `TD`, `TableScroll`), `Badge`, `EmptyState` |
@@ -156,6 +156,73 @@ Jarvis → Erreurs / cas d'usage → Excel/Notion → Tarifs → CTA.
 `/dev/ui` (développement uniquement) monte les vrais composants de toutes les
 pages, avec les fournisseurs de l'app et sa typographie. `?screen=calendar`,
 `?screen=journal`, `?screen=dashboard`, etc. choisissent une page ; `&empty=1`
-retire les trades de démonstration pour vérifier les états vides. La route ne
+retire les trades de démonstration pour vérifier les états vides. `screen=trade`,
+`screen=controls` et `screen=icons` exposent les bancs dédiés au formulaire,
+aux sélecteurs et au catalogue de glyphes. La route ne
 rend rien dans un build de production. Les pages qui chargent leurs propres
 données demandent une session locale de test ou des réponses simulées.
+
+## 9. Champs, filtres et icônes : contrat unique
+
+Point d'entrée des règles : `src/shared/ui/selection.ts`. La géométrie est
+implémentée dans `src/shared/ui/selection.css`, importé par `src/styles.css` ;
+`SelectionPanel.tsx` est le seul moteur de panneau flottant. `Picker.tsx`
+compose ce moteur, sans le recopier. Les dates, heures et couleurs passent
+par le même moteur, y compris dans une modale ou un filtre de période.
+
+| Besoin | Primitive à utiliser |
+| --- | --- |
+| Texte, nombre, note | `Field` + `Input` / `Textarea` |
+| Un choix, plusieurs choix, période | `SelectPicker`, `MultiPicker`, `RangePicker` |
+| Date civile, heure civile | `DateField`, `TimeField` |
+| Choix courts visibles | `ChoiceGroup` (radio, clavier, état neutre) |
+| Options avancées | `Disclosure` (titre, commande 44 px, corps espacé) |
+| Nouveau type de filtre | `SelectionPanel` + contrôle tiré de `selection.ts` |
+
+**Géométrie :** champ de 44 px, rayon `xl`, texte `body-sm` (13 px), libellé
+`tv-label`, séparation 12 px. Les nombres suivent `tv-figure`. Les sélections
+restent neutres ; l'accent désigne l'action principale et le focus. Le P&L
+et les erreurs gardent leurs couleurs sémantiques. Une page n'impose pas sa
+propre hauteur, couleur de champ, animation ou logique de positionnement.
+
+**Comportement commun :** portail hors des zones qui rognent ; placement
+contre le déclencheur sur bureau, panneau centré sur mobile ; adaptation à la
+fenêtre et au clavier virtuel ; recherche des longues listes ; clavier et
+retour du focus. Une pile de panneaux fait fermer seulement le dernier par
+Échap ou un clic extérieur : fermer une date dans une période ne ferme pas
+le formulaire de trade situé dessous. Aucune temporisation ne retarde un choix.
+
+`TimeField` accepte la saisie `HH:MM` ou quatre chiffres, et propose deux
+listes à défilement **natif**. Faire défiler parcourt les options ; cliquer ou
+utiliser les flèches sélectionne immédiatement. Le défilement ne réécrit pas
+la valeur. Les minutes importées hors du pas restent disponibles. Pas de
+`preventDefault` sur la molette, de `scroll-snap` obligatoire, ni de boucle
+`scroll → setTimeout → état → smooth scroll`.
+
+**Ajouter ou modifier un filtre :**
+1. Choisir la primitive dans la table ; fournir la donnée, les libellés
+   traduits, la valeur et `onChange` depuis la feature.
+2. Ajuster une règle commune dans `selection.ts`, `SelectionPanel.tsx` ou le
+   fichier `selection.css`, puis contrôler au moins une autre feature.
+3. Vérifier ouverture en bas de fenêtre, mobile 360 px, clavier, Échap
+   imbriqué, focus et absence de débordement. Un champ `TimeField` doit
+   accepter `09:47` sans arrondi ni attente.
+
+**Formulaire de trade :** trois vues partagent la même grille et le même pied
+fixe : Exécution (ordre, risque, date/heure, calculateur), Contexte (qualité,
+confiance, intention, confluences), Bilan (erreurs, réflexion, captures, notes).
+Tous les champs restent dans un seul état et un seul brouillon ; changer de
+vue ne les efface pas. Le P&L importé et la relation risque/R restent gérés
+par les calculs existants.
+
+**Pages contenues :** cadre standard de 1200 px, graphiques moins hauts ;
+Analytics organise tous ses blocs en Synthèse, Exécution et Timing, un groupe
+à la fois. Le calendrier conserve son cadre de référence de 1400 px.
+
+**Icônes :** `src/shared/ui/icons.tsx` est le catalogue commun à la navigation,
+aux pages et aux contrôles. Les glyphes métier sont propres à TradeVault
+(carnet, trajectoires, exécution, risque, saisons) : grille 24 px, trait 1,6,
+`currentColor`, aucune teinte décorative. Importer ce catalogue, jamais
+`lucide-react` directement dans l'app connectée. Les utilitaires moins courants
+restent compatibles avec les noms existants ; tout nouveau glyphe métier se
+dessine ici, jamais dans un écran.
