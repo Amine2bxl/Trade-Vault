@@ -225,7 +225,7 @@ export const AXIS_TICK = {
   fill: "var(--tv-text-muted)",
   fontSize: 11,
   fontFamily: "var(--font-figure)",
-  fontWeight: 600,
+  fontWeight: 800,
 } as const;
 
 // Compact money labels ($1.2k) so the Y axis stays narrow and readable at any

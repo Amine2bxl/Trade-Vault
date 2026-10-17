@@ -3,6 +3,47 @@
 @import "tw-animate-css";
 @import "./shared/ui/selection.css";
 
+/* Le même dessin ExtraBold pour chaque chiffre, même dans une phrase sans
+   classe numérique. Le sous-ensemble local ne remplace aucune lettre.
+   Une seule face couvre toutes les graisses du texte : aucun faux-gras. */
+@font-face {
+  font-family: "TradeVault Numerals";
+  src: url("/fonts/tradevault-numerals-800.v1.woff") format("woff");
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  unicode-range:
+    U+0024-0025, U+002B, U+0030-0039, U+00A2-00A5, U+0E3F, U+2030-2031, U+20A0-20BF, U+2212;
+}
+
+/* Le même fichier complète les séparateurs des valeurs balisées, sans
+   remplacer les virgules du texte courant. */
+@font-face {
+  font-family: "TradeVault Figures";
+  src: url("/fonts/tradevault-numerals-800.v1.woff") format("woff");
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+}
+/* Une emphase dans Jarvis ou une note ne déforme pas les chiffres. Les
+   lettres gardent leur italique ; les contours numériques restent droits. */
+@font-face {
+  font-family: "TradeVault Numerals";
+  src: url("/fonts/tradevault-numerals-800.v1.woff") format("woff");
+  font-style: italic;
+  font-weight: 100 900;
+  font-display: swap;
+  unicode-range:
+    U+0024-0025, U+002B, U+0030-0039, U+00A2-00A5, U+0E3F, U+2030-2031, U+20A0-20BF, U+2212;
+}
+@font-face {
+  font-family: "TradeVault Figures";
+  src: url("/fonts/tradevault-numerals-800.v1.woff") format("woff");
+  font-style: italic;
+  font-weight: 100 900;
+  font-display: swap;
+}
+
 /*
  * Design system definition.
  *
@@ -75,10 +116,11 @@
    * Roboto Mono sert aux rares données techniques (codes, heures).
    * ---------------------------------------------------------------- */
   --font-sans:
-    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    "TradeVault Numerals", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    Helvetica, Arial, sans-serif;
   --font-mono:
-    "Roboto Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
-    monospace;
+    "TradeVault Numerals", "Roboto Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", monospace;
 
   /* ----------------------------------------------------------------
    * Plancher de lisibilité de la rampe slate.
@@ -342,20 +384,22 @@
      classe du même nom. H1–H6, `.font-display`, `.metric-display` et la marque
      de la sidebar l'utilisent. */
   --font-display:
-    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    "TradeVault Numerals", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    Helvetica, Arial, sans-serif;
   /* LA PILE DE LUCID — la police du système, sans police web. SF Pro sur
      Apple (`-apple-system` / `BlinkMacSystemFont`), Segoe UI sous Windows,
      Roboto sous Android, Helvetica Neue / Arial en dernier recours. C'est
      exactement ce que rend leur tableau de bord (vérifié sur leurs captures :
      SF Pro sur iPhone, Segoe UI sur un poste Windows). */
   --font-lucid:
-    -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto,
-    "Helvetica Neue", Arial, sans-serif;
-  /* La voix des données de la référence fournie : Inter Bold, chargée
-     une seule fois par la racine. Contrairement à la pile système, elle garde
-     exactement la même carrure sur Mac, Windows et mobile. */
+    "TradeVault Numerals", -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  /* Les chiffres viennent du même fichier local, sur toutes les surfaces et
+     tous les appareils ; Inter complète les séparateurs des valeurs. */
   --font-figure:
-    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    "TradeVault Figures", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif;
+  --tv-numeric-weight: 800;
   /* Default identity = "Graphite" neutral gray — matches the public landing
      page so the signed-in app and the marketing site share one identity. */
   /* Surfaces et textes — extraits en variables pour que le studio de thème
@@ -2984,34 +3028,14 @@ a:focus-visible,
 }
 
 /* ══ LE CHIFFRE ══
- *
- * C'est le « Capital » de la page Calculatrice de lot, mot pour mot :
- *
- *     text-2xl md:text-3xl font-extrabold tabular-nums text-white
- *
- * Autrement dit : Inter — la police du produit, pas une seconde famille —
- * en graisse 700, avec les chiffres TABULAIRES.
- *
- * Le tabulaire est le seul point qui compte vraiment, et il ne se voit pas
- * tant qu'on ne l'enlève pas : il donne à chaque chiffre la même largeur.
- * Deux montants alignés en colonne le restent, et un total qui passe de 999
- * à 1 000 ne fait plus glisser sa ligne. La graisse 700, elle, est ce qui
- * fait qu'on lit le nombre AVANT son libellé.
- *
- * Une parenthèse fermée : le produit est passé un temps en chasse fixe pour
- * ses chiffres. C'était une autre police, donc une seconde voix dans une
- * interface qui n'en veut qu'une. Inter tabulaire fait le même travail
- * d'alignement en restant la même écriture que le reste.
- *
- * La classe ne fixe pas de COULEUR : la teinte d'un chiffre porte son signe
- * (vert gagné, rouge perdu), et cela se décide au point d'appel.
- */
-/* Deux poids de données, indépendants de la taille et de la couleur. */
+ * Un seul dessin Inter ExtraBold, y compris pour les valeurs secondaires.
+ * La hiérarchie reste dans la taille existante, la disposition et la couleur.
+ * Les colonnes de valeurs gardent leurs avances tabulaires. */
 .tv-figure {
   font-family: var(--font-figure);
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum";
-  font-weight: 700;
+  font-weight: var(--tv-numeric-weight);
   letter-spacing: -0.01em;
 }
 .tv-num,
@@ -3031,19 +3055,19 @@ time,
   font-family: var(--font-figure);
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum";
-  font-weight: 600;
+  font-weight: var(--tv-numeric-weight);
 }
 body.tv-app-type :is(.tv-figure, .tv-num, .tabular-nums) {
   font-family: var(--font-figure);
 }
 .tv-figure.tv-figure-secondary {
-  font-weight: 600;
+  font-weight: var(--tv-numeric-weight);
 }
-/* Les données de tableau et de calendrier restent denses, les totaux portent 700. */
+/* Tableaux, calendriers et axes partagent les mêmes contours numériques. */
 .tv-app-type :is(.cal-cell-day, .tv-pop-day, .tv-time-option, .recharts-text, .tv-chk-step) {
   font-family: var(--font-figure);
   font-variant-numeric: tabular-nums;
-  font-weight: 600;
+  font-weight: var(--tv-numeric-weight);
 }
 /* ══ LE LIBELLÉ ══
  *

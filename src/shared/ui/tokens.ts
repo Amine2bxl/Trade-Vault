@@ -27,13 +27,15 @@
  *  de police. */
 export const font = {
   /** Inter body stack (applied to `body` in styles.css). */
-  body: '"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif',
+  body: '"TradeVault Numerals","Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif',
   /** Inter display stack — use via the `font-display` utility class. */
-  display: '"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif',
+  display:
+    '"TradeVault Numerals","Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif',
   /** Roboto Mono stack for the rare technical spots (codes, session times). */
-  mono: '"Roboto Mono",ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace',
+  mono: '"TradeVault Numerals","Roboto Mono",ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace',
   /** Exact figure stack used by `.tv-figure` and numeric fields. */
-  figure: '"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif',
+  figure:
+    '"TradeVault Figures","Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif',
   /** Utility class for display emphasis (headings + hero metrics). */
   displayClass: "font-display",
   /** Tabular figures for prices / R / stats. */
