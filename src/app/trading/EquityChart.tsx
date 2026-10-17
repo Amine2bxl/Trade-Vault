@@ -217,15 +217,17 @@ function EquityChart({ data }: { data: EquityPoint[] }) {
                 const delta = val - breakEven;
                 return (
                   <div className="glass-strong rounded-2xl px-3 py-2 shadow-[var(--tv-elev-3)]">
-                    <p className="tv-label text-slate-500">{formatShortDate(label as string)}</p>
+                    <p className="tv-num tv-label text-slate-500">
+                      {formatShortDate(label as string)}
+                    </p>
                     <p className="tv-figure mt-0.5 text-sm text-white">
                       {formatMoney(Number(val))}
                     </p>
                     <p
                       className={
                         delta >= 0
-                          ? "tv-figure text-[11px] text-emerald-400"
-                          : "tv-figure text-[11px] text-red-400"
+                          ? "tv-figure tv-figure-secondary text-[11px] text-emerald-400"
+                          : "tv-figure tv-figure-secondary text-[11px] text-red-400"
                       }
                     >
                       {formatMoney(delta, { signed: true })}

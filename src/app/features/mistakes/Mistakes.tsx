@@ -24,7 +24,7 @@ import { MISTAKE_CLUSTERS, clusterBreakdown } from "@/app/trading/mistakeCluster
 import { cn } from "@/shared/ui/cn";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { useT } from "@/app/i18n/LanguageContext";
-import { AXIS_TICK, BAR_RADIUS, CHART_ANIMATION, tooltipStyle } from "@/app/trading/chartTheme";
+import { AXIS_TICK, BAR_RADIUS, useChartAnimation, tooltipStyle } from "@/app/trading/chartTheme";
 import { PageContainer, EmptyState, Card } from "@/shared/ui";
 
 interface MistakesProps {
@@ -50,6 +50,7 @@ const MISTAKE_TIP_KEYS: Record<string, string> = {
 };
 
 export default function Mistakes({ trades, embedded = false }: MistakesProps) {
+  const chartAnimation = useChartAnimation();
   const { t, lang } = useT();
   const locale =
     (
@@ -436,7 +437,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
                         radius={BAR_RADIUS}
                         fill="#f59e0b"
                         fillOpacity={0.55}
-                        {...CHART_ANIMATION}
+                        {...chartAnimation}
                       />
                     </BarChart>
                   </ResponsiveContainer>
@@ -477,7 +478,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
                   </div>
                   <span
                     className={cn(
-                      "tv-figure text-[11px] shrink-0 w-16 text-right",
+                      "tv-figure tv-figure-secondary text-[11px] shrink-0 w-16 text-right",
                       a.ratePct >= 80
                         ? "text-emerald-400"
                         : a.ratePct >= 50
@@ -516,7 +517,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
                           style={{ width: `${(s.count / maxSessionCount) * 100}%` }}
                         />
                       </div>
-                      <span className="tv-figure text-[10px] text-slate-400 w-6 text-right">
+                      <span className="tv-figure tv-figure-secondary text-[10px] text-slate-400 w-6 text-right">
                         {s.count}
                       </span>
                     </div>
@@ -542,7 +543,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
                         radius={BAR_RADIUS}
                         fill="#f59e0b"
                         fillOpacity={0.5}
-                        {...CHART_ANIMATION}
+                        {...chartAnimation}
                       />
                     </BarChart>
                   </ResponsiveContainer>
@@ -618,7 +619,9 @@ function Voie({
         <Icone className={cn("h-4 w-4 shrink-0", texte)} />
         <h3 className={cn("text-sm font-bold", texte)}>{titre}</h3>
         {items.length > 0 && (
-          <span className="tv-figure ml-auto shrink-0 text-xs text-slate-500">{items.length}</span>
+          <span className="tv-figure tv-figure-secondary ml-auto shrink-0 text-xs text-slate-500">
+            {items.length}
+          </span>
         )}
       </div>
       <p className="tv-row-label md:mt-0.5">{sous}</p>
@@ -750,7 +753,9 @@ function ItemPlan({
       <span className="min-w-0 flex-1 truncate text-sm font-semibold text-white">
         {item.mistake}
       </span>
-      <span className="tv-figure shrink-0 text-xs text-slate-500">{compte}×</span>
+      <span className="tv-figure tv-figure-secondary shrink-0 text-xs text-slate-500">
+        {compte}×
+      </span>
       <Pente semaines={semaines} legende={t("mistakes.weeklySlope")} />
       {/* LA TENDANCE — la seule information de cette page qui dise si l'on
           progresse. Elle était calculée pour chaque erreur et affichée pour
@@ -758,6 +763,7 @@ function ItemPlan({
       {item.deltaPct !== null && item.deltaPct !== 0 && (
         <span
           className={cn(
+            "tv-num",
             "inline-flex shrink-0 items-center gap-0.5 text-[11px] font-bold",
             item.deltaPct < 0 ? "rp-pos" : "rp-neg",
           )}
@@ -863,7 +869,7 @@ function BandeFamilles({ counts }: { counts: Record<string, number> }) {
             />
             <span className={cn("tv-row-label", c.n === 0 && "opacity-50")}>{t(c.labelKey)}</span>
             {c.n > 0 && (
-              <span className="tv-figure text-[11px] text-slate-400">
+              <span className="tv-figure tv-figure-secondary text-[11px] text-slate-400">
                 {Math.round((c.n / total) * 100)}%
               </span>
             )}
@@ -924,7 +930,12 @@ function ApresPerte({
 function Colonne({ pct, ton }: { pct: number; ton: "neg" | "neutre" }) {
   return (
     <span className="flex w-8 shrink-0 flex-col items-center gap-1">
-      <span className={cn("tv-figure text-xs", ton === "neg" ? "rp-neg" : "text-slate-400")}>
+      <span
+        className={cn(
+          "tv-figure tv-figure-secondary text-xs",
+          ton === "neg" ? "rp-neg" : "text-slate-400",
+        )}
+      >
         {pct}%
       </span>
       <span className="flex h-10 w-4 items-end overflow-hidden rounded-sm bg-white/[0.05]">

@@ -36,7 +36,8 @@ import {
   EmptyState,
   PageContainer,
   SelectPicker,
-  PageControls,
+  FilterControls,
+  FilterSection,
   Card,
   Kpi,
   KpiGrid,
@@ -53,7 +54,7 @@ import {
   BAR_FILL_RED,
   BAR_RADIUS,
   BAR_RADIUS_H,
-  CHART_ANIMATION,
+  useChartAnimation,
   EQUITY_CURVE_TYPE,
   EQUITY_GRID,
   TREND_LINE,
@@ -99,6 +100,7 @@ const PERIOD_DAYS: Record<AnalyticsPeriod, number | null> = {
 const weekdayOf = (date: string) => new Date(`${date}T12:00:00`).getDay();
 
 export default function Analytics({ trades }: AnalyticsProps) {
+  const chartAnimation = useChartAnimation();
   const [view, setView] = useState<"overview" | "execution" | "timing">("overview");
   const { t, lang } = useT();
   const { user } = useAuth();
@@ -391,74 +393,105 @@ export default function Analytics({ trades }: AnalyticsProps) {
   const pageControls = useMemo(
     () => (
       <div className="flex items-center gap-1">
-        <PageControls
+        <FilterControls
           label={t("common.filters")}
+          summary={[
+            period.kind === "custom"
+              ? `${period.from} – ${period.to}`
+              : period.preset !== "all"
+                ? t(`common.${period.preset}`)
+                : "",
+            ...days.map((d) => jours[Number(d)]),
+          ]
+            .filter(Boolean)
+            .join(" · ")}
+          onReset={() => {
+            setDays([]);
+            setPeriod({ kind: "preset", preset: "all" });
+          }}
+          resetLabel={t("common.reset")}
+          doneLabel={t("common.done")}
+          liveLabel={t("filters.live")}
           count={days.length + (period.kind === "custom" || period.preset !== "all" ? 1 : 0)}
         >
-          <SelectPicker
-            inline
+          <FilterSection
             label={t("common.viewMode")}
-            value={view}
-            onChange={setView}
-            options={[
-              { value: "overview", label: t("analytics.viewOverview") },
-              { value: "execution", label: t("analytics.viewExecution") },
-              { value: "timing", label: t("analytics.viewTiming") },
-            ]}
-          />
-          <RangePicker
+            summary={t(
+              view === "overview"
+                ? "analytics.viewOverview"
+                : view === "execution"
+                  ? "analytics.viewExecution"
+                  : "analytics.viewTiming",
+            )}
+          >
+            <SelectPicker
+              inline
+              label={t("common.viewMode")}
+              value={view}
+              onChange={setView}
+              options={[
+                { value: "overview", label: t("analytics.viewOverview") },
+                { value: "execution", label: t("analytics.viewExecution") },
+                { value: "timing", label: t("analytics.viewTiming") },
+              ]}
+            />
+          </FilterSection>
+          <FilterSection
             label={t("common.period")}
-            value={period}
-            onChange={setPeriod}
-            neutralPreset="all"
-            presets={[
-              { value: "all", label: t("common.all") },
-              { value: "7d", label: t("common.7d") },
-              { value: "30d", label: t("common.30d") },
-              { value: "90d", label: t("common.90d") },
-              { value: "1y", label: t("common.1y") },
-            ]}
-            customLabel={t("picker.custom")}
-            fromLabel={t("picker.from")}
-            toLabel={t("picker.to")}
-            applyLabel={t("picker.apply")}
-            todayLabel={t("calendar.today")}
-            locale={locale}
-          />
-          {/* Lundi à vendredi : les marchés que ce produit journalise ne
-            s'échangent pas le week-end. Un jour, plusieurs, ou tous. */}
-          <MultiPicker
+            summary={
+              period.kind === "custom"
+                ? `${period.from} – ${period.to}`
+                : t(`common.${period.preset}`)
+            }
+            defaultOpen
+          >
+            <RangePicker
+              inline
+              label={t("common.period")}
+              value={period}
+              onChange={setPeriod}
+              neutralPreset="all"
+              presets={[
+                { value: "all", label: t("common.all") },
+                { value: "7d", label: t("common.7d") },
+                { value: "30d", label: t("common.30d") },
+                { value: "90d", label: t("common.90d") },
+                { value: "1y", label: t("common.1y") },
+              ]}
+              customLabel={t("picker.custom")}
+              fromLabel={t("picker.from")}
+              toLabel={t("picker.to")}
+              applyLabel={t("picker.apply")}
+              todayLabel={t("calendar.today")}
+              locale={locale}
+            />
+          </FilterSection>
+          <FilterSection
             label={t("journal.filterDay")}
-            values={days}
-            onChange={setDays}
-            options={[1, 2, 3, 4, 5].map((d) => ({
-              value: String(d),
-              label: jours[d].charAt(0).toUpperCase() + jours[d].slice(1),
-              count: periodDayCount[d] ?? 0,
-            }))}
-            allLabel={t("common.all")}
-            clearLabel={t("common.clear")}
-            doneLabel={t("common.done")}
-            countLabel={t("picker.nSelected")}
-          />
-          {(days.length > 0 || period.kind === "custom" || period.preset !== "all") && (
-            <button
-              onClick={() => {
-                setDays([]);
-                setPeriod({ kind: "preset", preset: "all" });
-              }}
-              className="inline-flex h-9 shrink-0 items-center rounded-lg px-2.5 text-xs font-semibold text-slate-500 transition-colors hover:bg-white/[0.04] hover:text-white"
-            >
-              {t("common.reset")}
-            </button>
-          )}
-          <span className="tv-figure text-xs text-slate-500">
-            {cutoffTrades.length} {t("common.trades")}
-          </span>
-        </PageControls>
+            summary={days.length ? days.map((d) => jours[Number(d)]).join(", ") : t("common.all")}
+          >
+            {/* Lundi à vendredi : les marchés que ce produit journalise ne
+            s'échangent pas le week-end. Un jour, plusieurs, ou tous. */}
+            <MultiPicker
+              inline
+              label={t("journal.filterDay")}
+              values={days}
+              onChange={setDays}
+              options={[1, 2, 3, 4, 5].map((d) => ({
+                value: String(d),
+                label: jours[d].charAt(0).toUpperCase() + jours[d].slice(1),
+                count: periodDayCount[d] ?? 0,
+              }))}
+              allLabel={t("common.all")}
+              clearLabel={t("common.clear")}
+              doneLabel={t("common.done")}
+              countLabel={t("picker.nSelected")}
+            />
+          </FilterSection>
+        </FilterControls>
       </div>
     ),
-    [view, t, days, period, locale, jours, periodDayCount, cutoffTrades.length],
+    [view, t, days, period, locale, jours, periodDayCount],
   );
   usePageActions(trades.length > 0 ? pageControls : null);
 
@@ -508,7 +541,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
 
             {/* Le calcul, écrit : gains ÷ pertes. C'est ce qui rend le facteur
                 lisible sans le connaître. */}
-            <span className="tv-figure hidden items-baseline gap-1.5 text-[11px] text-slate-500 sm:flex">
+            <span className="tv-figure tv-figure-secondary hidden items-baseline gap-1.5 text-[11px] text-slate-500 sm:flex">
               <span className="text-emerald-400">{formatPnl(profitFactorData.totalProfits)}</span>
               <span className="text-slate-600">÷</span>
               <span className="text-red-400">{formatPnl(-profitFactorData.totalLosses)}</span>
@@ -638,7 +671,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                         stroke="none"
                         onMouseEnter={(_, i) => setActivePieIndex(i)}
                         onMouseLeave={() => setActivePieIndex(null)}
-                        animationDuration={900}
+                        {...chartAnimation}
                         animationEasing="ease-out"
                       >
                         {winLossData.map((e, i) => (
@@ -699,7 +732,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                           return [formatMoney(Number(value)), t("journal.colPnl")];
                         }}
                       />
-                      <Bar yAxisId="left" dataKey="pnl" radius={BAR_RADIUS} {...CHART_ANIMATION}>
+                      <Bar yAxisId="left" dataKey="pnl" radius={BAR_RADIUS} {...chartAnimation}>
                         {monthlyData.map((e, i) => (
                           <Cell key={i} fill={e.pnl >= 0 ? BAR_FILL_GREEN : BAR_FILL_RED} />
                         ))}
@@ -713,7 +746,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                         dot={false}
                         activeDot={glowActiveDot(TREND_STROKE)}
                         name="winRate"
-                        {...CHART_ANIMATION}
+                        {...chartAnimation}
                       />
                       <Line
                         yAxisId="right"
@@ -726,7 +759,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                         dot={false}
                         activeDot={glowActiveDot("#f59e0b")}
                         name="avgRR"
-                        {...CHART_ANIMATION}
+                        {...chartAnimation}
                       />
                     </ComposedChart>
                   </ResponsiveContainer>
@@ -810,10 +843,10 @@ export default function Analytics({ trades }: AnalyticsProps) {
                             {row.strategy}
                           </span>
                         </td>
-                        <td className="tv-figure px-4 py-2.5 text-xs text-slate-400 text-right">
+                        <td className="tv-figure tv-figure-secondary px-4 py-2.5 text-xs text-slate-400 text-right">
                           {row.count}
                         </td>
-                        <td className="tv-figure px-4 py-2.5 text-xs text-right">
+                        <td className="tv-figure tv-figure-secondary px-4 py-2.5 text-xs text-right">
                           <span
                             className={cn(
                               "font-semibold",
@@ -827,7 +860,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                             {row.winRate === null ? "—" : formatPct(row.winRate)}
                           </span>
                         </td>
-                        <td className="tv-figure hidden px-4 py-2.5 text-xs text-right sm:table-cell">
+                        <td className="tv-figure tv-figure-secondary hidden px-4 py-2.5 text-xs text-right sm:table-cell">
                           <span
                             className={cn(
                               "font-semibold",
@@ -837,7 +870,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                             {formatPnl(row.expectancy)}
                           </span>
                         </td>
-                        <td className="tv-figure hidden px-4 py-2.5 text-xs text-right text-slate-300 sm:table-cell">
+                        <td className="tv-figure tv-figure-secondary hidden px-4 py-2.5 text-xs text-right text-slate-300 sm:table-cell">
                           {/* « — » sous l'échantillon minimum : ne rien affirmer vaut
                           mieux qu'affirmer sur trois trades. */}
                           {row.profitFactor === null
@@ -846,7 +879,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                               ? "99+"
                               : row.profitFactor.toFixed(2)}
                         </td>
-                        <td className="tv-figure hidden px-4 py-2.5 text-xs text-right sm:table-cell">
+                        <td className="tv-figure tv-figure-secondary hidden px-4 py-2.5 text-xs text-right sm:table-cell">
                           {row.avgR === null ? (
                             <span className="text-slate-600">—</span>
                           ) : (
@@ -861,7 +894,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                             </span>
                           )}
                         </td>
-                        <td className="tv-figure px-4 py-2.5 text-xs text-right">
+                        <td className="tv-figure tv-figure-secondary px-4 py-2.5 text-xs text-right">
                           <span
                             className={cn(
                               "font-bold",
@@ -905,7 +938,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                           t("journal.colPnl"),
                         ]}
                       />
-                      <Bar dataKey="pnl" radius={BAR_RADIUS_H} {...CHART_ANIMATION}>
+                      <Bar dataKey="pnl" radius={BAR_RADIUS_H} {...chartAnimation}>
                         {strategyData.map((e, i) => (
                           <Cell key={i} fill={e.pnl >= 0 ? BAR_FILL_GREEN : BAR_FILL_RED} />
                         ))}
@@ -936,6 +969,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                       </div>
                       <span
                         className={cn(
+                          "tv-num",
                           "text-xs font-bold w-20 text-right",
                           s.pnl >= 0 ? "text-emerald-400" : "text-red-400",
                         )}
@@ -969,7 +1003,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                       allowDecimals={false}
                     />
                     <Tooltip {...tooltipStyle} />
-                    <Bar dataKey="count" radius={BAR_RADIUS} {...CHART_ANIMATION}>
+                    <Bar dataKey="count" radius={BAR_RADIUS} {...chartAnimation}>
                       {pnlDistribution.map((e, i) => (
                         <Cell key={i} fill={e.fill} fillOpacity={0.7} />
                       ))}
@@ -1040,14 +1074,16 @@ export default function Analytics({ trades }: AnalyticsProps) {
                                     cell.pnl >= 0 ? "text-emerald-300" : "text-red-300",
                                   )}
                                 >
-                                  <span className="md:hidden">
+                                  <span className="tv-num md:hidden">
                                     {formatMoney(cell.pnl, { signed: true, compact: true })}
                                   </span>
-                                  <span className="hidden md:inline">
+                                  <span className="tv-num hidden md:inline">
                                     {formatMoney(cell.pnl, { signed: true, whole: true })}
                                   </span>
                                 </span>
-                                <span className="text-slate-400 font-medium">{cell.count}</span>
+                                <span className="tv-num text-slate-400 font-medium">
+                                  {cell.count}
+                                </span>
                               </>
                             )}
                           </div>
@@ -1084,7 +1120,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                             name === "winRate" ? t("analytics.winRateLabel") : t("journal.colPnl"),
                           ]}
                         />
-                        <Bar yAxisId="left" dataKey="pnl" radius={BAR_RADIUS} {...CHART_ANIMATION}>
+                        <Bar yAxisId="left" dataKey="pnl" radius={BAR_RADIUS} {...chartAnimation}>
                           {hourData.map((e, i) => (
                             <Cell key={i} fill={e.pnl >= 0 ? BAR_FILL_GREEN : BAR_FILL_RED} />
                           ))}
@@ -1097,7 +1133,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                           {...TREND_LINE}
                           dot={false}
                           activeDot={glowActiveDot(TREND_STROKE)}
-                          {...CHART_ANIMATION}
+                          {...chartAnimation}
                         />
                       </ComposedChart>
                     </ResponsiveContainer>
@@ -1134,7 +1170,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                         name === "winRate" ? t("analytics.winRateLabel") : t("journal.colPnl"),
                       ]}
                     />
-                    <Bar yAxisId="left" dataKey="pnl" radius={BAR_RADIUS} {...CHART_ANIMATION}>
+                    <Bar yAxisId="left" dataKey="pnl" radius={BAR_RADIUS} {...chartAnimation}>
                       {dayOfWeekData.map((e, i) => (
                         <Cell key={i} fill={e.pnl >= 0 ? BAR_FILL_GREEN : BAR_FILL_RED} />
                       ))}
@@ -1147,7 +1183,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                       {...TREND_LINE}
                       dot={false}
                       activeDot={glowActiveDot(TREND_STROKE)}
-                      {...CHART_ANIMATION}
+                      {...chartAnimation}
                     />
                   </ComposedChart>
                 </ResponsiveContainer>
@@ -1257,7 +1293,7 @@ function SeasonalitySection({ trades }: { trades: Trade[] }) {
               </div>
               {years.map(([year, months]) => (
                 <div key={year} className="flex gap-0.5 items-center">
-                  <div className="w-8 text-[10px] font-bold text-slate-400 shrink-0 text-right pr-1">
+                  <div className="tv-num w-8 text-[10px] font-bold text-slate-400 shrink-0 text-right pr-1">
                     {year}
                   </div>
                   <div className="grid grid-cols-12 gap-0.5 flex-1">
@@ -1268,7 +1304,7 @@ function SeasonalitySection({ trades }: { trades: Trade[] }) {
                       return (
                         <div
                           key={i}
-                          className="tv-figure h-7 rounded flex items-center justify-center text-[10px]"
+                          className="tv-figure tv-figure-secondary h-7 rounded flex items-center justify-center text-[10px]"
                           style={{
                             background: isWin
                               ? `rgb(var(--tv-chart-green-rgb) / ${a})`

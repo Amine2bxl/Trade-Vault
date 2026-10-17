@@ -260,7 +260,7 @@ function Section({
         <span className="tv-label text-slate-500 group-hover:text-slate-300 transition-colors">
           {title}
         </span>
-        <span className="tv-figure text-[10px] text-slate-600">{count}</span>
+        <span className="tv-figure tv-figure-secondary text-[10px] text-slate-600">{count}</span>
         <span className="flex-1 h-px bg-white/[0.06]" />
         <ChevronDown
           className={cn(

@@ -105,3 +105,4 @@ export { ChoiceGroup, Disclosure } from "./FormControls";
 export { selection } from "./selection";
 
 export { PageControls } from "./PageControls";
+export { FilterControls, FilterSection } from "./FilterControls";

@@ -78,8 +78,12 @@ Roboto sous Android), relevée sur leurs captures, sans police web à charger ;
 `body.tv-app-type` (posé par `shell/App.tsx`) l'applique, modales comprises.
 La vitrine, les pages légales et la démo gardent **Inter**. `.tv-figure`
 (chiffres, P&L) et `.tv-label` (petites capitales grasses espacées) portent
-**Inter ExtraBold** via `--font-figure`, conformément à la référence fournie et
-de façon identique sur tous les appareils. Échelle à rôles `--tv-t-*` : `display`, `h1`, `h2`,
+**Inter** via `--font-figure`, identique sur tous les appareils. Utiliser
+`700` pour les valeurs principales (`tv-figure`) et `600` pour les valeurs
+secondaires (`tv-num`, `tv-figure-secondary`, champs, dates, heures, axes).
+Ne jamais augmenter une taille pour renforcer un chiffre ; conserver sa
+couleur sémantique et `tabular-nums`. `numericText` balise les nombres inclus
+dans le Markdown, les notifications et les libellés sans modifier le texte. Échelle à rôles `--tv-t-*` : `display`, `h1`, `h2`,
 `h3`, `body`, `body-sm`, `caption`, `micro`. Chiffres : `.tv-figure`
 (tabulaires). Libellés : `.tv-label` (petites capitales espacées). Détail :
 skill `typography`.
@@ -91,6 +95,8 @@ encore davantage (dette à résorber, sans en ajouter) —, **300 ms maximum dan
 `transform` et `opacity`, jamais `transition-property: all`. Pas de Framer
 Motion. Reveal au scroll réservé à la landing (GSAP, contenu visible par
 défaut). Recharts reste hors du chunk initial (chargé paresseusement).
+Les graphiques utilisent `useChartAnimation` : 260 ms, arrêt immédiat des
+animations en préférence réduite (y compris lors d’un changement du réglage système).
 Effet compteur de Lucid : `RollingFigure` (`shared/ui`) fait rouler un chiffre
 qui change — tuiles `Metric`/`Kpi`, P&L du tableau de bord — avec les
 keyframes du prix animé (`prix-entre`/`prix-sort`), aucune nouvelle keyframe.
@@ -177,7 +183,8 @@ par le même moteur, y compris dans une modale ou un filtre de période.
 | Date civile, heure civile | `DateField`, `TimeField` |
 | Choix courts visibles | `ChoiceGroup` (radio, clavier, état neutre) |
 | Options avancées | `Disclosure` (titre, commande 44 px, corps espacé) |
-| Filtres ou commandes secondaires d’une page | `PageControls` (déclencheur unique + panneau partagé) |
+| Filtres d’une page | `FilterControls` + `FilterSection`, choix inline, résumé actif et pied fixe |
+| Commandes secondaires | `PageControls` (menu d’actions partagé) |
 | Nouveau type de filtre | `SelectionPanel` + contrôle tiré de `selection.ts` |
 
 **Géométrie :** champ de 44 px ; dans `tv-compact-form` (trades et setups manqués), 36 px sur pointeur fin et 44 px sur écran tactile, rayon `lg`. Texte `body-sm` (13 px), libellé
@@ -209,7 +216,51 @@ la valeur. Les minutes importées hors du pas restent disponibles. Pas de
    imbriqué, focus et absence de débordement. Un champ `TimeField` doit
    accepter `09:47` sans arrondi ni attente.
 
-**En-têtes légers :** `app/shell/PageHead.tsx` porte une seule barre principale dans le flux, sans marge négative ni chevauchement. Les filtres secondaires sont regroupés dans `PageControls` ; un compteur indique les critères actifs et Échap ferme le panneau en conservant les valeurs. Analytics et la saisonnalité remontent un unique `PageControls` dans `usePageActions` ; la vue, la période, les jours ou les actifs se choisissent dans ce panneau. Le banc visuel monte le vrai `PageHead`, avec `SectionTabs` et `MobileActions`, pour contrôler leur largeur ensemble. Ne pas ajouter de rangées de pastilles ni de bloc permanent de personnalisation au-dessus du contenu. `SectionTabs`, `SubNav` et `PageToolbar` gardent un cadre fin et une plaque neutre : le groupe reste identifiable. Un seul contour par groupe, sans double cadre ; les onglets ne passent pas sur une deuxième ligne.
+**Filtres de page :** `FilterControls.tsx` est le point d’assemblage commun au
+Journal, à Analytics, aux actualités économiques, à la saisonnalité et à
+l’Inbox. Le déclencheur affiche le résumé actif (nom complet accessible, texte
+tronqué si nécessaire) et son nombre. Chaque `FilterSection` garde sa valeur
+visible lorsqu’elle est repliée ; l’accordéon natif ne développe qu’un groupe
+à la fois. Les options sont **inline**, jamais un second popover pour un jour,
+un résultat, une devise ou un setup. Les listes longues montrent d’abord six
+choix et les sélections ; la suite et la recherche se demandent explicitement.
+Le pied reste fixe : réinitialiser, mention « mise à jour immédiate », terminer.
+Les changements s’appliquent immédiatement ; seule une période personnalisée
+attend « appliquer la période » après choix de ses deux bornes. La date reste
+le seul panneau imbriqué, géré par la pile commune. Le défilement de secours
+existe sur un petit écran ou avec clavier ouvert, mais les critères usuels
+restent visibles sans scroll. Aucune requête réseau par choix de filtre.
+
+**En-têtes légers :** `app/shell/PageHead.tsx` porte une seule barre principale
+dans le flux. Les filtres remontent dans `usePageActions` ; le Journal garde
+sa recherche et son accès aux filtres sur une seule ligne. Les vues, mois de
+rapport, périodes d’equity et autres sélecteurs courts utilisent les mêmes
+primitives `Picker` / `SelectionPanel`. Ne pas ajouter de rangées de pastilles
+ni de bloc permanent de personnalisation au-dessus du contenu. `SectionTabs`,
+`SubNav` et `PageToolbar` gardent un cadre fin et une plaque neutre : un seul
+contour par groupe, sans double cadre ni retour des onglets à la ligne.
+
+**Jarvis :** conversation bornée à 760 px pour la lecture, questions sur plaque 3,
+réponses sur plaque 1, données dans les primitives KPI et tableaux denses qui
+se replient. Les actions de réponse vivent dans `ResponseActions` ; la copie
+utilise `responseTextOf` et n’emploie jamais le résumé tronqué envoyé à l’IA.
+Le scroll ne suit une génération que si le lecteur est déjà en bas ; « dernier
+message » y ramène explicitement. Le rendu progressif est court et peut être
+terminé au clavier, depuis une commande fixe près du compositeur ; `prefers-reduced-motion` affiche immédiatement la réponse.
+Les anciens blocs et leur Markdown sont mémoïsés pour ne pas être reparcourus
+à chaque frappe. Les anciens tours bénéficient de `content-visibility`, sans retirer de message
+du DOM ou de l’historique. Identité, focus et indicateurs utilisent l’accent du
+thème ; aucun fond animé ni halo d’ambiance. Les moteurs, mémoire, quotas,
+propositions et requêtes en cours restent indépendants de cette présentation.
+
+**Notifications :** une seule anatomie de ligne, groupée par période ; les
+avertissements/erreurs non lus passent dans « à traiter ». Le point et le poids
+du titre indiquent le non lu, le liseré indique l’urgence. Sujet et date vivent
+sur une ligne secondaire ; corps limité à deux lignes, détail et plan conservés
+dans le détail existant. Ouverture, lecture et navigation sont des boutons
+séparés. Catégories multiples et non-lues se combinent dans `FilterControls`.
+Le chargement reprend la géométrie des lignes ; échec et réessai sont explicites.
+Aucune notification de démonstration n’est ajoutée dans le produit.
 
 **Saisie d’un trade :** panneau de 576 px maximum, hauteur ajustée au contenu (plafond 680 px / 86dvh). La première vue présente instrument, date, direction et risque/R ; le résultat calculé porte l’accent visuel dans le pied, avec une seule action d’enregistrement. Entrée soumet le formulaire valide. Les horaires restent résumés sur une ligne dépliable. Stratégie, notes et analyse restent facultatives, à la demande, sans onglets. Le détail broker et les métriques avancées restent accessibles sans concurrencer la saisie essentielle. Les nombres importants gagnent un cran typographique, Long/Short/BE gardent leurs signes et états sémantiques. Le bouton de saisie utilise `Button variant="entry"` (cadre court, angles `lg`, hauteur 36 px / 44 px tactile). Les setups manqués gardent le même langage de champs et une palette neutre.
 

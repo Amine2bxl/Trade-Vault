@@ -38,6 +38,8 @@ import {
   EmptyState,
   Card,
   PageControls,
+  FilterControls,
+  FilterSection,
   Kpi,
   KpiGrid,
   SelectPicker,
@@ -297,15 +299,6 @@ export default function Journal({
       .filter((i) => (i >= 1 && i <= 5 ? true : traded.has(i) || days.includes(String(i))))
       .map((i) => ({ value: String(i), label: jours[i] }));
   }, [jours, trades, days]);
-  /* Sur téléphone, six setups d'abord ; les autres derrière « +N ». */
-  const [allSetups, setAllSetups] = useState(false);
-  const SETUPS_FIRST = 6;
-  const setupChips =
-    allSetups || strategyOptions.length <= SETUPS_FIRST + 1
-      ? strategyOptions
-      : strategyOptions.slice(0, SETUPS_FIRST);
-  const toggleSetup = (v: string) =>
-    setStrategies(strategies.includes(v) ? strategies.filter((x) => x !== v) : [...strategies, v]);
   const periodPresets: { value: PeriodPreset; label: string }[] = [
     { value: "all", label: t("common.all") },
     { value: "7d", label: t("common.7d") },
@@ -441,7 +434,7 @@ export default function Journal({
     <div className="py-3 text-center">
       <button
         onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
-        className="rounded-xl border border-white/[0.08] bg-white/[0.04] px-5 py-2.5 text-xs font-semibold text-slate-300 transition hover:bg-white/[0.08]"
+        className="tv-num rounded-xl border border-white/[0.08] bg-white/[0.04] px-5 py-2.5 text-xs font-semibold text-slate-300 transition hover:bg-white/[0.08]"
       >
         {t("journal.loadMore")} ({filtered.length - visibleCount})
       </button>
@@ -476,7 +469,7 @@ export default function Journal({
         {/* Deep-link filter actif — un chip qui permet de revenir à la vue complète */}
         {deepFilter.trades && deepFilter.trades.length > 0 && (
           <div className="mb-2.5 md:mb-3 flex shrink-0 items-center gap-2 rounded-xl border border-cyan-500/20 bg-cyan-500/[0.06] px-3 py-2 text-xs">
-            <span className="text-cyan-300 font-semibold">
+            <span className="tv-num text-cyan-300 font-semibold">
               {deepFilter.trades.length} {t("common.trades")} · {t("journal.fromJarvis")}
             </span>
             <button
@@ -498,8 +491,39 @@ export default function Journal({
             enterKeyHint="search"
             className="h-11 min-w-0 flex-1 rounded-xl border border-white/[0.06] bg-white/[0.03] px-3 text-sm text-slate-200 outline-none transition-colors placeholder:text-slate-600 focus:border-[var(--tv-border-accent)] md:h-9 md:max-w-sm"
           />
-          <PageControls label={t("common.filters")} count={activeFilterCount}>
-            <div className="space-y-3">
+          <FilterControls
+            label={t("common.filters")}
+            count={activeFilterCount}
+            summary={[
+              period.kind === "custom"
+                ? `${period.from} – ${period.to}`
+                : period.preset !== "all"
+                  ? periodPresets.find((p) => p.value === period.preset)?.label
+                  : "",
+              resultFilter !== "all" ? t(`common.${resultFilter}`) : "",
+              ...strategies,
+              ...days.map((d) => jours[Number(d)]),
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+            onReset={() => {
+              resetFilters();
+              setResultFilter("all");
+              setSearchQuery("");
+            }}
+            resetLabel={t("common.reset")}
+            doneLabel={t("common.done")}
+            liveLabel={t("filters.live")}
+          >
+            <FilterSection
+              label={t("common.period")}
+              summary={
+                period.kind === "custom"
+                  ? `${period.from} – ${period.to}`
+                  : periodPresets.find((p) => p.value === period.preset)?.label
+              }
+              defaultOpen
+            >
               <RangePicker
                 inline
                 label={t("common.period")}
@@ -507,50 +531,46 @@ export default function Journal({
                 presets={periodPresets}
                 onChange={setPeriod}
                 neutralPreset="all"
-                className="[&>div]:p-0"
                 {...rangeText}
               />
-              {strategyOptions.length > 0 && (
-                <div className="tv-pick-inline">
-                  <span className="tv-label mb-1.5 block text-slate-500">
-                    {t("journal.colStrategy")}
-                  </span>
-                  <div className="tv-pick-chips">
-                    <button
-                      type="button"
-                      aria-pressed={strategies.length === 0}
-                      onClick={() => setStrategies([])}
-                      className={cn("tv-pick-chip", strategies.length === 0 && "tv-pick-chip-on")}
-                    >
-                      {t("common.all")}
-                    </button>
-                    {setupChips.map((o) => {
-                      const on = strategies.includes(o.value);
-                      return (
-                        <button
-                          key={o.value}
-                          type="button"
-                          aria-pressed={on}
-                          onClick={() => toggleSetup(o.value)}
-                          className={cn("tv-pick-chip max-w-full", on && "tv-pick-chip-on")}
-                        >
-                          <span className="truncate">{o.label}</span>
-                          <span className="tv-figure opacity-60">{o.count}</span>
-                        </button>
-                      );
-                    })}
-                    {setupChips.length < strategyOptions.length && (
-                      <button
-                        type="button"
-                        onClick={() => setAllSetups(true)}
-                        className="tv-pick-chip border-dashed"
-                      >
-                        +{strategyOptions.length - setupChips.length}
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
+            </FilterSection>
+            <FilterSection
+              label={t("tradeDetail.result")}
+              summary={resultFilter === "all" ? t("common.all") : t(`common.${resultFilter}`)}
+            >
+              <SelectPicker
+                inline
+                label={t("tradeDetail.result")}
+                value={resultFilter}
+                onChange={setResultFilter}
+                options={(["all", "win", "loss", "be"] as const).map((v) => ({
+                  value: v,
+                  label: t(`common.${v}`),
+                  count: counts[v],
+                }))}
+              />
+            </FilterSection>
+            {strategyOptions.length > 0 && (
+              <FilterSection
+                label={t("journal.colStrategy")}
+                summary={strategies.length ? strategies.join(", ") : t("common.all")}
+              >
+                <MultiPicker
+                  inline
+                  label={t("journal.colStrategy")}
+                  values={strategies}
+                  options={strategyOptions}
+                  onChange={setStrategies}
+                  {...pickerText}
+                  moreLabel={t("filters.more")}
+                  lessLabel={t("filters.less")}
+                />
+              </FilterSection>
+            )}
+            <FilterSection
+              label={t("journal.filterDay")}
+              summary={days.length ? days.map((d) => jours[Number(d)]).join(", ") : t("common.all")}
+            >
               <MultiPicker
                 inline
                 label={t("journal.filterDay")}
@@ -559,63 +579,21 @@ export default function Journal({
                 onChange={setDays}
                 {...pickerText}
               />
-            </div>
-            <div className="flex items-center gap-1">
-              {(
-                [
-                  { v: "all", label: t("common.all") },
-                  { v: "win", label: t("common.win") },
-                  { v: "loss", label: t("common.loss") },
-                  { v: "be", label: t("common.be") },
-                ] as { v: ResultFilter; label: string }[]
-              ).map((opt) => (
-                <button
-                  key={opt.v}
-                  onClick={() => setResultFilter(opt.v)}
-                  className={cn(
-                    "flex h-11 flex-1 items-center justify-center gap-1.5 rounded-lg px-2 text-xs font-semibold transition lg:h-8 lg:flex-none lg:px-3",
-                    resultFilter === opt.v
-                      ? opt.v === "win"
-                        ? "bg-emerald-500/15 text-emerald-400"
-                        : opt.v === "loss"
-                          ? "bg-red-500/15 text-red-400"
-                          : opt.v === "be"
-                            ? "bg-slate-500/20 text-slate-200"
-                            : "bg-cyan-500/15 text-cyan-400"
-                      : "text-slate-500 hover:text-slate-300",
-                  )}
-                >
-                  {opt.label}
-                  <span
-                    className={cn(
-                      "tv-figure text-[10px]",
-                      resultFilter === opt.v ? "opacity-70" : "text-slate-600",
-                    )}
-                  >
-                    {counts[opt.v]}
-                  </span>
-                </button>
-              ))}
-            </div>
-            <SelectPicker
+            </FilterSection>
+            <FilterSection
               label={t("sort.label")}
-              value={sortChoice}
-              options={sortOptions}
-              onChange={pickSort}
-              neutralValue="date-desc"
-            />
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                resetFilters();
-                setResultFilter("all");
-                setSearchQuery("");
-              }}
+              summary={sortOptions.find((o) => o.value === sortChoice)?.label}
             >
-              {t("common.reset")}
-            </Button>
-          </PageControls>
+              <SelectPicker
+                inline
+                label={t("sort.label")}
+                value={sortChoice}
+                options={sortOptions}
+                onChange={pickSort}
+                neutralValue="date-desc"
+              />
+            </FilterSection>
+          </FilterControls>
         </div>
 
         {/* ── Mobile: Card List ── */}
@@ -694,7 +672,9 @@ export default function Journal({
                           {directionLabel(trade.direction)}
                         </span>
                       </span>
-                      <span className="tv-prose text-slate-500">{formatShortDate(trade.date)}</span>
+                      <span className="tv-num tv-prose text-slate-500">
+                        {formatShortDate(trade.date)}
+                      </span>
                     </span>
                     <span className="shrink-0 text-right">
                       <span
@@ -711,7 +691,7 @@ export default function Journal({
                       </span>
                       <span
                         className={cn(
-                          "tv-figure block text-xs",
+                          "tv-figure tv-figure-secondary block text-xs",
                           be
                             ? "text-slate-400"
                             : trade.rMultiple >= 0
@@ -824,7 +804,7 @@ export default function Journal({
                         className="group cursor-pointer transition-colors hover:bg-white/[0.03]"
                         onClick={() => setViewingIdx(i)}
                       >
-                        <td className="px-4 py-1.5 text-sm text-slate-300">
+                        <td className="tv-num px-4 py-1.5 text-sm text-slate-300">
                           {formatShortDate(trade.date)}
                         </td>
                         <td className="px-4 py-1.5">
@@ -1003,7 +983,7 @@ function QuickEditCell({
 
   if (disabled) {
     return (
-      <span className={className}>
+      <span className={`tv-num ${className ?? ""}`}>
         {prefix}
         {value.toFixed(decimals)}
         {suffix}
@@ -1046,6 +1026,7 @@ function QuickEditCell({
          c'est la zone qui s'ouvre, et le `-mx-1 -my-1` empêche la colonne de
          s'élargir pour autant. */
       className={cn(
+        "tv-num",
         className,
         "-mx-1 -my-1 inline-flex h-8 items-center rounded-md px-1 text-left transition-colors",
         "hover:bg-white/[0.08] hover:ring-1 hover:ring-cyan-500/30",

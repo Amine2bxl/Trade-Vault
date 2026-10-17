@@ -769,7 +769,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                     saveAccountBalance(userId, value);
                   }}
                 />
-                <p className="tv-prose text-slate-500">
+                <p className="tv-num tv-prose text-slate-500">
                   {formatMoney(riskDollar)} {t("dashboard.riskSuffix")}
                 </p>
               </Field>
@@ -926,7 +926,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                   />
                 </Field>
               </div>
-              <p className="tv-prose text-slate-400">
+              <p className="tv-num tv-prose text-slate-400">
                 {calcContracts
                   ? `${calcContracts.contracts} ${t("trade.contracts")} · ${t("trade.effectiveRisk")}: ${formatMoney(calcContracts.effectiveRisk)}`
                   : t("trade.calcHint")}
@@ -1186,7 +1186,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                         )}
                       </button>
                       {/* Rang + flèches de réordonnancement (tactile). */}
-                      <span className="absolute top-1 left-1 grid h-5 w-5 place-items-center rounded-md bg-black/70 text-xs font-bold text-white">
+                      <span className="tv-num absolute top-1 left-1 grid h-5 w-5 place-items-center rounded-md bg-black/70 text-xs font-bold text-white">
                         {i + 1}
                       </span>
                       {form.screenshots.length > 1 && (

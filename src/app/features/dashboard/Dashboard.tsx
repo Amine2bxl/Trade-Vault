@@ -285,8 +285,11 @@ export default function Dashboard({
   const headerActions = useMemo(
     () => (
       <div className="hidden shrink-0 items-center gap-2 md:flex">
-        <Button variant="entry" size="sm" onClick={onAddTrade}>
-          <Plus className="h-4 w-4" /> {t("common.addTrade")}
+        <Button variant="entry" size="sm" onClick={onAddTrade} className="tv-dashboard-add">
+          <span className="tv-dashboard-add-icon">
+            <Plus className="h-3.5 w-3.5" />
+          </span>
+          <span>{t("common.addTrade")}</span>
         </Button>
         {hasDraft && (
           <button type="button" onClick={onAddTrade} className="tv-draft-badge">
@@ -344,7 +347,7 @@ export default function Dashboard({
             >
               {formatPnl(jour.pnl)}
             </span>
-            <span className="tv-row-label shrink-0">
+            <span className="tv-num tv-row-label shrink-0">
               {jour.n} {jour.n > 1 ? t("dashboard.tradesToday") : t("dashboard.tradeToday")}
             </span>
           </>
@@ -462,11 +465,11 @@ export default function Dashboard({
                       </span>
                       <span className="text-[10px] text-slate-600">Silver Bullet</span>
                     </div>
-                    <div className="text-[10px] text-slate-600">
+                    <div className="tv-num text-[10px] text-slate-600">
                       10:03 · 2R · {formatMoney(150, { whole: true })} {t("dashboard.riskSuffix")}
                     </div>
                   </div>
-                  <div className="text-sm font-bold text-emerald-400">
+                  <div className="tv-num text-sm font-bold text-emerald-400">
                     {formatMoney(300, { signed: true })}
                   </div>
                 </div>
@@ -497,7 +500,7 @@ export default function Dashboard({
                         {periodPct !== null && (
                           <span
                             className={cn(
-                              "tv-figure text-xs md:text-sm px-2 py-0.5 rounded-lg",
+                              "tv-figure tv-figure-secondary text-xs md:text-sm px-2 py-0.5 rounded-lg",
                               gain
                                 ? "bg-emerald-500/10 text-emerald-400"
                                 : "bg-red-500/10 text-red-400",
@@ -776,7 +779,7 @@ export default function Dashboard({
                                   {trade.strategy}
                                 </span>
                               </div>
-                              <div className="text-[11px] text-slate-500">
+                              <div className="tv-num text-[11px] text-slate-500">
                                 {formatShortDate(trade.date)} · {trade.rMultiple.toFixed(1)}R
                               </div>
                             </div>
@@ -793,7 +796,7 @@ export default function Dashboard({
                               >
                                 {formatPnl(trade.pnl)}
                               </div>
-                              <div className="text-[10px] text-slate-500">
+                              <div className="tv-num text-[10px] text-slate-500">
                                 {formatMoney(trade.riskAmount, { whole: true })}{" "}
                                 {t("dashboard.riskSuffix")}
                               </div>

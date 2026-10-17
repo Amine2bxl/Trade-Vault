@@ -70,7 +70,9 @@ function Radial({ pct, color, center }: { pct: number; color: string; center?: s
       </svg>
       {center && (
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="tv-figure hidden text-[11px] text-slate-300 sm:inline">{center}</span>
+          <span className="tv-figure tv-figure-secondary hidden text-[11px] text-slate-300 sm:inline">
+            {center}
+          </span>
         </div>
       )}
     </div>
@@ -178,7 +180,12 @@ export function Metric({
       {footer && (
         <div className="mt-3 pt-2.5 border-t border-[var(--tv-border)] flex items-center justify-between">
           <span className={cn(type.label, "text-slate-500")}>{footer.label}</span>
-          <span className={cn("tv-figure text-xs", footer.className ?? "text-slate-300")}>
+          <span
+            className={cn(
+              "tv-figure tv-figure-secondary text-xs",
+              footer.className ?? "text-slate-300",
+            )}
+          >
             {footer.value}
           </span>
         </div>

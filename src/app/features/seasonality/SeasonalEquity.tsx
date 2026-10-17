@@ -19,7 +19,7 @@ import {
   AXIS_TICK,
   CHART_GREEN,
   CHART_RED,
-  EQUITY_ANIMATION,
+  useChartAnimation,
   EQUITY_FLOOR,
   EQUITY_GRID,
   EQUITY_LINE,
@@ -60,6 +60,7 @@ export function SeasonalEquity({
   currentMonth: number;
   trades: Trade[];
 }) {
+  const chartAnimation = useChartAnimation(true);
   const { t, lang } = useT();
   const monthName = (m: number) =>
     new Date(2026, m, 1).toLocaleDateString(lang, { month: "short" });
@@ -189,7 +190,7 @@ export function SeasonalEquity({
                 dot={false}
                 activeDot={glowActiveDot(color)}
                 connectNulls={false}
-                {...EQUITY_ANIMATION}
+                {...chartAnimation}
               />
               <Line
                 dataKey="ahead"
@@ -202,7 +203,7 @@ export function SeasonalEquity({
                 activeDot={glowActiveDot(color)}
                 connectNulls={false}
                 tooltipType="none"
-                {...EQUITY_ANIMATION}
+                {...chartAnimation}
               />
               <ReferenceLine
                 x={currentMonth}
@@ -351,7 +352,7 @@ export function SeasonalEquity({
                     {...EQUITY_LINE}
                     dot={false}
                     activeDot={glowActiveDot(myColor)}
-                    {...EQUITY_ANIMATION}
+                    {...chartAnimation}
                   />
                 </ComposedChart>
               </ResponsiveContainer>
@@ -364,7 +365,7 @@ export function SeasonalEquity({
               <div className="mb-2 flex items-center justify-between gap-2">
                 <span className="tv-label text-slate-500">{t("seasonality.mineVsSeason")}</span>
                 {alignment.active > 0 && (
-                  <span className="tv-figure text-[11px] text-slate-400">
+                  <span className="tv-figure tv-figure-secondary text-[11px] text-slate-400">
                     {t("seasonality.mineAligned")
                       .replace("{n}", String(alignment.aligned))
                       .replace("{total}", String(alignment.active))}

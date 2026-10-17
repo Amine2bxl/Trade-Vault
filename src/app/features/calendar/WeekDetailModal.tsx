@@ -74,7 +74,7 @@ export default function WeekDetailModal({
       <div className="flex max-h-[92vh] flex-col">
         <header className="flex items-start justify-between gap-3 border-b border-[var(--tv-border)] px-5 pb-4 pt-5">
           <div className="min-w-0">
-            <p className="tv-label text-slate-500">
+            <p className="tv-num tv-label text-slate-500">
               {t("calendar.week")} {weekIndex + 1} · {monthLabel}
             </p>
             <h2 id="week-title" className="tv-title mt-1 tracking-tight">
@@ -121,7 +121,7 @@ export default function WeekDetailModal({
                 <div className="flex items-center gap-3 px-2 py-2">
                   <span
                     className={cn(
-                      "tv-figure w-[5.5rem] shrink-0 text-xs capitalize",
+                      "tv-figure tv-figure-secondary w-[5.5rem] shrink-0 text-xs capitalize",
                       d.inMonth ? "text-slate-300" : "text-slate-500",
                     )}
                   >
@@ -171,7 +171,7 @@ export default function WeekDetailModal({
                             </span>
                           </span>
                           {Number.isFinite(tr.rMultiple) && tr.rMultiple !== 0 && (
-                            <span className="tv-figure text-xs text-slate-400">
+                            <span className="tv-figure tv-figure-secondary text-xs text-slate-400">
                               {tr.rMultiple > 0 ? "+" : ""}
                               {tr.rMultiple.toFixed(1)}R
                             </span>

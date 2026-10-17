@@ -1,3 +1,4 @@
+import { numericText } from "@/shared/ui/NumericText";
 import { useEffect } from "react";
 import { Bot, X, ArrowRight, CheckCircle2, Lightbulb } from "@/shared/ui/icons";
 import { Modal } from "@/shared/ui";
@@ -97,8 +98,8 @@ export default function NotificationDetailModal({ notification: n, onClose, onMa
       <div className="px-5 py-4 space-y-4 max-h-[52vh] overflow-y-auto">
         {/* Résumé */}
         <div>
-          <h3 className="tv-title leading-snug">{n.title}</h3>
-          <p className="text-[13px] text-slate-300 leading-relaxed mt-1.5">{n.body}</p>
+          <h3 className="tv-title leading-snug">{numericText(n.title)}</h3>
+          <p className="text-[13px] text-slate-300 leading-relaxed mt-1.5">{numericText(n.body)}</p>
           {WHY_KEY[n.kind] && (
             <p className="mt-2 text-[11px] text-slate-500">
               <span className="font-semibold text-slate-400">{t("inbox.why")}</span>{" "}

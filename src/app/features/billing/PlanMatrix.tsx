@@ -87,7 +87,7 @@ export default function PlanMatrix() {
   const renderCell = (v: Cell, i: number) => {
     if (typeof v === "number") {
       return Number.isFinite(v) ? (
-        <span className="plan-cmp-num">{v}</span>
+        <span className="tv-num plan-cmp-num">{v}</span>
       ) : (
         <span className="plan-cmp-num plan-cmp-unlimited">
           <InfinityIcon className="h-4 w-4" aria-hidden />

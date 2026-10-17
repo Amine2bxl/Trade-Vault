@@ -4,16 +4,21 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
-  X,
   AlertTriangle,
   Radio,
   Clock,
   ChevronDown,
-  Check,
 } from "@/shared/ui/icons";
 import { useT } from "@/app/i18n/LanguageContext";
 import { cn } from "@/shared/ui/cn";
-import { PageControls, PageContainer, Card, MultiPicker } from "@/shared/ui";
+import {
+  FilterControls,
+  FilterSection,
+  PageContainer,
+  Card,
+  MultiPicker,
+  SelectPicker,
+} from "@/shared/ui";
 import { usePageActions } from "@/app/contexts/PageActionsContext";
 import { useEconomicCalendar } from "./useEconomicCalendar";
 import type { CalendarEvent, EventImpact } from "@/modules/economic-calendar";
@@ -272,7 +277,11 @@ export default function EconomicNews() {
     return counts;
   }, [events]);
 
-  const activeFilterCount = currencyFilter.size + impactFilter.size + (search.trim() ? 1 : 0);
+  const activeFilterCount =
+    currencyFilter.size +
+    impactFilter.size +
+    (search.trim() ? 1 : 0) +
+    (dayPreset !== "week" ? 1 : 0);
 
   const weekLabel = useMemo(() => {
     const fmt = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" });
@@ -347,7 +356,9 @@ export default function EconomicNews() {
           </button>
           <div className="flex items-center gap-1.5 px-2">
             <CalendarDays className="w-3.5 h-3.5 text-cyan-400 shrink-0 hidden sm:block" />
-            <span className="text-sm font-bold text-white whitespace-nowrap">{weekLabel}</span>
+            <span className="tv-num text-sm font-bold text-white whitespace-nowrap">
+              {weekLabel}
+            </span>
           </div>
           {!isThisWeek && (
             <button
@@ -367,156 +378,141 @@ export default function EconomicNews() {
           </button>
         </div>
         <div className="ml-auto">
-          <PageControls label={t("common.filters")} count={activeFilterCount}>
-            <div className="relative flex-1 min-w-0">
-              <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <FilterControls
+            label={t("common.filters")}
+            count={activeFilterCount}
+            summary={[
+              ...Array.from(currencyFilter),
+              ...Array.from(impactFilter).map((i) => t(IMPACT_KEYS[i as keyof typeof IMPACT_KEYS])),
+              dayPreset !== "week"
+                ? t(
+                    dayPreset === "today"
+                      ? "news.today"
+                      : dayPreset === "tomorrow"
+                        ? "news.tomorrow"
+                        : "news.all",
+                  )
+                : "",
+              customDayFilter,
+              search,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+            onReset={() => {
+              clearFilters();
+              setDayPreset("week");
+              setCustomDayFilter(null);
+            }}
+            resetLabel={t("common.reset")}
+            doneLabel={t("common.done")}
+            liveLabel={t("filters.live")}
+          >
+            <label className="tv-pick-search">
+              <Search className="h-4 w-4 shrink-0 text-slate-500" />
               <input
-                type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder={t("news.searchPlaceholder")}
-                className="w-full h-10 bg-white/[0.03] border border-white/[0.07] rounded-xl pl-9 pr-8 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/40"
+                aria-label={t("news.searchPlaceholder")}
+                className="min-w-0 w-full bg-transparent text-sm outline-none"
               />
-              {search && (
-                <button
-                  onClick={() => setSearch("")}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-lg flex items-center justify-center text-slate-500 hover:text-white"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
+            </label>
+            <FilterSection
+              label={t("common.period")}
+              summary={t(
+                dayPreset === "today"
+                  ? "news.today"
+                  : dayPreset === "tomorrow"
+                    ? "news.tomorrow"
+                    : dayPreset === "week"
+                      ? "news.thisWeek"
+                      : "news.all",
               )}
-            </div>
-            {!loading && events.length > 0 && (
-              <div className="flex flex-wrap items-center gap-1">
-                {[
-                  {
-                    preset: "today" as DayNavPreset,
-                    label: t("news.today"),
-                    icon: <Clock className="w-3 h-3" />,
-                  },
-                  {
-                    preset: "tomorrow" as DayNavPreset,
-                    label: t("news.tomorrow"),
-                    icon: <ChevronRight className="w-3 h-3" />,
-                  },
-                  {
-                    preset: "week" as DayNavPreset,
-                    label: t("news.thisWeek"),
-                    icon: <CalendarDays className="w-3 h-3" />,
-                  },
-                  { preset: "all" as DayNavPreset, label: t("news.all"), icon: null },
-                ].map(({ preset, label, icon }) => {
-                  const active = dayPreset === preset;
-                  const count =
-                    preset === "today"
-                      ? (days.find((d) => d.iso === todayIso)?.all.length ?? 0)
-                      : preset === "tomorrow"
-                        ? (days.find((d) => d.iso === tomorrowIso)?.all.length ?? 0)
-                        : preset === "week"
-                          ? events.length
-                          : 0;
-                  return (
-                    <button
-                      key={preset}
-                      onClick={() => {
-                        setDayPreset(preset);
-                        if (preset === "today") setCustomDayFilter(null);
-                      }}
-                      className={cn(
-                        "shrink-0 flex items-center gap-1.5 h-9 px-3 rounded-xl border text-xs font-semibold transition",
-                        active
-                          ? "bg-cyan-500/15 border-cyan-500/30 text-cyan-200"
-                          : "bg-white/[0.02] border-white/[0.06] text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]",
-                      )}
-                    >
-                      {icon}
-                      {label}
-                      {preset !== "all" && (
-                        <span
-                          className={cn(
-                            "tv-figure text-[10px]",
-                            active ? "text-cyan-300/70" : "text-slate-600",
-                          )}
-                        >
-                          {count}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-                {/* Impact et devises : le même sélecteur que partout ailleurs —
-              plusieurs choix, « tout » pour lever le filtre. */}
-                <div className="basis-full" />
-                <MultiPicker
-                  label={t("news.impact")}
-                  values={Array.from(impactFilter)}
-                  onChange={(v) => setImpactFilter(new Set(v as EventImpact[]))}
-                  options={IMPACTS.map((i) => ({
-                    value: i,
-                    label: t(IMPACT_KEYS[i as keyof typeof IMPACT_KEYS]),
-                    count: weekCounts[i],
-                  }))}
-                  allLabel={t("common.all")}
-                  clearLabel={t("common.clear")}
-                  doneLabel={t("common.done")}
-                  countLabel={t("picker.nSelected")}
-                />
-                <MultiPicker
-                  label={t("news.currencies")}
-                  values={Array.from(currencyFilter)}
-                  onChange={(v) => setCurrencyFilter(new Set(v))}
-                  options={availableCurrencies.map((c) => ({
-                    value: c,
-                    label: `${flagOf(c)} ${c}`,
-                  }))}
-                  allLabel={t("common.all")}
-                  clearLabel={t("common.clear")}
-                  doneLabel={t("common.done")}
-                  countLabel={t("picker.nSelected")}
-                  searchLabel={t("picker.search")}
-                />
-                {activeFilterCount > 0 && (
-                  <button
-                    onClick={clearFilters}
-                    className="inline-flex h-9 shrink-0 items-center rounded-lg px-2.5 text-xs font-semibold text-slate-500 transition-colors hover:bg-white/[0.04] hover:text-white"
-                  >
-                    {t("common.reset")}
-                  </button>
-                )}
-              </div>
-            )}{" "}
-          </PageControls>
+            >
+              <SelectPicker
+                inline
+                label={t("common.period")}
+                value={dayPreset}
+                onChange={(v) => {
+                  setDayPreset(v);
+                  setCustomDayFilter(null);
+                }}
+                options={[
+                  { value: "today", label: t("news.today") },
+                  { value: "tomorrow", label: t("news.tomorrow") },
+                  { value: "week", label: t("news.thisWeek") },
+                  { value: "all", label: t("news.all") },
+                ]}
+              />
+              {dayPreset === "all" && (
+                <div className="mt-3">
+                  <span className="tv-prose mb-2 block text-slate-500">
+                    {t("journal.filterDay")}
+                  </span>
+                  <SelectPicker
+                    inline
+                    label={t("journal.filterDay")}
+                    value={customDayFilter ?? "all"}
+                    onChange={(v) => setCustomDayFilter(v === "all" ? null : v)}
+                    options={[
+                      { value: "all", label: t("common.all") },
+                      ...days
+                        .filter((d) => d.all.length > 0 || d.iso === customDayFilter)
+                        .map((d) => ({
+                          value: d.iso,
+                          label: shortDayFmt.format(d.date),
+                          count: d.all.length,
+                        })),
+                    ]}
+                  />
+                </div>
+              )}
+            </FilterSection>
+            <FilterSection
+              label={t("news.impact")}
+              summary={
+                impactFilter.size
+                  ? Array.from(impactFilter)
+                      .map((i) => t(IMPACT_KEYS[i as keyof typeof IMPACT_KEYS]))
+                      .join(", ")
+                  : t("common.all")
+              }
+              defaultOpen
+            >
+              <MultiPicker
+                inline
+                label={t("news.impact")}
+                values={Array.from(impactFilter)}
+                onChange={(v) => setImpactFilter(new Set(v as EventImpact[]))}
+                options={IMPACTS.map((i) => ({
+                  value: i,
+                  label: t(IMPACT_KEYS[i as keyof typeof IMPACT_KEYS]),
+                  count: weekCounts[i],
+                }))}
+                allLabel={t("common.all")}
+              />
+            </FilterSection>
+            <FilterSection
+              label={t("news.currencies")}
+              summary={
+                currencyFilter.size ? Array.from(currencyFilter).join(", ") : t("common.all")
+              }
+            >
+              <MultiPicker
+                inline
+                label={t("news.currencies")}
+                values={Array.from(currencyFilter)}
+                onChange={(v) => setCurrencyFilter(new Set(v))}
+                options={availableCurrencies.map((c) => ({ value: c, label: `${flagOf(c)} ${c}` }))}
+                allLabel={t("common.all")}
+                searchLabel={t("picker.search")}
+                moreLabel={t("filters.more")}
+                lessLabel={t("filters.less")}
+              />
+            </FilterSection>
+          </FilterControls>
         </div>
       </div>
-
-      {/* "All" mode: day picker chips for each day of the week */}
-      {dayPreset === "all" && (
-        <div className="flex flex-wrap gap-1.5 mb-4">
-          {days.map(({ iso, date, all }) => {
-            const on = customDayFilter === iso;
-            const isToday = iso === todayIso;
-            return (
-              <button
-                key={iso}
-                onClick={() => setCustomDayFilter(on ? null : iso)}
-                disabled={all.length === 0}
-                className={cn(
-                  "shrink-0 h-10 px-3 rounded-xl border text-xs font-bold transition flex items-center gap-1.5",
-                  on
-                    ? "bg-cyan-500/15 border-cyan-500/30 text-cyan-200"
-                    : all.length === 0
-                      ? "bg-white/[0.01] border-white/[0.04] text-slate-700 cursor-not-allowed"
-                      : "bg-white/[0.02] border-white/[0.06] text-slate-300 hover:bg-white/[0.05]",
-                  isToday && !on && all.length > 0 && "border-cyan-500/20",
-                )}
-              >
-                <span>{shortDayFmt.format(date)}</span>
-                <span className="tv-figure text-[11px] opacity-60">{all.length}</span>
-              </button>
-            );
-          })}
-        </div>
-      )}
 
       {/* Next event — compact countdown, only this week */}
       {isThisWeek && nextEvent && (
@@ -541,7 +537,7 @@ export default function EconomicNews() {
             <div className="text-sm font-semibold text-white truncate mt-0.5">
               {flagOf(nextEvent.currency)} {nextEvent.title}
             </div>
-            <div className="text-[11px] text-slate-500 mt-0.5">
+            <div className="tv-num text-[11px] text-slate-500 mt-0.5">
               {timeFmt.format(new Date(nextEvent.startsAt))}
             </div>
           </div>
@@ -588,13 +584,13 @@ export default function EconomicNews() {
                     </span>
                   )}
                   {highCount > 0 && (
-                    <span className="flex items-center gap-1 text-[11px] font-semibold text-red-400">
+                    <span className="tv-num flex items-center gap-1 text-[11px] font-semibold text-red-400">
                       <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
                       {highCount}
                     </span>
                   )}
                   <div className="flex-1" />
-                  <span className="text-[10px] text-slate-600 font-semibold">
+                  <span className="tv-num text-[10px] text-slate-600 font-semibold">
                     {dayEvents.length}
                   </span>
                 </div>
@@ -625,7 +621,7 @@ export default function EconomicNews() {
                             onClick={() => setExpanded(open ? null : e.id)}
                             className="flex-1 flex items-center gap-3 pl-3 pr-3 py-2.5 text-left hover:bg-white/[0.02] transition-colors min-w-0"
                           >
-                            <span className="tv-figure w-12 shrink-0 text-right font-mono text-xs text-slate-400">
+                            <span className="tv-figure tv-figure-secondary w-12 shrink-0 text-right font-mono text-xs text-slate-400">
                               {e.allDay ? "—" : timeFmt.format(start)}
                             </span>
                             <span

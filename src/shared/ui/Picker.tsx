@@ -1,5 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import { Check, ChevronDown, Search } from "@/shared/ui/icons";
+import { numericText } from "./NumericText";
 import { cn } from "./cn";
 import { FIELD_BASE } from "./Input";
 import { DateField } from "./DateField";
@@ -86,7 +87,7 @@ function Trigger({
         )}
       >
         {icon}
-        <span className="min-w-0 flex-1 truncate">{display}</span>
+        <span className="min-w-0 flex-1 truncate">{numericText(display)}</span>
         <ChevronDown
           className={cn(
             "h-3.5 w-3.5 shrink-0 text-slate-500 transition-transform",
@@ -113,7 +114,7 @@ function Trigger({
     >
       {icon}
       <span className="tv-label shrink-0 text-slate-500">{label}</span>
-      <span className="tv-pick-pill-value">{display}</span>
+      <span className="tv-pick-pill-value">{numericText(display)}</span>
       <ChevronDown
         className={cn("h-3 w-3 shrink-0 text-slate-500 transition-transform", open && "rotate-180")}
       />
@@ -220,13 +221,15 @@ function OptionList<V extends string>({
                   {on && <Check className="h-3 w-3" strokeWidth={3} />}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate">{o.label}</span>
+                  <span className="block truncate">{numericText(o.label)}</span>
                   {o.hint && (
                     <span className="block truncate text-[11px] text-slate-500">{o.hint}</span>
                   )}
                 </span>
                 {o.count !== undefined && (
-                  <span className="tv-figure text-[11px] text-slate-500">{o.count}</span>
+                  <span className="tv-figure tv-figure-secondary text-[11px] text-slate-500">
+                    {o.count}
+                  </span>
                 )}
               </button>
             </li>
@@ -234,6 +237,80 @@ function OptionList<V extends string>({
         })}
         {shown.length === 0 && <li className="px-3 py-4 text-center text-xs text-slate-500">—</li>}
       </ul>
+    </>
+  );
+}
+
+/** Choix courts directement accessibles ; les sélections restent toujours
+ * visibles, même parmi les options supplémentaires d'une longue liste. */
+function InlineChoices<V extends string>({
+  options,
+  isOn,
+  onPick,
+  searchLabel,
+  moreLabel,
+  lessLabel,
+  leading,
+}: {
+  options: PickerOption<V>[];
+  isOn: (v: V) => boolean;
+  onPick: (v: V) => void;
+  searchLabel: string;
+  moreLabel: string;
+  lessLabel: string;
+  leading?: ReactNode;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const [query, setQuery] = useState("");
+  const long = options.length > selection.searchThreshold;
+  const shown = options.filter((o, i) =>
+    query.trim()
+      ? `${o.label} ${o.hint ?? ""}`.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())
+      : !long || expanded || i < 6 || isOn(o.value),
+  );
+  return (
+    <>
+      {long && expanded && (
+        <label className="tv-pick-search mb-2">
+          <Search className="h-3.5 w-3.5 shrink-0" />
+          <input
+            className="w-full min-w-0 bg-transparent text-sm outline-none"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={searchLabel}
+            aria-label={searchLabel}
+          />
+        </label>
+      )}
+      <div className="tv-pick-chips">
+        {leading}
+        {shown.map((o) => (
+          <button
+            type="button"
+            key={o.value}
+            aria-pressed={isOn(o.value)}
+            onClick={() => onPick(o.value)}
+            className={cn("tv-pick-chip", isOn(o.value) && "tv-pick-chip-on")}
+          >
+            {isOn(o.value) && <Check className="h-3 w-3 shrink-0" />}
+            <span className="truncate">{numericText(o.label)}</span>
+            {o.count !== undefined && <span className="tv-num opacity-60">{o.count}</span>}
+          </button>
+        ))}
+        {long && (
+          <button
+            type="button"
+            className="tv-pick-chip tv-filter-more"
+            aria-expanded={expanded}
+            onClick={() => {
+              setExpanded((v) => !v);
+              setQuery("");
+            }}
+          >
+            {expanded ? lessLabel : `${moreLabel} +${options.length - shown.length}`}
+          </button>
+        )}
+      </div>
     </>
   );
 }
@@ -252,6 +329,8 @@ export interface SelectPickerProps<V extends string> {
   searchLabel?: string;
   /** Rend le corps à plat, sans déclencheur ni panneau flottant. */
   inline?: boolean;
+  moreLabel?: string;
+  lessLabel?: string;
   disabled?: boolean;
   className?: string;
   icon?: ReactNode;
@@ -269,6 +348,8 @@ export function SelectPicker<V extends string>({
   variant = "pill",
   neutralValue,
   searchLabel = "Search",
+  moreLabel = "More options",
+  lessLabel = "Fewer options",
   inline,
   disabled,
   className,
@@ -285,20 +366,14 @@ export function SelectPicker<V extends string>({
     return (
       <div className={cn("tv-pick-inline", className)}>
         <span className="tv-label mb-1.5 block text-slate-500">{label}</span>
-        <div className="tv-pick-chips">
-          {options.map((o) => (
-            <button
-              key={o.value}
-              type="button"
-              aria-pressed={o.value === value}
-              onClick={() => onChange(o.value)}
-              className={cn("tv-pick-chip", o.value === value && "tv-pick-chip-on")}
-            >
-              {o.label}
-              {o.count !== undefined && <span className="tv-figure opacity-60">{o.count}</span>}
-            </button>
-          ))}
-        </div>
+        <InlineChoices
+          options={options}
+          isOn={(v) => v === value}
+          onPick={onChange}
+          searchLabel={searchLabel}
+          moreLabel={moreLabel}
+          lessLabel={lessLabel}
+        />
       </div>
     );
   }
@@ -365,6 +440,8 @@ export interface MultiPickerProps<V extends string> {
   searchLabel?: string;
   variant?: Variant;
   inline?: boolean;
+  moreLabel?: string;
+  lessLabel?: string;
   disabled?: boolean;
   className?: string;
   icon?: ReactNode;
@@ -395,6 +472,8 @@ export function MultiPicker<V extends string>({
   countLabel,
   searchLabel = "Search",
   variant = "pill",
+  moreLabel = "More options",
+  lessLabel = "Fewer options",
   inline,
   disabled,
   className,
@@ -413,32 +492,24 @@ export function MultiPicker<V extends string>({
     return (
       <div className={cn("tv-pick-inline", className)}>
         <span className="tv-label mb-1.5 block text-slate-500">{label}</span>
-        <div className="tv-pick-chips">
-          <button
-            type="button"
-            aria-pressed={all}
-            onClick={() => onChange([])}
-            className={cn("tv-pick-chip", all && "tv-pick-chip-on")}
-          >
-            {allLabel}
-          </button>
-          {options.map((o) => {
-            const on = values.includes(o.value);
-            return (
-              <button
-                key={o.value}
-                type="button"
-                aria-pressed={on}
-                onClick={() => toggle(o.value)}
-                className={cn("tv-pick-chip", on && "tv-pick-chip-on")}
-              >
-                {on && <Check className="h-3 w-3" strokeWidth={3} />}
-                {o.label}
-                {o.count !== undefined && <span className="tv-figure opacity-60">{o.count}</span>}
-              </button>
-            );
-          })}
-        </div>
+        <InlineChoices
+          options={options}
+          isOn={(v) => values.includes(v)}
+          onPick={toggle}
+          searchLabel={searchLabel}
+          moreLabel={moreLabel}
+          lessLabel={lessLabel}
+          leading={
+            <button
+              type="button"
+              aria-pressed={all}
+              onClick={() => onChange([])}
+              className={cn("tv-pick-chip", all && "tv-pick-chip-on")}
+            >
+              {allLabel}
+            </button>
+          }
+        />
       </div>
     );
   }
@@ -531,6 +602,8 @@ export interface RangePickerProps<P extends string> {
   neutralPreset?: P;
   variant?: Variant;
   inline?: boolean;
+  moreLabel?: string;
+  lessLabel?: string;
   className?: string;
   icon?: ReactNode;
 }
@@ -606,7 +679,7 @@ export function RangePicker<P extends string>({
               }}
               className={cn("tv-pick-chip", on && "tv-pick-chip-on")}
             >
-              {p.label}
+              {numericText(p.label)}
             </button>
           );
         })}

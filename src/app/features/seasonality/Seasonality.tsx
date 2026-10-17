@@ -31,7 +31,7 @@ import {
   BAR_RADIUS,
   CHART_GREEN,
   CHART_RED,
-  CHART_ANIMATION,
+  useChartAnimation,
   EQUITY_GRID,
   moneyAxisProps,
   tooltipStyle,
@@ -49,7 +49,15 @@ import { Skeleton } from "@/app/components/Skeleton";
 import { usePersistedValue, nsKey, writeJSON } from "@/app/utils/persistence";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { cn } from "@/shared/ui/cn";
-import { PageControls, PageContainer, Card, Kpi, KpiGrid, SelectPicker } from "@/shared/ui";
+import {
+  FilterControls,
+  FilterSection,
+  PageContainer,
+  Card,
+  Kpi,
+  KpiGrid,
+  SelectPicker,
+} from "@/shared/ui";
 import { useIsNarrow } from "@/app/hooks/useIsNarrow";
 import { formatMoney } from "@/shared/currency";
 import { SeasonalEquity } from "./SeasonalEquity";
@@ -72,6 +80,7 @@ export default function Seasonality({ trades }: SeasonalityProps) {
  * ============================================================ */
 
 function AssetSeasonality({ trades }: { trades: Trade[] }) {
+  const chartAnimation = useChartAnimation();
   const { t, lang } = useT();
   const { user } = useAuth();
   const catKey = nsKey(user?.id, "seasonality.cat");
@@ -110,27 +119,46 @@ function AssetSeasonality({ trades }: { trades: Trade[] }) {
 
   const pageControls = useMemo(
     () => (
-      <PageControls label={t("common.filters")}>
-        <SelectPicker
-          label={t("seasonality.category")}
-          value={category}
-          onChange={(v) => {
-            writeJSON(catKey, v);
-            writeJSON(symKey, "");
-          }}
-          options={(Object.keys(CATEGORY_LABELS) as AssetCategory[]).map((c) => ({
-            value: c,
-            label: CATEGORY_LABELS[c],
-          }))}
-        />
-        <SelectPicker
-          label={t("seasonality.asset")}
-          value={asset.symbol}
-          onChange={(v) => writeJSON(symKey, v)}
-          searchLabel={t("picker.search")}
-          options={inCategory.map((a) => ({ value: a.symbol, label: a.symbol, hint: a.name }))}
-        />
-      </PageControls>
+      <FilterControls
+        label={t("common.filters")}
+        summary={`${CATEGORY_LABELS[category]} · ${asset.symbol}`}
+        count={category !== "indices" || asset.symbol !== inCategory[0]?.symbol ? 1 : 0}
+        onReset={() => {
+          writeJSON(catKey, "indices");
+          writeJSON(symKey, "");
+        }}
+        resetLabel={t("common.reset")}
+        doneLabel={t("common.done")}
+        liveLabel={t("filters.live")}
+      >
+        <FilterSection label={t("seasonality.category")} summary={CATEGORY_LABELS[category]}>
+          <SelectPicker
+            inline
+            label={t("seasonality.category")}
+            value={category}
+            onChange={(v) => {
+              writeJSON(catKey, v);
+              writeJSON(symKey, "");
+            }}
+            options={(Object.keys(CATEGORY_LABELS) as AssetCategory[]).map((c) => ({
+              value: c,
+              label: CATEGORY_LABELS[c],
+            }))}
+          />
+        </FilterSection>
+        <FilterSection label={t("seasonality.asset")} summary={asset.symbol} defaultOpen>
+          <SelectPicker
+            inline
+            label={t("seasonality.asset")}
+            value={asset.symbol}
+            onChange={(v) => writeJSON(symKey, v)}
+            searchLabel={t("picker.search")}
+            moreLabel={t("filters.more")}
+            lessLabel={t("filters.less")}
+            options={inCategory.map((a) => ({ value: a.symbol, label: a.symbol, hint: a.name }))}
+          />
+        </FilterSection>
+      </FilterControls>
     ),
     [t, category, asset.symbol, inCategory, catKey, symKey],
   );
@@ -179,7 +207,7 @@ function AssetSeasonality({ trades }: { trades: Trade[] }) {
             </h3>
             <p className="tv-hint">{t("seasonality.monthlyBiasSub")}</p>
           </div>
-          <span className="tv-figure text-[10px] text-slate-500 shrink-0">
+          <span className="tv-figure tv-figure-secondary text-[10px] text-slate-500 shrink-0">
             {asset.years} {t("seasonality.years")}
           </span>
         </div>
@@ -214,7 +242,7 @@ function AssetSeasonality({ trades }: { trades: Trade[] }) {
                 }
               />
               <ReferenceLine y={0} stroke="rgba(148,163,184,0.25)" />
-              <Bar dataKey="avg" radius={BAR_RADIUS} {...CHART_ANIMATION}>
+              <Bar dataKey="avg" radius={BAR_RADIUS} {...chartAnimation}>
                 {chartData.map((d, i) => (
                   <Cell
                     key={i}
@@ -234,7 +262,7 @@ function AssetSeasonality({ trades }: { trades: Trade[] }) {
               <div className="text-[11px] text-slate-600 font-semibold">{d.month.slice(0, 1)}</div>
               <div
                 className={cn(
-                  "tv-figure text-[11px]",
+                  "tv-figure tv-figure-secondary text-[11px]",
                   d.win >= 60
                     ? "text-emerald-400"
                     : d.win >= 50
@@ -345,7 +373,7 @@ function AssetHeatRow({
       <button
         onClick={onSelect}
         className={cn(
-          "tv-figure flex items-center text-[10px] truncate pr-1 transition-colors",
+          "tv-figure tv-figure-secondary flex items-center text-[10px] truncate pr-1 transition-colors",
           selected ? "text-cyan-300" : "text-slate-400 hover:text-white",
         )}
       >
@@ -363,7 +391,7 @@ function AssetHeatRow({
             key={i}
             title={`${asset.symbol} ${MONTHS_SHORT[i]}: ${v >= 0 ? "+" : ""}${v.toFixed(1)}%`}
             className={cn(
-              "tv-figure h-8 rounded-md flex items-center justify-center text-[11px] cursor-default transition-transform hover:scale-[1.08]",
+              "tv-figure tv-figure-secondary h-8 rounded-md flex items-center justify-center text-[11px] cursor-default transition-transform hover:scale-[1.08]",
               i === currentMonth && "ring-1 ring-cyan-400/50",
             )}
             style={{ background: bg, color: "#f1f5f9" }}
@@ -397,6 +425,7 @@ const MONTH_KEYS = [
 ];
 
 function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
+  const chartAnimation = useChartAnimation();
   const { t, lang } = useT();
   const monthRows = useMonthRows();
 
@@ -577,7 +606,7 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
                 }
               />
               <ReferenceLine y={0} stroke="rgba(148,163,184,0.25)" />
-              <Bar dataKey="pnl" radius={BAR_RADIUS} {...CHART_ANIMATION}>
+              <Bar dataKey="pnl" radius={BAR_RADIUS} {...chartAnimation}>
                 {monthly.map((m, i) => (
                   <Cell
                     key={i}
@@ -642,7 +671,7 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
                   }
                 />
                 <ReferenceLine y={0} stroke="rgba(148,163,184,0.25)" />
-                <Bar dataKey="pnl" radius={BAR_RADIUS} {...CHART_ANIMATION}>
+                <Bar dataKey="pnl" radius={BAR_RADIUS} {...chartAnimation}>
                   {weekdays.map((d, i) => (
                     <Cell key={i} fill={d.pnl >= 0 ? BAR_FILL_GREEN : BAR_FILL_RED} />
                   ))}
@@ -671,7 +700,7 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
                   }
                 />
                 <ReferenceLine y={0} stroke="rgba(148,163,184,0.25)" />
-                <Bar dataKey="pnl" radius={BAR_RADIUS} {...CHART_ANIMATION}>
+                <Bar dataKey="pnl" radius={BAR_RADIUS} {...chartAnimation}>
                   {hours.map((h, i) => (
                     <Cell key={i} fill={h.pnl >= 0 ? BAR_FILL_GREEN : BAR_FILL_RED} />
                   ))}
@@ -698,7 +727,9 @@ function YearRow({
 }) {
   return (
     <>
-      <div className="tv-figure flex items-center text-[10px] text-slate-400">{year}</div>
+      <div className="tv-figure tv-figure-secondary flex items-center text-[10px] text-slate-400">
+        {year}
+      </div>
       {months.map((i) => {
         const v = values[i] ?? 0;
         const intensity = Math.min(Math.abs(v) / heatMax, 1);
@@ -712,7 +743,7 @@ function YearRow({
           <div
             key={i}
             title={v === 0 ? "—" : formatMoney(v)}
-            className="tv-figure h-9 rounded-lg flex items-center justify-center text-[11px] transition-transform hover:scale-[1.06] cursor-default"
+            className="tv-figure tv-figure-secondary h-9 rounded-lg flex items-center justify-center text-[11px] transition-transform hover:scale-[1.06] cursor-default"
             style={{ background: bg, color: v === 0 ? "#475569" : "#f1f5f9" }}
           >
             {v === 0 ? "" : `${v > 0 ? "+" : ""}${Math.round(v)}`}

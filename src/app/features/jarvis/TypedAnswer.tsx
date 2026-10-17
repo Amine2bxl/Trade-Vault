@@ -10,9 +10,9 @@ import MarkdownAnswer from "@/app/components/MarkdownAnswer";
  * écriture rapide, et le Markdown se met en forme au fil de l'eau.
  *
  * Trois garde-fous :
- *  • la durée est BORNÉE (≈ 1,2 s à 7 s selon la longueur) — un long rapport
+ *  • la durée est BORNÉE (≈ 0,3 s à 2,2 s selon la longueur) — un long rapport
  *    ne doit pas faire attendre dix secondes ce qui est déjà là ;
- *  • un clic sur la réponse l'affiche en entier, tout de suite ;
+ *  • le bouton fixe sous le fil l'affiche en entier, tout de suite ;
  *  • `prefers-reduced-motion` : aucune animation, le texte arrive entier.
  */
 
@@ -58,7 +58,7 @@ export default function TypedAnswer({
     const all = tokens.current;
     if (shown >= all.length) return;
     // Durée cible bornée → nombre de jetons par tic.
-    const target = Math.min(7000, Math.max(1200, all.length * 45));
+    const target = Math.min(2200, Math.max(300, all.length * 12));
     const perTick = Math.max(1, Math.ceil(all.length / (target / TICK_MS)));
     timerRef.current = window.setInterval(() => {
       setShown((n) => Math.min(all.length, n + perTick));
@@ -83,10 +83,7 @@ export default function TypedAnswer({
   const text = typing ? balance(tokens.current.slice(0, shown).join("")) : content;
 
   return (
-    <div
-      className={typing ? "jarvis-typing" : undefined}
-      onClick={() => typing && setShown(tokens.current.length)}
-    >
+    <div className={typing ? "jarvis-typing" : undefined} aria-busy={typing}>
       <MarkdownAnswer content={text} />
     </div>
   );

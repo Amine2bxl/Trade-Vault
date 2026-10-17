@@ -152,9 +152,9 @@ export default function TradeDetailModal({
         <div className="px-4 md:px-6 pt-2 md:p-6 pb-3 md:pb-6 border-b border-white/[0.06]">
           <div className="flex items-start justify-between">
             <div>
-              <h2 className="tv-title">{dateStr}</h2>
+              <h2 className="tv-num tv-title">{dateStr}</h2>
               <div className="flex items-center gap-2 mt-1">
-                <p className="text-sm text-slate-400">
+                <p className="tv-num text-sm text-slate-400">
                   {trades.length}{" "}
                   {trades.length !== 1
                     ? t("tradeDetail.tradesCountSuffix")
@@ -188,7 +188,7 @@ export default function TradeDetailModal({
                     <ChevronLeft className="w-4 h-4" />
                   </button>
                   {positionLabel && (
-                    <span className="tv-figure text-[10px] text-slate-500 min-w-[36px] text-center">
+                    <span className="tv-figure tv-figure-secondary text-[10px] text-slate-500 min-w-[36px] text-center">
                       {positionLabel}
                     </span>
                   )}
@@ -344,6 +344,7 @@ export default function TradeDetailModal({
                     <div className="text-[10px] text-slate-500 mb-0.5">{t("tradeDetail.rr")}</div>
                     <div
                       className={cn(
+                        "tv-num",
                         "text-sm font-semibold",
                         trade.rMultiple >= 0 ? "text-emerald-400" : "text-red-400",
                       )}
@@ -367,7 +368,7 @@ export default function TradeDetailModal({
                 <div className="flex flex-wrap gap-3 md:gap-4 text-xs">
                   <div className="bg-white/[0.03] rounded-lg px-3 py-2">
                     <span className="text-slate-500">{t("tradeDetail.risk")}: </span>
-                    <span className="text-white font-semibold">
+                    <span className="tv-num text-white font-semibold">
                       {formatMoney(trade.riskAmount)}
                     </span>
                   </div>
@@ -387,7 +388,7 @@ export default function TradeDetailModal({
                   {trade.mae != null && (
                     <div className="bg-white/[0.03] rounded-lg px-3 py-2">
                       <span className="text-slate-500">MAE: </span>
-                      <span className="text-red-400 font-semibold">
+                      <span className="tv-num text-red-400 font-semibold">
                         {formatMoney(-Math.abs(trade.mae))}
                       </span>
                     </div>
@@ -395,7 +396,7 @@ export default function TradeDetailModal({
                   {trade.mfe != null && (
                     <div className="bg-white/[0.03] rounded-lg px-3 py-2">
                       <span className="text-slate-500">MFE: </span>
-                      <span className="text-emerald-400 font-semibold">
+                      <span className="tv-num text-emerald-400 font-semibold">
                         {formatMoney(Math.abs(trade.mfe), { signed: true })}
                       </span>
                     </div>
@@ -403,7 +404,7 @@ export default function TradeDetailModal({
                   {trade.slippage != null && (
                     <div className="bg-white/[0.03] rounded-lg px-3 py-2">
                       <span className="text-slate-500">{t("trade.slippage")}: </span>
-                      <span className="text-slate-300 font-semibold">
+                      <span className="tv-num text-slate-300 font-semibold">
                         {formatMoney(trade.slippage)}
                       </span>
                     </div>
@@ -418,6 +419,7 @@ export default function TradeDetailModal({
                     </span>
                     <span
                       className={cn(
+                        "tv-num",
                         "text-xs font-bold",
                         trade.confidence >= 75
                           ? "text-emerald-400"
@@ -518,13 +520,15 @@ export default function TradeDetailModal({
                                 <dt className="text-slate-500">
                                   {t("tradeDetail.intentConfidence")}
                                 </dt>
-                                <dd className="text-right text-white">{intent.confidence}%</dd>
+                                <dd className="tv-num text-right text-white">
+                                  {intent.confidence}%
+                                </dd>
                               </div>
                             )}
                             {intent.plannedRisk != null && (
                               <div className="flex justify-between gap-2">
                                 <dt className="text-slate-500">{t("tradeDetail.intentRisk")}</dt>
-                                <dd className="text-right text-white">
+                                <dd className="tv-num text-right text-white">
                                   {formatMoney(intent.plannedRisk)}
                                 </dd>
                               </div>

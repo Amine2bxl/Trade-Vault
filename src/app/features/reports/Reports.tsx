@@ -315,10 +315,10 @@ export default function Reports({ trades }: { trades: Trade[] }) {
                     key={month}
                     className="flex items-center gap-3 px-4 py-2.5 transition hover:bg-white/[0.02] md:px-5"
                   >
-                    <span className="font-display min-w-0 flex-1 truncate text-[13px] font-semibold capitalize text-slate-200">
+                    <span className="tv-num font-display min-w-0 flex-1 truncate text-[13px] font-semibold capitalize text-slate-200">
                       {monthLabel(month, locale)}
                     </span>
-                    <span className="tv-figure shrink-0 text-[11px] text-slate-500">
+                    <span className="tv-figure tv-figure-secondary shrink-0 text-[11px] text-slate-500">
                       {tradesByMonth.get(month) ?? 0} {t("common.trades")}
                     </span>
                     <Button
@@ -573,19 +573,19 @@ function ReportSheet({
               </span>
             )}
           </div>
-          <h2 className="font-display mt-0.5 text-xl font-bold capitalize leading-tight text-white md:text-2xl">
+          <h2 className="tv-num font-display mt-0.5 text-xl font-bold capitalize leading-tight text-white md:text-2xl">
             {monthLabel(row.month, locale)}
           </h2>
           <p className="tv-row-label mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
-            <span>
+            <span className="tv-num">
               {r.trades} {t("common.trades")}
             </span>
             <span aria-hidden className="h-1 w-1 rounded-full bg-slate-700" />
-            <span>
+            <span className="tv-num">
               {formatPct(r.winRate)} {t("stats.winRate")}
             </span>
             <span aria-hidden className="h-1 w-1 rounded-full bg-slate-700" />
-            <span>
+            <span className="tv-num">
               {r.wins}W / {r.losses}L{r.breakEven ? ` / ${r.breakEven}BE` : ""}
             </span>
           </p>
@@ -623,7 +623,12 @@ function ReportSheet({
               </span>
             )}
             {momDelta !== null && (
-              <span className={cn("tv-figure text-[11px]", momDelta >= 0 ? "rp-pos" : "rp-neg")}>
+              <span
+                className={cn(
+                  "tv-figure tv-figure-secondary text-[11px]",
+                  momDelta >= 0 ? "rp-pos" : "rp-neg",
+                )}
+              >
                 {momDelta >= 0 ? "▲" : "▼"} {formatPnl(Math.abs(momDelta))}
               </span>
             )}
@@ -721,7 +726,7 @@ function ReportSheet({
                 <div className={cn("tv-figure mt-0.5 text-sm", w.pnl >= 0 ? "rp-pos" : "rp-neg")}>
                   {formatPnl(w.pnl)}
                 </div>
-                <div className="tv-row-label mt-0.5">
+                <div className="tv-num tv-row-label mt-0.5">
                   {w.trades} {t("common.trades")}
                 </div>
               </div>
@@ -784,7 +789,9 @@ function ReportSheet({
                 neutral
               />
             </div>
-            <p className="tv-row-label mt-2 capitalize">{monthLabel(r.prev.month, locale)}</p>
+            <p className="tv-num tv-row-label mt-2 capitalize">
+              {monthLabel(r.prev.month, locale)}
+            </p>
           </section>
         )}
 
@@ -849,7 +856,7 @@ function ReportSheet({
       <div className="rp-print-only rp-paper-foot">
         <span className="rp-paper-domain">{SITE_HOST}</span>
         <span>
-          TradeVault · <span className="capitalize">{monthLabel(row.month, locale)}</span> ·{" "}
+          TradeVault · <span className="tv-num capitalize">{monthLabel(row.month, locale)}</span> ·{" "}
           {inProgress ? t("reports.inProgress") : printedOn}
         </span>
       </div>
@@ -964,7 +971,7 @@ function MixBar({
           <span key={p.key} className="flex items-center gap-1.5">
             <span aria-hidden className={cn("h-2 w-2 shrink-0 rounded-full", p.cls)} />
             <span className="tv-row-label">{p.label}</span>
-            <span className="tv-figure text-[11px] text-slate-300">
+            <span className="tv-figure tv-figure-secondary text-[11px] text-slate-300">
               {p.n} · {Math.round((p.n / total) * 100)}%
             </span>
           </span>
@@ -1033,7 +1040,10 @@ function BarList({
               {row.meta && <span className="ml-1.5 text-slate-600">{row.meta}</span>}
             </span>
             <span
-              className={cn("tv-figure shrink-0 text-xs", row.value >= 0 ? "rp-pos" : "rp-neg")}
+              className={cn(
+                "tv-figure tv-figure-secondary shrink-0 text-xs",
+                row.value >= 0 ? "rp-pos" : "rp-neg",
+              )}
             >
               {formatPnl(row.value)}
             </span>
@@ -1153,7 +1163,7 @@ function MonthSwitcher({
                     : "bg-[var(--tv-chart-red)]",
               )}
             />
-            <span className="truncate capitalize">{monthLabel(cur.month, locale)}</span>
+            <span className="tv-num truncate capitalize">{monthLabel(cur.month, locale)}</span>
             {cur.live && <span className="rp-switch-live">{t("reports.inProgress")}</span>}
             <ChevronDown
               className={cn(

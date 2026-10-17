@@ -34,6 +34,7 @@ export function SelectionPanel({
   label,
   width = "17rem",
   children,
+  footer,
 }: {
   open: boolean;
   onClose: () => void;
@@ -41,6 +42,7 @@ export function SelectionPanel({
   label: string;
   width?: string;
   children: ReactNode;
+  footer?: ReactNode;
 }) {
   const id = useId();
   const parent = useContext(LayerContext);
@@ -87,7 +89,7 @@ export function SelectionPanel({
       const w = Math.min(Math.max(a.width, wanted || 272), vw - margin * 2);
       const below = vy + vh - a.bottom - margin - selection.gap;
       const above = a.top - vy - margin - selection.gap;
-      const maxHeight = Math.max(100, Math.min(416, Math.max(below, above)));
+      const maxHeight = Math.max(100, Math.min(560, Math.max(below, above)));
       const left = Math.max(margin, Math.min(a.left, vw - w - margin));
       const next =
         below >= Math.min(320, maxHeight) || below >= above
@@ -95,7 +97,7 @@ export function SelectionPanel({
               left,
               top: a.bottom + selection.gap,
               width: w,
-              maxHeight: Math.max(100, Math.min(416, below)),
+              maxHeight: Math.max(100, Math.min(560, below)),
             }
           : { left, bottom: window.innerHeight - a.top + selection.gap, width: w, maxHeight };
       setPosition((previous) =>
@@ -231,6 +233,7 @@ export function SelectionPanel({
         <div className="tv-selection-body flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain">
           {children}
         </div>
+        {footer}
       </div>
     </LayerContext.Provider>
   );

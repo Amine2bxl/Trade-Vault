@@ -120,7 +120,7 @@ export default function UpgradeModal({ open, onClose }: { open: boolean; onClose
               >
                 {value === "monthly" ? (fr ? "Mensuel" : "Monthly") : fr ? "Annuel" : "Yearly"}
                 {value === "yearly" && (
-                  <span className="ml-1.5 text-[11px] font-bold text-emerald-500">
+                  <span className="tv-num ml-1.5 text-[11px] font-bold text-emerald-500">
                     −{monthsFree("pro")}
                   </span>
                 )}
@@ -208,7 +208,7 @@ export default function UpgradeModal({ open, onClose }: { open: boolean; onClose
                         </p>
                       ))}
                   {tier === "pro" && (
-                    <p className="pt-0.5 text-[11px] font-semibold text-cyan-300/80">
+                    <p className="tv-num pt-0.5 text-[11px] font-semibold text-cyan-300/80">
                       + {pagesOfTier("pro").length - 3}{" "}
                       {fr ? "autres pages Premium" : "more Premium pages"}
                     </p>

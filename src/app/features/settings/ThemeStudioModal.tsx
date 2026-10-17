@@ -178,6 +178,7 @@ export default function ThemeStudioModal({
                 />
                 <span
                   className={cn(
+                    "tv-num",
                     "text-[11px] font-semibold",
                     i === step ? "text-white" : "text-slate-500",
                   )}

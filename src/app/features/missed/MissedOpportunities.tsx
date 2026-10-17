@@ -331,7 +331,7 @@ export default function MissedOpportunities() {
                       <span className="truncate text-sm font-bold text-white">
                         {m.symbol || "—"}
                       </span>
-                      <span className="shrink-0 text-[10px] text-slate-500">
+                      <span className="tv-num shrink-0 text-[10px] text-slate-500">
                         {formatShortDate(m.date)}
                       </span>
                     </div>
@@ -360,7 +360,7 @@ export default function MissedOpportunities() {
                            `sm` on garde le chiffre et l'unité, qui suffisent
                            dans une colonne dont l'en-tête dit déjà « R left on
                            the table ». */
-                        <span className="truncate rounded-lg border border-emerald-500/25 bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold text-emerald-400">
+                        <span className="tv-num truncate rounded-lg border border-emerald-500/25 bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold text-emerald-400">
                           +{m.estimatedR.toFixed(1)}
                           <span className="sm:hidden">R</span>
                           <span className="hidden sm:inline"> {t("missed.rMissed")}</span>
@@ -374,7 +374,7 @@ export default function MissedOpportunities() {
                            taille et de couleur d'une machine à l'autre, au
                            milieu d'une interface qui n'en utilise nulle part
                            ailleurs. */
-                        <span className="inline-flex items-center gap-1 rounded-lg border border-white/[0.08] bg-white/[0.04] px-1.5 py-0.5 text-[10px] font-semibold text-slate-400">
+                        <span className="tv-num inline-flex items-center gap-1 rounded-lg border border-white/[0.08] bg-white/[0.04] px-1.5 py-0.5 text-[10px] font-semibold text-slate-400">
                           {m.screenshots.length}
                           <Camera className="h-3 w-3" />
                         </span>
@@ -554,7 +554,7 @@ export function ScreenshotsView({
                   </span>
                 </div>
                 {size === "lg" && (
-                  <span className="absolute bottom-1.5 right-1.5 text-[10px] font-bold text-white/80 bg-black/50 px-1.5 py-0.5 rounded-md backdrop-blur-sm">
+                  <span className="tv-num absolute bottom-1.5 right-1.5 text-[10px] font-bold text-white/80 bg-black/50 px-1.5 py-0.5 rounded-md backdrop-blur-sm">
                     {i + 1}/{paths.length}
                   </span>
                 )}
@@ -802,7 +802,7 @@ export function MissedEditor({
           <div className="mb-2 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
             <span className={cn(EDITOR_LABEL, "mb-0")}>
               {t("missed.field.screenshots")}{" "}
-              <span className="text-slate-600">({(m.screenshots ?? []).length}/3)</span>
+              <span className="tv-num text-slate-600">({(m.screenshots ?? []).length}/3)</span>
             </span>
             <span className="tv-prose text-slate-500">
               {t("missed.field.screenshotsHint")}

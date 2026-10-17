@@ -192,7 +192,7 @@ function DevUiPage() {
                       {ecran === "controls" && <ControlHarness />}
                       {ecran === "icons" && <IconHarness />}
                       {ecran === "calendar" && <CalendarPage trades={trades} />}
-                      {ecran === "dashboard" && <Dashboard trades={trades} onAddTrade={noop} />}
+                      {ecran === "dashboard" && <DashboardHarness trades={trades} />}
                       {ecran === "journal" && (
                         <Journal
                           trades={trades}
@@ -287,6 +287,19 @@ function PlanHarness({ trades }: { trades: Trade[] }) {
         forecast={null}
       />
     </PageContainer>
+  );
+}
+
+/** Le vrai déclencheur ouvre le vrai formulaire, sans écriture de compte. */
+function DashboardHarness({ trades }: { trades: Trade[] }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <Dashboard trades={trades} onAddTrade={() => setOpen(true)} />
+      {open && (
+        <TradeModal trade={null} onClose={() => setOpen(false)} onSave={() => setOpen(false)} />
+      )}
+    </>
   );
 }
 

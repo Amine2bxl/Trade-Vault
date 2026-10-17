@@ -1,6 +1,6 @@
 ---
 name: typography
-description: Loi typographique de TradeVault — pile système de Lucid dans l'app (Inter sur la vitrine), échelle `--tv-t-*` à 8 rôles, chiffres tabulaires `.tv-figure`, libellés `.tv-label`, plancher de lisibilité, titrage marketing vs titrage produit. À charger avant d'écrire une taille de texte, un titre, un libellé, un chiffre ou une graisse. Se déclenche sur : police, font, typo, taille de texte, titre, h1, h2, libellé, label, chiffre, nombre, graisse, tracking, interlignage, lisibilité.
+description: "Loi typographique de TradeVault — pile système de Lucid dans l'app (Inter sur la vitrine), échelle `--tv-t-*` à 8 rôles, chiffres tabulaires `.tv-figure`, libellés `.tv-label`, plancher de lisibilité, titrage marketing vs titrage produit. À charger avant d'écrire une taille de texte, un titre, un libellé, un chiffre ou une graisse. Se déclenche sur : police, font, typo, taille de texte, titre, h1, h2, libellé, label, chiffre, nombre, graisse, tracking, interlignage, lisibilité."
 ---
 
 # Typographie — une voix par surface
@@ -15,7 +15,7 @@ par `shell/App.tsx`) l'applique au corps et aux titres, modales comprises.
 
 La **vitrine**, les pages légales et la démo gardent **Inter** (`--font-sans`,
 `--font-display`). Les chiffres et leurs libellés portent **Inter** partout via
-`--font-figure` : c'est la référence fournie, en graisse 800 et chiffres
+`--font-figure` : c'est la référence fournie, en graisses 600–700 et chiffres
 tabulaires, avec un rendu identique sur chaque appareil.
 
 Dans chaque surface, une seule famille : la hiérarchie vient de la **taille,
@@ -50,10 +50,15 @@ mention. Rien sous 10px. Du texte réel à lire : 12px minimum.
 
 ```
 font-family: var(--font-figure); font-variant-numeric: tabular-nums;
-font-weight: 800; letter-spacing: -0.01em;
+font-weight: 700; letter-spacing: -0.01em;
 ```
 
-**Obligatoire** sur tout prix, P&L, R-multiple, pourcentage, statistique. Le
+**Utiliser `tv-figure` (700)** pour un total, un KPI principal ou le P&L héros.
+**Utiliser `tv-num` / `tv-figure-secondary` (600)** pour un prix secondaire,
+une date, une heure, un compte ou un axe. Ne jamais grossir un chiffre pour
+le rendre plus visible. Centraliser le contrat dans `styles.css` et
+`docs/DESIGN_SYSTEM.md` §3 ; les couleurs de profit/perte restent fixes.
+Utiliser `numericText` pour des nombres mêlés à une phrase ou une réponse. Le
 tabulaire donne à chaque chiffre la même largeur : une colonne de montants
 reste alignée, et un total qui passe de 999 à 1 000 ne fait plus glisser sa
 ligne. La classe ne fixe **pas** de couleur — la teinte porte le signe.
@@ -82,7 +87,7 @@ libellé**, **le reste**. Si un bloc a un titre, un sous-titre, une étiquette,
 une valeur et une note, quelque chose doit disparaître.
 
 Graisses utiles : `400` (corps), `600` (titre de carte, libellé), `700`
-(titre de section), `800` (chiffre). Pas de `500` décoratif, pas de faux-gras.
+(titre de section), `700` (valeur principale), `600` (valeur secondaire). Pas de `500` décoratif, pas de faux-gras.
 
 ## Titrage marketing (landing uniquement)
 

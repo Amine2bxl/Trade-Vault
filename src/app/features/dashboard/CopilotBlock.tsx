@@ -192,7 +192,7 @@ function CopilotBlock({
     edgeDelta !== null && edgeDelta !== 0 ? (
       <span
         className={cn(
-          "tv-figure text-xs px-1.5 py-0.5 rounded-md",
+          "tv-figure tv-figure-secondary text-xs px-1.5 py-0.5 rounded-md",
           edgeDelta > 0 ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400",
         )}
       >
@@ -209,7 +209,7 @@ function CopilotBlock({
         <EdgeSparkline scores={edgeScores} positive={edgeTrend.delta >= 0} />
         <span
           className={cn(
-            "tv-figure text-xs",
+            "tv-figure tv-figure-secondary text-xs",
             edgeTrend.delta >= 0 ? "text-emerald-400/90" : "text-red-400/90",
           )}
         >
@@ -327,7 +327,7 @@ function CopilotBlock({
               <div className="text-sm font-semibold leading-snug text-white">
                 {consigne ?? t("copilot.ruleNone")}
               </div>
-              <div className="tv-figure mt-1 truncate text-[10px] text-slate-600">
+              <div className="tv-figure tv-figure-secondary mt-1 truncate text-[10px] text-slate-600">
                 {preuve ?? (rule ? t("copilot.ruleFrom") : t("copilot.ruleNoneHint"))}
               </div>
             </div>
@@ -351,7 +351,7 @@ function CopilotBlock({
                         style={{ width: `${Math.round((objPct ?? 0) * 100)}%` }}
                       />
                     </div>
-                    <span className="tv-figure text-[11px] text-cyan-300 shrink-0">
+                    <span className="tv-figure tv-figure-secondary text-[11px] text-cyan-300 shrink-0">
                       {Math.round((objPct ?? 0) * 100)}%
                     </span>
                   </div>

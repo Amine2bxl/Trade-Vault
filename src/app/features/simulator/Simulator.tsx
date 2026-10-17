@@ -319,7 +319,7 @@ export default function Simulator({ trades }: { trades: Trade[] }) {
                         {t(`sim.dd.${s.rules.drawdownType ?? "static"}` as never)}
                       </span>
                       {s.lastRiskOfRuin !== null && (
-                        <span className="tv-figure block text-[11px] text-slate-500">
+                        <span className="tv-figure tv-figure-secondary block text-[11px] text-slate-500">
                           {t("sim.ruinShort")} {pct(s.lastRiskOfRuin)}
                           {s.lastSampleSize !== null && ` · n=${s.lastSampleSize}`}
                         </span>

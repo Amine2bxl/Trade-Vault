@@ -494,7 +494,7 @@ export default function ChecklistWizard({
                   style={{ width: `${((step + 1) / total) * 100}%` }}
                 />
               </div>
-              <span className="tv-figure shrink-0 text-[11px] tabular-nums text-slate-500">
+              <span className="tv-figure tv-figure-secondary shrink-0 text-[11px] tabular-nums text-slate-500">
                 {step + 1}/{total}
               </span>
             </div>

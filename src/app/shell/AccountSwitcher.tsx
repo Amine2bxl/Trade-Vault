@@ -164,7 +164,7 @@ export default function AccountSwitcher({
                   </span>
                 )}
               </span>
-              <span className="tv-figure block text-[11px] font-semibold text-slate-500">
+              <span className="tv-figure tv-figure-secondary block text-[11px] font-semibold text-slate-500">
                 {formatMoney(a.startingBalance, { whole: true })} · {t(TYPE_LABEL_KEY[a.type])}
               </span>
             </span>
@@ -714,7 +714,7 @@ export default function AccountSwitcher({
                 <Pencil className="w-3 h-3" />
               </button>
             </span>
-            <span className="tv-figure block text-[10px] text-slate-500 truncate">
+            <span className="tv-figure tv-figure-secondary block text-[10px] text-slate-500 truncate">
               {fmtBalance} · {t(TYPE_LABEL_KEY[activeAccount.type])}
             </span>
           </span>

@@ -547,8 +547,8 @@ export default function MonteCarloPage({ trades }: Props) {
           <ol className="mc-steps">
             {(["mc.step1", "mc.step2", "mc.step3"] as const).map((k, i) => (
               <li key={k}>
-                <span className="mc-step-n">{i + 1}</span>
-                <span>
+                <span className="tv-num mc-step-n">{i + 1}</span>
+                <span className="tv-num">
                   {t(k)
                     .replace("{n}", String(journalSamples.length))
                     .replace("{runs}", TIRAGES.toLocaleString())}
@@ -691,7 +691,7 @@ export default function MonteCarloPage({ trades }: Props) {
                         label={t("mc.failed")}
                         value={`${(result.failRate * 100).toFixed(0)}%`}
                       />
-                      <span className="tv-hint ml-auto">
+                      <span className="tv-num tv-hint ml-auto">
                         {TIRAGES.toLocaleString()} {t("mc.paths")} · {stats.totalSamples}{" "}
                         {t("mc.dataTrades").toLowerCase()}
                       </span>
@@ -1881,7 +1881,9 @@ function Legende({ cls, label, value }: { cls: string; label: string; value?: st
     <span className="flex items-center gap-1.5">
       <span aria-hidden className={cn("h-2 w-2 shrink-0 rounded-full", cls)} />
       <span className="tv-row-label">{label}</span>
-      {value && <span className="tv-figure text-[11px] text-slate-300">{value}</span>}
+      {value && (
+        <span className="tv-figure tv-figure-secondary text-[11px] text-slate-300">{value}</span>
+      )}
     </span>
   );
 }

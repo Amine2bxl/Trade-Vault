@@ -210,6 +210,7 @@ export function DateField({
                       }}
                       aria-current={iso === value ? "date" : undefined}
                       className={cn(
+                        "tv-num",
                         "tv-pop-day",
                         iso === value && "tv-pop-day-on",
                         iso === aujourdhui && iso !== value && "tv-pop-day-today",

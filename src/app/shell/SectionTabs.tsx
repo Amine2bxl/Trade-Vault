@@ -181,7 +181,7 @@ export default function SectionTabs({ section, page, setPage }: SectionTabsProps
         >
           <ActiveIcon className="h-4 w-4 shrink-0 text-[var(--tv-accent)]" strokeWidth={2.1} />
           <span className="min-w-0 flex-1 truncate text-left">{t(activeLabelKey)}</span>
-          <span className="section-picker-count">
+          <span className="tv-num section-picker-count">
             {activeIndex + 1}/{pages.length}
           </span>
           <ChevronDown

@@ -863,7 +863,9 @@ function Steps({ t }: { t: T }) {
           key={title}
           className="rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-2)] px-3 py-2.5"
         >
-          <span className="tv-figure text-[11px] font-bold text-[var(--tv-accent)]">0{i + 1}</span>
+          <span className="tv-figure tv-figure-secondary text-[11px] font-bold text-[var(--tv-accent)]">
+            0{i + 1}
+          </span>
           <div className="mt-0.5 text-[13px] font-semibold text-slate-100">{t(title)}</div>
           <div className="text-xs leading-snug text-slate-500">{t(body)}</div>
         </li>

@@ -67,7 +67,7 @@ export default function AccountsManager({ trades }: { trades: Trade[] }) {
   return (
     <div className="tv-accounts space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <span className="tv-prose text-slate-500">{count}</span>
+        <span className="tv-num tv-prose text-slate-500">{count}</span>
         <Button
           variant={canAdd ? "entry" : "subtle"}
           size="sm"

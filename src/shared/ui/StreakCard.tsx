@@ -111,7 +111,7 @@ const StreakCard = React.forwardRef<HTMLDivElement, StreakCardProps>(function St
         {subtitle && <p className="mt-1 text-[12px] leading-relaxed text-slate-400">{subtitle}</p>}
       </header>
 
-      <p className="mb-4 font-display text-4xl leading-none font-bold tracking-tight text-white">
+      <p className="tv-figure mb-4 text-4xl leading-none font-bold tracking-tight text-white">
         {currentStreak}
         <span className="ml-2 text-sm font-medium text-slate-500">{daysLabel}</span>
       </p>
@@ -124,14 +124,14 @@ const StreakCard = React.forwardRef<HTMLDivElement, StreakCardProps>(function St
       >
         <div>
           <p className="tv-prose text-slate-500">{longestLabel}</p>
-          <p className="mt-0.5 font-display text-2xl font-bold text-white">
+          <p className="tv-figure mt-0.5 text-2xl font-bold text-white">
             {longestStreak}
             <span className="ml-1 text-sm font-medium text-slate-500">{daysLabel}</span>
           </p>
         </div>
         <div className="text-right">
           <p className="tv-prose text-slate-500">{totalLabel}</p>
-          <p className="mt-0.5 font-display text-2xl font-bold text-white">{total}</p>
+          <p className="tv-figure mt-0.5 text-2xl font-bold text-white">{total}</p>
         </div>
       </div>
 

@@ -705,11 +705,13 @@ export default function Onboarding({
           </div>
           <div className="flex items-center justify-between text-slate-500">
             <span>SYNC</span>
-            <span className="tv-figure text-[10px]">{Math.round(progress * 100)}%</span>
+            <span className="tv-figure tv-figure-secondary text-[10px]">
+              {Math.round(progress * 100)}%
+            </span>
           </div>
           <div className="flex items-center justify-between text-slate-500">
             <span>LAT</span>
-            <span className="tv-figure text-[10px]">{12 + idx} ms</span>
+            <span className="tv-figure tv-figure-secondary text-[10px]">{12 + idx} ms</span>
           </div>
           <div className="flex items-center justify-between text-slate-600">
             <span>VAULT</span>
@@ -747,7 +749,7 @@ export default function Onboarding({
             ))}
           </div>
 
-          <span className="tv-figure shrink-0 text-[10px] text-slate-600">
+          <span className="tv-figure tv-figure-secondary shrink-0 text-[10px] text-slate-600">
             {String(stepNum).padStart(2, "0")}/{String(steps.length).padStart(2, "0")}
           </span>
         </header>

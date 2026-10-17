@@ -313,7 +313,7 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
           action={
             <span
               className={cn(
-                "tv-figure inline-flex h-6 shrink-0 items-center rounded-lg border px-2 text-[11px]",
+                "tv-figure tv-figure-secondary inline-flex h-6 shrink-0 items-center rounded-lg border px-2 text-[11px]",
                 plan.setups.length >= MAX_SETUPS
                   ? "border-amber-500/25 bg-amber-500/10 text-amber-300"
                   : "border-[var(--tv-border)] bg-[var(--tv-plate-2)] text-slate-400",
@@ -772,7 +772,7 @@ function SetupCard({
   return (
     <div className="rounded-2xl bg-white/[0.03] border border-white/[0.07] p-4 space-y-2.5">
       <div className="flex items-center gap-2.5">
-        <span className="w-6 h-6 rounded-lg bg-cyan-500/15 text-cyan-300 text-[11px] font-bold flex items-center justify-center shrink-0">
+        <span className="tv-num w-6 h-6 rounded-lg bg-cyan-500/15 text-cyan-300 text-[11px] font-bold flex items-center justify-center shrink-0">
           {index + 1}
         </span>
         <input

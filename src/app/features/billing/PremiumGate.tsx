@@ -126,7 +126,7 @@ export function PreviewWall({
                 <span className="tv-figure text-white">{perMonth}</span>
                 {fr ? "/mois" : "/month"}
                 {freeMonths > 0 && (
-                  <span className="ml-1 text-emerald-400">
+                  <span className="tv-num ml-1 text-emerald-400">
                     · {freeMonths} {fr ? "mois offerts" : "mo. free"}
                   </span>
                 )}

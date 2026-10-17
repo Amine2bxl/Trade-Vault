@@ -85,7 +85,7 @@ export function SubNav<T extends string>({
           >
             {it.icon}
             <span>{it.label}</span>
-            {it.count !== undefined && <span className="tv-subnav-count">{it.count}</span>}
+            {it.count !== undefined && <span className="tv-num tv-subnav-count">{it.count}</span>}
           </button>
         );
       })}

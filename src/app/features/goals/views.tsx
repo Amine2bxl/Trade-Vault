@@ -442,7 +442,7 @@ export function PlanView({
             <span className="tv-label text-slate-500">
               {tr("Actions du mois", "This month's actions")}
             </span>
-            <span className="tv-figure text-[11px] text-slate-400">
+            <span className="tv-figure tv-figure-secondary text-[11px] text-slate-400">
               {Math.round(monthTaskCompletion(plan, cur) * 100)}%
             </span>
           </div>
@@ -468,7 +468,7 @@ export function PlanView({
       <div className="glass rounded-3xl p-4">
         <div className="mb-2.5 flex items-baseline gap-2">
           <h2 className="tv-title">{tr("Mes objectifs", "My goals")}</h2>
-          <span className="tv-row-label truncate">
+          <span className="tv-num tv-row-label truncate">
             {tr("depuis", "since")} {monthLabel(monthOf(plan, 0))}
           </span>
         </div>
@@ -504,7 +504,7 @@ export function PlanView({
                     <div className="truncate text-[13px] font-semibold text-white">
                       {g.kind === "custom" ? g.label : fr ? meta.fr : meta.en}
                     </div>
-                    <div className="tv-figure truncate text-[11px] text-slate-500">
+                    <div className="tv-figure tv-figure-secondary truncate text-[11px] text-slate-500">
                       {fmtVal(g, g.startValue)} →{" "}
                       <span className="text-cyan-300 font-bold">{fmtVal(g, g.targetValue)}</span>
                       {" · "}
@@ -538,7 +538,7 @@ export function PlanView({
                     objectif de win rate ou de discipline, et en fabriquer un
                     pourcentage serait inventer un chiffre. */}
                 {g.kind === "capital" && !finalReached && forecast && (
-                  <p className="tv-figure mt-2 text-[11px] text-slate-400">
+                  <p className="tv-figure tv-figure-secondary mt-2 text-[11px] text-slate-400">
                     {tr(
                       `${Math.round(forecast.probability * 100)} % de chances d'y arriver au rythme actuel`,
                       `${Math.round(forecast.probability * 100)}% chance at your current pace`,
@@ -607,6 +607,7 @@ export function PlanView({
                   <span className="min-w-0 flex-1 truncate">
                     <span
                       className={cn(
+                        "tv-num",
                         "text-[13px] font-semibold capitalize",
                         i === cur ? "text-white" : "text-slate-300",
                       )}
@@ -620,7 +621,7 @@ export function PlanView({
                     )}
                   </span>
                   {!locked && (
-                    <span className="tv-figure shrink-0 text-[11px] text-slate-400">
+                    <span className="tv-figure tv-figure-secondary shrink-0 text-[11px] text-slate-400">
                       {Math.round(taskCompletion * 100)}%
                     </span>
                   )}
@@ -640,7 +641,10 @@ export function PlanView({
                     {/* Les jalons de l'étape — ici, et non dans l'étiquette. */}
                     <div className="flex flex-wrap gap-x-3 gap-y-0.5">
                       {plan.goals.map((g) => (
-                        <span key={g.id} className="tv-figure text-[10px] text-slate-500">
+                        <span
+                          key={g.id}
+                          className="tv-figure tv-figure-secondary text-[10px] text-slate-500"
+                        >
                           {g.kind === "custom"
                             ? g.label
                             : fr
@@ -689,7 +693,7 @@ export function PlanView({
                               </div>
                               <span
                                 className={cn(
-                                  "tv-figure text-[10px] w-9 text-right",
+                                  "tv-figure tv-figure-secondary text-[10px] w-9 text-right",
                                   reached ? "text-emerald-400" : "text-slate-400",
                                 )}
                               >
@@ -789,7 +793,7 @@ function ManualValueInput({
       onBlur={commit}
       onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
       aria-label={fr ? "Valeur actuelle" : "Current value"}
-      className="tv-figure w-20 h-9 shrink-0 bg-white/[0.05] border border-white/[0.1] rounded-lg px-2 text-xs text-white text-right focus:outline-none focus:border-cyan-500/40"
+      className="tv-figure tv-figure-secondary w-20 h-9 shrink-0 bg-white/[0.05] border border-white/[0.1] rounded-lg px-2 text-xs text-white text-right focus:outline-none focus:border-cyan-500/40"
     />
   );
 }

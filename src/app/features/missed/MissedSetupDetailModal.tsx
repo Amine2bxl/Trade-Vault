@@ -136,12 +136,14 @@ export default function MissedSetupDetailModal({ missed, onClose }: MissedSetupD
               <h2 className="tv-title tracking-tight truncate leading-tight">
                 {missed.symbol || t("tradeDetail.missedSetup")}
               </h2>
-              <p className="text-[11px] md:tv-prose text-slate-500 mt-0.5 truncate">{dateStr}</p>
+              <p className="tv-num text-[11px] md:tv-prose text-slate-500 mt-0.5 truncate">
+                {dateStr}
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             {missed.estimatedR > 0 && (
-              <span className="flex items-center gap-1 text-[11px] md:text-xs px-2 md:px-2.5 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/20 text-emerald-400 font-bold whitespace-nowrap">
+              <span className="tv-num flex items-center gap-1 text-[11px] md:text-xs px-2 md:px-2.5 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/20 text-emerald-400 font-bold whitespace-nowrap">
                 <TrendingUp className="w-3 h-3 md:w-3.5 md:h-3.5" />+{missed.estimatedR.toFixed(1)}
                 {t("missed.rMissed")}
               </span>
@@ -205,7 +207,9 @@ export default function MissedSetupDetailModal({ missed, onClose }: MissedSetupD
             <div className="flex items-center gap-2 mb-2.5 md:mb-3">
               <ImageIcon className="w-3.5 h-3.5 text-slate-500" />
               <span className="tv-label text-slate-500">{t("tradeDetail.chartScreenshots")}</span>
-              <span className="text-[10px] text-slate-700 font-semibold">· {shots.length}</span>
+              <span className="tv-num text-[10px] text-slate-700 font-semibold">
+                · {shots.length}
+              </span>
             </div>
             <ScreenshotsView paths={shots} size="lg" />
           </div>

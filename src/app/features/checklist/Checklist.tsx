@@ -1271,7 +1271,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
             Ça défile, et c'est très bien — ce n'est pas ce qu'on cherche à
             mi-parcours. Une ligne de texte, plus trois pastilles encadrées. */}
         <div className="animate-fade-in-up flex flex-wrap items-center gap-x-2 gap-y-1">
-          <span className="tv-figure text-[11px] text-slate-400">
+          <span className="tv-figure tv-figure-secondary text-[11px] text-slate-400">
             {dateStr} · {clockStr}
           </span>
           <span aria-hidden className="h-3 w-px bg-[var(--tv-border)]" />
@@ -1288,7 +1288,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
               <span aria-hidden className="h-3 w-px bg-[var(--tv-border)]" />
               <span
                 title={t("chk.streakHint")}
-                className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-300"
+                className="tv-num inline-flex items-center gap-1 text-[11px] font-bold text-amber-300"
               >
                 <Flame className="h-3 w-3" /> {streak} {t("chk.streakSuffix")}
               </span>
@@ -1359,7 +1359,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
             {/* L'AVANCEMENT — le chiffre, puis la jauge. La jauge seule ne dit
                 pas combien il reste ; le chiffre seul ne se lit pas d'un coup
                 d'œil. */}
-            <span className="tv-figure shrink-0 text-[11px] text-white">
+            <span className="tv-figure tv-figure-secondary shrink-0 text-[11px] text-white">
               {nChecked}/{nActive}
             </span>
             <span
@@ -1481,7 +1481,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
                       className="inline-flex items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-xs text-slate-300 hover:border-[rgb(var(--tv-accent-rgb)/0.30)] hover:text-white transition"
                     >
                       <span className="font-semibold">{tp.name}</span>
-                      <span className="text-[10px] text-[var(--tv-highlight)]">
+                      <span className="tv-num text-[10px] text-[var(--tv-highlight)]">
                         {tp.items.length} ✓
                       </span>
                     </button>
@@ -1534,7 +1534,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
                   </div>
                 )}
 
-                <div className="tv-label text-slate-500">
+                <div className="tv-num tv-label text-slate-500">
                   {t("chk.cfgChecklist")} ({nActive}/{config.items.length})
                 </div>
                 <div className="text-[11px] text-slate-500">{t("chk.cfgDragHint")}</div>
