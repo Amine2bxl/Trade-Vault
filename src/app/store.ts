@@ -65,6 +65,8 @@ export {
   type OnboardingData,
   loadOnboarding,
   saveOnboarding,
+  saveMonthlyTarget,
+  MONTHLY_TARGET_EVENT,
   type JarvisProfile,
   loadJarvisProfile,
   saveJarvisProfile,

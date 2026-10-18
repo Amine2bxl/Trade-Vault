@@ -37,6 +37,8 @@ interface CopilotBlockProps {
   checklist: CopilotChecklist | null;
   objective: CopilotObjective;
   onOpenChecklist?: () => void;
+  /** Mène là où l'objectif mensuel se règle (le plan de trading). */
+  onSetObjective?: () => void;
 }
 
 /**
@@ -159,6 +161,7 @@ function CopilotBlock({
   checklist,
   objective,
   onOpenChecklist,
+  onSetObjective,
 }: CopilotBlockProps) {
   const { t } = useT();
   const hasScore = edge.score !== null;
@@ -350,6 +353,16 @@ function CopilotBlock({
                     </span>
                   </div>
                 </>
+              ) : onSetObjective ? (
+                // Pas d'objectif : un lien direct vers l'endroit où il se règle,
+                // au lieu d'une consigne qui renvoyait à un profil sans champ.
+                <button
+                  type="button"
+                  onClick={onSetObjective}
+                  className="mt-1 inline-flex items-center gap-1 text-[12px] font-semibold text-[var(--tv-highlight)] transition-colors hover:text-white"
+                >
+                  {t("copilot.objNone")} <ChevronRight className="h-3 w-3" />
+                </button>
               ) : (
                 <div className="mt-1 text-[11px] leading-snug text-slate-500">
                   {t("copilot.objNone")}

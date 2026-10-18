@@ -305,6 +305,30 @@ export async function loadOnboarding(userId: string): Promise<OnboardingData> {
   };
 }
 
+/** Diffusé après un changement de l'objectif mensuel : le copilote du tableau
+ *  de bord se met à jour sans recharger la page. */
+export const MONTHLY_TARGET_EVENT = "tv:monthly-target";
+
+/**
+ * L'OBJECTIF MENSUEL, SEUL.
+ *
+ * Il n'était écrit que par `saveOnboarding`, qui réécrit aussi toutes les
+ * réponses et repose `onboarded_at` : le seul moyen de le changer était de
+ * refaire l'onboarding. Il se règle désormais depuis le plan de trading et les
+ * préférences, sans toucher au reste. `null` = pas d'objectif.
+ */
+export async function saveMonthlyTarget(userId: string, pct: number | null): Promise<void> {
+  const value = pct !== null && Number.isFinite(pct) && pct > 0 ? pct : null;
+  const { error } = await supabase
+    .from("profiles")
+    .update({ onboarding_monthly_target: value })
+    .eq("id", userId);
+  if (error) throw error;
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent(MONTHLY_TARGET_EVENT, { detail: value }));
+  }
+}
+
 // Persists the collected answers and stamps `onboarded_at` so the flow never
 // shows again. `skipped` records that the user bailed with defaults.
 //

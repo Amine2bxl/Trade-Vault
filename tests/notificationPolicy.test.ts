@@ -1,11 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import {
-  badgeLabel,
-  noteTradeAction,
-  planArchive,
-  shouldInterrupt,
-  LIVE_WINDOW_MS,
-} from "../src/modules/notifications/policy";
+import { badgeLabel, planArchive, shouldInterrupt } from "../src/modules/notifications/policy";
 import { evaluateNotificationRules } from "../src/modules/notifications/rules";
 
 const at = (daysAgo: number) => new Date(Date.now() - daysAgo * 86_400_000).toISOString();
@@ -40,14 +34,13 @@ describe("la boîte s'entretient : expiration et doublons", () => {
   });
 });
 
-describe("le popup se mérite par le contexte", () => {
-  test("une alerte grave n'interrompt que juste après un trade enregistré", () => {
-    const t0 = 1_000_000;
-    expect(shouldInterrupt({ severity: "error" }, t0)).toBe(false);
-    noteTradeAction(t0);
-    expect(shouldInterrupt({ severity: "error" }, t0 + 30_000)).toBe(true);
-    expect(shouldInterrupt({ severity: "warning" }, t0 + 30_000)).toBe(false);
-    expect(shouldInterrupt({ severity: "error" }, t0 + LIVE_WINDOW_MS + 1)).toBe(false);
+describe("un seul popup : l'annonce majeure, une heure avant", () => {
+  test("seule l'alerte économique marquée popup interrompt", () => {
+    expect(shouldInterrupt({ kind: "economic_event", data: { popup: true } })).toBe(true);
+    expect(shouldInterrupt({ kind: "economic_event", data: {} })).toBe(false);
+    // Une alerte grave du journal attend dans la boîte de réception.
+    expect(shouldInterrupt({ kind: "risk_loss_streak", data: { popup: true } })).toBe(false);
+    expect(shouldInterrupt({ kind: "discipline_limit" })).toBe(false);
   });
 });
 

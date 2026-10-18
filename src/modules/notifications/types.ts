@@ -83,4 +83,9 @@ export interface NotificationAdapters {
   push?: (payload: { title: string; body: string; url?: string }) => Promise<unknown>;
   /** Persist to the notifications table. */
   persist?: (n: AppNotification) => Promise<void>;
+  /**
+   * Filtre du trader : `false` → la notification n'existe pas (ni boîte, ni
+   * push, ni popup). Branché sur ses catégories (`preferences.ts`).
+   */
+  allow?: (n: AppNotification) => boolean;
 }

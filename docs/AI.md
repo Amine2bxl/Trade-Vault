@@ -143,6 +143,16 @@ hebdomadaire, progrès, règle qui glisse, séance propre) + alertes du
 calendrier économique (`modules/notifications/economic.ts`). Seuils hauts
 volontairement : un canal bruyant finit désactivé.
 
+Rien n'interrompt le trader, sauf **une** chose (`policy.shouldInterrupt`) :
+l'annonce à fort impact, **une heure avant**, sur une devise qu'il trade
+vraiment (`domain/instrumentCurrency.currencyFocus` : 60 derniers jours du
+journal, devises ≥ 10 % des trades, repli sur les marchés déclarés à
+l'onboarding). Annonces simultanées regroupées, heures approximatives du repli
+intégré jamais alertées. Pas de toast automatique ; le reste attend dans la
+boîte. Les catégories coupées dans les Réglages (`preferences.ts`, stockées
+dans `user_preferences.prefs.notifications`) sont appliquées par l'adaptateur
+`allow` du moteur.
+
 ## 6. Configuration
 
 Variables (liste complète : `.env.example`) : `AI_PROVIDER`, clés

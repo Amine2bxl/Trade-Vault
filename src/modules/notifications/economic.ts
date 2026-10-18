@@ -2,57 +2,60 @@ import type { CalendarEvent } from "../economic-calendar/types";
 import type { CodedRule } from "./rules";
 
 /**
- * LE CALENDRIER ÉCONOMIQUE DEVIENT UNE ALERTE.
+ * LE CALENDRIER ÉCONOMIQUE DEVIENT UNE ALERTE — LA SEULE QUI INTERROMPT.
  *
- * ── LE TROU ─────────────────────────────────────────────────────────────────
+ * ── CE QUI A CHANGÉ ─────────────────────────────────────────────────────────
  *
- * `NotificationKind` déclarait `"economic_event"` depuis le début, et
- * `NotificationCategory` déclarait `"economic"` — la boîte de réception avait
- * même son filtre « Économie », avec son icône. Mais AUCUNE règle n'émettait
- * jamais cette notification. Un filtre qui ne peut rien contenir, une catégorie
- * qui ne se remplit pas : le calendrier vivait dans sa page, et nulle part
- * ailleurs.
+ * Avant : deux préavis (60 et 15 min) pour TOUTE annonce à fort impact, quelle
+ * que soit la devise, en toast de quatre secondes qui ne nommait même pas
+ * l'annonce. Un trader de NQ recevait la BoJ, un trader d'EUR/USD le PIB
+ * canadien — et le préavis de quinze minutes « ouvrait le popup » à condition
+ * qu'un trade ait été enregistré dans les deux minutes, donc presque jamais.
  *
- * Or c'est la seule donnée du produit qui soit à la fois DATÉE et EXTERNE : le
- * trader ne peut pas la déduire de son journal, et elle a une heure limite.
- * C'est exactement ce qu'une notification doit porter — et le reste (ses
- * erreurs, ses objectifs) peut attendre qu'il ouvre la page.
+ * Maintenant, une seule règle, et c'est la seule notification du produit qui
+ * s'ouvre d'elle-même (le reste attend dans la boîte de réception) :
  *
- * ── CE QUI DÉCLENCHE, ET CE QUI SE TAIT ─────────────────────────────────────
+ *   • UNE HEURE AVANT, pas de compte à rebours — le temps de décider de rester
+ *     en dehors ou de réduire, pas une sirène quand il est trop tard ;
+ *   • IMPACT FORT UNIQUEMENT — les « rouges » ;
+ *   • SEULEMENT LES DEVISES QUE LE TRADER TRADE VRAIMENT — calculées sur son
+ *     journal (`domain/instrumentCurrency.currencyFocus`) : NQ → USD,
+ *     EURUSD → EUR et USD, DAX → EUR… ;
+ *   • ANNONCES SIMULTANÉES REGROUPÉES — « CPI + Core CPI » à 14 h 30 est UNE
+ *     alerte, pas deux ;
+ *   • HEURES SÛRES SEULEMENT — le repli intégré (`source: "builtin"`) donne des
+ *     heures approximatives : il sert la page Calendrier, jamais une alerte.
  *
- * IMPACT FORT UNIQUEMENT. Le calendrier publie des dizaines d'événements par
- * jour ; les alerter tous reviendrait à n'en alerter aucun. Seules les
- * publications à fort impact — les « rouges » — justifient d'interrompre.
- *
- * DEUX PRÉAVIS, PAS UN COMPTE À REBOURS. Une heure avant : le temps de décider
- * si l'on se met en dehors. Quinze minutes avant : le rappel de celui qui est
- * déjà en position. Entre les deux, silence.
- *
- * UN SEUL RAPPEL PAR PRÉAVIS ET PAR ÉVÉNEMENT. La clé porte l'identifiant de
- * l'événement ET le préavis, donc réévaluer les règles toutes les minutes ne
- * produit pas soixante alertes.
- *
- * RIEN APRÈS L'HEURE. Un événement passé n'a plus de préavis à donner ; le
- * signaler ferait douter de tous les autres.
+ * UN SEUL RAPPEL PAR ANNONCE : la clé porte l'identifiant de l'événement, donc
+ * réévaluer les règles toutes les cinq minutes ne produit pas douze alertes.
  */
 
-/** Les deux préavis, en minutes. Du plus lointain au plus proche. */
-export const PREAVIS_MIN = [60, 15] as const;
+/** Le préavis, en minutes. */
+export const PREAVIS_MIN = 60;
 
 /**
- * Marge de tolérance autour d'un préavis, en minutes.
+ * La fenêtre de tir : de 60 à 45 minutes avant.
  *
- * Les règles ne sont pas évaluées à la seconde : elles tournent quand le trader
- * ouvre l'application ou quand une tâche planifiée passe. Exiger exactement
- * « 60 minutes restantes » ne déclencherait donc presque jamais. La fenêtre
- * s'ouvre au préavis et se referme à la moitié du temps restant suivant — assez
- * large pour être attrapée, assez étroite pour que l'alerte reste juste.
+ * Les règles sont évaluées à l'ouverture de l'application puis toutes les cinq
+ * minutes. Exiger exactement « 60 minutes restantes » ne déclencherait
+ * presque jamais ; quinze minutes de tolérance garantissent le rappel sans
+ * qu'il arrive trop tard pour servir à quelque chose.
  */
-const TOLERANCE_MIN = 10;
+const FENETRE_MIN = 15;
+
+export interface FocusDevises {
+  /** Devises à surveiller. Vide → l'USD, la plus tradée du produit. */
+  currencies: string[];
+  /** Part des trades récents exposés à chaque devise (0–1), si connue. */
+  share?: Partial<Record<string, number>>;
+}
 
 export interface AlerteEco {
+  /** L'annonce de référence (la première du groupe). */
   event: CalendarEvent;
-  /** Le préavis qui a déclenché, en minutes. */
+  /** Toutes les annonces à fort impact de cette devise à cette heure. */
+  groupe: CalendarEvent[];
+  /** Le préavis, en minutes. */
   preavis: number;
   /** Minutes réellement restantes au moment de l'évaluation. */
   restant: number;
@@ -61,103 +64,114 @@ export interface AlerteEco {
 /**
  * Les alertes qui DEVRAIENT exister à cet instant — fonction pure.
  *
- * Rendre les alertes plutôt que de notifier permet de tester la décision sans
- * monter le moteur, et laisse l'appelant choisir ses canaux.
+ * `focus` absent : toutes les devises (comportement neutre, pour les appels
+ * qui ne connaissent pas le trader). Présent : seulement ses devises.
  */
 export function alertesEconomiquesImminentes(
   events: CalendarEvent[],
   now: Date = new Date(),
+  focus?: FocusDevises,
 ): AlerteEco[] {
   const maintenant = now.getTime();
-  const out: AlerteEco[] = [];
+  const devises = focus ? new Set(focus.currencies.length ? focus.currencies : ["USD"]) : null;
+  const groupes = new Map<string, CalendarEvent[]>();
 
   for (const e of events) {
-    // Un événement sans heure précise n'a pas de préavis à donner : « dans la
-    // journée » ne se compte pas en minutes.
+    // « Dans la journée » ne se compte pas en minutes.
     if (e.allDay) continue;
     if (e.impact !== "high") continue;
+    // Une heure approximative ne fait pas une alerte.
+    if (e.source === "builtin") continue;
+    if (devises && !devises.has(e.currency)) continue;
 
     const t = new Date(e.startsAt).getTime();
     if (Number.isNaN(t)) continue;
-
     const restantMin = (t - maintenant) / 60_000;
-    // Passé, ou en cours : plus rien à annoncer.
-    if (restantMin <= 0) continue;
+    if (restantMin <= PREAVIS_MIN - FENETRE_MIN || restantMin > PREAVIS_MIN) continue;
 
-    for (const preavis of PREAVIS_MIN) {
-      if (restantMin <= preavis && restantMin > preavis - TOLERANCE_MIN) {
-        out.push({ event: e, preavis, restant: Math.round(restantMin) });
-        // Un seul préavis par passage : à 14 minutes, on est dans la fenêtre
-        // des 15 et plus dans celle des 60. Sans ce `break`, un événement
-        // pourrait porter deux alertes d'un coup si les fenêtres se
-        // chevauchaient.
-        break;
-      }
-    }
+    const cle = `${e.currency}|${e.startsAt}`;
+    const g = groupes.get(cle);
+    if (g) g.push(e);
+    else groupes.set(cle, [e]);
   }
 
-  /* Le plus urgent d'abord : si deux publications tombent ensemble, c'est celle
-     qui arrive le plus tôt qui décide de ce qu'on fait des cinq prochaines
-     minutes. */
-  return out.sort((a, b) => a.restant - b.restant);
+  const out: AlerteEco[] = [];
+  for (const groupe of groupes.values()) {
+    // L'ordre du flux est stable : la première annonce donne son identifiant
+    // au groupe, la clé de déduplication ne bouge donc pas d'un passage à
+    // l'autre.
+    const tries = [...groupe].sort((a, b) => a.id.localeCompare(b.id));
+    const ref = tries[0];
+    const restant = Math.round((new Date(ref.startsAt).getTime() - maintenant) / 60_000);
+    out.push({ event: ref, groupe: tries, preavis: PREAVIS_MIN, restant });
+  }
+  // La plus proche d'abord ; à égalité, la devise la plus tradée.
+  const part = (c: string) => focus?.share?.[c] ?? 0;
+  return out.sort(
+    (a, b) => a.restant - b.restant || part(b.event.currency) - part(a.event.currency),
+  );
 }
 
 /** Le texte d'une alerte, dans la langue du trader. */
-function copie(a: AlerteEco, fr: boolean): { title: string; body: string } {
+function copie(
+  a: AlerteEco,
+  fr: boolean,
+  share: number | undefined,
+): { title: string; body: string; plan: string } {
   const heure = new Date(a.event.startsAt).toLocaleTimeString(fr ? "fr-FR" : "en-US", {
     hour: "2-digit",
     minute: "2-digit",
   });
+  const titres = a.groupe.map((e) => e.title);
+  const nom = titres.length > 2 ? `${titres[0]} +${titres.length - 1}` : titres.join(" + ");
+  const exposition =
+    share && share > 0
+      ? fr
+        ? ` ${Math.round(share * 100)} % de tes trades récents sont exposés au ${a.event.currency}.`
+        : ` ${Math.round(share * 100)}% of your recent trades are exposed to ${a.event.currency}.`
+      : "";
   return {
     title: fr
-      ? `${a.event.currency} · ${a.event.title} dans ${a.preavis} min`
-      : `${a.event.currency} · ${a.event.title} in ${a.preavis} min`,
+      ? `${a.event.currency} · ${nom} dans ${a.restant} min`
+      : `${a.event.currency} · ${nom} in ${a.restant} min`,
     body: fr
-      ? `Publication à fort impact à ${heure}. Prévois ta position avant, pas pendant.`
-      : `High-impact release at ${heure}. Decide on your position before, not during.`,
+      ? `Annonce à fort impact à ${heure}.${exposition}`
+      : `High-impact release at ${heure}.${exposition}`,
+    plan: fr
+      ? `Décide maintenant, pas à ${heure} : rester en dehors, réduire la taille ou sortir avant l'annonce.`
+      : `Decide now, not at ${heure}: stay flat, size down or close before the release.`,
   };
 }
 
 /**
  * Les alertes, prêtes pour le moteur de notifications.
  *
- * CANAUX. Le préavis d'une heure informe (tableau de bord + toast) ; celui de
- * quinze minutes interrompt (push compris). Un événement daté qui arrive dans
- * un quart d'heure est le cas le plus légitime qui soit pour faire sonner un
- * téléphone — et le seul de tout le produit.
+ * CANAUX : la boîte de réception (trace) et le push (téléphone, si le trader
+ * l'a activé). Pas de toast : l'alerte s'ouvre en POPUP (`data.popup`), la
+ * seule de tout le produit — voir l'adaptateur `persist` de `App.tsx`.
  */
 export function reglesEconomiques(
   events: CalendarEvent[],
   now: Date = new Date(),
   fr = false,
+  focus?: FocusDevises,
 ): CodedRule[] {
-  return alertesEconomiquesImminentes(events, now).map((a) => {
-    const { title, body } = copie(a, fr);
-    const urgent = a.preavis <= 15;
+  return alertesEconomiquesImminentes(events, now, focus).map((a) => {
+    const share = focus?.share?.[a.event.currency];
+    const { title, body, plan } = copie(a, fr, share);
+    const cle = `economic_event:${a.event.id}:${a.preavis}`;
     return {
-      // La clé porte l'ÉVÉNEMENT et le PRÉAVIS : réévaluer toutes les minutes
-      // ne produit donc pas soixante alertes pour la même publication.
-      key: `economic_event:${a.event.id}:${a.preavis}`,
-      /* LE PRÉAVIS DE QUINZE MINUTES OUVRE LE POPUP — et lui seul.
-         C'est la seule notification du produit qui porte une HEURE LIMITE :
-         quinze minutes avant une publication à fort impact, un toast qui
-         s'efface en trois secondes rate précisément sa cible. Comme sa clé
-         désigne déjà un événement unique et daté, elle ne peut pas se répéter :
-         la promouvoir en `error` n'ajoute aucun bruit, là où une règle d'état
-         en ajouterait tous les jours. Le préavis d'une heure, lui, reste une
-         information — il n'interrompt rien. */
-      once: urgent,
+      key: cle,
+      once: true,
       input: {
         kind: "economic_event" as const,
         title,
         body,
-        severity: urgent ? ("error" as const) : ("info" as const),
+        severity: "warning" as const,
         category: "economic" as const,
-        channels: urgent
-          ? (["dashboard", "toast", "push"] as const).slice()
-          : (["dashboard", "toast"] as const).slice(),
-        url: "/economic-news",
-        dedupKey: `economic_event:${a.event.id}:${a.preavis}`,
+        channels: (["dashboard", "push"] as const).slice(),
+        url: "/news",
+        dedupKey: cle,
         data: {
           eventId: a.event.id,
           currency: a.event.currency,
@@ -165,8 +179,12 @@ export function reglesEconomiques(
           impact: a.event.impact,
           forecast: a.event.forecast,
           previous: a.event.previous,
+          titles: a.groupe.map((e) => e.title),
+          exposure: share ?? null,
+          plan,
+          popup: true,
           ctaLabel: fr ? "Voir le calendrier" : "Open the calendar",
-          ctaPage: "economic-news",
+          ctaPage: "news",
         },
       },
     };

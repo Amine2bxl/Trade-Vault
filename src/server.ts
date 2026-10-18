@@ -197,11 +197,11 @@ export default {
       // The Vercel cron hits this path on the 1st of each month.
       if (pathname === "/robots.txt") return robotsTxt(request);
       if (pathname === "/sitemap.xml") return sitemapXml();
-      if (pathname === "/api/cron/monthly-reports" && request.method === "POST") {
+      if (pathname === "/api/cron/monthly-reports" && isCronMethod(request.method)) {
         const { handleMonthlyReportsCron } = await import("./backend/monthly-reports.server");
         return await handleMonthlyReportsCron(request);
       }
-      if (pathname === "/api/cron/lifecycle-emails" && request.method === "POST") {
+      if (pathname === "/api/cron/lifecycle-emails" && isCronMethod(request.method)) {
         const { handleLifecycleCron } = await import("./backend/lifecycle-emails.server");
         // Same daily tick also drives the weekly goal-plan push reminders
         // (Mondays only — the handler itself gates the day). Best-effort:
@@ -243,11 +243,11 @@ export default {
         }
         return response;
       }
-      if (pathname === "/api/cron/pattern-scan" && request.method === "POST") {
+      if (pathname === "/api/cron/pattern-scan" && isCronMethod(request.method)) {
         const { handlePatternScanCron } = await import("./backend/pattern-scan.server");
         return await handlePatternScanCron(request);
       }
-      if (pathname === "/api/cron/economic-calendar" && request.method === "POST") {
+      if (pathname === "/api/cron/economic-calendar" && isCronMethod(request.method)) {
         const { handleEconomicCalendarCron } = await import("./backend/economic-calendar.server");
         return await handleEconomicCalendarCron(request);
       }
@@ -347,3 +347,17 @@ export default {
     }
   },
 };
+
+/**
+ * LES CRONS ACCEPTENT GET ET POST.
+ *
+ * Vercel Cron appelle en GET ; l'enchaînement par lots (`cron-batch.ts`) et un
+ * déclenchement manuel appellent en POST. Ces routes n'acceptaient que POST :
+ * chaque appel planifié tombait sur le 405 du filet, et le calendrier
+ * économique, les rapports mensuels, les emails de cycle de vie et l'analyse
+ * des motifs ne tournaient JAMAIS seuls (`docs/ROADMAP.md` L1). Le secret
+ * partagé reste exigé par chaque gestionnaire, quelle que soit la méthode.
+ */
+function isCronMethod(method: string): boolean {
+  return method === "GET" || method === "POST";
+}

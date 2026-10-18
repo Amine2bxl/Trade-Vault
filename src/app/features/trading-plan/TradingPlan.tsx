@@ -30,6 +30,7 @@ import {
   type TradingPlanData,
 } from "@/app/trading/tradingPlan";
 import TradingRulesSection from "./TradingRulesSection";
+import { loadOnboarding, saveMonthlyTarget } from "@/app/store";
 import { usePageActions } from "@/app/contexts/PageActionsContext";
 
 // Trading Plan — the trader's written constitution. Every field autosaves
@@ -100,6 +101,43 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
         }
         return next;
       });
+    },
+    [user],
+  );
+
+  /* L'OBJECTIF MENSUEL vit sur le profil (`onboarding_monthly_target`), pas
+     dans le plan : c'est lui que lit le copilote du tableau de bord. Le plan
+     le montre et le règle, sans en faire une deuxième copie. */
+  const [monthly, setMonthly] = useState("");
+  const monthlyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (!user) return;
+    let active = true;
+    loadOnboarding(user.id)
+      .then((o) => active && setMonthly(o.monthlyTarget ? String(o.monthlyTarget) : ""))
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [user?.id]);
+  const updateMonthly = useCallback(
+    (v: string) => {
+      setMonthly(v);
+      if (!user) return;
+      setSaveState("saving");
+      if (monthlyTimer.current) clearTimeout(monthlyTimer.current);
+      monthlyTimer.current = setTimeout(() => {
+        const n = Number.parseFloat(v.replace(",", "."));
+        saveMonthlyTarget(user.id, Number.isFinite(n) && n > 0 ? n : null)
+          .then(() => {
+            setSaveState("saved");
+            setTimeout(() => setSaveState("idle"), 1600);
+          })
+          .catch((e) => {
+            console.error("Failed to save monthly target", e);
+            setSaveState("idle");
+          });
+      }, 800);
     },
     [user],
   );
@@ -297,6 +335,35 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
               onChange={(v) => update((p) => ({ ...p, risk: { ...p.risk, minRR: v } }))}
               placeholder="2"
             />
+          </div>
+          {/* L'objectif du mois : tant qu'il est vide, la ligne le signale —
+              c'est lui qui remplit la jauge « Objectif mensuel » du copilote. */}
+          <div
+            className={cn(
+              "mt-3 grid items-end gap-3 rounded-2xl border px-3 py-3 sm:grid-cols-[minmax(0,180px)_1fr]",
+              monthly
+                ? "border-[var(--tv-border)]"
+                : "border-[var(--tv-border-accent)] bg-[var(--tv-plate-2)]",
+            )}
+          >
+            <NumField
+              label={tr("Objectif mensuel", "Monthly target")}
+              unit="%"
+              value={monthly}
+              onChange={updateMonthly}
+              placeholder="4"
+            />
+            <p className="pb-2.5 text-[12px] leading-snug text-slate-500">
+              {monthly
+                ? tr(
+                    "Suivi chaque mois dans le copilote du tableau de bord.",
+                    "Tracked every month in the dashboard copilot.",
+                  )
+                : tr(
+                    "Pas encore défini — fixe-le ici, le copilote du tableau de bord le suivra.",
+                    "Not set yet — set it here and the dashboard copilot will track it.",
+                  )}
+            </p>
           </div>
         </Section>
       )}

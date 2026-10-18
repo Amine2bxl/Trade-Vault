@@ -20,7 +20,7 @@ import {
   directionBadgeClass,
 } from "@/domain/tradeCalcs";
 import { CHART_GREEN, CHART_RED } from "@/app/trading/chartTheme";
-import { loadOnboarding } from "@/app/store/profile";
+import { loadOnboarding, MONTHLY_TARGET_EVENT } from "@/app/store/profile";
 import { deriveDailyRule } from "@/domain/edgeScore";
 import { useEdgeScore } from "@/app/trading/useEdgeScore";
 import {
@@ -65,6 +65,8 @@ interface DashboardProps {
   onAddTrade: () => void;
   tradesLoading?: boolean;
   onOpenChecklist?: () => void;
+  /** Ouvre le plan de trading sur « Risque », où se règle l'objectif mensuel. */
+  onSetObjective?: () => void;
   onOpenImport?: () => void;
   /** Ouvre un trade récent en édition. La liste affichait déjà un état `hover`
    *  qui promettait cette interaction sans la fournir. */
@@ -126,6 +128,7 @@ export default function Dashboard({
   onAddTrade,
   tradesLoading,
   onOpenChecklist,
+  onSetObjective,
   // Déclaré dans `DashboardProps` et UTILISÉ dans l'état vide, mais il n'était
   // pas destructuré : la référence levait un ReferenceError au rendu du premier
   // écran d'un nouvel utilisateur. Vite ne typecheckant pas au build, le défaut
@@ -166,8 +169,15 @@ export default function Dashboard({
       .catch(() => {
         if (active) toast(t("dashboard.loadError"), "error");
       });
+    // Réglé depuis le plan de trading ou les préférences : la jauge suit.
+    const onTarget = (e: Event) => {
+      const v = (e as CustomEvent<number | null>).detail;
+      setMonthlyTarget(typeof v === "number" ? v : null);
+    };
+    window.addEventListener(MONTHLY_TARGET_EVENT, onTarget);
     return () => {
       active = false;
+      window.removeEventListener(MONTHLY_TARGET_EVENT, onTarget);
     };
   }, [user?.id, toast, t]);
 
@@ -673,6 +683,7 @@ export default function Dashboard({
                   checklist={chkStatus}
                   objective={objective}
                   onOpenChecklist={onOpenChecklist}
+                  onSetObjective={onSetObjective}
                 />
                 <StreakCard
                   streak={streakPeriods}

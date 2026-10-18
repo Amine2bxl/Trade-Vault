@@ -121,7 +121,10 @@ export const NotificationEngine = {
       body: input.body,
       url: input.url,
       severity: input.severity ?? "info",
-      channels: input.channels ?? ["dashboard", "toast"],
+      // Plus de toast par défaut : une notification va dans la boîte (et sur
+      // le téléphone si elle le demande). Le seul popup du produit est
+      // l'alerte économique d'une heure — voir `policy.shouldInterrupt`.
+      channels: input.channels ?? ["dashboard"],
       // La sévérité est passée : elle décide de la catégorie d'un progrès.
       category: input.category ?? categoryOf(input.kind, input.severity ?? "info"),
       createdAt: new Date().toISOString(),
@@ -130,6 +133,9 @@ export const NotificationEngine = {
       // depuis la BASE (tous appareils), pas seulement depuis ce navigateur.
       data: input.dedupKey ? { ...(input.data ?? {}), dedupKey: input.dedupKey } : input.data,
     };
+
+    // Catégorie coupée par le trader : rien ne part, nulle part.
+    if (adapters.allow && !adapters.allow(notification)) return notification;
 
     if (notification.channels.includes("toast")) {
       adapters.toast?.(notification.body, toToastType(notification.severity));
@@ -173,7 +179,7 @@ export function initNotificationListeners(): void {
       title: isFr() ? "Rappel de règle" : "Rule check",
       body: violation.message,
       severity: "warning",
-      channels: ["dashboard", "toast", "push"],
+      channels: ["dashboard", "push"],
       url: "/",
       dedupKey: `discipline_warning:${violation.rule.kind}`,
     });
@@ -185,7 +191,7 @@ export function initNotificationListeners(): void {
       title: isFr() ? "Limite atteinte" : "Limit reached",
       body: violation.message,
       severity: "error",
-      channels: ["dashboard", "toast", "push"],
+      channels: ["dashboard", "push"],
       url: "/",
       dedupKey: `discipline_limit:${violation.rule.kind}`,
     });
@@ -205,7 +211,7 @@ export function initNotificationListeners(): void {
 
   // ── Après-trade (Step 6B) : l'écart intention → exécution, notifié seulement
   // quand il compte. LOW ne remonte jamais ici (le build l'écarte déjà) ; la
-  // médium reste en toast + inbox, la haute peut sonner (push, dédupée / jour).
+  // médium reste dans la boîte, la haute peut sonner (push, dédupée / jour).
   events.on("AfterTradeInsight", async ({ userId, observation }) => {
     if (observation.priority !== "high" && observation.priority !== "medium") return;
     const fr = isFr();
@@ -217,7 +223,7 @@ export function initNotificationListeners(): void {
       title,
       body,
       severity: high ? "warning" : "info",
-      channels: high ? ["dashboard", "toast", "push"] : ["dashboard", "toast"],
+      channels: high ? ["dashboard", "push"] : ["dashboard"],
       // Deep-link ACTIONNABLE : ouvre le journal filtré sur CE trade, et le
       // détail du popup propose le même filtre via `ctaPage` + `filter`.
       url: `/journal?f=${encodeURIComponent("trades=" + encodeURIComponent(tradeIds.join(",")))}`,

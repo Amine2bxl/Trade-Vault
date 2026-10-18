@@ -193,10 +193,23 @@ export async function syncIfStale(): Promise<void> {
  * doit rester borné : sans cela la table grossit indéfiniment pour une donnée
  * que personne ne consulte.
  */
+/* LA RÉTENTION SUIT L'USAGE.
+   Les annonces à impact fort et moyen restent TROIS ANS : elles donnent à
+   chaque trade le contexte de sa journée (TradeModal) et nourrissent l'analyse
+   « jours d'annonces » — le flux Forex Factory ne publie que la semaine en
+   cours, l'historique n'existe donc que si on le garde. Le reste (impact
+   faible, jours fériés) part après 90 jours, comme avant. */
 async function pruneOldEvents(sb: AnyClient): Promise<void> {
-  const cutoff = new Date(Date.now() - 90 * 86_400_000).toISOString();
-  const { error } = await sb.from("economic_events").delete().lt("starts_at", cutoff);
-  if (error) console.error("[economic-calendar] prune failed", error);
+  const minor = new Date(Date.now() - 90 * 86_400_000).toISOString();
+  const all = new Date(Date.now() - 3 * 365 * 86_400_000).toISOString();
+  const { error } = await sb
+    .from("economic_events")
+    .delete()
+    .lt("starts_at", minor)
+    .in("impact", ["low", "holiday"]);
+  if (error) console.error("[economic-calendar] prune (minor) failed", error);
+  const { error: oldError } = await sb.from("economic_events").delete().lt("starts_at", all);
+  if (oldError) console.error("[economic-calendar] prune (old) failed", oldError);
 }
 
 /** Point d'entrée cron Vercel (voir src/server.ts). */

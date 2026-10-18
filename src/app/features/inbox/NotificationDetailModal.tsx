@@ -33,6 +33,23 @@ function essentials(n: AppNotification, t: (k: TKey) => string): Array<[string, 
     rows.push([t("inbox.essWinRate"), `${Math.round(d.winRate * 100)}%`]);
   if (typeof d.pnl === "number")
     rows.push([t("inbox.essPnl"), formatMoney(d.pnl, { signed: true })]);
+  // L'annonce économique : ce qu'il faut savoir pour décider dans l'heure.
+  if (n.kind === "economic_event") {
+    if (typeof d.startsAt === "string") {
+      const at = new Date(d.startsAt);
+      if (!Number.isNaN(at.getTime()))
+        rows.push([
+          t("inbox.essTime"),
+          at.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        ]);
+    }
+    if (typeof d.forecast === "string" && d.forecast)
+      rows.push([t("inbox.essForecast"), d.forecast]);
+    if (typeof d.previous === "string" && d.previous)
+      rows.push([t("inbox.essPrevious"), d.previous]);
+    if (typeof d.exposure === "number" && d.exposure > 0 && typeof d.currency === "string")
+      rows.push([`${t("inbox.essExposure")} ${d.currency}`, `${Math.round(d.exposure * 100)}%`]);
+  }
   return rows;
 }
 

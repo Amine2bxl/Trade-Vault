@@ -101,9 +101,16 @@ import {
   markNotificationRead,
   loadRecentDedupKeys,
   maintainNotifications,
-  noteTradeAction,
   shouldInterrupt,
+  categoryAllowed,
+  normalizeNotifPrefs,
+  DEFAULT_NOTIF_PREFS,
+  NOTIF_PREFS_KEY,
+  NOTIF_PREFS_EVENT,
+  type NotifPrefs,
 } from "@/modules/notifications";
+import { currencyFocus } from "@/domain/instrumentCurrency";
+import { loadUserPref } from "../utils/userPrefs";
 import type { AppNotification } from "@/modules/notifications/types";
 import { buildDemoTrades } from "./demoTrades";
 import { todayLocalDate } from "@/shared/calendar-date";
@@ -524,6 +531,33 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
   // once per user into a ref so saving a trade never waits on a rules fetch.
   const sendPush = useServerFn(sendPushToSelf);
   const rulesRef = useRef<TradingRule[]>([]);
+  /* Les catégories de notifications choisies dans les Réglages (préférences
+     du compte), et les marchés déclarés à l'onboarding — repli du filtre de
+     devises tant que le journal est vide. */
+  const notifPrefsRef = useRef<NotifPrefs>(DEFAULT_NOTIF_PREFS);
+  const [declaredMarkets, setDeclaredMarkets] = useState<string[]>([]);
+  useEffect(() => {
+    if (!user?.id) return;
+    let active = true;
+    void loadUserPref<unknown>(user.id, NOTIF_PREFS_KEY)
+      .then((raw) => {
+        if (active) notifPrefsRef.current = normalizeNotifPrefs(raw);
+      })
+      .catch(() => {});
+    void loadOnboarding(user.id)
+      .then((o) => {
+        if (active) setDeclaredMarkets(o.assets ?? []);
+      })
+      .catch(() => {});
+    const onPrefs = (e: Event) => {
+      notifPrefsRef.current = normalizeNotifPrefs((e as CustomEvent<unknown>).detail);
+    };
+    window.addEventListener(NOTIF_PREFS_EVENT, onPrefs);
+    return () => {
+      active = false;
+      window.removeEventListener(NOTIF_PREFS_EVENT, onPrefs);
+    };
+  }, [user?.id]);
 
   // Bootstrap the Notification Engine with this runtime's delivery adapters.
   // Engines never import React contexts or server fns — they get them here.
@@ -531,23 +565,12 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
     NotificationEngine.configure(user?.id ?? null, {
       toast: (message, type) => toast(message, type),
       push: (payload) => sendPush({ data: payload }),
+      // Les catégories coupées par le trader dans les Réglages.
+      allow: (n) => categoryAllowed(notifPrefsRef.current, n.category),
       persist: (n) => {
-        /* LES ALERTES GRAVES S'OUVRENT, ELLES N'ATTENDENT PAS.
-           Une série de pertes, une limite de risque franchie, un motif qui
-           vient d'être détecté : tout cela partait dans un toast de trois
-           secondes et dans une boîte de réception qu'on ouvre le lendemain.
-           Une notification de sévérité `error` ouvre maintenant le même popup
-           que si le trader avait cliqué dessus dans sa boîte — la surface
-           existait déjà (`tv:open-notification`), rien ne la déclenchait
-           toute seule.
-
-           SEULEMENT `error`. Étendre aux avertissements ferait un popup par
-           séance, et le popup ne voudrait plus rien dire.
-
-           ET SEULEMENT EN CONTEXTE (`shouldInterrupt`) : l'alerte doit
-           répondre à un trade enregistré à l'instant. Recalculée au
-           chargement de l'application, la même alerte va dans la boîte sans
-           interrompre — c'était le popup « à un moment aléatoire ». */
+        /* LE SEUL POPUP : l'annonce majeure, une heure avant, sur une devise
+           que le trader trade (`policy.shouldInterrupt`). Tout le reste
+           attend dans la boîte de réception, sans interrompre. */
         if (shouldInterrupt(n)) {
           window.dispatchEvent(
             new CustomEvent("tv:open-notification", { detail: { notification: n } }),
@@ -651,7 +674,13 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
             mistakeStats: stats.mistakeStats,
           },
           rulesEnabled: rulesRef.current.filter((r) => r.enabled).length,
-          economicEvents,
+          // Seulement si le trader n'a pas coupé le calendrier, et seulement
+          // les devises qu'il trade vraiment (journal, sinon marchés déclarés).
+          economicEvents: notifPrefsRef.current.economic ? economicEvents : undefined,
+          economicFocus: currencyFocus(
+            trades.map((t) => ({ symbol: t.symbol, date: t.date })),
+            declaredMarkets,
+          ),
           // Alimenté par les moteurs déterministes : Jarvis peut désormais
           // signaler un progrès chiffré ou une règle qui échappe — sans appel
           // IA, donc sans coût et sans risque d'invention.
@@ -684,17 +713,17 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
        Les règles du journal n'ont pas besoin d'être réévaluées : elles
        portent sur des données qui ne changent qu'à l'encodage d'un trade.
        Le préavis économique, lui, dépend de L'HEURE : évalué une seule fois
-       au chargement, un rappel à quinze minutes ne partirait que si le
+       au chargement, le rappel d'une heure ne partirait que si le
        trader ouvrait l'application pile dans cette fenêtre-là.
 
-       Cinq minutes est la maille juste : la fenêtre de tolérance d'un préavis
-       fait dix minutes, donc aucun rappel ne peut être manqué, et une
+       Cinq minutes est la maille juste : la fenêtre de tolérance du préavis
+       fait quinze minutes, donc aucun rappel ne peut être manqué, et une
        réévaluation ne coûte qu'un parcours de tableaux déjà en mémoire.
        Le journal de déduplication du jour garantit qu'un même rappel ne part
        qu'une fois — voir `dispatchCodedNotifications`. */
     const id = window.setInterval(() => void evaluer().catch(() => {}), 5 * 60_000);
     return () => window.clearInterval(id);
-  }, [user?.id, accountsReady, tradesLoading, trades, stats, economicEvents]);
+  }, [user?.id, accountsReady, tradesLoading, trades, stats, economicEvents, declaredMarkets]);
 
   /* Les trades importés par la synchro broker passent par le MÊME pipeline
      qu'une saisie (`AutomationEngine.tradeSaved`, isNew) : règles du plan,
@@ -730,9 +759,6 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
   const handleSave = useCallback(
     async (trade: Trade, meta?: TradeJournalMeta) => {
       if (!user) return;
-      // Le contexte « le trader vient d'agir » : seules les alertes graves
-      // nées dans les deux minutes qui suivent ouvrent un popup.
-      noteTradeAction();
       // Quota mensuel d'encodage. Il porte sur les CRÉATIONS : corriger un
       // trade déjà saisi reste possible quel que soit le palier — bloquer une
       // correction serait punitif et sans rapport avec l'offre.
@@ -1130,6 +1156,16 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
                         onAddTrade={handleAdd}
                         tradesLoading={tradesLoading}
                         onOpenChecklist={() => setPage("checklist")}
+                        onSetObjective={() => {
+                          // Le plan s'ouvre directement sur « Risque », où vit
+                          // le champ (sa partie ouverte est mémorisée ici).
+                          try {
+                            localStorage.setItem("tv.planSection", "risk");
+                          } catch {
+                            /* sans stockage, le plan s'ouvre sur sa première partie */
+                          }
+                          setPage("tradingplan");
+                        }}
                         onOpenImport={() => setImportOpen(true)}
                         onEditTrade={handleEdit}
                         onOpenJournal={() => setPage("journal")}

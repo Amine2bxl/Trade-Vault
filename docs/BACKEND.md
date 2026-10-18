@@ -73,7 +73,7 @@ n'est jamais évalué sur une requête de page. Rate-limit par IP
 | --- | --- | --- |
 | `0 6 1 * *` | `monthly-reports` | Rapport du mois écoulé par utilisateur actif, e-mail + push (`?report=YYYY-MM`) |
 | `0 8 * * *` | `lifecycle-emails` | Expirations d'essai, e-mails de cycle de vie, rappels d'objectifs, purge de `ai_agent_runs` (90 j) — best-effort |
-| `0 5 * * *` | `economic-calendar` | Synchro Forex Factory → `economic_events` (semaine en cours ; `actual` non fourni par la source) |
+| `0 5 * * *` | `economic-calendar` | Synchro Forex Factory → `economic_events` (semaine en cours ; `actual` non fourni par la source). Historique conservé 3 ans pour impact fort/moyen (actualités par trade), 90 j pour le reste |
 | `0 3 * * *` | `pattern-scan` | Détection de motifs → propositions ([`AI.md`](AI.md) §4) |
 | `0 20 * * 1-5` et `0 21 * * 1-5` | `broker-sync` | Connexions broker actives non synchronisées depuis 1 h, AVANT la clôture CME de 17:00 ET (`/fill/list` ne rend que la séance en cours) — deux créneaux (`?slot=edt|est`), seul celui de la saison en cours à New York travaille (`cronSlotActive`) (§9) |
 
@@ -84,8 +84,8 @@ survivre au timeout. Le plan Vercel Hobby n'autorise qu'un passage par jour :
 la fraîcheur du calendrier économique vient d'un rafraîchissement opportuniste
 (`syncIfStale`, 10 min, compare-and-swap sur `last_attempt_at`).
 
-> ⚠️ À vérifier : les crons n'acceptent que `POST`, alors que Vercel Cron
-> appelle en `GET` (voir [`ROADMAP.md`](ROADMAP.md)).
+Les crons acceptent `GET` (Vercel Cron) et `POST` (appel manuel) —
+`isCronMethod` dans `src/server.ts`.
 
 ## 5. Paiement
 

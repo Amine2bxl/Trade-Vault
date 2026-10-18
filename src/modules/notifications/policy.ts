@@ -68,30 +68,18 @@ export function planArchive(unread: Candidate[], now: Date = new Date()): string
 }
 
 /**
- * LE POPUP SE MÉRITE PAR LE CONTEXTE.
+ * UN SEUL POPUP DANS TOUT LE PRODUIT : L'ANNONCE MAJEURE, UNE HEURE AVANT.
  *
- * Seule une alerte grave (`error`) ouvre le popup, et seulement quand elle
- * RÉPOND À CE QUE LE TRADER VIENT DE FAIRE : elle naît d'un trade enregistré
- * dans les deux dernières minutes (limite franchie, troisième perte d'affilée).
- * La même alerte recalculée à l'ouverture de l'application — des faits de la
- * veille — va dans la boîte de réception, sans interrompre : c'était le popup
- * « à un moment aléatoire ».
+ * Avant, une alerte grave (`error`) s'ouvrait si un trade venait d'être
+ * enregistré, et chaque règle de discipline partait aussi en toast. Le trader
+ * était interrompu pour des faits qu'il pouvait lire plus tard. Désormais rien
+ * de cela ne s'ouvre : tout attend dans la boîte de réception, sauf l'alerte
+ * économique marquée `popup` — une annonce à fort impact, sur une devise qu'il
+ * trade vraiment, dans une heure (`economic.ts`). C'est la seule information
+ * du produit qui porte une heure limite.
  */
-export const LIVE_WINDOW_MS = 2 * 60_000;
-let lastTradeActionAt = 0;
-
-/** Appelé quand le trader enregistre un trade. */
-export function noteTradeAction(at: number = Date.now()): void {
-  lastTradeActionAt = at;
-}
-
-export function shouldInterrupt(
-  n: Pick<AppNotification, "severity">,
-  now: number = Date.now(),
-): boolean {
-  return (
-    n.severity === "error" && lastTradeActionAt > 0 && now - lastTradeActionAt <= LIVE_WINDOW_MS
-  );
+export function shouldInterrupt(n: Pick<AppNotification, "kind" | "data">): boolean {
+  return n.kind === "economic_event" && n.data?.popup === true;
 }
 
 /** Le badge : le vrai nombre. Au-delà de 999, la place manque — et seulement là. */

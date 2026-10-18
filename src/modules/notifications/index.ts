@@ -8,8 +8,17 @@ export {
   loadRecentDedupKeys,
   maintainNotifications,
 } from "./store";
-export { planArchive, shouldInterrupt, noteTradeAction, badgeLabel } from "./policy";
+export { planArchive, shouldInterrupt, badgeLabel } from "./policy";
 export { dispatchCodedNotifications, evaluateNotificationRules } from "./rules";
+export {
+  NOTIF_PREF_KEYS,
+  NOTIF_PREFS_KEY,
+  NOTIF_PREFS_EVENT,
+  DEFAULT_NOTIF_PREFS,
+  normalizeNotifPrefs,
+  categoryAllowed,
+} from "./preferences";
+export type { NotifPrefKey, NotifPrefs } from "./preferences";
 export type { RuleContext, CodedRule } from "./rules";
 export type {
   AppNotification,

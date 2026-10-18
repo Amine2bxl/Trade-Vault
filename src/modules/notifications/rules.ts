@@ -14,7 +14,7 @@
 import type { NotificationInput } from "./types";
 import { localDateOf, todayLocalDate } from "@/shared/calendar-date";
 import type { CalendarEvent } from "../economic-calendar/types";
-import { reglesEconomiques } from "./economic";
+import { reglesEconomiques, type FocusDevises } from "./economic";
 import { formatMoney } from "@/shared/currency";
 
 export interface RuleContext {
@@ -45,6 +45,11 @@ export interface RuleContext {
    * « aucun événement ». Rien ne doit être affirmé sur cette base.
    */
   economicEvents?: CalendarEvent[];
+  /**
+   * Les devises que le trader trade vraiment (`domain/instrumentCurrency`).
+   * Absent : aucune alerte économique n'est filtrée — appel neutre.
+   */
+  economicFocus?: FocusDevises;
 }
 
 /**
@@ -134,10 +139,10 @@ export function evaluateNotificationRules(ctx: RuleContext): CodedRule[] {
   /* ── ÉCONOMIE — la seule alerte DATÉE du produit ────────────────────────
      Elle passe en tête parce qu'elle est la seule à avoir une heure limite :
      une fuite dans le journal se lira aussi bien demain, une publication à
-     fort impact dans quinze minutes, non. Voir `economic.ts` pour ce qui
+     fort impact dans une heure, non. Voir `economic.ts` pour ce qui
      déclenche et, surtout, pour tout ce qui se tait. */
   if (ctx.economicEvents?.length) {
-    rules.push(...reglesEconomiques(ctx.economicEvents, new Date(), fr));
+    rules.push(...reglesEconomiques(ctx.economicEvents, new Date(), fr, ctx.economicFocus));
   }
 
   const sorted = [...ctx.trades].sort((a, b) => b.date.localeCompare(a.date));

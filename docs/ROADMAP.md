@@ -15,7 +15,6 @@ Ce qui ne se prouve pas dans le code — validation humaine requise.
 
 | # | Point | Détail |
 | --- | --- | --- |
-| L1 | **Crons Vercel** | `src/server.ts` n'accepte les crons qu'en `POST` alors que Vercel Cron appelle en `GET` : vérifier dans les logs que rapports, e-mails, calendrier et détection de motifs tournent |
 | L2 | **Parcours d'achat réel** (mode test Stripe) | Mensuel, annuel, 3DS, échec de paiement (`past_due`), rejeu de webhook (`deduped`), résiliation via portail, retour à Free, changement mensuel → annuel, pas de client Stripe en double, signature invalide et horodatage périmé → 400 |
 | L3 | **Tâches du propriétaire (dashboard)** | Endpoint webhook Stripe (test puis live) + `STRIPE_WEBHOOK_SECRET` ; produits Pro et Elite (mensuel/annuel) et leurs `STRIPE_PRICE_*` ; CGU et confidentialité déclarées dans Stripe ; Stripe Tax + OSS (TVA UE, puis `automatic_tax` au checkout) ; `ADMIN_EMAILS` ; branding du checkout |
 | L4 | **Validation visuelle** mobile et desktop des écrans principaux | Dashboard, Journal, Checklist, Analytics, Jarvis, Inbox, Goals, Réglages |
