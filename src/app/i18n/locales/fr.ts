@@ -828,10 +828,6 @@ const fr: Dict = {
   "dashboard.pLong1y": "12 derniers mois",
   "dashboard.pLongAll": "Depuis le début",
   "dashboard.periodTrades": "{n} trades",
-  "dashboard.perTrade": "{v} par trade",
-  "dashboard.wonLost": "{w} gagnés · {l} perdus",
-  "dashboard.onTrades": "sur {n} trades",
-  "dashboard.grossSplit": "+{won} / −{lost}",
   "streak.todayDone": "Fait aujourd'hui",
   "streak.todayTodo": "Aujourd'hui : à faire",
   // La carte de série parlait anglais dans l'interface française.

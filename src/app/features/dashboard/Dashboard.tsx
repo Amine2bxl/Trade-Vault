@@ -193,16 +193,6 @@ export default function Dashboard({
   }, [trades, cutoff]);
 
   const stats = useMemo(() => computeStats(filtered), [filtered]);
-  // Gagné / perdu bruts de la période : ce que le profit factor divise.
-  const gross = useMemo(() => {
-    let won = 0;
-    let lost = 0;
-    for (const tr of filtered) {
-      if (tr.pnl > 0) won += tr.pnl;
-      else if (tr.pnl < 0) lost -= tr.pnl;
-    }
-    return { won, lost };
-  }, [filtered]);
   const recentTrades = useMemo(() => [...filtered].sort(newestFirst).slice(0, 4), [filtered]);
 
   // Le résultat de la période en R — la mesure qui ne dépend pas de la taille.
@@ -621,34 +611,20 @@ export default function Dashboard({
                   density.sectionGap,
                 )}
               >
-                {/* Chaque tuile porte maintenant SA preuve sous le chiffre :
-                    un calcul sur les mêmes trades, jamais un texte d'ambiance. */}
+                {/* Une ligne par tuile : le libellé, le chiffre (et sa jauge).
+                    Les sous-lignes de contexte ont été retirées — demandé : la
+                    tuile se lit d'un regard, le détail vit dans l'Analyse. */}
                 <Metric
                   compact
                   title={t("dashboard.netR")}
                   value={`${netR >= 0 ? "+" : "−"}${Math.abs(netR).toFixed(1)}R`}
                   valueClass={netR >= 0 ? "text-emerald-400" : "text-red-400"}
-                  subtitle={
-                    stats.totalTrades > 0
-                      ? t("dashboard.perTrade").replace(
-                          "{v}",
-                          `${netR >= 0 ? "+" : "−"}${Math.abs(netR / stats.totalTrades).toFixed(2)}R`,
-                        )
-                      : undefined
-                  }
                   delay={0}
                 />
                 <Metric
                   compact
                   title={t("stats.trades")}
                   value={String(stats.totalTrades)}
-                  subtitle={
-                    stats.totalTrades > 0
-                      ? t("dashboard.wonLost")
-                          .replace("{w}", String(stats.wins))
-                          .replace("{l}", String(stats.losses))
-                      : undefined
-                  }
                   delay={40}
                 />
                 <Metric
@@ -662,11 +638,6 @@ export default function Dashboard({
                     color: stats.winRate >= 0.5 ? CHART_GREEN : CHART_RED,
                     center: `${stats.wins}/${stats.losses}`,
                   }}
-                  subtitle={
-                    stats.wins + stats.losses > 0
-                      ? t("dashboard.onTrades").replace("{n}", String(stats.wins + stats.losses))
-                      : undefined
-                  }
                   delay={80}
                 />
                 <Metric
@@ -685,13 +656,6 @@ export default function Dashboard({
                     pct: Math.min(stats.profitFactor / 3, 1),
                     color: stats.profitFactor >= 1 ? CHART_GREEN : CHART_RED,
                   }}
-                  subtitle={
-                    gross.won > 0 || gross.lost > 0
-                      ? t("dashboard.grossSplit")
-                          .replace("{won}", formatMoney(gross.won, { compact: true }))
-                          .replace("{lost}", formatMoney(gross.lost, { compact: true }))
-                      : undefined
-                  }
                   delay={120}
                 />
               </div>

@@ -6783,9 +6783,13 @@ body.tv-app-type svg.lucide {
   font-size: var(--tv-t-caption);
   box-shadow: var(--tv-elev-2);
 }
-/* Une création de trade compacte, repérable par son signe d'ajout encadré. */
+/* Une création de trade compacte, repérable par son signe d'ajout encadré.
+   32px de haut (et non les 36px de `.tv-entry-button`) : dans la barre de tête,
+   le bouton pesait plus lourd que le titre de la page qu'il accompagne. */
 .btn-primary.tv-dashboard-add {
-  padding: 0 12px 0 6px;
+  min-height: 32px;
+  height: 32px;
+  padding: 0 11px 0 5px;
   gap: 8px;
   border: 1px solid var(--tv-border-accent);
   border-radius: var(--radius-lg);
@@ -6799,8 +6803,8 @@ body.tv-app-type svg.lucide {
 .tv-dashboard-add-icon {
   display: grid;
   place-items: center;
-  height: 24px;
-  width: 24px;
+  height: 22px;
+  width: 22px;
   border-radius: var(--radius-sm);
   background: var(--tv-accent);
   color: var(--tv-plate-0);
