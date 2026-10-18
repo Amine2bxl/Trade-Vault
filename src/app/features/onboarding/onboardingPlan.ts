@@ -27,6 +27,12 @@
 import type { TradingRule } from "@/domain/ruleCheck";
 import type { AccountType } from "@/app/store/accounts";
 import type { OnboardingData } from "@/app/store/profile";
+import type { TradingPlanData } from "@/app/trading/tradingPlan";
+import {
+  defaultConfigFor,
+  generateChecklist,
+  type ChkConfig,
+} from "@/app/features/checklist/checklistDefaults";
 
 export type Arena = "prop_challenge" | "funded" | "personal" | "demo";
 export type Style = "scalping" | "daytrading" | "swing";
@@ -265,6 +271,230 @@ export function profileFields(a: OnboardingAnswers): OnboardingData {
     onboardedAt: null,
     skipped: false,
   };
+}
+
+/* ══════════════ CE QUE LES AUTRES ÉCRANS LISENT ══════════════
+   Chaque bloc ci-dessous alimente un sous-système qui, avant, ne recevait RIEN
+   de l'onboarding : le plan de trading (et donc l'Edge Score, qui lit son
+   risque max), la checklist pré-market, la mémoire de Jarvis, les confluences
+   du journal et le calculateur de lots. Purs : `Onboarding.tsx` les écrit. */
+
+/** Les textes du plan, dans la langue du trader (il les relit sur sa page). */
+export interface PlanTexts {
+  /** La mission, déjà rédigée (« Passer mon challenge — atteindre l'objectif… »). */
+  mission: string;
+  /** Les marchés choisis, en libellés (« Futures », « Forex »). */
+  markets: string[];
+  /** La fenêtre de session (« 09:30 · New York »), vide si aucune. */
+  sessions: string;
+  /** La routine d'avant séance. */
+  preMarket: string;
+  /** La routine d'après séance — seulement si l'angle mort est la revue. */
+  postMarket: string;
+}
+
+/** `0.5` → « 0.5 » ; une valeur nulle ou désactivée → `null`. */
+const numStr = (n: number | null | undefined): string | null =>
+  n !== null && n !== undefined && Number.isFinite(n) && n > 0 ? String(n) : null;
+
+/**
+ * Le plan de trading après l'onboarding.
+ *
+ * Deux règles de fusion, parce que le plan est une page que le trader écrit :
+ *   • les CHIFFRES des garde-fous remplacent les anciens — ils viennent d'être
+ *     choisis, ce sont eux qui font foi (et `useEdgeScore` lit ce risque max) ;
+ *   • les TEXTES (mission, marchés, session, routine) ne remplissent que ce
+ *     qui est vide : on ne réécrit jamais ce que le trader a rédigé lui-même.
+ */
+export function planFromAnswers(
+  a: OnboardingAnswers,
+  existing: TradingPlanData,
+  texts: PlanTexts,
+): TradingPlanData {
+  const g = a.guardrails;
+  const dailyPct =
+    g.dailyLoss && a.capital && a.capital > 0
+      ? String(Math.round((g.dailyLoss / a.capital) * 1000) / 10)
+      : null;
+  return {
+    ...existing,
+    mission: existing.mission.trim() ? existing.mission : texts.mission,
+    markets: existing.markets.length ? existing.markets : texts.markets,
+    sessions: existing.sessions.trim() ? existing.sessions : texts.sessions,
+    risk: {
+      ...existing.risk,
+      maxRiskPerTradePct: numStr(g.riskPct) ?? existing.risk.maxRiskPerTradePct,
+      maxDailyLossPct: dailyPct ?? existing.risk.maxDailyLossPct,
+    },
+    limits: {
+      ...existing.limits,
+      maxTradesPerDay: numStr(g.maxTrades) ?? existing.limits.maxTradesPerDay,
+      stopAfterLosses: numStr(g.stopAfter) ?? existing.limits.stopAfterLosses,
+      noRevenge: existing.limits.noRevenge || a.leak === "emotions",
+    },
+    routine: {
+      ...existing.routine,
+      preMarket: existing.routine.preMarket.trim() ? existing.routine.preMarket : texts.preMarket,
+      postMarket:
+        existing.routine.postMarket.trim() || !texts.postMarket
+          ? existing.routine.postMarket
+          : texts.postMarket,
+    },
+  };
+}
+
+/**
+ * La checklist pré-market, construite pour CE trader.
+ *
+ * La liste vient du générateur que la page Checklist propose déjà
+ * (`generateChecklist`), nourri cette fois avec les chiffres de l'onboarding :
+ * « max 4 trades » quand la règle dit 4, la perte max du jour d'un compte de
+ * prop firm, le risque par trade. Le reste (états d'esprit, cycle FOMO…)
+ * reprend la configuration par défaut de la langue.
+ */
+export function checklistFromAnswers(
+  a: OnboardingAnswers,
+  lang: string,
+  formatMoney: (n: number) => string,
+): ChkConfig {
+  const p = profileFields(a);
+  const g = a.guardrails;
+  const generated = generateChecklist(
+    {
+      style: p.style,
+      experience: p.experience,
+      assets: p.assets,
+      goal: p.goal,
+      pain: p.pain,
+      usesIct: p.usesIct,
+      prop: isProp(a.arena),
+      riskPct: g.riskPct,
+      maxTrades: g.maxTrades,
+      stopAfter: g.stopAfter,
+      dailyLoss: g.dailyLoss ? formatMoney(g.dailyLoss) : null,
+    },
+    lang,
+  );
+  return {
+    ...defaultConfigFor(lang),
+    items: generated.items,
+    startTime: generated.startTime,
+    timeZone: generated.timeZone,
+  };
+}
+
+/** Un souvenir de Jarvis, tel que `remember()` l'écrit (`ai_memory`). */
+export interface OnboardingMemory {
+  kind: "fact" | "preference" | "decision";
+  /** Clé STABLE : refaire l'onboarding met à jour, n'empile pas. */
+  key: string;
+  content: string;
+  importance: number;
+  confidence: number;
+}
+
+/**
+ * Ce que Jarvis retient de l'onboarding, au-delà de son profil.
+ *
+ * Seulement ce qu'aucune autre colonne ne porte déjà (règle de `memory.ts` :
+ * pas deux sources de vérité) :
+ *   • le TERRAIN (challenge, financé, capital propre, démo) — nulle part
+ *     ailleurs : le type du compte dit « prop » pour un challenge comme pour
+ *     un compte financé ;
+ *   • l'ENGAGEMENT daté — les garde-fous tels qu'acceptés ce jour-là, la même
+ *     forme qu'une règle acceptée dans la conversation ;
+ *   • le TON attendu, selon l'expérience.
+ * En anglais : c'est la langue de travail du modèle, quelle que soit celle de
+ * l'interface.
+ */
+export function memoriesFromAnswers(
+  a: OnboardingAnswers,
+  formatMoney: (n: number) => string,
+  today: string,
+): OnboardingMemory[] {
+  const out: OnboardingMemory[] = [];
+  const firm = PROP_FIRMS.find((f) => f.id === a.firm)?.name ?? "";
+  const size = a.capital && a.capital > 0 ? formatMoney(a.capital) : "";
+  const arenaText: Record<Arena, string> = {
+    prop_challenge: `Trading a prop firm evaluation${firm ? ` with ${firm}` : ""}${size ? ` (${size} account)` : ""}. Passing it means keeping every firm rule, not just hitting the target.`,
+    funded: `Trading a funded prop account${firm ? ` with ${firm}` : ""}${size ? ` (${size})` : ""}. Protecting the account and its payouts comes first.`,
+    personal: `Trading their own capital${size ? ` (${size} starting balance)` : ""}.`,
+    demo: `Practising on a demo / paper account${size ? ` (${size})` : ""} before trading live.`,
+  };
+  if (a.arena) {
+    out.push({
+      kind: "fact",
+      key: "onb:arena",
+      content: arenaText[a.arena],
+      importance: 5,
+      confidence: 0.95,
+    });
+  }
+
+  const g = a.guardrails;
+  const commitments = [
+    g.riskPct ? `max ${g.riskPct}% risk per trade` : null,
+    g.maxTrades ? `max ${g.maxTrades} trades per day` : null,
+    g.stopAfter ? `stop for the day after ${g.stopAfter} losses` : null,
+    g.dailyLoss ? `daily loss limit ${formatMoney(g.dailyLoss)}` : null,
+  ].filter((x): x is string => !!x);
+  if (commitments.length) {
+    out.push({
+      kind: "decision",
+      key: "onb:commitments",
+      content: `Committed during onboarding on ${today}: ${commitments.join("; ")}.`,
+      importance: 5,
+      confidence: 1,
+    });
+  }
+
+  const tone: Record<Experience, string> = {
+    new: "New to trading (under a year): explain the why, one step at a time, no jargon without a definition.",
+    intermediate:
+      "1–3 years of trading: short explanations, then the numbers. Skip the basics unless asked.",
+    seasoned:
+      "Experienced (3+ years): straight numbers, no basics, challenge them when the data does.",
+    funded:
+      "Already funded with payouts: talk like a risk manager — precise, brief, account first.",
+  };
+  if (a.experience) {
+    out.push({
+      kind: "preference",
+      key: "onb:coaching",
+      content: tone[a.experience],
+      importance: 4,
+      confidence: 0.9,
+    });
+  }
+  return out;
+}
+
+/**
+ * Les confluences du journal pour un trader ICT / SMC — le vocabulaire qu'il
+ * coche réellement, au lieu de la liste générique (Fibonacci, EMA…).
+ */
+export const ICT_CONFLUENCES = [
+  "Draw on liquidity",
+  "Liquidity sweep",
+  "Fair value gap",
+  "Order block",
+  "Market structure shift",
+  "Breaker block",
+  "Premium / Discount",
+  "Killzone",
+  "SMT divergence",
+  "Displacement",
+];
+
+/** Le calculateur de lots démarre sur le bon marché et le bon risque. */
+export function lotCalcSeed(
+  a: OnboardingAnswers,
+): { mode: "forex" | "futures"; riskPct?: string } | null {
+  const futures = a.assets.includes("futures");
+  const forex = a.assets.includes("forex");
+  if (!futures && !forex) return null;
+  const riskPct = numStr(a.guardrails.riskPct);
+  return { mode: futures ? "futures" : "forex", ...(riskPct ? { riskPct } : {}) };
 }
 
 /** Le marché qui montre l'interrupteur ICT / SMC. */

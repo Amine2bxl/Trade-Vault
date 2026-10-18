@@ -1,15 +1,9 @@
 import { memo } from "react";
 import { CHART_GREEN, CHART_RED } from "@/app/trading/chartTheme";
-import {
-  Sparkles,
-  ClipboardCheck,
-  Check,
-  ChevronRight,
-  Target,
-  Flag,
-  Bot,
-} from "@/shared/ui/icons";
+import { Sparkles, ClipboardCheck, Check, ChevronRight, Target, Flag } from "@/shared/ui/icons";
 import { cn } from "@/shared/ui/cn";
+import { InfoTip } from "@/shared/ui/InfoTip";
+import { JarvisOrb } from "@/shared/ui/JarvisOrb";
 import { formatPnl } from "@/domain/tradeCalcs";
 import { useT } from "@/app/i18n/LanguageContext";
 import type { EdgeResult, DailyRule } from "@/domain/edgeScore";
@@ -80,16 +74,16 @@ function EdgeDial({ score }: { score: number }) {
   const pct = Math.max(0, Math.min(100, score)) / 100;
   const tone = scoreTone(score);
   return (
-    <div className="relative w-[132px] h-[132px] shrink-0">
+    <div className="relative h-[96px] w-[96px] shrink-0 md:h-[112px] md:w-[112px]">
       <svg viewBox="0 0 120 120" className="w-full h-full -rotate-90">
-        <circle cx="60" cy="60" r={R} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="9" />
+        <circle cx="60" cy="60" r={R} fill="none" stroke="var(--tv-plate-0)" strokeWidth="8" />
         <circle
           cx="60"
           cy="60"
           r={R}
           fill="none"
           stroke={tone.ring}
-          strokeWidth="9"
+          strokeWidth="8"
           strokeLinecap="round"
           strokeDasharray={C}
           strokeDashoffset={C * (1 - pct)}
@@ -99,8 +93,10 @@ function EdgeDial({ score }: { score: number }) {
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className={cn("tv-figure text-4xl leading-none", tone.text)}>{score}</span>
-        <span className="tv-label text-slate-500 mt-1">/ 100</span>
+        <span className={cn("tv-figure text-[30px] leading-none md:text-[34px]", tone.text)}>
+          {score}
+        </span>
+        <span className="tv-label mt-1 text-slate-500">/ 100</span>
       </div>
     </div>
   );
@@ -249,159 +245,176 @@ function CopilotBlock({
       ? Math.max(0, Math.min(1, objective.currentPct / (objective.targetPct / 100)))
       : null;
 
-  return (
-    <div className="relative glass rounded-3xl p-4 md:p-5 animate-fade-in-up stagger-1 overflow-hidden">
-      <div className="tv-label flex items-center gap-2 text-cyan-400/80 mb-2">
-        <Sparkles className="w-3.5 h-3.5" />
-        <span>{t("copilot.title")}</span>
-      </div>
-      {/* Le « en une ligne » : on dit d'abord quoi c'est, avant les chiffres. */}
-      <p className="mb-4 text-[13px] leading-relaxed text-slate-400">{t("copilot.intro")}</p>
+  const chkPct =
+    checklist && checklist.total > 0 ? Math.round((checklist.n / checklist.total) * 100) : 0;
 
-      <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-5 md:gap-7 items-center">
-        {/* Left — Edge dial + clean-days bar */}
-        <div className="flex flex-col items-center gap-3">
+  /* UNE CARTE, TROIS ÉTAGES, AUCUNE PHRASE DE TROP.
+     Avant : un paragraphe d'introduction qui redisait le titre, une légende de
+     quatre lignes sous le cadran, un cyan codé en dur qui ignorait le thème,
+     un dégradé dans la barre des jours propres. Le copilote se lit maintenant
+     en trois secondes : le score (et ce qu'il mesure, dans l'infobulle), ce
+     que Jarvis en tire, puis ce qu'il y a à faire aujourd'hui. Toutes les
+     couleurs viennent des tokens — l'accent du thème pour ce qui agit, les
+     verts/rouges de la donnée pour ce qui se mesure. */
+  return (
+    <div className="relative glass flex min-w-0 flex-col rounded-3xl p-4 md:p-5 animate-fade-in-up stagger-1 overflow-hidden">
+      <div className="mb-3.5 flex items-center justify-between gap-3">
+        <div className="tv-label flex items-center gap-2 text-[var(--tv-highlight)]">
+          <Sparkles className="h-3.5 w-3.5" />
+          <span>{t("copilot.title")}</span>
+        </div>
+        {hasScore && <InfoTip text={t("copilot.explain")} />}
+      </div>
+
+      <div className="grid grid-cols-1 items-center gap-4 md:grid-cols-[auto_minmax(0,1fr)] md:gap-6">
+        {/* Le score — en ligne sur téléphone, en colonne à partir de md. */}
+        <div className="flex items-center gap-4 md:flex-col md:gap-2.5">
           {hasScore ? (
             <EdgeDial score={edge.score!} />
           ) : (
-            <div className="w-[132px] h-[132px] rounded-full border border-dashed border-white/10 flex items-center justify-center text-center text-[11px] text-slate-500 px-4">
+            <div className="grid h-[96px] w-[96px] shrink-0 place-items-center rounded-full border border-dashed border-[var(--tv-border-strong)] px-3 text-center text-[10px] leading-snug text-slate-500 md:h-[112px] md:w-[112px]">
               {t("copilot.scoreBuilding")}
             </div>
           )}
-          <div className="flex items-center gap-2">
-            <span className="tv-label text-slate-500">{t("copilot.edgeLabel")}</span>
-            {deltaEl}
-          </div>
-          {trendEl && <div className="flex items-center justify-center">{trendEl}</div>}
-          {edge.tradedDays > 0 && (
-            <div className="w-full max-w-[160px]">
-              <div className="flex items-center justify-between text-[10px] text-slate-500 mb-1">
-                <span>{t("copilot.cleanDays")}</span>
-                <span className="tv-figure text-slate-400">
-                  {edge.cleanDays}/{edge.tradedDays}
-                </span>
-              </div>
-              <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-emerald-400 transition duration-250"
-                  style={{ width: `${cleanPct}%` }}
-                />
-              </div>
+          <div className="flex min-w-0 flex-1 flex-col gap-2 md:w-full md:max-w-[150px] md:items-center">
+            <div className="flex items-center gap-2">
+              <span className="tv-label text-slate-500">{t("copilot.edgeLabel")}</span>
+              {deltaEl}
             </div>
-          )}
-          {/* Le « c'est quoi ce chiffre » — c'est ce qui manquait pour lire
-              le score comme une information plutôt que comme un jauge. */}
-          {hasScore && (
-            <p className="tv-caption mt-1 max-w-[170px] text-center text-[11px] leading-relaxed text-slate-600">
-              {t("copilot.explain")}
-            </p>
-          )}
+            {trendEl}
+            {edge.tradedDays > 0 && (
+              <div className="w-full max-w-[180px] md:max-w-none">
+                <div className="mb-1 flex items-center justify-between text-[10px] text-slate-500">
+                  <span>{t("copilot.cleanDays")}</span>
+                  <span className="tv-figure text-slate-400">
+                    {edge.cleanDays}/{edge.tradedDays}
+                  </span>
+                </div>
+                <div className="h-1 overflow-hidden rounded-full bg-[var(--tv-plate-0)]">
+                  <div
+                    className="h-full rounded-full transition-[width] duration-300"
+                    style={{
+                      width: `${cleanPct}%`,
+                      background: cleanPct >= 50 ? CHART_GREEN : CHART_RED,
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Right — Jarvis line, rule, checklist, objective */}
-        <div className="space-y-3 min-w-0">
-          {/* Jarvis coaching line */}
-          {/* Jarvis coaching line — signée Jarvis */}
-          <div className="relative rounded-2xl bg-cyan-500/[0.05] border border-cyan-500/15 px-3.5 py-3 overflow-hidden">
-            <div className="flex gap-2.5 items-start">
-              <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md tv-accent-fill">
-                <Bot className="w-3 h-3" />
-              </span>
-              <p className="text-[13px] leading-relaxed text-slate-200 min-w-0">
-                <span className="font-semibold text-cyan-300">Jarvis</span>{" "}
-                <span className="text-slate-500">·</span> {jarvisLine}
-              </p>
-            </div>
+        {/* Ce que Jarvis en tire, puis ce qu'il y a à faire aujourd'hui. */}
+        <div className="min-w-0 space-y-2.5">
+          <div className="flex items-start gap-2.5 rounded-2xl border border-[var(--tv-border-accent)] bg-[var(--tv-plate-2)] px-3.5 py-3">
+            <JarvisOrb size={20} className="mt-px shrink-0" />
+            <p className="min-w-0 text-[13px] leading-relaxed text-slate-200">
+              <span className="font-semibold text-[var(--tv-highlight)]">Jarvis</span>{" "}
+              <span className="text-slate-600">·</span> {jarvisLine}
+            </p>
           </div>
 
-          {/* LE PANNEAU — un seul cadre, deux colonnes, un filet entre elles.
-              Avant : une boîte bordée DANS une boîte bordée DANS la carte, et
-              ce troisième niveau d'encadrement est exactement ce qui fait
-              « empilement de composants » plutôt que produit dessiné. */}
-          <div className="grid grid-cols-1 divide-y divide-white/[0.06] overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02] sm:grid-cols-2 sm:divide-x sm:divide-y-0">
-            {/* Rule of the day */}
+          <div className="grid grid-cols-2 divide-x divide-[var(--tv-border)] overflow-hidden rounded-2xl border border-[var(--tv-border)] bg-[var(--tv-plate-2)]">
             <div className="min-w-0 px-3.5 py-3">
-              <div className="tv-label mb-1.5 flex items-center gap-1.5 text-amber-400/80">
-                <Flag className="w-3 h-3" /> {t("copilot.ruleTitle")}
+              <div className="tv-label mb-1.5 flex items-center gap-1.5 text-amber-400/85">
+                <Flag className="h-3 w-3" /> {t("copilot.ruleTitle")}
               </div>
-              <div className="text-sm font-semibold leading-snug text-white">
+              <div className="text-[13px] font-semibold leading-snug text-white">
                 {consigne ?? t("copilot.ruleNone")}
               </div>
-              <div className="tv-figure tv-figure-secondary mt-1 truncate text-[10px] text-slate-600">
+              <div className="tv-figure tv-figure-secondary mt-1 truncate text-[10px] text-slate-500">
                 {preuve ?? (rule ? t("copilot.ruleFrom") : t("copilot.ruleNoneHint"))}
               </div>
             </div>
 
-            {/* Monthly objective */}
             <div className="min-w-0 px-3.5 py-3">
-              <div className="tv-label mb-1.5 flex items-center gap-1.5 text-cyan-400/80">
-                <Target className="w-3 h-3" /> {t("copilot.objTitle")}
+              <div className="tv-label mb-1.5 flex items-center gap-1.5 text-slate-400">
+                <Target className="h-3 w-3" /> {t("copilot.objTitle")}
               </div>
               {objective.targetPct && objective.targetPct > 0 ? (
                 <>
-                  <div className="tv-figure text-sm text-white">
+                  <div className="tv-figure text-[13px] text-white">
                     {objective.currentPct >= 0 ? "+" : ""}
                     {(objective.currentPct * 100).toFixed(1)}%{" "}
-                    <span className="text-slate-600 text-xs">/ {objective.targetPct}%</span>
+                    <span className="text-[11px] text-slate-500">/ {objective.targetPct}%</span>
                   </div>
-                  <div className="flex items-center gap-2 mt-2">
-                    <div className="flex-1 h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+                  <div className="mt-2 flex items-center gap-2">
+                    <div className="h-1 flex-1 overflow-hidden rounded-full bg-[var(--tv-plate-0)]">
                       <div
-                        className="h-full rounded-full bg-[var(--tv-accent)] transition duration-250"
+                        className="h-full rounded-full bg-[var(--tv-accent)] transition-[width] duration-300"
                         style={{ width: `${Math.round((objPct ?? 0) * 100)}%` }}
                       />
                     </div>
-                    <span className="tv-figure tv-figure-secondary text-[11px] text-cyan-300 shrink-0">
+                    <span className="tv-figure tv-figure-secondary shrink-0 text-[10px] text-slate-400">
                       {Math.round((objPct ?? 0) * 100)}%
                     </span>
                   </div>
                 </>
               ) : (
-                <div className="text-[11px] text-slate-500 mt-1">{t("copilot.objNone")}</div>
+                <div className="mt-1 text-[11px] leading-snug text-slate-500">
+                  {t("copilot.objNone")}
+                </div>
               )}
             </div>
           </div>
 
-          {/* Checklist — folded into the copilot */}
+          {/* La checklist du jour : son état se LIT (barre n/total), on n'a pas
+              à ouvrir la page pour savoir où on en est. */}
           {onOpenChecklist && checklist && (
             <button
+              type="button"
               onClick={onOpenChecklist}
-              className={cn(
-                "w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl border text-left transition hover:-translate-y-0.5",
-                checklist.locked
-                  ? "bg-emerald-500/[0.06] border-emerald-500/20 hover:bg-emerald-500/10"
-                  : "bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.04]",
-              )}
+              className="flex w-full items-center gap-3 rounded-2xl border border-[var(--tv-border)] bg-[var(--tv-plate-2)] px-3.5 py-2.5 text-left transition-colors hover:border-[var(--tv-border-strong)]"
             >
-              <div
+              <span
                 className={cn(
-                  "w-8 h-8 rounded-xl border flex items-center justify-center shrink-0",
+                  "grid h-8 w-8 shrink-0 place-items-center rounded-xl",
                   checklist.locked
-                    ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-400"
-                    : "bg-cyan-500/10 border-cyan-500/20 text-cyan-400",
+                    ? "tv-accent-fill"
+                    : "border border-[var(--tv-border)] bg-[var(--tv-plate-0)] text-[var(--tv-highlight)]",
                 )}
               >
-                <ClipboardCheck className="w-4 h-4" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-white">{t("chk.dashTitle")}</span>
+                {checklist.locked ? (
+                  <Check className="h-4 w-4" strokeWidth={3} />
+                ) : (
+                  <ClipboardCheck className="h-4 w-4" />
+                )}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="flex items-center gap-2">
+                  <span className="truncate text-[13px] font-semibold text-white">
+                    {t("chk.dashTitle")}
+                  </span>
                   {checklist.locked && (
-                    <span className="tv-label inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/25 px-2 py-0.5 text-emerald-300">
-                      <Check className="w-2.5 h-2.5" /> {t("chk.ready")}
+                    <span className="tv-label shrink-0 text-[var(--tv-highlight)]">
+                      {t("chk.ready")}
                     </span>
                   )}
-                </div>
-                <div className="text-[11px] text-slate-400 truncate">
-                  {checklist.locked
-                    ? t("chk.dashLocked")
-                    : checklist.total > 0
-                      ? `${checklist.n}/${checklist.total} ${t("chk.dashChecked")}`
-                      : t("chk.dashStart")}
-                </div>
-              </div>
-              <span className="tv-label flex items-center gap-1 text-cyan-400 shrink-0">
-                {t("chk.dashCta")} <ChevronRight className="w-3.5 h-3.5" />
+                </span>
+                {checklist.locked ? (
+                  <span className="block truncate text-[11px] text-slate-500">
+                    {t("chk.dashLocked")}
+                  </span>
+                ) : checklist.total > 0 ? (
+                  <span className="mt-1.5 flex items-center gap-2">
+                    <span className="h-1 flex-1 overflow-hidden rounded-full bg-[var(--tv-plate-0)]">
+                      <span
+                        className="block h-full rounded-full bg-[var(--tv-accent)]"
+                        style={{ width: `${chkPct}%` }}
+                      />
+                    </span>
+                    <span className="tv-figure tv-figure-secondary shrink-0 text-[10px] text-slate-500">
+                      {checklist.n}/{checklist.total}
+                    </span>
+                  </span>
+                ) : (
+                  <span className="block truncate text-[11px] text-slate-500">
+                    {t("chk.dashStart")}
+                  </span>
+                )}
+              </span>
+              <span className="tv-label flex shrink-0 items-center gap-0.5 text-[var(--tv-highlight)]">
+                {t("chk.dashCta")} <ChevronRight className="h-3.5 w-3.5" />
               </span>
             </button>
           )}

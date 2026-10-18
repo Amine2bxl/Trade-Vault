@@ -1042,7 +1042,47 @@ body {
   transform-origin: top center;
 }
 
+/* ── La métamorphose : la carte finale devient l'application ──
+   1. `.onb-morphing` (onboarding) : tout ce qui n'est pas la carte s'efface,
+      et la carte se vide — il ne reste qu'une plaque.
+   2. `.tv-morph-in` (shell) : l'application s'ouvre depuis le rectangle de
+      cette plaque (`clip-path`, transformé par le GPU, aucune mise en page
+      recalculée) jusqu'au plein écran. Les tuiles du tableau de bord font
+      ensuite leur propre entrée. Exception de durée documentée
+      (`docs/DESIGN_SYSTEM.md` §4) : c'est la fin de l'onboarding, pas un
+      geste de l'application. */
+.onb-morphing .onb-launch-head,
+.onb-morphing .onb-data-field,
+.onb-morphing .onb-market-pulse,
+.onb-morphing .onb-dashboard-reveal > * {
+  opacity: 0;
+  transition: opacity 280ms var(--tv-ease);
+}
+.onb-morphing .onb-launch-head {
+  transform: translateY(-6px);
+  transition:
+    opacity 280ms var(--tv-ease),
+    transform 280ms var(--tv-ease);
+}
+@keyframes tv-morph-in {
+  from {
+    clip-path: inset(var(--morph-t) var(--morph-r) var(--morph-b) var(--morph-l) round 18px);
+  }
+  to {
+    clip-path: inset(0 0 0 0 round 0);
+  }
+}
+/* Courbe ENTRÉE-SORTIE, pas l'`--tv-ease` des apparitions : celle-ci jette
+   90 % du mouvement dans les 150 premières ms, et l'ouverture se lisait comme
+   un saut. Ici, la plaque démarre doucement, s'ouvre, puis se pose. */
+.tv-morph-in {
+  animation: tv-morph-in 760ms cubic-bezier(0.7, 0, 0.2, 1) both;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .tv-morph-in {
+    animation: none;
+  }
   .onb-in > * {
     animation: none;
     opacity: 1;
@@ -5568,6 +5608,44 @@ thead .plan-cmp-col.is-pro {
 /* ── Les trois portes du tableau de bord (Journal · Jarvis · Analyse) ──
    Des boutons de 44 px, pas des cartes : l'action se lit sans se déguiser en
    tuile de données. */
+/* Le sélecteur de période de la courbe — un segmenté de 24px, visible à
+   toutes les tailles (l'ancien empruntait les onglets de page, masqués sous
+   1024px). Le choix actif est une plaque plus claire, pas un aplat d'accent :
+   c'est une vue, pas une action. */
+.dash-period {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 9px;
+  border: 1px solid var(--tv-border);
+  background: var(--tv-plate-0);
+}
+.dash-period-btn {
+  height: 24px;
+  min-width: 34px;
+  padding: 0 8px;
+  border-radius: 7px;
+  font-family: var(--font-figure);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--tv-text-muted);
+  transition:
+    background-color var(--duration-micro) var(--tv-ease),
+    color var(--duration-micro) var(--tv-ease);
+}
+.dash-period-btn:hover {
+  color: var(--tv-text-primary);
+}
+.dash-period-btn[aria-pressed="true"] {
+  background: var(--tv-plate-3);
+  color: var(--tv-text-primary);
+}
+.dash-period-btn:focus-visible {
+  outline: 2px solid var(--tv-accent);
+  outline-offset: 1px;
+}
+
 .dash-action {
   display: inline-flex;
   min-height: 2.75rem;

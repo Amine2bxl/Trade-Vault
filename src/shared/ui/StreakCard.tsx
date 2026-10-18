@@ -42,6 +42,12 @@ interface StreakCardProps extends React.HTMLAttributes<HTMLDivElement> {
   howItWorksItems?: string[];
   /** État initial de la section. */
   defaultHowItWorksOpen?: boolean;
+  /** La routine du jour est-elle faite ? Affichée à côté du chiffre : c'est
+   *  la seule information de la carte sur laquelle on peut encore agir. */
+  todayDone?: boolean;
+  /** Libellés de l'état du jour (fait / à faire). */
+  todayDoneLabel?: string;
+  todayTodoLabel?: string;
 }
 
 const StreakCard = React.forwardRef<HTMLDivElement, StreakCardProps>(function StreakCard(
@@ -74,6 +80,9 @@ const StreakCard = React.forwardRef<HTMLDivElement, StreakCardProps>(function St
       "Weekends don't break your streak — markets are closed.",
     ],
     defaultHowItWorksOpen = false,
+    todayDone,
+    todayDoneLabel,
+    todayTodoLabel,
     ...props
   },
   ref,
@@ -102,7 +111,7 @@ const StreakCard = React.forwardRef<HTMLDivElement, StreakCardProps>(function St
             <button
               type="button"
               onClick={onActionClick}
-              className="inline-flex h-8 shrink-0 items-center rounded-lg px-2 text-xs font-medium text-slate-500 transition-colors hover:bg-white/[0.04] hover:text-cyan-300"
+              className="inline-flex h-8 shrink-0 items-center rounded-lg px-2 text-xs font-medium text-slate-500 transition-colors hover:bg-white/[0.04] hover:text-[var(--tv-highlight)]"
             >
               {actionLabel}
             </button>
@@ -111,39 +120,59 @@ const StreakCard = React.forwardRef<HTMLDivElement, StreakCardProps>(function St
         {subtitle && <p className="mt-1 text-[12px] leading-relaxed text-slate-400">{subtitle}</p>}
       </header>
 
-      <p className="tv-figure mb-4 text-4xl leading-none font-bold tracking-tight text-white">
-        {currentStreak}
-        <span className="ml-2 text-sm font-medium text-slate-500">{daysLabel}</span>
-      </p>
+      <div className="mb-4 flex items-end justify-between gap-3">
+        <p className="tv-figure text-4xl leading-none font-bold tracking-tight text-white">
+          {currentStreak}
+          <span className="ml-2 text-sm font-medium text-slate-500">{daysLabel}</span>
+        </p>
+        {todayDone !== undefined && (todayDone ? todayDoneLabel : todayTodoLabel) && (
+          <span
+            className={cn(
+              "tv-label inline-flex shrink-0 items-center gap-1.5 rounded-lg border px-2 py-1",
+              todayDone
+                ? "border-amber-500/30 text-amber-300"
+                : "border-dashed border-[var(--tv-border-strong)] text-slate-400",
+            )}
+          >
+            {todayDone ? (
+              <CheckCircle2 className="h-3 w-3" aria-hidden="true" />
+            ) : (
+              <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true" />
+            )}
+            {todayDone ? todayDoneLabel : todayTodoLabel}
+          </span>
+        )}
+      </div>
 
       <StreakCalendar streak={streak} />
 
-      <div
-        className="mt-4 mb-4 grid grid-cols-2 gap-4 border-t border-white/[0.06] pt-4"
+      {/* Record et total : deux repères, pas deux chiffres héros — une ligne. */}
+      <dl
+        className="mt-4 mb-3 flex items-center justify-between gap-4 border-t border-[var(--tv-border)] pt-3 text-[12px]"
         aria-label="Streak stats"
       >
-        <div>
-          <p className="tv-prose text-slate-500">{longestLabel}</p>
-          <p className="tv-figure mt-0.5 text-2xl font-bold text-white">
+        <div className="flex items-baseline gap-1.5">
+          <dt className="text-slate-500">{longestLabel}</dt>
+          <dd className="tv-figure font-bold text-white">
             {longestStreak}
-            <span className="ml-1 text-sm font-medium text-slate-500">{daysLabel}</span>
-          </p>
+            <span className="ml-1 font-medium text-slate-500">{daysLabel}</span>
+          </dd>
         </div>
-        <div className="text-right">
-          <p className="tv-prose text-slate-500">{totalLabel}</p>
-          <p className="tv-figure mt-0.5 text-2xl font-bold text-white">{total}</p>
+        <div className="flex items-baseline gap-1.5">
+          <dt className="text-slate-500">{totalLabel}</dt>
+          <dd className="tv-figure font-bold text-white">{total}</dd>
         </div>
-      </div>
+      </dl>
 
-      <div className="mt-auto border-t border-white/[0.06] pt-3">
+      <div className="mt-auto">
         <button
           type="button"
-          className="flex w-full items-center justify-between rounded-xl bg-white/[0.03] px-3.5 py-2.5 text-left transition-colors hover:bg-white/[0.05]"
+          className="flex w-full items-center justify-between rounded-xl border border-[var(--tv-border)] px-3.5 py-2 text-left transition-colors hover:border-[var(--tv-border-strong)]"
           onClick={() => setOpen((prev) => !prev)}
           aria-expanded={open}
           aria-controls={contentId}
         >
-          <span className="text-[13px] font-semibold text-slate-300">{howItWorksTitle}</span>
+          <span className="text-[12px] font-semibold text-slate-400">{howItWorksTitle}</span>
           <ChevronDown
             className={cn("h-4 w-4 text-slate-500 transition-transform", open && "rotate-180")}
             aria-hidden="true"

@@ -72,6 +72,7 @@ export type { KpiProps, KpiTone } from "./Kpi";
 export { SubNav, PageToolbar } from "./SubNav";
 export type { SubNavItem } from "./SubNav";
 export { Sheet } from "./Sheet";
+export { InfoTip } from "./InfoTip";
 export { EmptyState } from "./EmptyState";
 export { Metric } from "./Metric";
 export { RollingFigure } from "./RollingFigure";

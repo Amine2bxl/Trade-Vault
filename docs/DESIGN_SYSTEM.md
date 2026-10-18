@@ -135,6 +135,9 @@ réduit à un fondu sous `prefers-reduced-motion`. Elle a aussi le seul **son**
 du produit, synthétisé en Web Audio (`onboardingSound.ts`) : jamais avant un
 geste, coupable et mémorisé, silencieux en cas d'échec. Le thème choisi à
 l'écran « apparence » s'applique à chaud à la séquence elle-même.
+Sa sortie est une **métamorphose**, pas une coupure : la carte finale se vide
+(`.onb-morphing`), puis le shell s'ouvre depuis son rectangle jusqu'au plein
+écran (`.tv-morph-in`, `clip-path`, 760 ms en entrée-sortie, coupée sous mouvement réduit).
 
 ## 5. Primitives (`src/shared/ui`)
 

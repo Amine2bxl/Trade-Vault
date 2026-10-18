@@ -50,6 +50,7 @@ import CopilotBlock from "./CopilotBlock";
 import { DeferredFallback } from "@/app/shell/PageTransition";
 import { cn } from "@/shared/ui/cn";
 import { useT } from "@/app/i18n/LanguageContext";
+import type { TKey } from "@/app/i18n/translations";
 import { computeChecklistStreakStats, recentChecklistPeriods } from "../checklist/checklistStreak";
 import { newestFirst } from "@/app/trading/tradeOrder";
 import { formatMoney } from "@/shared/currency";
@@ -72,9 +73,24 @@ interface DashboardProps {
   onOpenJournal?: () => void;
 }
 
-type Period = "7d" | "30d" | "ytd" | "all";
-const PERIODS: Period[] = ["7d", "30d", "ytd", "all"];
+/* 7J · 30J · 1A · TOUT. « YTD » (depuis le 1er janvier) laissait en janvier
+   une courbe de quelques jours sous un bouton qui promettait l'année : 1A est
+   une fenêtre glissante, toujours pleine. Un « ytd » mémorisé devient « 1y ». */
+type Period = "7d" | "30d" | "1y" | "all";
+const PERIODS: Period[] = ["7d", "30d", "1y", "all"];
 const PERIOD_STORAGE_KEY = "tv.dashboard.period";
+const PERIOD_SHORT: Record<Period, TKey> = {
+  "7d": "dashboard.p7d",
+  "30d": "dashboard.p30d",
+  "1y": "dashboard.p1y",
+  all: "common.all",
+};
+const PERIOD_LONG: Record<Period, TKey> = {
+  "7d": "dashboard.pLong7d",
+  "30d": "dashboard.pLong30d",
+  "1y": "dashboard.pLong1y",
+  all: "dashboard.pLongAll",
+};
 
 /** Date locale `YYYY-MM-DD` — jamais `toISOString()` (UTC), qui décale le filtre
  *  d'un jour selon le fuseau et fait disparaître la journée la plus récente. */
@@ -97,7 +113,11 @@ function periodCutoff(period: Period): string | null {
     d.setDate(d.getDate() - 30);
     return localDateStr(d);
   }
-  if (period === "ytd") return `${now.getFullYear()}-01-01`;
+  if (period === "1y") {
+    const d = new Date(now);
+    d.setFullYear(d.getFullYear() - 1);
+    return localDateStr(d);
+  }
   return null;
 }
 
@@ -120,7 +140,8 @@ export default function Dashboard({
   const { activeAccount } = useAccounts();
   const [period, setPeriod] = useState<Period>(() => {
     try {
-      const saved = localStorage.getItem(PERIOD_STORAGE_KEY);
+      const raw = localStorage.getItem(PERIOD_STORAGE_KEY);
+      const saved = raw === "ytd" ? "1y" : raw;
       return PERIODS.includes(saved as Period) ? (saved as Period) : "all";
     } catch {
       return "all";
@@ -172,6 +193,16 @@ export default function Dashboard({
   }, [trades, cutoff]);
 
   const stats = useMemo(() => computeStats(filtered), [filtered]);
+  // Gagné / perdu bruts de la période : ce que le profit factor divise.
+  const gross = useMemo(() => {
+    let won = 0;
+    let lost = 0;
+    for (const tr of filtered) {
+      if (tr.pnl > 0) won += tr.pnl;
+      else if (tr.pnl < 0) lost -= tr.pnl;
+    }
+    return { won, lost };
+  }, [filtered]);
   const recentTrades = useMemo(() => [...filtered].sort(newestFirst).slice(0, 4), [filtered]);
 
   // Le résultat de la période en R — la mesure qui ne dépend pas de la taille.
@@ -511,28 +542,34 @@ export default function Dashboard({
                           </span>
                         )}
                       </div>
+                      {/* Ce que le chiffre couvre, en mots : la période et
+                          l'échantillon. Un P&L sans sa fenêtre ne se lit pas. */}
+                      <div className="mt-1 text-[11px] text-slate-500">
+                        {t(PERIOD_LONG[period])}
+                        <span className="text-slate-600"> · </span>
+                        {t("dashboard.periodTrades").replace("{n}", String(stats.totalTrades))}
+                      </div>
                     </div>
-                    {/* Le sélecteur de période emprunte le contrôle segmenté du
-                        produit (`.section-tabs`) au lieu de re-dériver le sien :
-                        une seule grammaire pour « je choisis UNE vue parmi N »,
-                        du haut de page jusqu'ici. */}
-                    <div className="section-tabs shrink-0">
+                    {/* LE SÉLECTEUR, DISCRET ET PARTOUT.
+                        Il empruntait `.section-tabs` — le contrôle des onglets de
+                        PAGE : 36px de haut, et MASQUÉ sous 1024px (la règle de
+                        ce contrôle), donc absent sur téléphone et tablette. Ici,
+                        un segmenté de 24px qui reste visible à toutes les
+                        tailles et se souvient du choix. */}
+                    <div
+                      className="dash-period shrink-0 self-start"
+                      role="group"
+                      aria-label={t("dashboard.periodAria")}
+                    >
                       {PERIODS.map((p) => (
                         <button
                           key={p}
+                          type="button"
                           onClick={() => changePeriod(p)}
-                          className={cn(
-                            "tv-label section-tab px-2.5 md:px-3.5 md:text-xs",
-                            period === p ? "section-tab-active" : "section-tab-idle",
-                          )}
+                          aria-pressed={period === p}
+                          className="dash-period-btn"
                         >
-                          {p === "7d"
-                            ? "7D"
-                            : p === "30d"
-                              ? "30D"
-                              : p === "ytd"
-                                ? "YTD"
-                                : t("common.all")}
+                          {t(PERIOD_SHORT[p])}
                         </button>
                       ))}
                     </div>
@@ -584,17 +621,34 @@ export default function Dashboard({
                   density.sectionGap,
                 )}
               >
+                {/* Chaque tuile porte maintenant SA preuve sous le chiffre :
+                    un calcul sur les mêmes trades, jamais un texte d'ambiance. */}
                 <Metric
                   compact
                   title={t("dashboard.netR")}
                   value={`${netR >= 0 ? "+" : "−"}${Math.abs(netR).toFixed(1)}R`}
                   valueClass={netR >= 0 ? "text-emerald-400" : "text-red-400"}
+                  subtitle={
+                    stats.totalTrades > 0
+                      ? t("dashboard.perTrade").replace(
+                          "{v}",
+                          `${netR >= 0 ? "+" : "−"}${Math.abs(netR / stats.totalTrades).toFixed(2)}R`,
+                        )
+                      : undefined
+                  }
                   delay={0}
                 />
                 <Metric
                   compact
                   title={t("stats.trades")}
                   value={String(stats.totalTrades)}
+                  subtitle={
+                    stats.totalTrades > 0
+                      ? t("dashboard.wonLost")
+                          .replace("{w}", String(stats.wins))
+                          .replace("{l}", String(stats.losses))
+                      : undefined
+                  }
                   delay={40}
                 />
                 <Metric
@@ -608,6 +662,11 @@ export default function Dashboard({
                     color: stats.winRate >= 0.5 ? CHART_GREEN : CHART_RED,
                     center: `${stats.wins}/${stats.losses}`,
                   }}
+                  subtitle={
+                    stats.wins + stats.losses > 0
+                      ? t("dashboard.onTrades").replace("{n}", String(stats.wins + stats.losses))
+                      : undefined
+                  }
                   delay={80}
                 />
                 <Metric
@@ -626,6 +685,13 @@ export default function Dashboard({
                     pct: Math.min(stats.profitFactor / 3, 1),
                     color: stats.profitFactor >= 1 ? CHART_GREEN : CHART_RED,
                   }}
+                  subtitle={
+                    gross.won > 0 || gross.lost > 0
+                      ? t("dashboard.grossSplit")
+                          .replace("{won}", formatMoney(gross.won, { compact: true }))
+                          .replace("{lost}", formatMoney(gross.lost, { compact: true }))
+                      : undefined
+                  }
                   delay={120}
                 />
               </div>
@@ -650,7 +716,9 @@ export default function Dashboard({
                   longestStreak={streak.longest}
                   total={streak.total}
                   title={t("streak.title")}
-                  subtitle={t("streak.subtitle")}
+                  todayDone={streak.doneToday}
+                  todayDoneLabel={t("streak.todayDone")}
+                  todayTodoLabel={t("streak.todayTodo")}
                   daysLabel={t("streak.days")}
                   longestLabel={t("streak.longest")}
                   totalLabel={t("streak.total")}

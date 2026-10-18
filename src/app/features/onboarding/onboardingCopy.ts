@@ -54,12 +54,10 @@ export interface OnboardingCopy {
   rulesCount: string;
   // ── 1 · Identité ──
   idTitle: string;
-  whyId: string;
   idPlaceholder: string;
   langTitle: string;
   // ── 2 · Arène ──
   arenaTitle: string;
-  whyArena: string;
   arProp: string;
   arPropD: string;
   arFunded: string;
@@ -72,7 +70,6 @@ export interface OnboardingCopy {
   firmTitle: string;
   capTitle: string;
   capTitleDemo: string;
-  whyAccount: string;
   firmLabel: string;
   firmOther: string;
   sizeLabel: string;
@@ -85,7 +82,6 @@ export interface OnboardingCopy {
   acctProp: string;
   // ── 4 · Marchés ──
   assetsTitle: string;
-  whyMarkets: string;
   aFutures: string;
   aFuturesD: string;
   aForex: string;
@@ -102,7 +98,6 @@ export interface OnboardingCopy {
   ictNo: string;
   // ── 5 · Style ──
   styleTitle: string;
-  whyStyle: string;
   sScalper: string;
   sScalperD: string;
   sDay: string;
@@ -111,7 +106,6 @@ export interface OnboardingCopy {
   sSwingD: string;
   // ── 6 · Expérience ──
   expTitle: string;
-  whyExp: string;
   eNew: string;
   eNewD: string;
   eInt: string;
@@ -122,7 +116,6 @@ export interface OnboardingCopy {
   eFundD: string;
   // ── 7 · Angle mort ──
   painTitle: string;
-  whyPain: string;
   pEmo: string;
   pEmoD: string;
   pOver: string;
@@ -133,14 +126,8 @@ export interface OnboardingCopy {
   pConsD: string;
   pJour: string;
   pJourD: string;
-  ackEmo: string;
-  ackOver: string;
-  ackRisk: string;
-  ackCons: string;
-  ackJour: string;
   // ── 8 · Garde-fous ──
   grTitle: string;
-  whyGuard: string;
   grRisk: string;
   grRiskUnit: string;
   grTrades: string;
@@ -160,7 +147,6 @@ export interface OnboardingCopy {
   ruleDaily: string;
   // ── 9 · Mission ──
   goalTitle: string;
-  whyGoal: string;
   gProp: string;
   gPropD: string;
   gFull: string;
@@ -175,25 +161,30 @@ export interface OnboardingCopy {
   targetNone: string;
   // ── 10 · Apparence ──
   lookTitle: string;
-  whyLook: string;
   /** Une ligne par thème : ce qu'il change, en mots. */
   themeDesc: Record<string, string>;
   lookDefault: string;
   // ── Calibration ──
   calTitle: string;
   calAccount: string;
-  calMarkets: string;
   calRules: string;
   calChecklist: string;
   calJarvis: string;
   calLook: string;
+  /** Le plan de trading écrit à la calibration. */
+  calPlan: string;
+  /** La base de risque du journal (le capital du compte). */
+  calJournal: string;
+  /** La routine d'avant séance écrite dans le plan. */
+  planPre: string;
+  /** La routine d'après séance (angle mort « revue »). */
+  planPost: string;
   calHonest: string;
   calError: string;
   calRetry: string;
   revealTitle: string;
   // ── Lancement ──
   startTitle: string;
-  startSub: string;
   startImport: string;
   startImportD: string;
   startBroker: string;
@@ -224,13 +215,12 @@ const en: OnboardingCopy = {
   bootKicker: "TradeVault · calibration terminal",
   bootTitleA: "Your trading,",
   bootTitleB: "decoded.",
-  bootSub:
-    "Sixty seconds. A few honest answers. TradeVault rebuilds itself around the way you trade — your account, your rules, your blind spot.",
+  bootSub: "Sixty seconds. TradeVault rebuilds itself around the way you trade.",
   bootCta: "Start calibration",
   bootHint: "Best with sound on",
-  bootP1: "Your account and risk limits, pre-wired",
-  bootP2: "Your rules checked on every trade you log",
-  bootP3: "Jarvis briefed on your biggest leak",
+  bootP1: "Your account, pre-wired",
+  bootP2: "Your rules, checked on every trade",
+  bootP3: "Jarvis, briefed on your leak",
 
   fileTitle: "Trader file",
   fileLive: "Live",
@@ -249,13 +239,10 @@ const en: OnboardingCopy = {
   rulesCount: "{n} armed",
 
   idTitle: "First — what should Jarvis call you?",
-  whyId: "Jarvis is your coach inside TradeVault. He uses your name in every debrief.",
   idPlaceholder: "Your first name",
   langTitle: "Language",
 
   arenaTitle: "Where are you trading right now?",
-  whyArena:
-    "Sets up your account, your drawdown guard and the rules your trades are checked against.",
   arProp: "Prop firm challenge",
   arPropD: "Passing an evaluation",
   arFunded: "Funded account",
@@ -268,8 +255,6 @@ const en: OnboardingCopy = {
   firmTitle: "Which firm, and what size?",
   capTitle: "How much capital is in this account?",
   capTitleDemo: "What balance are you practising with?",
-  whyAccount:
-    "Your account opens at this size, in this currency — every % and every drawdown is right from your first trade.",
   firmLabel: "Firm",
   firmOther: "Other",
   sizeLabel: "Account size",
@@ -282,7 +267,6 @@ const en: OnboardingCopy = {
   acctProp: "Prop",
 
   assetsTitle: "What do you trade?",
-  whyMarkets: "Your pre-market checklist and Jarvis are tuned to your markets.",
   aFutures: "Futures",
   aFuturesD: "NQ · ES · CL",
   aForex: "Forex",
@@ -299,7 +283,6 @@ const en: OnboardingCopy = {
   ictNo: "No",
 
   styleTitle: "How long do you usually hold a trade?",
-  whyStyle: "Sets your trades-per-day guardrail and the shape of your session checklist.",
   sScalper: "Scalping",
   sScalperD: "Seconds to minutes",
   sDay: "Day trading",
@@ -308,7 +291,6 @@ const en: OnboardingCopy = {
   sSwingD: "Days to weeks",
 
   expTitle: "How long have you been trading?",
-  whyExp: "Jarvis adapts how he talks to you — more guidance early on, straight numbers later.",
   eNew: "Just starting",
   eNewD: "Under a year",
   eInt: "Finding my rhythm",
@@ -319,7 +301,6 @@ const en: OnboardingCopy = {
   eFundD: "Payouts already",
 
   painTitle: "Be honest. What costs you the most money?",
-  whyPain: "This is the blind spot Jarvis watches first, on every trade you log.",
   pEmo: "Revenge trading",
   pEmoD: "One red trade turns into three",
   pOver: "Overtrading",
@@ -330,15 +311,8 @@ const en: OnboardingCopy = {
   pConsD: "I know my rules. I don't follow them",
   pJour: "Never reviewing",
   pJourD: "Same mistakes, every week",
-  ackEmo: "Understood. After a losing day starts, I'll be watching your next entry.",
-  ackOver: "Understood. Every trade past your daily limit gets flagged.",
-  ackRisk: "Understood. Any trade above your risk cap gets flagged the moment you log it.",
-  ackCons: "Understood. Your plan becomes rules — and I'll measure how often you keep them.",
-  ackJour: "Understood. Your checklist will close every session with a review.",
 
   grTitle: "Your guardrails.",
-  whyGuard:
-    "Built from your answers. Every trade you log is checked against them — you know the moment you break one.",
   grRisk: "Max risk per trade",
   grRiskUnit: "% of account",
   grTrades: "Max trades per day",
@@ -358,7 +332,6 @@ const en: OnboardingCopy = {
   ruleDaily: "Daily loss limit: {v}. When I hit it, I stop.",
 
   goalTitle: "What does winning look like in 90 days?",
-  whyGoal: "Jarvis anchors his advice to this mission.",
   gProp: "Pass my challenge",
   gPropD: "Hit the target, keep every rule",
   gFull: "Get paid every month",
@@ -373,7 +346,6 @@ const en: OnboardingCopy = {
   targetNone: "None",
 
   lookTitle: "Last touch — make it yours.",
-  whyLook: "Your colour runs through the whole app. Profit stays green, loss stays red — always.",
   themeDesc: {
     lucid: "Mint — the TradeVault signature, built for long sessions.",
     vault: "Emerald — the green of prop-firm desks.",
@@ -387,19 +359,20 @@ const en: OnboardingCopy = {
 
   calTitle: "Calibrating your vault",
   calAccount: "Opening {account}",
-  calMarkets: "Tuning to {markets}",
   calRules: "Arming {n} guardrails",
   calChecklist: "Building your pre-market checklist",
   calJarvis: "Briefing Jarvis: {leak}",
   calLook: "Applying your colour",
-  calHonest:
-    "No statistics yet — Jarvis starts measuring from your first logged trades, and never shows a number without enough data.",
+  calPlan: "Writing your trading plan: {markets}",
+  calJournal: "Setting your journal's risk base: {capital}",
+  planPre: "Pre-market checklist locked before the first trade.",
+  planPost: "Two-minute review of every trade before closing the platform.",
+  calHonest: "No statistics yet — they appear once you've logged enough trades.",
   calError: "We couldn't save your setup. Your answers are kept — try again.",
   calRetry: "Try again",
   revealTitle: "Your vault is ready.",
 
   startTitle: "How do you want to start?",
-  startSub: "Your first trade is where Jarvis starts learning.",
   startImport: "Import my history",
   startImportD: "A CSV from your broker or prop firm — Jarvis reads all of it.",
   startBroker: "Connect Tradovate",
@@ -430,13 +403,12 @@ const fr: OnboardingCopy = {
   bootKicker: "TradeVault · terminal de calibration",
   bootTitleA: "Ton trading,",
   bootTitleB: "décodé.",
-  bootSub:
-    "Soixante secondes. Quelques réponses honnêtes. TradeVault se reconstruit autour de ta façon de trader — ton compte, tes règles, ton angle mort.",
+  bootSub: "Soixante secondes. TradeVault se reconstruit autour de ta façon de trader.",
   bootCta: "Lancer la calibration",
   bootHint: "Meilleur avec le son",
-  bootP1: "Ton compte et tes limites de risque, déjà câblés",
-  bootP2: "Tes règles vérifiées sur chaque trade loggé",
-  bootP3: "Jarvis briefé sur ta plus grosse fuite",
+  bootP1: "Ton compte, déjà câblé",
+  bootP2: "Tes règles, vérifiées à chaque trade",
+  bootP3: "Jarvis, briefé sur ta fuite",
 
   fileTitle: "Dossier trader",
   fileLive: "En direct",
@@ -455,13 +427,10 @@ const fr: OnboardingCopy = {
   rulesCount: "{n} activés",
 
   idTitle: "D'abord — comment Jarvis doit-il t'appeler ?",
-  whyId: "Jarvis est ton coach dans TradeVault. Il utilise ton prénom dans chaque débrief.",
   idPlaceholder: "Ton prénom",
   langTitle: "Langue",
 
   arenaTitle: "Sur quoi trades-tu en ce moment ?",
-  whyArena:
-    "Ça configure ton compte, ta garde de drawdown et les règles contre lesquelles tes trades sont vérifiés.",
   arProp: "Challenge prop firm",
   arPropD: "Je passe une évaluation",
   arFunded: "Compte financé",
@@ -474,8 +443,6 @@ const fr: OnboardingCopy = {
   firmTitle: "Quelle prop firm, et quelle taille ?",
   capTitle: "Combien de capital sur ce compte ?",
   capTitleDemo: "Avec quel solde t'entraînes-tu ?",
-  whyAccount:
-    "Ton compte s'ouvre à cette taille, dans cette devise — chaque % et chaque drawdown est juste dès ton premier trade.",
   firmLabel: "Prop firm",
   firmOther: "Autre",
   sizeLabel: "Taille du compte",
@@ -488,7 +455,6 @@ const fr: OnboardingCopy = {
   acctProp: "Prop",
 
   assetsTitle: "Que trades-tu ?",
-  whyMarkets: "Ta checklist pré-market et Jarvis sont réglés sur tes marchés.",
   aFutures: "Futures",
   aFuturesD: "NQ · ES · CL",
   aForex: "Forex",
@@ -505,7 +471,6 @@ const fr: OnboardingCopy = {
   ictNo: "Non",
 
   styleTitle: "Combien de temps tiens-tu un trade, en général ?",
-  whyStyle: "Règle ta limite de trades par jour et la forme de ta checklist de session.",
   sScalper: "Scalping",
   sScalperD: "Secondes à minutes",
   sDay: "Day trading",
@@ -514,8 +479,6 @@ const fr: OnboardingCopy = {
   sSwingD: "Jours à semaines",
 
   expTitle: "Depuis combien de temps trades-tu ?",
-  whyExp:
-    "Jarvis adapte sa façon de te parler — plus de guidage au début, des chiffres bruts ensuite.",
   eNew: "Je débute",
   eNewD: "Moins d'un an",
   eInt: "Je trouve mon rythme",
@@ -526,7 +489,6 @@ const fr: OnboardingCopy = {
   eFundD: "Déjà des payouts",
 
   painTitle: "Sois honnête. Qu'est-ce qui te coûte le plus d'argent ?",
-  whyPain: "C'est l'angle mort que Jarvis surveille en premier, sur chaque trade que tu logges.",
   pEmo: "Le revenge trading",
   pEmoD: "Un trade perdant en appelle trois",
   pOver: "L'overtrading",
@@ -537,15 +499,8 @@ const fr: OnboardingCopy = {
   pConsD: "Je connais mes règles. Je ne les suis pas",
   pJour: "Je ne relis jamais",
   pJourD: "Les mêmes erreurs, chaque semaine",
-  ackEmo: "Compris. Dès qu'une journée part dans le rouge, je surveille ta prochaine entrée.",
-  ackOver: "Compris. Chaque trade au-delà de ta limite du jour sera signalé.",
-  ackRisk: "Compris. Tout trade au-dessus de ton risque max sera signalé dès que tu le logges.",
-  ackCons: "Compris. Ton plan devient des règles — et je mesure combien de fois tu les tiens.",
-  ackJour: "Compris. Ta checklist terminera chaque session par une revue.",
 
   grTitle: "Tes garde-fous.",
-  whyGuard:
-    "Construits à partir de tes réponses. Chaque trade loggé est vérifié contre eux — tu sais à l'instant où tu en casses un.",
   grRisk: "Risque max. par trade",
   grRiskUnit: "% du compte",
   grTrades: "Trades max. par jour",
@@ -565,7 +520,6 @@ const fr: OnboardingCopy = {
   ruleDaily: "Perte max. du jour : {v}. Quand je l'atteins, j'arrête.",
 
   goalTitle: "À quoi ressemble la victoire dans 90 jours ?",
-  whyGoal: "Jarvis ancre ses conseils sur cette mission.",
   gProp: "Passer mon challenge",
   gPropD: "Atteindre l'objectif, tenir chaque règle",
   gFull: "Être payé chaque mois",
@@ -580,7 +534,6 @@ const fr: OnboardingCopy = {
   targetNone: "Aucun",
 
   lookTitle: "Dernière touche — fais-le tien.",
-  whyLook: "Ta couleur traverse toute l'app. Le gain reste vert, la perte rouge — toujours.",
   themeDesc: {
     lucid: "Menthe — la signature TradeVault, faite pour les longues sessions.",
     vault: "Émeraude — le vert des desks de prop firm.",
@@ -594,19 +547,20 @@ const fr: OnboardingCopy = {
 
   calTitle: "Calibration de ton espace",
   calAccount: "Ouverture de {account}",
-  calMarkets: "Réglage sur {markets}",
   calRules: "Activation de {n} garde-fous",
   calChecklist: "Construction de ta checklist pré-market",
   calJarvis: "Briefing de Jarvis : {leak}",
   calLook: "Application de ta couleur",
-  calHonest:
-    "Aucune statistique pour l'instant — Jarvis commence à mesurer dès tes premiers trades loggés, et n'affiche jamais un chiffre sans assez de données.",
+  calPlan: "Rédaction de ton plan de trading : {markets}",
+  calJournal: "Base de risque de ton journal : {capital}",
+  planPre: "Checklist pré-market verrouillée avant le premier trade.",
+  planPost: "Deux minutes de revue de chaque trade avant de fermer la plateforme.",
+  calHonest: "Aucune statistique pour l'instant — elles arrivent avec assez de trades loggués.",
   calError: "Impossible d'enregistrer ta configuration. Tes réponses sont gardées — réessaie.",
   calRetry: "Réessayer",
   revealTitle: "Ton espace est prêt.",
 
   startTitle: "Comment veux-tu commencer ?",
-  startSub: "Ton premier trade, c'est là que Jarvis commence à apprendre.",
   startImport: "Importer mon historique",
   startImportD: "Un CSV de ton broker ou de ta prop firm — Jarvis lit tout.",
   startBroker: "Connecter Tradovate",

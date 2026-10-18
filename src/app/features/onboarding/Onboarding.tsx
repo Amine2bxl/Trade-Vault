@@ -48,8 +48,23 @@ import { useAccounts } from "@/app/contexts/AccountContext";
 import { usePushNotifications } from "@/app/hooks/usePushNotifications";
 import { useJarvisVoice } from "../jarvis/jarvisVoice";
 import { LANG_NAMES, type Lang } from "@/app/i18n/translations";
-import { saveOnboarding, saveCurrency, updateAccount, loadAccounts } from "@/app/store";
+import {
+  saveOnboarding,
+  saveCurrency,
+  updateAccount,
+  loadAccounts,
+  loadChecklistConfig,
+  saveChecklistConfig,
+  saveAccountBalance,
+  loadConfluences,
+  saveConfluences,
+} from "@/app/store";
 import { loadTradingRules, saveTradingRules } from "@/app/trading/tradingRules";
+import { loadTradingPlan, saveTradingPlan } from "@/app/trading/tradingPlan";
+import { loadUserPref, saveUserPref } from "@/app/utils/userPrefs";
+import { remember } from "@/modules/ai/memory";
+import { DEFAULT_CONFLUENCES } from "@/app/types";
+import { todayLocalDate } from "@/shared/calendar-date";
 import { BUILTIN_THEMES, DEFAULT_THEME_ID } from "@/app/utils/themes";
 import {
   CURRENCIES,
@@ -74,7 +89,12 @@ import {
   accountType,
   armedCount,
   buildRules,
+  checklistFromAnswers,
   defaultGoal,
+  ICT_CONFLUENCES,
+  lotCalcSeed,
+  memoriesFromAnswers,
+  planFromAnswers,
   guardrailForLeak,
   isProp,
   offersIct,
@@ -102,9 +122,19 @@ import {
   TraderFile,
 } from "./OnboardingParts";
 import { prefersReducedMotion, rise } from "./onboardingMotion";
+import { jarvisLines } from "./onboardingJarvis";
 
 /** Ce que le trader a choisi pour démarrer — `App.tsx` l'exécute. */
 export type OnboardingAction = "import" | "demo" | "broker" | null;
+
+/** Où se trouvait la carte finale (marges depuis les bords de l'écran) : le
+ *  shell s'ouvre depuis ce rectangle — la carte DEVIENT l'application. */
+export interface MorphOrigin {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+}
 
 /**
  * L'ONBOARDING — la calibration de TradeVault autour d'UN trader.
@@ -282,12 +312,12 @@ function labelsOf(c: OnboardingCopy) {
       funded: { label: c.eFund, desc: c.eFundD, icon: BadgeCheck },
     } satisfies Record<Experience, { label: string; desc: string; icon: LucideIcon }>,
     leak: {
-      emotions: { label: c.pEmo, desc: c.pEmoD, icon: Flame, ack: c.ackEmo },
-      overtrading: { label: c.pOver, desc: c.pOverD, icon: Repeat2, ack: c.ackOver },
-      risk: { label: c.pRisk, desc: c.pRiskD, icon: Scale, ack: c.ackRisk },
-      consistency: { label: c.pCons, desc: c.pConsD, icon: Route, ack: c.ackCons },
-      journaling: { label: c.pJour, desc: c.pJourD, icon: NotebookPen, ack: c.ackJour },
-    } satisfies Record<Leak, { label: string; desc: string; icon: LucideIcon; ack: string }>,
+      emotions: { label: c.pEmo, desc: c.pEmoD, icon: Flame },
+      overtrading: { label: c.pOver, desc: c.pOverD, icon: Repeat2 },
+      risk: { label: c.pRisk, desc: c.pRiskD, icon: Scale },
+      consistency: { label: c.pCons, desc: c.pConsD, icon: Route },
+      journaling: { label: c.pJour, desc: c.pJourD, icon: NotebookPen },
+    } satisfies Record<Leak, { label: string; desc: string; icon: LucideIcon }>,
     goal: {
       prop_challenge: { label: c.gProp, desc: c.gPropD, icon: Trophy },
       fulltime: { label: c.gFull, desc: c.gFullD, icon: BadgeCheck },
@@ -328,7 +358,7 @@ export default function Onboarding({
   onDone,
 }: {
   userId: string;
-  onDone: (action?: OnboardingAction) => void;
+  onDone: (action?: OnboardingAction, origin?: MorphOrigin) => void;
 }) {
   const { lang, setLang, t } = useT();
   const c = useMemo(() => oc(lang), [lang]);
@@ -505,6 +535,38 @@ export default function Onboarding({
     [c],
   );
 
+  /* ── Ce que dit Jarvis, écran par écran — selon les réponses DÉJÀ données ──
+     Les garde-fous cités avant leur écran sont ceux qui y seront proposés :
+     Jarvis annonce « 4 trades par jour », l'écran suivant affiche 4. */
+  const lines = useMemo(() => {
+    const g = guardTouched ? answers.guardrails : suggestGuardrails(answers);
+    const firm = isProp(answers.arena)
+      ? (PROP_FIRMS.find((f) => f.id === answers.firm)?.name ?? "")
+      : "";
+    return jarvisLines(
+      lang,
+      {
+        name: answers.firstName,
+        arena: answers.arena,
+        firm,
+        size:
+          answers.capital && answers.capital >= 1000
+            ? `${Math.round(answers.capital / 1000)}K`
+            : "",
+        assets: answers.assets,
+        usesIct: answers.usesIct,
+        style: answers.style,
+        experience: answers.experience,
+        leak: answers.leak,
+        goal: answers.goal,
+        risk: g.riskPct ? num(g.riskPct) : "",
+        trades: g.maxTrades ? String(g.maxTrades) : "",
+        stop: g.stopAfter ? String(g.stopAfter) : "",
+      },
+      userId,
+    );
+  }, [answers, guardTouched, lang, num, userId]);
+
   /* ── Les libellés vivants du dossier ── */
   const acctLabels = {
     personal: c.acctPersonal,
@@ -606,12 +668,119 @@ export default function Onboarding({
       })(),
     );
 
+    /* ── LE RESTE DE L'APPLICATION ──
+       Chaque écriture ci-dessous alimente un écran qui, avant, repartait de
+       zéro après l'onboarding. Toutes au mieux : une seule qui échoue ne
+       bloque ni les autres, ni l'entrée dans l'application. */
+
+    // La checklist pré-market : construite sur les réponses ET les chiffres
+    // des garde-fous. Jamais par-dessus une checklist déjà réglée.
+    const checklist = checklistFromAnswers(answers, lang, money);
+    tasks.push(
+      (async () => {
+        const cfgKey = `tv-chk-config-${userId}`;
+        let local: string | null = null;
+        try {
+          local = localStorage.getItem(cfgKey);
+        } catch {
+          /* stockage refusé : la base fait foi */
+        }
+        const saved = (await loadChecklistConfig(userId).catch(() => null)) as {
+          items?: unknown[];
+        } | null;
+        if (local || (Array.isArray(saved?.items) && saved.items.length > 0)) return;
+        try {
+          localStorage.setItem(cfgKey, JSON.stringify(checklist));
+          // L'assistant de la checklist reposerait les mêmes questions.
+          localStorage.setItem(`tv-chk-wizard-${userId}`, "1");
+        } catch {
+          /* la copie en base suffit */
+        }
+        await saveChecklistConfig(userId, checklist);
+      })(),
+    );
+
+    // Le plan de trading : ses chiffres de risque nourrissent l'Edge Score.
+    tasks.push(
+      (async () => {
+        const existing = await loadTradingPlan(userId);
+        const city = (tz: string) => tz.split("/").pop()?.replace(/_/g, " ") ?? tz;
+        const goal = answers.goal ? L.goal[answers.goal] : null;
+        const plan = planFromAnswers(answers, existing, {
+          mission: goal
+            ? `${goal.label} — ${goal.desc}${answers.monthlyTarget ? ` (${answers.monthlyTarget}%/${lang === "fr" ? "mois" : "month"})` : ""}`
+            : "",
+          markets: answers.assets.map((m) => L.market[m].label),
+          sessions: answers.assets.length
+            ? `${checklist.startTime} · ${city(checklist.timeZone)}`
+            : "",
+          preMarket: c.planPre,
+          postMarket: answers.leak === "journaling" ? c.planPost : "",
+        });
+        await saveTradingPlan(userId, plan);
+      })(),
+    );
+
+    // Ce que Jarvis retient (terrain, engagement daté, ton attendu). Écrit par
+    // le TRADER via l'onboarding — pas une écriture de l'IA.
+    for (const m of memoriesFromAnswers(answers, money, todayLocalDate())) {
+      tasks.push(
+        remember(userId, m.kind, m.content, {
+          key: m.key,
+          importance: m.importance,
+          confidence: m.confidence,
+          source: "onboarding",
+        }),
+      );
+    }
+
+    // Le journal : la base du % de risque saisi dans un trade, et le
+    // vocabulaire de confluences d'un trader ICT (sauf liste déjà personnalisée).
+    if (answers.capital && answers.capital > 0) {
+      tasks.push(saveAccountBalance(userId, answers.capital));
+    }
+    if (answers.usesIct) {
+      tasks.push(
+        (async () => {
+          const current = await loadConfluences(userId);
+          const untouched =
+            current.length === DEFAULT_CONFLUENCES.length &&
+            current.every((x, i) => x === DEFAULT_CONFLUENCES[i]);
+          if (untouched) await saveConfluences(userId, ICT_CONFLUENCES);
+        })(),
+      );
+    }
+
+    // Le calculateur de lots s'ouvre sur le bon marché et le risque choisi.
+    const lot = lotCalcSeed(answers);
+    if (lot) {
+      tasks.push(
+        (async () => {
+          const existing = await loadUserPref(userId, "lotCalc");
+          if (!existing) saveUserPref(userId, "lotCalc", lot);
+        })(),
+      );
+    }
+
     const results = await Promise.allSettled(tasks);
     for (const r of results) {
       if (r.status === "rejected") console.error("[onboarding] best-effort step failed", r.reason);
     }
     setSave("saved");
-  }, [userId, answers, activeAccount, accounts, editAccount, acctName, money, num, ruleTexts]);
+  }, [
+    userId,
+    answers,
+    activeAccount,
+    accounts,
+    editAccount,
+    acctName,
+    money,
+    num,
+    ruleTexts,
+    lang,
+    L,
+    c,
+  ]);
 
   // L'état réel de la connexion Tradovate, demandé pendant la calibration :
   // il est connu quand l'écran de départ arrive. Seuls les traders de futures
@@ -639,10 +808,12 @@ export default function Onboarding({
     void persist();
   }, [scene, persist, speak]);
 
+  // Une ligne par écriture RÉELLE de `persist()` — la calibration ne raconte
+  // rien qui ne se passe pas.
   const calLines = useMemo(
     () => [
       fmt(c.calAccount, { account: answers.arena ? acctName : c.acctPersonal }),
-      fmt(c.calMarkets, {
+      fmt(c.calPlan, {
         markets: answers.assets.length
           ? answers.assets.map((m) => L.market[m].label).join(", ")
           : "—",
@@ -650,9 +821,12 @@ export default function Onboarding({
       fmt(c.calRules, { n: String(armed) }),
       c.calChecklist,
       fmt(c.calJarvis, { leak: answers.leak ? L.leak[answers.leak].label : "—" }),
+      ...(answers.capital && answers.capital > 0
+        ? [fmt(c.calJournal, { capital: money(answers.capital) })]
+        : []),
       c.calLook,
     ],
-    [c, answers.arena, answers.assets, answers.leak, acctName, armed, L],
+    [c, answers.arena, answers.assets, answers.leak, answers.capital, acctName, armed, L, money],
   );
 
   // Les lignes défilent au rythme d'un terminal ; la dernière attend
@@ -684,17 +858,43 @@ export default function Onboarding({
     speak(VOICE_LAUNCH, 500);
     setScene("launch");
   };
+  /* LA MÉTAMORPHOSE. Le prénom, puis l'espace configuré ; ensuite tout ce qui
+     n'est pas la carte s'efface, la carte se vide — et l'application s'ouvre
+     DEPUIS son rectangle (`App.tsx`, `.tv-morph-in`). Pas de coupure : la
+     plaque que le trader regarde devient la fenêtre du produit. */
+  const revealRef = useRef<HTMLDivElement>(null);
+  const [morphing, setMorphing] = useState(false);
   useEffect(() => {
     if (scene !== "launch") return;
+    const action = launching === "fresh" ? null : launching;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const timer = window.setTimeout(
-      () => {
+    if (reduced) {
+      const timer = window.setTimeout(() => {
         releaseAudio();
-        onDone(launching === "fresh" ? null : launching);
-      },
-      reduced ? 200 : 3_200,
-    );
-    return () => window.clearTimeout(timer);
+        onDone(action);
+      }, 200);
+      return () => window.clearTimeout(timer);
+    }
+    const fade = window.setTimeout(() => setMorphing(true), 2_900);
+    const done = window.setTimeout(() => {
+      releaseAudio();
+      const r = revealRef.current?.getBoundingClientRect();
+      onDone(
+        action,
+        r
+          ? {
+              top: r.top,
+              right: window.innerWidth - r.right,
+              bottom: window.innerHeight - r.bottom,
+              left: r.left,
+            }
+          : undefined,
+      );
+    }, 3_250);
+    return () => {
+      window.clearTimeout(fade);
+      window.clearTimeout(done);
+    };
   }, [scene, launching, onDone]);
 
   /* ── Notifications : demandées AU MOMENT où elles ont un sens ── */
@@ -856,14 +1056,17 @@ export default function Onboarding({
     const rules = buildRules(answers.guardrails, ruleTexts, money, [], num);
     return (
       <div
-        className="onb-root relative flex h-dvh w-full items-center justify-center overflow-hidden px-5 py-5"
+        className={cn(
+          "onb-root relative flex h-dvh w-full items-center justify-center overflow-hidden px-5 py-5",
+          morphing && "onb-morphing",
+        )}
         role="status"
         aria-live="polite"
       >
         <OnboardingField />
         <MarketPulse step={QUESTIONS.length + 1} />
         <div className="relative z-10 w-full max-w-2xl">
-          <div className="flex items-center gap-4">
+          <div className="onb-launch-head flex items-center gap-4">
             <div className="onb-launch-logo relative grid h-16 w-16 shrink-0 place-items-center">
               <span className="absolute inset-0 rounded-full border border-[var(--tv-border-strong)]" />
               <span className="absolute inset-2 rounded-full border border-[var(--tv-border-accent)]" />
@@ -883,7 +1086,10 @@ export default function Onboarding({
 
           {/* L'espace tel qu'il vient d'être configuré — AUCUN chiffre de
               performance : il n'y a pas encore un seul trade. */}
-          <div className="onb-dashboard-reveal mt-6 overflow-hidden rounded-2xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)]">
+          <div
+            ref={revealRef}
+            className="onb-dashboard-reveal mt-6 overflow-hidden rounded-2xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)]"
+          >
             <div className="flex items-center justify-between border-b border-[var(--tv-border)] px-4 py-3">
               <div className="flex min-w-0 items-center gap-2 text-[13px] font-semibold text-white">
                 <img
@@ -951,7 +1157,7 @@ export default function Onboarding({
     const langs = Object.entries(LANG_NAMES) as [Lang, string][];
     keys.current.enter = next;
     body = (
-      <SceneFrame code={STEP_CODES[0]} title={c.idTitle} why={c.whyId}>
+      <SceneFrame code={STEP_CODES[0]} title={c.idTitle} why={lines.identity}>
         <input
           type="text"
           value={answers.firstName}
@@ -985,7 +1191,7 @@ export default function Onboarding({
     const order: Arena[] = ["prop_challenge", "funded", "personal", "demo"];
     keys.current.digits = order.map((id) => () => choose(() => set("arena", id)));
     body = (
-      <SceneFrame code={STEP_CODES[1]} title={c.arenaTitle} why={c.whyArena}>
+      <SceneFrame code={STEP_CODES[1]} title={c.arenaTitle} why={lines.arena}>
         <div className="grid gap-2.5 sm:grid-cols-2">
           {order.map((id, i) => (
             <OptionTile
@@ -1005,7 +1211,7 @@ export default function Onboarding({
     const title = prop ? c.firmTitle : answers.arena === "demo" ? c.capTitleDemo : c.capTitle;
     keys.current.enter = next;
     body = (
-      <SceneFrame code={STEP_CODES[2]} title={title} why={c.whyAccount}>
+      <SceneFrame code={STEP_CODES[2]} title={title} why={lines.account}>
         {prop && (
           <div className="onb-rise mb-5" style={rise(3)}>
             <div className="tv-label mb-2 text-slate-500">{c.firmLabel}</div>
@@ -1091,7 +1297,7 @@ export default function Onboarding({
     keys.current.digits = order.map((m) => () => toggle(m));
     keys.current.enter = next;
     body = (
-      <SceneFrame code={STEP_CODES[3]} title={c.assetsTitle} why={c.whyMarkets}>
+      <SceneFrame code={STEP_CODES[3]} title={c.assetsTitle} why={lines.markets}>
         <div className="grid gap-2.5 sm:grid-cols-2">
           {order.map((m, i) => (
             <OptionTile
@@ -1142,7 +1348,7 @@ export default function Onboarding({
     const order: Style[] = ["scalping", "daytrading", "swing"];
     keys.current.digits = order.map((id) => () => choose(() => set("style", id)));
     body = (
-      <SceneFrame code={STEP_CODES[4]} title={c.styleTitle} why={c.whyStyle}>
+      <SceneFrame code={STEP_CODES[4]} title={c.styleTitle} why={lines.style}>
         <div className="grid gap-2.5">
           {order.map((id, i) => (
             <OptionTile
@@ -1161,7 +1367,7 @@ export default function Onboarding({
     const order: Experience[] = ["new", "intermediate", "seasoned", "funded"];
     keys.current.digits = order.map((id) => () => choose(() => set("experience", id)));
     body = (
-      <SceneFrame code={STEP_CODES[5]} title={c.expTitle} why={c.whyExp}>
+      <SceneFrame code={STEP_CODES[5]} title={c.expTitle} why={lines.experience}>
         <div className="grid gap-2.5 sm:grid-cols-2">
           {order.map((id, i) => (
             <OptionTile
@@ -1182,7 +1388,7 @@ export default function Onboarding({
     keys.current.digits = order.map((id) => () => choose(() => set("leak", id), false));
     if (answers.leak) keys.current.enter = next;
     body = (
-      <SceneFrame code={STEP_CODES[6]} title={c.painTitle} why={c.whyPain}>
+      <SceneFrame code={STEP_CODES[6]} title={c.painTitle} why={lines.leak}>
         <div className="grid gap-2.5">
           {order.map((id, i) => (
             <OptionTile
@@ -1203,7 +1409,7 @@ export default function Onboarding({
             key={answers.leak}
             className="onb-scene mt-4 rounded-2xl border border-[var(--tv-border-accent)] bg-[var(--tv-plate-1)] px-4 py-3"
           >
-            <JarvisLine text={L.leak[answers.leak].ack} delay={60} />
+            <JarvisLine text={lines.ack} delay={60} />
           </div>
         )}
       </SceneFrame>
@@ -1273,7 +1479,7 @@ export default function Onboarding({
       );
     };
     body = (
-      <SceneFrame code={STEP_CODES[7]} title={c.grTitle} why={c.whyGuard}>
+      <SceneFrame code={STEP_CODES[7]} title={c.grTitle} why={lines.guardrails}>
         <div className="grid gap-2.5">
           {card(
             "riskPct",
@@ -1380,7 +1586,7 @@ export default function Onboarding({
     keys.current.digits = order.map((id) => () => choose(() => set("goal", id), false));
     keys.current.enter = next;
     body = (
-      <SceneFrame code={STEP_CODES[8]} title={c.goalTitle} why={c.whyGoal}>
+      <SceneFrame code={STEP_CODES[8]} title={c.goalTitle} why={lines.mission}>
         <div className="grid gap-2.5">
           {order.map((id, i) => (
             <OptionTile
@@ -1435,7 +1641,7 @@ export default function Onboarding({
     keys.current.digits = themes.map((th) => () => pick(th.id));
     keys.current.enter = next;
     body = (
-      <SceneFrame code={STEP_CODES[9]} title={c.lookTitle} why={c.whyLook}>
+      <SceneFrame code={STEP_CODES[9]} title={c.lookTitle} why={lines.look}>
         <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
           {themes.map((th, i) => (
             <ThemeCard
@@ -1560,7 +1766,7 @@ export default function Onboarding({
         <h2 className="text-[clamp(1.45rem,3.2vw,2rem)] font-semibold leading-[1.12] tracking-[-0.03em] text-white">
           {c.startTitle}
         </h2>
-        <JarvisLine text={c.startSub} className="mt-3 mb-6" />
+        <JarvisLine text={lines.start} className="mt-3 mb-6" />
         <div className="grid gap-2.5">
           {options.map((o, i) => (
             <OptionTile

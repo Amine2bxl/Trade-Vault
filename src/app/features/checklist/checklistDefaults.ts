@@ -537,6 +537,17 @@ export interface ChkProfile {
   goal?: string | null; // consistency | prop_challenge | discipline | fulltime | side
   pain?: string | null; // emotions | consistency | overtrading | risk | journaling
   usesIct?: boolean | null;
+  /* LES CHIFFRES DE L'ONBOARDING — facultatifs.
+     Sans eux, la liste reste générique (« Max 1 trade »). Avec eux, chaque
+     consigne reprend les limites que le trader vient de fixer : une checklist
+     qui dit « max 4 trades » quand ses règles disent 4, pas 1. */
+  /** Compte de prop firm (challenge ou financé) : le risque passe en tête. */
+  prop?: boolean | null;
+  riskPct?: number | null;
+  maxTrades?: number | null;
+  stopAfter?: number | null;
+  /** Perte max du jour, DÉJÀ formatée dans la devise du compte. */
+  dailyLoss?: string | null;
 }
 
 type Loc = { fr: ChkItem; en: ChkItem };
@@ -558,8 +569,16 @@ export function generateChecklist(
   const style = p.style ?? "";
   const isSwing = style === "swing" || style === "position";
   const isScalp = style === "scalping";
-  const funded = p.experience === "funded" || p.goal === "prop_challenge";
+  const funded = !!p.prop || p.experience === "funded" || p.goal === "prop_challenge";
   const primary = p.assets?.[0];
+  // Les nombres s'écrivent dans la langue (« 0,5 » en français).
+  const num = (n: number) => new Intl.NumberFormat(fr ? "fr" : "en").format(n);
+  const riskTail =
+    p.riskPct && p.riskPct > 0
+      ? fr
+        ? ` Max ${num(p.riskPct)} % du compte par trade.`
+        : ` Max ${num(p.riskPct)}% of the account per trade.`
+      : "";
 
   // Candidate blocks with a priority (higher = more important to keep).
   const candidates: { prio: number; item: ChkItem }[] = [];
@@ -645,48 +664,82 @@ export function generateChecklist(
     add(90, {
       fr: {
         title: "Risque défini AVANT l'entrée",
-        desc: "SL sur la structure d'abord, taille calculée ensuite. Drawdown journalier vérifié.",
+        desc: `SL sur la structure d'abord, taille calculée ensuite. Drawdown journalier vérifié.${riskTail}`,
       },
       en: {
         title: "Risk defined BEFORE the entry",
-        desc: "SL on structure first, size computed after. Daily drawdown checked.",
+        desc: `SL on structure first, size computed after. Daily drawdown checked.${riskTail}`,
       },
     });
   } else {
     add(75, {
       fr: {
         title: "SL sur structure, taille calculée",
-        desc: "Le risque est fixé avant l'entrée, jamais après. Le nombre de contrats suit le SL.",
+        desc: `Le risque est fixé avant l'entrée, jamais après. Le nombre de contrats suit le SL.${riskTail}`,
       },
       en: {
         title: "SL on structure, size computed",
-        desc: "Risk is set before the entry, never after. Contract size follows the SL.",
+        desc: `Risk is set before the entry, never after. Contract size follows the SL.${riskTail}`,
+      },
+    });
+  }
+
+  // ── Prop firm: the daily loss limit, in the account's own money ──
+  if (funded && p.dailyLoss) {
+    add(88, {
+      fr: {
+        title: `Perte max du jour connue : ${p.dailyLoss}`,
+        desc: "Si je l'atteins, la journée est finie — avant que la firme ne décide pour moi.",
+      },
+      en: {
+        title: `Daily loss limit known: ${p.dailyLoss}`,
+        desc: "If I hit it, the day is over — before the firm decides for me.",
       },
     });
   }
 
   // ── Psychology block, keyed to the trader's stated weakness ──
   if (p.pain === "overtrading" || p.goal === "discipline") {
-    add(85, {
-      fr: {
-        title: "Max 1 trade — pas de loss déjà prise",
-        desc: "Une perte le matin = chart fermé, journée terminée. Zéro trade est une position gagnante.",
-      },
-      en: {
-        title: "Max 1 trade — no loss taken yet",
-        desc: "A morning loss = chart closed, day over. Zero trades is a winning position.",
-      },
-    });
+    const n = p.maxTrades && p.maxTrades > 0 ? p.maxTrades : null;
+    add(
+      85,
+      n
+        ? {
+            fr: {
+              title: `Max ${n} trade${n > 1 ? "s" : ""} aujourd'hui — je compte`,
+              desc: `Au-delà de ${n}, le chart se ferme. Zéro trade est une position gagnante.`,
+            },
+            en: {
+              title: `Max ${n} trade${n > 1 ? "s" : ""} today — I count them`,
+              desc: `Past ${n}, the chart closes. Zero trades is a winning position.`,
+            },
+          }
+        : {
+            fr: {
+              title: "Max 1 trade — pas de loss déjà prise",
+              desc: "Une perte le matin = chart fermé, journée terminée. Zéro trade est une position gagnante.",
+            },
+            en: {
+              title: "Max 1 trade — no loss taken yet",
+              desc: "A morning loss = chart closed, day over. Zero trades is a winning position.",
+            },
+          },
+    );
   }
   if (p.pain === "emotions") {
+    const stop = p.stopAfter && p.stopAfter > 0 ? p.stopAfter : null;
     add(82, {
       fr: {
         title: "Je ne trade pas pour me prouver quelque chose",
-        desc: "Si l'envie de trader est plus forte que le signal → c'est une alarme, pas une entrée.",
+        desc: `Si l'envie de trader est plus forte que le signal → c'est une alarme, pas une entrée.${
+          stop ? ` Après ${stop} perte${stop > 1 ? "s" : ""}, j'arrête pour la journée.` : ""
+        }`,
       },
       en: {
         title: "I'm not trading to prove something",
-        desc: "If the urge to trade is stronger than the signal → it's an alarm, not an entry.",
+        desc: `If the urge to trade is stronger than the signal → it's an alarm, not an entry.${
+          stop ? ` After ${stop} loss${stop > 1 ? "es" : ""}, I stop for the day.` : ""
+        }`,
       },
     });
   }

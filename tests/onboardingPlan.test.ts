@@ -4,12 +4,18 @@ import {
   accountType,
   armedCount,
   buildRules,
+  checklistFromAnswers,
   defaultGoal,
   guardrailForLeak,
+  ICT_CONFLUENCES,
+  lotCalcSeed,
+  memoriesFromAnswers,
+  planFromAnswers,
   profileFields,
   suggestGuardrails,
   type OnboardingAnswers,
 } from "../src/app/features/onboarding/onboardingPlan";
+import { EMPTY_PLAN } from "../src/app/trading/tradingPlan";
 import { readSource, stripComments } from "./helpers/source";
 
 /**
@@ -167,5 +173,110 @@ describe("la séquence elle-même", () => {
     expect(code).toContain('setSave("error")');
     expect(code).toContain("Promise.allSettled(tasks)");
     expect(code).toContain('new CustomEvent("tv-rules-updated"');
+  });
+});
+
+/**
+ * CHAQUE RÉPONSE ARRIVE QUELQUE PART — le contrat de la seconde passe.
+ *
+ * Avant : la calibration annonçait « construction de ta checklist » et rien
+ * n'était écrit pour elle ; l'Edge Score ignorait le risque max choisi (il lit
+ * le plan de trading, que l'onboarding ne touchait pas) ; Jarvis ignorait le
+ * terrain (challenge ou compte financé). Ces tests tiennent chaque branchement.
+ */
+describe("le reste de l'application reçoit les réponses", () => {
+  const money = (n: number) => `$${n.toLocaleString("en-US")}`;
+  const planTexts = {
+    mission: "Pass my challenge — Hit the target, keep every rule",
+    markets: ["Futures"],
+    sessions: "09:30 · New York",
+    preMarket: "Checklist first.",
+    postMarket: "",
+  };
+
+  test("le plan de trading porte les chiffres des garde-fous (lus par l'Edge Score)", () => {
+    const plan = planFromAnswers(base, structuredClone(EMPTY_PLAN), planTexts);
+    expect(plan.risk.maxRiskPerTradePct).toBe("0.5");
+    expect(plan.risk.maxDailyLossPct).toBe("2");
+    expect(plan.limits.maxTradesPerDay).toBe("4");
+    expect(plan.limits.stopAfterLosses).toBe("2");
+    expect(plan.limits.noRevenge).toBe(true);
+    expect(plan.mission).toBe(planTexts.mission);
+    expect(plan.markets).toEqual(["Futures"]);
+    expect(plan.sessions).toBe("09:30 · New York");
+  });
+
+  test("le plan ne réécrit jamais ce que le trader a rédigé lui-même", () => {
+    const mine = {
+      ...structuredClone(EMPTY_PLAN),
+      mission: "Ma mission à moi",
+      markets: ["NQ"],
+      sessions: "10:00–11:00",
+    };
+    const plan = planFromAnswers(base, mine, planTexts);
+    expect(plan.mission).toBe("Ma mission à moi");
+    expect(plan.markets).toEqual(["NQ"]);
+    expect(plan.sessions).toBe("10:00–11:00");
+    // …mais les chiffres viennent d'être choisis : ils font foi.
+    expect(plan.risk.maxRiskPerTradePct).toBe("0.5");
+  });
+
+  test("la checklist reprend les chiffres de l'onboarding, pas des génériques", () => {
+    const over: OnboardingAnswers = {
+      ...base,
+      leak: "overtrading",
+      guardrails: { ...base.guardrails, maxTrades: 3 },
+    };
+    const cfg = checklistFromAnswers(over, "en", money);
+    const titles = cfg.items.map((i) => i.title).join(" | ");
+    expect(titles).toContain("Max 3 trades today");
+    expect(titles).not.toMatch(/max 1 trade/i);
+    expect(titles).toContain("Daily loss limit known: $1,000");
+    expect(cfg.items.length).toBeLessThanOrEqual(6);
+    expect(cfg.startTime).toBe("09:30");
+    expect(cfg.timeZone).toBe("America/New_York");
+    // Le reste de la configuration est complet (la page l'attend tel quel).
+    expect(cfg.fomo.length).toBe(4);
+  });
+
+  test("Jarvis retient le terrain, l'engagement daté et le ton — sans doublon du profil", () => {
+    const mem = memoriesFromAnswers(base, money, "2026-10-18");
+    const byKey = Object.fromEntries(mem.map((m) => [m.key, m]));
+    expect(byKey["onb:arena"].content).toContain("prop firm evaluation with Apex");
+    expect(byKey["onb:arena"].content).toContain("$50,000");
+    expect(byKey["onb:commitments"].kind).toBe("decision");
+    expect(byKey["onb:commitments"].content).toContain("2026-10-18");
+    expect(byKey["onb:commitments"].content).toContain("max 0.5% risk per trade");
+    expect(byKey["onb:commitments"].content).toContain("daily loss limit $1,000");
+    expect(byKey["onb:coaching"].kind).toBe("preference");
+    // Le profil (style, faiblesse, mission) vit déjà dans `profiles` : pas ici.
+    expect(mem.every((m) => m.kind !== ("profile" as string))).toBe(true);
+    expect(new Set(mem.map((m) => m.key)).size).toBe(mem.length);
+  });
+
+  test("le calculateur et le journal démarrent sur le bon marché", () => {
+    expect(lotCalcSeed(base)).toEqual({ mode: "futures", riskPct: "0.5" });
+    expect(lotCalcSeed({ ...base, assets: ["forex"] })?.mode).toBe("forex");
+    expect(lotCalcSeed({ ...base, assets: ["stocks"] })).toBeNull();
+    expect(ICT_CONFLUENCES).toContain("Fair value gap");
+  });
+
+  test("la calibration écrit réellement chaque bloc qu'elle annonce", () => {
+    const code = stripComments(
+      readSource(import.meta.dir, "../src/app/features/onboarding/Onboarding.tsx"),
+    );
+    for (const call of [
+      "saveTradingPlan(",
+      "saveChecklistConfig(",
+      "remember(",
+      "saveAccountBalance(",
+      "saveConfluences(",
+      'saveUserPref(userId, "lotCalc"',
+      "saveTradingRules(",
+    ]) {
+      expect(code, call).toContain(call);
+    }
+    // L'écriture mémoire vient du trader : sa source le dit.
+    expect(code).toContain('source: "onboarding"');
   });
 });

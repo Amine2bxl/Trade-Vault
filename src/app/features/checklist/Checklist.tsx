@@ -375,14 +375,21 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
     } catch {
       /* noop */
     }
-    if (local || !touchedRef.current) return;
+    /* LA CONDITION ÉTAIT INVERSÉE. Elle sortait aussi quand la config n'avait
+       jamais été touchée SUR CET APPAREIL — c'est-à-dire exactement le cas à
+       couvrir : sur un nouvel appareil (ou après une déconnexion, qui purge le
+       stockage local), la checklist construite à l'onboarding ou réglée
+       ailleurs n'était jamais relue, et le trader retombait sur les défauts. */
+    if (local) return;
     let active = true;
     void loadChecklistConfig(uid).then((saved) => {
       if (!active || !saved) return;
       const cfg = saved as ChkConfig;
       if (Array.isArray(cfg?.items) && cfg.items.length > 0) {
-        setConfig(cfg);
+        setConfig({ ...defaultConfigFor(lang), ...cfg });
         markTouched();
+        // Une checklist déjà construite n'a plus besoin de l'assistant.
+        setShowWizard(false);
       }
     });
     return () => {

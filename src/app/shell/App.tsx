@@ -10,8 +10,10 @@ import {
   Component,
   Suspense,
   startTransition,
+  type CSSProperties,
   type ReactNode,
 } from "react";
+import { cn } from "@/shared/ui/cn";
 import { reportAppError } from "@/shared/error-reporting";
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
@@ -111,7 +113,7 @@ import { computeBehavioral } from "@/domain/behavioral";
 import { useEconomicCalendar } from "../features/news/useEconomicCalendar";
 import { startOfWeek } from "../features/news/economicEvents";
 import { computeRuleAdherence } from "../trading/ruleAdherence";
-import type { OnboardingAction } from "../features/onboarding/Onboarding";
+import type { MorphOrigin, OnboardingAction } from "../features/onboarding/Onboarding";
 import { AuthProvider, useAuth } from "../contexts/AuthContext";
 import { hasLikelySession } from "../utils/sessionHint";
 import { clearCurrencyCache, setCurrency, useCurrency } from "@/shared/currency";
@@ -905,8 +907,11 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
   // Onboarding hand-off: "import" opens the CSV modal right away; "demo"
   // seeds three example trades so Dashboard/Analytics light up instantly;
   // "broker" opens the Tradovate connection page.
+  // La carte finale de l'onboarding, d'où le shell s'ouvre (voir `.tv-morph-in`).
+  const [morph, setMorph] = useState<MorphOrigin | null>(null);
   const handleOnboardingDone = useCallback(
-    async (action?: OnboardingAction) => {
+    async (action?: OnboardingAction, origin?: MorphOrigin) => {
+      if (origin) setMorph(origin);
       setOnboarding("done");
       if (!user) return;
       rememberOnboarded(user.id);
@@ -1057,7 +1062,22 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
   return (
     // h-dvh + overflow-hidden: the shell is exactly one viewport tall — content
     // scrolls inside <main>, so the sidebar rail never moves on any page.
-    <div className="relative flex h-dvh text-white overflow-hidden">
+    <div
+      className={cn("relative flex h-dvh text-white overflow-hidden", morph && "tv-morph-in")}
+      style={
+        morph
+          ? ({
+              "--morph-t": `${morph.top}px`,
+              "--morph-r": `${morph.right}px`,
+              "--morph-b": `${morph.bottom}px`,
+              "--morph-l": `${morph.left}px`,
+            } as CSSProperties)
+          : undefined
+      }
+      onAnimationEnd={(e) => {
+        if (morph && e.target === e.currentTarget) setMorph(null);
+      }}
+    >
       <FirstSessionWelcome />
       {/* Les dégradés des histogrammes, montés une fois pour toute l'app. */}
       <ChartDefs />
