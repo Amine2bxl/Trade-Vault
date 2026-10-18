@@ -3,6 +3,20 @@
 Journal des changements **structurels** (pas des features ni des correctifs,
 qui vivent dans l'historique git et les PR).
 
+## 2026-10-18 — Pop-up unique, annonces par trade, primitives de saisie et de réglages
+
+- Notifications : un seul pop-up (`policy.shouldInterrupt` — annonce à fort
+  impact, une heure avant, devises du trader via `domain/instrumentCurrency`),
+  plus de toast automatique ; catégories du compte appliquées par l'adaptateur
+  `allow` du moteur (`modules/notifications/preferences.ts`).
+- Calendrier économique : historique des semaines passées
+  (`modules/economic-calendar/forex-factory-history.ts`, registre
+  `economic_calendar_backfill`), rapprochement trade ↔ annonces dans
+  `domain/tradeNews`. Crons acceptés en `GET`.
+- Primitives `shared/ui` : `FormSection` / `FormLabel` (TradeModal, Missed
+  Setups) et `SettingsGroup` / `SettingsRow` / `SettingsAction` / `Toggle`
+  (toutes les pages de paramètres).
+
 ## 2026-10-17 — Application montée une fois, onboarding qui configure
 
 - `App` est hébergée une seule fois par la racine (`AppHost`, `routes/__root.tsx`) ;
