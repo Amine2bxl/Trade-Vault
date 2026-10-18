@@ -710,6 +710,8 @@ const fr: Dict = {
   "jarvisHome.subtitle": "Voici ton état trading aujourd'hui.",
   "jarvisHome.ask": "Comment puis-je t'aider aujourd'hui ?",
   "jarvisHome.suggestions": "Questions à explorer",
+  "jarvis.knowsYou": "Ce que je sais de toi",
+  "jarvis.followUps": "On continue",
   "jarvisHome.analyzing": "J'analyse tes {n} derniers trades…",
   "jarvisHome.proposal": "Action proposée",
   "jarvisHome.speaking": "parle",

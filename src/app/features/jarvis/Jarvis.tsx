@@ -209,9 +209,11 @@ export default function Jarvis() {
 
   return (
     <PageContainer ref={boxRef} style={{ height: hauteur }}>
-      {/* La plaque du produit, pas un cadre à part : `glass` est la surface que
-          porte chaque carte de l'application. */}
-      <div className="glass jarvis-stage flex h-full flex-col overflow-hidden rounded-3xl">
+      {/* FACE À FACE, SANS CADRE. La page posait une carte (`glass`) dans le
+          cadre de l'application, puis chaque réponse dans une autre carte :
+          un écran dans un écran dans un écran. La conversation occupe
+          maintenant la page elle-même — Jarvis parle, le trader répond. */}
+      <div className="jarvis-page flex h-full flex-col">
         {/* ── LES CONSEILS DE JARVIS ─────────────────────────────────────
             Ils existaient déjà, adossés à des motifs mesurés sur les trades du
             trader (une proposition sans preuve chiffrée ne s'affiche PAS) —
@@ -221,7 +223,7 @@ export default function Jarvis() {
             Ils sont ici, au-dessus de la conversation, plafonnés à dix par
             mois calendaire. */}
         {user?.id && (
-          <div className="max-h-[45%] shrink-0 overflow-y-auto px-4 pt-4 md:px-6">
+          <div className="jarvis-page-proposals">
             <ProposalsPanel userId={user.id} />
           </div>
         )}
@@ -252,7 +254,7 @@ export default function Jarvis() {
 
         {/* Crédits IA (quota du jour) — la MÊME bande que dans la fenêtre
             flottante : un seul Jarvis, donc un seul pied de page. */}
-        <div className="tv-jarvis-bar tv-jarvis-bar-bottom">
+        <div className="jarvis-page-credits">
           <CreditsBar />
         </div>
       </div>

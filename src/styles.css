@@ -1155,7 +1155,6 @@ body {
   border-radius: 0.5rem;
   background: rgb(var(--tv-accent-rgb) / 0.1);
   color: var(--tv-highlight);
-  box-shadow: 0 0 14px -4px rgb(var(--tv-accent-rgb) / 0.6);
 }
 /* « Écouter » : discret au repos, il ne s'impose qu'au survol ou en lecture. */
 .jarvis-listen {
@@ -1206,7 +1205,6 @@ body {
 .jarvis-suggestion:hover {
   border-color: rgb(var(--tv-accent-rgb) / 0.45);
   background: rgb(var(--tv-accent-rgb) / 0.08);
-  box-shadow: 0 0 28px -10px rgb(var(--tv-accent-rgb) / 0.55);
   transform: translateY(-1px);
 }
 .jarvis-suggestion:active {
@@ -4904,14 +4902,11 @@ body.tv-app-type :is(.tv-figure, .tv-num, .tabular-nums) {
   border-color: var(--tv-border);
   backdrop-filter: none;
 }
+/* Une réponse de Jarvis n'est plus une carte : il PARLE, à plat, sous sa
+   marque — comme un interlocuteur, pas comme un widget. */
 .jarvis-turn {
   position: relative;
   min-width: 0;
-  border: 1px solid var(--tv-border);
-  border-radius: var(--radius-xl);
-  background: var(--tv-plate-1);
-  padding: 16px;
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.025);
   overflow-wrap: anywhere;
 }
 .jarvis-turn::before {
@@ -7111,9 +7106,84 @@ body.tv-app-type svg.lucide {
   background: var(--tv-plate-2);
 }
 .jarvis-composer-dock {
-  padding: 12px max(16px, calc((100% - 760px) / 2));
-  border-top: 1px solid var(--tv-border);
-  background: var(--tv-plate-0);
+  padding: 8px max(16px, calc((100% - 760px) / 2)) 12px;
+}
+/* ── La page Jarvis : la conversation EST la page ─────────────────────── */
+.jarvis-page {
+  min-height: 0;
+}
+.jarvis-page-proposals {
+  flex-shrink: 0;
+  max-height: 40%;
+  overflow-y: auto;
+  padding: 4px max(16px, calc((100% - 760px) / 2)) 0;
+}
+.jarvis-page-credits {
+  display: flex;
+  justify-content: center;
+  padding: 0 max(16px, calc((100% - 760px) / 2)) 4px;
+}
+.jarvis-tools {
+  display: flex;
+  flex-shrink: 0;
+  justify-content: flex-end;
+  padding: 2px max(16px, calc((100% - 760px) / 2)) 0;
+}
+/* Ce que Jarvis sait du trader — des faits, pas des cartes. */
+.jarvis-known {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  margin-top: 18px;
+}
+.jarvis-known-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+.jarvis-known-item {
+  max-width: 100%;
+  padding: 3px 10px;
+  border: 1px solid var(--tv-border);
+  border-radius: 999px;
+  color: var(--tv-text-secondary);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Les relances après une réponse : la conversation continue. */
+.jarvis-followups {
+  display: grid;
+  gap: 8px;
+}
+.jarvis-followups-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.jarvis-followup {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  max-width: 100%;
+  padding: 4px 12px;
+  border: 1px solid var(--tv-border);
+  border-radius: 999px;
+  color: var(--tv-text-secondary);
+  font-size: 12.5px;
+  text-align: left;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+.jarvis-followup:hover {
+  border-color: var(--tv-border-accent);
+  background: rgb(var(--tv-accent-rgb) / 0.08);
+  color: var(--tv-highlight);
 }
 .jarvis-composer-action {
   width: 36px;
@@ -7380,9 +7450,6 @@ body.tv-app-type svg.lucide {
   }
   .jarvis-thread > * + * {
     margin-top: 16px;
-  }
-  .jarvis-turn {
-    padding: 12px;
   }
   .jarvis-bubble-user {
     max-width: 92%;

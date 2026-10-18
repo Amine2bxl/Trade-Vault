@@ -193,7 +193,11 @@ export function PageGate({
   if (!locked) {
     return (
       <>
-        {purpose}
+        {/* Jarvis porte déjà son identité et sa promesse dans la barre de
+            tête : la répéter juste dessous faisait deux « Jarvis · … » à
+            40 px d'écart, au-dessus d'une conversation qui doit commencer
+            tout de suite. */}
+        {page !== "insights" && purpose}
         {children}
       </>
     );

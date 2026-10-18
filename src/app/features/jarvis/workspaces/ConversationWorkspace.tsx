@@ -433,6 +433,11 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
   // question — la mémoire doit rendre Jarvis plus pertinent, jamais plus lent.
   // Une ref plutôt qu'un state : cette donnée ne déclenche aucun rendu.
   const memoryRef = useRef<MemoryEntry[]>([]);
+  /* CE QUE JARVIS SAIT DU TRADER, montré au trader. La mémoire nourrissait
+     les réponses sans jamais se voir : la relation restait invisible. Les
+     souvenirs les plus importants s'affichent à l'accueil — le trader voit
+     qu'il parle à quelqu'un qui le connaît, et ce qu'il sait. */
+  const [knownFacts, setKnownFacts] = useState<MemoryEntry[]>([]);
   const SpeechRecognitionCtor = getSpeechRecognition();
   const draftKey = conversationId ? `tv:jarvis:draft:${userId ?? "anon"}:${conversationId}` : null;
 
@@ -468,7 +473,13 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
     let active = true;
     void loadMemory(userId)
       .then((entries) => {
-        if (active) memoryRef.current = entries;
+        if (!active) return;
+        memoryRef.current = entries;
+        setKnownFacts(
+          entries
+            .filter((e) => e.kind === "profile" || e.kind === "fact" || e.kind === "lesson")
+            .slice(0, 4),
+        );
       })
       .catch(() => {
         /* la mémoire est un bonus, jamais un prérequis */
@@ -599,6 +610,16 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
       ).slice(0, 4),
     [context.trades, context.profile, context.page, stats, signals, onboarding, lang],
   );
+
+  /* LA CONVERSATION CONTINUE. Après chaque réponse, les questions tirées
+     des données du trader qu'il n'a pas encore posées — un échange qui mène
+     quelque part, plutôt qu'une page qui attend. */
+  const followUps = useMemo(() => {
+    const asked = new Set(
+      messages.filter((m) => m.role === "user").map((m) => (textOf(m) || "").trim()),
+    );
+    return suggestions.filter((s) => !asked.has(s.prompt.trim())).slice(0, 3);
+  }, [messages, suggestions]);
 
   useEffect(() => {
     if (!userId) {
@@ -933,7 +954,7 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
           une bande qui prenait la place du dialogue. Il ne reste que le bouton
           « effacer », et seulement quand il y a quelque chose à effacer. */}
       {messages.length > 0 && (
-        <div className="flex shrink-0 items-center justify-end border-b border-white/[0.04] px-4 py-1.5 md:px-6">
+        <div className="jarvis-tools">
           <button
             onClick={clearChat}
             aria-label={t("assistant.clear")}
@@ -1008,6 +1029,18 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
             {/* L'orbe : Jarvis est là, et elle s'anime dès qu'il écoute. */}
             <JarvisOrb state={activity} size={84} className="mx-auto mb-6" />
             <p className="jarvis-accueil-invite">{t("assistant.empty")}</p>
+            {knownFacts.length > 0 && (
+              <div className="jarvis-known">
+                <span className="tv-label text-slate-500">{t("jarvis.knowsYou")}</span>
+                <div className="jarvis-known-list">
+                  {knownFacts.map((f) => (
+                    <span key={f.id} className="jarvis-known-item" title={f.content}>
+                      {f.content.length > 48 ? `${f.content.slice(0, 46)}…` : f.content}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {suggestions.length > 0 && (
               <div className="mt-7 w-full">
@@ -1112,6 +1145,32 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
             ),
           )
         )}
+
+        {messages.length > 0 &&
+          !loading &&
+          typingId === null &&
+          messages[messages.length - 1]?.role === "assistant" &&
+          followUps.length > 0 && (
+            <div className="jarvis-followups animate-fade-in">
+              <span className="tv-label text-slate-500">{t("jarvis.followUps")}</span>
+              <div className="jarvis-followups-list">
+                {followUps.map((s) => (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => {
+                      followRef.current = true;
+                      void ask(s.prompt);
+                    }}
+                    className="jarvis-followup"
+                  >
+                    {s.label}
+                    <ArrowUpRight className="h-3 w-3 shrink-0" aria-hidden />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
         {loading && (
           /* LE TEMPS DE RÉFLEXION SE VOIT. Jarvis prend le temps d'analyser

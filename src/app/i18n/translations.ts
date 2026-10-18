@@ -756,6 +756,8 @@ const en = {
   "jarvisHome.subtitle": "Here is your trading state today.",
   "jarvisHome.ask": "How can I help you today?",
   "jarvisHome.suggestions": "Questions to explore",
+  "jarvis.knowsYou": "What I know about you",
+  "jarvis.followUps": "Keep going",
   "jarvisHome.analyzing": "Reading your last {n} trades…",
   "jarvisHome.proposal": "Proposed action",
   "jarvisHome.speaking": "speaking",
