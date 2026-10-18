@@ -104,6 +104,7 @@ export type {
 export { SelectionPanel } from "./SelectionPanel";
 export { ChoiceGroup, Disclosure } from "./FormControls";
 export { FormSection, FormLabel, FORM_LABEL } from "./FormSection";
+export { SettingsGroup, SettingsRow, SettingsAction, Toggle } from "./SettingsList";
 export { selection } from "./selection";
 
 export { PageControls } from "./PageControls";

@@ -2,8 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Bell,
   Wallet,
-  Globe,
-  DollarSign,
   Check,
   Download,
   Upload,
@@ -11,13 +9,11 @@ import {
   Trash2,
   Database,
   SlidersHorizontal,
-  ChevronRight,
   Search,
   UserX,
   AlertTriangle,
   FileText,
   ShieldCheck,
-  Coins,
 } from "@/shared/ui/icons";
 import type { LucideIcon } from "@/shared/ui/icons";
 import { Trade, LANGUAGES } from "@/app/types";
@@ -27,6 +23,8 @@ import {
   loadStartingBalance,
   saveStartingBalance,
   saveCurrency,
+  loadOnboarding,
+  saveMonthlyTarget,
 } from "@/app/store";
 import { exportTradesCSV } from "../journal/exportCsv";
 import { useAuth } from "@/app/contexts/AuthContext";
@@ -34,7 +32,16 @@ import { useT } from "@/app/i18n/LanguageContext";
 import type { TKey } from "@/app/i18n/translations";
 import { PushNotificationSettings } from "./PushNotificationSettings";
 import { cn } from "@/shared/ui/cn";
-import { Button, Card, FIELD_BASE, Modal, PageContainer, SelectPicker } from "@/shared/ui";
+import {
+  Button,
+  FIELD_BASE,
+  Modal,
+  PageContainer,
+  SelectPicker,
+  SettingsAction,
+  SettingsGroup,
+  SettingsRow,
+} from "@/shared/ui";
 import AccountsManager from "./AccountsManager";
 import { useSubscription } from "@/app/hooks/useSubscription";
 import { useAccounts } from "@/app/contexts/AccountContext";
@@ -111,6 +118,7 @@ export default function Settings({
   const { t, setLang } = useT();
   const [language, setLanguage] = useState("en");
   const [startingEquity, setStartingEquity] = useState("25000");
+  const [monthlyTarget, setMonthlyTarget] = useState("");
   const [savedFlash, setSavedFlash] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -188,6 +196,11 @@ export default function Settings({
         if (active) setStartingEquity(String(v));
       })
       .catch(() => {});
+    loadOnboarding(user.id)
+      .then((o) => {
+        if (active && o.monthlyTarget) setMonthlyTarget(String(o.monthlyTarget));
+      })
+      .catch(() => {});
     return () => {
       active = false;
     };
@@ -239,6 +252,22 @@ export default function Settings({
     }
   };
 
+  /* L'OBJECTIF MENSUEL, le même que celui du plan de trading et du copilote :
+     un seul point d'écriture (`saveMonthlyTarget`), qui prévient le tableau
+     de bord. Vide = pas d'objectif. */
+  const handleTargetBlur = async () => {
+    if (!user) return;
+    const raw = monthlyTarget.trim();
+    const n = raw === "" ? null : Number(raw);
+    if (n !== null && (!Number.isFinite(n) || n < 0)) return;
+    try {
+      await saveMonthlyTarget(user.id, n);
+      flash("target");
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   // Les onglets « General / Profile / Theme / Plan » vivaient ici, en état
   // local, et rendaient trois PAGES entières sans changer l'URL. Ce sont
   // maintenant des pages à part : Profil, Apparence et Abonnement se gèrent
@@ -246,115 +275,66 @@ export default function Settings({
 
   if (!user) return null;
 
+  const saved = (k: string) =>
+    savedFlash === k ? (
+      <span className="flex items-center gap-1 text-[11px] font-medium text-emerald-400">
+        <Check className="h-3 w-3" /> {t("common.saved")}
+      </span>
+    ) : null;
+
   return (
-    <PageContainer className="max-w-5xl space-y-3">
-      {/* UNE SEULE FENÊTRE. Le rail et le contenu vivent dans le même panneau,
-          séparés par une simple cloison — pas deux cartes flottantes séparées
-          par un vide. C'est ce qui fait la différence entre une page de
-          réglages et une pile de widgets. */}
-      <Card
-        variant="glass"
-        className="animate-fade-in-up stagger-0 overflow-hidden lg:grid lg:grid-cols-[244px_1fr]"
-      >
-        {/* ── RAIL DES RUBRIQUES ── */}
-        <div className="border-b border-white/[0.06] p-3 lg:border-b-0 lg:border-r">
-          {/* Search — the fastest route through a settings page is typing. */}
-          <div className="relative mb-3">
-            <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+    <PageContainer className="max-w-5xl">
+      {/* DEUX COLONNES, AUCUN CADRE AUTOUR. Le rail des rubriques à gauche,
+          les réglages de la rubrique à droite, en rangées « nom · commande ».
+          Plus de carte vitrée qui en contient d'autres. */}
+      <div className="animate-fade-in-up grid gap-5 lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-8">
+        <nav className="space-y-3" aria-label={t("nav.settings")}>
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
             <input
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={t("settings.search")}
-              className={cn(FIELD_BASE, "h-10 pl-10 text-[13px]")}
+              aria-label={t("settings.search")}
+              className={cn(FIELD_BASE, "h-9 text-[13px]")}
+              style={{ paddingLeft: "2.25rem" }}
             />
           </div>
-
           {anyVisible && (
             <div
-              // Sur téléphone, une grille de deux colonnes : toutes les
-              // rubriques visibles, sans rangée qui défile de côté.
               className="grid grid-cols-2 gap-1 sm:grid-cols-3 lg:flex lg:flex-col"
               role="tablist"
               aria-orientation="vertical"
             >
-              {PANES.filter((p) => sections[p.section]).map(({ id, labelKey, icon: Ico }) => {
-                const active = pane === id;
-                const danger = id === "danger";
-                return (
+              {PANES.filter((p) => (p.id !== "admin" || isAdmin) && sections[p.section]).map(
+                ({ id, labelKey, icon: Ico }) => (
                   <button
                     key={id}
                     type="button"
                     role="tab"
-                    aria-selected={active}
+                    aria-selected={pane === id}
+                    data-danger={id === "danger"}
                     onClick={() => setPane(id)}
-                    className={cn(
-                      "group flex h-11 shrink-0 items-center gap-3 rounded-xl px-3 text-[13px] font-medium",
-                      "transition-colors duration-200 lg:w-full",
-                      active
-                        ? danger
-                          ? "bg-red-500/10 text-red-300"
-                          : "bg-cyan-500/10 text-white"
-                        : "text-slate-400 hover:bg-white/[0.04] hover:text-slate-100",
-                    )}
+                    className="tv-set-rail-item"
                   >
-                    <Ico
-                      className={cn(
-                        "h-[18px] w-[18px] shrink-0",
-                        active ? (danger ? "text-red-400" : "text-cyan-400") : "text-slate-500",
-                      )}
-                      strokeWidth={1.9}
-                    />
+                    <Ico className="h-4 w-4 shrink-0 text-slate-500" strokeWidth={1.9} />
                     <span className="truncate">{t(labelKey)}</span>
-                    <ChevronRight
-                      className={cn(
-                        "ml-auto hidden h-4 w-4 shrink-0 lg:block",
-                        active ? "text-slate-500" : "text-slate-700",
-                      )}
-                    />
                   </button>
-                );
-              })}
+                ),
+              )}
             </div>
           )}
-        </div>
+        </nav>
 
-        {/* ── VOLET ACTIF ── */}
-        <div className="space-y-4 p-5 md:p-6">
+        <div className="min-w-0 space-y-5">
           {!anyVisible && (
-            <p className="text-sm text-slate-500 text-center py-6">{t("settings.noResults")}</p>
+            <p className="py-6 text-center text-sm text-slate-500">{t("settings.noResults")}</p>
           )}
 
-          {/* Compte actif — il vivait dans le pied du menu « Plus », qui
-              n'existe plus. Il a maintenant sa rubrique, sur toutes les
-              tailles d'écran : la barre latérale peut être repliée. */}
-          {pane === "account" && sections.account && (
-            <div className="space-y-4">
-              <SectionHeading
-                icon={<Wallet className="w-4 h-4" />}
-                title={t("settings.paneAccount")}
-              />
-              {/* Le gestionnaire complet : principal, sous-comptes, et les
-                  outils qui les relient (transfert, recalibrage). */}
-              <AccountsManager trades={trades} />
-            </div>
-          )}
-
-          {/* Preferences */}
           {pane === "general" && sections.prefs && (
-            <div className="space-y-5">
-              <SectionHeading
-                icon={<SlidersHorizontal className="w-4 h-4" />}
-                title={t("settings.preferences")}
-              />
-
-              <div className="block">
-                <span className="tv-label flex items-center justify-between text-slate-500 mb-1.5">
-                  <span className="flex items-center gap-1.5">
-                    <Globe className="w-3.5 h-3.5" /> {t("profile.language")}
-                  </span>
-                  {savedFlash === "lang" && <SavedBadge label={t("common.saved")} />}
-                </span>
+            <SettingsGroup title={t("settings.preferences")}>
+              <SettingsRow label={t("profile.language")} aside={saved("lang")}>
                 <SelectPicker
                   variant="field"
                   label={t("profile.language")}
@@ -363,15 +343,12 @@ export default function Settings({
                   options={LANGUAGES.map((l) => ({ value: l.code, label: l.label }))}
                   searchLabel={t("picker.search")}
                 />
-              </div>
-
-              <div className="block">
-                <span className="tv-label flex items-center justify-between text-slate-500 mb-1.5">
-                  <span className="flex items-center gap-1.5">
-                    <Coins className="w-3.5 h-3.5" /> {t("settings.currency")}
-                  </span>
-                  {savedFlash === "cur" && <SavedBadge label={t("common.saved")} />}
-                </span>
+              </SettingsRow>
+              <SettingsRow
+                label={t("settings.currency")}
+                hint={t("settings.currencyHint")}
+                aside={saved("cur")}
+              >
                 <SelectPicker
                   variant="field"
                   label={t("settings.currency")}
@@ -384,21 +361,19 @@ export default function Settings({
                   }))}
                   searchLabel={t("picker.search")}
                 />
-                <p className="tv-hint mt-1.5">{t("settings.currencyHint")}</p>
-              </div>
-
-              <label className="block">
-                <span className="tv-label flex items-center justify-between text-slate-500 mb-1.5">
-                  <span className="flex items-center gap-1.5">
-                    <DollarSign className="w-3.5 h-3.5" /> {t("profile.startingEquity")}
-                  </span>
-                  {savedFlash === "eq" && <SavedBadge label={t("common.saved")} />}
-                </span>
+              </SettingsRow>
+              <SettingsRow
+                label={t("profile.startingEquity")}
+                hint={t("profile.startingEquityHint")}
+                aside={saved("eq")}
+                htmlFor="settings-equity"
+              >
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">
                     {currencySymbol()}
                   </span>
                   <input
+                    id="settings-equity"
                     type="number"
                     inputMode="decimal"
                     value={startingEquity}
@@ -406,106 +381,107 @@ export default function Settings({
                     onBlur={handleEquityBlur}
                     min={0}
                     step={100}
-                    className={cn(FIELD_BASE, "h-11")}
+                    className={cn(FIELD_BASE, "tv-figure h-10")}
                     style={{ paddingLeft: `${1.1 + currencySymbol().length * 0.55}rem` }}
                   />
                 </div>
-                <p className="tv-hint mt-1.5">{t("profile.startingEquityHint")}</p>
-              </label>
-            </div>
+              </SettingsRow>
+              <SettingsRow
+                label={t("settings.monthlyTarget")}
+                hint={t("settings.monthlyTargetHint")}
+                aside={saved("target")}
+                htmlFor="settings-target"
+              >
+                <div className="relative">
+                  <input
+                    id="settings-target"
+                    type="number"
+                    inputMode="decimal"
+                    value={monthlyTarget}
+                    onChange={(e) => setMonthlyTarget(e.target.value)}
+                    onBlur={handleTargetBlur}
+                    min={0}
+                    step={0.5}
+                    placeholder="—"
+                    className={cn(FIELD_BASE, "tv-figure h-10 pr-8")}
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">
+                    %
+                  </span>
+                </div>
+              </SettingsRow>
+            </SettingsGroup>
           )}
 
-          {/* Notifications */}
+          {pane === "account" && sections.account && (
+            /* Le gestionnaire porte déjà sa propre liste : pas de second cadre. */
+            <section className="tv-set-group">
+              <h2 className="tv-set-title">{t("settings.paneAccount")}</h2>
+              <AccountsManager trades={trades} />
+            </section>
+          )}
+
           {pane === "notifications" && sections.notifs && <PushNotificationSettings />}
 
-          {/* Propriétaire (`ADMIN_EMAILS`) : panneaux d'accès offert + codes
-              promo. Jamais rendu pour le grand public. */}
           {isAdmin && pane === "admin" && sections.admin && (
             <div className="space-y-4">
-              <SectionHeading
-                icon={<ShieldCheck className="w-4 h-4" />}
-                title={t("settings.admin")}
-              />
               <CompAccessSection />
               <PromoCodeSection />
             </div>
           )}
 
-          {/* Data */}
           {pane === "data" && sections.data && (
-            <div className="space-y-2.5">
-              <SectionHeading icon={<Database className="w-4 h-4" />} title={t("settings.data")} />
-
-              <ActionRow
-                icon={<Download className="w-4 h-4" />}
+            <SettingsGroup title={t("settings.data")}>
+              <SettingsAction
+                icon={<Download className="h-4 w-4" />}
                 label={t("settings.exportCsv")}
                 onClick={() => exportTradesCSV(trades)}
                 disabled={trades.length === 0}
               />
-              <ActionRow
-                icon={<Upload className="w-4 h-4" />}
+              <SettingsAction
+                icon={<Upload className="h-4 w-4" />}
                 label={t("settings.importCsv")}
                 onClick={onOpenImport}
               />
-              {/* Recalibrage d'échelle : dans la section Données, à côté de
-              l'import et de l'export — c'est bien une opération sur
-              l'historique, pas un réglage d'apparence. */}
               {activeId && (
-                <ActionRow
-                  icon={<Scale className="w-4 h-4" />}
+                <SettingsAction
+                  icon={<Scale className="h-4 w-4" />}
                   label={t("recal.action")}
-                  sub={canRecal ? undefined : t("recal.proNote")}
+                  hint={canRecal ? undefined : t("recal.proNote")}
                   onClick={() => setRecalOpen(true)}
                 />
               )}
-              <ActionRow
-                icon={<FileText className="w-4 h-4" />}
+              <SettingsAction
+                icon={<FileText className="h-4 w-4" />}
                 label={t("settings.reports")}
                 onClick={onOpenReports}
               />
-            </div>
+            </SettingsGroup>
           )}
 
-          {/* Danger zone — sa propre rubrique dans le rail, pas une carte de
-              plus au bas d'une colonne. On n'atteint « Supprimer mon compte »
-              qu'en le demandant. */}
+          {/* La zone de danger a sa rubrique : on n'y tombe pas en cherchant
+              autre chose. */}
           {pane === "danger" && sections.danger && (
-            <div className="space-y-2.5 rounded-2xl border border-red-500/20 bg-red-500/[0.03] p-4">
-              <h2 className="text-xs font-bold uppercase tracking-wider text-red-400/90">
-                {t("settings.dangerZone")}
-              </h2>
-              <Button
-                variant="danger"
+            <SettingsGroup title={t("settings.dangerZone")} tone="danger">
+              <SettingsAction
+                danger
+                icon={<Trash2 className="h-4 w-4" />}
+                label={t("profile.deleteAllTrades")}
+                hint={t("settings.deleteAllSub")}
                 onClick={onDeleteAll}
                 disabled={trades.length === 0}
-                className="w-full justify-between h-auto py-3 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <span className="text-left">
-                  <span className="block text-sm font-medium">{t("profile.deleteAllTrades")}</span>
-                  <span className="block text-[10px] opacity-70 mt-0.5">
-                    {t("settings.deleteAllSub")}
-                  </span>
-                </span>
-                <Trash2 className="w-4 h-4 shrink-0" />
-              </Button>
-
-              <Button
-                variant="danger"
+              />
+              <SettingsAction
+                danger
+                icon={<UserX className="h-4 w-4" />}
+                label={t("settings.deleteAccount")}
+                hint={t("settings.deleteAccountSub")}
                 onClick={() => setDeleteOpen(true)}
-                className="w-full justify-between h-auto py-3"
-              >
-                <span className="text-left">
-                  <span className="block text-sm font-medium">{t("settings.deleteAccount")}</span>
-                  <span className="block text-[10px] opacity-70 mt-0.5">
-                    {t("settings.deleteAccountSub")}
-                  </span>
-                </span>
-                <UserX className="w-4 h-4 shrink-0" />
-              </Button>
-            </div>
+              />
+            </SettingsGroup>
           )}
         </div>
-      </Card>
+      </div>
 
       {deleteOpen && (
         <DeleteAccountModal onClose={() => setDeleteOpen(false)} onConfirm={deleteAccount} />
@@ -594,73 +570,5 @@ function DeleteAccountModal({
         </div>
       </div>
     </Modal>
-  );
-}
-
-function SectionHeading({ icon, title }: { icon: React.ReactNode; title: string }) {
-  return (
-    <div className="flex items-start gap-2.5">
-      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg tv-accent-fill">
-        <span className="">{icon}</span>
-      </span>
-      <h2 className="text-sm font-bold text-white uppercase tracking-wider">{title}</h2>
-    </div>
-  );
-}
-
-function SavedBadge({ label }: { label: string }) {
-  return (
-    <span className="flex items-center gap-1 text-emerald-400 normal-case tracking-normal">
-      <Check className="w-3 h-3" /> {label}
-    </span>
-  );
-}
-
-function ActionRow({
-  icon,
-  label,
-  sub,
-  onClick,
-  disabled,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  /** Sous-titre facultatif. Quatre appels l'omettaient déjà : le type le
-   *  déclarait obligatoire, TypeScript le signalait, et comme `tsc` ne tournait
-   *  pas en CI, ces quatre lignes rendaient une div vide de onze pixels sous le
-   *  libellé — un décalage vertical inexpliqué entre les rangées d'action. */
-  sub?: string;
-  onClick: () => void;
-  disabled?: boolean;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      className={cn(
-        "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border transition text-left",
-        disabled
-          ? "bg-white/[0.02] border-white/[0.04] text-slate-600 cursor-not-allowed"
-          : "bg-white/[0.03] border-white/[0.06] hover:bg-white/[0.06]",
-      )}
-    >
-      <div
-        className={cn(
-          "w-9 h-9 rounded-xl border flex items-center justify-center shrink-0",
-          disabled
-            ? "bg-white/[0.02] border-white/[0.05] text-slate-600"
-            : "bg-cyan-500/10 border-cyan-500/20 text-cyan-400",
-        )}
-      >
-        {icon}
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className={cn("text-sm font-semibold", disabled ? "text-slate-500" : "text-white")}>
-          {label}
-        </div>
-        {sub && <div className="text-[11px] text-slate-500 truncate">{sub}</div>}
-      </div>
-      <ChevronRight className="w-4 h-4 text-slate-600 shrink-0" />
-    </button>
   );
 }

@@ -149,6 +149,7 @@ Import unique : `import { … } from "@/shared/ui"`. `shared/ui` n'importe jamai
 | Typographie | `Display`, `Heading`, `Text`, `Label` |
 | Actions | `Button`, `Chip`, `RemovableChip` |
 | Saisie | `Input`, `Textarea`, `Select`, `Field`, `DateField`, `TimeField`, `SelectPicker`, `MultiPicker`, `RangePicker`, `ColorPicker`, `ChoiceGroup`, `Disclosure`, `FormSection` / `FormLabel` (sections numérotées qui se cochent, pastille obligatoire ou de catégorie) |
+| Pages de paramètres | `SettingsGroup` (un cadre, des rangées à filets), `SettingsRow` (nom + aide à gauche, commande à droite), `SettingsAction` (rangée cliquable), `Toggle` (`role="switch"`) — jamais de carte dans une carte |
 | Surfaces | `Card` (+ `CardHeader/Title/Body`), `Modal`, `Sheet`, `PageContainer` |
 | Structure de page | `PageHeader`, `SectionHeader`, `SubNav`, `PageToolbar` |
 | Données | `Kpi`, `KpiGrid`, `Metric`, `Table` (+ `THead`, `TBody`, `TR`, `TH`, `TD`, `TableScroll`), `Badge`, `EmptyState` |

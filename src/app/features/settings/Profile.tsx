@@ -1,16 +1,8 @@
-import { PageContainer } from "@/shared/ui";
+import { PageContainer, SettingsAction, SettingsGroup } from "@/shared/ui";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { Trade, SUPPORT_EMAIL } from "@/app/types";
 import { computeStats, formatPnl, formatPct } from "@/domain/tradeCalcs";
-import {
-  LogOut,
-  Mail,
-  RotateCcw,
-  MessageSquare,
-  Handshake,
-  Lightbulb,
-  ChevronRight,
-} from "@/shared/ui/icons";
+import { LogOut, Mail, RotateCcw, MessageSquare, Handshake, Lightbulb } from "@/shared/ui/icons";
 import { useT } from "@/app/i18n/LanguageContext";
 import { cn } from "@/shared/ui/cn";
 
@@ -35,11 +27,9 @@ interface ProfileProps {
  *     le sujet, ils sont la CARTE D'IDENTITÉ : ils tiennent sur la même ligne
  *     que le nom, séparés par un filet.
  *
- * Ce qui reste tient sur UN ÉCRAN, sans défilement, en deux rangées :
- * l'identité (avec son bilan), puis le contact et les actions de compte côte à
- * côte. La page n'utilise plus une colonne étroite centrée mais toute la
- * largeur disponible — c'est elle qui permet aux deux blocs de vivre côte à
- * côte au lieu de s'empiler.
+ * Ce qui reste tient sur UN ÉCRAN : l'identité (avec son bilan), puis deux
+ * listes à filets — contact, compte — sur l'anatomie commune des pages de
+ * paramètres (`SettingsGroup`). Plus de cartes vitrées ni de pastilles.
  */
 export default function Profile({ trades }: ProfileProps) {
   const { user, logout } = useAuth();
@@ -48,17 +38,17 @@ export default function Profile({ trades }: ProfileProps) {
 
   if (!user) return null;
 
+  const mail = (subject: string) =>
+    `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}`;
+
   return (
-    <PageContainer className="max-w-5xl space-y-3">
-      {/* ── L'IDENTITÉ, ET LE BILAN QUI VA AVEC ────────────────────────── */}
-      <section className="glass animate-fade-in-up flex flex-wrap items-center gap-x-6 gap-y-4 rounded-3xl px-4 py-4 sm:px-5">
-        {/* `basis-[240px]` : la rangée peut passer à la ligne, encore
-            faut-il qu'elle SACHE quand. Sans base, le bloc d'identité était
-            comprimé à 39px sur un téléphone pendant que les trois chiffres,
-            eux, gardaient leur largeur. Avec elle, ce sont les chiffres qui
-            descendent d'une ligne. */}
+    <PageContainer className="max-w-3xl space-y-5">
+      {/* ── L'IDENTITÉ, ET LE BILAN QUI VA AVEC — à plat, sans carte ────── */}
+      <section className="animate-fade-in-up flex flex-wrap items-center gap-x-6 gap-y-4 px-1">
+        {/* `basis-[240px]` : ce sont les chiffres qui passent à la ligne sur
+            téléphone, jamais le nom qui se comprime. */}
         <div className="flex min-w-0 flex-1 basis-[240px] items-center gap-3.5">
-          <div className="tv-accent-fill grid h-12 w-12 shrink-0 place-items-center rounded-2xl text-base font-bold">
+          <div className="tv-accent-fill grid h-11 w-11 shrink-0 place-items-center rounded-xl text-base font-bold">
             {user.name.charAt(0).toUpperCase()}
           </div>
           <div className="min-w-0">
@@ -71,8 +61,6 @@ export default function Profile({ trades }: ProfileProps) {
             </p>
           </div>
         </div>
-
-        {/* Le bilan — trois faits, sur la même ligne que le nom. */}
         <div className="flex shrink-0 items-stretch gap-5">
           <Fait
             label={t("stats.totalPnl")}
@@ -84,66 +72,48 @@ export default function Profile({ trades }: ProfileProps) {
         </div>
       </section>
 
-      {/* ── LE CONTACT, ET LES ACTIONS DE COMPTE ───────────────────────── */}
-      {/* `items-start` : sans lui, la colonne « Compte » — deux lignes — est
-          étirée à la hauteur de la colonne « Contact » qui en a trois, et
-          finit sur un tiers de cadre vide. */}
-      <div className="grid items-start gap-3 md:grid-cols-[1.35fr_1fr]">
-        <section className="glass animate-fade-in-up stagger-1 overflow-hidden rounded-3xl">
-          <header className="flex items-center gap-2 border-b border-white/[0.05] px-4 py-3 sm:px-5">
-            <MessageSquare className="h-3.5 w-3.5 shrink-0 text-slate-500" />
-            <h2 className="tv-label text-slate-400">{t("profile.getInTouch")}</h2>
-          </header>
-          <div className="divide-y divide-white/[0.04]">
-            <ContactLink
-              icon={<MessageSquare className="h-4 w-4" />}
-              label={t("profile.support")}
-              sub={t("profile.supportSub")}
-              subject="TradeVault — Support request"
-            />
-            <ContactLink
-              icon={<Handshake className="h-4 w-4" />}
-              label={t("profile.collab")}
-              sub={t("profile.collabSub")}
-              subject="TradeVault — Collab inquiry"
-            />
-            <ContactLink
-              icon={<Lightbulb className="h-4 w-4" />}
-              label={t("profile.improvements")}
-              sub={t("profile.improvementsSub")}
-              subject="TradeVault — Improvement idea"
-            />
-          </div>
-        </section>
+      <SettingsGroup title={t("profile.getInTouch")}>
+        <SettingsAction
+          icon={<MessageSquare className="h-4 w-4" />}
+          label={t("profile.support")}
+          hint={t("profile.supportSub")}
+          href={mail("TradeVault — Support request")}
+        />
+        <SettingsAction
+          icon={<Handshake className="h-4 w-4" />}
+          label={t("profile.collab")}
+          hint={t("profile.collabSub")}
+          href={mail("TradeVault — Collab inquiry")}
+        />
+        <SettingsAction
+          icon={<Lightbulb className="h-4 w-4" />}
+          label={t("profile.improvements")}
+          hint={t("profile.improvementsSub")}
+          href={mail("TradeVault — Improvement idea")}
+        />
+      </SettingsGroup>
 
-        <section className="glass animate-fade-in-up stagger-2 overflow-hidden rounded-3xl">
-          <header className="flex items-center gap-2 border-b border-white/[0.05] px-4 py-3 sm:px-5">
-            <LogOut className="h-3.5 w-3.5 shrink-0 text-slate-500" />
-            <h2 className="tv-label text-slate-400">{t("profile.accountActions")}</h2>
-          </header>
-          <div className="divide-y divide-white/[0.04]">
-            <ActionRow
-              label={t("profile.redoOnboarding")}
-              icon={<RotateCcw className="h-4 w-4" />}
-              onClick={async () => {
-                try {
-                  const { supabase } = await import("@/integrations/supabase/client");
-                  await supabase.from("profiles").update({ onboarded_at: null }).eq("id", user.id);
-                  window.location.reload();
-                } catch {
-                  /* ignore */
-                }
-              }}
-            />
-            <ActionRow
-              label={t("common.signOut")}
-              icon={<LogOut className="h-4 w-4" />}
-              onClick={logout}
-              danger
-            />
-          </div>
-        </section>
-      </div>
+      <SettingsGroup title={t("profile.accountActions")}>
+        <SettingsAction
+          icon={<RotateCcw className="h-4 w-4" />}
+          label={t("profile.redoOnboarding")}
+          onClick={async () => {
+            try {
+              const { supabase } = await import("@/integrations/supabase/client");
+              await supabase.from("profiles").update({ onboarded_at: null }).eq("id", user.id);
+              window.location.reload();
+            } catch {
+              /* ignore */
+            }
+          }}
+        />
+        <SettingsAction
+          danger
+          icon={<LogOut className="h-4 w-4" />}
+          label={t("common.signOut")}
+          onClick={logout}
+        />
+      </SettingsGroup>
     </PageContainer>
   );
 }
@@ -165,78 +135,5 @@ function Fait({ label, value, tone }: { label: string; value: string; tone?: "po
         {value}
       </div>
     </div>
-  );
-}
-
-function ContactLink({
-  icon,
-  label,
-  sub,
-  subject,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  sub: string;
-  subject: string;
-}) {
-  const href = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}`;
-  return (
-    <a
-      href={href}
-      className="group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-white/[0.03] sm:px-5"
-    >
-      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl border border-cyan-500/20 bg-cyan-500/10 text-cyan-400">
-        {icon}
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block truncate text-sm font-semibold text-white">{label}</span>
-        <span className="block truncate text-[11px] text-slate-500">{sub}</span>
-      </span>
-      <ChevronRight className="h-4 w-4 shrink-0 text-slate-600 transition-transform group-hover:translate-x-0.5" />
-    </a>
-  );
-}
-
-function ActionRow({
-  label,
-  icon,
-  onClick,
-  danger,
-}: {
-  label: string;
-  icon: React.ReactNode;
-  onClick: () => void;
-  danger?: boolean;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={cn(
-        "flex w-full items-center gap-3 px-4 py-3 text-left transition-colors sm:px-5",
-        danger ? "hover:bg-red-500/[0.06]" : "hover:bg-white/[0.03]",
-      )}
-    >
-      <span
-        className={cn(
-          "grid h-8 w-8 shrink-0 place-items-center rounded-xl border",
-          danger
-            ? "border-red-500/20 bg-red-500/10 text-red-400"
-            : "border-white/[0.08] bg-white/[0.03] text-slate-400",
-        )}
-      >
-        {icon}
-      </span>
-      {/* Pas de `truncate` : sur tablette la colonne fait 250px et « Redo
-          onboarding tutorial » y était coupé. Deux lignes valent mieux qu'une
-          phrase amputée. */}
-      <span
-        className={cn(
-          "min-w-0 flex-1 text-sm font-semibold leading-snug",
-          danger ? "text-red-300" : "text-white",
-        )}
-      >
-        {label}
-      </span>
-    </button>
   );
 }

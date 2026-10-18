@@ -1,18 +1,5 @@
-import { useState, type ComponentType } from "react";
-import {
-  Bell,
-  BellRing,
-  Smartphone,
-  AlertCircle,
-  Loader2,
-  Send,
-  ShieldAlert,
-  Target,
-  TrendingDown,
-  Brain,
-  Calendar,
-  Lock,
-} from "@/shared/ui/icons";
+import { useEffect, useState } from "react";
+import { Lock, Send, Smartphone } from "@/shared/ui/icons";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { usePushNotifications } from "@/app/hooks/usePushNotifications";
@@ -20,81 +7,81 @@ import { sendPushToSelf } from "@/backend/push.functions";
 import { useT } from "@/app/i18n/LanguageContext";
 import type { TKey } from "@/app/i18n/translations";
 import { useSubscription } from "@/app/hooks/useSubscription";
+import { useAuth } from "@/app/contexts/AuthContext";
 import { tierAtLeast } from "@/app/utils/pricing";
-import { cn } from "@/shared/ui/cn";
+import { loadUserPref, saveUserPref } from "@/app/utils/userPrefs";
+import { SettingsAction, SettingsGroup, SettingsRow, Toggle } from "@/shared/ui";
+import {
+  DEFAULT_NOTIF_PREFS,
+  NOTIF_PREF_KEYS,
+  NOTIF_PREFS_EVENT,
+  NOTIF_PREFS_KEY,
+  normalizeNotifPrefs,
+  type NotifPrefKey,
+  type NotifPrefs,
+} from "@/modules/notifications";
 
-type NotifCategory = "discipline" | "goals" | "risk" | "ai" | "economic";
+/**
+ * LES NOTIFICATIONS — deux questions, deux groupes.
+ *
+ *   1. DE QUOI veux-tu être averti ? Une rangée par catégorie. Les choix
+ *      vivent dans les préférences du COMPTE (`user_preferences`) et le moteur
+ *      les applique (`preferences.ts`) — avant, ils dormaient dans le
+ *      navigateur sans que rien ne les lise.
+ *   2. SUR CET APPAREIL : le push, et un test.
+ */
 
-const CATEGORIES: {
-  key: NotifCategory;
-  /** Clé i18n. Typée par le dictionnaire plutôt que `string` : une clé
-   *  inexistante devient une erreur de compilation au lieu d'un libellé
-   *  affiché brut à l'écran. */
-  labelKey: TKey;
-  icon: ComponentType<{ className?: string }>;
-}[] = [
-  { key: "discipline", labelKey: "push.catDiscipline", icon: ShieldAlert },
-  { key: "goals", labelKey: "push.catGoals", icon: Target },
-  { key: "risk", labelKey: "push.catRisk", icon: TrendingDown },
-  { key: "ai", labelKey: "push.catAi", icon: Brain },
-  { key: "economic", labelKey: "push.catEconomic", icon: Calendar },
+const ROWS: { key: NotifPrefKey; label: TKey; hint: TKey }[] = [
+  { key: "economic", label: "push.catEconomic", hint: "push.catEconomicHint" },
+  { key: "discipline", label: "push.catDiscipline", hint: "push.catDisciplineHint" },
+  { key: "risk", label: "push.catRisk", hint: "push.catRiskHint" },
+  { key: "goals", label: "push.catGoals", hint: "push.catGoalsHint" },
+  { key: "jarvis", label: "push.catAi", hint: "push.catJarvisHint" },
 ];
 
-const PREFS_KEY = "tv.notif.prefs";
-
-function loadPrefs(): Record<NotifCategory, boolean> {
-  try {
-    const raw = localStorage.getItem(PREFS_KEY);
-    if (raw) return { ...defaultPrefs(), ...JSON.parse(raw) };
-  } catch {
-    /* localStorage unavailable */
-  }
-  return defaultPrefs();
-}
-
-function defaultPrefs(): Record<NotifCategory, boolean> {
-  return { discipline: true, goals: true, risk: true, ai: true, economic: true };
-}
-
-function savePrefs(p: Record<NotifCategory, boolean>): void {
-  try {
-    localStorage.setItem(PREFS_KEY, JSON.stringify(p));
-  } catch {
-    /* localStorage unavailable */
-  }
-}
-
-export { loadPrefs, type NotifCategory, PREFS_KEY };
-
-function Switch({ on }: { on: boolean }) {
-  return (
-    <span
-      className={cn(
-        "relative h-5 w-9 shrink-0 rounded-full p-0.5 transition-colors",
-        on ? "tv-accent-fill" : "bg-white/10",
-      )}
-    >
-      <span
-        className={cn(
-          "block h-4 w-4 rounded-full bg-white shadow transition-transform",
-          on && "translate-x-4",
-        )}
-      />
-    </span>
-  );
-}
+/** Anciens choix restés dans le navigateur (avant les préférences du compte). */
+const LEGACY_KEY = "tv.notif.prefs";
 
 export function PushNotificationSettings() {
-  const { t, lang } = useT();
+  const { t } = useT();
+  const { user } = useAuth();
   const { tier, loading: subLoading } = useSubscription();
   const canUse = subLoading ? true : tierAtLeast(tier, "elite");
   const { isSupported, isSubscribed, permission, isLoading, isiOS, isPWA, subscribe, unsubscribe } =
     usePushNotifications();
   const sendPush = useServerFn(sendPushToSelf);
   const [isSending, setIsSending] = useState(false);
-  const [prefs, setPrefs] = useState<Record<NotifCategory, boolean>>(loadPrefs);
+  const [prefs, setPrefs] = useState<NotifPrefs>(DEFAULT_NOTIF_PREFS);
 
-  const handleToggle = async () => {
+  useEffect(() => {
+    if (!user?.id) return;
+    let active = true;
+    void loadUserPref<unknown>(user.id, NOTIF_PREFS_KEY)
+      .then((raw) => {
+        if (!active) return;
+        if (raw !== undefined) return setPrefs(normalizeNotifPrefs(raw));
+        let legacy: unknown = null;
+        try {
+          legacy = JSON.parse(localStorage.getItem(LEGACY_KEY) ?? "null");
+        } catch {
+          /* stockage indisponible */
+        }
+        if (legacy) setPrefs(normalizeNotifPrefs(legacy));
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [user?.id]);
+
+  const setPref = (key: NotifPrefKey, on: boolean) => {
+    const next = { ...prefs, [key]: on };
+    setPrefs(next);
+    if (user?.id) saveUserPref(user.id, NOTIF_PREFS_KEY, next);
+    window.dispatchEvent(new CustomEvent(NOTIF_PREFS_EVENT, { detail: next }));
+  };
+
+  const togglePush = async () => {
     try {
       if (isSubscribed) {
         await unsubscribe();
@@ -108,7 +95,7 @@ export function PushNotificationSettings() {
     }
   };
 
-  const handleTest = async () => {
+  const sendTest = async () => {
     setIsSending(true);
     try {
       const res = await sendPush({
@@ -124,160 +111,62 @@ export function PushNotificationSettings() {
   };
 
   return (
-    // Surface NUE : ce bloc vit maintenant dans le panneau des Réglages, qui
-    // porte déjà sa vitre. Une carte dans une carte creuse un double cadre à
-    // 4 px d'écart, et c'est exactement ce qui fait « collé » plutôt que
-    // « intégré ».
-    <div className="relative space-y-4">
-      <div className="flex items-center gap-2.5">
-        <span className="relative shrink-0">
-          <span className="absolute -inset-1 rounded-lg bg-cyan-500/30 blur-md" />
-          <span className="relative grid h-8 w-8 place-items-center rounded-xl tv-accent-fill">
-            <Bell className="w-4 h-4" />
-          </span>
-        </span>
-        <div className="min-w-0">
-          <h2 className="tv-title tracking-tight">{t("push.title")}</h2>
-          <p className="tv-row-label">{t("push.subtitle")}</p>
-        </div>
-      </div>
+    <div className="space-y-5">
+      <SettingsGroup title={t("push.categories")}>
+        {NOTIF_PREF_KEYS.map((key) => {
+          const row = ROWS.find((r) => r.key === key)!;
+          return (
+            <SettingsRow key={key} label={t(row.label)} hint={t(row.hint)}>
+              <Toggle on={prefs[key]} onChange={(on) => setPref(key, on)} label={t(row.label)} />
+            </SettingsRow>
+          );
+        })}
+      </SettingsGroup>
 
-      {/* Alertes push = offre Elite. Un verrou le dit ici plutôt qu'un
-          réglage qui semble permis puis échoue. `canUse` reste vrai tant que
-          l'abonnement n'est pas chargé pour éviter un clignotement de cadenas
-          chez un abonné Elite. */}
-      {!canUse ? (
-        <div className="flex flex-col gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.02] p-4">
-          <div className="flex items-start gap-3">
-            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white/[0.05] text-slate-500">
-              <Lock className="w-4 h-4" />
-            </span>
-            <div className="min-w-0">
-              <div className="text-xs font-bold text-white">
-                {lang === "fr" ? "Alertes push — offre Elite" : "Push alerts — Elite plan"}
-              </div>
-              <p className="mt-0.5 text-[11px] leading-snug text-slate-500">
-                {lang === "fr"
-                  ? "Les alertes push et les rappels de session sont réservés à l'offre Elite."
-                  : "Push alerts and session reminders are reserved for the Elite plan."}
-              </p>
-            </div>
-          </div>
-          <button
+      {/* Le push est réservé à l'offre Elite : un verrou le dit ici plutôt
+          qu'un interrupteur qui semble permis puis échoue. */}
+      <SettingsGroup title={t("push.deviceTitle")}>
+        {!canUse ? (
+          <SettingsAction
+            icon={<Lock className="h-4 w-4" />}
+            label={t("push.eliteTitle")}
+            hint={t("push.eliteBody")}
             onClick={() => window.dispatchEvent(new CustomEvent("tv:upgrade"))}
-            className="inline-flex items-center justify-center gap-2 rounded-xl tv-accent-fill px-4 py-2.5 text-[13px] font-bold transition"
-          >
-            <Lock className="h-3.5 w-3.5" />
-            {lang === "fr" ? "Passer à Elite" : "Go Elite"}
-          </button>
-        </div>
-      ) : (
-        <>
-          {isiOS && !isPWA ? (
-            <div className="flex gap-3 rounded-2xl border border-cyan-500/20 bg-cyan-500/[0.05] p-3.5">
-              <Smartphone className="w-5 h-5 text-cyan-400 shrink-0 mt-0.5" />
-              <div className="text-xs text-slate-300 leading-relaxed">
-                <div className="font-semibold text-white mb-1">{t("push.iosInstallTitle")}</div>
-                <ol className="list-decimal list-inside space-y-0.5 text-slate-400">
-                  <li>{t("push.iosStep1")}</li>
-                  <li>{t("push.iosStep2")}</li>
-                  <li>{t("push.iosStep3")}</li>
-                </ol>
-              </div>
-            </div>
-          ) : !isSupported ? (
-            <div className="flex items-center gap-3 rounded-2xl border border-white/[0.06] bg-white/[0.02] p-3.5 text-xs text-slate-400">
-              <AlertCircle className="w-4 h-4" /> {t("push.unsupported")}
-            </div>
-          ) : permission === "denied" ? (
-            <div className="flex items-center gap-3 rounded-2xl border border-red-500/20 bg-red-500/[0.05] p-3.5 text-xs text-red-300">
-              <AlertCircle className="w-4 h-4" /> {t("push.denied")}
-            </div>
-          ) : (
-            <>
-              {/* Toggle principal — carte action */}
-              <button
-                onClick={handleToggle}
+          />
+        ) : isiOS && !isPWA ? (
+          <SettingsRow
+            label={
+              <>
+                <Smartphone className="h-4 w-4 text-slate-500" /> {t("push.iosInstallTitle")}
+              </>
+            }
+            hint={`${t("push.iosStep1")} · ${t("push.iosStep2")} · ${t("push.iosStep3")}`}
+          />
+        ) : !isSupported ? (
+          <SettingsRow label={t("push.unsupported")} />
+        ) : permission === "denied" ? (
+          <SettingsRow label={t("push.denied")} />
+        ) : (
+          <>
+            <SettingsRow label={t("push.enable")} hint={t("push.hint")}>
+              <Toggle
+                on={isSubscribed}
+                onChange={() => void togglePush()}
+                label={t("push.enable")}
                 disabled={isLoading}
-                className="w-full flex items-center justify-between px-3.5 py-3 rounded-2xl bg-white/[0.03] border border-white/[0.08] hover:bg-white/[0.06] transition disabled:opacity-50"
-              >
-                <span className="flex items-center gap-3">
-                  <span
-                    className={cn(
-                      "grid h-9 w-9 place-items-center rounded-xl border",
-                      isSubscribed
-                        ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-400"
-                        : "bg-white/[0.04] border-white/[0.08] text-slate-400",
-                    )}
-                  >
-                    {isSubscribed ? <BellRing className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
-                  </span>
-                  <span className="text-left">
-                    <span className="block text-sm text-white font-semibold">
-                      {isSubscribed ? t("push.enabled") : t("push.enable")}
-                    </span>
-                    <span className="block text-[10px] text-slate-500">{t("push.hint")}</span>
-                  </span>
-                </span>
-                {isLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
-                ) : (
-                  <Switch on={isSubscribed} />
-                )}
-              </button>
-
-              {isSubscribed && (
-                <button
-                  onClick={handleTest}
-                  disabled={isSending}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-cyan-500/10 border border-cyan-500/25 text-cyan-300 hover:bg-cyan-500/15 transition disabled:opacity-50 text-sm font-semibold"
-                >
-                  {isSending ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Send className="w-4 h-4" />
-                  )}
-                  {t("push.sendTest")}
-                </button>
-              )}
-            </>
-          )}
-
-          {/* Notification category preferences */}
-          <div className="space-y-1.5 pt-2 border-t border-white/[0.06]">
-            <p className="tv-label px-1 pt-1 pb-1 text-slate-500">{t("push.categories")}</p>
-            {CATEGORIES.map((cat) => {
-              const Icon = cat.icon;
-              return (
-                <label
-                  key={cat.key}
-                  className="flex items-center justify-between gap-3 px-2.5 py-2 rounded-xl bg-white/[0.02] hover:bg-white/[0.04] transition cursor-pointer"
-                >
-                  <span className="flex items-center gap-2.5 min-w-0">
-                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-white/[0.04] border border-white/[0.06] text-slate-400">
-                      <Icon className="w-3.5 h-3.5" />
-                    </span>
-                    <span className="text-xs text-slate-300 truncate">{t(cat.labelKey)}</span>
-                  </span>
-                  <input
-                    type="checkbox"
-                    checked={prefs[cat.key]}
-                    onChange={() =>
-                      setPrefs((p) => {
-                        const next = { ...p, [cat.key]: !p[cat.key] };
-                        savePrefs(next);
-                        return next;
-                      })
-                    }
-                    className="sr-only"
-                  />
-                  <Switch on={prefs[cat.key]} />
-                </label>
-              );
-            })}
-          </div>
-        </>
-      )}
+              />
+            </SettingsRow>
+            {isSubscribed && (
+              <SettingsAction
+                icon={<Send className="h-4 w-4" />}
+                label={t("push.sendTest")}
+                onClick={() => void sendTest()}
+                disabled={isSending}
+              />
+            )}
+          </>
+        )}
+      </SettingsGroup>
     </div>
   );
 }

@@ -7506,3 +7506,161 @@ body.tv-app-type svg.lucide {
     min-height: 44px;
   }
 }
+
+/* ── Pages de paramètres : groupes à filets, rangées libellé / commande ──── */
+.tv-set-group {
+  display: grid;
+  gap: 8px;
+}
+.tv-set-title {
+  padding-inline: 2px;
+  color: var(--tv-text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.tv-set-list {
+  overflow: hidden;
+  border: 1px solid var(--tv-border);
+  border-radius: var(--radius-xl);
+  background: var(--tv-plate-1);
+}
+.tv-set-group[data-tone="danger"] .tv-set-list {
+  border-color: rgb(239 68 68 / 0.25);
+}
+.tv-set-row {
+  display: grid;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+}
+.tv-set-row + .tv-set-row {
+  border-top: 1px solid var(--tv-border);
+}
+@media (min-width: 640px) {
+  .tv-set-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 280px);
+    gap: 20px;
+  }
+}
+/* Un interrupteur reste sur la ligne de son libellé, même sur téléphone. */
+.tv-set-row:has(> .tv-set-control > .tv-switch) {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+.tv-set-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--tv-text-primary);
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+.tv-set-hint {
+  margin-top: 2px;
+  color: var(--tv-text-muted);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.45;
+}
+.tv-set-control {
+  display: flex;
+  min-width: 0;
+  justify-content: flex-end;
+}
+.tv-set-control > * {
+  width: 100%;
+}
+.tv-set-control > .tv-switch {
+  width: 36px;
+}
+.tv-set-action {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  transition: background-color 0.15s ease;
+}
+.tv-set-action:hover:not(:disabled) {
+  background: var(--tv-plate-2);
+}
+.tv-set-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.tv-set-action-icon {
+  display: grid;
+  width: 18px;
+  flex-shrink: 0;
+  place-items: center;
+  color: var(--tv-text-muted);
+}
+.tv-set-action[data-danger="true"] .tv-set-label,
+.tv-set-action[data-danger="true"] .tv-set-action-icon {
+  color: #f87171;
+}
+.tv-set-action[data-danger="true"]:hover:not(:disabled) {
+  background: rgb(239 68 68 / 0.06);
+}
+.tv-switch {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: var(--tv-plate-3);
+  transition: background-color 0.2s ease;
+}
+.tv-switch[aria-checked="true"] {
+  background: var(--tv-accent);
+}
+.tv-switch:disabled {
+  opacity: 0.5;
+}
+.tv-switch-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: #fff;
+  transition: transform 0.2s ease;
+}
+.tv-switch[aria-checked="true"] .tv-switch-knob {
+  transform: translateX(16px);
+}
+.tv-set-rail-item {
+  display: flex;
+  height: 38px;
+  align-items: center;
+  gap: 10px;
+  border-radius: var(--radius-lg);
+  padding-inline: 10px;
+  color: var(--tv-text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+.tv-set-rail-item:hover {
+  background: var(--tv-plate-2);
+  color: var(--tv-text-primary);
+}
+.tv-set-rail-item[aria-selected="true"] {
+  background: rgb(var(--tv-accent-rgb) / 0.1);
+  color: var(--tv-text-primary);
+}
+.tv-set-rail-item[aria-selected="true"] svg {
+  color: var(--tv-highlight);
+}
+.tv-set-rail-item[data-danger="true"][aria-selected="true"] {
+  background: rgb(239 68 68 / 0.1);
+  color: #fca5a5;
+}
+.tv-set-rail-item[data-danger="true"][aria-selected="true"] svg {
+  color: #f87171;
+}

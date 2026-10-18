@@ -162,7 +162,10 @@ const fr: Dict = {
   "profile.language": "Langue",
   "settings.currency": "Devise",
   "settings.currencyHint":
-    "La devise dans laquelle tu tiens ton journal. Chaque montant — tableau de bord, journal, analyses, rapports et PDF — s'y affiche. Les montants sont étiquetés, pas convertis.",
+    "Tous les montants s'affichent dans cette devise — étiquetés, pas convertis.",
+  "settings.monthlyTarget": "Objectif mensuel",
+  "settings.monthlyTargetHint":
+    "Rendement visé chaque mois, en % du compte. Suivi par le copilote.",
   "profile.startingEquity": "Capital de départ",
   "profile.startingEquityHint":
     "Utilisé comme base pour votre courbe d'équité et la croissance du compte.",
@@ -1177,8 +1180,17 @@ const fr: Dict = {
   "push.catDiscipline": "Discipline & règles",
   "push.catGoals": "Objectifs & streaks",
   "push.catRisk": "Risque & perte max",
-  "push.catAi": "Insights IA",
-  "push.catEconomic": "Calendrier économique",
+  "push.catAi": "Observations de Jarvis",
+  "push.catEconomic": "Annonces économiques majeures",
+  "push.catEconomicHint":
+    "Pop-up une heure avant une annonce à fort impact sur une devise que tu trades.",
+  "push.catDisciplineHint": "Une règle de ton plan est sur le point de céder, ou vient de céder.",
+  "push.catRiskHint": "Série de pertes, perte max du jour, erreur la plus coûteuse.",
+  "push.catGoalsHint": "Objectif atteint, palier, série.",
+  "push.catJarvisHint": "Bilan de la semaine, progrès et motifs mesurés par Jarvis.",
+  "push.deviceTitle": "Sur cet appareil",
+  "push.eliteTitle": "Alertes push — offre Elite",
+  "push.eliteBody": "Les alertes sur ton téléphone, même application fermée.",
   "push.hint":
     "Vous pouvez désactiver les notifications à tout moment depuis cet écran ou les réglages système.",
   "push.iosInstallTitle": "Installez d'abord l'application",

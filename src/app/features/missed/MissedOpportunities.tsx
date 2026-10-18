@@ -39,7 +39,6 @@ import { useRealtimeTable } from "@/app/hooks/useRealtimeTable";
 import { usePreviewMode } from "@/app/features/billing/PremiumGate";
 import { previewMissed } from "@/app/utils/previewTrades";
 import {
-  Card,
   PageContainer,
   Button,
   EmptyState,

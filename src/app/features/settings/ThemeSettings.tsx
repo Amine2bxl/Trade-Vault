@@ -179,7 +179,7 @@ export default function ThemeSettings() {
        sur le même écran : dans l'onglet de section, dans le titre de page, et
        ici. Il ne l'est plus qu'une fois, dans la barre de tête, avec la phrase
        qui explique à quoi sert la page. */
-    <div className="glass space-y-4 rounded-2xl p-4 md:p-5">
+    <div className="space-y-4">
       <Section
         title={t("appearance.presets")}
         count={presets.length}
