@@ -48,6 +48,7 @@ import { announceBrokerImport, announceBrokersChanged } from "./useBrokerSync";
 import { SyncCelebration, type CelebrationState } from "./SyncCelebration";
 import { PageContainer, Badge, Button, Card, FIELD_BASE, SelectPicker, cn } from "@/shared/ui";
 import { currencySymbol } from "@/shared/currency";
+import tradovateLogo from "@/assets/brands/tradovate.png";
 
 /**
  * BROKERS — brancher ses comptes une fois, ne plus jamais saisir un trade.
@@ -686,6 +687,7 @@ export default function Brokers() {
         <div className="mt-3 grid gap-2 sm:grid-cols-2">
           <BrokerTile
             name="Tradovate"
+            logo={tradovateLogo}
             desc={t("brokers.tradovateDesc")}
             badge={
               hasConnections ? (
@@ -693,6 +695,10 @@ export default function Brokers() {
                   <Check className="h-3 w-3" />
                   {t("brokers.connectedBadge")}
                 </Badge>
+              ) : blocked ? (
+                // Même vérité que le bouton : tant que la connexion n'est pas
+                // ouverte sur ce serveur, on ne la dit pas « disponible ».
+                <Badge>{t("brokers.soon")}</Badge>
               ) : (
                 <Badge variant="accent">{t("brokers.available")}</Badge>
               )
@@ -935,15 +941,18 @@ function TrustPanel({ t, className, wide }: { t: T; className?: string; wide?: b
   );
 }
 
-/** Une tuile du catalogue : le nom en texte, jamais un logo redessiné. */
+/** Une tuile du catalogue : le VRAI logo quand on l'a (fichier officiel,
+ *  jamais redessiné), sinon l'initiale du nom. */
 function BrokerTile({
   name,
+  logo,
   desc,
   badge,
   action,
   muted,
 }: {
   name: string;
+  logo?: string;
   desc: string;
   badge: ReactNode;
   action?: ReactNode;
@@ -956,9 +965,20 @@ function BrokerTile({
         muted && "opacity-70",
       )}
     >
-      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-[var(--tv-border)] bg-[var(--tv-plate-1)] text-[13px] font-extrabold text-slate-200">
-        {name.charAt(0)}
-      </span>
+      {logo ? (
+        <img
+          src={logo}
+          alt=""
+          width={36}
+          height={36}
+          draggable={false}
+          className="h-9 w-9 shrink-0 rounded-lg"
+        />
+      ) : (
+        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-[var(--tv-border)] bg-[var(--tv-plate-1)] text-[13px] font-extrabold text-slate-200">
+          {name.charAt(0)}
+        </span>
+      )}
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="text-[13px] font-bold text-white">{name}</span>

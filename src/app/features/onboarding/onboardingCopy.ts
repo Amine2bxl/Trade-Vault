@@ -38,6 +38,10 @@ export interface OnboardingCopy {
   fileTitle: string;
   fileLive: string;
   fileEmpty: string;
+  /** Ligne encore vide du dossier (feuille mobile). */
+  filePending: string;
+  /** Sous-titre de la feuille du dossier, sur téléphone. */
+  fileSheetSub: string;
   fTrader: string;
   fArena: string;
   fAccount: string;
@@ -172,6 +176,9 @@ export interface OnboardingCopy {
   // ── 10 · Apparence ──
   lookTitle: string;
   whyLook: string;
+  /** Une ligne par thème : ce qu'il change, en mots. */
+  themeDesc: Record<string, string>;
+  lookDefault: string;
   // ── Calibration ──
   calTitle: string;
   calAccount: string;
@@ -191,6 +198,9 @@ export interface OnboardingCopy {
   startImportD: string;
   startBroker: string;
   startBrokerD: string;
+  /** Tradovate tant que la connexion n'est pas ouverte : visible, honnête. */
+  startBrokerSoon: string;
+  startBrokerSoonD: string;
   startDemo: string;
   startDemoD: string;
   startFresh: string;
@@ -225,6 +235,8 @@ const en: OnboardingCopy = {
   fileTitle: "Trader file",
   fileLive: "Live",
   fileEmpty: "Your answers write themselves here.",
+  filePending: "to set",
+  fileSheetSub: "Every answer writes a real setting into your vault.",
   fTrader: "Trader",
   fArena: "Arena",
   fAccount: "Account",
@@ -362,6 +374,16 @@ const en: OnboardingCopy = {
 
   lookTitle: "Last touch — make it yours.",
   whyLook: "Your colour runs through the whole app. Profit stays green, loss stays red — always.",
+  themeDesc: {
+    lucid: "Mint — the TradeVault signature, built for long sessions.",
+    vault: "Emerald — the green of prop-firm desks.",
+    graphite: "Pure grey — no colour anywhere but your P&L.",
+    steel: "Steel blue — the calm of a trading terminal.",
+    amber: "Warm amber — clearer if red and green look alike to you.",
+    indigo: "Deep indigo — dark, quiet, focused.",
+    jarvis: "Cyan — the original Jarvis look.",
+  },
+  lookDefault: "Default",
 
   calTitle: "Calibrating your vault",
   calAccount: "Opening {account}",
@@ -382,6 +404,9 @@ const en: OnboardingCopy = {
   startImportD: "A CSV from your broker or prop firm — Jarvis reads all of it.",
   startBroker: "Connect Tradovate",
   startBrokerD: "Your trades sync on their own, read-only (Pro).",
+  startBrokerSoon: "In progress",
+  startBrokerSoonD:
+    "Your Tradovate trades will land in your journal on their own, read-only. Import a CSV in the meantime.",
   startDemo: "Explore with sample trades",
   startDemoD: "Three clearly-marked examples, to see the app come alive.",
   startFresh: "Start with an empty journal",
@@ -416,6 +441,8 @@ const fr: OnboardingCopy = {
   fileTitle: "Dossier trader",
   fileLive: "En direct",
   fileEmpty: "Tes réponses s'inscrivent ici.",
+  filePending: "à régler",
+  fileSheetSub: "Chaque réponse écrit un réglage réel dans ton espace.",
   fTrader: "Trader",
   fArena: "Terrain",
   fAccount: "Compte",
@@ -554,6 +581,16 @@ const fr: OnboardingCopy = {
 
   lookTitle: "Dernière touche — fais-le tien.",
   whyLook: "Ta couleur traverse toute l'app. Le gain reste vert, la perte rouge — toujours.",
+  themeDesc: {
+    lucid: "Menthe — la signature TradeVault, faite pour les longues sessions.",
+    vault: "Émeraude — le vert des desks de prop firm.",
+    graphite: "Gris pur — aucune couleur ailleurs que dans ton P&L.",
+    steel: "Bleu acier — le calme d'un terminal de trading.",
+    amber: "Ambre chaud — plus lisible si le rouge et le vert se confondent pour toi.",
+    indigo: "Indigo profond — sombre, calme, concentré.",
+    jarvis: "Cyan — le look Jarvis des débuts.",
+  },
+  lookDefault: "Par défaut",
 
   calTitle: "Calibration de ton espace",
   calAccount: "Ouverture de {account}",
@@ -574,6 +611,9 @@ const fr: OnboardingCopy = {
   startImportD: "Un CSV de ton broker ou de ta prop firm — Jarvis lit tout.",
   startBroker: "Connecter Tradovate",
   startBrokerD: "Tes trades se synchronisent seuls, en lecture seule (Pro).",
+  startBrokerSoon: "En cours",
+  startBrokerSoonD:
+    "Tes trades Tradovate arriveront seuls dans ton journal, en lecture seule. En attendant, importe un CSV.",
   startDemo: "Explorer avec des trades d'exemple",
   startDemoD: "Trois exemples bien signalés, pour voir l'app prendre vie.",
   startFresh: "Commencer avec un journal vide",

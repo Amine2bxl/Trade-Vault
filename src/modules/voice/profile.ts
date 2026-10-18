@@ -12,12 +12,13 @@ import type { VoiceProfile } from "./types";
  * the browser engine closest to it.
  */
 export const JARVIS_VOICE: VoiceProfile = {
-  // LA voix de Jarvis — celle que le fondateur a choisie et fait créer :
-  // charismatique, posée, identique aux clips pré-rendus de la checklist.
-  // Elle avait été remplacée le 27/09 par « Brian », une voix générique de la
-  // bibliothèque ElevenLabs : Jarvis avait perdu son timbre. Rétablie à
-  // l'identique (identifiant ET réglages de voix dans `tts.functions.ts`).
-  hostedVoiceId: "PEuehAGHRfRnnYqUDPCo",
+  // LA voix de Jarvis — « Daniel » (ElevenLabs) depuis le 18/10, à la demande
+  // du fondateur : britannique, grave, posé, le timbre d'un Jarvis de film.
+  // Historique, pour ne pas refaire le chemin : la voix créée sur mesure
+  // (`PEuehAGHRfRnnYqUDPCo`, celle des clips pré-rendus de la checklist) puis,
+  // brièvement, « Brian » (27/09), retiré parce que trop générique. Revenir à
+  // la voix sur mesure = remettre son identifiant ici, rien d'autre.
+  hostedVoiceId: "onwK4e9ZLuTAKqWW03F9",
   hostedModelId: "eleven_multilingual_v2",
   // Slightly under natural pace: a coach lands the number, then moves on.
   rate: 0.94,

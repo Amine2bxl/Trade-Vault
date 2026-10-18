@@ -31,7 +31,7 @@ src/
 │                  *.server.ts (internes), ai-tools/, gardes d'accès
 ├── integrations/supabase/  Client typé, middleware d'auth, types GÉNÉRÉS
 ├── shared/        Helpers neutres (dates, devises, SEO, erreurs…) + shared/ui (primitives)
-├── assets/        Ressources importées par le bundle (logo, captures produit)
+├── assets/        Ressources importées par le bundle (logo, captures produit, brands/ : logos officiels de tiers)
 ├── server.ts      Entrée serveur : endpoints HTTP bruts, robots/sitemap, enveloppe d'erreur SSR
 ├── start.ts · router.tsx · styles.css
 supabase/          migrations/ (additives) · functions/delete-account (RGPD)

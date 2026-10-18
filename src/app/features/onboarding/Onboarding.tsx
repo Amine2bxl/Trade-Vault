@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { SelectPicker } from "@/shared/ui";
+import { useServerFn } from "@tanstack/react-start";
+import { SelectPicker, Sheet } from "@/shared/ui";
 import {
   ArrowLeft,
   ArrowRight,
@@ -37,7 +38,6 @@ import {
   VolumeX,
   Wallet,
   Zap,
-  Cable,
   type LucideIcon,
 } from "@/shared/ui/icons";
 import { cn } from "@/shared/ui/cn";
@@ -50,7 +50,7 @@ import { useJarvisVoice } from "../jarvis/jarvisVoice";
 import { LANG_NAMES, type Lang } from "@/app/i18n/translations";
 import { saveOnboarding, saveCurrency, updateAccount, loadAccounts } from "@/app/store";
 import { loadTradingRules, saveTradingRules } from "@/app/trading/tradingRules";
-import { BUILTIN_THEMES } from "@/app/utils/themes";
+import { BUILTIN_THEMES, DEFAULT_THEME_ID } from "@/app/utils/themes";
 import {
   CURRENCIES,
   currencySymbol,
@@ -61,6 +61,8 @@ import {
   type CurrencyCode,
 } from "@/shared/currency";
 import logoSrc from "@/assets/tradevault-logo-128.png";
+import tradovateLogo from "@/assets/brands/tradovate.png";
+import { brokerCapabilities } from "@/backend/brokers.functions";
 import { fmt, oc, type OnboardingCopy } from "./onboardingCopy";
 import {
   CAPITAL_PRESETS,
@@ -90,11 +92,13 @@ import {
 import { play, releaseAudio, setSoundEnabled, soundEnabled, unlockAudio } from "./onboardingSound";
 import {
   ChoiceChip,
+  FileTicker,
   JarvisLine,
   LockSweep,
   OptionTile,
   SceneFrame,
   Stepper,
+  ThemeCard,
   TraderFile,
 } from "./OnboardingParts";
 import { prefersReducedMotion, rise } from "./onboardingMotion";
@@ -347,6 +351,12 @@ export default function Onboarding({
   const [save, setSave] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [calStep, setCalStep] = useState(0);
   const [launching, setLaunching] = useState<OnboardingAction | "fresh" | null>(null);
+  const [fileOpen, setFileOpen] = useState(false);
+  // La connexion Tradovate est-elle OUVERTE sur ce serveur ? `null` tant
+  // qu'on ne sait pas : la carte s'affiche alors comme « en cours », jamais
+  // comme un bouton qui mènerait à une impasse.
+  const [brokerReady, setBrokerReady] = useState<boolean | null>(null);
+  const getBrokerCaps = useServerFn(brokerCapabilities);
   const advanceTimer = useRef<number | undefined>(undefined);
 
   const set = useCallback(
@@ -407,8 +417,12 @@ export default function Onboarding({
 
   /* ── Clavier : 1-9 choisit, Entrée continue ── */
   const keys = useRef<{ digits: (() => void)[]; enter?: () => void }>({ digits: [] });
+  const fileOpenRef = useRef(false);
+  fileOpenRef.current = fileOpen;
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      // Le dossier ouvert est une lecture : le clavier ne répond pas dessous.
+      if (fileOpenRef.current) return;
       const target = e.target as HTMLElement | null;
       if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA")) {
         if (e.key === "Enter" && keys.current.enter) keys.current.enter();
@@ -598,6 +612,23 @@ export default function Onboarding({
     }
     setSave("saved");
   }, [userId, answers, activeAccount, accounts, editAccount, acctName, money, num, ruleTexts]);
+
+  // L'état réel de la connexion Tradovate, demandé pendant la calibration :
+  // il est connu quand l'écran de départ arrive. Seuls les traders de futures
+  // la voient — c'est le marché que Tradovate couvre.
+  const wantsBroker = answers.assets.includes("futures");
+  useEffect(() => {
+    if ((scene !== "calibrate" && scene !== "start") || !wantsBroker || brokerReady !== null) {
+      return;
+    }
+    let alive = true;
+    getBrokerCaps()
+      .then((caps) => alive && setBrokerReady(caps.ready))
+      .catch(() => alive && setBrokerReady(false));
+    return () => {
+      alive = false;
+    };
+  }, [scene, wantsBroker, brokerReady, getBrokerCaps]);
 
   // Démarre l'enregistrement en entrant dans la calibration, une fois.
   const started = useRef(false);
@@ -869,18 +900,21 @@ export default function Onboarding({
                 {c.fileLive}
               </span>
             </div>
-            <div className="grid grid-cols-2 divide-x divide-[var(--tv-border)] sm:grid-cols-3">
+            {/* Trois cellules sur grand écran ; sur téléphone, l'angle mort
+                passe en pleine largeur au lieu de disparaître — c'est ce que
+                Jarvis surveillera dès le premier trade. */}
+            <div className="grid grid-cols-2 sm:grid-cols-3">
               <div className="px-4 py-3">
                 <div className="tv-label text-slate-500">{c.capitalLabel}</div>
                 <div className="tv-figure mt-1 truncate text-xl text-white">
                   {answers.capital ? money(answers.capital) : "—"}
                 </div>
               </div>
-              <div className="px-4 py-3">
+              <div className="border-l border-[var(--tv-border)] px-4 py-3">
                 <div className="tv-label text-slate-500">{c.fRules}</div>
                 <div className="tv-figure mt-1 text-xl text-white">{armed}</div>
               </div>
-              <div className="hidden px-4 py-3 sm:block">
+              <div className="col-span-2 border-t border-[var(--tv-border)] px-4 py-3 sm:col-span-1 sm:border-l sm:border-t-0">
                 <div className="tv-label text-slate-500">{c.fLeak}</div>
                 <div className="mt-1 truncate text-[15px] font-semibold text-[var(--tv-highlight)]">
                   {answers.leak ? L.leak[answers.leak].label : "—"}
@@ -1388,35 +1422,33 @@ export default function Onboarding({
       </SceneFrame>
     );
   } else if (scene === "look") {
-    keys.current.digits = BUILTIN_THEMES.map((th) => () => {
+    // Le thème signature d'abord, en grand ; les autres en vis-à-vis, chacun
+    // peint par ses propres couleurs pour qu'on les compare d'un regard.
+    const themes = [
+      ...BUILTIN_THEMES.filter((th) => th.id === DEFAULT_THEME_ID),
+      ...BUILTIN_THEMES.filter((th) => th.id !== DEFAULT_THEME_ID),
+    ];
+    const pick = (id: string) => {
       play("select");
-      setTheme(th.id);
-    });
+      setTheme(id);
+    };
+    keys.current.digits = themes.map((th) => () => pick(th.id));
     keys.current.enter = next;
     body = (
       <SceneFrame code={STEP_CODES[9]} title={c.lookTitle} why={c.whyLook}>
         <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
-          {BUILTIN_THEMES.map((th, i) => (
-            <button
+          {themes.map((th, i) => (
+            <ThemeCard
               key={th.id}
-              type="button"
-              aria-pressed={themeId === th.id}
-              onClick={() => {
-                play("select");
-                setTheme(th.id);
-              }}
-              className="onb-tile onb-rise flex items-center gap-3 p-3 text-left"
+              theme={th}
+              desc={c.themeDesc[th.id] ?? ""}
+              tag={th.id === DEFAULT_THEME_ID ? c.lookDefault : undefined}
+              wide={th.id === DEFAULT_THEME_ID}
+              index={i + 1}
+              selected={themeId === th.id}
+              onSelect={() => pick(th.id)}
               style={rise(3 + i)}
-            >
-              {themeId === th.id && <LockSweep />}
-              {/* La couleur VIENT du thème (une donnée), pas d'un littéral. */}
-              <span
-                className="h-8 w-8 shrink-0 rounded-lg border border-[var(--tv-border-strong)]"
-                style={{ background: th.primary }}
-                aria-hidden
-              />
-              <span className="text-[13px] font-semibold text-slate-200">{th.name}</span>
-            </button>
+            />
           ))}
         </div>
       </SceneFrame>
@@ -1491,14 +1523,34 @@ export default function Onboarding({
       </div>
     );
   } else if (scene === "start") {
-    const options: { id: OnboardingAction; icon: LucideIcon; label: string; desc: string }[] = [
+    type StartOption = {
+      id: OnboardingAction;
+      icon?: LucideIcon;
+      media?: ReactNode;
+      label: string;
+      desc: string;
+      badge?: string;
+      disabled?: boolean;
+    };
+    // Le vrai logo de Tradovate : le trader reconnaît d'un coup d'œil ce
+    // qu'il pourra brancher. Tant que la connexion n'est pas ouverte sur ce
+    // serveur, la carte le DIT (« En cours ») et ne mène nulle part.
+    const tradovate: StartOption = {
+      id: "broker",
+      media: <img src={tradovateLogo} alt="" width={44} height={44} draggable={false} />,
+      label: brokerReady ? c.startBroker : "Tradovate",
+      desc: brokerReady ? c.startBrokerD : c.startBrokerSoonD,
+      badge: brokerReady ? undefined : c.startBrokerSoon,
+      disabled: !brokerReady,
+    };
+    const options: StartOption[] = [
       { id: "import", icon: Upload, label: c.startImport, desc: c.startImportD },
-      ...(answers.assets.includes("futures")
-        ? [{ id: "broker" as const, icon: Cable, label: c.startBroker, desc: c.startBrokerD }]
-        : []),
+      ...(wantsBroker && brokerReady ? [tradovate] : []),
       { id: "demo", icon: PlayCircle, label: c.startDemo, desc: c.startDemoD },
+      ...(wantsBroker && !brokerReady ? [tradovate] : []),
     ];
-    keys.current.digits = options.map((o) => () => launch(o.id));
+    const live = options.filter((o) => !o.disabled);
+    keys.current.digits = live.map((o) => () => launch(o.id));
     body = (
       <div className="onb-scene w-full">
         <div className="mb-3 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--tv-highlight)]">
@@ -1514,9 +1566,12 @@ export default function Onboarding({
             <OptionTile
               key={o.id}
               icon={o.icon}
+              media={o.media}
               label={o.label}
               desc={o.desc}
-              index={i + 1}
+              badge={o.badge}
+              disabled={o.disabled}
+              index={o.disabled ? undefined : live.indexOf(o) + 1}
               selected={launching === o.id}
               onSelect={() => launch(o.id)}
               style={rise(3 + i)}
@@ -1664,6 +1719,22 @@ export default function Onboarding({
           {soundButton}
         </header>
 
+        {/* Le dossier, en une ligne, partout où le dossier complet n'a pas
+            sa colonne : chaque réponse s'y voit écrite. */}
+        {qIndex >= 0 && (
+          <div className="mx-auto w-full max-w-[628px] shrink-0 px-4 pt-3 md:px-6 xl:hidden">
+            <FileTicker
+              title={c.fileTitle}
+              empty={c.fileEmpty}
+              rows={fileRows}
+              onOpen={() => {
+                play("tick");
+                setFileOpen(true);
+              }}
+            />
+          </div>
+        )}
+
         <div className="relative flex min-h-0 flex-1 justify-center overflow-y-auto px-4 pb-6 pt-6 md:px-6 md:pt-10">
           <div className="flex w-full max-w-[1080px] items-start justify-center gap-8">
             <div key={scene} className="w-full max-w-[580px]">
@@ -1699,6 +1770,22 @@ export default function Onboarding({
           </div>
         </div>
       </main>
+
+      <Sheet
+        open={fileOpen}
+        onClose={() => setFileOpen(false)}
+        title={c.fileTitle}
+        subtitle={c.fileSheetSub}
+      >
+        <TraderFile
+          headless
+          title={c.fileTitle}
+          live={c.fileLive}
+          empty={c.fileEmpty}
+          pending={c.filePending}
+          rows={fileRows}
+        />
+      </Sheet>
     </div>
   );
 }

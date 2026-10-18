@@ -904,6 +904,31 @@ body {
   border-color: var(--tv-border-accent);
   color: var(--tv-highlight);
 }
+/* La vignette d'un service tiers : son VRAI logo, tel quel. Ni plaque ni
+   aplat d'accent par-dessus — c'est sa couleur qui le fait reconnaître. */
+.onb-glyph-media {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 12px;
+}
+.onb-glyph-media > img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+/* Visible, pas encore activable : la carte ne réagit ni au survol ni au toucher. */
+.onb-tile[aria-disabled="true"] {
+  cursor: default;
+}
+.onb-tile[aria-disabled="true"]:hover {
+  border-color: var(--tv-border);
+  background: var(--tv-plate-1);
+}
+.onb-tile[aria-disabled="true"]:active {
+  transform: none;
+}
 .onb-kbd {
   font-family: var(--font-mono);
   font-size: 10px;

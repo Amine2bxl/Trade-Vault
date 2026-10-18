@@ -189,6 +189,11 @@ Jarvis → Erreurs / cas d'usage → Excel/Notion → Tarifs → CTA.
 - Copy anglaise honnête, courte, concrète ; jamais de promesse de gain, de faux
   témoignage, de logo ou de compteur inventé. Détail : skill `landing-copy` et
   [`PRODUCT.md`](PRODUCT.md).
+- **Logos de services tiers** (broker, plateforme) : uniquement le fichier
+  officiel, dans `src/assets/brands/`, affiché tel quel — ni redessiné, ni
+  retinté, ni posé sur un aplat d'accent. C'est sa couleur qui le fait
+  reconnaître (Tradovate : onboarding et page Brokers). Sans fichier officiel,
+  le nom en texte.
 
 ## 8. Vérification visuelle
 
