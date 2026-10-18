@@ -6494,16 +6494,18 @@ body::after {
   border-radius: var(--radius-xl);
   background: var(--tv-plate-0);
 }
+/* Les puces gardent leur TEINTE une fois choisies (menthe pour une
+   confluence, rouge pour une erreur, ambre pour une raison) : c'est le repère
+   qui manquait au formulaire, où tout virait au gris. */
 .tv-trade-form [data-selection-chip] {
-  min-height: 36px;
-  border-radius: var(--radius-lg);
-  border-color: var(--tv-border);
-  background: var(--tv-plate-2);
-  color: var(--tv-text-secondary);
-  font-size: var(--tv-t-body-sm);
+  min-height: 30px;
+  border-radius: 999px;
+  font-size: 12px;
 }
-.tv-trade-form [data-selection-chip][aria-pressed="true"],
-.tv-trade-form [data-selection-chip]:has([aria-pressed="true"]),
+/* La puce supprimable porte déjà ses marges sur ses deux boutons. */
+.tv-compact-form .tv-trade-form div[data-selection-chip] {
+  padding: 0;
+}
 .tv-trade-form .tv-pick-chip-on {
   border-color: var(--tv-border-strong);
   background: var(--tv-plate-3);
@@ -6530,12 +6532,12 @@ body::after {
   }
 }
 .tv-trade-form input[type="range"]::-webkit-slider-thumb {
-  background: var(--tv-text-secondary);
-  border-color: var(--tv-text-secondary);
+  background: var(--tv-range, var(--tv-text-secondary));
+  border-color: var(--tv-range, var(--tv-text-secondary));
 }
 .tv-trade-form input[type="range"]::-moz-range-thumb {
-  background: var(--tv-text-secondary);
-  border-color: var(--tv-text-secondary);
+  background: var(--tv-range, var(--tv-text-secondary));
+  border-color: var(--tv-range, var(--tv-text-secondary));
 }
 body.tv-app-type svg.lucide {
   stroke-width: 1.6;
@@ -6586,15 +6588,390 @@ body.tv-app-type svg.lucide {
   }
 }
 
-.tv-trade-modal .tv-trade-symbol {
-  font-size: var(--tv-t-h2);
-  font-weight: 700;
-}
-.tv-trade-modal .tv-trade-number {
-  font-size: var(--tv-t-h2);
+/* ── Saisie d'un trade ─────────────────────────────────────────────────────
+   Une seule taille de texte pour les données (13–14 px, la police chiffrée du
+   calendrier), des sections numérotées qui se cochent, des couleurs qui
+   portent une information (signe du P&L, sens, qualité, confiance). */
+.tv-trade-modal .tv-control {
+  font-size: 13px;
 }
 .tv-trade-modal .tv-direction .tv-choice {
-  min-height: 44px;
+  gap: 4px;
+  padding-inline: 6px;
+  font-size: 12px;
+}
+.tv-trade-stripe {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 1;
+  height: 2px;
+  background: var(--tv-border-strong);
+  transition: background-color 0.3s ease;
+  pointer-events: none;
+}
+.tv-trade-stripe[data-tone="up"] {
+  background: var(--tv-chart-green);
+}
+.tv-trade-stripe[data-tone="down"] {
+  background: var(--tv-chart-red);
+}
+.tv-trade-pill {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  place-items: center;
+  border: 1px solid var(--tv-border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--tv-plate-2);
+  color: var(--tv-text-secondary);
+  transition:
+    color 0.25s ease,
+    background-color 0.25s ease,
+    border-color 0.25s ease;
+}
+.tv-trade-pill[data-tone="up"] {
+  border-color: color-mix(in srgb, var(--tv-chart-green) 30%, transparent);
+  background: color-mix(in srgb, var(--tv-chart-green) 12%, var(--tv-plate-1));
+  color: var(--tv-chart-green);
+}
+.tv-trade-pill[data-tone="down"] {
+  border-color: color-mix(in srgb, var(--tv-chart-red) 30%, transparent);
+  background: color-mix(in srgb, var(--tv-chart-red) 12%, var(--tv-plate-1));
+  color: var(--tv-chart-red);
+}
+.tv-trade-section {
+  display: grid;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--tv-border);
+  animation: tv-trade-section-in 0.26s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.tv-trade-section:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+.tv-trade-section-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.tv-trade-step {
+  display: grid;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  place-items: center;
+  border: 1px solid var(--tv-border-accent);
+  border-radius: 999px;
+  color: var(--tv-highlight);
+  font-size: 10px;
+  line-height: 1;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+.tv-trade-step[data-done="true"] {
+  border-color: var(--tv-accent);
+  background: var(--tv-accent);
+  color: var(--tv-plate-0);
+}
+@keyframes tv-trade-section-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.tv-trade-req {
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--tv-warning);
+  transition: background-color 0.2s ease;
+}
+.tv-trade-req[data-ok="true"] {
+  background: var(--tv-accent);
+}
+.tv-trade-unit {
+  display: grid;
+  width: var(--tv-form-control-height);
+  height: var(--tv-form-control-height);
+  flex-shrink: 0;
+  place-items: center;
+  border: 1px solid var(--tv-border);
+  border-radius: var(--tv-form-control-radius);
+  background: var(--tv-plate-2);
+  color: var(--tv-text-secondary);
+  font-size: 13px;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+.tv-trade-unit:hover {
+  border-color: var(--tv-border-accent);
+  color: var(--tv-text-primary);
+}
+.tv-trade-pnl,
+.tv-trade-pnl-input {
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+.tv-trade-pnl {
+  display: flex;
+  height: var(--tv-form-control-height);
+  align-items: center;
+  padding-inline: 10px;
+  border: 1px solid var(--tv-border);
+  border-radius: var(--tv-form-control-radius);
+  background: var(--tv-plate-2);
+  color: var(--tv-text-secondary);
+  font-size: 14px;
+}
+.tv-trade-pnl[data-tone="up"],
+.tv-trade-modal .tv-trade-pnl-input[data-tone="up"] {
+  border-color: color-mix(in srgb, var(--tv-chart-green) 25%, transparent);
+  background: color-mix(in srgb, var(--tv-chart-green) 9%, var(--tv-plate-1));
+  color: var(--tv-chart-green);
+}
+.tv-trade-pnl[data-tone="down"],
+.tv-trade-modal .tv-trade-pnl-input[data-tone="down"] {
+  border-color: color-mix(in srgb, var(--tv-chart-red) 25%, transparent);
+  background: color-mix(in srgb, var(--tv-chart-red) 9%, var(--tv-plate-1));
+  color: var(--tv-chart-red);
+}
+.tv-trade-recap-pnl {
+  color: var(--tv-text-secondary);
+}
+.tv-trade-recap-pnl[data-tone="up"] {
+  color: var(--tv-chart-green);
+}
+.tv-trade-recap-pnl[data-tone="down"] {
+  color: var(--tv-chart-red);
+}
+.tv-trade-strip {
+  display: flex;
+  min-height: var(--tv-form-control-height);
+  align-items: center;
+  gap: 10px;
+  padding: 4px 10px;
+  border: 1px solid var(--tv-border);
+  border-radius: var(--tv-form-control-radius);
+  background: var(--tv-plate-0);
+}
+.tv-trade-imported {
+  padding: 10px 12px;
+  border: 1px solid var(--tv-border-accent);
+  border-radius: var(--radius-xl);
+  background: rgb(var(--tv-accent-rgb) / 0.05);
+}
+.tv-trade-preset {
+  height: 28px;
+  padding-inline: 9px;
+  border: 1px solid var(--tv-border);
+  border-radius: var(--radius-md);
+  background: var(--tv-plate-2);
+  color: var(--tv-text-muted);
+  font-size: 11px;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+.tv-trade-preset:hover,
+.tv-trade-preset[aria-pressed="true"] {
+  border-color: var(--tv-border-accent);
+  color: var(--tv-highlight);
+}
+.tv-trade-preset[aria-pressed="true"] {
+  background: rgb(var(--tv-accent-rgb) / 0.12);
+}
+.tv-trade-star {
+  display: grid;
+  height: var(--tv-form-control-height);
+  flex: 1;
+  place-items: center;
+  border: 1px solid var(--tv-border);
+  border-radius: var(--tv-form-control-radius);
+  background: var(--tv-plate-2);
+  color: var(--tv-text-muted);
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.12s ease;
+}
+.tv-trade-star:active {
+  transform: scale(0.94);
+}
+.tv-trade-star[data-on="true"] {
+  border-color: rgb(245 158 11 / 0.3);
+  background: rgb(245 158 11 / 0.12);
+  color: #fbbf24;
+}
+.tv-trade-star[data-on="true"] svg {
+  fill: currentColor;
+}
+.tv-trade-badge {
+  padding: 1px 7px;
+  border: 1px solid var(--tv-border);
+  border-radius: 999px;
+  color: var(--tv-text-secondary);
+  font-size: 10.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition:
+    color 0.2s ease,
+    border-color 0.2s ease;
+}
+.tv-trade-badge:is([data-level="1"], [data-conf="low"]) {
+  border-color: rgb(248 113 113 / 0.3);
+  color: #fca5a5;
+}
+.tv-trade-badge:is([data-level="2"], [data-conf="mid"]) {
+  border-color: rgb(245 158 11 / 0.3);
+  color: #fcd34d;
+}
+.tv-trade-badge:is([data-level="4"], [data-level="5"], [data-conf="high"]) {
+  border-color: var(--tv-border-accent);
+  color: var(--tv-highlight);
+}
+.tv-trade-form .tv-trade-range {
+  --tv-range: var(--tv-accent);
+  accent-color: var(--tv-range);
+}
+.tv-trade-strip[data-conf="mid"] .tv-trade-range {
+  --tv-range: #f59e0b;
+}
+.tv-trade-strip[data-conf="low"] .tv-trade-range {
+  --tv-range: #f87171;
+}
+/* Densité : les bascules, le texte libre et les liens secondaires à la taille
+   des champs, pas au-dessus. */
+.tv-trade-modal .tv-disclosure-toggle {
+  color: var(--tv-text-secondary);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.tv-trade-modal .tv-control-textarea,
+.tv-trade-modal textarea {
+  font-size: 13px;
+}
+.tv-trade-more {
+  min-height: 30px;
+  padding-inline: 6px;
+  color: var(--tv-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+.tv-trade-more:hover {
+  color: var(--tv-highlight);
+}
+.tv-trade-plan {
+  height: var(--tv-form-control-height);
+  border: 1px solid var(--tv-border);
+  border-radius: var(--tv-form-control-radius);
+  background: var(--tv-plate-2);
+  color: var(--tv-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+.tv-trade-plan[aria-pressed="true"][data-plan="yes"] {
+  border-color: color-mix(in srgb, var(--tv-chart-green) 30%, transparent);
+  background: color-mix(in srgb, var(--tv-chart-green) 12%, var(--tv-plate-1));
+  color: var(--tv-chart-green);
+}
+.tv-trade-plan[aria-pressed="true"][data-plan="partial"] {
+  border-color: rgb(245 158 11 / 0.3);
+  background: rgb(245 158 11 / 0.12);
+  color: #fbbf24;
+}
+.tv-trade-plan[aria-pressed="true"][data-plan="no"] {
+  border-color: color-mix(in srgb, var(--tv-chart-red) 30%, transparent);
+  background: color-mix(in srgb, var(--tv-chart-red) 12%, var(--tv-plate-1));
+  color: var(--tv-chart-red);
+}
+.tv-trade-drop {
+  display: flex;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed var(--tv-border-strong);
+  border-radius: var(--radius-xl);
+  color: var(--tv-text-muted);
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+.tv-trade-drop:hover {
+  border-color: var(--tv-border-accent);
+  color: var(--tv-highlight);
+}
+.tv-missed-list {
+  overflow: hidden;
+  border: 1px solid var(--tv-border);
+  border-radius: var(--radius-xl);
+  background: var(--tv-plate-1);
+}
+.tv-missed-row + .tv-missed-row {
+  border-top: 1px solid var(--tv-border);
+}
+.tv-missed-row[data-open="true"] {
+  background: var(--tv-plate-2);
+}
+.tv-missed-pill {
+  border-color: rgb(245 158 11 / 0.3);
+  background: rgb(245 158 11 / 0.1);
+  color: #fbbf24;
+}
+.tv-trade-session {
+  background: rgb(var(--tv-accent-rgb) / 0.1);
+}
+/* Les annonces du jour : une ligne, discrète, jamais un bloc. */
+.tv-trade-news {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+  color: var(--tv-text-muted);
+  font-size: 11px;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+.tv-trade-news-item {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 4px;
+}
+.tv-trade-news-item[data-during="true"] {
+  color: #fcd34d;
+}
+.tv-trade-news-dot {
+  width: 5px;
+  height: 5px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: #f59e0b;
+}
+.tv-trade-news-dot[data-impact="high"] {
+  background: var(--tv-chart-red);
+}
+@media (prefers-reduced-motion: reduce) {
+  .tv-trade-section {
+    animation: none;
+  }
 }
 .tv-account-list {
   overflow: hidden;

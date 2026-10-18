@@ -33,6 +33,7 @@ suffixe `*.server.ts`.
 | `generateMyMonthlyReport` | `reports.functions.ts` | Rapport mensuel à la demande |
 | `sendPushToSelf` | `push.functions.ts` | Web-push vers les appareils de l'utilisateur, élague les souscriptions mortes |
 | `fetchEconomicCalendar` | `economic-calendar.functions.ts` | Lecture du cache du calendrier économique (+ rafraîchissement opportuniste) |
+| `fetchEconomicHistory`, `requestEconomicBackfill` | `economic-calendar.functions.ts` | Annonces fortes/moyennes des journées de trades passées ; demande d'UNE semaine manquante, lue sur la page hebdomadaire Forex Factory (`forex-factory-history.ts`) — une page à la fois, 20 s d'écart, registre `economic_calendar_backfill` (jamais deux fois une semaine réussie, nouvel essai après 7 j, 3 au plus) |
 | `ttsCapabilities`, `ttsSpeak` | `tts.functions.ts` | Voix hébergée optionnelle (ElevenLabs) |
 | `aiChat`, `aiGenerate*`, `aiAnalyzeTrade`, `aiDetectPatterns` | `ai.functions.ts` | Catalogue historique, **non appelé** par l'UI |
 
@@ -73,7 +74,7 @@ n'est jamais évalué sur une requête de page. Rate-limit par IP
 | --- | --- | --- |
 | `0 6 1 * *` | `monthly-reports` | Rapport du mois écoulé par utilisateur actif, e-mail + push (`?report=YYYY-MM`) |
 | `0 8 * * *` | `lifecycle-emails` | Expirations d'essai, e-mails de cycle de vie, rappels d'objectifs, purge de `ai_agent_runs` (90 j) — best-effort |
-| `0 5 * * *` | `economic-calendar` | Synchro Forex Factory → `economic_events` (semaine en cours ; `actual` non fourni par la source). Historique conservé 3 ans pour impact fort/moyen (actualités par trade), 90 j pour le reste |
+| `0 5 * * *` | `economic-calendar` | Synchro Forex Factory → `economic_events` (semaine en cours ; `actual` non fourni par la source). Historique conservé 3 ans pour impact fort/moyen (actualités par trade), 90 j pour le reste. Remonte aussi UNE semaine passée manquante par passage |
 | `0 3 * * *` | `pattern-scan` | Détection de motifs → propositions ([`AI.md`](AI.md) §4) |
 | `0 20 * * 1-5` et `0 21 * * 1-5` | `broker-sync` | Connexions broker actives non synchronisées depuis 1 h, AVANT la clôture CME de 17:00 ET (`/fill/list` ne rend que la séance en cours) — deux créneaux (`?slot=edt|est`), seul celui de la saison en cours à New York travaille (`cronSlotActive`) (§9) |
 

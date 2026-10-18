@@ -49,6 +49,8 @@ import {
   DateField,
   Kpi,
   KpiGrid,
+  FormSection,
+  FormLabel,
 } from "@/shared/ui";
 import { intlLocale } from "@/app/i18n/locale";
 import { useDraftAutosave } from "@/app/hooks/useDraftAutosave";
@@ -253,9 +255,9 @@ export default function MissedOpportunities() {
       )}
 
       {loading ? (
-        <div className="space-y-1.5">
+        <div className="tv-missed-list">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="glass rounded-2xl h-11 animate-pulse" />
+            <div key={i} className="tv-missed-row h-11 animate-pulse" />
           ))}
         </div>
       ) : items.length === 0 ? (
@@ -270,17 +272,13 @@ export default function MissedOpportunities() {
           }
         />
       ) : (
-        <div className="space-y-1.5">
+        /* UNE liste à séparateurs, pas une pile de cartes : même anatomie que
+           la boîte de réception, rien d'imbriqué. */
+        <div className="tv-missed-list animate-fade-in-up stagger-2">
           {items.map((m) => {
             const open = openIds.has(m.id);
             return (
-              <div
-                key={m.id}
-                className={cn(
-                  "glass rounded-2xl overflow-hidden border transition-colors",
-                  open ? "border-amber-500/20" : "border-transparent",
-                )}
-              >
+              <div key={m.id} className="tv-missed-row" data-open={open}>
                 <div
                   role="button"
                   tabIndex={0}
@@ -291,7 +289,7 @@ export default function MissedOpportunities() {
                       toggleOpen(m.id);
                     }
                   }}
-                  className="w-full flex items-center justify-between gap-3 px-3 py-2 md:px-3.5 text-left hover:bg-white/[0.02] transition cursor-pointer"
+                  className="w-full flex items-center justify-between gap-3 px-3 py-2 md:px-3.5 text-left hover:bg-white/[0.02] transition-colors cursor-pointer"
                   aria-expanded={open}
                 >
                   <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -328,10 +326,10 @@ export default function MissedOpportunities() {
                         largeur, la date passe dessous. À partir de `sm` on
                         revient sur une ligne, où la place existe. */}
                     <div className="flex min-w-0 flex-1 flex-col sm:flex-row sm:items-baseline sm:gap-2">
-                      <span className="truncate text-sm font-bold text-white">
+                      <span className="tv-figure truncate text-[13px] text-white">
                         {m.symbol || "—"}
                       </span>
-                      <span className="tv-num shrink-0 text-[10px] text-slate-500">
+                      <span className="tv-figure shrink-0 text-[11px] text-slate-500">
                         {formatShortDate(m.date)}
                       </span>
                     </div>
@@ -360,7 +358,7 @@ export default function MissedOpportunities() {
                            `sm` on garde le chiffre et l'unité, qui suffisent
                            dans une colonne dont l'en-tête dit déjà « R left on
                            the table ». */
-                        <span className="tv-num truncate rounded-lg border border-emerald-500/25 bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold text-emerald-400">
+                        <span className="tv-figure truncate rounded-md border border-emerald-500/25 bg-emerald-500/10 px-1.5 py-0.5 text-[11px] text-emerald-400">
                           +{m.estimatedR.toFixed(1)}
                           <span className="sm:hidden">R</span>
                           <span className="hidden sm:inline"> {t("missed.rMissed")}</span>
@@ -374,7 +372,7 @@ export default function MissedOpportunities() {
                            taille et de couleur d'une machine à l'autre, au
                            milieu d'une interface qui n'en utilise nulle part
                            ailleurs. */
-                        <span className="tv-num inline-flex items-center gap-1 rounded-lg border border-white/[0.08] bg-white/[0.04] px-1.5 py-0.5 text-[10px] font-semibold text-slate-400">
+                        <span className="tv-figure inline-flex items-center gap-1 px-1 py-0.5 text-[11px] text-slate-500">
                           {m.screenshots.length}
                           <Camera className="h-3 w-3" />
                         </span>
@@ -412,8 +410,8 @@ export default function MissedOpportunities() {
                   </div>
                 </div>
                 {open && (
-                  <div className="px-3 md:px-3.5 pb-3 pt-0.5 animate-fade-in">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs md:text-sm">
+                  <div className="px-3 md:px-3.5 pb-3 pt-1 animate-fade-in">
+                    <div className="grid grid-cols-1 gap-x-6 gap-y-2.5 md:grid-cols-2">
                       <Field label={t("missed.card.why")} value={m.reasonNotTaken} tone="red" />
                       <Field label={t("missed.card.what")} value={m.whatHappened} tone="amber" />
                       <Field label={t("missed.card.lesson")} value={m.lessonLearned} tone="blue" />
@@ -461,17 +459,22 @@ function Field({
   value: string;
   tone: "red" | "amber" | "blue" | "emerald";
 }) {
-  const tones: Record<string, string> = {
-    red: "text-red-400 border-red-500/15",
-    amber: "text-amber-400 border-amber-500/15",
-    blue: "text-cyan-400 border-cyan-500/15",
-    emerald: "text-emerald-400 border-emerald-500/15",
+  // La couleur de la catégorie tient dans une pastille, pas dans un cadre :
+  // la fiche dépliée reste à plat, sans boîte dans la boîte.
+  const dots: Record<string, string> = {
+    red: "var(--tv-chart-red)",
+    amber: "var(--tv-warning)",
+    blue: "var(--tv-highlight)",
+    emerald: "var(--tv-chart-green)",
   };
   return (
-    <div className={cn("tv-relief-inset rounded-lg border px-2.5 py-2", tones[tone])}>
-      <div className="tv-label mb-0.5 opacity-80">{label}</div>
-      <div className="text-slate-200 text-xs md:text-sm whitespace-pre-wrap">
-        {value || <span className="text-slate-600 italic">—</span>}
+    <div className="min-w-0">
+      <div className="tv-label mb-0.5 flex items-center gap-1.5 text-slate-400">
+        <span className="tv-trade-req" style={{ background: dots[tone] }} aria-hidden />
+        {label}
+      </div>
+      <div className="whitespace-pre-wrap text-[13px] leading-relaxed text-slate-200">
+        {value || <span className="text-slate-600">—</span>}
       </div>
     </div>
   );
@@ -621,7 +624,7 @@ export function MissedEditor({
   onSave: (m: MissedOpportunity) => void;
 }) {
   const { user } = useAuth();
-  const { t } = useT();
+  const { t, lang } = useT();
   const { toast } = useToast();
   // Même filet que la popup de trade : ce qui est écrit ici survit à un clic
   // à côté, à une coupure ou à un onglet fermé.
@@ -716,105 +719,148 @@ export function MissedEditor({
     return () => document.removeEventListener("paste", onPaste);
   }, [handleFiles]);
 
+  /* Les mêmes repères que la saisie d'un trade : sections numérotées qui se
+     cochent, pastilles de couleur reprises de la fiche (rouge « pourquoi »,
+     ambre « ce qui s'est passé », menthe « leçon », vert « la prochaine
+     fois »), chiffres dans la police du calendrier. */
+  const r = Number(m.estimatedR) || 0;
+  const tone = r > 0 ? "up" : r < 0 ? "down" : "flat";
+  const setupDone = m.symbol.trim() !== "" && !!m.date;
+  const storyDone = m.reasonNotTaken.trim() !== "" && m.whatHappened.trim() !== "";
+  const lessonDone = m.lessonLearned.trim() !== "" && m.nextTimePlan.trim() !== "";
+  const shots = m.screenshots ?? [];
+
   return (
     <Modal
       open
       onClose={onClose}
       // Une saisie en cours ne se referme pas sur un clic à côté.
       closeOnBackdrop={!dirty}
-      className="tv-trade-modal tv-compact-form flex max-h-[86dvh] flex-col overflow-hidden md:max-w-2xl"
+      className="tv-trade-modal tv-compact-form relative flex max-h-[min(92dvh,760px)] flex-col overflow-hidden md:max-w-2xl"
       labelledBy="missed-editor-title"
     >
-      <div className="flex shrink-0 items-center justify-between border-b border-[var(--tv-border)] px-4 py-2.5">
-        <div className="relative flex items-center gap-2.5 min-w-0">
-          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-[var(--tv-border)] bg-[var(--tv-plate-2)]">
-            <Target className="w-4 h-4 text-white" />
-          </span>
-          <div className="min-w-0">
-            <h2 id="missed-editor-title" className="tv-title leading-tight">
-              {t("missed.modalTitle")}
-            </h2>
-            <p className="tv-row-label truncate">
-              {m.symbol ? `${m.symbol} · ` : ""}
-              {t("missed.editorHint")}
-            </p>
-          </div>
+      <div className="tv-trade-stripe" data-tone={tone} aria-hidden />
+      <header className="flex shrink-0 items-center gap-2.5 border-b border-[var(--tv-border)] px-4 py-2.5 sm:px-5">
+        <span className="tv-trade-pill tv-missed-pill">
+          <Target className="h-4 w-4" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <h2 id="missed-editor-title" className="tv-title leading-tight">
+            {t("missed.modalTitle")}
+          </h2>
+          <p className="tv-row-label truncate">
+            {m.symbol ? `${m.symbol} · ` : ""}
+            {t("missed.editorHint")}
+          </p>
         </div>
         <button
+          type="button"
           onClick={onClose}
           aria-label={t("common.close")}
-          className="w-11 h-11 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 transition-colors shrink-0"
+          className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-slate-400 transition-colors hover:bg-white/5 hover:text-white"
         >
-          <X className="w-4 h-4" />
+          <X className="h-4 w-4" />
         </button>
-      </div>
-      <div className="tv-trade-form min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3 space-y-3">
-        {/* Grille responsive : 1 colonne sur mobile (jamais empilé/cramé),
-            3 sur desktop. La date passe par des bulles de présélection. */}
-        <div className="grid grid-cols-2 gap-3 [&>div:first-child]:col-span-2 sm:grid-cols-3 sm:[&>div:first-child]:col-span-1">
-          <DateBubbles
-            value={m.date}
-            onChange={(v) => set("date", v)}
-            label={t("missed.field.date")}
-          />
-          <FieldInput
-            label={t("missed.field.symbol")}
-            value={m.symbol}
-            onChange={(v) => set("symbol", v.toUpperCase())}
-            placeholder="ES"
-          />
-          <FieldInput
-            label={t("missed.field.estR")}
-            type="number"
-            value={String(m.estimatedR)}
-            onChange={(v) => set("estimatedR", Number(v) || 0)}
-            step="0.1"
-          />
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <FieldArea
-            label={t("missed.field.why")}
-            value={m.reasonNotTaken}
-            onChange={(v) => set("reasonNotTaken", v)}
-            placeholder={t("missed.field.whyPh")}
-          />
-          <FieldArea
-            label={t("missed.field.what")}
-            value={m.whatHappened}
-            onChange={(v) => set("whatHappened", v)}
-            placeholder={t("missed.field.whatPh")}
-          />
-          <FieldArea
-            label={t("missed.field.lesson")}
-            value={m.lessonLearned}
-            onChange={(v) => set("lessonLearned", v)}
-            placeholder={t("missed.field.lessonPh")}
-          />
-          <FieldArea
-            label={t("missed.field.next")}
-            value={m.nextTimePlan}
-            onChange={(v) => set("nextTimePlan", v)}
-            placeholder={t("missed.field.nextPh")}
-          />
-        </div>
+      </header>
+      <div className="tv-trade-form min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain px-4 py-3 sm:px-5">
+        {/* 1 — LE SETUP */}
+        <FormSection n={1} title={t("missed.secSetup")} done={setupDone}>
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+            <div className="col-span-2 min-w-0 sm:col-span-1">
+              <FormLabel ok={!!m.date}>{t("missed.field.date")}</FormLabel>
+              <DateField
+                value={m.date}
+                onChange={(v) => set("date", v)}
+                locale={intlLocale(lang)}
+                todayLabel={t("common.today")}
+                aria-label={t("missed.field.date")}
+              />
+            </div>
+            <label className="block min-w-0">
+              <FormLabel ok={m.symbol.trim() !== ""}>{t("missed.field.symbol")}</FormLabel>
+              <Input
+                value={m.symbol}
+                onChange={(e) => set("symbol", e.target.value.toUpperCase())}
+                placeholder="ES"
+                className="tv-figure"
+              />
+            </label>
+            <label className="block min-w-0">
+              <FormLabel>{t("missed.field.estR")}</FormLabel>
+              <Input
+                type="number"
+                step="0.1"
+                inputMode="decimal"
+                value={String(m.estimatedR)}
+                onChange={(e) => set("estimatedR", Number(e.target.value) || 0)}
+                className="tv-figure tv-trade-pnl-input"
+                data-tone={tone}
+              />
+            </label>
+          </div>
+        </FormSection>
 
-        <div>
-          <div className="mb-2 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-            <span className={cn(EDITOR_LABEL, "mb-0")}>
-              {t("missed.field.screenshots")}{" "}
-              <span className="tv-num text-slate-600">({(m.screenshots ?? []).length}/3)</span>
-            </span>
-            <span className="tv-prose text-slate-500">
+        {/* 2 — CE QUI S'EST PASSÉ */}
+        <FormSection n={2} title={t("missed.secStory")} done={storyDone}>
+          <div className="grid gap-2.5 sm:grid-cols-2">
+            <label className="block min-w-0">
+              <FormLabel dot="var(--tv-chart-red)">{t("missed.field.why")}</FormLabel>
+              <Textarea
+                value={m.reasonNotTaken}
+                onChange={(e) => set("reasonNotTaken", e.target.value)}
+                placeholder={t("missed.field.whyPh")}
+                rows={2}
+              />
+            </label>
+            <label className="block min-w-0">
+              <FormLabel dot="var(--tv-warning)">{t("missed.field.what")}</FormLabel>
+              <Textarea
+                value={m.whatHappened}
+                onChange={(e) => set("whatHappened", e.target.value)}
+                placeholder={t("missed.field.whatPh")}
+                rows={2}
+              />
+            </label>
+          </div>
+        </FormSection>
+
+        {/* 3 — LA LEÇON */}
+        <FormSection n={3} title={t("missed.secLesson")} done={lessonDone}>
+          <div className="grid gap-2.5 sm:grid-cols-2">
+            <label className="block min-w-0">
+              <FormLabel dot="var(--tv-highlight)">{t("missed.field.lesson")}</FormLabel>
+              <Textarea
+                value={m.lessonLearned}
+                onChange={(e) => set("lessonLearned", e.target.value)}
+                placeholder={t("missed.field.lessonPh")}
+                rows={2}
+              />
+            </label>
+            <label className="block min-w-0">
+              <FormLabel dot="var(--tv-chart-green)">{t("missed.field.next")}</FormLabel>
+              <Textarea
+                value={m.nextTimePlan}
+                onChange={(e) => set("nextTimePlan", e.target.value)}
+                placeholder={t("missed.field.nextPh")}
+                rows={2}
+              />
+            </label>
+          </div>
+        </FormSection>
+
+        {/* 4 — CAPTURES */}
+        <FormSection n={4} title={t("missed.field.screenshots")} done={shots.length > 0}>
+          <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+            <span className="tv-figure text-[11px] text-slate-500">{shots.length}/3</span>
+            <span className="text-[11px] text-slate-500">
               {t("missed.field.screenshotsHint")}
               <span className="hidden sm:inline"> · {t("common.pasteHint")}</span>
             </span>
           </div>
-          <ScreenshotsView
-            paths={m.screenshots ?? []}
-            onRemove={removeShot}
-            onReorder={reorderShots}
-          />
-          {(m.screenshots ?? []).length < 3 && (
+          {shots.length > 0 && (
+            <ScreenshotsView paths={shots} onRemove={removeShot} onReorder={reorderShots} />
+          )}
+          {shots.length < 3 && (
             <>
               <input
                 ref={fileRef}
@@ -828,122 +874,53 @@ export function MissedEditor({
                 type="button"
                 onClick={() => fileRef.current?.click()}
                 disabled={uploading}
-                className="mt-2 w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-dashed border-white/[0.1] bg-white/[0.02] hover:bg-white/[0.05] text-sm text-slate-300 hover:text-white transition disabled:opacity-50"
+                className="tv-trade-drop h-11 w-full flex-row gap-2 text-[12px] disabled:opacity-50"
               >
                 {uploading ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin" /> {t("missed.uploading")}
+                    <Loader2 className="h-4 w-4 animate-spin" /> {t("missed.uploading")}
                   </>
                 ) : (
                   <>
-                    <ImagePlus className="w-4 h-4" /> {t("missed.addImage")}
+                    <ImagePlus className="h-4 w-4" /> {t("missed.addImage")}
                   </>
                 )}
               </button>
             </>
           )}
-        </div>
+        </FormSection>
       </div>
-      <div className="flex shrink-0 justify-end gap-2 border-t border-[var(--tv-border)] px-4 py-2.5">
-        <Button variant="ghost" onClick={onClose}>
+      <footer className="flex shrink-0 items-center gap-2 border-t border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-4 py-2.5 sm:px-5">
+        <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden text-[12px] text-slate-500">
+          {m.symbol ? (
+            <>
+              <span className="tv-figure shrink-0 text-white">{m.symbol}</span>
+              <span className="tv-figure tv-trade-recap-pnl shrink-0 text-[14px]" data-tone={tone}>
+                {r > 0 ? "+" : ""}
+                {r.toFixed(1)}R
+              </span>
+            </>
+          ) : (
+            <span className="truncate">{t("missed.fillRequired")}</span>
+          )}
+        </div>
+        <Button variant="ghost" onClick={onClose} className="shrink-0">
           {t("common.cancel")}
         </Button>
         <Button
+          variant="entry"
           onClick={() => {
             // Enregistré : le brouillon a fait son office.
             savedRef.current = true;
             removeKey(draftKey);
             onSave(m);
           }}
-          disabled={uploading}
+          disabled={uploading || !setupDone}
+          className="shrink-0"
         >
-          <Save className="w-4 h-4" /> {t("common.save")}
+          <Save className="h-4 w-4" /> {t("common.save")}
         </Button>
-      </div>
+      </footer>
     </Modal>
-  );
-}
-
-// Both editors share one label style and one field skin (`FIELD_BASE`), so a
-// field in Missed Setup is pixel-identical to the same field in Add Trade.
-const EDITOR_LABEL = "tv-label block text-slate-400 mb-1.5";
-
-function FieldInput({
-  label,
-  value,
-  onChange,
-  type = "text",
-  placeholder,
-  step,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  type?: string;
-  placeholder?: string;
-  step?: string;
-}) {
-  return (
-    <label className="block">
-      <span className={EDITOR_LABEL}>{label}</span>
-      <Input
-        type={type}
-        value={value}
-        step={step}
-        placeholder={placeholder}
-        onChange={(e) => onChange(e.target.value)}
-      />
-    </label>
-  );
-}
-
-function FieldArea({
-  label,
-  value,
-  onChange,
-  placeholder,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-}) {
-  return (
-    <label className="block">
-      <span className={EDITOR_LABEL}>{label}</span>
-      <Textarea
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        rows={2}
-        className="min-h-[56px]"
-      />
-    </label>
-  );
-}
-
-/** Date en BULLES (présélections) + date précise via le sélecteur DU PRODUIT —
- *  pas de case à remplir : un tap suffit pour le cas le plus fréquent. */
-function DateBubbles({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-}) {
-  const { t, lang } = useT();
-  return (
-    <div>
-      <span className={EDITOR_LABEL}>{label}</span>
-      <DateField
-        value={value}
-        onChange={onChange}
-        locale={intlLocale(lang)}
-        todayLabel={t("common.today")}
-        aria-label={label}
-      />
-    </div>
   );
 }

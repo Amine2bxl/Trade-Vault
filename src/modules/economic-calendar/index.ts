@@ -3,6 +3,11 @@
 
 export * from "./types";
 export { parseForexFactoryFeed, forexFactoryProvider, FOREX_FACTORY_SOURCE } from "./forex-factory";
+export {
+  parseForexFactoryCalendarPage,
+  fetchForexFactoryWeek,
+  forexFactoryWeekUrl,
+} from "./forex-factory-history";
 
 import { forexFactoryProvider } from "./forex-factory";
 import type { CalendarProvider } from "./types";

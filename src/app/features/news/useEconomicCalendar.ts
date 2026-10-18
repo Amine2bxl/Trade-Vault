@@ -36,7 +36,7 @@ function readCachedEcon<T>(key: string): T | undefined {
 }
 
 /** Repli hors-ligne : le générateur de règles, converti au format normalisé. */
-async function fallbackEvents(weekStart: Date): Promise<CalendarEvent[]> {
+export async function fallbackEvents(weekStart: Date): Promise<CalendarEvent[]> {
   const legacy = await getEventsForWeek(weekStart);
   return legacy.map((e) => ({
     id: `builtin-${e.id}`,

@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { CalendarEvent, EventImpact } from "@/modules/economic-calendar";
 
 // ============================================================
@@ -212,3 +213,70 @@ function triggerBackgroundSync(): Promise<void> {
   keepAlive(pendingSync);
   return pendingSync;
 }
+
+// ── HISTORIQUE : les annonces des journées de trades passées ─────────────────
+
+const HistoryInput = z.object({
+  from: z.string().datetime(),
+  to: z.string().datetime(),
+});
+
+/** Plafond de lignes lues par appel — trois ans d'annonces fortes et moyennes. */
+const HISTORY_MAX_ROWS = 6_000;
+const HISTORY_PAGE = 1_000;
+
+/**
+ * Les annonces FORTES et MOYENNES d'une période passée, sans synchro : le
+ * contexte des trades (TradeModal) et l'analyse « jours d'annonce ». Lecture
+ * paginée — PostgREST plafonne une réponse à mille lignes.
+ */
+export const fetchEconomicHistory = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => HistoryInput.parse(input))
+  .handler(async ({ data }): Promise<{ events: CalendarEvent[] }> => {
+    const url = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL;
+    const key = process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+    if (!url || !key) return { events: [] };
+    const sb = createClient(url, key, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+
+    const rows: EventRow[] = [];
+    for (let offset = 0; offset < HISTORY_MAX_ROWS; offset += HISTORY_PAGE) {
+      const { data: page, error } = await sb
+        .from("economic_events")
+        .select(
+          "id, starts_at, currency, country, title, impact, previous, forecast, actual, all_day, source",
+        )
+        .gte("starts_at", data.from)
+        .lt("starts_at", data.to)
+        .in("impact", ["high", "medium"])
+        .order("starts_at", { ascending: true })
+        .range(offset, offset + HISTORY_PAGE - 1);
+      if (error) {
+        console.error("[economic-calendar] history read failed", error);
+        break;
+      }
+      rows.push(...((page ?? []) as EventRow[]));
+      if (!page || page.length < HISTORY_PAGE) break;
+    }
+    return { events: rows.map(rowToEvent) };
+  });
+
+const BackfillInput = z.object({
+  /** Dimanche d'une semaine passée, `YYYY-MM-DD`. */
+  week: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+});
+
+/**
+ * Demande la récupération d'UNE semaine passée qui manque au cache. Réservé
+ * aux comptes connectés ; le serveur décide seul s'il contacte la source
+ * (semaine déjà connue, essai récent, page demandée il y a moins de 20 s).
+ */
+export const requestEconomicBackfill = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => BackfillInput.parse(input))
+  .handler(async ({ data }) => {
+    const { backfillEconomicWeek } = await import("./economic-calendar.server");
+    return backfillEconomicWeek(data.week);
+  });

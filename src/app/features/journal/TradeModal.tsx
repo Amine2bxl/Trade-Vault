@@ -10,7 +10,9 @@ import {
   ArrowDownRight,
   Minus,
   FilePenLine,
-  ChevronDown,
+  Newspaper,
+  Star,
+  Wallet,
 } from "@/shared/ui/icons";
 import { Trade, STRATEGIES, MISTAKE_OPTIONS } from "@/app/types";
 import { POINT_VALUES, calcContracts as calcContractsFor } from "@/app/trading/positionCalc";
@@ -45,6 +47,9 @@ import {
   ChoiceGroup,
   Disclosure,
   SelectPicker,
+  FormSection,
+  FormLabel,
+  FORM_LABEL,
 } from "@/shared/ui";
 import { intlLocale } from "@/app/i18n/locale";
 import {
@@ -68,6 +73,10 @@ import {
 } from "@/app/store/tradeIntel";
 import { EMOTIONAL_STATES, type EmotionalState } from "@/app/trading/readiness";
 import { currencySymbol, formatMoney } from "@/shared/currency";
+import { getSession } from "@/domain/quantStats";
+import { getDuration } from "@/domain/tradeCalcs";
+import { todayLocalDate } from "@/shared/calendar-date";
+import { useTradeNews } from "../news/useTradeNews";
 
 interface TradeModalProps {
   trade: Trade | null;
@@ -76,7 +85,9 @@ interface TradeModalProps {
 }
 
 const defaultForm = {
-  date: new Date().toISOString().split("T")[0],
+  // La date CIVILE du trader, pas celle d'UTC (un trade du soir à Los Angeles
+  // tombait au lendemain).
+  date: todayLocalDate(),
   symbol: "",
   direction: "long" as "long" | "short" | "be",
   riskAmount: "",
@@ -214,8 +225,6 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const [detailsOpen, setDetailsOpen] = useState(false);
-  const [timingOpen, setTimingOpen] = useState(false);
   const [showCalc, setShowCalc] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showIntent, setShowIntent] = useState(false);
@@ -581,7 +590,33 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
     !timeError &&
     !rMultipleError;
 
-  const labelClass = "tv-label mb-1.5 block text-slate-500";
+  /* LES REPÈRES DE SAISIE. Chaque section porte un numéro qui devient une
+     coche quand ses champs obligatoires sont remplis : le trader voit d'un
+     coup d'œil ce qu'il reste à saisir, et où. */
+  const symbolOk = form.symbol.trim() !== "";
+  const riskOk = parseFloat(form.riskAmount) > 0;
+  const rOk = pnlLocked || form.direction === "be" || form.rMultiple !== "";
+  const tradeDone = symbolOk && !!form.date;
+  const resultDone = riskOk && rOk && !rMultipleError;
+  // Libellé sans l'astérisque : la pastille du champ dit déjà « obligatoire ».
+  const req = (key: Parameters<typeof t>[0]) => t(key).replace(/\s*\*$/, "");
+  const session = getSession(form.entryTime);
+  const tone =
+    form.direction === "be"
+      ? "flat"
+      : calculatedPnl > 0
+        ? "up"
+        : calculatedPnl < 0
+          ? "down"
+          : "flat";
+  const qualityLabels = [
+    t("trade.quality1"),
+    t("trade.quality2"),
+    t("trade.quality3"),
+    t("trade.quality4"),
+    t("trade.quality5"),
+  ];
+  const confidenceLevel = form.confidence >= 75 ? "high" : form.confidence >= 50 ? "mid" : "low";
 
   return (
     <>
@@ -590,14 +625,27 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
         onClose={onClose}
         closeOnBackdrop={!dirty}
         labelledBy="trade-form-title"
-        className="tv-trade-modal tv-compact-form flex max-h-[min(86dvh,680px)] flex-col overflow-hidden md:max-w-xl"
+        className="tv-trade-modal tv-compact-form relative flex max-h-[min(92dvh,780px)] flex-col overflow-hidden md:max-w-2xl"
       >
-        <header className="flex shrink-0 items-center gap-3 border-b border-[var(--tv-border)] px-4 py-2.5">
-          <CandlestickChart className="h-5 w-5 shrink-0 text-[var(--tv-highlight)]" />
+        {/* Le liseré du haut dit le SIGNE de la saisie : vert gagnant, rouge
+            perdant, neutre sinon. Un trait plein de deux pixels, sans effet. */}
+        <div className="tv-trade-stripe" data-tone={tone} aria-hidden />
+        <header className="flex shrink-0 items-center gap-2.5 border-b border-[var(--tv-border)] px-4 py-2.5 sm:px-5">
+          <span className="tv-trade-pill" data-tone={tone}>
+            <CandlestickChart className="h-4 w-4" />
+          </span>
           <div className="min-w-0 flex-1">
-            <h2 id="trade-form-title" className="tv-title">
+            <h2 id="trade-form-title" className="tv-title leading-tight">
               {trade ? t("trade.editTitle") : t("trade.newTitle")}
             </h2>
+            <p className="tv-row-label truncate">
+              {form.symbol ? `${form.symbol.toUpperCase()} · ` : ""}
+              {form.direction === "long"
+                ? t("common.long")
+                : form.direction === "short"
+                  ? t("common.short")
+                  : t("common.be")}
+            </p>
           </div>
           {!trade && draftRestored && (
             <button
@@ -613,7 +661,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
             type="button"
             onClick={onClose}
             aria-label={t("common.close")}
-            className="grid h-11 w-11 shrink-0 place-items-center rounded-xl text-slate-400 hover:bg-white/5"
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-slate-400 transition-colors hover:bg-white/5 hover:text-white"
           >
             <X className="h-4 w-4" />
           </button>
@@ -624,163 +672,303 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
             e.preventDefault();
             if (isValid) handleSave();
           }}
-          className="tv-trade-form min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3"
+          className="tv-trade-form min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3 sm:px-5"
         >
-          <div className="space-y-3">
-            {trade?.broker && (
-              <p className="tv-prose text-slate-500">
-                {t("trade.importedFrom").replace("{broker}", "Tradovate")}
-              </p>
-            )}
-            <div className="grid grid-cols-2 gap-3">
-              <Field label={t("trade.symbol")}>
-                <Input
-                  aria-label={t("trade.symbol")}
-                  className="tv-trade-symbol"
-                  value={form.symbol}
-                  onChange={(e) => setForm((f) => ({ ...f, symbol: e.target.value }))}
-                  placeholder="NQ"
-                />
-              </Field>
-              <Field label={t("trade.date")}>
-                <DateField
-                  value={form.date}
-                  onChange={(date) => setForm((f) => ({ ...f, date }))}
-                  locale={intlLocale(lang)}
-                  todayLabel={t("common.today")}
-                  aria-label={t("trade.date")}
-                />
-              </Field>
+          {/* TRADE IMPORTÉ — ce que le broker a exécuté, prérempli et
+              corrigeable. Il ne reste au trader que son jugement. */}
+          {trade?.broker && (
+            <div className="tv-trade-imported mb-3">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <span className="tv-label text-[var(--tv-highlight)]">
+                  {t("trade.importedFrom").replace("{broker}", "Tradovate")}
+                </span>
+                {trade.brokerAccount && (
+                  <span className="text-[12px] font-semibold text-slate-300">
+                    {trade.brokerAccount}
+                  </span>
+                )}
+              </div>
+              <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {(
+                  [
+                    ["quantity", "trade.execContracts", "1"],
+                    ["entryPrice", "trade.execEntry", "0.25"],
+                    ["exitPrice", "trade.execExit", "0.25"],
+                    ["fees", "trade.execFees", "0.01"],
+                  ] as const
+                ).map(([key, label, step]) => (
+                  <label key={key} className="block min-w-0">
+                    <span className={FORM_LABEL}>{t(label)}</span>
+                    <Input
+                      aria-label={t(label)}
+                      type="number"
+                      step={step}
+                      inputMode="decimal"
+                      value={form[key]}
+                      onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
+                      placeholder="—"
+                      className="tv-figure"
+                    />
+                  </label>
+                ))}
+              </div>
+              {trade.reviewPending && (
+                <p className="mt-1.5 text-[11px] leading-snug text-slate-500">
+                  {riskDollar > 0 ? t("trade.reviewHint") : t("trade.reviewHintRisk")}
+                </p>
+              )}
             </div>
-            <Field label={t("trade.direction")} className="tv-direction">
-              <ChoiceGroup
-                label={t("trade.direction")}
-                value={form.direction}
-                options={[
-                  {
-                    value: "long",
-                    label: t("common.long"),
-                    icon: <ArrowUpRight className="h-4 w-4" />,
-                    tone: "positive",
-                  },
-                  {
-                    value: "short",
-                    label: t("common.short"),
-                    icon: <ArrowDownRight className="h-4 w-4" />,
-                    tone: "negative",
-                  },
-                  { value: "be", label: t("common.be"), icon: <Minus className="h-4 w-4" /> },
-                ]}
-                onChange={(direction) =>
-                  setForm((f) => ({
-                    ...f,
-                    direction,
-                    ...(direction === "be" ? { rMultiple: "0" } : {}),
-                  }))
-                }
-              />
-            </Field>
-            <div className="grid grid-cols-2 gap-3">
-              <Field label={t("trade.riskAmount")}>
-                <div className="grid grid-cols-[minmax(0,1fr)_72px] gap-2">
+          )}
+
+          <div className="space-y-3">
+            {/* 1 — LE TRADE */}
+            <FormSection n={1} title={t("trade.secTrade")} done={tradeDone}>
+              <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+                <label className="block min-w-0">
+                  <FormLabel ok={symbolOk}>{req("trade.symbol")}</FormLabel>
                   <Input
-                    aria-label={t("trade.riskAmount")}
-                    className="tv-trade-number tv-figure"
-                    type="number"
-                    step="0.01"
-                    inputMode="decimal"
-                    value={form.riskAmount}
-                    onChange={(e) => setForm((f) => ({ ...f, riskAmount: e.target.value }))}
-                    placeholder="0.00"
+                    aria-label={t("trade.symbol")}
+                    value={form.symbol}
+                    onChange={(e) => setForm((f) => ({ ...f, symbol: e.target.value }))}
+                    placeholder={t("trade.symbolPh")}
+                    autoCapitalize="characters"
+                    className="tv-figure uppercase placeholder:normal-case"
                   />
-                  <SelectPicker
-                    variant="field"
-                    label={t("trade.riskUnit")}
-                    value={form.riskType}
-                    onChange={(riskType) => setForm((f) => ({ ...f, riskType }))}
+                </label>
+                <div className="order-last col-span-2 min-w-0 sm:order-none sm:col-span-1">
+                  <FormLabel>{t("trade.direction")}</FormLabel>
+                  <ChoiceGroup
+                    label={t("trade.direction")}
+                    className="tv-direction"
+                    value={form.direction}
                     options={[
-                      { value: "dollar", label: currencySymbol() },
-                      { value: "percent", label: "%" },
+                      {
+                        value: "long",
+                        label: t("common.long"),
+                        icon: <ArrowUpRight className="h-3.5 w-3.5" />,
+                        tone: "positive",
+                      },
+                      {
+                        value: "short",
+                        label: t("common.short"),
+                        icon: <ArrowDownRight className="h-3.5 w-3.5" />,
+                        tone: "negative",
+                      },
+                      {
+                        value: "be",
+                        label: t("common.be"),
+                        icon: <Minus className="h-3.5 w-3.5" />,
+                      },
                     ]}
+                    onChange={(direction) =>
+                      setForm((f) => ({
+                        ...f,
+                        direction,
+                        ...(direction === "be" ? { rMultiple: "0" } : {}),
+                      }))
+                    }
                   />
                 </div>
-              </Field>
-              <Field label={t("trade.rrMultiple")} error={rMultipleError}>
-                {pnlLocked ? (
-                  <Input
-                    aria-label={t("trade.rrMultiple")}
-                    className="tv-trade-number tv-figure"
-                    type="number"
-                    step="0.1"
-                    inputMode="decimal"
-                    value={rDraft ?? (riskDollar > 0 ? derivedR.toFixed(2) : "")}
-                    onChange={(e) => editBrokerR(e.target.value)}
-                    onBlur={() => setRDraft(null)}
-                    disabled={!(riskDollar > 0)}
-                    placeholder="—"
+                <div className="min-w-0">
+                  <FormLabel ok={!!form.date}>{req("trade.date")}</FormLabel>
+                  <DateField
+                    value={form.date}
+                    onChange={(date) => setForm((f) => ({ ...f, date }))}
+                    locale={intlLocale(lang)}
+                    todayLabel={t("common.today")}
+                    aria-label={t("trade.date")}
                   />
-                ) : (
-                  <Input
-                    aria-label={t("trade.rrMultiple")}
-                    className="tv-trade-number tv-figure"
-                    type="number"
-                    step="0.1"
-                    inputMode="decimal"
-                    value={form.rMultiple}
-                    onChange={(e) => setForm((f) => ({ ...f, rMultiple: e.target.value }))}
-                    disabled={form.direction === "be"}
-                    placeholder="2.0"
-                  />
-                )}
-              </Field>
-            </div>
-            {pnlLocked && (
-              <Field label={t("trade.brokerPnl")}>
-                <Input
-                  aria-label={t("trade.brokerPnl")}
-                  type="number"
-                  step="0.01"
-                  inputMode="decimal"
-                  value={form.brokerPnl}
-                  onChange={(e) => {
-                    setRDraft(null);
-                    setForm((f) => ({ ...f, brokerPnl: e.target.value }));
-                  }}
-                  className={cn(
-                    "tv-figure",
-                    calculatedPnl > 0
-                      ? "text-emerald-400"
-                      : calculatedPnl < 0
-                        ? "text-red-400"
-                        : "text-slate-300",
+                </div>
+              </div>
+              <TradeNewsLine
+                symbol={form.symbol}
+                date={form.date}
+                entryTime={form.entryTime}
+                exitTime={form.exitTime}
+              />
+            </FormSection>
+
+            {/* 2 — RISQUE ET RÉSULTAT */}
+            <FormSection n={2} title={t("trade.secResult")} done={resultDone}>
+              <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+                <div className="min-w-0">
+                  <FormLabel ok={riskOk}>{req("trade.riskAmount")}</FormLabel>
+                  <div className="flex gap-1.5">
+                    <Input
+                      aria-label={t("trade.riskAmount")}
+                      type="number"
+                      step="0.01"
+                      inputMode="decimal"
+                      value={form.riskAmount}
+                      onChange={(e) => setForm((f) => ({ ...f, riskAmount: e.target.value }))}
+                      placeholder={form.riskType === "dollar" ? "200" : "1.0"}
+                      className="tv-figure min-w-0 flex-1"
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setForm((f) => ({
+                          ...f,
+                          riskType: f.riskType === "dollar" ? "percent" : "dollar",
+                        }))
+                      }
+                      aria-label={t("trade.riskUnit")}
+                      title={t("trade.riskUnit")}
+                      className="tv-trade-unit tv-figure"
+                    >
+                      {form.riskType === "dollar" ? currencySymbol() : "%"}
+                    </button>
+                  </div>
+                </div>
+                <div className="min-w-0">
+                  <FormLabel ok={rOk && !rMultipleError}>{req("trade.rrMultiple")}</FormLabel>
+                  {pnlLocked ? (
+                    <Input
+                      aria-label={t("trade.rrMultiple")}
+                      type="number"
+                      step="0.1"
+                      inputMode="decimal"
+                      value={rDraft ?? (riskDollar > 0 ? derivedR.toFixed(2) : "")}
+                      onChange={(e) => editBrokerR(e.target.value)}
+                      onBlur={() => setRDraft(null)}
+                      disabled={!(riskDollar > 0)}
+                      placeholder="—"
+                      className="tv-figure"
+                    />
+                  ) : (
+                    <Input
+                      aria-label={t("trade.rrMultiple")}
+                      type="number"
+                      step="0.1"
+                      inputMode="decimal"
+                      value={form.rMultiple}
+                      onChange={(e) => setForm((f) => ({ ...f, rMultiple: e.target.value }))}
+                      disabled={form.direction === "be"}
+                      placeholder="2.0"
+                      className={cn("tv-figure", rMultipleError && "border-red-500/50")}
+                    />
                   )}
-                />
-              </Field>
-            )}
-            {form.riskType === "percent" && (
-              <Field label={t("trade.accountBalance")}>
-                <Input
-                  aria-label={t("trade.accountBalance")}
-                  type="number"
-                  value={accountBalance}
-                  onChange={(e) => {
-                    const value = parseFloat(e.target.value) || 0;
-                    setAccountBalance(value);
-                    saveAccountBalance(userId, value);
-                  }}
-                />
-                <p className="tv-num tv-prose text-slate-500">
-                  {formatMoney(riskDollar)} {t("dashboard.riskSuffix")}
+                  <p className="mt-1 text-[11px] leading-snug text-slate-500">
+                    {rMultipleError ??
+                      (pnlLocked ? t("trade.rDerivedHint") : t("trade.rrHintShort"))}
+                  </p>
+                </div>
+                <div className="col-span-2 min-w-0 sm:col-span-1">
+                  <FormLabel>{pnlLocked ? t("trade.brokerPnl") : t("trade.estPnl")}</FormLabel>
+                  {pnlLocked ? (
+                    <Input
+                      aria-label={t("trade.brokerPnl")}
+                      type="number"
+                      step="0.01"
+                      inputMode="decimal"
+                      value={form.brokerPnl}
+                      onChange={(e) => {
+                        setRDraft(null);
+                        setForm((f) => ({ ...f, brokerPnl: e.target.value }));
+                      }}
+                      className="tv-figure tv-trade-pnl-input"
+                      data-tone={tone}
+                    />
+                  ) : (
+                    <output className="tv-trade-pnl tv-figure" data-tone={tone} aria-live="polite">
+                      {form.direction === "be"
+                        ? "BE"
+                        : formatMoney(calculatedPnl, { signed: true })}
+                    </output>
+                  )}
+                </div>
+              </div>
+              {form.riskType === "percent" && (
+                <div className="tv-trade-strip">
+                  <Wallet className="h-3.5 w-3.5 shrink-0 text-slate-500" />
+                  <span className="shrink-0 text-[12px] text-slate-500">
+                    {t("trade.accountBalance")}
+                  </span>
+                  <input
+                    aria-label={t("trade.accountBalance")}
+                    type="number"
+                    value={accountBalance}
+                    onChange={(e) => {
+                      const value = parseFloat(e.target.value) || 0;
+                      setAccountBalance(value);
+                      saveAccountBalance(userId, value);
+                    }}
+                    className="tv-figure min-w-0 flex-1 bg-transparent text-[13px] text-white focus:outline-none"
+                  />
+                  <span className="tv-figure shrink-0 text-[12px] text-slate-400">
+                    = {formatMoney(riskDollar)}
+                  </span>
+                </div>
+              )}
+              <Disclosure title={t("trade.positionCalc")} open={showCalc} onChange={setShowCalc}>
+                <div className={CHIP_ROW}>
+                  {POINT_VALUES.map((p) => (
+                    <Chip
+                      key={p.label}
+                      selected={pointValue === String(p.value)}
+                      onClick={() => setPointValue(String(p.value))}
+                    >
+                      {p.label} <span className="tv-figure">{p.value}</span>
+                    </Chip>
+                  ))}
+                </div>
+                <div className="grid grid-cols-2 gap-2.5">
+                  <label className="block min-w-0">
+                    <span className={FORM_LABEL}>{t("trade.stopPoints")}</span>
+                    <Input
+                      aria-label={t("trade.stopPoints")}
+                      type="number"
+                      step="0.25"
+                      min="0"
+                      value={stopPoints}
+                      onChange={(e) => setStopPoints(e.target.value)}
+                      placeholder="10"
+                      className="tv-figure"
+                    />
+                  </label>
+                  <label className="block min-w-0">
+                    <span className={FORM_LABEL}>{t("trade.pointValue")}</span>
+                    <Input
+                      aria-label={t("trade.pointValue")}
+                      type="number"
+                      step="0.5"
+                      min="0"
+                      value={pointValue}
+                      onChange={(e) => setPointValue(e.target.value)}
+                      className="tv-figure"
+                    />
+                  </label>
+                </div>
+                <p
+                  className={cn(
+                    "tv-trade-strip text-[12px]",
+                    calcContracts ? "text-[var(--tv-highlight)]" : "text-slate-500",
+                  )}
+                >
+                  {calcContracts ? (
+                    <>
+                      <span className="tv-figure">
+                        {calcContracts.contracts} {t("trade.contracts")}
+                      </span>
+                      <span className="ml-auto text-slate-400">
+                        {t("trade.effectiveRisk")}:{" "}
+                        <span className="tv-figure">
+                          {formatMoney(calcContracts.effectiveRisk)}
+                        </span>
+                      </span>
+                    </>
+                  ) : (
+                    t("trade.calcHint")
+                  )}
                 </p>
-              </Field>
-            )}
-            <Disclosure
-              title={`${t("trade.timing")} · ${form.entryTime || "—"} → ${form.exitTime || "—"}`}
-              open={timingOpen}
-              onChange={setTimingOpen}
-            >
-              <div className="grid grid-cols-2 gap-3">
-                <Field label={t("trade.entryTime")}>
+              </Disclosure>
+            </FormSection>
+
+            {/* 3 — HORAIRES ET SETUP */}
+            <FormSection n={3} title={t("trade.secTiming")} done={!!form.entryTime && !timeError}>
+              <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+                <div className="min-w-0">
+                  <FormLabel>{t("trade.entryTime")}</FormLabel>
                   <TimeField
                     value={form.entryTime}
                     onChange={(entryTime) => setForm((f) => ({ ...f, entryTime }))}
@@ -788,205 +976,125 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                     aria-label={t("trade.entryTime")}
                     doneLabel={t("common.done")}
                   />
-                </Field>
-                <Field label={t("trade.exitTime")} error={timeError}>
+                </div>
+                <div className="min-w-0">
+                  <FormLabel>{t("trade.exitTime")}</FormLabel>
                   <TimeField
                     value={form.exitTime}
                     onChange={(exitTime) => setForm((f) => ({ ...f, exitTime }))}
                     locale={intlLocale(lang)}
                     aria-label={t("trade.exitTime")}
                     doneLabel={t("common.done")}
+                    className={cn(timeError && "border-red-500/50")}
                   />
-                </Field>
+                  {timeError && (
+                    <p role="alert" className="mt-1 text-[11px] text-red-400">
+                      {timeError}
+                    </p>
+                  )}
+                </div>
+                <div className="col-span-2 min-w-0 sm:col-span-1">
+                  <FormLabel>{t("trade.strategy")}</FormLabel>
+                  <SelectPicker
+                    variant="field"
+                    label={t("trade.strategy")}
+                    value={form.strategy}
+                    onChange={(strategy) => setForm((f) => ({ ...f, strategy }))}
+                    searchLabel={t("picker.search")}
+                    options={Array.from(new Set([...STRATEGIES, form.strategy]))
+                      .filter(Boolean)
+                      .map((value) => ({ value, label: value }))}
+                  />
+                </div>
               </div>
-              <SelectPicker
-                label={t("trade.timePresets")}
-                value={`${form.entryTime}|${form.exitTime}`}
-                renderTrigger={({ open, toggle, controls }) => (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={toggle}
-                    aria-haspopup="listbox"
-                    aria-expanded={open}
-                    aria-controls={controls}
-                  >
-                    {t("trade.timePresets")} <ChevronDown className="h-3 w-3" />
-                  </Button>
-                )}
-                onChange={(value) => {
-                  const [entryTime, exitTime] = value.split("|");
-                  setForm((f) => ({ ...f, entryTime, exitTime }));
-                }}
-                options={[
+              {/* Un tap remplit entrée + sortie, puis tout reste ajustable. */}
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="tv-label mr-0.5 text-slate-500">{t("trade.timePresets")}</span>
+                {[
                   ["09:30", "10:15"],
                   ["10:00", "11:00"],
                   ["15:30", "16:00"],
                   ["16:00", "17:00"],
-                ].map(([a, b]) => ({ value: `${a}|${b}`, label: `${a} → ${b}` }))}
-              />
-            </Disclosure>
-          </div>
-          <Disclosure
-            title={t("trade.detailsNotes")}
-            open={detailsOpen}
-            onChange={setDetailsOpen}
-            className="mt-3"
-          >
-            <Field label={t("trade.notes")}>
-              <Textarea
-                aria-label={t("trade.notes")}
-                value={form.notes}
-                onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
-                placeholder={t("trade.notesPlaceholder")}
-                rows={3}
-              />
-            </Field>
-            <Field label={t("trade.strategy")}>
-              <SelectPicker
-                variant="field"
-                label={t("trade.strategy")}
-                value={form.strategy}
-                onChange={(strategy) => setForm((f) => ({ ...f, strategy }))}
-                searchLabel={t("picker.search")}
-                options={Array.from(new Set([...STRATEGIES, form.strategy]))
-                  .filter(Boolean)
-                  .map((value) => ({ value, label: value }))}
-              />
-            </Field>
-            {trade?.broker && (
-              <div className="tv-trade-inset space-y-3">
-                <div>
-                  <p className="tv-label text-slate-400">
-                    {t("trade.importedFrom").replace("{broker}", "Tradovate")}
-                  </p>
-                  {trade.brokerAccount && (
-                    <p className="tv-prose mt-1 text-slate-500">{trade.brokerAccount}</p>
-                  )}
-                </div>
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                  {(
-                    [
-                      ["quantity", "trade.execContracts", "1"],
-                      ["entryPrice", "trade.execEntry", "0.25"],
-                      ["exitPrice", "trade.execExit", "0.25"],
-                      ["fees", "trade.execFees", "0.01"],
-                    ] as const
-                  ).map(([key, label, step]) => (
-                    <Field key={key} label={t(label)}>
-                      <Input
-                        aria-label={t(label)}
-                        type="number"
-                        step={step}
-                        inputMode="decimal"
-                        value={form[key]}
-                        onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
-                        placeholder="—"
-                      />
-                    </Field>
-                  ))}
-                </div>
-                {trade.reviewPending && (
-                  <p className="tv-prose text-slate-500">
-                    {riskDollar > 0 ? t("trade.reviewHint") : t("trade.reviewHintRisk")}
-                  </p>
-                )}
+                ].map(([a, b]) => {
+                  const on = form.entryTime === a && form.exitTime === b;
+                  return (
+                    <button
+                      key={a}
+                      type="button"
+                      aria-pressed={on}
+                      onClick={() => setForm((f) => ({ ...f, entryTime: a, exitTime: b }))}
+                      className="tv-trade-preset tv-figure"
+                    >
+                      {a} → {b}
+                    </button>
+                  );
+                })}
               </div>
-            )}
-            <Disclosure title={t("trade.positionCalc")} open={showCalc} onChange={setShowCalc}>
-              <SelectPicker
-                inline
-                label={t("trade.pointValue")}
-                value={pointValue}
-                onChange={setPointValue}
-                options={POINT_VALUES.map((p) => ({
-                  value: String(p.value),
-                  label: `${p.label} ${p.value}`,
-                }))}
-              />
-              <div className="grid grid-cols-2 gap-3">
-                <Field label={t("trade.stopPoints")}>
-                  <Input
-                    aria-label={t("trade.stopPoints")}
-                    type="number"
-                    step="0.25"
-                    min="0"
-                    value={stopPoints}
-                    onChange={(e) => setStopPoints(e.target.value)}
-                  />
-                </Field>
-                <Field label={t("trade.pointValue")}>
-                  <Input
-                    aria-label={t("trade.pointValue")}
-                    type="number"
-                    step="0.5"
-                    min="0"
-                    value={pointValue}
-                    onChange={(e) => setPointValue(e.target.value)}
-                  />
-                </Field>
-              </div>
-              <p className="tv-num tv-prose text-slate-400">
-                {calcContracts
-                  ? `${calcContracts.contracts} ${t("trade.contracts")} · ${t("trade.effectiveRisk")}: ${formatMoney(calcContracts.effectiveRisk)}`
-                  : t("trade.calcHint")}
-              </p>
-            </Disclosure>
-            <Disclosure title={t("trade.advanced")} open={showAdvanced} onChange={setShowAdvanced}>
-              <div className="grid gap-3 sm:grid-cols-3">
-                {(
-                  [
-                    ["mae", `MAE (${currencySymbol()})`],
-                    ["mfe", `MFE (${currencySymbol()})`],
-                    ["slippage", `${t("trade.slippage")} (${currencySymbol()})`],
-                  ] as const
-                ).map(([key, label]) => (
-                  <Field key={key} label={label}>
-                    <Input
-                      aria-label={label}
-                      type="number"
-                      step="0.01"
-                      value={form[key]}
-                      onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
-                      placeholder="—"
+            </FormSection>
+
+            {/* 4 — QUALITÉ D'EXÉCUTION */}
+            <FormSection n={4} title={t("trade.secQuality")}>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="min-w-0">
+                  <div className="mb-1 flex items-center justify-between gap-2">
+                    <FormLabel className="mb-0">{t("trade.setupQuality")}</FormLabel>
+                    <span className="tv-trade-badge" data-level={form.setupQuality}>
+                      {qualityLabels[form.setupQuality - 1]}
+                    </span>
+                  </div>
+                  <div
+                    className="flex items-center gap-1.5"
+                    role="radiogroup"
+                    aria-label={t("trade.setupQuality")}
+                  >
+                    {[1, 2, 3, 4, 5].map((n) => {
+                      const on = n <= form.setupQuality;
+                      return (
+                        <button
+                          key={n}
+                          type="button"
+                          role="radio"
+                          aria-checked={form.setupQuality === n}
+                          aria-label={`${n} / 5`}
+                          onClick={() => setForm((f) => ({ ...f, setupQuality: n }))}
+                          className="tv-trade-star"
+                          data-on={on}
+                        >
+                          <Star className="h-4 w-4" strokeWidth={on ? 2 : 1.75} />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div className="min-w-0">
+                  <div className="mb-1 flex items-center justify-between gap-2">
+                    <FormLabel className="mb-0">{t("trade.confidence")}</FormLabel>
+                    <span className="tv-trade-badge" data-conf={confidenceLevel}>
+                      {confidenceLevel === "high"
+                        ? t("trade.confHigh")
+                        : confidenceLevel === "mid"
+                          ? t("trade.confMid")
+                          : t("trade.confLow")}
+                    </span>
+                  </div>
+                  <div className="tv-trade-strip" data-conf={confidenceLevel}>
+                    <input
+                      aria-label={t("trade.confidence")}
+                      type="range"
+                      min="1"
+                      max="100"
+                      value={form.confidence}
+                      onChange={(e) =>
+                        setForm((f) => ({ ...f, confidence: Number(e.target.value) }))
+                      }
+                      className="tv-trade-range min-w-0 flex-1"
                     />
-                    {key !== "slippage" && (
-                      <p className="tv-prose text-slate-500">
-                        {t(key === "mae" ? "trade.maeHint" : "trade.mfeHint")}
-                      </p>
-                    )}
-                  </Field>
-                ))}
-              </div>
-            </Disclosure>
-            <div className="space-y-3">
-              <Field label={t("trade.setupQuality")}>
-                <ChoiceGroup
-                  label={t("trade.setupQuality")}
-                  value={form.setupQuality}
-                  options={[1, 2, 3, 4, 5].map((value) => ({ value, label: String(value) }))}
-                  onChange={(setupQuality) => setForm((f) => ({ ...f, setupQuality }))}
-                />
-                <p className="tv-prose text-slate-500">
-                  {t(`trade.quality${form.setupQuality}` as never)}
-                </p>
-              </Field>
-              <Field label={t("trade.confidence")}>
-                <div className="tv-trade-inset flex min-h-11 items-center gap-4">
-                  <input
-                    aria-label={t("trade.confidence")}
-                    type="range"
-                    min="1"
-                    max="100"
-                    value={form.confidence}
-                    onChange={(e) => setForm((f) => ({ ...f, confidence: Number(e.target.value) }))}
-                    className="min-w-0 flex-1"
-                  />
-                  <span className="tv-figure w-12 shrink-0 text-right text-sm text-white">
-                    {form.confidence}%
-                  </span>
+                    <span className="tv-figure w-10 shrink-0 text-right text-[13px] text-white">
+                      {form.confidence}%
+                    </span>
+                  </div>
                 </div>
-              </Field>
+              </div>
               <Disclosure title={t("trade.intent")} open={showIntent} onChange={setShowIntent}>
                 <Field label={t("trade.intentEmotion")}>
                   <div className={CHIP_ROW}>
@@ -1025,21 +1133,28 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                   />
                 </Field>
               </Disclosure>
-              <Field label={t("trade.confluences")}>
-                <div className={CHIP_ROW}>
-                  {userConfluences.map((c) => (
-                    <RemovableChip
-                      key={c}
-                      selected={form.confluences.includes(c)}
-                      onClick={() => toggleConfluence(c)}
-                      onRemove={() => removeConfluence(c)}
-                      removeLabel={t("common.remove")}
-                    >
-                      {c}
-                    </RemovableChip>
-                  ))}
-                </div>
-                <div className="flex gap-2">
+            </FormSection>
+
+            {/* 5 — CONFLUENCES ET ERREURS */}
+            <FormSection n={5} title={t("trade.secContext")}>
+              <div>
+                <FormLabel>{t("trade.confluences")}</FormLabel>
+                {userConfluences.length > 0 && (
+                  <div className={cn(CHIP_ROW, "mb-2")}>
+                    {userConfluences.map((c) => (
+                      <RemovableChip
+                        key={c}
+                        selected={form.confluences.includes(c)}
+                        onClick={() => toggleConfluence(c)}
+                        onRemove={() => removeConfluence(c)}
+                        removeLabel={t("common.remove")}
+                      >
+                        {c}
+                      </RemovableChip>
+                    ))}
+                  </div>
+                )}
+                <div className="flex gap-1.5">
                   <Input
                     aria-label={t("trade.confluences")}
                     value={newConfluence}
@@ -1057,19 +1172,19 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                     variant="subtle"
                     onClick={addConfluence}
                     aria-label={t("common.add")}
-                    className="h-11 w-11 shrink-0 px-0"
+                    className="tv-trade-unit px-0"
                   >
                     <Plus className="h-4 w-4" />
                   </Button>
                 </div>
-              </Field>
-            </div>
-            <div className="space-y-3 border-t border-[var(--tv-border)] pt-3">
-              <Field label={t("trade.mistakes")}>
+              </div>
+              <div>
+                <FormLabel>{t("trade.mistakes")}</FormLabel>
                 <div className={CHIP_ROW}>
                   {(showAllMistakes ? MISTAKE_OPTIONS : MISTAKE_OPTIONS.slice(0, 5)).map((m) => (
                     <Chip
                       key={m}
+                      tone="danger"
                       selected={form.mistakes.includes(m)}
                       onClick={() =>
                         setForm((f) => ({
@@ -1083,38 +1198,51 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                       {m}
                     </Chip>
                   ))}
-                  <Button variant="ghost" size="sm" onClick={() => setShowAllMistakes((v) => !v)}>
+                  <button
+                    type="button"
+                    onClick={() => setShowAllMistakes((v) => !v)}
+                    className="tv-trade-more"
+                  >
                     {showAllMistakes ? t("common.showLess") : t("common.showMore")}
-                  </Button>
+                  </button>
                 </div>
-              </Field>
+              </div>
               <Disclosure
                 title={t("trade.reflection")}
                 open={showReflection}
                 onChange={setShowReflection}
               >
                 <Field label={t("trade.reflectionPlanRespected")}>
-                  <ChoiceGroup
-                    label={t("trade.reflectionPlanRespected")}
-                    value={form.reflectionPlan}
-                    options={[
-                      { value: "yes", label: t("trade.reflectionYes") },
-                      { value: "partial", label: t("trade.reflectionPartial") },
-                      { value: "no", label: t("trade.reflectionNo") },
-                    ]}
-                    onChange={(value) =>
-                      setForm((f) => ({
-                        ...f,
-                        reflectionPlan: f.reflectionPlan === value ? null : value,
-                      }))
-                    }
-                  />
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {(["yes", "partial", "no"] as const).map((p) => (
+                      <button
+                        key={p}
+                        type="button"
+                        aria-pressed={form.reflectionPlan === p}
+                        onClick={() =>
+                          setForm((f) => ({
+                            ...f,
+                            reflectionPlan: f.reflectionPlan === p ? null : p,
+                          }))
+                        }
+                        className="tv-trade-plan"
+                        data-plan={p}
+                      >
+                        {p === "yes"
+                          ? t("trade.reflectionYes")
+                          : p === "partial"
+                            ? t("trade.reflectionPartial")
+                            : t("trade.reflectionNo")}
+                      </button>
+                    ))}
+                  </div>
                 </Field>
                 <Field label={t("trade.reflectionReason")}>
                   <div className={CHIP_ROW}>
                     {REFLECTION_REASONS.map((r) => (
                       <Chip
                         key={r}
+                        tone="warning"
                         selected={form.reflectionReason === r}
                         onClick={() =>
                           setForm((f) => ({
@@ -1138,15 +1266,23 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                   />
                 </Field>
               </Disclosure>
-              {/* Screenshots */}
+            </FormSection>
+
+            {/* 6 — NOTES ET CAPTURES */}
+            <FormSection n={6} title={t("trade.secNotes")}>
+              <Textarea
+                aria-label={t("trade.notes")}
+                value={form.notes}
+                onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+                placeholder={t("trade.notesPlaceholder")}
+                rows={2}
+              />
               <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className={labelClass + " mb-0"}>{t("trade.screenshots")}</label>
-                  <span className="text-xs text-slate-600 flex items-center gap-1">
-                    {t("common.pasteHint")}
-                  </span>
+                <div className="mb-1 flex items-center justify-between">
+                  <FormLabel className="mb-0">{t("trade.screenshots")}</FormLabel>
+                  <span className="text-[11px] text-slate-600">{t("common.pasteHint")}</span>
                 </div>
-                <div className="flex gap-3 flex-wrap items-start">
+                <div className="flex flex-wrap items-start gap-2">
                   {form.screenshots.map((shot, i) => (
                     <div
                       key={shot || i}
@@ -1163,71 +1299,72 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                       onDragEnd={() => {
                         dragIndex.current = null;
                       }}
-                      className="relative w-24 h-24 rounded-xl overflow-hidden border border-white/[0.08] group cursor-grab active:cursor-grabbing"
+                      className="group relative h-20 w-20 cursor-grab overflow-hidden rounded-xl border border-[var(--tv-border)] active:cursor-grabbing"
                     >
                       <button
                         type="button"
                         onClick={() => setLightboxIndex(i)}
-                        className="block w-full h-full"
+                        className="block h-full w-full"
                       >
                         {screenshotUrls[shot] ? (
                           <img
                             src={screenshotUrls[shot]}
                             alt={`Screenshot ${i + 1}`}
-                            className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                            className="h-full w-full object-cover transition-transform group-hover:scale-105"
                             onError={() => {
                               invalidateScreenshot(shot);
                             }}
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <div className="w-4 h-4 border-2 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin" />
+                          <div className="flex h-full w-full items-center justify-center">
+                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-[var(--tv-border)] border-t-[var(--tv-accent)]" />
                           </div>
                         )}
                       </button>
                       {/* Rang + flèches de réordonnancement (tactile). */}
-                      <span className="tv-num absolute top-1 left-1 grid h-5 w-5 place-items-center rounded-md bg-black/70 text-xs font-bold text-white">
+                      <span className="tv-figure absolute left-1 top-1 grid h-5 w-5 place-items-center rounded-md bg-black/70 text-[11px] text-white">
                         {i + 1}
                       </span>
                       {form.screenshots.length > 1 && (
-                        <div className="absolute inset-x-0 bottom-0 flex justify-between bg-black/60 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                        <div className="absolute inset-x-0 bottom-0 flex justify-between bg-black/60 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
                           <button
                             type="button"
                             disabled={i === 0}
                             onClick={() => moveScreenshot(i, i - 1)}
                             aria-label={t("trade.moveScreenshotLeft")}
-                            className="flex-1 py-1 grid place-items-center text-white disabled:opacity-25"
+                            className="grid flex-1 place-items-center py-1 text-white disabled:opacity-25"
                           >
-                            <ArrowLeft className="w-3.5 h-3.5" />
+                            <ArrowLeft className="h-3.5 w-3.5" />
                           </button>
                           <button
                             type="button"
                             disabled={i === form.screenshots.length - 1}
                             onClick={() => moveScreenshot(i, i + 1)}
                             aria-label={t("trade.moveScreenshotRight")}
-                            className="flex-1 py-1 grid place-items-center text-white disabled:opacity-25"
+                            className="grid flex-1 place-items-center py-1 text-white disabled:opacity-25"
                           >
-                            <ArrowRight className="w-3.5 h-3.5" />
+                            <ArrowRight className="h-3.5 w-3.5" />
                           </button>
                         </div>
                       )}
                       <button
+                        type="button"
                         onClick={() => removeScreenshot(i)}
                         aria-label={t("common.remove")}
-                        className="absolute top-1 right-1 w-6 h-6 bg-[var(--tv-plate-3)] rounded-full flex items-center justify-center opacity-60 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+                        className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-[var(--tv-plate-3)] opacity-60 transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
                       >
-                        <X className="w-3 h-3 text-white" />
+                        <X className="h-3 w-3 text-white" />
                       </button>
                     </div>
                   ))}
                   {form.screenshots.length < 3 && (
-                    <label className="w-24 h-24 rounded-xl border-2 border-dashed border-white/[0.08] flex flex-col items-center justify-center cursor-pointer hover:border-[var(--tv-border-accent)] hover:bg-cyan-500/[0.03] transition">
+                    <label className="tv-trade-drop h-20 w-20 flex-col">
                       {uploading ? (
-                        <div className="w-5 h-5 border-2 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin" />
+                        <div className="h-5 w-5 animate-spin rounded-full border-2 border-[var(--tv-border)] border-t-[var(--tv-accent)]" />
                       ) : (
                         <>
-                          <ImagePlus className="w-5 h-5 text-slate-600" />
-                          <span className="text-xs text-slate-600 mt-1">{t("trade.upload")}</span>
+                          <ImagePlus className="h-5 w-5" />
+                          <span className="mt-1 text-[11px]">{t("trade.upload")}</span>
                         </>
                       )}
                       <input
@@ -1241,39 +1378,77 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                   )}
                 </div>
               </div>
-            </div>
-          </Disclosure>
-        </form>
-        <footer className="shrink-0 border-t border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-4 py-2.5">
-          {(timeError || rMultipleError) && (
-            <p role="alert" className="tv-prose mb-2 text-red-400">
-              {timeError || rMultipleError}
-            </p>
-          )}
-          <div className="flex items-center gap-2">
-            <div className="min-w-0 flex-1">
-              <span className="tv-label block truncate text-slate-500">
-                {pnlLocked ? t("trade.brokerPnl") : t("trade.estPnl")}
-              </span>
-              <span
-                className={cn(
-                  "tv-figure block truncate text-xl",
-                  calculatedPnl > 0
-                    ? "text-emerald-400"
-                    : calculatedPnl < 0
-                      ? "text-red-400"
-                      : "text-slate-400",
-                )}
+              <Disclosure
+                title={t("trade.advanced")}
+                open={showAdvanced}
+                onChange={setShowAdvanced}
               >
-                {formatMoney(calculatedPnl, { signed: true })}
-              </span>
+                <div className="grid gap-2.5 sm:grid-cols-3">
+                  {(
+                    [
+                      ["mae", `MAE (${currencySymbol()})`],
+                      ["mfe", `MFE (${currencySymbol()})`],
+                      ["slippage", `${t("trade.slippage")} (${currencySymbol()})`],
+                    ] as const
+                  ).map(([key, label]) => (
+                    <label key={key} className="block min-w-0">
+                      <span className={FORM_LABEL}>{label}</span>
+                      <Input
+                        aria-label={label}
+                        type="number"
+                        step="0.01"
+                        value={form[key]}
+                        onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
+                        placeholder="—"
+                        className="tv-figure"
+                      />
+                      {key !== "slippage" && (
+                        <span className="mt-1 block text-[11px] leading-snug text-slate-500">
+                          {t(key === "mae" ? "trade.maeHint" : "trade.mfeHint")}
+                        </span>
+                      )}
+                    </label>
+                  ))}
+                </div>
+              </Disclosure>
+            </FormSection>
+          </div>
+        </form>
+        <footer className="shrink-0 border-t border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-4 py-2.5 sm:px-5">
+          <div className="flex items-center gap-2">
+            {/* Le récapitulatif de ce qui sera enregistré. */}
+            <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden text-[12px] text-slate-500">
+              {isValid ? (
+                <>
+                  <span className="tv-figure shrink-0 text-white">{form.symbol.toUpperCase()}</span>
+                  {session && (
+                    <span className="tv-label hidden shrink-0 rounded px-1.5 py-0.5 text-[var(--tv-highlight)] sm:inline tv-trade-session">
+                      {t(`session.${session}` as never)}
+                    </span>
+                  )}
+                  <span className="tv-figure hidden shrink-0 sm:inline">
+                    {getDuration(form.entryTime, form.exitTime)}
+                  </span>
+                  <span
+                    className="tv-figure tv-trade-recap-pnl shrink-0 text-[14px]"
+                    data-tone={tone}
+                  >
+                    {form.direction === "be" ? "BE" : formatMoney(calculatedPnl, { signed: true })}
+                  </span>
+                </>
+              ) : (
+                <span className="truncate">{t("trade.fillRequired")}</span>
+              )}
             </div>
+            <Button variant="ghost" type="button" onClick={onClose} className="shrink-0">
+              {t("common.cancel")}
+            </Button>
             <Button
               variant="entry"
               type="submit"
               form="trade-entry-form"
               disabled={!isValid}
-              className="h-11"
+              className="shrink-0"
             >
               {trade ? t("trade.updateTrade") : t("trade.saveTrade")}
             </Button>
@@ -1289,5 +1464,64 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
         />
       )}
     </>
+  );
+}
+
+/**
+ * Les annonces économiques de la journée, sur une ligne discrète : la devise
+ * du trade, les annonces fortes (point rouge) et moyennes (point ambre), leur
+ * heure, et celles tombées PENDANT la position. Rien si le symbole est inconnu.
+ */
+function TradeNewsLine({
+  symbol,
+  date,
+  entryTime,
+  exitTime,
+}: {
+  symbol: string;
+  date: string;
+  entryTime: string;
+  exitTime: string;
+}) {
+  const { t } = useT();
+  const input = useMemo(
+    () => ({ symbol, date, entryTime, exitTime }),
+    [symbol, date, entryTime, exitTime],
+  );
+  const { news, loading, failed } = useTradeNews(input);
+  if (!news.currencies.length || !date || failed) return null;
+  const ccy = news.currencies.join("/");
+  const shown = news.items.slice(0, 3);
+  const more = news.items.length - shown.length;
+  return (
+    <p
+      className="tv-trade-news"
+      title={news.items
+        .map((i) => `${i.time ?? "—"} ${i.event.currency} ${i.event.title}`)
+        .join("\n")}
+    >
+      <Newspaper className="h-3 w-3 shrink-0" aria-hidden />
+      {loading ? (
+        <span className="text-slate-600">…</span>
+      ) : news.items.length === 0 ? (
+        <span>{t("trade.newsNone").replace("{ccy}", ccy)}</span>
+      ) : (
+        <>
+          <span className="shrink-0 text-slate-400">{ccy}</span>
+          {shown.map((i) => (
+            <span key={i.event.id} className="tv-trade-news-item" data-during={i.duringTrade}>
+              <span className="tv-trade-news-dot" data-impact={i.event.impact} aria-hidden />
+              <span className="truncate">{i.event.title}</span>
+              {i.time && <span className="tv-figure shrink-0">{i.time}</span>}
+            </span>
+          ))}
+          {more > 0 && <span className="tv-figure shrink-0">+{more}</span>}
+          {news.items.some((i) => i.duringTrade) && (
+            <span className="shrink-0 text-amber-300/90">· {t("trade.newsDuring")}</span>
+          )}
+          {news.approximate && <span className="shrink-0">· {t("trade.newsApprox")}</span>}
+        </>
+      )}
+    </p>
   );
 }

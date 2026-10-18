@@ -45,7 +45,7 @@ interface RawEntry {
 }
 
 /** FNV-1a 32 bits — hash déterministe, synchrone, identique sur tous les runtimes. */
-function stableId(parts: string): string {
+export function stableId(parts: string): string {
   let h = 0x811c9dc5;
   for (let i = 0; i < parts.length; i++) {
     h ^= parts.charCodeAt(i);
@@ -70,14 +70,14 @@ function text(value: unknown): string | null {
  * brute donnerait un nombre incompréhensible : on ne garde que la valeur
  * courante, celle que le trader lit sur le calendrier.
  */
-function figure(value: unknown): string | null {
+export function figure(value: unknown): string | null {
   const raw = text(value);
   if (raw === null) return null;
   const [current] = raw.split("|");
   return text(current);
 }
 
-function normalizeImpact(value: unknown): CalendarEvent["impact"] {
+export function normalizeImpact(value: unknown): CalendarEvent["impact"] {
   const v = typeof value === "string" ? value.trim().toLowerCase() : "";
   if (v === "high") return "high";
   if (v === "medium") return "medium";
@@ -150,7 +150,7 @@ export function parseForexFactoryFeed(raw: unknown): CalendarEvent[] {
 }
 
 /** Erreur HTTP de la source, avec son statut — pour décider d'un nouvel essai. */
-class SourceHttpError extends Error {
+export class SourceHttpError extends Error {
   constructor(
     url: string,
     readonly status: number,

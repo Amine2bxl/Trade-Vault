@@ -32,6 +32,7 @@ import {
   CartesianGrid,
 } from "recharts";
 import { useT } from "@/app/i18n/LanguageContext";
+import { NewsDaysCard } from "./NewsDaysCard";
 import {
   EmptyState,
   PageContainer,
@@ -1189,6 +1190,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                 </ResponsiveContainer>
               </div>
             </Card>
+            <NewsDaysCard trades={cutoffTrades} />
           </div>
         )}
       </div>

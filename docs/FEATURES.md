@@ -14,11 +14,11 @@ Chemins relatifs à `src/app/` sauf mention contraire.
 | Checklist pré-market (`checklist`) | `features/checklist/` | `Checklist.tsx` | `ChecklistWizard`, `checklistDefaults`, `checklistStreak`, `voice` (lignes parlées), `jarvis/jarvisVoice`, `profiles.checklist_config` |
 | Calculateur de position (`calculator`) | `features/calculator/` | `LotSizeCalculator.tsx` | `trading/positionCalc`, `utils/userPrefs` |
 | Calendrier économique (`news`) | `features/news/` | `EconomicNews.tsx` | `useEconomicCalendar`, `economicEvents`, `modules/economic-calendar`, `backend/economic-calendar.*` |
-| Journal (`journal`) | `features/journal/` | `Journal.tsx` | `TradeModal` (saisie), `TradeDetailModal`, `ImportCsvModal` + `csvImport`, `exportCsv`, `useTradeFilter` + `deepLink`, `trading/tradeFilter`, `store/trades` |
+| Journal (`journal`) | `features/journal/` | `Journal.tsx` | `TradeModal` (saisie en six sections numérotées ; ligne des annonces du jour via `news/useTradeNews` + `domain/tradeNews`), `TradeDetailModal`, `ImportCsvModal` + `csvImport`, `exportCsv`, `useTradeFilter` + `deepLink`, `trading/tradeFilter`, `store/trades` |
 | Calendrier P&L (`calendar`) | `features/calendar/` | `CalendarPage.tsx` | `WeekDetailModal`, `calendarGrid`, `calendarTone`, `hooks/useAvailableHeight` |
 | Erreurs (`mistakes`) | `features/mistakes/` | `Mistakes.tsx` | `mistakePlan`, `trading/mistakeClusters`, `domain/behavioral`, `goals/useGoalProgress` |
 | Setups manqués (`missed`) | `features/missed/` | `MissedOpportunities.tsx` | `MissedSetupDetailModal`, `store/missed` |
-| Analytics (`analytics`) | `features/analytics/` | `Analytics.tsx` | `domain/quantStats`, `domain/tradeCalcs`, `trading/EquityChart`, `trading/chartTheme` |
+| Analytics (`analytics`) | `features/analytics/` | `Analytics.tsx` | `NewsDaysCard` (jours d'annonce / jours calmes, `domain/tradeNews.newsDaySplit`), `domain/quantStats`, `domain/tradeCalcs`, `trading/EquityChart`, `trading/chartTheme` |
 | Saisonnalité (`seasonality`) | `features/seasonality/` | `Seasonality.tsx` | `SeasonalEquity`, `assetSeasonality`, `seasonalCurve` |
 | Rapports (`reports`) | `features/reports/` | `Reports.tsx` | `reportMonths`, `domain/monthlyReport`, `store/reports`, `backend/reports.functions` |
 | Monte Carlo (`montecarlo`) | `features/monte-carlo/` | `MonteCarlo.tsx` | `monteCarloEngine`, `monteCarloViz`, `propFirms`, `mistakes/mistakePlan` |

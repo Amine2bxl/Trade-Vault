@@ -103,6 +103,7 @@ export type {
 } from "./Picker";
 export { SelectionPanel } from "./SelectionPanel";
 export { ChoiceGroup, Disclosure } from "./FormControls";
+export { FormSection, FormLabel, FORM_LABEL } from "./FormSection";
 export { selection } from "./selection";
 
 export { PageControls } from "./PageControls";

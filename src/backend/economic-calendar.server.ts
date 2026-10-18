@@ -1,5 +1,10 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { activeProvider, type CalendarEvent } from "@/modules/economic-calendar";
+import {
+  activeProvider,
+  fetchForexFactoryWeek,
+  type CalendarEvent,
+} from "@/modules/economic-calendar";
+import { isWeekStart, previousWeekStarts } from "@/domain/tradeNews";
 
 // ============================================================
 //  Synchronisation du calendrier économique.
@@ -212,6 +217,198 @@ async function pruneOldEvents(sb: AnyClient): Promise<void> {
   if (oldError) console.error("[economic-calendar] prune (old) failed", oldError);
 }
 
+// ── HISTORIQUE : les semaines passées, une page à la fois ────────────────────
+//
+// Le flux officiel ne publie que la semaine en cours. Pour qu'un trade ancien
+// retrouve les annonces de sa journée, les semaines passées sont lues sur les
+// pages hebdomadaires de la source (`forex-factory-history.ts`) et rangées dans
+// le même cache. Le registre `economic_calendar_backfill` retient ce qui a été
+// tenté : une semaine réussie n'est plus jamais redemandée, un échec n'est
+// retenté qu'après une semaine, trois fois au plus.
+
+/** Écart minimal entre deux pages demandées à la source, tous appelants confondus. */
+const BACKFILL_SPACING_MS = 20_000;
+/** Délai avant de retenter une semaine en échec. */
+const BACKFILL_RETRY_MS = 7 * 86_400_000;
+const BACKFILL_MAX_ATTEMPTS = 3;
+/** Au-delà de ce nombre d'annonces fortes/moyennes, une semaine est déjà connue. */
+const WEEK_KNOWN_MIN_EVENTS = 10;
+
+export type BackfillOutcome = "filled" | "known" | "busy" | "skipped" | "failed";
+
+interface BackfillRow {
+  week_start: string;
+  attempted_at: string;
+  succeeded: boolean;
+  attempts: number;
+}
+
+/* Si le registre n'existe pas encore (migration pas appliquée), la mémoire de
+   l'instance le remplace : moins durable, mais jamais une page de trop. */
+const memoryRegistry = new Map<string, BackfillRow>();
+let lastPageAt = 0;
+
+async function readRegistry(sb: AnyClient, week: string): Promise<BackfillRow | null> {
+  const { data, error } = await sb
+    .from("economic_calendar_backfill")
+    .select("week_start, attempted_at, succeeded, attempts")
+    .eq("week_start", week)
+    .maybeSingle();
+  if (error) return memoryRegistry.get(week) ?? null;
+  return (data as BackfillRow | null) ?? null;
+}
+
+async function writeRegistry(
+  sb: AnyClient,
+  row: BackfillRow & { events?: number; last_error?: string | null },
+): Promise<void> {
+  memoryRegistry.set(row.week_start, row);
+  const { error } = await sb
+    .from("economic_calendar_backfill")
+    .upsert(row, { onConflict: "week_start" });
+  if (error) console.warn("[economic-calendar] backfill registry unavailable", error.message);
+}
+
+async function lastRegistryAttempt(sb: AnyClient): Promise<number> {
+  const { data, error } = await sb
+    .from("economic_calendar_backfill")
+    .select("attempted_at")
+    .order("attempted_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const fromDb = !error && data?.attempted_at ? Date.parse(data.attempted_at as string) : 0;
+  return Math.max(fromDb, lastPageAt);
+}
+
+/** Nombre d'annonces fortes/moyennes déjà en cache pour la semaine. */
+async function knownEventsInWeek(sb: AnyClient, week: string): Promise<number> {
+  const from = new Date(`${week}T00:00:00Z`);
+  const to = new Date(from.getTime() + 7 * 86_400_000);
+  const { count, error } = await sb
+    .from("economic_events")
+    .select("id", { count: "exact", head: true })
+    .gte("starts_at", from.toISOString())
+    .lt("starts_at", to.toISOString())
+    .in("impact", ["high", "medium"]);
+  return error ? 0 : (count ?? 0);
+}
+
+/**
+ * Récupère UNE semaine passée si elle manque encore. Idempotent : appelé
+ * cent fois pour la même semaine, il ne contacte la source qu'une fois.
+ */
+export async function backfillEconomicWeek(
+  week: string,
+  opts: { spacingMs?: number } = {},
+): Promise<{ outcome: BackfillOutcome; events: number }> {
+  const sb = serviceClient();
+  if (!sb || !isWeekStart(week)) return { outcome: "skipped", events: 0 };
+  // Jamais la semaine en cours ni une semaine future : le flux officiel s'en charge.
+  if (Date.parse(`${week}T00:00:00Z`) + 7 * 86_400_000 > Date.now()) {
+    return { outcome: "skipped", events: 0 };
+  }
+
+  const known = await knownEventsInWeek(sb, week);
+  const reg = await readRegistry(sb, week);
+  if (reg?.succeeded || known >= WEEK_KNOWN_MIN_EVENTS) {
+    if (!reg?.succeeded) {
+      await writeRegistry(sb, {
+        week_start: week,
+        attempted_at: new Date().toISOString(),
+        succeeded: true,
+        attempts: reg?.attempts ?? 0,
+        events: known,
+      });
+    }
+    return { outcome: "known", events: known };
+  }
+  if (
+    reg &&
+    (reg.attempts >= BACKFILL_MAX_ATTEMPTS ||
+      Date.now() - Date.parse(reg.attempted_at) < BACKFILL_RETRY_MS)
+  ) {
+    return { outcome: "skipped", events: 0 };
+  }
+
+  const spacing = opts.spacingMs ?? BACKFILL_SPACING_MS;
+  if (Date.now() - (await lastRegistryAttempt(sb)) < spacing) {
+    return { outcome: "busy", events: 0 };
+  }
+
+  // Le créneau est réservé AVANT l'appel : un second appelant voit la page en cours.
+  const attemptedAt = new Date().toISOString();
+  lastPageAt = Date.now();
+  const attempts = (reg?.attempts ?? 0) + 1;
+  await writeRegistry(sb, {
+    week_start: week,
+    attempted_at: attemptedAt,
+    succeeded: false,
+    attempts,
+  });
+
+  let events: CalendarEvent[];
+  try {
+    events = await fetchForexFactoryWeek(week);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn("[economic-calendar] backfill fetch failed", week, message);
+    await writeRegistry(sb, {
+      week_start: week,
+      attempted_at: attemptedAt,
+      succeeded: false,
+      attempts,
+      last_error: message.slice(0, 300),
+    });
+    return { outcome: "failed", events: 0 };
+  }
+
+  // Une semaine passée porte ses valeurs publiées : on les écrit avec le reste.
+  const { error } = await sb.from("economic_events").upsert(
+    events.map((e) => ({ ...toRow(e), ...(e.actual !== null ? { actual: e.actual } : {}) })),
+    { onConflict: "id" },
+  );
+  if (error) {
+    console.error("[economic-calendar] backfill upsert failed", error);
+    await writeRegistry(sb, {
+      week_start: week,
+      attempted_at: attemptedAt,
+      succeeded: false,
+      attempts,
+      last_error: error.message.slice(0, 300),
+    });
+    return { outcome: "failed", events: 0 };
+  }
+
+  await writeRegistry(sb, {
+    week_start: week,
+    attempted_at: attemptedAt,
+    succeeded: true,
+    attempts,
+    events: events.length,
+    last_error: null,
+  });
+  return { outcome: "filled", events: events.length };
+}
+
+/**
+ * Le cron remonte le temps, une semaine par passage : la plus récente des
+ * semaines passées qui manque encore (trois ans au plus). Les trades anciens
+ * retrouvent ainsi leur contexte même si personne ne les rouvre.
+ */
+async function backfillNextMissingWeek(): Promise<void> {
+  const sb = serviceClient();
+  if (!sb) return;
+  for (const week of previousWeekStarts(new Date(), 156)) {
+    const reg = await readRegistry(sb, week);
+    if (reg?.succeeded) continue;
+    if (reg && reg.attempts >= BACKFILL_MAX_ATTEMPTS) continue;
+    const { outcome } = await backfillEconomicWeek(week, { spacingMs: 0 });
+    // Déjà connue, ou en attente de son prochain essai : on remonte d'une semaine.
+    if (outcome === "known" || outcome === "skipped") continue;
+    return;
+  }
+}
+
 /** Point d'entrée cron Vercel (voir src/server.ts). */
 export async function handleEconomicCalendarCron(request: Request): Promise<Response> {
   const secret = process.env.CRON_SECRET;
@@ -227,6 +424,10 @@ export async function handleEconomicCalendarCron(request: Request): Promise<Resp
 
   const sb = serviceClient();
   if (sb && result.ok) await pruneOldEvents(sb);
+  // Une semaine d'historique par passage, sans jamais faire échouer le cron.
+  await backfillNextMissingWeek().catch((e) =>
+    console.error("[economic-calendar] cron backfill failed", e),
+  );
 
   // 200 même en échec : le cache précédent est toujours servi, l'incident est
   // journalisé, et un 500 ne ferait que déclencher des alertes pour une
