@@ -33,6 +33,7 @@ import TradingRulesSection from "./TradingRulesSection";
 import { loadOnboarding, saveMonthlyTarget } from "@/app/store";
 import { usePageActions } from "@/app/contexts/PageActionsContext";
 import { useLiveTable } from "@/app/hooks/useLiveTable";
+import { createAutosaveGuard } from "@/app/utils/autosaveGuard";
 
 // Trading Plan — the trader's written constitution. Every field autosaves
 // (debounced) to profiles.trading_plan; the completion ring fills as the
@@ -83,9 +84,27 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
   /* MODIFICATION EN ATTENTE. Entre la frappe et la fin de l'enregistrement
      débouncé, ce qui arrive d'un autre appareil (ou l'écho d'une sauvegarde
      plus ancienne) ne doit pas effacer ce que le trader vient de taper : la
-     sauvegarde locale partira, et c'est elle qui gagnera. */
-  const planDirtyRef = useRef(false);
-  const planSeqRef = useRef(0);
+     sauvegarde locale partira, et c'est elle qui gagnera. Un enregistrement
+     ÉCHOUÉ (hors réseau) laisse la saisie en attente : au retour du réseau,
+     elle est renvoyée, jamais remplacée par la version serveur. */
+  const planGuard = useRef(createAutosaveGuard()).current;
+  const pendingPlanRef = useRef<TradingPlanData | null>(null);
+  const savePlanNow = useCallback(
+    (uid: string, data: TradingPlanData, seq: number) => {
+      saveTradingPlan(uid, data)
+        .then(() => {
+          planGuard.settle(seq, true);
+          setSaveState("saved");
+          setTimeout(() => setSaveState("idle"), 1600);
+        })
+        .catch((e) => {
+          planGuard.settle(seq, false);
+          console.error("Failed to save trading plan", e);
+          setSaveState("idle");
+        });
+    },
+    [planGuard],
+  );
 
   // Debounced autosave — only after the initial load, never for it.
   const update = useCallback(
@@ -94,29 +113,15 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
         const next = typeof patch === "function" ? patch(prev) : { ...prev, ...patch };
         if (user && loadedRef.current) {
           setSaveState("saving");
-          planDirtyRef.current = true;
-          const seq = ++planSeqRef.current;
-          const settle = () => {
-            if (seq === planSeqRef.current) planDirtyRef.current = false;
-          };
+          pendingPlanRef.current = next;
+          const seq = planGuard.begin();
           if (saveTimer.current) clearTimeout(saveTimer.current);
-          saveTimer.current = setTimeout(() => {
-            saveTradingPlan(user.id, next)
-              .then(() => {
-                setSaveState("saved");
-                setTimeout(() => setSaveState("idle"), 1600);
-              })
-              .catch((e) => {
-                console.error("Failed to save trading plan", e);
-                setSaveState("idle");
-              })
-              .finally(settle);
-          }, 800);
+          saveTimer.current = setTimeout(() => savePlanNow(user.id, next, seq), 800);
         }
         return next;
       });
     },
-    [user],
+    [user, planGuard, savePlanNow],
   );
 
   /* L'OBJECTIF MENSUEL vit sur le profil (`onboarding_monthly_target`), pas
@@ -124,24 +129,51 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
      le montre et le règle, sans en faire une deuxième copie. */
   const [monthly, setMonthly] = useState("");
   const monthlyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const monthlyDirtyRef = useRef(false);
-  const monthlySeqRef = useRef(0);
+  const monthlyGuard = useRef(createAutosaveGuard()).current;
+  const pendingMonthlyRef = useRef<string | null>(null);
+  const saveMonthlyNow = useCallback(
+    (uid: string, v: string, seq: number) => {
+      const n = Number.parseFloat(v.replace(",", "."));
+      saveMonthlyTarget(uid, Number.isFinite(n) && n > 0 ? n : null)
+        .then(() => {
+          monthlyGuard.settle(seq, true);
+          setSaveState("saved");
+          setTimeout(() => setSaveState("idle"), 1600);
+        })
+        .catch((e) => {
+          monthlyGuard.settle(seq, false);
+          console.error("Failed to save monthly target", e);
+          setSaveState("idle");
+        });
+    },
+    [monthlyGuard],
+  );
 
-  // Plan ou objectif changés sur un autre appareil : appliqués ici, sauf si une
-  // modification locale attend encore son enregistrement.
+  /* Plan ou objectif changés sur un autre appareil : appliqués ici, sauf si une
+     modification locale attend encore son enregistrement. Celle qui avait
+     échoué (hors réseau) est renvoyée à cette occasion — c'est aussi ce qui
+     arrive au rattrapage, quand le réseau revient. */
   useLiveTable("profiles", () => {
     if (!user) return;
-    if (!planDirtyRef.current) {
+    if (planGuard.isDirty()) {
+      if (planGuard.hasFailed() && pendingPlanRef.current) {
+        savePlanNow(user.id, pendingPlanRef.current, planGuard.begin());
+      }
+    } else {
       loadTradingPlan(user.id)
         .then((p) => {
-          if (!planDirtyRef.current) setPlan(p);
+          if (!planGuard.isDirty()) setPlan(p);
         })
         .catch(() => {});
     }
-    if (!monthlyDirtyRef.current) {
+    if (monthlyGuard.isDirty()) {
+      if (monthlyGuard.hasFailed() && pendingMonthlyRef.current !== null) {
+        saveMonthlyNow(user.id, pendingMonthlyRef.current, monthlyGuard.begin());
+      }
+    } else {
       loadOnboarding(user.id)
         .then((o) => {
-          if (!monthlyDirtyRef.current) setMonthly(o.monthlyTarget ? String(o.monthlyTarget) : "");
+          if (!monthlyGuard.isDirty()) setMonthly(o.monthlyTarget ? String(o.monthlyTarget) : "");
         })
         .catch(() => {});
     }
@@ -161,26 +193,12 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
       setMonthly(v);
       if (!user) return;
       setSaveState("saving");
-      monthlyDirtyRef.current = true;
-      const seq = ++monthlySeqRef.current;
+      pendingMonthlyRef.current = v;
+      const seq = monthlyGuard.begin();
       if (monthlyTimer.current) clearTimeout(monthlyTimer.current);
-      monthlyTimer.current = setTimeout(() => {
-        const n = Number.parseFloat(v.replace(",", "."));
-        saveMonthlyTarget(user.id, Number.isFinite(n) && n > 0 ? n : null)
-          .then(() => {
-            setSaveState("saved");
-            setTimeout(() => setSaveState("idle"), 1600);
-          })
-          .catch((e) => {
-            console.error("Failed to save monthly target", e);
-            setSaveState("idle");
-          })
-          .finally(() => {
-            if (seq === monthlySeqRef.current) monthlyDirtyRef.current = false;
-          });
-      }, 800);
+      monthlyTimer.current = setTimeout(() => saveMonthlyNow(user.id, v, seq), 800);
     },
-    [user],
+    [user, monthlyGuard, saveMonthlyNow],
   );
 
   const completion = useMemo(() => planCompletion(plan), [plan]);

@@ -258,6 +258,18 @@ describe("liveSync — statut", () => {
     off();
   });
 
+  test("époque : change à chaque abonnement réussi, nulle hors direct", () => {
+    live.startLiveSync("u1");
+    expect(live.getLiveEpoch()).toBeNull();
+    current().statusCb!("SUBSCRIBED");
+    const first = live.getLiveEpoch();
+    expect(typeof first).toBe("number");
+    current().statusCb!("CHANNEL_ERROR");
+    expect(live.getLiveEpoch()).toBeNull();
+    current().statusCb!("SUBSCRIBED");
+    expect(live.getLiveEpoch()).toBeGreaterThan(first as number);
+  });
+
   test("le navigateur hors ligne passe le statut à offline", () => {
     live.startLiveSync("u1");
     current().statusCb!("SUBSCRIBED");

@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { startLiveSync, stopLiveSync } from "../store/liveSync";
-import { wireProfileRowLive } from "../store/profileRow";
-import { wireUserPrefsLive } from "../utils/userPrefs";
+import { invalidateProfileRow, wireProfileRowLive } from "../store/profileRow";
+import { invalidateUserPrefs, wireUserPrefsLive } from "../utils/userPrefs";
 
 /**
  * Ouvre le canal live du compte connecté, le ferme à la déconnexion.
@@ -12,6 +12,10 @@ import { wireUserPrefsLive } from "../utils/userPrefs";
 export function useLiveSync(userId: string | undefined | null): void {
   useEffect(() => {
     if (!userId) return;
+    // Nouvelle session (connexion, changement de compte dans l'onglet) : rien
+    // de ce qui a été lu avant n'est servi sans être relu.
+    invalidateProfileRow();
+    invalidateUserPrefs();
     const unwireProfile = wireProfileRowLive();
     const unwirePrefs = wireUserPrefsLive();
     startLiveSync(userId);
@@ -19,6 +23,8 @@ export function useLiveSync(userId: string | undefined | null): void {
       stopLiveSync();
       unwireProfile();
       unwirePrefs();
+      invalidateProfileRow();
+      invalidateUserPrefs();
     };
   }, [userId]);
 }

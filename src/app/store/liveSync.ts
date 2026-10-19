@@ -80,6 +80,11 @@ let everSubscribed = false;
 /** Vrai après une coupure : le prochain SUBSCRIBED déclenche un rattrapage. */
 let lost = false;
 let hiddenAt: number | null = null;
+/** Numéro du dernier abonnement réussi (« époque ») ; `null` hors direct. Une
+ *  donnée lue sous une autre époque a pu manquer des changements
+ *  (`store/profileRow.ts`). */
+let epochCounter = 0;
+let liveEpoch: number | null = null;
 let detachListeners: (() => void) | null = null;
 
 function safeCall<A>(fn: (a: A) => void, arg: A): void {
@@ -91,6 +96,7 @@ function safeCall<A>(fn: (a: A) => void, arg: A): void {
 }
 
 function setStatus(next: LiveStatus): void {
+  if (next !== "online") liveEpoch = null;
   if (next === status) return;
   status = next;
   for (const h of [...statusHandlers]) safeCall(h, next);
@@ -115,6 +121,7 @@ function dispatch(table: LiveTable, payload: Record<string, unknown>): void {
 
 function onChannelStatus(s: string): void {
   if (s === "SUBSCRIBED") {
+    liveEpoch = ++epochCounter;
     setStatus("online");
     if (everSubscribed && lost) fireResync();
     everSubscribed = true;
@@ -145,6 +152,7 @@ function attachListeners(): () => void {
     // Le réseau revient sans que le canal soit tombé (coupure brève) : aucun
     // SUBSCRIBED ne viendra, on rattrape tout de suite.
     const joined = (channel as unknown as { state?: string } | null)?.state === "joined";
+    if (joined) liveEpoch = ++epochCounter;
     setStatus(joined ? "online" : "connecting");
     if (joined && lost) fireResync();
   };
@@ -230,6 +238,11 @@ export function onResync(handler: () => void): () => void {
 
 export function getLiveStatus(): LiveStatus {
   return status;
+}
+
+/** L'époque du direct (change à chaque abonnement réussi), ou `null` hors ligne. */
+export function getLiveEpoch(): number | null {
+  return status === "online" ? liveEpoch : null;
 }
 
 export function subscribeLiveStatus(handler: (s: LiveStatus) => void): () => void {

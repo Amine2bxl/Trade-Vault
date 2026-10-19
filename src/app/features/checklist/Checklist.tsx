@@ -60,6 +60,7 @@ import {
 import { PageContainer, Button, PageToolbar, TimeField, SelectPicker } from "@/shared/ui";
 import { intlLocale } from "@/app/i18n/locale";
 import { useLiveTable } from "@/app/hooks/useLiveTable";
+import { createAutosaveGuard, stableStringify } from "@/app/utils/autosaveGuard";
 
 /* ════════════════════════════════════════════════════════════════
    JARVIS Pre-Market Checklist — follows the app language, offers
@@ -358,41 +359,58 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
   /* Phase 5 — l'app se souvient : la config remonte en base (best-effort,
      debounced) pour survivre au changement d'appareil / vidage du cache.
 
-     `persistedCfgRef` retient ce que la base contient déjà : une config
-     arrivée d'un autre appareil n'est pas réécrite (sinon l'écho
-     rebondirait sans fin), et `cfgDirtyRef` protège une modification locale
-     en attente contre ce qui arrive pendant ce temps. */
+     `persistedCfgRef` retient ce que la base contient déjà (JSON aux clés
+     triées : jsonb réordonne les clés) — une config arrivée d'un autre appareil
+     n'est pas réécrite, sinon l'écho rebondirait sans fin. `cfgGuard` protège
+     la DERNIÈRE modification locale jusqu'à la réussite de son enregistrement ;
+     un échec (hors réseau) la garde en attente pour la renvoyer au retour. */
   const persistedCfgRef = useRef<string | null>(null);
-  const cfgDirtyRef = useRef(false);
+  const cfgGuard = useRef(createAutosaveGuard()).current;
+  const latestCfgRef = useRef(config);
+  latestCfgRef.current = config;
+  const saveCfgNow = useCallback(
+    (owner: string, cfg: ChkConfig, seq: number) => {
+      const json = stableStringify(cfg);
+      void saveChecklistConfig(owner, cfg).then((ok) => {
+        if (ok) persistedCfgRef.current = json;
+        cfgGuard.settle(seq, ok);
+      });
+    },
+    [cfgGuard],
+  );
   useEffect(() => {
     if (!touchedRef.current || !uid) return;
-    const json = JSON.stringify(config);
-    if (json === persistedCfgRef.current) return;
-    cfgDirtyRef.current = true;
-    const t = window.setTimeout(() => {
-      persistedCfgRef.current = json;
-      void saveChecklistConfig(uid, config).finally(() => {
-        if (persistedCfgRef.current === json) cfgDirtyRef.current = false;
-      });
-    }, 600);
+    if (stableStringify(config) === persistedCfgRef.current) {
+      // Revenu à ce que la base contient déjà (frappe annulée, config arrivée
+      // d'ailleurs) : plus rien en attente.
+      if (cfgGuard.isDirty() && !cfgGuard.hasFailed()) cfgGuard.settle(cfgGuard.begin(), true);
+      return;
+    }
+    const seq = cfgGuard.begin();
+    const t = window.setTimeout(() => saveCfgNow(uid, config, seq), 600);
     return () => window.clearTimeout(t);
-  }, [config, uid]);
+  }, [config, uid, cfgGuard, saveCfgNow]);
 
   /* Config ou profil changés sur un autre appareil : appliqués ici, sauf
-     modification locale en attente (la dernière écriture gagne). */
+     modification locale en attente (la dernière écriture gagne). Une saisie
+     dont l'envoi avait échoué repart à cette occasion (rattrapage au retour
+     du réseau). */
   useLiveTable("profiles", () => {
     if (!user?.id) return;
     void loadOnboarding(uid)
       .then(setOnb)
       .catch(() => {});
-    if (cfgDirtyRef.current) return;
+    if (cfgGuard.isDirty()) {
+      if (cfgGuard.hasFailed()) saveCfgNow(uid, latestCfgRef.current, cfgGuard.begin());
+      return;
+    }
     void loadChecklistConfig(uid).then((saved) => {
       const cfg = saved as ChkConfig | null;
-      if (cfgDirtyRef.current || !cfg || !Array.isArray(cfg.items) || cfg.items.length === 0) {
+      if (cfgGuard.isDirty() || !cfg || !Array.isArray(cfg.items) || cfg.items.length === 0) {
         return;
       }
       const next = { ...defaultConfigFor(lang), ...cfg };
-      const json = JSON.stringify(next);
+      const json = stableStringify(next);
       if (json === persistedCfgRef.current) return;
       persistedCfgRef.current = json;
       markTouched();
@@ -424,7 +442,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
       if (Array.isArray(cfg?.items) && cfg.items.length > 0) {
         const next = { ...defaultConfigFor(lang), ...cfg };
         // Déjà en base : inutile de la réécrire.
-        persistedCfgRef.current = JSON.stringify(next);
+        persistedCfgRef.current = stableStringify(next);
         setConfig(next);
         markTouched();
         // Une checklist déjà construite n'a plus besoin de l'assistant.

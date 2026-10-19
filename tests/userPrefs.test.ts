@@ -11,6 +11,7 @@ import { afterAll, beforeEach, describe, expect, mock, test } from "bun:test";
 
 let dbPrefs: Record<string, unknown> = {};
 let upserts: Record<string, unknown>[] = [];
+let upsertError: { message: string } | null = null;
 
 function prefsQuery() {
   const q = {
@@ -19,6 +20,7 @@ function prefsQuery() {
     maybeSingle: () => Promise.resolve({ data: { prefs: dbPrefs }, error: null }),
     upsert: (row: Record<string, unknown>) => {
       upserts.push(row);
+      if (upsertError) return Promise.resolve({ error: upsertError });
       dbPrefs = row.prefs as Record<string, unknown>;
       return Promise.resolve({ error: null });
     },
@@ -28,12 +30,16 @@ function prefsQuery() {
 
 type Binding = { filter: Record<string, string>; cb: (p: unknown) => void };
 let bindings: Binding[] = [];
+let statusCb: ((s: string) => void) | null = null;
 const fakeChannel = {
   on: (_t: string, filter: Record<string, string>, cb: (p: unknown) => void) => {
     bindings.push({ filter, cb });
     return fakeChannel;
   },
-  subscribe: () => fakeChannel,
+  subscribe: (cb: (s: string) => void) => {
+    statusCb = cb;
+    return fakeChannel;
+  },
 };
 
 mock.module("@/integrations/supabase/client", () => ({
@@ -66,6 +72,7 @@ afterAll(() => {
 beforeEach(() => {
   dbPrefs = {};
   upserts = [];
+  upsertError = null;
   prefs.invalidateUserPrefs();
 });
 
@@ -113,6 +120,28 @@ describe("userPrefs — en direct", () => {
       }
     }
     expect(await prefs.loadUserPref("u1", "lotCalc")).toEqual({ pair: "NQ" });
+    unwire();
+  });
+
+  test("un envoi échoué garde la saisie, et elle repart au retour du réseau", async () => {
+    const unwire = prefs.wireUserPrefsLive();
+    live.startLiveSync("u1");
+    statusCb!("SUBSCRIBED");
+    await prefs.loadUserPrefs("u1");
+    upsertError = { message: "network down" };
+    prefs.saveUserPref("u1", "lotCalc", { pair: "B" });
+    await sleep(600);
+    expect(upserts.length).toBe(1);
+    // La version serveur (ancienne) ne remplace pas ce qui n'est jamais parti.
+    prefs.replaceUserPrefs("u1", { lotCalc: { pair: "A" } });
+    expect(await prefs.loadUserPref("u1", "lotCalc")).toEqual({ pair: "B" });
+    // Le réseau revient : la saisie est renvoyée.
+    upsertError = null;
+    statusCb!("CHANNEL_ERROR");
+    statusCb!("SUBSCRIBED");
+    await sleep(600);
+    expect(upserts.length).toBe(2);
+    expect((upserts[1].prefs as Record<string, unknown>).lotCalc).toEqual({ pair: "B" });
     unwire();
   });
 });

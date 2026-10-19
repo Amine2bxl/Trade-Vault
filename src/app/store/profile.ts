@@ -350,12 +350,17 @@ export async function saveOnboarding(
 // navigation privée stricte — et postgrest-js faisait cumuler les filtres
 // `id=eq.…` de deux comptes dans le même onglet).
 
-export async function saveChecklistConfig(userId: string, config: unknown): Promise<void> {
+/** `true` si la config est en base. Un échec reste silencieux pour le trader
+ *  (le localStorage garde la config) mais DOIT être connu de l'éditeur, qui
+ *  renverra sa saisie au retour du réseau au lieu de la perdre. */
+export async function saveChecklistConfig(userId: string, config: unknown): Promise<boolean> {
   try {
     await updateProfile(userId, { checklist_config: config });
+    return true;
   } catch (e) {
-    // Migration absente → on garde le localStorage, silencieux.
+    // Migration absente ou réseau coupé → on garde le localStorage, silencieux.
     console.error("[checklist-config] DB write skipped", e);
+    return false;
   }
 }
 

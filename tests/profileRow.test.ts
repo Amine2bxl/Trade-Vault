@@ -112,12 +112,19 @@ afterAll(() => {
 });
 
 beforeEach(() => {
+  live.stopLiveSync();
   row = { ...BASE };
   selects = 0;
   failNextSelect = false;
   updates = [];
   profileRow.invalidateProfileRow();
 });
+
+/** Le direct est connecté : le cache n'est servi qu'à cette condition. */
+function goOnline() {
+  live.startLiveSync("u1");
+  statusCb!("SUBSCRIBED");
+}
 
 describe("profileRow — lecture", () => {
   test("une seule requête pour tous les lecteurs du profil", async () => {
@@ -145,6 +152,7 @@ describe("profileRow — lecture", () => {
   });
 
   test("un changement distant remplace la ligne, sans nouvelle requête", async () => {
+    goOnline();
     await profile.loadCurrency("u1");
     profileRow.replaceProfileRow("u1", { ...BASE, currency: "USD" });
     expect(await profile.loadCurrency("u1")).toBe("USD");
@@ -159,6 +167,7 @@ describe("profileRow — lecture", () => {
   });
 
   test("les utilisateurs sont isolés, invalidate vide tout", async () => {
+    goOnline();
     await profile.loadCurrency("u1");
     row = { id: "u2", currency: "GBP" };
     expect(await profile.loadCurrency("u2")).toBe("GBP");
@@ -167,6 +176,31 @@ describe("profileRow — lecture", () => {
     profileRow.invalidateProfileRow();
     row = { id: "u1", currency: "CHF" };
     expect(await profile.loadCurrency("u1")).toBe("CHF");
+  });
+});
+
+describe("profileRow — direct muet", () => {
+  test("direct pas en ligne : chaque lecture repart de la base", async () => {
+    await profile.loadCurrency("u1");
+    row = { ...BASE, currency: "USD" };
+    expect(await profile.loadCurrency("u1")).toBe("USD");
+    expect(selects).toBe(2);
+  });
+
+  test("lue avant l'abonnement : relue une fois en ligne, puis servie du cache", async () => {
+    await profile.loadCurrency("u1");
+    goOnline();
+    row = { ...BASE, currency: "USD" };
+    expect(await profile.loadCurrency("u1")).toBe("USD");
+    expect(await profile.loadCurrency("u1")).toBe("USD");
+    expect(selects).toBe(2);
+  });
+
+  test("une écriture en attente reste visible même hors direct", async () => {
+    await loadTradingPlan("u1");
+    const settle = profileRow.beginProfileWrite("u1", { trading_plan: { mission: "B" } });
+    expect((await loadTradingPlan("u1")).mission).toBe("B");
+    settle();
   });
 });
 
@@ -182,6 +216,7 @@ describe("profileRow — écho de ses propres écritures", () => {
   });
 
   test("un enregistrement applique la valeur au cache tout de suite", async () => {
+    goOnline();
     await loadTradingPlan("u1");
     await saveTradingPlan("u1", { ...(await loadTradingPlan("u1")), mission: "C" });
     expect(updates.length).toBe(1);
@@ -195,7 +230,7 @@ describe("profileRow — branchement live", () => {
   afterAll(() => unwire());
 
   test("nouvelles règles : tv-rules-updated est diffusé avec les règles", async () => {
-    live.startLiveSync("u1");
+    goOnline();
     await loadTradingRules("u1");
     const received: unknown[] = [];
     const on = (e: Event) => received.push((e as CustomEvent).detail);

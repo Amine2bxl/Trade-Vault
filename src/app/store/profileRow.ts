@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { onResync, onTable } from "./liveSync";
+import { getLiveEpoch, onResync, onTable } from "./liveSync";
 
 /**
  * LA LIGNE `profiles` DU COMPTE — lue une fois, tenue à jour en direct.
@@ -27,11 +27,16 @@ export type ProfileRow = Record<string, unknown>;
 export const MONTHLY_TARGET_EVENT = "tv:monthly-target";
 
 const rows = new Map<string, ProfileRow | null>();
+/** L'époque du direct sous laquelle chaque ligne a été lue (au DÉBUT de la
+ *  lecture) ou reçue par Realtime ; `null` = lue hors direct. */
+const rowEpoch = new Map<string, number | null>();
 const inflight = new Map<string, Promise<ProfileRow | null>>();
 /** Colonnes en cours d'écriture, par compte : nombre d'écritures, dernière valeur. */
 const pending = new Map<string, Map<string, { count: number; value: unknown }>>();
 /** Incrémenté à chaque invalidation : une lecture lancée avant ne s'installe pas. */
 let generation = 0;
+/** Incrémenté à chaque ligne reçue par Realtime : une lecture lancée avant ne l'écrase pas. */
+let replaceCount = 0;
 
 function overlay(userId: string, row: ProfileRow | null): ProfileRow | null {
   const cols = pending.get(userId);
@@ -41,12 +46,26 @@ function overlay(userId: string, row: ProfileRow | null): ProfileRow | null {
   return out;
 }
 
+/**
+ * Le cache n'est fiable que si le direct est EN LIGNE et que la ligne a été
+ * lue (ou reçue) depuis le dernier abonnement réussi : sinon des changements
+ * ont pu passer sans qu'on les voie (direct qui ne se connecte jamais — proxy,
+ * quota —, reconnexion, nouvelle session dans le même onglet). Dans ce cas,
+ * chaque lecture repart de la base, comme avant le direct.
+ */
+function isFresh(userId: string): boolean {
+  const epoch = getLiveEpoch();
+  return rows.has(userId) && epoch !== null && rowEpoch.get(userId) === epoch;
+}
+
 /** La ligne du compte (ou `null` s'il n'en a pas). Rejette si la lecture échoue — sans mémoriser l'échec. */
 export function loadProfileRow(userId: string): Promise<ProfileRow | null> {
-  if (rows.has(userId)) return Promise.resolve(overlay(userId, rows.get(userId) ?? null));
+  if (isFresh(userId)) return Promise.resolve(overlay(userId, rows.get(userId) ?? null));
   let p = inflight.get(userId);
   if (!p) {
     const gen = generation;
+    const epochAtStart = getLiveEpoch();
+    const replacedBefore = replaceCount;
     p = (async () => {
       const { data, error } = await supabase
         .from("profiles")
@@ -54,9 +73,10 @@ export function loadProfileRow(userId: string): Promise<ProfileRow | null> {
         .eq("id", userId)
         .maybeSingle();
       if (error) throw error;
-      // Une ligne arrivée par Realtime pendant la lecture est plus récente.
-      if (gen === generation && !rows.has(userId)) {
+      // Une ligne arrivée par Realtime PENDANT la lecture est plus récente.
+      if (gen === generation && replaceCount === replacedBefore) {
         rows.set(userId, (data as ProfileRow | null) ?? null);
+        rowEpoch.set(userId, epochAtStart);
       }
       return (data as ProfileRow | null) ?? null;
     })();
@@ -105,6 +125,8 @@ export function beginProfileWrite(userId: string, patch: ProfileRow): () => void
 /** Remplace la ligne en cache par une version arrivée d'ailleurs. */
 export function replaceProfileRow(userId: string, row: ProfileRow): void {
   rows.set(userId, overlay(userId, row));
+  rowEpoch.set(userId, getLiveEpoch());
+  replaceCount += 1;
 }
 
 /** Oublie la ligne d'un compte (ou de tous) : la prochaine lecture repart de la base. */
@@ -112,9 +134,11 @@ export function invalidateProfileRow(userId?: string): void {
   generation += 1;
   if (userId) {
     rows.delete(userId);
+    rowEpoch.delete(userId);
     inflight.delete(userId);
   } else {
     rows.clear();
+    rowEpoch.clear();
     inflight.clear();
   }
 }

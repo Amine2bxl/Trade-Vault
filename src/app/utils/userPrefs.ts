@@ -87,6 +87,15 @@ export function saveUserPref(userId: string, key: string, value: unknown): void 
     dirty.set(userId, keys);
   }
   keys.set(key, (keys.get(key) ?? 0) + 1);
+  scheduleFlush(userId);
+}
+
+/**
+ * Envoie (regroupé, 500 ms) ce qui attend pour ce compte. Les clés ne sont
+ * libérées qu'après un envoi RÉUSSI : un échec (hors réseau) les garde en
+ * attente, protégées de ce qui arrive, et le rattrapage les renvoie.
+ */
+function scheduleFlush(userId: string): void {
   const pending = timers.get(userId);
   if (pending) clearTimeout(pending);
   timers.set(
@@ -101,15 +110,20 @@ export function saveUserPref(userId: string, key: string, value: unknown): void 
         const base = await loadUserPrefs(userId).catch(() => ({}) as Prefs);
         const prefs = { ...base, ...(current.get(userId) ?? {}) };
         current.set(userId, prefs);
-        await supabase
+        const { error } = await supabase
           .from("user_preferences")
           .upsert(
             { user_id: userId, prefs: prefs as never, updated_at: new Date().toISOString() },
             { onConflict: "user_id" },
           )
-          .then(({ error }) => {
-            if (error) console.error("[prefs] save failed", error);
-          });
+          .then(
+            (r: { error: unknown }) => r,
+            (e: unknown) => ({ error: e }),
+          );
+        if (error) {
+          console.error("[prefs] save failed", error);
+          return;
+        }
         const keys = dirty.get(userId);
         if (!keys) return;
         for (const [k, v] of sent) if (keys.get(k) === v) keys.delete(k);
@@ -146,6 +160,8 @@ export function wireUserPrefsLive(): () => void {
     const users = [...loaded.keys()];
     invalidateUserPrefs();
     for (const uid of users) notify(uid);
+    // Ce qui n'était jamais parti (envoi échoué hors réseau) repart maintenant.
+    for (const uid of dirty.keys()) scheduleFlush(uid);
   });
   return () => {
     offTable();
