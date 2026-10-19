@@ -14,6 +14,7 @@ import { migrateLegacyChat, jarvisConversationStore, useConversations } from "./
 import JarvisSidebar from "./components/JarvisSidebar";
 import CreditsBar from "./components/CreditsBar";
 import AccountSwitcher from "@/app/shell/AccountSwitcher";
+import { useLiveTable } from "@/app/hooks/useLiveTable";
 
 interface AiAssistantProps {
   trades: Trade[];
@@ -159,6 +160,17 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
       active = false;
     };
   }, [open, user?.id]);
+  // Profil modifié sur un autre appareil → relu depuis le cache, sans requête.
+  useLiveTable(
+    "profiles",
+    () => {
+      if (!user?.id) return;
+      loadJarvisProfile(user.id)
+        .then(setJarvisProfile)
+        .catch(() => {});
+    },
+    { enabled: open },
+  );
   // Profil modifié dans les Réglages → la conversation le suit sans rechargement.
   useEffect(() => {
     const onProfile = (e: Event) => setJarvisProfile((e as CustomEvent<JarvisProfile>).detail);

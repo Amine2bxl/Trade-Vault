@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Trade } from "@/app/types";
 import { computeStats } from "@/domain/tradeCalcs";
 import { computeQuantStats } from "@/domain/quantStats";
 import { loadStartingBalance } from "@/app/store";
 import { loadGoalPlan, currentGoalValue, type GoalPlan, type MeasureCtx } from "./goalPlan";
+import { useLiveTable } from "@/app/hooks/useLiveTable";
 
 /**
  * Objectifs du trader et leur progression MESURÉE.
@@ -75,6 +76,25 @@ export function useGoalProgress(
       active = false;
     };
   }, [userId, accountId]);
+
+  // Changement venu d'un autre appareil : relecture silencieuse, sans repasser
+  // par l'état de chargement.
+  const accountRef = useRef(accountId);
+  accountRef.current = accountId;
+  const reloadLive = () => {
+    if (!userId || !accountId) return;
+    const key = accountId;
+    Promise.all([loadGoalPlan(userId, key), loadStartingBalance(userId)])
+      .then(([p, b]) => {
+        if (key !== accountRef.current) return;
+        setPlan(p);
+        setStartingBalance(b);
+      })
+      .catch(() => {});
+  };
+  useLiveTable("profiles", reloadLive);
+  useLiveTable("accounts", reloadLive);
+  useLiveTable("goal_plans", reloadLive);
 
   const stats = useMemo(() => computeStats(trades), [trades]);
   const quant = useMemo(

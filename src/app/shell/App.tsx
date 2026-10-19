@@ -85,6 +85,7 @@ import {
 import { useTrades, tradesQueryKey } from "../trading/useTrades";
 import { useRealtimeTrades } from "../trading/useRealtimeTrades";
 import { useLiveSync } from "../hooks/useLiveSync";
+import { useLiveTable } from "../hooks/useLiveTable";
 import { useBrokerSync } from "../features/brokers/useBrokerSync";
 import { useSubscription } from "../hooks/useSubscription";
 import { generateMyMonthlyReport } from "@/backend/reports.functions";
@@ -202,6 +203,14 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
       active = false;
     };
   }, [user?.id]);
+  // Devise changée sur un autre appareil : la ligne du profil en cache suit
+  // (aucune requête), et toute la page se réécrit dans la nouvelle devise.
+  useLiveTable("profiles", () => {
+    if (!user?.id) return;
+    loadCurrency(user.id)
+      .then(setCurrency)
+      .catch(() => {});
+  });
   // Multi-appareils : UN canal live pour tout le compte (`store/liveSync.ts`).
   // Ce qui est encodé/modifié/supprimé ailleurs arrive ici instantanément,
   // sans rafraîchissement (voir `useRealtimeTrades`).

@@ -59,6 +59,7 @@ import {
 } from "./helpers";
 import { PageContainer, Button, PageToolbar, TimeField, SelectPicker } from "@/shared/ui";
 import { intlLocale } from "@/app/i18n/locale";
+import { useLiveTable } from "@/app/hooks/useLiveTable";
 
 /* ════════════════════════════════════════════════════════════════
    JARVIS Pre-Market Checklist — follows the app language, offers
@@ -355,14 +356,49 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
   }, [config, CFG_KEY]);
 
   /* Phase 5 — l'app se souvient : la config remonte en base (best-effort,
-     debounced) pour survivre au changement d'appareil / vidage du cache. */
+     debounced) pour survivre au changement d'appareil / vidage du cache.
+
+     `persistedCfgRef` retient ce que la base contient déjà : une config
+     arrivée d'un autre appareil n'est pas réécrite (sinon l'écho
+     rebondirait sans fin), et `cfgDirtyRef` protège une modification locale
+     en attente contre ce qui arrive pendant ce temps. */
+  const persistedCfgRef = useRef<string | null>(null);
+  const cfgDirtyRef = useRef(false);
   useEffect(() => {
     if (!touchedRef.current || !uid) return;
+    const json = JSON.stringify(config);
+    if (json === persistedCfgRef.current) return;
+    cfgDirtyRef.current = true;
     const t = window.setTimeout(() => {
-      void saveChecklistConfig(uid, config);
+      persistedCfgRef.current = json;
+      void saveChecklistConfig(uid, config).finally(() => {
+        if (persistedCfgRef.current === json) cfgDirtyRef.current = false;
+      });
     }, 600);
     return () => window.clearTimeout(t);
   }, [config, uid]);
+
+  /* Config ou profil changés sur un autre appareil : appliqués ici, sauf
+     modification locale en attente (la dernière écriture gagne). */
+  useLiveTable("profiles", () => {
+    if (!user?.id) return;
+    void loadOnboarding(uid)
+      .then(setOnb)
+      .catch(() => {});
+    if (cfgDirtyRef.current) return;
+    void loadChecklistConfig(uid).then((saved) => {
+      const cfg = saved as ChkConfig | null;
+      if (cfgDirtyRef.current || !cfg || !Array.isArray(cfg.items) || cfg.items.length === 0) {
+        return;
+      }
+      const next = { ...defaultConfigFor(lang), ...cfg };
+      const json = JSON.stringify(next);
+      if (json === persistedCfgRef.current) return;
+      persistedCfgRef.current = json;
+      markTouched();
+      setConfig(next);
+    });
+  });
 
   /* Hydratation depuis la base : 1re visite sur cet appareil (localStorage
      vide) mais config existante en base → on la restaure. Jamais bloquant. */
@@ -386,7 +422,10 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
       if (!active || !saved) return;
       const cfg = saved as ChkConfig;
       if (Array.isArray(cfg?.items) && cfg.items.length > 0) {
-        setConfig({ ...defaultConfigFor(lang), ...cfg });
+        const next = { ...defaultConfigFor(lang), ...cfg };
+        // Déjà en base : inutile de la réécrire.
+        persistedCfgRef.current = JSON.stringify(next);
+        setConfig(next);
         markTouched();
         // Une checklist déjà construite n'a plus besoin de l'assistant.
         setShowWizard(false);

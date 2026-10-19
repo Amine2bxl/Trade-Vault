@@ -32,6 +32,7 @@ import {
 import TradingRulesSection from "./TradingRulesSection";
 import { loadOnboarding, saveMonthlyTarget } from "@/app/store";
 import { usePageActions } from "@/app/contexts/PageActionsContext";
+import { useLiveTable } from "@/app/hooks/useLiveTable";
 
 // Trading Plan — the trader's written constitution. Every field autosaves
 // (debounced) to profiles.trading_plan; the completion ring fills as the
@@ -79,6 +80,13 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
     };
   }, [user?.id]);
 
+  /* MODIFICATION EN ATTENTE. Entre la frappe et la fin de l'enregistrement
+     débouncé, ce qui arrive d'un autre appareil (ou l'écho d'une sauvegarde
+     plus ancienne) ne doit pas effacer ce que le trader vient de taper : la
+     sauvegarde locale partira, et c'est elle qui gagnera. */
+  const planDirtyRef = useRef(false);
+  const planSeqRef = useRef(0);
+
   // Debounced autosave — only after the initial load, never for it.
   const update = useCallback(
     (patch: Partial<TradingPlanData> | ((p: TradingPlanData) => TradingPlanData)) => {
@@ -86,6 +94,11 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
         const next = typeof patch === "function" ? patch(prev) : { ...prev, ...patch };
         if (user && loadedRef.current) {
           setSaveState("saving");
+          planDirtyRef.current = true;
+          const seq = ++planSeqRef.current;
+          const settle = () => {
+            if (seq === planSeqRef.current) planDirtyRef.current = false;
+          };
           if (saveTimer.current) clearTimeout(saveTimer.current);
           saveTimer.current = setTimeout(() => {
             saveTradingPlan(user.id, next)
@@ -96,7 +109,8 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
               .catch((e) => {
                 console.error("Failed to save trading plan", e);
                 setSaveState("idle");
-              });
+              })
+              .finally(settle);
           }, 800);
         }
         return next;
@@ -110,6 +124,28 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
      le montre et le règle, sans en faire une deuxième copie. */
   const [monthly, setMonthly] = useState("");
   const monthlyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const monthlyDirtyRef = useRef(false);
+  const monthlySeqRef = useRef(0);
+
+  // Plan ou objectif changés sur un autre appareil : appliqués ici, sauf si une
+  // modification locale attend encore son enregistrement.
+  useLiveTable("profiles", () => {
+    if (!user) return;
+    if (!planDirtyRef.current) {
+      loadTradingPlan(user.id)
+        .then((p) => {
+          if (!planDirtyRef.current) setPlan(p);
+        })
+        .catch(() => {});
+    }
+    if (!monthlyDirtyRef.current) {
+      loadOnboarding(user.id)
+        .then((o) => {
+          if (!monthlyDirtyRef.current) setMonthly(o.monthlyTarget ? String(o.monthlyTarget) : "");
+        })
+        .catch(() => {});
+    }
+  });
   useEffect(() => {
     if (!user) return;
     let active = true;
@@ -125,6 +161,8 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
       setMonthly(v);
       if (!user) return;
       setSaveState("saving");
+      monthlyDirtyRef.current = true;
+      const seq = ++monthlySeqRef.current;
       if (monthlyTimer.current) clearTimeout(monthlyTimer.current);
       monthlyTimer.current = setTimeout(() => {
         const n = Number.parseFloat(v.replace(",", "."));
@@ -136,6 +174,9 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
           .catch((e) => {
             console.error("Failed to save monthly target", e);
             setSaveState("idle");
+          })
+          .finally(() => {
+            if (seq === monthlySeqRef.current) monthlyDirtyRef.current = false;
           });
       }, 800);
     },

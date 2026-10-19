@@ -20,6 +20,7 @@ import {
 } from "../prefs";
 import JarvisProfileModal from "../JarvisProfileModal";
 import type { JarvisWorkspaceProps } from "../workspaces";
+import { useLiveTable } from "@/app/hooks/useLiveTable";
 
 /**
  * SettingsWorkspace — les réglages de Jarvis, et CHACUN agit.
@@ -67,6 +68,14 @@ export default function SettingsWorkspace({ context }: JarvisWorkspaceProps) {
       active = false;
     };
   }, [userId]);
+
+  // Profil Jarvis changé sur un autre appareil : relu, sauf pendant l'édition.
+  useLiveTable("profiles", () => {
+    if (!userId || editProfile) return;
+    void loadJarvisProfile(userId)
+      .then(setProfile)
+      .catch(() => {});
+  });
 
   const onSavedProfile = () => {
     setEditProfile(false);

@@ -284,3 +284,29 @@ describe("liveSync — structure", () => {
     expect(owners).toEqual(["store/liveSync.ts"]);
   });
 });
+
+describe("liveSync — écrans branchés", () => {
+  test("les écrans qui lisent le profil suivent ses changements", () => {
+    // `shell/FirstSessionWelcome.tsx` n'y figure pas : c'est un accueil joué
+    // une seule fois, rien n'y reste affiché qui devrait suivre.
+    for (const file of [
+      "shell/App.tsx",
+      "features/dashboard/Dashboard.tsx",
+      "features/analytics/Analytics.tsx",
+      "features/goals/Goals.tsx",
+      "features/goals/useGoalProgress.ts",
+      "trading/useEdgeScore.ts",
+      "features/jarvis/Jarvis.tsx",
+      "features/jarvis/AiAssistant.tsx",
+      "features/journal/TradeModal.tsx",
+      "features/checklist/Checklist.tsx",
+      "features/trading-plan/TradingPlan.tsx",
+      "features/trading-plan/TradingRulesSection.tsx",
+      "features/settings/Settings.tsx",
+      "features/jarvis/workspaces/SettingsWorkspace.tsx",
+    ]) {
+      const src = stripComments(readSource(SRC_APP, file));
+      expect(src, `profil non suivi : ${file}`).toMatch(/useLiveTable\(\s*"profiles"/);
+    }
+  });
+});
