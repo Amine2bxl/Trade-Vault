@@ -1,4 +1,16 @@
-import { afterAll, afterEach, beforeEach, describe, expect, mock, setSystemTime, test } from "bun:test";
+import {
+  afterAll,
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  mock,
+  setSystemTime,
+  test,
+} from "bun:test";
+import { readdirSync } from "node:fs";
+import { join, relative, resolve } from "node:path";
+import { readSource, stripComments } from "./helpers/source";
 
 /**
  * LE MOYEU LIVE — un canal par compte, redistribué par table.
@@ -253,5 +265,22 @@ describe("liveSync — statut", () => {
     expect(live.getLiveStatus()).toBe("offline");
     fakeWindow.dispatchEvent(new Event("online"));
     expect(live.getLiveStatus()).toBe("connecting");
+  });
+});
+
+// ── Structure : un seul canal pour toute l'app ───────────────────────────────
+const SRC_APP = resolve(import.meta.dir, "../src/app");
+function appSources(): string[] {
+  return (readdirSync(SRC_APP, { recursive: true }) as string[])
+    .filter((f) => /\.(ts|tsx)$/.test(f) && !/(^|\/)tests\//.test(f) && !/\.test\.tsx?$/.test(f))
+    .map((f) => join(SRC_APP, f));
+}
+
+describe("liveSync — structure", () => {
+  test("un seul canal Realtime dans l'app : le moyeu", () => {
+    const owners = appSources()
+      .filter((f) => stripComments(readSource("/", f)).includes(".channel("))
+      .map((f) => relative(SRC_APP, f));
+    expect(owners).toEqual(["store/liveSync.ts"]);
   });
 });

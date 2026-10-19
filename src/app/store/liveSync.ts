@@ -180,16 +180,16 @@ export function startLiveSync(userId: string): void {
         table,
         filter: table === "profiles" ? `id=eq.${userId}` : `user_id=eq.${userId}`,
       },
-      (payload) => {
+      (payload: unknown) => {
         // Un événement tardif d'un canal fermé (changement de compte) ne doit
         // atteindre personne.
         if (channel !== ch) return;
-        dispatch(table, payload as unknown as Record<string, unknown>);
+        dispatch(table, payload as Record<string, unknown>);
       },
     );
   }
   channel = ch;
-  ch.subscribe((s) => {
+  ch.subscribe((s: string) => {
     if (channel !== ch) return;
     onChannelStatus(String(s));
   });

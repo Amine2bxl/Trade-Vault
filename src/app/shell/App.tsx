@@ -84,6 +84,7 @@ import {
 } from "../store";
 import { useTrades, tradesQueryKey } from "../trading/useTrades";
 import { useRealtimeTrades } from "../trading/useRealtimeTrades";
+import { useLiveSync } from "../hooks/useLiveSync";
 import { useBrokerSync } from "../features/brokers/useBrokerSync";
 import { useSubscription } from "../hooks/useSubscription";
 import { generateMyMonthlyReport } from "@/backend/reports.functions";
@@ -201,8 +202,10 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
       active = false;
     };
   }, [user?.id]);
-  // Multi-appareils : ce qui est encodé/modifié/supprimé ailleurs arrive ici
-  // instantanément, sans rafraîchissement (voir `useRealtimeTrades`).
+  // Multi-appareils : UN canal live pour tout le compte (`store/liveSync.ts`).
+  // Ce qui est encodé/modifié/supprimé ailleurs arrive ici instantanément,
+  // sans rafraîchissement (voir `useRealtimeTrades`).
+  useLiveSync(user?.id);
   useRealtimeTrades(user?.id, activeId);
   const { tier, can: canUse, loading: subLoading } = useSubscription();
   // Synchro broker : le journal se remplit seul pendant que l'app est ouverte.
