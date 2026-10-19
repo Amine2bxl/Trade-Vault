@@ -472,6 +472,7 @@ const en = {
   "inbox.categories": "Categories",
   "inbox.loadError": "Could not load notifications.",
   "inbox.title": "Inbox",
+  "screenshot.unavailable": "Screenshot unavailable",
   "liveStatus.offline":
     "You're offline — changes from your other devices will show up when you reconnect.",
   "liveStatus.connecting": "Reconnecting live sync…",

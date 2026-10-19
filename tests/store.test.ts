@@ -23,3 +23,22 @@ describe("store helpers", () => {
     expect(storagePathsOf(undefined)).toEqual([]);
   });
 });
+
+describe("captures orphelines après enregistrement", () => {
+  it("seules les captures RETIRÉES du trade sont à supprimer", async () => {
+    const { orphanedScreenshots } = await import("../src/app/store/storage");
+    expect(orphanedScreenshots(["u/a.png", "u/b.png"], ["u/b.png", "u/c.png"])).toEqual([
+      "u/a.png",
+    ]);
+  });
+
+  it("nouvelle saisie (pas d'avant) : rien à supprimer", async () => {
+    const { orphanedScreenshots } = await import("../src/app/store/storage");
+    expect(orphanedScreenshots(undefined, ["u/a.png"])).toEqual([]);
+  });
+
+  it("les anciennes images en ligne (data:) ne sont jamais des fichiers", async () => {
+    const { orphanedScreenshots } = await import("../src/app/store/storage");
+    expect(orphanedScreenshots(["data:image/png;base64,AA"], [])).toEqual([]);
+  });
+});

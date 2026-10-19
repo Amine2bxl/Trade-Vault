@@ -431,6 +431,7 @@ const fr: Dict = {
   "inbox.categories": "Catégories",
   "inbox.loadError": "Impossible de charger les notifications.",
   "inbox.title": "Boîte de réception",
+  "screenshot.unavailable": "Capture indisponible",
   "liveStatus.offline":
     "Hors ligne — les changements de tes autres appareils arriveront au retour du réseau.",
   "liveStatus.connecting": "Reconnexion de la synchro en direct…",

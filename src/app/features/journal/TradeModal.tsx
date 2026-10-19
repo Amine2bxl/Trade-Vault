@@ -30,7 +30,8 @@ import { useT } from "@/app/i18n/LanguageContext";
 import { cn } from "@/shared/ui/cn";
 import { useConfirm } from "@/app/contexts/ConfirmContext";
 import { compressImageToFile } from "@/app/utils/image";
-import { useScreenshotUrls, invalidateScreenshot } from "@/app/hooks/useScreenshotUrls";
+import { useScreenshotUrls } from "@/app/hooks/useScreenshotUrls";
+import { ScreenshotImage } from "@/app/components/ScreenshotImage";
 import { useDraftAutosave } from "@/app/hooks/useDraftAutosave";
 import Lightbox from "@/app/components/Lightbox";
 import {
@@ -502,15 +503,9 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
     savedRef.current = true;
     // Trade committed — the draft has served its purpose.
     removeKey(draftKey);
-    // Pre-existing screenshots the user removed in this session: their files
-    // are no longer referenced once the trade saves — delete them now.
-    if (trade) {
-      for (const old of trade.screenshots) {
-        if (!old.startsWith("data:") && !form.screenshots.includes(old)) {
-          deleteScreenshot(old).catch(() => {});
-        }
-      }
-    }
+    // Les captures retirées d'un trade existant sont supprimées par
+    // `App.handleSave` APRÈS l'enregistrement réussi (`orphanedScreenshots`) :
+    // si l'écriture échoue, le trade restauré garde des fichiers intacts.
     const intent: TradeIntentInput = {
       emotion: form.intentEmotion,
       reasoning: form.intentReasoning.trim() ? form.intentReasoning : null,
@@ -1317,20 +1312,13 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                         onClick={() => setLightboxIndex(i)}
                         className="block h-full w-full"
                       >
-                        {screenshotUrls[shot] ? (
-                          <img
-                            src={screenshotUrls[shot]}
-                            alt={`Screenshot ${i + 1}`}
-                            className="h-full w-full object-cover transition-transform group-hover:scale-105"
-                            onError={() => {
-                              invalidateScreenshot(shot);
-                            }}
-                          />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center">
-                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-[var(--tv-border)] border-t-[var(--tv-accent)]" />
-                          </div>
-                        )}
+                        <ScreenshotImage
+                          path={shot}
+                          url={screenshotUrls[shot] ?? ""}
+                          alt={`Screenshot ${i + 1}`}
+                          boxClassName="h-full w-full"
+                          className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                        />
                       </button>
                       {/* Rang + flèches de réordonnancement (tactile). */}
                       <span className="tv-figure absolute left-1 top-1 grid h-5 w-5 place-items-center rounded-md bg-black/70 text-[11px] text-white">
@@ -1468,7 +1456,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
       </Modal>
       {lightboxIndex !== null && (
         <Lightbox
-          images={form.screenshots.map((s) => screenshotUrls[s] || "")}
+          paths={form.screenshots}
           index={lightboxIndex}
           onClose={() => setLightboxIndex(null)}
           onIndexChange={setLightboxIndex}

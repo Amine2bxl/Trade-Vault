@@ -24,7 +24,8 @@ import {
   type TradeIntent,
   type TradeReflection,
 } from "@/app/store/tradeIntel";
-import { useScreenshotUrls, invalidateScreenshot } from "@/app/hooks/useScreenshotUrls";
+import { useScreenshotUrls } from "@/app/hooks/useScreenshotUrls";
+import { ScreenshotImage } from "@/app/components/ScreenshotImage";
 import Lightbox from "@/app/components/Lightbox";
 import { Modal } from "@/shared/ui";
 import { formatMoney } from "@/shared/currency";
@@ -76,7 +77,7 @@ export default function TradeDetailModal({
   const { user } = useAuth();
   const userId = user?.id;
   const locale = LOCALE_MAP[lang] || "en-US";
-  const [lightbox, setLightbox] = useState<{ images: string[]; index: number } | null>(null);
+  const [lightbox, setLightbox] = useState<{ paths: string[]; index: number } | null>(null);
   // Intentions + réflexions des trades affichés (6I) — chargées en BULK quand le
   // modal s'ouvre. Absentes si aucune capture : on n'invente jamais un « avant ».
   const [intents, setIntents] = useState<Record<string, TradeIntent>>({});
@@ -619,30 +620,16 @@ export default function TradeDetailModal({
                       {trade.screenshots.map((shot, i) => (
                         <button
                           key={i}
-                          onClick={() =>
-                            setLightbox({
-                              images: trade.screenshots.map((s) => screenshotUrls[s] || ""),
-                              index: i,
-                            })
-                          }
+                          onClick={() => setLightbox({ paths: trade.screenshots, index: i })}
                           className="relative rounded-xl overflow-hidden border border-white/[0.06] hover:border-cyan-500/30 transition group bg-black/40"
                         >
-                          {screenshotUrls[shot] ? (
-                            <img
-                              src={screenshotUrls[shot]}
-                              alt={`Chart ${i + 1}`}
-                              loading="lazy"
-                              decoding="async"
-                              className="w-full max-h-[420px] object-contain"
-                              onError={() => {
-                                invalidateScreenshot(shot);
-                              }}
-                            />
-                          ) : (
-                            <div className="w-full h-32 flex items-center justify-center">
-                              <div className="w-5 h-5 border-2 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin" />
-                            </div>
-                          )}
+                          <ScreenshotImage
+                            path={shot}
+                            url={screenshotUrls[shot] ?? ""}
+                            alt={`Chart ${i + 1}`}
+                            boxClassName="w-full h-32"
+                            className="w-full max-h-[420px] object-contain"
+                          />
                           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                             <span className="opacity-0 group-hover:opacity-100 transition-opacity text-xs text-white font-medium bg-black/40 px-2 py-1 rounded-md">
                               {t("common.view")}
@@ -676,7 +663,7 @@ export default function TradeDetailModal({
 
       {lightbox && (
         <Lightbox
-          images={lightbox.images}
+          paths={lightbox.paths}
           index={lightbox.index}
           onClose={() => setLightbox(null)}
           onIndexChange={(i) => setLightbox((prev) => (prev ? { ...prev, index: i } : prev))}

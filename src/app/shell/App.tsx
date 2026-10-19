@@ -87,6 +87,7 @@ import { useTrades, tradesQueryKey } from "../trading/useTrades";
 import { useRealtimeTrades } from "../trading/useRealtimeTrades";
 import { useLiveSync } from "../hooks/useLiveSync";
 import { useLiveTable } from "../hooks/useLiveTable";
+import { orphanedScreenshots, removeScreenshotFiles } from "../store/storage";
 import { onTable } from "../store/liveSync";
 import { useBrokerSync } from "../features/brokers/useBrokerSync";
 import { useSubscription } from "../hooks/useSubscription";
@@ -821,7 +822,8 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
       // Quota mensuel d'encodage. Il porte sur les CRÉATIONS : corriger un
       // trade déjà saisi reste possible quel que soit le palier — bloquer une
       // correction serait punitif et sans rapport avec l'offre.
-      const isEdit = trades.some((t) => t.id === trade.id);
+      const previous = trades.find((t) => t.id === trade.id);
+      const isEdit = !!previous;
       if (!canLogTrade(tier, trades, isEdit)) {
         setModalOpen(false);
         setEditingTrade(null);
@@ -850,6 +852,9 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
         toast(t("app.saveTradeFailed"), "error");
         return;
       }
+      // Captures retirées pendant la modification : leurs fichiers ne sont
+      // supprimés qu'une fois le trade enregistré sans elles.
+      void removeScreenshotFiles(orphanedScreenshots(previous?.screenshots, trade.screenshots));
 
       // Intention & réflexion (Phase 0b) — écriture AU MIEUX, jamais bloquante.
       // Le trade est déjà enregistré : une capture qui échoue laisse un trade
