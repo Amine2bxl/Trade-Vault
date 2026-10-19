@@ -1122,6 +1122,7 @@ const fr: Dict = {
   "tradeDetail.mistakes": "Erreurs",
   "tradeDetail.chartScreenshots": "Captures d'écran",
   "tradeDetail.notes": "Notes",
+  "tradeDetail.details": "Détails",
   "tradeDetail.missedSetup": "Setup manqué",
   "tradeDetail.tradeCountSuffix": "trade",
   "tradeDetail.tradesCountSuffix": "trades",

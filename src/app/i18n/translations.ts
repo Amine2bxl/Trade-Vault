@@ -1167,6 +1167,7 @@ const en = {
   "tradeDetail.mistakes": "Mistakes",
   "tradeDetail.chartScreenshots": "Chart Screenshots",
   "tradeDetail.notes": "Notes",
+  "tradeDetail.details": "Details",
   "tradeDetail.missedSetup": "Missed Setup",
   "tradeDetail.tradeCountSuffix": "trade",
   "tradeDetail.tradesCountSuffix": "trades",
