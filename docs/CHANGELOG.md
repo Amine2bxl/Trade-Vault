@@ -3,6 +3,21 @@
 Journal des changements **structurels** (pas des features ni des correctifs,
 qui vivent dans l'historique git et les PR).
 
+## 2026-10-19 — Synchro live multi-appareils, palier 1
+
+- Moyeu unique `store/liveSync.ts` : un canal Realtime par compte pour toutes
+  les tables du compte, rattrapage après coupure ou retour d'onglet ; les trois
+  canaux existants y passent. `hooks/useLiveTable` pour les écrans.
+- Profil lu une fois (`store/profileRow.ts`) et remplacé par Realtime ;
+  préférences du compte idem (`utils/userPrefs.ts`). Écritures protégées de
+  l'écho.
+- Notifications : `dedup_key` unique en base, push et popup depuis le seul
+  appareil qui crée la ligne, badge en direct (fin du sondage de 30 s), popup
+  fermé partout (`data.dismissedAt`).
+- Compte actif propre à chaque appareil (`pickActiveAccount`).
+- Migration `20261019120000_live_sync_all_tables`. Spec et plan :
+  `docs/superpowers/`.
+
 ## 2026-10-18 — Pop-up unique, annonces par trade, primitives de saisie et de réglages
 
 - Notifications : un seul pop-up (`policy.shouldInterrupt` — annonce à fort

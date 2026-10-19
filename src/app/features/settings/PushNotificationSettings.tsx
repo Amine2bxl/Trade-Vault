@@ -10,6 +10,7 @@ import { useSubscription } from "@/app/hooks/useSubscription";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { tierAtLeast } from "@/app/utils/pricing";
 import { loadUserPref, saveUserPref } from "@/app/utils/userPrefs";
+import { useUserPrefsChange } from "@/app/hooks/useUserPrefsChange";
 import { SettingsAction, SettingsGroup, SettingsRow, Toggle } from "@/shared/ui";
 import {
   DEFAULT_NOTIF_PREFS,
@@ -73,6 +74,16 @@ export function PushNotificationSettings() {
       active = false;
     };
   }, [user?.id]);
+
+  // Catégories changées sur un autre appareil : la page suit.
+  useUserPrefsChange(user?.id, () => {
+    if (!user?.id) return;
+    void loadUserPref<unknown>(user.id, NOTIF_PREFS_KEY)
+      .then((raw) => {
+        if (raw !== undefined) setPrefs(normalizeNotifPrefs(raw));
+      })
+      .catch(() => {});
+  });
 
   const setPref = (key: NotifPrefKey, on: boolean) => {
     const next = { ...prefs, [key]: on };

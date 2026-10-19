@@ -57,6 +57,7 @@ import { cn } from "@/shared/ui/cn";
 import type { Trade } from "@/app/types";
 import { PageContainer, Button, Kpi, SelectPicker } from "@/shared/ui";
 import { usePageActions } from "@/app/contexts/PageActionsContext";
+import { useLiveTable } from "@/app/hooks/useLiveTable";
 
 const LOCALE_MAP: Record<string, string> = {
   en: "en-US",
@@ -161,6 +162,8 @@ export default function Reports({ trades }: { trades: Trade[] }) {
     setLoading(true);
     refresh();
   }, [refresh]);
+  // Rapport généré sur un autre appareil (ou par le cron) : la liste suit.
+  useLiveTable("monthly_reports", () => void refresh());
 
   // Les mois générables viennent des TRADES, plus du seul « mois dernier ».
   // Un historique de six mois saisi à la main ou importé donne donc bien six

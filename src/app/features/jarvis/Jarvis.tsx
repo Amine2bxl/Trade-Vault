@@ -17,6 +17,7 @@ import { PageContainer, JarvisOrb } from "@/shared/ui";
 import { useJarvisActivity } from "./activity";
 import { usePageActions, usePageLead } from "@/app/contexts/PageActionsContext";
 import { observeLayout, stableViewportHeight, topAtRest } from "@/app/hooks/useAvailableHeight";
+import { useLiveTable } from "@/app/hooks/useLiveTable";
 
 const ConversationWorkspace = lazyPage(() => import("./workspaces/ConversationWorkspace"));
 
@@ -96,6 +97,13 @@ export default function Jarvis() {
       active = false;
     };
   }, [user?.id]);
+  // Profil modifié sur un autre appareil → la page le suit, depuis le cache.
+  useLiveTable("profiles", () => {
+    if (!user?.id) return;
+    loadJarvisProfile(user.id)
+      .then(setProfile)
+      .catch(() => {});
+  });
   // Profil modifié dans les Réglages de la fenêtre → la page le suit aussi.
   useEffect(() => {
     const onProfile = (e: Event) => setProfile((e as CustomEvent<JarvisProfile>).detail);

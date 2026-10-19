@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Bell,
   Wallet,
@@ -55,6 +55,7 @@ import {
   setCurrency,
   useCurrency,
 } from "@/shared/currency";
+import { useLiveTable } from "@/app/hooks/useLiveTable";
 
 /**
  * Réglages en DEUX VOLETS : le rail des rubriques à gauche, une seule à droite.
@@ -193,18 +194,53 @@ export default function Settings({
       .catch(() => {});
     loadStartingBalance(user.id)
       .then((v) => {
-        if (active) setStartingEquity(String(v));
+        if (!active) return;
+        loadedRef.current.equity = String(v);
+        setStartingEquity(String(v));
       })
       .catch(() => {});
     loadOnboarding(user.id)
       .then((o) => {
-        if (active && o.monthlyTarget) setMonthlyTarget(String(o.monthlyTarget));
+        if (!active) return;
+        loadedRef.current.monthly = o.monthlyTarget ? String(o.monthlyTarget) : "";
+        if (o.monthlyTarget) setMonthlyTarget(String(o.monthlyTarget));
       })
       .catch(() => {});
     return () => {
       active = false;
     };
   }, [user?.id]);
+
+  /* Solde de départ, objectif ou langue changés sur un autre appareil : la
+     valeur affichée suit, SAUF si le trader est en train de la modifier ici
+     (champ différent de la dernière valeur chargée). */
+  const loadedRef = useRef({ equity: "", monthly: "" });
+  useLiveTable("profiles", () => {
+    if (!user) return;
+    loadLanguage(user.id)
+      .then(setLanguage)
+      .catch(() => {});
+    loadStartingBalance(user.id)
+      .then((v) => {
+        const next = String(v);
+        setStartingEquity((cur) => {
+          if (cur !== loadedRef.current.equity && cur !== next) return cur;
+          loadedRef.current.equity = next;
+          return next;
+        });
+      })
+      .catch(() => {});
+    loadOnboarding(user.id)
+      .then((o) => {
+        const next = o.monthlyTarget ? String(o.monthlyTarget) : "";
+        setMonthlyTarget((cur) => {
+          if (cur !== loadedRef.current.monthly && cur !== next) return cur;
+          loadedRef.current.monthly = next;
+          return next;
+        });
+      })
+      .catch(() => {});
+  });
 
   const flash = (k: string) => {
     setSavedFlash(k);

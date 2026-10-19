@@ -1,6 +1,8 @@
 export { NotificationEngine, initNotificationListeners, categoryOf } from "./engine";
 export {
   persistNotification,
+  dismissNotification,
+  notificationFromRow,
   loadNotifications,
   markNotificationRead,
   markNotificationsRead,
@@ -8,7 +10,14 @@ export {
   loadRecentDedupKeys,
   maintainNotifications,
 } from "./store";
-export { planArchive, shouldInterrupt, badgeLabel } from "./policy";
+export {
+  planArchive,
+  shouldInterrupt,
+  badgeLabel,
+  notificationDedupKey,
+  createPersistAdapter,
+  shouldClosePopup,
+} from "./policy";
 export { dispatchCodedNotifications, evaluateNotificationRules } from "./rules";
 export {
   NOTIF_PREF_KEYS,

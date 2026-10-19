@@ -146,6 +146,20 @@ fi
 rm -f "$MIGRATION_LOG"
 echo "→ assertions synchro broker et recalibrage Pro"
 psql_run -f tests/sql/broker.sql
+LIVE_MIGRATION="supabase/migrations/20261019120000_live_sync_all_tables.sql"
+echo "→ migration $LIVE_MIGRATION (appliquée deux fois)"
+for passe in 1 2; do
+  MIGRATION_LOG=$(mktemp)
+  if ! psql_run -f "$LIVE_MIGRATION" >"$MIGRATION_LOG" 2>&1; then
+    grep -v "^NOTICE:" "$MIGRATION_LOG" >&2 || true
+    rm -f "$MIGRATION_LOG"
+    echo "ÉCHEC : la migration live_sync ne s'applique pas (passe $passe)." >&2
+    exit 1
+  fi
+  rm -f "$MIGRATION_LOG"
+done
+echo "→ assertions synchro live"
+psql_run -f tests/sql/live-sync.sql
 echo "→ concurrence (deux sessions simultanées)"
 if [ -n "$CONN" ]; then
   PSQL_ARGS="$CONN" bash tests/sql/concurrency.sh

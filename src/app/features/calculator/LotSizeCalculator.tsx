@@ -24,6 +24,7 @@ import { PageContainer, FIELD_BASE, Button } from "@/shared/ui";
 import type { Page } from "@/app/types";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { loadUserPref, saveUserPref } from "@/app/utils/userPrefs";
+import { useUserPrefsChange } from "@/app/hooks/useUserPrefsChange";
 
 interface LotSizeCalculatorProps {
   onAddTrade: () => void;
@@ -85,29 +86,44 @@ export default function LotSizeCalculator({ onAddTrade }: LotSizeCalculatorProps
      le stockage local. À l'ouverture, la version du compte remplace le cache —
      sauf si le trader a déjà touché un réglage entre-temps. */
   const touched = useRef(false);
+  const applyPersisted = (p: Partial<PersistedState>) => {
+    if (p.mode) setMode(p.mode === "futures" ? "futures" : "forex");
+    if (p.riskPct !== undefined) setRiskPct(p.riskPct);
+    if (p.stopPips !== undefined) setStopPips(p.stopPips);
+    if (p.pairIdx !== undefined) setPairIdx(Math.min(p.pairIdx, FOREX_PAIRS.length - 1));
+    if (p.stopPoints !== undefined) setStopPoints(p.stopPoints);
+    if (p.pointValue !== undefined) setPointValue(p.pointValue);
+    try {
+      localStorage.setItem(PERSIST_KEY, JSON.stringify({ ...readPersisted(), ...p }));
+    } catch {
+      /* cache best-effort */
+    }
+  };
   useEffect(() => {
     if (!user?.id) return;
     let alive = true;
     void loadUserPref<Partial<PersistedState>>(user.id, "lotCalc")
       .then((p) => {
         if (!alive || !p || touched.current) return;
-        if (p.mode) setMode(p.mode === "futures" ? "futures" : "forex");
-        if (p.riskPct !== undefined) setRiskPct(p.riskPct);
-        if (p.stopPips !== undefined) setStopPips(p.stopPips);
-        if (p.pairIdx !== undefined) setPairIdx(Math.min(p.pairIdx, FOREX_PAIRS.length - 1));
-        if (p.stopPoints !== undefined) setStopPoints(p.stopPoints);
-        if (p.pointValue !== undefined) setPointValue(p.pointValue);
-        try {
-          localStorage.setItem(PERSIST_KEY, JSON.stringify({ ...readPersisted(), ...p }));
-        } catch {
-          /* cache best-effort */
-        }
+        applyPersisted(p);
       })
       .catch(() => {});
     return () => {
       alive = false;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
+  /* Réglé sur un autre appareil : appliqué ici aussi. Ce qui attend encore son
+     envoi depuis CET appareil est protégé par le cache (`userPrefs.ts`) : la
+     valeur relue est alors exactement celle qu'on vient de saisir. */
+  useUserPrefsChange(user?.id, () => {
+    if (!user?.id) return;
+    void loadUserPref<Partial<PersistedState>>(user.id, "lotCalc")
+      .then((p) => {
+        if (p) applyPersisted(p);
+      })
+      .catch(() => {});
+  });
 
   const persist = (patch: Partial<PersistedState>) => {
     touched.current = true;

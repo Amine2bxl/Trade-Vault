@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { planLimitFromDbError } from "../utils/planLimits";
+import { loadProfileRow, updateProfile } from "./profileRow";
 
 // ── Sub-accounts ──
 export const ACCOUNT_TYPES = ["personal", "prop", "demo", "live"] as const;
@@ -228,20 +229,29 @@ export async function deleteAccount(userId: string, id: string): Promise<void> {
   if (error) throw error;
 }
 
+/**
+ * LE COMPTE ACTIF EST PROPRE À CHAQUE APPAREIL. Changer de compte sur
+ * l'ordinateur ne bascule pas le téléphone : chacun regarde le compte qu'il
+ * veut. Ordre : le choix de CET appareil s'il existe encore, sinon le dernier
+ * compte utilisé (colonne `profiles.active_account_id`, utile au premier
+ * lancement d'un nouvel appareil), sinon le compte principal, sinon le premier.
+ */
+export function pickActiveAccount(
+  list: Pick<Account, "id" | "isDefault">[],
+  local: string | null,
+  lastUsed: string | null,
+): string | null {
+  const exists = (id: string | null): id is string => !!id && list.some((a) => a.id === id);
+  if (exists(local)) return local;
+  if (exists(lastUsed)) return lastUsed;
+  return list.find((a) => a.isDefault)?.id ?? list[0]?.id ?? null;
+}
+
 export async function loadActiveAccountId(userId: string): Promise<string | null> {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("active_account_id")
-    .eq("id", userId)
-    .maybeSingle();
-  if (error) throw error;
-  return (data?.active_account_id as string | null) ?? null;
+  const row = await loadProfileRow(userId);
+  return (row?.active_account_id as string | null | undefined) ?? null;
 }
 
 export async function saveActiveAccountId(userId: string, id: string): Promise<void> {
-  const { error } = await supabase
-    .from("profiles")
-    .update({ active_account_id: id })
-    .eq("id", userId);
-  if (error) throw error;
+  await updateProfile(userId, { active_account_id: id });
 }

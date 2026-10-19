@@ -66,6 +66,7 @@ const TradeModal = lazyPage(() => import("../features/journal/TradeModal"));
 const TradeDetailModal = lazyPage(() => import("../features/journal/TradeDetailModal"));
 const NotificationDetailModal = lazyPage(() => import("../features/inbox/NotificationDetailModal"));
 import TrustpilotPrompt from "./TrustpilotPrompt";
+import LiveStatus from "./LiveStatus";
 import { Trade, isPage, type Page } from "../types";
 import { resolveLocation, buildPageUrl, DEFAULT_PAGE } from "../utils/pageUrl";
 import {
@@ -84,6 +85,9 @@ import {
 } from "../store";
 import { useTrades, tradesQueryKey } from "../trading/useTrades";
 import { useRealtimeTrades } from "../trading/useRealtimeTrades";
+import { useLiveSync } from "../hooks/useLiveSync";
+import { useLiveTable } from "../hooks/useLiveTable";
+import { onTable } from "../store/liveSync";
 import { useBrokerSync } from "../features/brokers/useBrokerSync";
 import { useSubscription } from "../hooks/useSubscription";
 import { generateMyMonthlyReport } from "@/backend/reports.functions";
@@ -102,6 +106,10 @@ import {
   loadRecentDedupKeys,
   maintainNotifications,
   shouldInterrupt,
+  shouldClosePopup,
+  createPersistAdapter,
+  dismissNotification,
+  notificationFromRow,
   categoryAllowed,
   normalizeNotifPrefs,
   DEFAULT_NOTIF_PREFS,
@@ -111,6 +119,7 @@ import {
 } from "@/modules/notifications";
 import { currencyFocus } from "@/domain/instrumentCurrency";
 import { loadUserPref } from "../utils/userPrefs";
+import { useUserPrefsChange } from "../hooks/useUserPrefsChange";
 import type { AppNotification } from "@/modules/notifications/types";
 import { buildDemoTrades } from "./demoTrades";
 import { todayLocalDate } from "@/shared/calendar-date";
@@ -201,8 +210,18 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
       active = false;
     };
   }, [user?.id]);
-  // Multi-appareils : ce qui est encodé/modifié/supprimé ailleurs arrive ici
-  // instantanément, sans rafraîchissement (voir `useRealtimeTrades`).
+  // Devise changée sur un autre appareil : la ligne du profil en cache suit
+  // (aucune requête), et toute la page se réécrit dans la nouvelle devise.
+  useLiveTable("profiles", () => {
+    if (!user?.id) return;
+    loadCurrency(user.id)
+      .then(setCurrency)
+      .catch(() => {});
+  });
+  // Multi-appareils : UN canal live pour tout le compte (`store/liveSync.ts`).
+  // Ce qui est encodé/modifié/supprimé ailleurs arrive ici instantanément,
+  // sans rafraîchissement (voir `useRealtimeTrades`).
+  useLiveSync(user?.id);
   useRealtimeTrades(user?.id, activeId);
   const { tier, can: canUse, loading: subLoading } = useSubscription();
   // Synchro broker : le journal se remplit seul pendant que l'app est ouverte.
@@ -404,14 +423,45 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
   }, []);
   // Notification ouverte via tv:open-notification → popup centré (fond flouté).
   const [detailNotification, setDetailNotification] = useState<AppNotification | null>(null);
+  /* Les popups déjà ouverts sur cet onglet : l'écho Realtime de sa propre
+     annonce ne doit pas la rouvrir une fois fermée. */
+  const openedPopupsRef = useRef(new Set<string>());
   useEffect(() => {
     const onOpen = (e: Event) => {
       const n = (e as CustomEvent<{ notification?: AppNotification }>).detail?.notification;
-      if (n) setDetailNotification(n);
+      if (!n) return;
+      openedPopupsRef.current.add(n.id);
+      setDetailNotification(n);
     };
     window.addEventListener("tv:open-notification", onOpen);
     return () => window.removeEventListener("tv:open-notification", onOpen);
   }, []);
+  /* LE POPUP SUIT LES AUTRES APPAREILS. Une annonce créée ailleurs s'ouvre ici
+     aussi (même notification, même id) ; fermée ailleurs, elle se ferme ici. */
+  useEffect(() => {
+    if (!user?.id) return;
+    return onTable("notifications", (c) => {
+      const row = c.new;
+      if (!row || typeof row.id !== "string") return;
+      if (c.eventType === "INSERT") {
+        const n = notificationFromRow(row as never);
+        if (!shouldInterrupt(n) || n.data?.dismissedAt || openedPopupsRef.current.has(n.id)) return;
+        openedPopupsRef.current.add(n.id);
+        setDetailNotification(n);
+        return;
+      }
+      setDetailNotification((cur) => (shouldClosePopup(cur?.id ?? null, row) ? null : cur));
+    });
+  }, [user?.id]);
+  const detailRef = useRef(detailNotification);
+  detailRef.current = detailNotification;
+  const closeNotification = useCallback(() => {
+    const cur = detailRef.current;
+    if (cur && user?.id && shouldInterrupt(cur)) {
+      void dismissNotification(user.id, cur).catch(() => {});
+    }
+    setDetailNotification(null);
+  }, [user?.id]);
   const markNotifRead = useCallback(
     (id: string) => {
       if (!user?.id) return;
@@ -558,6 +608,15 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
       window.removeEventListener(NOTIF_PREFS_EVENT, onPrefs);
     };
   }, [user?.id]);
+  // Catégories coupées sur un autre appareil : le filtre de ce poste suit.
+  useUserPrefsChange(user?.id, () => {
+    if (!user?.id) return;
+    void loadUserPref<unknown>(user.id, NOTIF_PREFS_KEY)
+      .then((raw) => {
+        notifPrefsRef.current = normalizeNotifPrefs(raw);
+      })
+      .catch(() => {});
+  });
 
   // Bootstrap the Notification Engine with this runtime's delivery adapters.
   // Engines never import React contexts or server fns — they get them here.
@@ -567,17 +626,17 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
       push: (payload) => sendPush({ data: payload }),
       // Les catégories coupées par le trader dans les Réglages.
       allow: (n) => categoryAllowed(notifPrefsRef.current, n.category),
-      persist: (n) => {
-        /* LE SEUL POPUP : l'annonce majeure, une heure avant, sur une devise
-           que le trader trade (`policy.shouldInterrupt`). Tout le reste
-           attend dans la boîte de réception, sans interrompre. */
-        if (shouldInterrupt(n)) {
+      /* LE SEUL POPUP : l'annonce majeure, une heure avant, sur une devise
+         que le trader trade (`policy.shouldInterrupt`). Tout le reste attend
+         dans la boîte de réception, sans interrompre. Il ne s'ouvre ici que si
+         CET appareil a créé la ligne : sinon, il arrive par Realtime. */
+      persist: createPersistAdapter({
+        persist: persistNotification,
+        open: (n) =>
           window.dispatchEvent(
             new CustomEvent("tv:open-notification", { detail: { notification: n } }),
-          );
-        }
-        return persistNotification(n);
-      },
+          ),
+      }),
     });
   }, [user?.id, toast, sendPush]);
 
@@ -1233,6 +1292,8 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
       </main>
       {/* Discreet review nudge — self-gating, never during an active flow */}
       <TrustpilotPrompt tradeCount={trades.length} page={page} modalOpen={modalOpen} />
+      {/* Hors ligne ou synchro en direct qui se reconnecte : dit, sinon muet. */}
+      <LiveStatus />
       {/* Mobile : la pastille des sous-comptes flotte en bas à gauche, en miroir
           de la bulle Jarvis. Solde = départ + P&L. */}
       {/* Chaque widget flottant a son propre filet : une erreur dans la bulle
@@ -1294,7 +1355,7 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
         {detailNotification && (
           <NotificationDetailModal
             notification={detailNotification}
-            onClose={() => setDetailNotification(null)}
+            onClose={closeNotification}
             onMarkRead={markNotifRead}
           />
         )}

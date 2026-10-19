@@ -1,19 +1,16 @@
 import { useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { onTable } from "../store/liveSync";
 
 /**
- * Subscribe to live changes on the signed-in user's `profiles` row so
- * server-backed preferences (language, balances, confluences…) propagate
- * across their devices in real time: change a setting on the phone and the
- * laptop reflects it without a refresh.
+ * Les changements de la ligne `profiles` du compte connecté, en direct :
+ * une langue (ou tout autre réglage serveur) changée sur le téléphone se
+ * reflète sur l'ordinateur sans rafraîchir.
  *
- * Safe by design — if Realtime isn't enabled for the `profiles` table the
- * channel simply never emits; there's no error and nothing breaks. Local
- * writes echo back as no-op UPDATEs (same value in, same value out), so there's
- * no feedback loop.
+ * Passe par le moyeu unique (`store/liveSync.ts`). Sans Realtime, rien
+ * n'arrive et rien ne casse. Les écritures locales reviennent en écho avec la
+ * même valeur : pas de boucle.
  *
- * `onChange` should be stable (wrap in useCallback) — it's re-subscribed when
- * it or the user changes.
+ * `onChange` doit être stable (useCallback) — il est réabonné quand il change.
  */
 export function useRealtimeProfile(
   userId: string | undefined | null,
@@ -21,21 +18,9 @@ export function useRealtimeProfile(
 ): void {
   useEffect(() => {
     if (!userId) return;
-    const channel = supabase
-      .channel(`profile:${userId}`)
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "profiles", filter: `id=eq.${userId}` },
-        (payload) => {
-          if (payload.new && typeof payload.new === "object") {
-            onChange(payload.new as Record<string, unknown>);
-          }
-        },
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return onTable("profiles", (c) => {
+      if (c.eventType !== "UPDATE" || !c.new || c.new.id !== userId) return;
+      onChange(c.new);
+    });
   }, [userId, onChange]);
 }

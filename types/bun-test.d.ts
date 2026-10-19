@@ -80,6 +80,9 @@ declare module "bun:test" {
   export function beforeAll(fn: () => void | Promise<unknown>): void;
   export function afterAll(fn: () => void | Promise<unknown>): void;
 
+  /** Fige l'horloge (`Date.now()`, `new Date()`) ; sans argument, la rend. */
+  export function setSystemTime(now?: Date | number): void;
+
   /** Substitution de module — `mock.module(specifier, factory)`. Le module est
    *  remplacé pour tous les imports qui suivent dans le même processus. */
   export const mock: {

@@ -11,6 +11,7 @@ import {
   type Tier,
 } from "@/domain/plans";
 import { effectiveTier, isEntitled, type SubSource, type SubStatus } from "@/domain/entitlement";
+import { onResync, onTable } from "../store/liveSync";
 
 // Subscription state + billing actions for the signed-in user.
 //
@@ -96,6 +97,24 @@ export function invalidateSubscription(): void {
   inFlight = null;
 }
 
+/* EN DIRECT : un paiement validé (webhook), une résiliation ou un code promo
+   appliqué ailleurs change la ligne `subscriptions`. Branché UNE fois pour
+   tout le module — vingt composants utilisent ce hook, ils ne doivent pas
+   relancer vingt requêtes : le cache est vidé une fois, et chaque instance
+   relit en partageant la même promesse. */
+const SUBSCRIPTION_CHANGED = "tv:subscription-changed";
+let liveWired = false;
+function wireSubscriptionLive(): void {
+  if (liveWired || typeof window === "undefined") return;
+  liveWired = true;
+  const changed = () => {
+    invalidateSubscription();
+    window.dispatchEvent(new Event(SUBSCRIPTION_CHANGED));
+  };
+  onTable("subscriptions", changed);
+  onResync(changed);
+}
+
 export function useSubscription(): UseSubscription {
   const { user } = useAuth();
   const [sub, setSub] = useState<Subscription | null>(null);
@@ -145,6 +164,13 @@ export function useSubscription(): UseSubscription {
 
   useEffect(() => {
     void hydrate();
+  }, [hydrate]);
+
+  useEffect(() => {
+    wireSubscriptionLive();
+    const onChanged = () => void hydrate();
+    window.addEventListener(SUBSCRIPTION_CHANGED, onChanged);
+    return () => window.removeEventListener(SUBSCRIPTION_CHANGED, onChanged);
   }, [hydrate]);
 
   // `refresh` est l'ordre explicite de RELIRE (retour de checkout, reprise

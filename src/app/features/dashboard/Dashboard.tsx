@@ -54,6 +54,7 @@ import type { TKey } from "@/app/i18n/translations";
 import { computeChecklistStreakStats, recentChecklistPeriods } from "../checklist/checklistStreak";
 import { newestFirst } from "@/app/trading/tradeOrder";
 import { formatMoney } from "@/shared/currency";
+import { useLiveTable } from "@/app/hooks/useLiveTable";
 
 // recharts (~150-200 KB) is loaded on demand: the Dashboard shell is eager
 // (landing page), but the equity chart — below the fold — is code-split so it
@@ -158,6 +159,14 @@ export default function Dashboard({
   const startingBalance = activeAccount?.startingBalance ?? 0;
   const [monthlyTarget, setMonthlyTarget] = useState<number | null>(null);
   const hasDraft = useHasTradeDraft(user?.id);
+  // L'événement MONTHLY_TARGET_EVENT suit déjà les changements (ici ou ailleurs) ;
+  // ceci couvre le rattrapage après une coupure, où aucun événement n'arrive.
+  useLiveTable("profiles", () => {
+    if (!user?.id) return;
+    loadOnboarding(user.id)
+      .then((o) => setMonthlyTarget(o.monthlyTarget ?? null))
+      .catch(() => {});
+  });
 
   useEffect(() => {
     if (!user?.id) return;

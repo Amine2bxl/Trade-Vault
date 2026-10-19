@@ -1,5 +1,5 @@
 import { PageContainer } from "@/shared/ui";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import MonthCelebration from "./MonthCelebration";
 import { Loader2, Flag } from "@/shared/ui/icons";
 import { useServerFn } from "@tanstack/react-start";
@@ -34,6 +34,7 @@ import {
 
 import { GoalPicker, PlanView } from "./views";
 import { todayLocalDate } from "@/shared/calendar-date";
+import { useLiveTable } from "@/app/hooks/useLiveTable";
 
 export default function Goals({ trades }: { trades: Trade[] }) {
   const { user } = useAuth();
@@ -72,6 +73,25 @@ export default function Goals({ trades }: { trades: Trade[] }) {
       active = false;
     };
   }, [user?.id, activeId]);
+
+  // Plan d'objectifs, compte ou solde changés sur un autre appareil : relecture
+  // SILENCIEUSE — pas de retour à l'écran de chargement pour un changement distant.
+  const activeIdRef = useRef(activeId);
+  activeIdRef.current = activeId;
+  const reloadLive = () => {
+    if (!user || !activeId) return;
+    const key = activeId;
+    Promise.all([loadGoalPlan(user.id, key), loadStartingBalance(user.id)])
+      .then(([p, b]) => {
+        if (key !== activeIdRef.current) return;
+        setPlan(p);
+        setStartingBalance(b);
+      })
+      .catch(() => {});
+  };
+  useLiveTable("profiles", reloadLive);
+  useLiveTable("accounts", reloadLive);
+  useLiveTable("goal_plans", reloadLive);
 
   // Contexte de mesure : hook PARTAGÉ avec Jarvis. Deux implémentations de
   // « où en est cet objectif ? » auraient divergé au premier changement de

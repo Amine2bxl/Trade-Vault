@@ -8,6 +8,7 @@ import {
   loadPendingProposals,
   type PendingProposal,
 } from "../proposals";
+import { useLiveTable } from "@/app/hooks/useLiveTable";
 
 /**
  * Les propositions en attente — la SEULE surface où Jarvis demande quelque
@@ -50,6 +51,14 @@ export default function ProposalsPanel({ userId }: { userId: string }) {
       active = false;
     };
   }, [userId]);
+
+  // Acceptée ou écartée sur un autre appareil, ou nouvelle (scan de motifs) :
+  // la liste suit.
+  useLiveTable("agent_proposals", () => {
+    loadPendingProposals(userId)
+      .then(setProposals)
+      .catch(() => {});
+  });
 
   const remove = (id: string) => setProposals((list) => list.filter((p) => p.id !== id));
 

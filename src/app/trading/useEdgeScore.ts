@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useReducer, useState } from "react";
 import { computeEdgeScore, EDGE_WINDOW_DAYS, type EdgeResult } from "@/domain/edgeScore";
 import { loadStartingBalance } from "../store";
 import { loadTradingPlan } from "./tradingPlan";
 import type { Trade } from "../types";
 import { localDateOf } from "@/shared/calendar-date";
+import { useLiveTable } from "../hooks/useLiveTable";
 
 /**
  * Edge Score — hook PARTAGÉ, sur le modèle de `useGoalProgress`.
@@ -55,6 +56,10 @@ export function readChecklistByDay(
 export function useEdgeScore(trades: Trade[], userId: string | null | undefined): EdgeResult {
   const [startingBalance, setStartingBalance] = useState(0);
   const [maxRiskPct, setMaxRiskPct] = useState<number | null>(null);
+  // Plan ou solde changés sur un autre appareil : le score suit.
+  const [liveRev, bumpLive] = useReducer((n: number) => n + 1, 0);
+  useLiveTable("profiles", bumpLive);
+  useLiveTable("accounts", bumpLive);
 
   useEffect(() => {
     if (!userId) return;
@@ -72,7 +77,7 @@ export function useEdgeScore(trades: Trade[], userId: string | null | undefined)
     return () => {
       active = false;
     };
-  }, [userId]);
+  }, [userId, liveRev]);
 
   const checklistByDay = useMemo(() => readChecklistByDay(userId), [userId]);
 

@@ -20,6 +20,7 @@ import {
   saveTradingRules,
 } from "@/app/trading/tradingRules";
 import { Button } from "@/shared/ui";
+import { useLiveTable } from "@/app/hooks/useLiveTable";
 
 // "Mes règles de trading" card on the profile page. The trader writes their
 // own rules; structured kinds are auto-checked on every trade save (the
@@ -84,6 +85,15 @@ export default function TradingRulesSection() {
       active = false;
     };
   }, [user]);
+
+  // Règles changées sur un autre appareil (ou acceptées depuis Jarvis) : relues
+  // depuis la ligne du profil en cache.
+  useLiveTable("profiles", () => {
+    if (!user) return;
+    loadTradingRules(user.id)
+      .then((r) => setRules(r))
+      .catch(() => {});
+  });
 
   const persist = async (next: TradingRule[]) => {
     setRules(next);

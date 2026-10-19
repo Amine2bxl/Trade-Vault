@@ -1,5 +1,5 @@
-import { supabase } from "@/integrations/supabase/client";
 import type { TradingRule } from "@/domain/ruleCheck";
+import { loadProfileRow, updateProfile } from "../store/profileRow";
 
 /**
  * Persistance des règles du trader (colonne `trading_rules` de `profiles`).
@@ -12,23 +12,12 @@ import type { TradingRule } from "@/domain/ruleCheck";
 export * from "@/domain/ruleCheck";
 
 export async function loadTradingRules(userId: string): Promise<TradingRule[]> {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("trading_rules")
-    .eq("id", userId)
-    .maybeSingle();
-  if (error) throw error;
-  const raw = data?.trading_rules;
+  const raw = (await loadProfileRow(userId))?.trading_rules;
   return Array.isArray(raw) ? (raw as unknown as TradingRule[]) : [];
 }
 
 export async function saveTradingRules(userId: string, rules: TradingRule[]): Promise<void> {
-  const { error } = await supabase
-    .from("profiles")
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .update({ trading_rules: rules as any })
-    .eq("id", userId);
-  if (error) throw error;
+  await updateProfile(userId, { trading_rules: rules });
 }
 
 // ── Evaluation ───────────────────────────────────────────────────────────────

@@ -77,6 +77,7 @@ import { getSession } from "@/domain/quantStats";
 import { getDuration } from "@/domain/tradeCalcs";
 import { todayLocalDate } from "@/shared/calendar-date";
 import { useTradeNews } from "../news/useTradeNews";
+import { useLiveTable } from "@/app/hooks/useLiveTable";
 
 interface TradeModalProps {
   trade: Trade | null;
@@ -150,6 +151,16 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
   const [userConfluences, setUserConfluences] = useState<string[]>([]);
   const [newConfluence, setNewConfluence] = useState("");
   const [accountBalance, setAccountBalance] = useState<number>(25000);
+  // Confluences ou solde changés sur un autre appareil : la liste suit.
+  useLiveTable("profiles", () => {
+    if (!userId) return;
+    loadConfluences(userId)
+      .then((c) => setUserConfluences(c))
+      .catch(() => {});
+    loadAccountBalance(userId)
+      .then((b) => setAccountBalance(b))
+      .catch(() => {});
+  });
 
   useEffect(() => {
     if (!userId) return;

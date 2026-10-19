@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useReducer, useState } from "react";
 import { InfoTip } from "@/shared/ui/InfoTip";
 import { TrendingUp, TrendingDown, CalendarDays, Clock, Sparkles } from "@/shared/ui/icons";
 import { Trade, isBreakEven } from "@/app/types";
@@ -68,6 +68,7 @@ import {
 import { usePageActions } from "@/app/contexts/PageActionsContext";
 import EquityChart from "@/app/trading/EquityChart";
 import { formatMoney } from "@/shared/currency";
+import { useLiveTable } from "@/app/hooks/useLiveTable";
 
 interface AnalyticsProps {
   trades: Trade[];
@@ -161,6 +162,10 @@ export default function Analytics({ trades }: AnalyticsProps) {
     const fmt = new Intl.DateTimeFormat(locale, { weekday: "short" });
     return Array.from({ length: 7 }, (_, i) => fmt.format(new Date(2023, 0, 1 + i)));
   }, [locale]);
+  // Solde de départ modifié sur un autre appareil (profil ou compte) : relu.
+  const [liveRev, bumpLive] = useReducer((n: number) => n + 1, 0);
+  useLiveTable("profiles", bumpLive);
+  useLiveTable("accounts", bumpLive);
   useEffect(() => {
     if (!user?.id) return;
     let active = true;
@@ -172,7 +177,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
     return () => {
       active = false;
     };
-  }, [user?.id, activeId]);
+  }, [user?.id, activeId, liveRev]);
   const DAY_NAMES = useMemo(
     () =>
       Array.from({ length: 7 }, (_, i) =>

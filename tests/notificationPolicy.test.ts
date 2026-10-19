@@ -1,5 +1,12 @@
 import { describe, expect, test } from "bun:test";
-import { badgeLabel, planArchive, shouldInterrupt } from "../src/modules/notifications/policy";
+import {
+  badgeLabel,
+  createPersistAdapter,
+  notificationDedupKey,
+  planArchive,
+  shouldClosePopup,
+  shouldInterrupt,
+} from "../src/modules/notifications/policy";
 import { evaluateNotificationRules } from "../src/modules/notifications/rules";
 
 const at = (daysAgo: number) => new Date(Date.now() - daysAgo * 86_400_000).toISOString();
@@ -82,5 +89,150 @@ describe("la cadence des règles : un événement, pas un jour", () => {
     const lull = evaluateNotificationRules(ctx).find((r) => r.key.startsWith("activity_lull"));
     expect(lull?.key).toBe("activity_lull:2026-01-03");
     expect(lull?.once).toBe(true);
+  });
+});
+
+// ── Plusieurs appareils, une seule alerte ────────────────────────────────────
+const notif = (data?: Record<string, unknown>, kind = "discipline_warning") =>
+  ({
+    id: "n1",
+    userId: "u1",
+    kind,
+    title: "t",
+    body: "b",
+    severity: "info",
+    channels: ["dashboard"],
+    category: "discipline",
+    createdAt: "2026-10-19T10:00:00Z",
+    readAt: null,
+    data,
+  }) as never;
+
+describe("clé anti-doublon en base", () => {
+  test("sans clé : aucune contrainte", () => {
+    expect(notificationDedupKey(notif(), "2026-10-19")).toBeNull();
+  });
+
+  test("règle codée : la clé telle quelle (elle porte déjà sa période)", () => {
+    expect(
+      notificationDedupKey(
+        notif({ codedRule: true, dedupKey: "weekly_review:2026-10-12" }),
+        "2026-10-19",
+      ),
+    ).toBe("weekly_review:2026-10-12");
+  });
+
+  test("alerte de l'engine : une par jour", () => {
+    expect(
+      notificationDedupKey(notif({ dedupKey: "discipline_warning:max_trades" }), "2026-10-19"),
+    ).toBe("2026-10-19:discipline_warning:max_trades");
+  });
+});
+
+describe("le popup ne s'ouvre que sur l'appareil qui a créé la ligne", () => {
+  const popup = () => notif({ popup: true }, "economic_event");
+
+  test("doublon refusé par la base : pas de popup ici", async () => {
+    const opened: unknown[] = [];
+    const persist = createPersistAdapter({
+      persist: async () => false,
+      open: (n) => opened.push(n),
+    });
+    await persist(popup());
+    expect(opened).toEqual([]);
+  });
+
+  test("ligne créée et annonce majeure : un popup", async () => {
+    const opened: unknown[] = [];
+    const persist = createPersistAdapter({
+      persist: async () => true,
+      open: (n) => opened.push(n),
+    });
+    await persist(popup());
+    expect(opened.length).toBe(1);
+  });
+
+  test("ligne créée sans interruption : jamais de popup", async () => {
+    const opened: unknown[] = [];
+    const persist = createPersistAdapter({
+      persist: async () => true,
+      open: (n) => opened.push(n),
+    });
+    await persist(notif({ dedupKey: "x" }));
+    expect(opened).toEqual([]);
+  });
+});
+
+describe("un popup fermé sur un appareil se ferme sur les autres", () => {
+  test("fermé ailleurs (dismissedAt) : se ferme", () => {
+    expect(
+      shouldClosePopup("n1", {
+        id: "n1",
+        data: { popup: true, dismissedAt: "2026-10-19T10:01:00Z" },
+      }),
+    ).toBe(true);
+  });
+
+  test("simplement lu (l'ouverture marque lu) : reste ouvert", () => {
+    expect(
+      shouldClosePopup("n1", { id: "n1", read_at: "2026-10-19T10:00:01Z", data: { popup: true } }),
+    ).toBe(false);
+  });
+
+  test("une autre notification : sans effet", () => {
+    expect(shouldClosePopup("n1", { id: "n2", data: { dismissedAt: "x" } })).toBe(false);
+    expect(shouldClosePopup(null, { id: "n1", data: { dismissedAt: "x" } })).toBe(false);
+  });
+});
+
+describe("un push par alerte, pas un par appareil", () => {
+  test("ligne déjà créée par un autre appareil : pas de push ici", async () => {
+    const { NotificationEngine } = await import("../src/modules/notifications/engine");
+    const pushes: unknown[] = [];
+    NotificationEngine.configure("u1", {
+      persist: async () => false,
+      push: async (p) => pushes.push(p),
+    });
+    await NotificationEngine.notify("u1", {
+      kind: "risk_max_loss",
+      title: "t",
+      body: "b",
+      channels: ["dashboard", "push"],
+      dedupKey: "risk:x",
+    } as never);
+    expect(pushes).toEqual([]);
+  });
+
+  test("ligne créée ici : le push part", async () => {
+    const { NotificationEngine } = await import("../src/modules/notifications/engine");
+    const pushes: unknown[] = [];
+    NotificationEngine.configure("u1", {
+      persist: async () => true,
+      push: async (p) => pushes.push(p),
+    });
+    await NotificationEngine.notify("u1", {
+      kind: "risk_max_loss",
+      title: "t",
+      body: "b",
+      channels: ["dashboard", "push"],
+      dedupKey: "risk:y",
+    } as never);
+    expect(pushes.length).toBe(1);
+  });
+
+  test("push seul (sans boîte) : il part", async () => {
+    const { NotificationEngine } = await import("../src/modules/notifications/engine");
+    const pushes: unknown[] = [];
+    NotificationEngine.configure("u1", {
+      persist: async () => false,
+      push: async (p) => pushes.push(p),
+    });
+    await NotificationEngine.notify("u1", {
+      kind: "risk_max_loss",
+      title: "t",
+      body: "b",
+      channels: ["push"],
+    } as never);
+    expect(pushes.length).toBe(1);
   });
 });

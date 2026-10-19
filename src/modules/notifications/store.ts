@@ -1,7 +1,8 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { AppNotification } from "./types";
 import { categoryOf } from "./engine";
-import { PRUNE_READ_AFTER_DAYS, planArchive } from "./policy";
+import { PRUNE_READ_AFTER_DAYS, notificationDedupKey, planArchive } from "./policy";
+import { todayLocalDate } from "@/shared/calendar-date";
 
 /**
  * Persistence adapter for the notifications table (see migration
@@ -9,8 +10,17 @@ import { PRUNE_READ_AFTER_DAYS, planArchive } from "./policy";
  * bootstrap — the engine itself never imports supabase.
  */
 
-export async function persistNotification(n: AppNotification): Promise<void> {
-  const { error } = await supabase.from("notifications").insert({
+/**
+ * Écrit la notification ; rend `true` si la ligne a été créée, `false` si un
+ * autre appareil l'avait déjà créée (même `dedup_key`, voir
+ * `policy.notificationDedupKey`). La garantie est en base : l'index unique
+ * `(user_id, dedup_key)` et `on conflict do nothing`.
+ *
+ * Base pas encore migrée (colonne ou index absents) : repli sur l'insertion
+ * d'avant. Une notification en double vaut mieux qu'une notification perdue.
+ */
+export async function persistNotification(n: AppNotification): Promise<boolean> {
+  const row = {
     id: n.id,
     user_id: n.userId,
     kind: n.kind,
@@ -21,11 +31,38 @@ export async function persistNotification(n: AppNotification): Promise<void> {
     data: (n.data ?? {}) as never,
     created_at: n.createdAt,
     read_at: n.readAt ?? null,
-  });
+  };
+  const { data, error } = await supabase
+    .from("notifications")
+    .upsert({ ...row, dedup_key: notificationDedupKey(n, todayLocalDate()) } as never, {
+      onConflict: "user_id,dedup_key",
+      ignoreDuplicates: true,
+    })
+    .select("id");
+  if (error && (error.code === "42703" || error.code === "42P10")) {
+    const { error: insertError } = await supabase.from("notifications").insert(row);
+    if (insertError) throw insertError;
+    return true;
+  }
+  if (error) throw error;
+  return (data?.length ?? 0) > 0;
+}
+
+/**
+ * Le trader a fermé un popup : on l'écrit sur la notification, pour que les
+ * autres appareils où le même popup est ouvert le ferment aussi
+ * (`policy.shouldClosePopup`).
+ */
+export async function dismissNotification(userId: string, n: AppNotification): Promise<void> {
+  const { error } = await supabase
+    .from("notifications")
+    .update({ data: { ...(n.data ?? {}), dismissedAt: new Date().toISOString() } as never })
+    .eq("id", n.id)
+    .eq("user_id", userId);
   if (error) throw error;
 }
 
-type Row = {
+export type NotificationRow = {
   id: string;
   user_id: string;
   kind: string;
@@ -38,7 +75,8 @@ type Row = {
   data: unknown;
 };
 
-function fromRow(r: Row): AppNotification {
+/** Une ligne de la table (lecture ou Realtime) → la notification du produit. */
+export function notificationFromRow(r: NotificationRow): AppNotification {
   return {
     id: r.id,
     userId: r.user_id,
@@ -92,7 +130,7 @@ export async function loadNotifications(
   if (unread.error) throw unread.error;
   if (read.error) throw read.error;
   return [...(unread.data ?? []), ...(read.data ?? [])]
-    .map((r) => fromRow(r as Row))
+    .map((r) => notificationFromRow(r as NotificationRow))
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 

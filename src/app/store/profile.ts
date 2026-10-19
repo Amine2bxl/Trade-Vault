@@ -3,42 +3,32 @@ import { DEFAULT_CONFLUENCES } from "../types";
 import { getActiveAccountId } from "./accounts";
 import { loadTradingPlan } from "../trading/tradingPlan";
 import { parseCurrency, type CurrencyCode } from "@/shared/currency";
+import { loadProfileRow, updateProfile, MONTHLY_TARGET_EVENT } from "./profileRow";
+
+/* Toutes les lectures du profil dérivent d'UNE ligne en cache, tenue à jour
+   en direct par `profileRow.ts` ; toutes les écritures passent par
+   `updateProfile`, qui protège la valeur locale de l'écho Realtime. */
 
 // ── Confluences (stored on profile) ──
 export async function loadConfluences(userId: string): Promise<string[]> {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("confluences")
-    .eq("id", userId)
-    .maybeSingle();
-  if (error) throw error;
-  const list = data?.confluences as string[] | undefined;
+  const row = await loadProfileRow(userId);
+  const list = row?.confluences as string[] | undefined;
   return list && list.length > 0 ? list : [...DEFAULT_CONFLUENCES];
 }
 
 export async function saveConfluences(userId: string, confluences: string[]): Promise<void> {
-  const { error } = await supabase.from("profiles").update({ confluences }).eq("id", userId);
-  if (error) throw error;
+  await updateProfile(userId, { confluences });
 }
 
 // ── Account balance (stored on profile) ──
 export async function loadAccountBalance(userId: string): Promise<number> {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("account_balance")
-    .eq("id", userId)
-    .maybeSingle();
-  if (error) throw error;
-  const bal = data?.account_balance as number | undefined;
+  const row = await loadProfileRow(userId);
+  const bal = row?.account_balance as number | undefined;
   return typeof bal === "number" ? bal : 25000;
 }
 
 export async function saveAccountBalance(userId: string, balance: number): Promise<void> {
-  const { error } = await supabase
-    .from("profiles")
-    .update({ account_balance: balance })
-    .eq("id", userId);
-  if (error) throw error;
+  await updateProfile(userId, { account_balance: balance });
 }
 
 // ── Starting balance (account equity baseline) ──
@@ -55,13 +45,8 @@ export async function loadStartingBalance(userId: string): Promise<number> {
     const bal = data?.starting_balance as number | undefined;
     if (typeof bal === "number") return bal;
   }
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("starting_balance")
-    .eq("id", userId)
-    .maybeSingle();
-  if (error) throw error;
-  const bal = data?.starting_balance as number | undefined;
+  const row = await loadProfileRow(userId);
+  const bal = row?.starting_balance as number | undefined;
   return typeof bal === "number" ? bal : 25000;
 }
 
@@ -76,27 +61,17 @@ export async function saveStartingBalance(userId: string, balance: number): Prom
     if (error) throw error;
     return;
   }
-  const { error } = await supabase
-    .from("profiles")
-    .update({ starting_balance: balance })
-    .eq("id", userId);
-  if (error) throw error;
+  await updateProfile(userId, { starting_balance: balance });
 }
 
 // ── Language ──
 export async function loadLanguage(userId: string): Promise<string> {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("language")
-    .eq("id", userId)
-    .maybeSingle();
-  if (error) throw error;
-  return (data?.language as string | undefined) || "en";
+  const row = await loadProfileRow(userId);
+  return (row?.language as string | undefined) || "en";
 }
 
 export async function saveLanguage(userId: string, language: string): Promise<void> {
-  const { error } = await supabase.from("profiles").update({ language }).eq("id", userId);
-  if (error) throw error;
+  await updateProfile(userId, { language });
 }
 
 // ── Jarvis remembered profile ──
@@ -159,15 +134,7 @@ const EMPTY_JARVIS: JarvisProfile = {
 export async function loadJarvisProfile(userId: string): Promise<JarvisProfile> {
   const local = readJarvisLocal(userId);
   try {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select(
-        "jarvis_first_name, jarvis_style, jarvis_weakness, jarvis_strength, jarvis_goal, jarvis_completed_at",
-      )
-      .eq("id", userId)
-      .maybeSingle();
-    if (error) throw error;
-    const r = (data ?? {}) as JarvisProfileRow;
+    const r = ((await loadProfileRow(userId)) ?? {}) as Partial<JarvisProfileRow>;
     const fromDb: JarvisProfile = {
       firstName: r.jarvis_first_name ?? null,
       style: r.jarvis_style ?? null,
@@ -199,18 +166,14 @@ export async function saveJarvisProfile(
   // Toujours mémoriser localement : le profil est disponible immédiatement.
   writeJarvisLocal(userId, completed);
   try {
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        jarvis_first_name: completed.firstName,
-        jarvis_style: completed.style,
-        jarvis_weakness: completed.weakness,
-        jarvis_strength: completed.strength,
-        jarvis_goal: completed.goal,
-        jarvis_completed_at: completed.completedAt,
-      })
-      .eq("id", userId);
-    if (error) throw error;
+    await updateProfile(userId, {
+      jarvis_first_name: completed.firstName,
+      jarvis_style: completed.style,
+      jarvis_weakness: completed.weakness,
+      jarvis_strength: completed.strength,
+      jarvis_goal: completed.goal,
+      jarvis_completed_at: completed.completedAt,
+    });
   } catch (e) {
     // Migration Supabase non appliquée → le profil reste en local, jamais
     // d'erreur bloquante pour l'utilisateur.
@@ -280,16 +243,9 @@ interface OnboardingRow {
 }
 
 export async function loadOnboarding(userId: string): Promise<OnboardingData> {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select(
-      "onboarding_goal, onboarding_assets, onboarding_style, onboarding_experience, onboarding_uses_ict, onboarding_brokers, onboarding_pain, onboarding_monthly_target, onboarded_at, onboarding_skipped",
-    )
-    .eq("id", userId)
-    .maybeSingle();
-  if (error) throw error;
+  const data = await loadProfileRow(userId);
   if (!data) return { ...EMPTY_ONBOARDING };
-  const r = data as OnboardingRow;
+  const r = data as unknown as OnboardingRow;
   return {
     goal: r.onboarding_goal ?? null,
     assets: r.onboarding_assets ?? [],
@@ -305,9 +261,9 @@ export async function loadOnboarding(userId: string): Promise<OnboardingData> {
   };
 }
 
-/** Diffusé après un changement de l'objectif mensuel : le copilote du tableau
- *  de bord se met à jour sans recharger la page. */
-export const MONTHLY_TARGET_EVENT = "tv:monthly-target";
+/** Diffusé après un changement de l'objectif mensuel (ici ou sur un autre
+ *  appareil) : le copilote du tableau de bord se met à jour sans recharger. */
+export { MONTHLY_TARGET_EVENT };
 
 /**
  * L'OBJECTIF MENSUEL, SEUL.
@@ -319,11 +275,7 @@ export const MONTHLY_TARGET_EVENT = "tv:monthly-target";
  */
 export async function saveMonthlyTarget(userId: string, pct: number | null): Promise<void> {
   const value = pct !== null && Number.isFinite(pct) && pct > 0 ? pct : null;
-  const { error } = await supabase
-    .from("profiles")
-    .update({ onboarding_monthly_target: value })
-    .eq("id", userId);
-  if (error) throw error;
+  await updateProfile(userId, { onboarding_monthly_target: value });
   if (typeof window !== "undefined") {
     window.dispatchEvent(new CustomEvent(MONTHLY_TARGET_EVENT, { detail: value }));
   }
@@ -345,37 +297,29 @@ export async function saveOnboarding(
   opts: { skipped?: boolean; firstName?: string } = {},
 ): Promise<void> {
   const now = new Date().toISOString();
-  const { error } = await supabase
-    .from("profiles")
-    .update({
-      onboarding_goal: d.goal,
-      onboarding_assets: d.assets,
-      onboarding_style: d.style,
-      onboarding_experience: d.experience,
-      onboarding_uses_ict: d.usesIct,
-      onboarding_brokers: d.brokers,
-      onboarding_pain: d.pain,
-      onboarding_monthly_target: d.monthlyTarget,
-      onboarding_skipped: opts.skipped ?? false,
-      onboarded_at: now,
-    })
-    .eq("id", userId);
-  if (error) throw error;
+  await updateProfile(userId, {
+    onboarding_goal: d.goal,
+    onboarding_assets: d.assets,
+    onboarding_style: d.style,
+    onboarding_experience: d.experience,
+    onboarding_uses_ict: d.usesIct,
+    onboarding_brokers: d.brokers,
+    onboarding_pain: d.pain,
+    onboarding_monthly_target: d.monthlyTarget,
+    onboarding_skipped: opts.skipped ?? false,
+    onboarded_at: now,
+  });
 
   // Fusion profil Jarvis — jamais bloquante (migration absente = ignorée).
-  void supabase
-    .from("profiles")
-    .update({
-      ...(opts.firstName?.trim() ? { jarvis_first_name: opts.firstName.trim() } : {}),
-      jarvis_style: d.style || null,
-      jarvis_weakness: d.pain || null,
-      jarvis_goal: d.goal || null,
-      jarvis_completed_at: now,
-    })
-    .eq("id", userId)
-    .then(({ error: jarvisError }) => {
-      if (jarvisError) console.error("[onboarding] jarvis merge skipped", jarvisError);
-    });
+  void updateProfile(userId, {
+    ...(opts.firstName?.trim() ? { jarvis_first_name: opts.firstName.trim() } : {}),
+    jarvis_style: d.style || null,
+    jarvis_weakness: d.pain || null,
+    jarvis_goal: d.goal || null,
+    jarvis_completed_at: now,
+  }).catch((jarvisError) => {
+    console.error("[onboarding] jarvis merge skipped", jarvisError);
+  });
 
   // J+0 welcome email, personalized from the answers just saved. Fire and
   // forget: the server dedupes via email_log, a failure never blocks the app.
@@ -400,33 +344,30 @@ export async function saveOnboarding(
 // colonne n'existe pas (migration non appliquée), le localStorage continue de
 // fonctionner — jamais d'erreur bloquante.
 //
-// UNE REQUÊTE NEUVE À CHAQUE APPEL — plus un constructeur partagé.
-// `supabase.from("profiles")` était évalué AU CHARGEMENT DU MODULE : il créait
-// le client Supabase à l'import du magasin, et un stockage refusé (navigation
-// privée stricte) faisait lever l'import entier — écran 500 au lancement. Et
-// postgrest-js fait partager l'URL du constructeur à ses filtres : chaque
-// appel y ajoutait son `id=eq.…`, un second compte dans le même onglet
-// cumulait deux identifiants contradictoires.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const profilesAny = () => supabase.from("profiles") as any;
+// Lecture et écriture passent par `profileRow.ts`, qui construit une requête
+// neuve à chaque appel : jamais de `supabase.from("profiles")` évalué au
+// chargement du module (il créait le client à l'import — écran 500 en
+// navigation privée stricte — et postgrest-js faisait cumuler les filtres
+// `id=eq.…` de deux comptes dans le même onglet).
 
-export async function saveChecklistConfig(userId: string, config: unknown): Promise<void> {
+/** `true` si la config est en base. Un échec reste silencieux pour le trader
+ *  (le localStorage garde la config) mais DOIT être connu de l'éditeur, qui
+ *  renverra sa saisie au retour du réseau au lieu de la perdre. */
+export async function saveChecklistConfig(userId: string, config: unknown): Promise<boolean> {
   try {
-    await profilesAny().update({ checklist_config: config }).eq("id", userId);
+    await updateProfile(userId, { checklist_config: config });
+    return true;
   } catch (e) {
-    // Migration absente → on garde le localStorage, silencieux.
+    // Migration absente ou réseau coupé → on garde le localStorage, silencieux.
     console.error("[checklist-config] DB write skipped", e);
+    return false;
   }
 }
 
 export async function loadChecklistConfig(userId: string): Promise<unknown> {
   try {
-    const { data, error } = await profilesAny()
-      .select("checklist_config")
-      .eq("id", userId)
-      .maybeSingle();
-    if (error) throw error;
-    return data?.checklist_config ?? null;
+    const row = await loadProfileRow(userId);
+    return row?.checklist_config ?? null;
   } catch (e) {
     console.error("[checklist-config] DB read skipped", e);
     return null;
@@ -437,19 +378,10 @@ export async function loadChecklistConfig(userId: string): Promise<unknown> {
 // `select("*")` : la colonne `currency` est récente — le code déployé avant la
 // migration doit continuer de fonctionner (retour à la devise par défaut).
 export async function loadCurrency(userId: string): Promise<CurrencyCode> {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", userId)
-    .maybeSingle();
-  if (error) throw error;
-  return parseCurrency((data as { currency?: unknown } | null)?.currency);
+  const row = await loadProfileRow(userId);
+  return parseCurrency(row?.currency);
 }
 
 export async function saveCurrency(userId: string, currency: CurrencyCode): Promise<void> {
-  const { error } = await supabase
-    .from("profiles")
-    .update({ currency } as never)
-    .eq("id", userId);
-  if (error) throw error;
+  await updateProfile(userId, { currency });
 }
