@@ -412,6 +412,29 @@
   min-height: 88px;
 }
 
+/* Notes mises en forme (`RichTextarea`, `RichTextView`) : le gras reste au
+   cran « titre de carte » (600), pas au 700 du navigateur, et le texte garde
+   ses espaces et ses retours comme dans une zone de texte. */
+.tv-rich-editor {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  cursor: text;
+}
+.tv-rich-editor:empty::before {
+  content: attr(data-placeholder);
+  color: var(--tv-text-muted);
+  pointer-events: none;
+}
+.tv-rich b,
+.tv-rich strong {
+  font-weight: 600;
+  color: var(--tv-text-primary);
+}
+.tv-rich u {
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
 .tv-selection-panel {
   background: var(--tv-plate-2);
 }

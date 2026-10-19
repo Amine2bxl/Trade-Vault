@@ -1145,6 +1145,10 @@ const en = {
   "common.pasteHint": "Snip with Win+Shift+S, then paste with Ctrl+V",
   "trade.notes": "Notes",
   "trade.notesPlaceholder": "Trade observations, lessons learned...",
+  "richText.toolbar": "Formatting",
+  "richText.bold": "Bold",
+  "richText.italic": "Italic",
+  "richText.underline": "Underline",
   "trade.updateTrade": "Update Trade",
   "trade.saveTrade": "Save Trade",
   "trade.pasteHint":

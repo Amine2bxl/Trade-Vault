@@ -1102,6 +1102,10 @@ const fr: Dict = {
   "common.pasteHint": "Capture avec Win+Maj+S, puis colle avec Ctrl+V",
   "trade.notes": "Notes",
   "trade.notesPlaceholder": "Observations sur le trade, leçons apprises...",
+  "richText.toolbar": "Mise en forme",
+  "richText.bold": "Gras",
+  "richText.italic": "Italique",
+  "richText.underline": "Souligné",
   "trade.updateTrade": "Mettre à jour le trade",
   "trade.saveTrade": "Enregistrer le trade",
   "trade.pasteHint":

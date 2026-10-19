@@ -51,6 +51,7 @@ import {
   FormSection,
   FormLabel,
   FORM_LABEL,
+  RichTextarea,
 } from "@/shared/ui";
 import { intlLocale } from "@/app/i18n/locale";
 import {
@@ -278,6 +279,17 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
 
   const [showAllMistakes, setShowAllMistakes] = useState(false);
   const [uploading, setUploading] = useState(false);
+  // Notes mises en forme : gras / italique / souligné (voir `shared/richText`).
+  const setNotes = useCallback((notes: string) => setForm((f) => ({ ...f, notes })), []);
+  const richTextLabels = useMemo(
+    () => ({
+      toolbar: t("richText.toolbar"),
+      bold: t("richText.bold"),
+      italic: t("richText.italic"),
+      underline: t("richText.underline"),
+    }),
+    [t],
+  );
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   const riskDollar = useMemo(() => {
@@ -1276,12 +1288,12 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
 
             {/* 6 — NOTES ET CAPTURES */}
             <FormSection n={6} title={t("trade.secNotes")}>
-              <Textarea
+              <RichTextarea
                 aria-label={t("trade.notes")}
                 value={form.notes}
-                onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+                onChange={setNotes}
+                labels={richTextLabels}
                 placeholder={t("trade.notesPlaceholder")}
-                rows={2}
               />
               <div>
                 <div className="mb-1 flex items-center justify-between">

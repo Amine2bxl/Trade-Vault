@@ -27,6 +27,7 @@ import {
 } from "@/domain/tradeCalcs";
 import { exportTradesCSV } from "./exportCsv";
 import { cn } from "@/shared/ui/cn";
+import { stripRichText } from "@/shared/richText";
 import { useT } from "@/app/i18n/LanguageContext";
 import { intlLocale } from "@/app/i18n/locale";
 import { useTradeFilter } from "./useTradeFilter";
@@ -189,7 +190,7 @@ export default function Journal({
         (t) =>
           t.symbol.toLowerCase().includes(q) ||
           t.strategy.toLowerCase().includes(q) ||
-          t.notes.toLowerCase().includes(q),
+          stripRichText(t.notes).toLowerCase().includes(q),
       );
     }
 

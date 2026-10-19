@@ -27,7 +27,7 @@ import {
 import { useScreenshotUrls } from "@/app/hooks/useScreenshotUrls";
 import { ScreenshotImage } from "@/app/components/ScreenshotImage";
 import Lightbox from "@/app/components/Lightbox";
-import { Modal } from "@/shared/ui";
+import { Modal, RichTextView } from "@/shared/ui";
 import { formatMoney } from "@/shared/currency";
 import { useLiveTable } from "@/app/hooks/useLiveTable";
 
@@ -650,9 +650,10 @@ export default function TradeDetailModal({
                     {/* `whitespace-pre-wrap` : les retours à la ligne écrits
                         dans la note étaient écrasés à l'affichage — un texte
                         structuré redevenait un pavé illisible. */}
-                    <div className="bg-white/[0.03] rounded-xl p-4 text-sm text-slate-300 leading-relaxed border border-white/[0.04] whitespace-pre-wrap break-words">
-                      {trade.notes}
-                    </div>
+                    <RichTextView
+                      value={trade.notes}
+                      className="bg-white/[0.03] rounded-xl p-4 text-sm text-slate-300 leading-relaxed border border-white/[0.04] whitespace-pre-wrap break-words"
+                    />
                   </div>
                 )}
               </div>
