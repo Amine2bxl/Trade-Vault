@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+import { loadProfileRow, updateProfile } from "../store/profileRow";
 
 // Written trading plan — the trader's own constitution: mission, markets,
 // risk management, setups, limits, routine. Stored as one jsonb blob on the
@@ -73,23 +73,12 @@ function normalize(raw: unknown): TradingPlanData {
 }
 
 export async function loadTradingPlan(userId: string): Promise<TradingPlanData> {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("trading_plan")
-    .eq("id", userId)
-    .maybeSingle();
-  if (error) throw error;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return normalize((data as any)?.trading_plan);
+  return normalize((await loadProfileRow(userId))?.trading_plan as any);
 }
 
 export async function saveTradingPlan(userId: string, plan: TradingPlanData): Promise<void> {
-  const { error } = await supabase
-    .from("profiles")
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .update({ trading_plan: plan as any })
-    .eq("id", userId);
-  if (error) throw error;
+  await updateProfile(userId, { trading_plan: plan });
 }
 
 /** 0..1 — how much of the plan is filled in (drives the completion ring). */

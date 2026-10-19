@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { planLimitFromDbError } from "../utils/planLimits";
+import { loadProfileRow, updateProfile } from "./profileRow";
 
 // ── Sub-accounts ──
 export const ACCOUNT_TYPES = ["personal", "prop", "demo", "live"] as const;
@@ -229,19 +230,10 @@ export async function deleteAccount(userId: string, id: string): Promise<void> {
 }
 
 export async function loadActiveAccountId(userId: string): Promise<string | null> {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("active_account_id")
-    .eq("id", userId)
-    .maybeSingle();
-  if (error) throw error;
-  return (data?.active_account_id as string | null) ?? null;
+  const row = await loadProfileRow(userId);
+  return (row?.active_account_id as string | null | undefined) ?? null;
 }
 
 export async function saveActiveAccountId(userId: string, id: string): Promise<void> {
-  const { error } = await supabase
-    .from("profiles")
-    .update({ active_account_id: id })
-    .eq("id", userId);
-  if (error) throw error;
+  await updateProfile(userId, { active_account_id: id });
 }
