@@ -172,3 +172,26 @@ begin
   return new;
 end;
 $$;
+
+-- ── Ce que la migration `live_sync_all_tables` attend ───────────────────────
+-- La boîte de réception (colonnes réelles) et la publication Realtime, que
+-- Supabase crée d'office et qu'un Postgres nu n'a pas.
+create table if not exists public.notifications (
+  id         uuid primary key,
+  user_id    uuid not null references auth.users(id) on delete cascade,
+  kind       text not null,
+  title      text not null,
+  body       text not null,
+  url        text,
+  severity   text not null default 'info',
+  data       jsonb,
+  created_at timestamptz not null default now(),
+  read_at    timestamptz
+);
+
+do $$
+begin
+  if not exists (select 1 from pg_publication where pubname = 'supabase_realtime') then
+    create publication supabase_realtime;
+  end if;
+end $$;
