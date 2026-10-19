@@ -66,6 +66,7 @@ const TradeModal = lazyPage(() => import("../features/journal/TradeModal"));
 const TradeDetailModal = lazyPage(() => import("../features/journal/TradeDetailModal"));
 const NotificationDetailModal = lazyPage(() => import("../features/inbox/NotificationDetailModal"));
 import TrustpilotPrompt from "./TrustpilotPrompt";
+import LiveStatus from "./LiveStatus";
 import { Trade, isPage, type Page } from "../types";
 import { resolveLocation, buildPageUrl, DEFAULT_PAGE } from "../utils/pageUrl";
 import {
@@ -1291,6 +1292,8 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
       </main>
       {/* Discreet review nudge — self-gating, never during an active flow */}
       <TrustpilotPrompt tradeCount={trades.length} page={page} modalOpen={modalOpen} />
+      {/* Hors ligne ou synchro en direct qui se reconnecte : dit, sinon muet. */}
+      <LiveStatus />
       {/* Mobile : la pastille des sous-comptes flotte en bas à gauche, en miroir
           de la bulle Jarvis. Solde = départ + P&L. */}
       {/* Chaque widget flottant a son propre filet : une erreur dans la bulle

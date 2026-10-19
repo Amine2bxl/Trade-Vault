@@ -431,6 +431,9 @@ const fr: Dict = {
   "inbox.categories": "Catégories",
   "inbox.loadError": "Impossible de charger les notifications.",
   "inbox.title": "Boîte de réception",
+  "liveStatus.offline":
+    "Hors ligne — les changements de tes autres appareils arriveront au retour du réseau.",
+  "liveStatus.connecting": "Reconnexion de la synchro en direct…",
   "studio.newTheme": "Créer un thème",
   "studio.editTheme": "Modifier le thème",
   "studio.livePreview": "L'application derrière se retinte en direct pendant que tu choisis.",
