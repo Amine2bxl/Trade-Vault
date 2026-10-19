@@ -113,6 +113,7 @@ import {
 } from "@/modules/notifications";
 import { currencyFocus } from "@/domain/instrumentCurrency";
 import { loadUserPref } from "../utils/userPrefs";
+import { useUserPrefsChange } from "../hooks/useUserPrefsChange";
 import type { AppNotification } from "@/modules/notifications/types";
 import { buildDemoTrades } from "./demoTrades";
 import { todayLocalDate } from "@/shared/calendar-date";
@@ -570,6 +571,15 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
       window.removeEventListener(NOTIF_PREFS_EVENT, onPrefs);
     };
   }, [user?.id]);
+  // Catégories coupées sur un autre appareil : le filtre de ce poste suit.
+  useUserPrefsChange(user?.id, () => {
+    if (!user?.id) return;
+    void loadUserPref<unknown>(user.id, NOTIF_PREFS_KEY)
+      .then((raw) => {
+        notifPrefsRef.current = normalizeNotifPrefs(raw);
+      })
+      .catch(() => {});
+  });
 
   // Bootstrap the Notification Engine with this runtime's delivery adapters.
   // Engines never import React contexts or server fns — they get them here.
