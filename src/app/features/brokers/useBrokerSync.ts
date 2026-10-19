@@ -6,6 +6,7 @@ import { hasActiveBrokerConnection, loadBrokerAlerts } from "@/app/store/brokers
 import { nsKey, readJSON, writeJSON } from "@/app/utils/persistence";
 import type { Trade } from "@/app/types";
 import { clearTradesCache, tradesQueryKey } from "@/app/trading/useTrades";
+import { useLiveTable } from "@/app/hooks/useLiveTable";
 
 /**
  * LE JOURNAL QUI SE REMPLIT TOUT SEUL.
@@ -134,6 +135,21 @@ export function useBrokerSync(opts: {
       inFlight.current = false;
     }
   }, [sync, absorb, userId]);
+
+  // Une connexion ouverte (ou coupée) sur un autre appareil : la synchro de
+  // cet appareil démarre (ou s'arrête) sans attendre un rechargement.
+  useLiveTable(
+    "broker_connections",
+    () => {
+      if (!userId) return;
+      void hasActiveBrokerConnection(userId).then((on) => {
+        const was = enabled.current;
+        enabled.current = on;
+        if (on && !was) void run();
+      });
+    },
+    { enabled: !!userId && ready },
+  );
 
   useEffect(() => {
     if (!userId || !ready) return;

@@ -15,7 +15,7 @@ import { Trade, MissedOpportunity, isBreakEven } from "@/app/types";
 import { formatPnl, getDuration, directionLabel, directionBadgeClass } from "@/domain/tradeCalcs";
 import { getSession, getMacroEvents } from "@/domain/quantStats";
 import { cn } from "@/shared/ui/cn";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useReducer, useRef, useState } from "react";
 import { useT } from "@/app/i18n/LanguageContext";
 import { useAuth } from "@/app/contexts/AuthContext";
 import {
@@ -28,6 +28,7 @@ import { useScreenshotUrls, invalidateScreenshot } from "@/app/hooks/useScreensh
 import Lightbox from "@/app/components/Lightbox";
 import { Modal } from "@/shared/ui";
 import { formatMoney } from "@/shared/currency";
+import { useLiveTable } from "@/app/hooks/useLiveTable";
 
 interface TradeDetailModalProps {
   trades: Trade[];
@@ -80,6 +81,10 @@ export default function TradeDetailModal({
   // modal s'ouvre. Absentes si aucune capture : on n'invente jamais un « avant ».
   const [intents, setIntents] = useState<Record<string, TradeIntent>>({});
   const [reflections, setReflections] = useState<Record<string, TradeReflection>>({});
+  // Intention ou réflexion complétées sur un autre appareil : affichées ici.
+  const [liveRev, bumpLive] = useReducer((n: number) => n + 1, 0);
+  useLiveTable("trade_intent", bumpLive);
+  useLiveTable("trade_reflection", bumpLive);
   useEffect(() => {
     if (!userId || trades.length === 0) return;
     let active = true;
@@ -94,7 +99,7 @@ export default function TradeDetailModal({
     return () => {
       active = false;
     };
-  }, [userId, trades]);
+  }, [userId, trades, liveRev]);
   // Screenshots are stored as storage paths (or legacy data: URLs) — resolve
   // them all in one batched signed-URL request.
   const screenshotUrls = useScreenshotUrls(trades.flatMap((tr) => tr.screenshots));

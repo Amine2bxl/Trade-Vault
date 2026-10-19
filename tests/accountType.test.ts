@@ -41,3 +41,30 @@ describe("type de compte lu en base", () => {
     expect(switcher).toMatch(/getAccountIcon[\s\S]*from "\.\/accountVisuals"/);
   });
 });
+
+describe("compte actif : propre à chaque appareil", () => {
+  const acc = (id: string, isDefault = false) => ({ id, isDefault }) as never;
+  const list = [acc("a"), acc("main", true), acc("b")];
+
+  test("le compte choisi sur CET appareil passe en premier", async () => {
+    const { pickActiveAccount } = await import("../src/app/store/accounts");
+    expect(pickActiveAccount(list, "b", "a")).toBe("b");
+  });
+
+  test("compte local supprimé ailleurs : le dernier utilisé en base", async () => {
+    const { pickActiveAccount } = await import("../src/app/store/accounts");
+    expect(pickActiveAccount(list, "gone", "a")).toBe("a");
+  });
+
+  test("les deux invalides : le compte principal", async () => {
+    const { pickActiveAccount } = await import("../src/app/store/accounts");
+    expect(pickActiveAccount(list, "gone", "gone-too")).toBe("main");
+    expect(pickActiveAccount(list, null, null)).toBe("main");
+  });
+
+  test("pas de principal : le premier ; liste vide : aucun", async () => {
+    const { pickActiveAccount } = await import("../src/app/store/accounts");
+    expect(pickActiveAccount([acc("x"), acc("y")], null, null)).toBe("x");
+    expect(pickActiveAccount([], "x", "y")).toBeNull();
+  });
+});

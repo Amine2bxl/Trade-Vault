@@ -69,6 +69,14 @@ export default function SettingsWorkspace({ context }: JarvisWorkspaceProps) {
     };
   }, [userId]);
 
+  // Un souvenir oublié ou appris ailleurs : la liste suit.
+  useLiveTable("ai_memory", () => {
+    if (!userId) return;
+    loadMemory(userId, ["profile", "fact", "lesson", "decision", "preference"], 60)
+      .then(setMemory)
+      .catch(() => {});
+  });
+
   // Profil Jarvis changé sur un autre appareil : relu, sauf pendant l'édition.
   useLiveTable("profiles", () => {
     if (!userId || editProfile) return;

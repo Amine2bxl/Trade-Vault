@@ -310,3 +310,19 @@ describe("liveSync — écrans branchés", () => {
     }
   });
 });
+
+describe("liveSync — couverture", () => {
+  test("chaque table diffusée a au moins un écran qui la suit", () => {
+    const sources = appSources()
+      .filter((f) => !f.endsWith("store/liveSync.ts"))
+      .map((f) => stripComments(readSource("/", f)));
+    const all = sources.join("\n");
+    for (const table of live.LIVE_TABLES) {
+      const followed =
+        new RegExp(`(useLiveTable|onTable|useRealtimeTable)\\(\\s*"${table}"`).test(all) ||
+        (table === "trades" && all.includes("useRealtimeTrades(")) ||
+        (table === "profiles" && all.includes("useRealtimeProfile("));
+      expect(followed, `table diffusée mais suivie par aucun écran : ${table}`).toBe(true);
+    }
+  });
+});

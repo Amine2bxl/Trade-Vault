@@ -4,11 +4,14 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "./AuthContext";
+import { pickActiveAccount } from "../store/accounts";
+import { useLiveTable } from "../hooks/useLiveTable";
 import {
   type Account,
   type AccountType,
@@ -137,15 +140,10 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       }
       setAccounts(list);
 
-      let active = await loadActiveAccountId(uid).catch(() => null);
-      if (!active || !list.some((a) => a.id === active)) {
-        active =
-          (cached && list.some((a) => a.id === cached) ? cached : null) ??
-          list.find((a) => a.isDefault)?.id ??
-          list[0]?.id ??
-          null;
-      }
-      apply(uid, active);
+      // Le compte choisi sur CET appareil d'abord : le compte actif ne suit pas
+      // les autres appareils (voir `pickActiveAccount`).
+      const lastUsed = await loadActiveAccountId(uid).catch(() => null);
+      apply(uid, pickActiveAccount(list, cached, lastUsed));
       setReady(true);
     },
     [apply],
@@ -165,6 +163,23 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       setReady(true); // never hard-block the app on account load
     });
   }, [user?.id, load]);
+
+  /* Comptes créés, renommés, recalibrés ou supprimés sur un autre appareil :
+     la liste suit. Si le compte affiché ici a disparu, on bascule sur le
+     principal — sans jamais suivre le compte ACTIF d'un autre appareil. */
+  const activeIdRef = useRef(activeId);
+  activeIdRef.current = activeId;
+  useLiveTable("accounts", () => {
+    if (!user) return;
+    const uid = user.id;
+    loadAccounts(uid)
+      .then((list) => {
+        setAccounts(list);
+        const next = pickActiveAccount(list, activeIdRef.current, null);
+        if (next !== activeIdRef.current) apply(uid, next);
+      })
+      .catch(() => {});
+  });
 
   const switchAccount = useCallback(
     (id: string) => {

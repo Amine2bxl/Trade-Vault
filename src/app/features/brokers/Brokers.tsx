@@ -49,6 +49,7 @@ import { SyncCelebration, type CelebrationState } from "./SyncCelebration";
 import { PageContainer, Badge, Button, Card, FIELD_BASE, SelectPicker, cn } from "@/shared/ui";
 import { currencySymbol } from "@/shared/currency";
 import tradovateLogo from "@/assets/brands/tradovate.png";
+import { useLiveTable } from "@/app/hooks/useLiveTable";
 
 /**
  * BROKERS — brancher ses comptes une fois, ne plus jamais saisir un trade.
@@ -231,6 +232,11 @@ export default function Brokers() {
       setBrokerAccounts([]);
     }
   }, [user]);
+
+  // Connexion ajoutée, synchronisée ou en erreur ailleurs (autre appareil,
+  // cron) : la page suit.
+  useLiveTable("broker_connections", () => void reload());
+  useLiveTable("broker_accounts", () => void reload());
 
   useEffect(() => {
     void reload();
