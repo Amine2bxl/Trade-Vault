@@ -99,6 +99,13 @@ getLiveStatus(): LiveStatus; subscribeLiveStatus(h): () => void
 DEVICE_ID: string                          // id de l'onglet, en mémoire
 ```
 
+> **Réalisé au palier 1** (voir le plan) : le canal des changements de base
+> est `db:{uid}`, non privé — Realtime y applique la RLS des tables. Le canal
+> privé `user:{uid}` et ses policies `realtime.messages` arrivent avec le
+> premier `broadcast` (palier 2). `trading_sessions` et `simulation_scenarios`
+> ne sont pas diffusées (aucun écran monté ne les affiche). Fermeture d'un
+> popup partagée par `data.dismissedAt` (l'ouverture marque déjà « lu »).
+
 - **Un canal privé par compte** : `user:{uid}`, `config.private = true`. Il porte
   les `postgres_changes` de toutes les tables `LiveTable` (filtre
   `user_id=eq.{uid}`, `id=eq.{uid}` pour `profiles`) et les événements

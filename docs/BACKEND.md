@@ -111,6 +111,11 @@ Les crons acceptent `GET` (Vercel Cron) et `POST` (appel manuel) —
   publique par nature ; `VAPID_PRIVATE_KEY` est obligatoire.
 - **Voix hébergée** : `tts.functions.ts`, désactivée sans `ELEVENLABS_API_KEY`
   ou si `TTS_PROVIDER=local` ; la voix locale prend le relais.
+- **Realtime** (synchro live multi-appareils, `src/app/store/liveSync.ts`) :
+  un canal par appareil connecté. Le projet est sur le **plan gratuit**
+  Supabase, dont le Realtime est plafonné (connexions simultanées, messages
+  par mois — voir la grille Supabase en vigueur). Suffisant aujourd'hui ;
+  le passage au plan Pro est le seuil de croissance à surveiller.
 
 ## 7. Variables d'environnement
 

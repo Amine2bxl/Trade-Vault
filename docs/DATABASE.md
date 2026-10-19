@@ -78,6 +78,23 @@ Toute fonction `SECURITY DEFINER` voit son `EXECUTE` révoqué pour
 | `users_with_trades_since`, `find_user_id_by_email` | Balayages de cron, administration |
 | `set_updated_at` | Triggers `updated_at` |
 
+## 4 bis. Realtime
+
+Publication `supabase_realtime` : les tables du compte qu'un écran affiche
+(`trades`, `missed_opportunities`, `profiles`, `accounts`, `goal_plans`,
+`notifications`, `user_preferences`, `agent_proposals`, `ai_memory`,
+`broker_connections`, `broker_accounts`, `monthly_reports`, `trade_intent`,
+`trade_reflection`, `subscriptions`), toutes en `replica identity full` (sans
+elle, une suppression n'atteint pas les autres appareils). Migrations
+`20260826120000_enable_realtime_sync` et `20261019120000_live_sync_all_tables`.
+Realtime applique la RLS : chacun ne reçoit que ses lignes. Ajouter une table
+= la publier ET l'ajouter à `LIVE_TABLES` (`src/app/store/liveSync.ts`) ;
+`tests/liveSync.test.ts` exige un écran qui la suive.
+
+`notifications.dedup_key` + index unique `(user_id, dedup_key)` : une alerte
+évaluée par deux appareils n'est écrite qu'une fois (`on conflict do
+nothing`) ; la clé vient de `policy.notificationDedupKey`.
+
 ## 5. Storage
 
 Bucket `trade-screenshots` (créé par migration) : policies restreintes au rôle

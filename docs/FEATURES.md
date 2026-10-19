@@ -28,7 +28,7 @@ Chemins relatifs à `src/app/` sauf mention contraire.
 | Réglages (`settings`, `profile`, `appearance`) | `features/settings/` | `Settings.tsx` · `Profile.tsx` · `Appearance.tsx` | `ThemeSettings`, `ThemeStudioModal`, `PushNotificationSettings`, `AccountsManager` (principal, sous-comptes, transfert et recalibrage — Pro), `RecalibrateAccountModal`, `trading/AccountScaleBridge`, `utils/themes` |
 | Abonnement (`subscription`) | `features/billing/` | `Subscription.tsx` | `PricingPlans`, `PlanMatrix`, `PremiumGate`, `UpgradeModal`, codes promo, `domain/plans`, `hooks/useSubscription` |
 | Brokers (`brokers`, Pro) | `features/brokers/` | `Brokers.tsx` | `SyncCelebration` (retour de connexion chez Tradovate), `useBrokerSync` (synchro pendant que l'app est ouverte + file de relecture, monté par `shell/App.tsx`), `store/brokers`, `backend/brokers.functions`, `backend/broker-sync.server`, `backend/tradovate.server`, `modules/brokers` |
-| Inbox (`inbox`) | `features/inbox/` | `Inbox.tsx` | `NotificationDetailModal`, `notificationMeta`, `useUnreadCount` (badge de la sidebar), `modules/notifications` |
+| Inbox (`inbox`) | `features/inbox/` | `Inbox.tsx` | `NotificationDetailModal`, `notificationMeta`, `useUnreadCount` (badge de la sidebar, en direct), `modules/notifications` (anti-doublon `dedup_key`, popup partagé : `createPersistAdapter`, `shouldClosePopup`) |
 
 ## Hors navigation
 
@@ -47,7 +47,11 @@ Chemins relatifs à `src/app/` sauf mention contraire.
 - `app/trading/` : `EquityChart`, `ChartDefs`, `chartTheme`, `tradeFilter`,
   `tradeOrder`, `readiness`, `positionCalc`, `tradingPlan`, `tradingRules`,
   `ruleAdherence`, `accountCalibration`, `tradeTransfer`, `mistakeClusters`, hooks `useTrades`,
-  `useTradeStats`, `useRealtimeTrades`, `useEdgeScore`, `useTradingRules`.
+  `useTradeStats`, `useRealtimeTrades` (sur le moyeu `store/liveSync`),
+  `useEdgeScore`, `useTradingRules`.
+- Synchro live : `store/liveSync.ts` (moyeu), `store/profileRow.ts` (ligne du
+  profil), `hooks/useLiveSync`, `hooks/useLiveTable`, `hooks/useUserPrefsChange`,
+  `shell/LiveStatus`.
 - `domain/` : `trade` (type `Trade`), `tradeCalcs`, `quantStats`, `edgeScore`,
   `behavioral`, `monthlyReport`, `ruleCheck`, `plans`, `entitlement`, `promo`,
   `ai-limits`.

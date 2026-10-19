@@ -95,6 +95,18 @@ le vérifie.
   `useTradeStats` — aucune requête, aucun N+1.
 - Contextes React : Auth, Account (sous-comptes), Language, Theme, Toast,
   Confirm, PageActions.
+- **Synchro live multi-appareils** : un moyeu unique (`store/liveSync.ts`)
+  ouvre un canal Realtime par compte (`db:{uid}`) et redistribue les
+  changements de toutes les tables du compte (`LIVE_TABLES`). Les écrans s'y
+  branchent par `hooks/useLiveTable` (recharge regroupée + rattrapage après
+  coupure ou retour d'onglet) ; `useRealtimeTrades` corrige le cache React
+  Query sur place. Deux caches absorbent les changements sans requête :
+  la ligne `profiles` (`store/profileRow.ts`, lue une fois, écritures par
+  `updateProfile`) et `user_preferences` (`utils/userPrefs.ts`). Une écriture
+  locale en attente n'est jamais écrasée par l'écho d'une plus ancienne.
+  Restent **par appareil** : compte actif (`pickActiveAccount`), thème actif,
+  barre latérale, filtres et périodes, voix de Jarvis. Statut affiché par
+  `shell/LiveStatus`.
 - `localStorage` namespacé par utilisateur (`utils/persistence.ts`,
   `nsKey`) ; tout est purgé à la déconnexion (`utils/session-purge.ts`).
 - Pages plein écran (non défilantes) : `hooks/useAvailableHeight.ts`.
