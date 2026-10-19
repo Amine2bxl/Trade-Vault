@@ -1,5 +1,6 @@
 import { numericText } from "@/shared/ui/NumericText";
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { useLiveTable } from "@/app/hooks/useLiveTable";
 import {
   ArrowRight,
   Bell,
@@ -152,6 +153,9 @@ export default function Inbox() {
     setLoading(true);
     reload();
   }, [reload]);
+
+  // Créée, lue ou archivée sur un autre appareil : la boîte suit.
+  useLiveTable("notifications", reload);
 
   // En direct : une notification émise pendant qu'on regarde la boîte y entre.
   useEffect(() => {

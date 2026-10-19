@@ -86,6 +86,7 @@ import { useTrades, tradesQueryKey } from "../trading/useTrades";
 import { useRealtimeTrades } from "../trading/useRealtimeTrades";
 import { useLiveSync } from "../hooks/useLiveSync";
 import { useLiveTable } from "../hooks/useLiveTable";
+import { onTable } from "../store/liveSync";
 import { useBrokerSync } from "../features/brokers/useBrokerSync";
 import { useSubscription } from "../hooks/useSubscription";
 import { generateMyMonthlyReport } from "@/backend/reports.functions";
@@ -104,6 +105,10 @@ import {
   loadRecentDedupKeys,
   maintainNotifications,
   shouldInterrupt,
+  shouldClosePopup,
+  createPersistAdapter,
+  dismissNotification,
+  notificationFromRow,
   categoryAllowed,
   normalizeNotifPrefs,
   DEFAULT_NOTIF_PREFS,
@@ -417,14 +422,45 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
   }, []);
   // Notification ouverte via tv:open-notification → popup centré (fond flouté).
   const [detailNotification, setDetailNotification] = useState<AppNotification | null>(null);
+  /* Les popups déjà ouverts sur cet onglet : l'écho Realtime de sa propre
+     annonce ne doit pas la rouvrir une fois fermée. */
+  const openedPopupsRef = useRef(new Set<string>());
   useEffect(() => {
     const onOpen = (e: Event) => {
       const n = (e as CustomEvent<{ notification?: AppNotification }>).detail?.notification;
-      if (n) setDetailNotification(n);
+      if (!n) return;
+      openedPopupsRef.current.add(n.id);
+      setDetailNotification(n);
     };
     window.addEventListener("tv:open-notification", onOpen);
     return () => window.removeEventListener("tv:open-notification", onOpen);
   }, []);
+  /* LE POPUP SUIT LES AUTRES APPAREILS. Une annonce créée ailleurs s'ouvre ici
+     aussi (même notification, même id) ; fermée ailleurs, elle se ferme ici. */
+  useEffect(() => {
+    if (!user?.id) return;
+    return onTable("notifications", (c) => {
+      const row = c.new;
+      if (!row || typeof row.id !== "string") return;
+      if (c.eventType === "INSERT") {
+        const n = notificationFromRow(row as never);
+        if (!shouldInterrupt(n) || n.data?.dismissedAt || openedPopupsRef.current.has(n.id)) return;
+        openedPopupsRef.current.add(n.id);
+        setDetailNotification(n);
+        return;
+      }
+      setDetailNotification((cur) => (shouldClosePopup(cur?.id ?? null, row) ? null : cur));
+    });
+  }, [user?.id]);
+  const detailRef = useRef(detailNotification);
+  detailRef.current = detailNotification;
+  const closeNotification = useCallback(() => {
+    const cur = detailRef.current;
+    if (cur && user?.id && shouldInterrupt(cur)) {
+      void dismissNotification(user.id, cur).catch(() => {});
+    }
+    setDetailNotification(null);
+  }, [user?.id]);
   const markNotifRead = useCallback(
     (id: string) => {
       if (!user?.id) return;
@@ -589,17 +625,17 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
       push: (payload) => sendPush({ data: payload }),
       // Les catégories coupées par le trader dans les Réglages.
       allow: (n) => categoryAllowed(notifPrefsRef.current, n.category),
-      persist: (n) => {
-        /* LE SEUL POPUP : l'annonce majeure, une heure avant, sur une devise
-           que le trader trade (`policy.shouldInterrupt`). Tout le reste
-           attend dans la boîte de réception, sans interrompre. */
-        if (shouldInterrupt(n)) {
+      /* LE SEUL POPUP : l'annonce majeure, une heure avant, sur une devise
+         que le trader trade (`policy.shouldInterrupt`). Tout le reste attend
+         dans la boîte de réception, sans interrompre. Il ne s'ouvre ici que si
+         CET appareil a créé la ligne : sinon, il arrive par Realtime. */
+      persist: createPersistAdapter({
+        persist: persistNotification,
+        open: (n) =>
           window.dispatchEvent(
             new CustomEvent("tv:open-notification", { detail: { notification: n } }),
-          );
-        }
-        return persistNotification(n);
-      },
+          ),
+      }),
     });
   }, [user?.id, toast, sendPush]);
 
@@ -1316,7 +1352,7 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
         {detailNotification && (
           <NotificationDetailModal
             notification={detailNotification}
-            onClose={() => setDetailNotification(null)}
+            onClose={closeNotification}
             onMarkRead={markNotifRead}
           />
         )}

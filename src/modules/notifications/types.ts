@@ -81,8 +81,9 @@ export interface NotificationAdapters {
   toast?: (message: string, type: "success" | "error" | "info") => void;
   /** Web-push sender (server function wrapper). */
   push?: (payload: { title: string; body: string; url?: string }) => Promise<unknown>;
-  /** Persist to the notifications table. */
-  persist?: (n: AppNotification) => Promise<void>;
+  /** Persist to the notifications table. `false` = la ligne existait déjà
+   *  (créée par un autre appareil) : rien de plus à envoyer d'ici. */
+  persist?: (n: AppNotification) => Promise<boolean | void>;
   /**
    * Filtre du trader : `false` → la notification n'existe pas (ni boîte, ni
    * push, ni popup). Branché sur ses catégories (`preferences.ts`).

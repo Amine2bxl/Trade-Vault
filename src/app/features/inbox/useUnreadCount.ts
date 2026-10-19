@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useLiveTable } from "@/app/hooks/useLiveTable";
 
 const CACHE_KEY = "tv:unread-count";
 
@@ -47,19 +48,19 @@ export function useUnreadCount(userId: string | undefined): number {
     activeRef.current = true;
     fetchCount();
 
-    // Poll every 30s
-    const interval = setInterval(fetchCount, 30_000);
-
     // Listen for manual refresh events (from Inbox mark-all-read)
     const handler = () => fetchCount();
     window.addEventListener("tv:notif-updated", handler);
 
     return () => {
       activeRef.current = false;
-      clearInterval(interval);
       window.removeEventListener("tv:notif-updated", handler);
     };
   }, [userId]);
+
+  // EN DIRECT, plus de sondage toutes les 30 s : une notification créée, lue
+  // ou supprimée — ici ou sur un autre appareil — recompte le badge.
+  useLiveTable("notifications", () => void fetchCount(), { enabled: !!userId });
 
   return count;
 }

@@ -140,13 +140,6 @@ export const NotificationEngine = {
     if (notification.channels.includes("toast")) {
       adapters.toast?.(notification.body, toToastType(notification.severity));
     }
-    // Push is deduplicated (once per key per day); toast + persist are not.
-    const suppressPush = input.dedupKey ? alreadyPushedToday(input.dedupKey) : false;
-    if (notification.channels.includes("push") && !suppressPush) {
-      await adapters
-        .push?.({ title: notification.title, body: notification.body, url: notification.url })
-        .catch(() => {});
-    }
     /* LA BOÎTE NE REÇOIT UNE MÊME ALERTE QU'UNE FOIS PAR JOUR.
        Un rappel de règle part à chaque trade qui s'en approche : le toast est
        le bon retour immédiat (le trader vient d'agir), mais dix exemplaires
@@ -155,10 +148,24 @@ export const NotificationEngine = {
        d'événement (voir `rules.ts`) et ne sont pas concernées ici. */
     const persistDedup = input.dedupKey && !input.data?.codedRule;
     const suppressPersist = persistDedup ? seenToday(PERSIST_LOG_KEY, input.dedupKey!) : false;
+    /* UN PUSH PAR ALERTE, PAS UN PAR APPAREIL. Chaque appareil ouvert évalue
+       les mêmes règles ; la base n'accepte la ligne qu'une fois
+       (`notifications.dedup_key`). L'écriture passe donc AVANT le push, et un
+       appareil dont la ligne a été refusée comme doublon n'envoie rien : celui
+       qui l'a créée s'en charge. */
+    let createdHere = true;
     if (!input.ephemeral && !suppressPersist && notification.channels.includes("dashboard")) {
-      await adapters.persist?.(notification).catch((e) => {
+      const created = await adapters.persist?.(notification).catch((e) => {
         console.error("[notifications] persist failed", e);
       });
+      createdHere = created !== false;
+    }
+    // Push is deduplicated (once per key per day); toast + persist are not.
+    const suppressPush = input.dedupKey ? alreadyPushedToday(input.dedupKey) : false;
+    if (notification.channels.includes("push") && !suppressPush && createdHere) {
+      await adapters
+        .push?.({ title: notification.title, body: notification.body, url: notification.url })
+        .catch(() => {});
     }
 
     events.emit("NotificationCreated", { userId, notification });
