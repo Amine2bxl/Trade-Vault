@@ -423,12 +423,16 @@ function StrategyLab({
         <div className="strategy-layout">
           <section className="strategy-main" aria-label={t("lab.chartViews")}>
             <div className="strategy-source-line">
-              <span className="strategy-provenance">
-                {t(isDemo ? "lab.demo" : source === "manual" ? "lab.hypothesis" : "lab.observed")}
-              </span>
+              {model && (
+                <span className="strategy-provenance">
+                  {t(isDemo ? "lab.demo" : source === "manual" ? "lab.hypothesis" : "lab.observed")}
+                </span>
+              )}
               <span>
                 {source === "csv"
-                  ? `${csv?.name} · ${t("lab.sample").replace("{n}", String(model?.sampleSize ?? 0))}`
+                  ? csv
+                    ? `${csv.name} · ${t("lab.sample").replace("{n}", String(model?.sampleSize ?? 0))}`
+                    : t("lab.csv")
                   : source === "manual"
                     ? reference.length
                       ? t("lab.calibratedSample").replace("{n}", String(reference.length))
