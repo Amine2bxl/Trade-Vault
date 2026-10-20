@@ -131,12 +131,23 @@ moteur pour en brancher un autre.
 | `automation` | Chaîne « trade sauvegardé » : `validate → analyze → discipline` (steps ordonnés) |
 | `notifications` | Entonnoir unique vers dashboard / toast / push / e-mail ; règles codées dédupliquées une fois par jour |
 | `patterns` | Détection de motifs déterministe → propositions (voir [`AI.md`](AI.md)) |
-| `probability` | Monte Carlo seedable, scénarios, sensibilité, objectifs |
+| `probability` | Monte Carlo seedable, scénarios, sensibilité, objectifs ; `strategy.ts` : projection de stratégie et barrières, 10 000 trajectoires |
 | `coaching` | Observations d'après-trade et sécurité statistique |
 | `economic-calendar` | Source Forex Factory (fournisseur interchangeable) |
 | `brokers` | Synchro broker : exécutions → allers-retours plat → plat (déterministe), stop initial → risque, ligne de journal ; adaptateur pur par broker (`tradovate.ts`) |
 | `voice` | Voix unique de Jarvis (clips, voix locale, prosodie) |
 | `ai`, `ai-provider` | Plateforme IA — [`AI.md`](AI.md) |
+
+Le laboratoire Monte Carlo étend le module avec `strategy.ts` : données R
+nettes, hypothèses exactes, quantiles et résultats de 10 000 trajectoires.
+Il réutilise le générateur, les percentiles et les règles de compte canoniques.
+La projection arithmétique complète et le compte arrêté sur objectif/limite
+restent distincts. Le Worker de la feature transfère les tableaux typés ; un
+second Worker rasterise le nuage pour éviter de bloquer l'affichage.
+Les comparaisons conservent la même graine ; les plans enregistrés sont locaux,
+namespacés par utilisateur et sous-compte, avec leur distribution de référence.
+Les anciens `monteCarloEngine` et `monteCarloViz` restent présents pour leurs
+consommateurs et tests historiques ; la page n'exécute plus l'ancien moteur.
 
 ## 5. Cycle de vie d'un trade
 

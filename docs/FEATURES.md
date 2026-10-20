@@ -21,7 +21,7 @@ Chemins relatifs à `src/app/` sauf mention contraire.
 | Analytics (`analytics`) | `features/analytics/` | `Analytics.tsx` | `NewsDaysCard` (jours d'annonce / jours calmes, `domain/tradeNews.newsDaySplit`), `domain/quantStats`, `domain/tradeCalcs`, `trading/EquityChart`, `trading/chartTheme` |
 | Saisonnalité (`seasonality`) | `features/seasonality/` | `Seasonality.tsx` | `SeasonalEquity`, `assetSeasonality`, `seasonalCurve` |
 | Rapports (`reports`) | `features/reports/` | `Reports.tsx` | `reportMonths`, `domain/monthlyReport`, `store/reports`, `backend/reports.functions` |
-| Monte Carlo (`montecarlo`) | `features/monte-carlo/` | `MonteCarlo.tsx` | `monteCarloEngine`, `monteCarloViz`, `propFirms`, `mistakes/mistakePlan` |
+| Monte Carlo (`montecarlo`) | `features/monte-carlo/` | `MonteCarlo.tsx` | `StrategyChart`, `StrategyEditor`, `StrategyDetails`, `strategyCsv`, Workers de projection et de densité, `src/modules/probability/strategy` |
 | Jarvis (`insights`) | `features/jarvis/` | `Jarvis.tsx` (page) · `AiAssistant.tsx` (widget) | voir [`AI.md`](AI.md) |
 | Plan de trading (`tradingplan`) | `features/trading-plan/` | `TradingPlan.tsx` | `TradingRulesSection`, `trading/tradingPlan`, `trading/tradingRules` |
 | Objectifs (`goals`) | `features/goals/` | `Goals.tsx` | `views`, `goalPlan`, `useGoalProgress` (consommé aussi par Mistakes et Jarvis), `modules/probability/goals` |

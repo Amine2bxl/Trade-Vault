@@ -178,6 +178,16 @@ Réutiliser avant de restyler. Graphes : `app/trading/chartTheme.ts` +
 - **Mobile** : barre flottante, cibles tactiles ≥ 44 px, zéro débordement
   horizontal (vérifié de 360 à 1920 px).
 
+Le laboratoire Monte Carlo privilégie un graphe, quatre chiffres et un éditeur
+compact (modal sur mobile). Les vues Capital / Drawdown / Objectif partagent
+la même simulation. Médiane linéaire, bandes centrales 50 % / 90 %, nuage de
+densité des 10 000 trajectoires et lecture clavier/tactile ; aucune courbe
+lissée qui inventerait des valeurs. Une comparaison garde le même axe.
+La provenance et le nombre de trades restent visibles ; explications détaillées
+et méthode sont repliées. Les bandes sont des quantiles par instant, pas un
+intervalle de confiance sur l'edge. Les trajectoires extrêmes hors cadre ne
+sont pas retirées des calculs ; la méthode l'explicite.
+
 ## 7. Landing et marketing
 
 Même langage Lucid que l'app, accent encore plus rare. Structure : Hero →

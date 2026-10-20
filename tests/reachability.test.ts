@@ -82,7 +82,9 @@ describe("aucun composant n'est écrit pour personne", () => {
       const modulePath = relative(SRC, stem);
       const referenced =
         blob.includes(modulePath) ||
-        new RegExp(`[/"']${base}["']`).test(blob) ||
+        new RegExp(`[/"']${base.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?:\\.tsx?)?["']`).test(
+          blob,
+        ) ||
         (base === "index" && blob.includes(relative(SRC, join(file, ".."))));
       if (!referenced) unreached.push(rel);
     }
