@@ -8,7 +8,7 @@ import {
   particleBudget,
   type DeviceProfile,
 } from "../src/shared/ui/neural/modes";
-import { buildLinks, buildParticles } from "../src/shared/ui/neural/engine";
+import { buildLinks, buildParticles, createNeuralEngine } from "../src/shared/ui/neural/engine";
 import { POINT_VERTEX, LINE_VERTEX } from "../src/shared/ui/neural/shaders";
 import { jarvisMode, thinkingPhase, MODE_LABEL } from "../src/app/features/jarvis/neuralMode";
 import { en } from "../src/app/i18n/translations";
@@ -135,5 +135,58 @@ describe("le mode affiché suit ce que fait Jarvis", () => {
   test("la voix prime sur l'écriture, l'écriture sur la réflexion", () => {
     expect(jarvisMode({ ...idle, writing: true, loading: true })).toBe("writing");
     expect(jarvisMode({ ...idle, speaking: true, writing: true })).toBe("speaking");
+  });
+});
+
+describe("cycle de vie du canevas", () => {
+  test("un nettoyage puis remontage sur le même canevas garde WebGL disponible (StrictMode)", () => {
+    let lost = false;
+    let deletedBuffers = 0;
+    let deletedPrograms = 0;
+    // Le pilote conserve le contexte d'un canevas entre deux effets React.
+    // Forcer loseContext au nettoyage rendrait le second montage inutilisable.
+    const gl = new Proxy(
+      {
+        getShaderParameter: () => !lost,
+        getProgramParameter: () => !lost,
+        getAttribLocation: () => 0,
+        getUniformLocation: () => ({}),
+        createShader: () => ({}),
+        createProgram: () => ({}),
+        createBuffer: () => ({}),
+        deleteBuffer: () => {
+          deletedBuffers++;
+        },
+        deleteProgram: () => {
+          deletedPrograms++;
+        },
+        getExtension: () => ({
+          loseContext: () => {
+            lost = true;
+          },
+        }),
+      },
+      {
+        get(target, key) {
+          return key in target ? target[key as keyof typeof target] : () => {};
+        },
+      },
+    );
+    const canvas = {
+      getContext: () => gl,
+      addEventListener() {},
+      removeEventListener() {},
+    } as unknown as HTMLCanvasElement;
+    const options = { count: 400, mode: "breathing" as const, reducedMotion: true };
+    const first = createNeuralEngine(canvas, options);
+    expect(first).not.toBeNull();
+    first!.destroy();
+    expect(deletedBuffers).toBe(5);
+    expect(deletedPrograms).toBe(2);
+    const second = createNeuralEngine(canvas, options);
+    expect(second).not.toBeNull();
+    second!.destroy();
+    expect(deletedBuffers).toBe(10);
+    expect(deletedPrograms).toBe(4);
   });
 });

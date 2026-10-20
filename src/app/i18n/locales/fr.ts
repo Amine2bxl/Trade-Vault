@@ -682,6 +682,8 @@ const fr: Dict = {
   "jarvis.generating": "Rédaction de la réponse",
   "jarvis.showFull": "Afficher la réponse complète",
   "jarvis.send": "Envoyer",
+  "jarvis.process.label": "Préparation de la réponse",
+  "jarvis.process.indicative": "Réponse en préparation · étapes indicatives",
   "jarvis.mode.breathing": "Prêt",
   "jarvis.mode.listening": "Je t'écoute",
   "jarvis.mode.understanding": "Je comprends",

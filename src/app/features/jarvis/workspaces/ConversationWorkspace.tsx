@@ -3,7 +3,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowDown,
   ArrowUpRight,
-  Check,
   Eraser,
   RotateCcw,
   Square,
@@ -14,8 +13,9 @@ import { JarvisMark, JarvisOrb, type JarvisOrbState } from "@/shared/ui";
 import Composer from "../Composer";
 import { VoiceBar } from "../components/VoiceBar";
 import { LiveStage } from "../components/LiveStage";
+import { JarvisPresence } from "../components/JarvisPresence";
 import { JarvisNeural } from "@/shared/ui/JarvisNeural";
-import { MODE_LABEL, jarvisMode, useElapsed } from "../neuralMode";
+import { jarvisMode, useElapsed } from "../neuralMode";
 import {
   getSpeechRecognition,
   speechLangTag,
@@ -68,8 +68,6 @@ import { loadOnboarding, type OnboardingData } from "@/app/store";
 import { exceedsDailyLimit, incrementAiUsage, jarvisDailyLimit } from "../aiUsage";
 import { effectiveCopyLang, readAutoSpeak } from "../prefs";
 import { jarvisConversationStore } from "../conversations";
-import { INTENT_STEPS, classifyQuestion } from "../intent";
-import type { TKey } from "@/app/i18n/translations";
 import {
   listenJarvisThread,
   pendingQuestion,
@@ -416,9 +414,7 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
     loadingMs,
     listening: listening || voiceTurn === "listening",
   });
-  /* UN SEUL CŒUR À LA FOIS. En mode vocal, la scène « live » a le sien ; le
-     fil, caché derrière, n'en monte aucun (chaque cœur est un contexte
-     graphique — deux, c'est deux fois la carte graphique pour rien). */
+  /* Un seul cœur à la fois : accueil, présence centrale du chat ou scène vocale. */
   const neuralInThread = voiceTurn === "off";
   useEffect(() => () => setJarvisActivity("idle"), []);
   const readAloud = (m: JarvisMessage) => {
@@ -1140,6 +1136,12 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
         </div>
       )}
 
+      {/* Le cœur reste centré et visible pendant toute la conversation,
+          hors du fil défilant : un seul contexte WebGL, même en rédaction. */}
+      {neuralInThread && loaded && messages.length > 0 && (
+        <JarvisPresence mode={neuralMode} loading={loading} elapsedMs={loadingMs} />
+      )}
+
       {/* Messages — rendus UNIQUEMENT via les blocs */}
       {/* `aria-live="polite"` : les réponses arrivent de façon asynchrone. Sans
           région live, une réponse de Jarvis n'existe tout simplement PAS pour un
@@ -1267,23 +1269,11 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
                  — fin des cartes-dans-une-carte, les blocs respirent enfin. */
               <div key={m.id} className="jarvis-turn animate-fade-in-up" data-message-id={m.id}>
                 <div className="mb-2.5 flex items-center gap-2">
-                  {/* La réponse EN COURS DE LECTURE porte l'orbe qui parle ;
-                      les autres, la marque au repos. */}
-                  {neuralInThread && (typingId === m.id || readingId === m.id) ? (
-                    /* La réponse EN COURS — écrite ou lue — porte le cœur
-                       neuronal, dans son mode (rédige / parle). */
-                    <JarvisNeural
-                      mode={readingId === m.id ? "speaking" : "writing"}
-                      size={36}
-                      fallback={<JarvisOrb state="speaking" size={24} />}
-                    />
-                  ) : readingId === m.id ? (
-                    <JarvisOrb state="speaking" size={24} />
-                  ) : (
-                    <span className="jarvis-avatar">
-                      <JarvisMark className="h-4 w-4" />
-                    </span>
-                  )}
+                  {/* L'identité du tour reste légère : le cœur animé vit
+                      dans la présence centrale, au-dessus du fil. */}
+                  <span className="jarvis-avatar">
+                    <JarvisMark className="h-4 w-4" />
+                  </span>
                   <span className="tv-label text-[var(--tv-highlight)]">
                     {t("assistant.title")}
                   </span>
@@ -1364,48 +1354,16 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
               </div>
             </div>
           )}
-
-        {loading && (
-          /* LE TEMPS DE RÉFLEXION SE VOIT. Jarvis prend le temps d'analyser
-             avant d'écrire : les étapes avancent pendant qu'il lit le journal,
-             au lieu d'un squelette gris qui ne dit rien. */
-          <div className="jarvis-turn animate-fade-in">
-            <div className="jarvis-thinking">
-              {neuralInThread ? (
-                /* Le cœur neuronal montre CE QUE fait Jarvis — comprendre,
-                   analyser, réfléchir, réviser — pendant que les étapes
-                   disent SUR QUOI. */
-                <JarvisNeural
-                  mode={neuralMode}
-                  size={72}
-                  fallback={
-                    <span className="jarvis-thinking-mark">
-                      <JarvisMark className="h-4 w-4" />
-                    </span>
-                  }
-                />
-              ) : (
-                <span className="jarvis-thinking-mark">
-                  <JarvisMark className="h-4 w-4" />
-                </span>
-              )}
-              <div className="min-w-0 flex-1">
-                <span className="tv-label text-[var(--tv-highlight)]">
-                  {t(MODE_LABEL[neuralMode])}
-                </span>
-                <ThinkingSteps
-                  key={lastQuestionRef.current}
-                  steps={INTENT_STEPS[classifyQuestion(lastQuestionRef.current)].map((k) =>
-                    t(k as TKey).replace("{n}", String(context.trades.length)),
-                  )}
-                />
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
-      {!neuralInThread && <LiveStage mode={neuralMode} subtitle={liveSubtitle} />}
+      {!neuralInThread && (
+        <LiveStage
+          mode={neuralMode}
+          subtitle={liveSubtitle}
+          loading={loading}
+          elapsedMs={loadingMs}
+        />
+      )}
 
       {showLatest && neuralInThread && (
         <button type="button" className="jarvis-latest" onClick={scrollToLatest}>
@@ -1483,37 +1441,6 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
         )}
       </div>
     </div>
-  );
-}
-
-/**
- * Les étapes de réflexion, qui avancent pendant que la réponse se prépare.
- * La dernière reste active tant que le serveur n'a pas répondu : elle ne
- * prétend jamais avoir fini avant lui.
- */
-function ThinkingSteps({ steps }: { steps: string[] }) {
-  const [at, setAt] = useState(0);
-  useEffect(() => {
-    const id = window.setInterval(() => {
-      setAt((n) => Math.min(steps.length - 1, n + 1));
-    }, 1600);
-    return () => window.clearInterval(id);
-  }, [steps.length]);
-  return (
-    <ol className="jarvis-steps">
-      {steps.map((label, i) => (
-        <li
-          key={i}
-          className="jarvis-step"
-          data-state={i < at ? "done" : i === at ? "active" : "todo"}
-        >
-          <span className="jarvis-step-dot" aria-hidden>
-            {i < at && <Check className="h-2.5 w-2.5" />}
-          </span>
-          {label}
-        </li>
-      ))}
-    </ol>
   );
 }
 

@@ -4956,49 +4956,6 @@ body.tv-app-type :is(.tv-figure, .tv-num, .tabular-nums) {
   cursor: pointer;
 }
 
-/* ── LA RÉFLEXION ── les étapes qui avancent pendant l'analyse. */
-.jarvis-steps {
-  display: grid;
-  gap: 0.5rem;
-}
-.jarvis-step {
-  display: flex;
-  align-items: center;
-  gap: 0.625rem;
-  font-size: 0.8125rem;
-  color: var(--tv-text-muted, #64748b);
-  transition:
-    color 0.3s ease,
-    opacity 0.3s ease;
-}
-.jarvis-step[data-state="todo"] {
-  opacity: 0.45;
-}
-.jarvis-step[data-state="active"] {
-  color: var(--tv-text-primary);
-}
-.jarvis-step[data-state="done"] {
-  color: var(--tv-text-secondary, #94a3b8);
-}
-.jarvis-step-dot {
-  display: grid;
-  place-items: center;
-  height: 1rem;
-  width: 1rem;
-  flex-shrink: 0;
-  border: 1px solid rgb(255 255 255 / 0.14);
-  border-radius: 9999px;
-  color: #07080a;
-}
-.jarvis-step[data-state="active"] .jarvis-step-dot {
-  border-color: var(--tv-accent);
-  background: rgb(var(--tv-accent-rgb) / 0.1);
-}
-.jarvis-step[data-state="done"] .jarvis-step-dot {
-  border-color: transparent;
-  background: var(--tv-accent);
-}
-
 /* ── LE COMPOSITEUR ── il s'allume quand on écrit. */
 .jarvis-composer {
   border: 1px solid var(--tv-border-strong);
@@ -7287,23 +7244,116 @@ body.tv-app-type svg.lucide {
   font-family: var(--font-mono);
   font-size: var(--tv-t-caption);
 }
-/* La réflexion : le cœur à gauche (ce que fait Jarvis), les étapes à droite
-   (sur quoi il travaille). */
-.jarvis-thinking {
+/* Le cœur reste au centre du dialogue, au-dessus du fil défilant.
+   Une seule scène graphique : ni avatar WebGL par message, ni carte imbriquée. */
+.jarvis-presence {
   display: flex;
-  align-items: flex-start;
-  gap: 14px;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+  padding: 0 16px 12px;
+  text-align: center;
 }
-.jarvis-thinking .jarvis-steps {
-  margin-top: 8px;
+.jarvis-presence-core {
+  width: min(220px, 28dvh);
+  height: min(220px, 28dvh);
+  display: grid;
+  place-items: center;
 }
-/* L'accueil : le cœur respire au centre, au-dessus de l'invitation. */
+.jarvis-presence-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 24px;
+  color: var(--tv-text-primary);
+  font-size: var(--tv-t-body-sm);
+  font-weight: 600;
+}
+.jarvis-presence[data-loading="true"] .jarvis-presence-status {
+  color: var(--tv-highlight);
+}
+.jarvis-process {
+  width: min(100%, 560px);
+  margin-top: 14px;
+}
+.jarvis-process-bubbles {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.jarvis-process-bubble {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 7px 10px;
+  border: 1px solid var(--tv-border-strong);
+  border-radius: 999px;
+  background: var(--tv-plate-1);
+  color: var(--tv-text-muted);
+  font-size: var(--tv-t-caption);
+  line-height: 1.3;
+  transition:
+    color var(--tv-dur-2),
+    border-color var(--tv-dur-2),
+    background-color var(--tv-dur-2);
+}
+.jarvis-process-bubble[data-active="true"] {
+  border-color: var(--tv-border-accent);
+  background: var(--tv-plate-2);
+  color: var(--tv-highlight);
+}
+.jarvis-process-caption {
+  display: flex;
+  justify-content: center;
+  align-items: baseline;
+  gap: 12px;
+  margin-top: 10px;
+  color: var(--tv-text-muted);
+  font-size: var(--tv-t-caption);
+  line-height: 1.5;
+}
+.jarvis-process-caption .tv-figure {
+  min-width: 3ch;
+  white-space: nowrap;
+}
+.jarvis-wait-dots {
+  display: inline-flex;
+  gap: 3px;
+}
+.jarvis-wait-dots i {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: currentColor;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .jarvis-wait-dots i {
+    animation: pulse 1.4s ease-in-out infinite;
+  }
+  .jarvis-wait-dots i:nth-child(2) {
+    animation-delay: 160ms;
+  }
+  .jarvis-wait-dots i:nth-child(3) {
+    animation-delay: 320ms;
+  }
+}
+/* L'accueil laisse toute la place à la sphère et à son noyau lumineux. */
 .jarvis-accueil-core {
-  width: min(196px, 52vw);
-  height: min(196px, 52vw);
+  display: grid;
+  place-items: center;
+  width: min(280px, 60vw, 34dvh);
+  height: min(280px, 60vw, 34dvh);
   margin: 0 auto 12px;
 }
-/* ── JARVIS LIVE ── la scène de la conversation vocale, à la place du fil. */
+/* Le mode vocal garde le même cœur et les mêmes bulles de préparation. */
 .jarvis-live {
   display: flex;
   flex: 1;
@@ -7312,15 +7362,44 @@ body.tv-app-type svg.lucide {
   align-items: center;
   justify-content: center;
   gap: 14px;
+  overflow-y: auto;
   padding: 16px max(16px, calc((100% - 760px) / 2));
   text-align: center;
 }
-.jarvis-live-core {
-  width: min(78vw, 46vh, 380px);
-  height: min(78vw, 46vh, 380px);
+.jarvis-presence[data-live="true"] {
+  width: 100%;
 }
-.jarvis-live-status {
-  color: var(--tv-highlight);
+.jarvis-presence[data-live="true"] .jarvis-presence-core {
+  width: min(72vw, 38dvh, 360px);
+  height: min(72vw, 38dvh, 360px);
+}
+@media (max-width: 639px) {
+  .jarvis-presence-core {
+    width: min(154px, 22dvh);
+    height: min(154px, 22dvh);
+  }
+  .jarvis-process-bubbles {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-width: 340px;
+    margin-inline: auto;
+  }
+  .jarvis-process-caption {
+    gap: 8px;
+  }
+}
+@media (max-height: 600px) {
+  .jarvis-presence-core {
+    width: 100px;
+    height: 100px;
+  }
+  .jarvis-process {
+    margin-top: 8px;
+  }
+  .jarvis-presence[data-live="true"] .jarvis-presence-core {
+    width: min(160px, 28dvh);
+    height: min(160px, 28dvh);
+  }
 }
 .jarvis-live-text {
   display: -webkit-box;
@@ -7332,18 +7411,6 @@ body.tv-app-type svg.lucide {
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 4;
   line-clamp: 4;
-}
-.jarvis-thinking-mark {
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  color: var(--tv-highlight);
-  border: 1px solid var(--tv-border-accent);
-  border-radius: var(--radius-sm);
-}
-.jarvis-thread .jarvis-step[data-state="todo"] {
-  display: none;
 }
 .jarvis-latest {
   align-self: center;

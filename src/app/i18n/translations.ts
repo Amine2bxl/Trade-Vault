@@ -729,6 +729,8 @@ const en = {
   "jarvis.generating": "Writing response",
   "jarvis.showFull": "Show full response",
   "jarvis.send": "Send",
+  "jarvis.process.label": "Response preparation",
+  "jarvis.process.indicative": "Preparing your response · indicative stages",
   "jarvis.mode.breathing": "Ready",
   "jarvis.mode.listening": "Listening",
   "jarvis.mode.understanding": "Understanding",

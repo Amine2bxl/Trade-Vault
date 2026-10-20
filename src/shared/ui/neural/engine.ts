@@ -338,7 +338,7 @@ export function createNeuralEngine(
     // bornée pour rester un point et jamais une tache.
     gl.uniform1f(
       pu.uPointSize,
-      Math.min(2.8, Math.max(1.2, cssSize / 150)) * (canvas.width / Math.max(1, cssSize)),
+      Math.min(3.2, Math.max(1.6, cssSize / 110)) * (canvas.width / Math.max(1, cssSize)),
     );
     gl.drawArrays(gl.POINTS, 0, drawCount);
     detach(pAttr.seed, pAttr.kind);
@@ -453,8 +453,9 @@ export function createNeuralEngine(
       for (const b of [seedBuf, kindBuf, lineABuf, lineBBuf, lineEndBuf]) gl.deleteBuffer(b);
       gl.deleteProgram(points);
       gl.deleteProgram(lines);
-      // Rend la mémoire GPU tout de suite au lieu d'attendre le ramasse-miettes.
-      gl.getExtension("WEBGL_lose_context")?.loseContext();
+      // Les tampons et programmes sont libérés ci-dessus. Ne pas forcer la
+      // perte du contexte : StrictMode réutilise le même canevas au second
+      // montage d'effet, qui compilerait alors dans un contexte déjà perdu.
     },
   };
 }

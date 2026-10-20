@@ -54,7 +54,7 @@ vec4 shape(float m, vec4 s, float kind, float t) {
 
   // Le NOYAU : une petite masse dense au centre, qui rayonne quand Jarvis parle.
   if (kind > 0.5) {
-    float cr = 0.2 * pow(s.z, 0.6);
+    float cr = 0.18 * pow(s.z, 0.333);
     if (m > 6.5) {
       float ph = fract(s.w + t * 0.9);
       return vec4(dir * (0.06 + ph * 0.5), 1.7 * (1.0 - ph));
@@ -62,7 +62,7 @@ vec4 shape(float m, vec4 s, float kind, float t) {
     if (m > 3.5 && m < 4.5) {
       return vec4(vec3(dir.x, dir.y * 0.35, dir.z) * cr * 1.3, 1.3);
     }
-    return vec4(dir * cr * (1.0 + 0.15 * sin(t * 2.0 + s.w * TAU)), 1.15);
+    return vec4(dir * cr * (1.0 + 0.15 * sin(t * 2.0 + s.w * TAU)), 1.25);
   }
 
   if (m < 0.5) {
@@ -180,10 +180,10 @@ void main() {
   float depth;
   float persp;
   gl_Position = project(q.xyz, depth, persp);
-  gl_PointSize = uPointSize * persp * (aKind > 0.5 ? 1.5 : 1.0) * (0.75 + 0.5 * aSeed.w);
+  gl_PointSize = uPointSize * persp * (aKind > 0.5 ? 1.8 : 1.0) * (0.75 + 0.5 * aSeed.w);
   vec3 col = mix(uColorA, uColorB, aSeed.y);
-  vColor = aKind > 0.5 ? mix(col, vec3(1.0), 0.35) : col;
-  vAlpha = uGlow * q.w * (0.25 + 0.75 * depth) * 0.6;
+  vColor = aKind > 0.5 ? mix(col, vec3(1.0), 0.5) : col;
+  vAlpha = uGlow * q.w * (0.35 + 0.65 * depth) * 0.8;
 }
 `;
 

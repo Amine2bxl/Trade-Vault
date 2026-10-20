@@ -10,10 +10,9 @@ import type { TKey } from "@/app/i18n/translations";
  * mode de fonctionnement (voir `shared/ui/neural/modes.ts`).
  *
  * Le serveur répond d'un bloc : il ne dit pas en direct s'il comprend, lit ou
- * vérifie. Les phases de réflexion suivent donc le temps écoulé — le même
- * principe que les étapes affichées sous la question (`ThinkingSteps`) : la
- * dernière phase dure tant que le serveur n'a pas répondu, elle ne prétend
- * jamais avoir fini avant lui.
+ * vérifie. Les phases de réflexion suivent donc le temps écoulé — les bulles
+ * de `JarvisPresence` les présentent explicitement comme indicatives, sans
+ * cocher des étapes ni annoncer une progression réelle du serveur.
  */
 
 export type ThinkingPhase = "understanding" | "analyzing" | "thinking" | "revising";
