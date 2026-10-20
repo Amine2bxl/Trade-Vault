@@ -117,6 +117,20 @@ keyframes du prix animé (`prix-entre`/`prix-sort`), aucune nouvelle keyframe.
 Le rail se plie en 260 ms : seule sa largeur s'anime, les icônes ne bougent
 pas, les libellés s'effacent en fondu. Détail : skill `motion`.
 
+**Exception : le cœur neuronal de Jarvis** (`shared/ui/JarvisNeural.tsx`,
+moteur `shared/ui/neural/`). Comme `JarvisOrb`, il est décoratif par
+décision produit : on doit VOIR l'agent respirer, écouter, comprendre,
+analyser, réfléchir, réviser, rédiger, parler — huit formes de particules et
+des morphings de ~850 ms entre elles. Il ne vit que sur les surfaces de
+Jarvis (accueil de la conversation, réflexion, réponse en cours, scène
+vocale « live »), un seul à la fois. Son halo vient du mélange additif de
+points sur un canevas : aucune ombre, aucun `filter`, aucun bloom. Garde-fous
+non négociables : WebGL sans dépendance, calcul sur la carte graphique, rien
+par particule côté JavaScript, arrêt hors écran / onglet caché / repos
+prolongé, 30 images/s pour respirer, densité adaptée à l'appareil et réduite
+en direct si les images arrivent en retard, image fixe sous
+`prefers-reduced-motion`, repli sur `JarvisOrb` sans WebGL.
+
 **Changement de page** : un seul mouvement. L'enveloppe (`.page-in`) fond en
 180 ms sans se déplacer ; seules les cartes portent `fade-in-up` (6 px). Deux
 glissements superposés se lisaient comme un « zoom en deux temps ». Les pages

@@ -2171,6 +2171,22 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
  * garde son identité quel que soit le thème choisi par le trader.
  * Au repos, rien ne bouge. Les animations n'existent que dans un état actif,
  * et seulement si le trader n'a pas demandé moins de mouvement. */
+/* ── LE CŒUR NEURONAL (`JarvisNeural`) ──
+   Un canevas WebGL isolé : `contain` empêche ses changements de taille de
+   faire recalculer la page, et le canevas suit son conteneur. */
+.tv-neural {
+  position: relative;
+  display: block;
+  flex-shrink: 0;
+  contain: layout paint;
+}
+.tv-neural-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: manipulation;
+}
+
 .tv-orb {
   --orb: 34 224 138;
   position: relative;
@@ -7270,6 +7286,52 @@ body.tv-app-type svg.lucide {
   color: var(--tv-highlight);
   font-family: var(--font-mono);
   font-size: var(--tv-t-caption);
+}
+/* La réflexion : le cœur à gauche (ce que fait Jarvis), les étapes à droite
+   (sur quoi il travaille). */
+.jarvis-thinking {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+.jarvis-thinking .jarvis-steps {
+  margin-top: 8px;
+}
+/* L'accueil : le cœur respire au centre, au-dessus de l'invitation. */
+.jarvis-accueil-core {
+  width: min(196px, 52vw);
+  height: min(196px, 52vw);
+  margin: 0 auto 12px;
+}
+/* ── JARVIS LIVE ── la scène de la conversation vocale, à la place du fil. */
+.jarvis-live {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 16px max(16px, calc((100% - 760px) / 2));
+  text-align: center;
+}
+.jarvis-live-core {
+  width: min(78vw, 46vh, 380px);
+  height: min(78vw, 46vh, 380px);
+}
+.jarvis-live-status {
+  color: var(--tv-highlight);
+}
+.jarvis-live-text {
+  display: -webkit-box;
+  max-width: 34rem;
+  overflow: hidden;
+  color: var(--tv-text-secondary);
+  font-size: var(--tv-t-body);
+  line-height: 1.6;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
 }
 .jarvis-thinking-mark {
   display: grid;
