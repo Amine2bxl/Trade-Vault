@@ -12,7 +12,7 @@ Chemins relatifs à `src/app/` sauf mention contraire.
 | --- | --- | --- | --- |
 | Dashboard (`dashboard`) | `features/dashboard/` | `Dashboard.tsx` | `CopilotBlock`, `edgeHistory`, `trading/EquityChart`, `trading/useEdgeScore`, `domain/edgeScore` |
 | Checklist pré-market (`checklist`) | `features/checklist/` | `Checklist.tsx` | `ChecklistWizard`, `checklistDefaults`, `checklistStreak`, `voice` (lignes parlées), `jarvis/jarvisVoice`, `profiles.checklist_config` |
-| Calculateur de position (`calculator`) | `features/calculator/` | `LotSizeCalculator.tsx` | `trading/positionCalc`, `utils/userPrefs` |
+| Calculateur de position (`calculator`) | `features/calculator/` | `LotSizeCalculator.tsx` | `trading/positionCalc` (fiche des contrats : `domain/futuresContracts`, lue aussi par Jarvis), `utils/userPrefs` |
 | Calendrier économique (`news`) | `features/news/` | `EconomicNews.tsx` | `useEconomicCalendar`, `economicEvents`, `modules/economic-calendar`, `backend/economic-calendar.*` |
 | Journal (`journal`) | `features/journal/` | `Journal.tsx` | `TradeModal` (saisie en six sections numérotées ; ligne des annonces du jour via `news/useTradeNews` + `domain/tradeNews`), `TradeDetailModal`, `ImportCsvModal` + `csvImport`, `exportCsv`, `useTradeFilter` + `deepLink`, `trading/tradeFilter`, `store/trades` |
 | Calendrier P&L (`calendar`) | `features/calendar/` | `CalendarPage.tsx` | `WeekDetailModal`, `calendarGrid`, `calendarTone`, `hooks/useAvailableHeight` |
@@ -22,7 +22,7 @@ Chemins relatifs à `src/app/` sauf mention contraire.
 | Saisonnalité (`seasonality`) | `features/seasonality/` | `Seasonality.tsx` | `SeasonalEquity`, `assetSeasonality`, `seasonalCurve` |
 | Rapports (`reports`) | `features/reports/` | `Reports.tsx` | `reportMonths`, `domain/monthlyReport`, `store/reports`, `backend/reports.functions` |
 | Monte Carlo (`montecarlo`) | `features/monte-carlo/` | `MonteCarlo.tsx` | `monteCarloEngine`, `monteCarloViz`, `propFirms`, `mistakes/mistakePlan` |
-| Jarvis (`insights`) | `features/jarvis/` | `Jarvis.tsx` (page) · `AiAssistant.tsx` (widget) | voir [`AI.md`](AI.md) |
+| Jarvis (`insights`) | `features/jarvis/` | `Jarvis.tsx` (page) · `AiAssistant.tsx` (widget) | profil `jarvis_nq`, conversation vocale (`voiceConversation`, `VoiceBar`) — voir [`AI.md`](AI.md) |
 | Plan de trading (`tradingplan`) | `features/trading-plan/` | `TradingPlan.tsx` | `TradingRulesSection`, `trading/tradingPlan`, `trading/tradingRules` |
 | Objectifs (`goals`) | `features/goals/` | `Goals.tsx` | `views`, `goalPlan`, `useGoalProgress` (consommé aussi par Mistakes et Jarvis), `modules/probability/goals` |
 | Réglages (`settings`, `profile`, `appearance`) | `features/settings/` | `Settings.tsx` · `Profile.tsx` · `Appearance.tsx` | `ThemeSettings`, `ThemeStudioModal`, `PushNotificationSettings`, `AccountsManager` (principal, sous-comptes, transfert et recalibrage — Pro), `RecalibrateAccountModal`, `trading/AccountScaleBridge`, `utils/themes` |

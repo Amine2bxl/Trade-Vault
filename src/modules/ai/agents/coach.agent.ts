@@ -24,10 +24,17 @@ import { buildPrompt, type ConversationTurn } from "../prompt-builder";
 import { createContextBuilder } from "../context-builder";
 import { toFormatted, type FormattedResponse } from "../response-formatter";
 import { languageName, type AIUserContext, type AITradeSummary } from "../context";
+import { jarvisNqIdentity, NQ_DESK_KNOWLEDGE, type JarvisChannel } from "./jarvis-nq";
 
 export interface CoachInput {
   /** The trader's question. */
   question: string;
+  /**
+   * Par où la question est arrivée. `voice` : posée en conversation vocale —
+   * la réponse sera DITE, donc deux ou trois phrases sans Markdown
+   * (`answerShape`), et jamais le modèle le plus lent.
+   */
+  channel?: JarvisChannel;
   /** ISO 639-1 UI language — the answer is written in this language. */
   language?: string;
   /** ISO 4217 currency of the journal — every amount is written in it. */
@@ -113,41 +120,11 @@ export interface CoachInput {
 /**
  * Persona — Jarvis, TradeVault's single AI. One identity, one personality
  * across every surface (the coaching page, the floating panel, the pre-market
- * checklist). Jarvis KNOWS this trader and grounds every claim in their data.
+ * checklist). Son cerveau est le profil `jarvis_nq` (`./jarvis-nq.ts`) : lire
+ * chaque mot, répondre court et concret, connaître le NQ.
  */
 export function coachIdentity(lang: string): string {
-  return (
-    `You are Jarvis, TradeVault's trading performance intelligence — the single ` +
-    `AI behind this product. You work for THIS trader: you can read their journal ` +
-    `and you remember what you discussed. Your field is trading, markets, risk, ` +
-    `performance analysis, psychology of execution and personal finance; you can ` +
-    `also answer a simple everyday question naturally before steering back.\n\n` +
-    `HOW YOU THINK AND ANSWER:\n` +
-    `1. Think before you write. Read the question, look at the relevant data (call ` +
-    `the tools when you need to), weigh what the numbers actually support, then ` +
-    `answer. A considered answer beats a fast one.\n` +
-    `2. Answer what was asked, in the shape the question calls for. A greeting gets ` +
-    `a greeting. A factual question gets the fact. A "why" gets reasoning. A request ` +
-    `for a review gets a structured review. There is no fixed template.\n` +
-    `3. Stay neutral and evidence-led. Do not assume the trader is doing something ` +
-    `wrong, do not assume they are doing well — let their data decide, and say how ` +
-    `confident the data allows you to be. When something is going well, say so as ` +
-    `plainly as when something is costing them.\n` +
-    `4. When you make a claim about THIS trader, attach the number that supports it. ` +
-    `General trading knowledge needs no number — only claims about their results do.\n` +
-    `5. Only suggest an action, a rule or a plan when it genuinely follows from the ` +
-    `conversation — never by reflex, never the same one twice. Many good answers end ` +
-    `without any recommendation at all.\n` +
-    `6. Talk like a sharp, calm human expert in a real conversation: natural sentences, ` +
-    `no stock phrases, no filler openers ("Great question", "Based on your data"), no ` +
-    `closing pleasantries. Vary your wording; never reuse a sentence from earlier in ` +
-    `the conversation.\n` +
-    `7. Length follows substance: one line when one line is enough, longer when the ` +
-    `analysis needs it.\n` +
-    `8. When the data is too thin to support a claim, say exactly what is missing ` +
-    `rather than padding with generic advice.\n\n` +
-    `Write the ENTIRE written response in ${lang}.`
-  );
+  return jarvisNqIdentity(lang);
 }
 
 /**
@@ -256,6 +233,11 @@ export const TOOL_PROTOCOL =
   "'what did I feel yesterday'. It returns the trades WITH their notes, the session " +
   "(objective, emotions, review note), the discipline day and missed opportunities. " +
   "Resolve relative dates ('yesterday', 'last Friday') from TODAY in the context.\n" +
+  "- Call get_contract_math for ANY tick, point, dollar or contract-count figure (a stop in " +
+  "points on MNQ, how many contracts for a dollar risk, what a move is worth) — never do " +
+  "that arithmetic yourself.\n" +
+  "- Call get_economic_calendar for scheduled releases (news today, CPI this week, what is at " +
+  "8:30). Times are New York time; quote them exactly, never from memory.\n" +
   "- Simple personal or general questions (their name, a trading concept, how a feature " +
   "of TradeVault works) get a direct answer. General knowledge is allowed; only claims " +
   "about THIS trader's numbers need a source.\n" +
@@ -340,6 +322,7 @@ export function buildCoachMessages(input: CoachInput, opts: BuildOptions = {}) {
     // trader ensuite (date, devise).
     identity: [
       coachIdentity(lang),
+      NQ_DESK_KNOWLEDGE,
       ANTI_HALLUCINATION,
       EVIDENCE_RULES,
       ...(opts.tools ? [TOOL_PROTOCOL] : []),

@@ -3,31 +3,17 @@
 //  and the quick calculator embedded in the Add Trade modal.
 // ============================================================
 
+import { FUTURES_SPECS } from "@/domain/futuresContracts";
+
+// La fiche des contrats vit dans `domain/futuresContracts` : Jarvis la lit
+// aussi (outil `get_contract_math`), et deux tables finiraient par diverger.
+export { calcContracts, type ContractsResult } from "@/domain/futuresContracts";
+
 /** Common futures contracts and their $ value per point. */
-export const POINT_VALUES = [
-  { label: "NQ", value: 20 },
-  { label: "MNQ", value: 2 },
-  { label: "ES", value: 50 },
-  { label: "MES", value: 5 },
-  { label: "YM", value: 5 },
-  { label: "GC", value: 100 },
-] as const;
-
-export interface ContractsResult {
-  contracts: number;
-  effectiveRisk: number;
-}
-
-/** contracts = floor(risk / (stop distance × $ per point)); null when inputs incomplete. */
-export function calcContracts(
-  riskDollar: number,
-  stopPoints: number,
-  pointValue: number,
-): ContractsResult | null {
-  if (riskDollar <= 0 || stopPoints <= 0 || pointValue <= 0) return null;
-  const contracts = Math.floor(riskDollar / (stopPoints * pointValue));
-  return { contracts, effectiveRisk: contracts * stopPoints * pointValue };
-}
+export const POINT_VALUES = (["NQ", "MNQ", "ES", "MES", "YM", "GC"] as const).map((label) => ({
+  label,
+  value: FUTURES_SPECS[label].pointValue,
+}));
 
 // ---- Forex ---------------------------------------------------------------
 

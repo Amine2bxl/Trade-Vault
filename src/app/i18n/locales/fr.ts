@@ -682,6 +682,16 @@ const fr: Dict = {
   "jarvis.generating": "Rédaction de la réponse",
   "jarvis.showFull": "Afficher la réponse complète",
   "jarvis.send": "Envoyer",
+  "jarvis.voice.start": "Parler à Jarvis",
+  "jarvis.voice.listening": "Je t'écoute",
+  "jarvis.voice.thinking": "Jarvis réfléchit",
+  "jarvis.voice.speaking": "Jarvis parle",
+  "jarvis.voice.hint": "Parle naturellement — dis « stop » pour terminer.",
+  "jarvis.voice.end": "Terminer",
+  "jarvis.voice.orbSend": "Envoyer maintenant",
+  "jarvis.voice.orbInterrupt": "Interrompre Jarvis",
+  "jarvis.voice.denied":
+    "L'accès au micro a été refusé — autorise-le dans ton navigateur pour parler à Jarvis.",
   "jarvis.copilot": "Ton copilote IA trading",
   "assistant.subtitle": "Ton intelligence de performance trading",
   "assistant.placeholder": "Demande à Jarvis…",
@@ -818,6 +828,9 @@ const fr: Dict = {
   "jarvisSettings.autoSpeak": "Lire les réponses à voix haute",
   "jarvisSettings.autoSpeakHint":
     "Jarvis prononce chaque réponse une fois qu'il a fini de l'écrire.",
+  "jarvisSettings.model": "Modèle",
+  "jarvisSettings.modelHint":
+    "Lit chaque mot, répond court et concret, spécialiste des futures NQ.",
   "jarvisSettings.memoryEmpty":
     "Rien pour l'instant. Jarvis retient tes engagements et ce que tu lui dis de toi au fil des conversations.",
   "jarvisSettings.memoryForget": "Oublier",

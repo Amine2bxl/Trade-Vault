@@ -15,6 +15,7 @@ import { computeQuantStats, statsBySession } from "@/domain/quantStats";
 import { computeBehavioral } from "@/domain/behavioral";
 import { computeEdgeScore, EDGE_WINDOW_DAYS } from "@/domain/edgeScore";
 import { todayLocalDate } from "@/shared/calendar-date";
+import { getContractMath, getEconomicCalendar } from "./market";
 
 /**
  * LES OUTILS DE JARVIS — ce qui le sépare d'un texte pré-rempli.
@@ -813,4 +814,7 @@ export const JARVIS_TOOL_DEFS: readonly ToolDefinition[] = [
   getMistakes,
   getEdgeScore,
   searchMemory,
+  // Marché (`market.ts`) : arithmétique des contrats et calendrier économique.
+  getContractMath,
+  getEconomicCalendar,
 ];

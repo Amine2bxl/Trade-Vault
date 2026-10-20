@@ -729,6 +729,16 @@ const en = {
   "jarvis.generating": "Writing response",
   "jarvis.showFull": "Show full response",
   "jarvis.send": "Send",
+  "jarvis.voice.start": "Talk to Jarvis",
+  "jarvis.voice.listening": "Listening",
+  "jarvis.voice.thinking": "Jarvis is thinking",
+  "jarvis.voice.speaking": "Jarvis is speaking",
+  "jarvis.voice.hint": "Speak naturally — say “stop” to end.",
+  "jarvis.voice.end": "End",
+  "jarvis.voice.orbSend": "Send now",
+  "jarvis.voice.orbInterrupt": "Interrupt Jarvis",
+  "jarvis.voice.denied":
+    "Microphone access was refused — allow it in your browser to talk to Jarvis.",
   "jarvis.copilot": "Your AI trading copilot",
   "assistant.placeholder": "Ask Jarvis…",
   "assistant.empty":
@@ -861,6 +871,9 @@ const en = {
     "Erase everything Jarvis remembers about you? This cannot be undone.",
   "jarvisSettings.autoSpeak": "Read answers aloud",
   "jarvisSettings.autoSpeakHint": "Jarvis speaks each answer once it has finished writing it.",
+  "jarvisSettings.model": "Model",
+  "jarvisSettings.modelHint":
+    "Reads every word, answers short and concrete, NQ futures specialist.",
   "jarvisSettings.memoryEmpty":
     "Nothing yet. Jarvis remembers your commitments and what you tell it about yourself as you talk.",
   "jarvisSettings.memoryForget": "Forget this",

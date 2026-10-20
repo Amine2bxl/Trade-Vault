@@ -7201,6 +7201,76 @@ body.tv-app-type svg.lucide {
 .jarvis-composer-hint {
   text-align: center;
 }
+/* ── LA BARRE VOCALE ── remplace le compositeur pendant une conversation à
+   voix haute. Même plaque, même liseré : c'est le même endroit, qui parle
+   au lieu d'écrire. L'orbe porte seule le mouvement (voir `JarvisOrb`). */
+.jarvis-voicebar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  /* Le texte en direct ne s'élargit jamais au-delà du dock (360px compris). */
+  min-width: 0;
+  min-height: 60px;
+  padding: 8px 10px;
+  border: 1px solid var(--tv-border-accent);
+  border-radius: var(--radius-xl);
+  background: var(--tv-plate-2);
+}
+.jarvis-voicebar-orb {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  transition: transform var(--tv-dur-1);
+}
+.jarvis-voicebar-orb:active:not(:disabled) {
+  transform: scale(0.96);
+}
+.jarvis-voicebar-orb:disabled {
+  cursor: default;
+}
+/* Deux lignes : sur téléphone, une seule coupait la phrase entendue au
+   quatrième mot — or c'est la seule preuve que Jarvis a bien compris. */
+.jarvis-voicebar-text {
+  display: -webkit-box;
+  margin-top: 2px;
+  overflow: hidden;
+  color: var(--tv-text-secondary);
+  font-size: var(--tv-t-body-sm);
+  line-height: 1.4;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+.jarvis-voicebar-end {
+  flex-shrink: 0;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--tv-border-strong);
+  border-radius: var(--radius-lg);
+  color: var(--tv-text-secondary);
+  font-size: var(--tv-t-body-sm);
+  font-weight: 600;
+  transition:
+    color var(--tv-dur-1),
+    border-color var(--tv-dur-1);
+}
+.jarvis-voicebar-end:hover {
+  border-color: var(--tv-border-accent);
+  color: var(--tv-text-primary);
+}
+/* Le nom du modèle : un identifiant, donc la police des données techniques. */
+.jarvis-model-id {
+  flex-shrink: 0;
+  padding: 3px 10px;
+  border: 1px solid var(--tv-border-accent);
+  border-radius: 999px;
+  color: var(--tv-highlight);
+  font-family: var(--font-mono);
+  font-size: var(--tv-t-caption);
+}
 .jarvis-thinking-mark {
   display: grid;
   place-items: center;

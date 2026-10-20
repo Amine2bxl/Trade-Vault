@@ -57,9 +57,14 @@ import { estimateCostUsd } from "../runtime/pricing";
 import { repairInstruction, unverifiedNotice, validateAnswer } from "../validation";
 import type { ToolResult } from "../tools/types";
 import { buildCoachMessages, runCoach, type CoachInput } from "./coach.agent";
+import { JARVIS_NQ, answerShape, jarvisNqSlot, type JarvisChannel } from "./jarvis-nq";
 
 /** La trace d'une question — UNIQUEMENT des métadonnées, jamais de contenu. */
 export interface JarvisTrace {
+  /** Le profil qui a répondu (`jarvis_nq`). */
+  profile: string;
+  /** Écrite ou dite en conversation vocale. */
+  channel: JarvisChannel;
   domains: string[];
   tier: number;
   slot: ModelSlot;
@@ -132,6 +137,7 @@ export function selectInputForPlan(input: CoachInput, plan: ContextPlan): CoachI
     language: input.language,
     currency: input.currency,
     today: input.today,
+    ...(input.channel ? { channel: input.channel } : {}),
     ...(keep.has("stats") && input.stats ? { stats: input.stats } : {}),
     ...(keep.has("trades") && input.trades ? { trades: input.trades } : {}),
     ...(keep.has("mistakes") && input.mistakes ? { mistakes: input.mistakes } : {}),
@@ -157,7 +163,11 @@ export function selectInputForPlan(input: CoachInput, plan: ContextPlan): CoachI
  * Les consignes propres à la question (second message système) : la période
  * résolue, la forme de réponse attendue, les sources non branchées.
  */
-export function routeGuidance(route: QuestionRoute, plan: ContextPlan): string {
+export function routeGuidance(
+  route: QuestionRoute,
+  plan: ContextPlan,
+  channel: JarvisChannel = "text",
+): string {
   const lines: string[] = [];
   const e = route.entities;
   // « Salut, ça va aujourd'hui ? » nomme une date sans demander de chiffres.
@@ -179,20 +189,9 @@ export function routeGuidance(route: QuestionRoute, plan: ContextPlan): string {
   if (e.weekdays.length) lines.push(`WEEKDAY FOCUS: ${e.weekdays.join(", ")} (1 = Monday).`);
   if (e.symbols.length) lines.push(`SYMBOLS MENTIONED: ${e.symbols.join(", ")}.`);
   if (e.sessions.length) lines.push(`SESSIONS MENTIONED: ${e.sessions.join(", ")}.`);
-  if (route.tier === 1) {
-    lines.push(
-      "ANSWER SHAPE: direct and short — the fact or figure first, one or two sentences, no " +
-        "headings. Greetings get a greeting.",
-    );
-  } else {
-    lines.push(
-      "ANSWER SHAPE (analysis): lead with what the data shows (figures with their n), then why " +
-        "it matters (how it compares, how much it weighs), then what it suggests (worded as a " +
-        "likely explanation, never as a certainty), and end with ONE concrete action only when " +
-        "it follows from the data. Skip any part that has nothing to say. Look for what is " +
-        "concentrated, recurring or asymmetric in the data rather than restating totals.",
-    );
-  }
+  // La forme vient du profil jarvis_nq : des budgets en mots, par niveau et
+  // par canal — « court » laissé à l'appréciation du modèle donnait des rapports.
+  lines.push(answerShape(route.tier, channel));
   lines.push(...plan.notices);
   return lines.join("\n");
 }
@@ -259,6 +258,8 @@ function evidenceCorpus(
 /** Ce qu'il faut pour écrire la trace — y compris d'une question qui a échoué. */
 interface TraceParts {
   route: QuestionRoute;
+  slot: ModelSlot;
+  channel: JarvisChannel;
   ambiguityUsed: boolean;
   usage: readonly UsageEvent[];
   toolResults: readonly { result: ToolResult; ms: number }[];
@@ -277,9 +278,11 @@ function buildTrace(p: TraceParts): JarvisTrace {
   const ok = p.usage.filter((u) => u.ok);
   const costs = ok.map((u) => estimateCostUsd(u));
   return {
+    profile: JARVIS_NQ.id,
+    channel: p.channel,
     domains: p.route.domains,
     tier: p.route.tier,
-    slot: TIER_SLOT[p.route.tier],
+    slot: p.slot,
     ambiguous: p.route.ambiguous || p.ambiguityUsed,
     modelRouted: p.ambiguityUsed,
     signals: p.route.signals,
@@ -358,6 +361,9 @@ export async function orchestrateCoach(
   let prefetchResults: PrefetchResult[] = [];
   const toolResults: { result: ToolResult; ms: number }[] = [];
   let contextChars = 0;
+  const channel: JarvisChannel = input.channel === "voice" ? "voice" : "text";
+  // Avant le routage, l'emplacement du niveau ; le profil le relève ensuite.
+  let slot: ModelSlot = TIER_SLOT[route.tier];
 
   try {
     const ambiguity = await resolveAmbiguity(
@@ -388,13 +394,14 @@ export async function orchestrateCoach(
         : [];
     const prefetched = prefetchBlocks(prefetchResults);
 
-    // 4. RAISONNER — le modèle du niveau, et seulement les outils utiles.
-    const slot = TIER_SLOT[route.tier];
+    // 4. RAISONNER — le modèle du niveau, relevé par jarvis_nq, et seulement
+    // les outils utiles.
+    slot = jarvisNqSlot(route, channel);
     const policy = SLOT_POLICY[slot];
     const providers = opts.providers ?? slotChain(slot);
     const offered = new Set(opts.modelTools);
     const tools = toolContext ? plan.tools.filter((t) => offered.has(t)) : [];
-    const guidance = routeGuidance(route, plan);
+    const guidance = routeGuidance(route, plan, channel);
     contextChars = buildCoachMessages(selected, {
       prefetched,
       guidance,
@@ -491,6 +498,8 @@ export async function orchestrateCoach(
       text,
       trace: buildTrace({
         route,
+        slot,
+        channel,
         ambiguityUsed,
         usage,
         toolResults,
@@ -512,6 +521,8 @@ export async function orchestrateCoach(
       err,
       buildTrace({
         route,
+        slot,
+        channel,
         ambiguityUsed,
         usage,
         toolResults,

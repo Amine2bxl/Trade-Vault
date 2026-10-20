@@ -44,7 +44,16 @@ export interface AgentRun {
   tier?: number;
   slot?: string;
   /** Domaines routés, ambiguïté, routage par modèle, étiquettes du lexique. */
-  route?: { domains: string[]; ambiguous: boolean; modelRouted: boolean; signals: string[] };
+  route?: {
+    /** Profil de modèle (`jarvis_nq`) et canal (écrit / vocal) — dans le JSON
+     *  de `route` : aucune migration pour deux étiquettes. */
+    profile?: string;
+    channel?: string;
+    domains: string[];
+    ambiguous: boolean;
+    modelRouted: boolean;
+    signals: string[];
+  };
   /** Outils exécutés par la boucle, et lectures préparées. */
   tools?: string[];
   toolCalls?: number;
