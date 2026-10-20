@@ -32,6 +32,7 @@ const DEFAULT_PRICES: Record<string, Price> = {
   "claude-opus-4-8": [5, 25, 0.5],
   "claude-sonnet-5-5": [2, 10, 0.2],
   "claude-sonnet-5": [2, 10, 0.2],
+  "claude-haiku-5-5": [0.1, 0.5, 0.01],
   "claude-haiku-4-5": [1, 5, 0.1],
   // Gemini 2.5 — prix publics de lancement, à reconfirmer.
   "gemini-2.5-pro": [1.25, 10, 0.31],

@@ -65,12 +65,12 @@ interface AnthropicResponse {
 
 /** Famille réglée par `effort` (réflexion adaptative) — un budget de tokens y est refusé. */
 function usesEffort(model: string): boolean {
-  return /^claude-(opus-5|sonnet-5|fable-5|mythos-5|opus-4-[678]|sonnet-4-6)/.test(model);
+  return /^claude-(opus-5|sonnet-5|haiku-5|fable-5|mythos-5|opus-4-[678]|sonnet-4-6)/.test(model);
 }
 
 /** Modèles qui refusent une température (ou tout réglage d'échantillonnage) non par défaut. */
 function rejectsSampling(model: string): boolean {
-  return /^claude-(opus-5|sonnet-5|fable|mythos|opus-4-[78])/.test(model);
+  return /^claude-(opus-5|sonnet-5|haiku-5|fable|mythos|opus-4-[78])/.test(model);
 }
 
 /** Modèles qui refusent `tool_choice` « any » / « tool ». */

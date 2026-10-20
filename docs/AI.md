@@ -87,23 +87,35 @@ mode « none ».
 
 **Le profil `jarvis_nq`** (`agents/jarvis-nq.ts`, nom seul dans
 `jarvis-model.ts` pour l'UI) est le cerveau de Jarvis — un nom de modèle, pas
-un second personnage :
+un second personnage. La v1 (court, chiffré) produisait un lecteur de tableau
+de bord ; la v2 en fait un interlocuteur :
 
-- **Lire chaque lettre** : chaque mot, chiffre, unité, négation ; fautes,
-  argot et erreurs de dictée lus sans être corrigés ; chaque sous-question
-  traitée, dans l'ordre. La question passe entière (`AI_LIMITS.question` =
-  4 000 caractères ; elle était coupée en silence à 500).
-- **Répondre court** : la première phrase est la réponse ; budgets en mots
-  par forme (`answerShape` : 60 / 120 / 180 / 350, vocal 45) ; conseil
-  passe-partout interdit sauf adossé à un chiffre ou à une règle du trader ;
-  une recommandation au plus, écrite « Si …, alors … ».
-- **Savoir le NQ** (`NQ_DESK_KNOWLEDGE`) : fiche NQ/MNQ, échéances, sessions
-  en heure de New York, annonces types, vocabulaire ICT et prop firm —
-  connaissance générale, jamais une prédiction ni un signal.
-- **Réfléchir plus** (`jarvisNqSlot`) : seul le bavardage reste sur
-  l'emplacement `fast` ; tout le reste part au moins sur `balanced`. En vocal,
-  jamais `deep` (latence).
+- **Converser** : répondre à ce qui est dit et voulu, suivre le fil (douze
+  tours au moins, `MIN_CONVERSATION_TURNS`), donner un avis argumenté,
+  construire sur une idée. Polyvalent : le trading d'abord, mais aucun sujet
+  n'est esquivé parce qu'il ne parle pas de statistiques.
+- **Les chiffres sont une preuve** : un ou deux, avec leur `n`, quand ils
+  changent la réponse — jamais un relevé non demandé. `STRICT DATA RULE` ne
+  bride que les affirmations sur les résultats du trader ; connaissance,
+  explications, avis et idées sont libres.
+- **Autonome** (`jarvisNqTools`) : hors bavardage, toute la boîte de lecture
+  (`AUTONOMOUS_TOOLS`) est offerte ; le modèle décide lui-même de lire le
+  journal. Le Context Engine ne fait que préparer les lectures évidentes.
+- **Réfléchir** (`jarvisNqSlot`) : bavardage → `fast` ; mesure simple →
+  `balanced` ; analyse, diagnostic et discussion ouverte → `strong` ; revue
+  complète → `deep` (jamais en vocal, où la discussion reste sur `balanced`).
+- **Lire chaque lettre** (fautes, dictée, unités, négations ; question
+  entière jusqu'à 4 000 caractères) et **savoir le NQ** (`NQ_DESK_KNOWLEDGE`,
+  qui compte comme source pour la validation des chiffres).
+- Formes (`answerShape`) : des repères de longueur, pas un gabarit ; en
+  vocal, une à trois phrases parlées.
 - La trace (`ai_agent_runs.route`) porte `profile` et `channel`.
+
+**L'intelligence dépend d'abord du fournisseur** : sans `ANTHROPIC_API_KEY`
+ni `OPENAI_API_KEY`, la chaîne tombe sur Gemini 2.5 (Flash pour la plupart
+des niveaux, Pro en `strong`/`deep` quand la clé y a accès). Avec une clé
+Anthropic et `AI_PROVIDER=anthropic`, les niveaux passent sur Haiku 5.5 /
+Sonnet 5.5 / Opus 5.5 (`DEFAULT_SLOT_MODELS`).
 
 **Sources branchées** : le domaine « marché » lit le calendrier économique
 (`backend/ai-tools/sources.ts`, branché par `askCoach` via

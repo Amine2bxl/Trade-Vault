@@ -1,6 +1,12 @@
-import { describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, test } from "bun:test";
 import { buildCoachMessages } from "../src/modules/ai/agents/coach.agent";
-import { JARVIS_NQ, answerShape, jarvisNqSlot } from "../src/modules/ai/agents/jarvis-nq";
+import {
+  AUTONOMOUS_TOOLS,
+  JARVIS_NQ,
+  answerShape,
+  jarvisNqSlot,
+  jarvisNqTools,
+} from "../src/modules/ai/agents/jarvis-nq";
 import { orchestrateCoach, routeGuidance } from "../src/modules/ai/agents/coach.orchestrator";
 import { routeQuestion } from "../src/modules/ai/router/route";
 import { planContext, UNAVAILABLE_NOTICE } from "../src/modules/ai/context-engine";
@@ -8,6 +14,7 @@ import { contractMath, futuresSpecFor } from "../src/domain/futuresContracts";
 import { POINT_VALUES } from "../src/app/trading/positionCalc";
 import { shapeCalendar, newYorkDay } from "../src/backend/ai-tools/market";
 import { ensureJarvisSources } from "../src/backend/ai-tools/sources";
+import { ensureJarvisTools, JARVIS_TOOL_NAMES } from "../src/backend/ai-tools";
 import { AI_LIMITS } from "../src/domain/ai-limits";
 import {
   isEndCommand,
@@ -16,13 +23,20 @@ import {
 } from "../src/app/features/jarvis/voiceConversation";
 import { pickJarvisVoice } from "../src/modules/voice";
 import type { AIProvider, AIRequest, AIResponse } from "../src/modules/ai-provider";
+import { fullCoachInput } from "./helpers/coachInput";
 
 /**
- * JARVIS_NQ — le cerveau de Jarvis : lire chaque mot, répondre court et
- * concret, connaître le NQ, réfléchir plus, parler.
+ * JARVIS_NQ v2 — un vrai interlocuteur : polyvalent, autonome, constructif,
+ * les chiffres en preuve et pas en conversation ; lecture mot à mot,
+ * connaissance du NQ, voix.
  */
 
 const TODAY = "2026-10-20";
+const ROUTER = process.env.AI_MODEL_ROUTER;
+afterEach(() => {
+  if (ROUTER === undefined) delete process.env.AI_MODEL_ROUTER;
+  else process.env.AI_MODEL_ROUTER = ROUTER;
+});
 
 function scripted(answer: string, seen: AIRequest[]): AIProvider {
   return {
@@ -43,42 +57,51 @@ function scripted(answer: string, seen: AIRequest[]): AIProvider {
   };
 }
 
-describe("le prompt jarvis_nq", () => {
-  const system = buildCoachMessages({ question: "Combien vaut un tick NQ ?", language: "fr" })[0]
+describe("le prompt jarvis_nq — un interlocuteur, pas un relevé de stats", () => {
+  const system = buildCoachMessages({ question: "Je doute de moi en ce moment", language: "fr" })[0]
     .content;
 
-  test("porte le nom du modèle, la lecture mot à mot et la concision", () => {
+  test("polyvalent, conversationnel, autonome et constructif", () => {
     expect(system).toContain(JARVIS_NQ.id);
-    expect(system).toContain("HOW YOU READ");
-    expect(system).toContain("The first sentence IS the answer");
-    expect(system).toContain("Generic advice is banned");
+    expect(system).toContain("versatile assistant");
+    expect(system).toContain("A REAL CONVERSATION PARTNER, NOT A REPORT GENERATOR");
+    expect(system).toContain("read it yourself with your tools");
+    expect(system).toContain("Constructive");
   });
 
-  test("connaît la fiche du NQ et du MNQ, et ne prédit jamais", () => {
-    expect(system).toContain("tick 0.25 point = $5, 1 point = $20");
-    expect(system).toContain("1 point = $2");
+  test("les chiffres sont une preuve, pas la conversation", () => {
+    expect(system).toContain("Most replies need no number at all");
+    // Les consignes de la v1 qui transformaient chaque réponse en relevé.
+    expect(system).not.toContain("Every sentence carries something specific");
+    expect(system).not.toContain("The first sentence IS the answer");
+  });
+
+  test("la règle des chiffres ne bride que les affirmations sur le trader", () => {
+    expect(system).toContain("STRICT DATA RULE");
+    expect(system).toContain("General knowledge, explanations, opinions, ideas");
     expect(system).toContain("never give a trade signal");
   });
 
-  test("garde le contrat « ne jamais inventer » et la réponse dans la langue de l'UI", () => {
-    expect(system).toContain("STRICT DATA RULE");
+  test("garde la lecture mot à mot, la fiche NQ et la langue de l'UI", () => {
+    expect(system).toContain("READ EVERY LETTER");
+    expect(system).toContain("tick 0.25 point = $5, 1 point = $20");
     expect(system).toContain("Write the ENTIRE written response in French");
   });
 });
 
-describe("la forme de réponse — des budgets, pas des intentions", () => {
-  test("chaque niveau a son plafond de mots", () => {
-    expect(answerShape(1)).toContain("60 words");
-    expect(answerShape(2)).toContain("120 words");
-    expect(answerShape(3)).toContain("180 words");
-    expect(answerShape(4)).toContain("350 words");
+describe("la forme de réponse — des repères, pas un gabarit", () => {
+  test("aucune forme n'impose un verdict chiffré en première ligne", () => {
+    for (const tier of [1, 2, 3, 4]) {
+      expect(answerShape(tier)).toContain("REPLY SHAPE");
+      expect(answerShape(tier)).not.toMatch(/line one|verdict with its key figure/i);
+    }
+    expect(answerShape(1)).toContain("conversational");
   });
 
   test("en vocal : deux ou trois phrases, sans Markdown, quel que soit le niveau", () => {
     for (const tier of [1, 2, 3, 4]) {
       const shape = answerShape(tier, "voice");
       expect(shape).toContain("VOICE MODE");
-      expect(shape).toContain("45 words");
       expect(shape).toContain("No markdown");
     }
   });
@@ -86,25 +109,30 @@ describe("la forme de réponse — des budgets, pas des intentions", () => {
   test("la consigne de la question porte la forme du canal", () => {
     const route = routeQuestion("Pourquoi je perds le vendredi ?", { today: TODAY });
     const plan = planContext(route);
-    expect(routeGuidance(route, plan)).toContain("ANSWER SHAPE");
+    expect(routeGuidance(route, plan)).toContain("REPLY SHAPE");
     expect(routeGuidance(route, plan, "voice")).toContain("VOICE MODE");
   });
 });
 
-describe("le modèle — plus de réflexion, sauf pour bavarder", () => {
+describe("le modèle — le cerveau puissant dès qu'il y a matière à penser", () => {
   test("le bavardage reste sur le modèle rapide", () => {
     expect(jarvisNqSlot({ tier: 1, domains: ["smalltalk"] })).toBe("fast");
   });
 
-  test("une question de connaissance ou de journal monte au moins à « balanced »", () => {
-    expect(jarvisNqSlot({ tier: 1, domains: ["knowledge"] })).toBe("balanced");
-    expect(jarvisNqSlot({ tier: 1, domains: ["performance"] })).toBe("balanced");
+  test("la discussion ouverte et l'analyse partent sur « strong »", () => {
+    expect(jarvisNqSlot({ tier: 1, domains: ["knowledge"] })).toBe("strong");
+    expect(jarvisNqSlot({ tier: 2, domains: ["performance"] })).toBe("strong");
     expect(jarvisNqSlot({ tier: 3, domains: ["patterns"] })).toBe("strong");
+    expect(jarvisNqSlot({ tier: 4, domains: ["performance"] })).toBe("deep");
   });
 
-  test("en vocal, jamais le modèle le plus lent", () => {
-    expect(jarvisNqSlot({ tier: 4, domains: ["performance"] })).toBe("deep");
+  test("une mesure simple reste sur « balanced »", () => {
+    expect(jarvisNqSlot({ tier: 1, domains: ["performance"] })).toBe("balanced");
+  });
+
+  test("en vocal, la réponse vient vite : jamais « deep », discussion sur « balanced »", () => {
     expect(jarvisNqSlot({ tier: 4, domains: ["performance"] }, "voice")).toBe("strong");
+    expect(jarvisNqSlot({ tier: 1, domains: ["knowledge"] }, "voice")).toBe("balanced");
   });
 
   test("la trace dit le profil, le canal et l'emplacement réellement servi", async () => {
@@ -116,6 +144,61 @@ describe("le modèle — plus de réflexion, sauf pour bavarder", () => {
     expect(trace).toMatchObject({ profile: "jarvis_nq", channel: "voice", slot: "balanced" });
     const guidance = seen[0].messages.find((m, i) => i > 0 && m.role === "system")?.content ?? "";
     expect(guidance).toContain("VOICE MODE");
+  });
+});
+
+describe("autonomie — il décide lui-même de lire le journal", () => {
+  test("hors bavardage, toute la boîte de lecture est offerte", () => {
+    const tools = jarvisNqTools(["get_stats"], { domains: ["psychology"] });
+    for (const t of AUTONOMOUS_TOOLS) expect(tools).toContain(t);
+    expect(jarvisNqTools([], { domains: ["smalltalk"] })).toEqual([]);
+  });
+
+  test("le bloc Edge Score du client garde la main sur l'outil serveur", () => {
+    const tools = jarvisNqTools([], { domains: ["performance"] }, { edgeKept: true });
+    expect(tools).not.toContain("get_edge_score");
+  });
+
+  test("une question personnelle reçoit les outils au-delà du plan", async () => {
+    process.env.AI_MODEL_ROUTER = "off";
+    ensureJarvisTools();
+    const seen: AIRequest[] = [];
+    await orchestrateCoach(
+      { question: "Je doute de moi, tu en penses quoi ?", language: "fr", today: TODAY },
+      {
+        userId: "u1",
+        modelTools: JARVIS_TOOL_NAMES,
+        prefetch: false,
+        providers: [scripted("On en parle.", seen)],
+      },
+    );
+    const offered = seen[0].tools?.map((t) => t.name) ?? [];
+    expect(offered).toContain("search_memory");
+    expect(offered).toContain("get_day");
+  });
+
+  test("une vraie discussion se souvient du fil : douze tours au moins", async () => {
+    const seen: AIRequest[] = [];
+    await orchestrateCoach(fullCoachInput("salut"), {
+      modelTools: [],
+      prefetch: false,
+      providers: [scripted("Salut !", seen)],
+    });
+    const turns = seen[0].messages.filter((m) => m.content.startsWith("Et sur la semaine"));
+    expect(turns.length).toBeGreaterThanOrEqual(6);
+  });
+
+  test("la fiche NQ citée dans une réponse sur le journal n'est pas un chiffre inventé", async () => {
+    const { trace } = await orchestrateCoach(
+      { question: "Combien j'ai perdu sur NQ ce mois-ci ?", language: "fr", today: TODAY },
+      {
+        modelTools: [],
+        prefetch: false,
+        validate: true,
+        providers: [scripted("Pour rappel, 1 point de NQ vaut $20 par contrat.", [])],
+      },
+    );
+    expect(trace.validation).toBe("ok");
   });
 });
 

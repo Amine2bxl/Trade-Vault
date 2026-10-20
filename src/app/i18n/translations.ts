@@ -720,7 +720,7 @@ const en = {
   "jarvis.think.goal.3": "Working out what's left to do",
   "jarvis.think.general.1": "Thinking it through",
   "jarvis.think.general.2": "Relating it to your trading",
-  "jarvis.composerPlaceholder": "Ask Jarvis about your trading…",
+  "jarvis.composerPlaceholder": "Talk to Jarvis…",
   "jarvis.composerHint": "Enter to send · Shift+Enter for a new line",
   "jarvis.copy": "Copy",
   "jarvis.copied": "Copied",
@@ -742,7 +742,7 @@ const en = {
   "jarvis.copilot": "Your AI trading copilot",
   "assistant.placeholder": "Ask Jarvis…",
   "assistant.empty":
-    "Ask Jarvis anything about your trading — stats, patterns, mistakes, or a specific trade.",
+    "Talk to Jarvis about anything — your trading, a strategy idea, a doubt, a plan. He reads your journal when it matters.",
   "assistant.listening": "Listening…",
   "assistant.micUnsupported": "Voice input is not supported in this browser.",
   "assistant.thinking": "Thinking…",
@@ -873,7 +873,7 @@ const en = {
   "jarvisSettings.autoSpeakHint": "Jarvis speaks each answer once it has finished writing it.",
   "jarvisSettings.model": "Model",
   "jarvisSettings.modelHint":
-    "Reads every word, answers short and concrete, NQ futures specialist.",
+    "A versatile conversation partner that reads your journal on its own when it matters. NQ futures specialist.",
   "jarvisSettings.memoryEmpty":
     "Nothing yet. Jarvis remembers your commitments and what you tell it about yourself as you talk.",
   "jarvisSettings.memoryForget": "Forget this",

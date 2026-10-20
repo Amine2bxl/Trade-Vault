@@ -57,7 +57,15 @@ import { estimateCostUsd } from "../runtime/pricing";
 import { repairInstruction, unverifiedNotice, validateAnswer } from "../validation";
 import type { ToolResult } from "../tools/types";
 import { buildCoachMessages, runCoach, type CoachInput } from "./coach.agent";
-import { JARVIS_NQ, answerShape, jarvisNqSlot, type JarvisChannel } from "./jarvis-nq";
+import {
+  JARVIS_NQ,
+  MIN_CONVERSATION_TURNS,
+  NQ_DESK_KNOWLEDGE,
+  answerShape,
+  jarvisNqSlot,
+  jarvisNqTools,
+  type JarvisChannel,
+} from "./jarvis-nq";
 
 /** La trace d'une question — UNIQUEMENT des métadonnées, jamais de contenu. */
 export interface JarvisTrace {
@@ -251,6 +259,9 @@ function evidenceCorpus(
   return [
     ...messages.filter((m) => m.role !== "system").map((m) => m.content),
     ...toolOutputs.map((r) => JSON.stringify(r.output ?? r.error ?? null)),
+    // La fiche NQ fait partie des consignes : « 1 point = 20 $ » cité dans une
+    // réponse sur le journal est une source, pas un chiffre inventé.
+    NQ_DESK_KNOWLEDGE,
     input.question,
   ].join("\n");
 }
@@ -380,7 +391,14 @@ export async function orchestrateCoach(
     if (!ambiguityUsed) route = personalFallback(route);
 
     // 2. CHOISIR
-    const plan = planContext(route, { hasEdgeBlock: !!input.edge && input.edge.score !== null });
+    const hasEdgeBlock = !!input.edge && input.edge.score !== null;
+    const planned = planContext(route, { hasEdgeBlock });
+    // Une vraie discussion se souvient du fil : le plan garde 4 tours pour
+    // « salut », jarvis_nq en garde au moins douze.
+    const plan = {
+      ...planned,
+      conversationTurns: Math.max(planned.conversationTurns, MIN_CONVERSATION_TURNS),
+    };
     blocksKept = plan.blocks;
     const selected = selectInputForPlan(input, plan);
 
@@ -400,7 +418,13 @@ export async function orchestrateCoach(
     const policy = SLOT_POLICY[slot];
     const providers = opts.providers ?? slotChain(slot);
     const offered = new Set(opts.modelTools);
-    const tools = toolContext ? plan.tools.filter((t) => offered.has(t)) : [];
+    // AUTONOME : au-delà des outils du plan, le modèle a toute la boîte de
+    // lecture et décide lui-même s'il a besoin du journal.
+    const tools = toolContext
+      ? jarvisNqTools(plan.tools, route, {
+          edgeKept: hasEdgeBlock && plan.blocks.includes("edge"),
+        }).filter((t) => offered.has(t))
+      : [];
     const guidance = routeGuidance(route, plan, channel);
     contextChars = buildCoachMessages(selected, {
       prefetched,

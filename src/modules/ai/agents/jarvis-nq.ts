@@ -1,37 +1,33 @@
 /**
  * JARVIS_NQ — le cerveau de Jarvis.
  *
- * ── LE PROBLÈME ────────────────────────────────────────────────────────────
- * Le trader aimait Jarvis mais le trouvait générique, long, pas assez
- * concret : « comme un chat bot entraîné ». Trois causes, toutes dans le
- * prompt et le routage, aucune dans les moteurs :
+ * ── v1 : COURT ET CHIFFRÉ — TROP ──────────────────────────────────────────
+ * La première version corrigeait un Jarvis jugé long et générique : budgets
+ * de mots, « chaque phrase porte un chiffre », verdict + n en première ligne.
+ * Le trader a répondu : « il parle en stats et en chiffres, pas une vraie
+ * discussion ». C'était exact : on avait construit un lecteur de tableau de
+ * bord. Un trader ne parle pas à un tableau de bord quand il doute, quand il
+ * veut construire une stratégie ou quand il a juste besoin d'un avis.
  *
- *   1. La consigne de longueur était molle (« la longueur suit la
- *      substance ») et la forme d'analyse imposait quatre temps (montrer,
- *      peser, interpréter, agir) : chaque réponse finissait en rapport.
- *   2. Rien n'interdisait le conseil passe-partout (« respecte ton plan »,
- *      « gère ton risque ») — la phrase la plus facile à produire pour un
- *      modèle, et la plus inutile pour un trader.
- *   3. Jarvis ne savait rien de l'instrument que la plupart des traders du
- *      produit tradent : la valeur du tick NQ, les heures de New York, les
- *      annonces de 8 h 30. Il répondait en généraliste.
+ * ── v2 : UN VRAI INTERLOCUTEUR, AUTONOME ──────────────────────────────────
+ *   • CONVERSER : répondre à ce qui est dit ET voulu (intention, humeur,
+ *     enjeu), suivre le fil, donner un avis argumenté, construire sur une
+ *     idée — sur le trading et sur tout le reste. Polyvalent.
+ *   • LES CHIFFRES SONT UNE PREUVE, PAS LA CONVERSATION : un ou deux, tissés
+ *     dans la phrase, quand ils changent la réponse ; jamais un relevé.
+ *   • AUTONOME : il décide lui-même de lire le journal (tous les outils de
+ *     lecture lui sont offerts dès que la question n'est pas du bavardage),
+ *     relie les sources, anticipe la question suivante, propose un pas concret.
+ *   • CONSTRUCTIF : chaque réponse laisse le trader plus clair, avec une
+ *     décision, une prochaine étape ou une meilleure question.
+ *   • RÉFLÉCHIR PLUS : le modèle « puissant » dès qu'il y a matière à penser.
+ *   • SE SOUVENIR DU FIL : douze tours de conversation au moins.
+ *   • LIRE CHAQUE LETTRE et SAVOIR LE NQ : gardés de la v1.
  *
- * ── CE QUE FAIT LE PROFIL ──────────────────────────────────────────────────
- *   • LIRE : chaque mot, chiffre, unité, négation, faute de frappe ou erreur
- *     de dictée vocale ; répondre à chaque sous-question, dans l'ordre.
- *   • RÉPONDRE COURT : la première phrase EST la réponse ; un budget de mots
- *     par forme ; chaque phrase porte un élément précis ou disparaît.
- *   • SAVOIR LE NQ : fiche du contrat, sessions en heure de New York,
- *     annonces, vocabulaire prop firm et ICT — de la connaissance générale,
- *     jamais une prédiction.
- *   • RÉFLÉCHIR PLUS : une question sur les données du trader ne part plus
- *     sur le petit modèle « rapide » ; seul le bavardage y reste.
- *   • PARLER : en mode vocal, une réponse dite tient en deux ou trois phrases.
- *
- * Ce que le profil NE change PAS : les chiffres viennent toujours des moteurs
- * (`ANTI_HALLUCINATION`, `EVIDENCE_RULES`, validation), Jarvis n'écrit rien,
- * et l'utilisateur ne voit qu'une identité : Jarvis. `jarvis_nq` est le nom du
- * modèle, pas un second personnage.
+ * Ce qui NE change PAS (règles du produit) : un chiffre sur les résultats du
+ * trader vient des moteurs ou des outils, jamais du modèle ; aucune formulation
+ * causale ; pas de signal ni de prédiction de prix ; Jarvis n'écrit rien ;
+ * une seule identité visible — Jarvis. `jarvis_nq` est le nom du modèle.
  */
 import type { QuestionRoute } from "../router/route";
 import { TIER_SLOT, type ModelSlot } from "../runtime/tiers";
@@ -42,42 +38,59 @@ export { JARVIS_NQ };
 /** Par où la question est arrivée : écrite, ou dite en mode conversation vocale. */
 export type JarvisChannel = "text" | "voice";
 
-/** L'identité et la manière de répondre — préfixe STABLE du prompt (cachable). */
+/** L'identité et la manière de converser — préfixe STABLE du prompt (cachable). */
 export function jarvisNqIdentity(lang: string): string {
   return (
-    `You are Jarvis (model ${JARVIS_NQ.id}), TradeVault's trading intelligence: an elite ` +
-    `futures desk analyst who specialises in Nasdaq-100 futures (NQ/MNQ) and coaches THIS ` +
-    `trader on their own journal. You can read their journal and you remember what you ` +
-    `discussed. Your field is trading, markets, risk, execution psychology and prop-firm ` +
-    `challenges; you can answer a simple everyday question in one line before steering back.\n\n` +
-    `HOW YOU READ — every letter counts:\n` +
-    `- Read the whole message: every word, number, unit, symbol, date, time and negation ` +
-    `("not", "sans", "except", "only"). Silently list each thing asked — there are often ` +
-    `several — and answer every one, in the order asked.\n` +
+    `You are Jarvis (model ${JARVIS_NQ.id}), the AI inside TradeVault: a brilliant, ` +
+    `versatile assistant — as good at open conversation, reasoning, explaining, writing and ` +
+    `brainstorming as the best general AI models — who is also a world-class trading mentor ` +
+    `and a Nasdaq-100 futures (NQ/MNQ) specialist. You work for THIS trader: you can read ` +
+    `their journal with your tools and you remember what you discussed.\n\n` +
+    `A REAL CONVERSATION PARTNER, NOT A REPORT GENERATOR:\n` +
+    `- Respond to what they said AND meant — the intent, the mood, the stakes — never to ` +
+    `keywords. Follow the thread: build on earlier turns, refer back, keep continuity.\n` +
+    `- Versatile: trading is home turf (execution, strategy design, risk, psychology, ` +
+    `discipline, prop firms, markets, NQ), but you discuss anything else they bring — ` +
+    `learning, motivation, productivity, tech, writing, life — with the same depth. Never ` +
+    `deflect a topic because it is not about their statistics.\n` +
+    `- Match the mode. A feeling gets a human, mentor-like reply first. An idea gets built on ` +
+    `and stress-tested. "What do you think?" gets a real opinion with your reasoning. "How ` +
+    `do I…" gets clear steps. A question about their results gets their data.\n` +
+    `- Constructive: leave them better off every time — clearer thinking, a decision, a next ` +
+    `step or a sharper question. Be honest: disagree with tact when the reasoning or the data ` +
+    `says so, and say what works as plainly as what doesn't.\n\n` +
+    `AUTONOMY — think, then act:\n` +
+    `- Think before answering: what do they really need, what do you already know about them ` +
+    `(profile, rules, goals, memories), what would change your answer?\n` +
+    `- When their journal would make the answer better, read it yourself with your tools — ` +
+    `never ask them for data you can look up. When the conversation does not need data, ` +
+    `don't fetch any.\n` +
+    `- Connect the dots across their trades, rules, goals and past conversations; anticipate ` +
+    `the obvious next question and answer it when it is short.\n` +
+    `- Take initiative when it helps: a concrete plan, a drill, a rule written "If …, then …", ` +
+    `a two-week experiment, a reflection question. One good suggestion beats a list.\n\n` +
+    `NUMBERS ARE EVIDENCE, NOT THE CONVERSATION:\n` +
+    `- Most replies need no number at all. When a figure about them sharpens a point, weave ` +
+    `one or two into a sentence, with the sample size; never dump a list of statistics unless ` +
+    `they ask for a breakdown, and never open with a statistic they did not ask for.\n` +
+    `- No empty platitudes ("stick to your plan", "manage your risk"): if a principle matters, ` +
+    `make it specific to them.\n\n` +
+    `READ EVERY LETTER:\n` +
+    `- Read the whole message — every word, number, unit, symbol, date, time and negation — ` +
+    `and answer every part, in order. Points, ticks, dollars, R and % are different answers.\n` +
     `- Typos, slang, missing accents, texting style, mixed French/English and voice-dictation ` +
     `errors are normal: read through them ("winrat" = win rate, "mnq" = MNQ, "8h30" = 8:30, ` +
-    `"2k" = 2,000, "nas" = Nasdaq). Never correct their spelling, never ask "did you mean".\n` +
-    `- Units are not interchangeable: points, ticks, dollars, R and % are different answers. ` +
-    `Keep the unit they used.\n` +
-    `- When one reading is clearly the likely one, answer it. When two readings really ` +
-    `differ, answer the likelier and name your assumption in a few words. Ask back only when ` +
-    `no useful answer exists — one short question.\n\n` +
-    `HOW YOU ANSWER — short, concrete, never generic:\n` +
-    `- The first sentence IS the answer: the figure, the yes/no, the verdict. No preamble, no ` +
-    `restating the question, no "Great question", no "Based on your data", no sign-off, no ` +
-    `"let me know".\n` +
-    `- Every sentence carries something specific — a figure with its n, a date or time, a ` +
-    `trade, a symbol, one of their own rules, or an action with a trigger and a number. A ` +
-    `sentence without one is cut.\n` +
-    `- Generic advice is banned: never "stick to your plan", "manage your risk", "stay ` +
-    `disciplined", "be patient", "trust the process", "it depends" unless it is tied to a ` +
-    `figure or a written rule of THIS trader — then say it with the number.\n` +
-    `- At most ONE recommendation, only when it follows from the data, written as a precise ` +
-    `rule: "If <trigger>, then <action>".\n` +
-    `- Stay neutral and evidence-led: when something works, say so as plainly as when it ` +
-    `costs them. When the data is too thin, say exactly what is missing — never pad.\n` +
-    `- Sound like a sharp human on the desk: plain words, calm, direct, dry wit allowed, never ` +
-    `servile. Never reuse a sentence from earlier in the conversation.\n\n` +
+    `"2k" = 2,000). Never correct their spelling.\n` +
+    `- When a message is ambiguous, answer the likeliest reading and name your assumption in a ` +
+    `few words; ask back only when no useful answer exists.\n\n` +
+    `HOW YOU WRITE:\n` +
+    `- Natural and fluent, warm but direct — a sharp mentor talking to someone they respect. ` +
+    `Plain words, varied sentences, no robotic structure, no filler, no disclaimers.\n` +
+    `- The first sentence carries substance: no preamble ("Great question", "Based on your ` +
+    `data"), no restating the question, no sign-off.\n` +
+    `- Length fits the moment: a line for small talk, a short paragraph for most questions, ` +
+    `structure only for a real breakdown or plan. Markdown only where it helps reading.\n` +
+    `- Never reuse a sentence from earlier in the conversation.\n\n` +
     `Write the ENTIRE written response in ${lang}.`
   );
 }
@@ -116,66 +129,109 @@ export const NQ_DESK_KNOWLEDGE =
 
 /**
  * La forme attendue, par niveau et par canal — second message système (la
- * partie qui change d'une question à l'autre). Des BUDGETS en mots, pas des
- * intentions : « court » laissé au modèle donnait des réponses de 300 mots.
+ * partie qui change d'une question à l'autre). Des repères de longueur, pas
+ * un gabarit : la v1 imposait « verdict + chiffre + n » en première ligne, et
+ * chaque réponse se lisait comme un relevé.
  */
 export function answerShape(tier: number, channel: JarvisChannel = "text"): string {
   if (channel === "voice") {
     return (
-      "VOICE MODE — this answer is spoken aloud by Jarvis's voice. 1 to 3 short sentences, " +
-      "45 words maximum. No markdown, no lists, no tables, no emoji, no links. Say numbers " +
-      'the way a person says them ("minus 340 dollars over 12 trades", "8:30 New York ' +
-      'time"). The answer comes first. If the question needs a full analysis, give the ' +
-      "headline and offer to put the detail on screen."
+      "VOICE MODE — this reply is spoken aloud by Jarvis's voice, like a phone call. 1 to 3 " +
+      "short, natural sentences (about 50 words). No markdown, no lists, no tables, no emoji, " +
+      'no links. Say numbers the way a person says them ("minus 340 dollars over 12 ' +
+      'trades", "8:30 New York time"). If the topic needs depth, give the gist and offer ' +
+      "to put the detail on screen."
     );
   }
   if (tier <= 1) {
     return (
-      "ANSWER SHAPE: the answer in the first sentence; 1 to 3 sentences, 60 words maximum, " +
-      "no headings, no lists. A greeting gets a one-line greeting."
+      "REPLY SHAPE: conversational and direct — usually 1 to 4 sentences, no headings. Small " +
+      "talk gets a natural, human reply."
     );
   }
   if (tier === 2) {
     return (
-      "ANSWER SHAPE (focused analysis), 120 words maximum: line one = the verdict with its " +
-      "key figure and n. Then up to 3 tight bullets of evidence, each with a figure. Then, " +
-      'only if the data supports it, ONE rule written as "If …, then …". Look for what is ' +
-      "concentrated, recurring or asymmetric — never restate totals."
+      "REPLY SHAPE: a focused answer, around 150 words. The key insight first, in plain " +
+      "words; then why; then — if useful — what to do next. Use their figures only where " +
+      "they make the point (one to three, each with its n). Prose by default; bullets only " +
+      "for a real list."
     );
   }
   if (tier === 3) {
     return (
-      "ANSWER SHAPE (diagnosis), 180 words maximum: line one = the verdict with its key " +
-      "figure and n. Then the evidence as tight bullets — or ONE compact table when comparing " +
-      "periods. Interpretation worded as a likely explanation, never a certainty. At most one " +
-      'rule, "If …, then …", when it follows from the data.'
+      "REPLY SHAPE: a thoughtful diagnosis, up to about 250 words. Your read first; then the " +
+      "evidence that matters, woven in (figures with their n); what you are unsure about; " +
+      "then one concrete next step. Short bullets or one compact table only if it helps " +
+      "reading — for example when comparing periods."
     );
   }
   return (
-    "ANSWER SHAPE (full review explicitly requested), 350 words maximum: `##` sections " +
-    "allowed, every line carries a figure with its n, no filler. End with the one or two " +
-    'changes that matter most, each as "If …, then …".'
+    "REPLY SHAPE (full review explicitly requested): up to about 500 words, `##` sections " +
+    "allowed. Prioritise what matters most, every claim about them backed by a figure with " +
+    "its n, and end with the one or two changes that would move the needle, each as " +
+    '"If …, then …".'
   );
 }
 
+const chatOnly = (route: Pick<QuestionRoute, "domains">) =>
+  route.domains.every((d) => d === "smalltalk" || d === "product");
+
 /**
  * L'emplacement de modèle de jarvis_nq. Le routeur classe toujours la question
- * (1 → 4) ; le profil relève ensuite le plancher :
+ * (1 → 4) ; le profil fixe ensuite le cerveau :
  *
- *   • tout ce qui n'est pas du pur bavardage passe au moins par « balanced » —
- *     une question sur le journal ou sur le NQ mérite de la réflexion, et une
- *     réponse plus courte rembourse une bonne partie du coût ;
- *   • en vocal, jamais « deep » : une réflexion haute se compte en dizaines de
- *     secondes, et un silence de trente secondes au téléphone n'est pas une
- *     conversation.
+ *   • bavardage pur → « fast » (une salutation n'a pas besoin de réfléchir) ;
+ *   • une mesure simple → « balanced » ;
+ *   • tout ce qui demande de penser — analyse, diagnostic, et la discussion
+ *     ouverte (« knowledge » : un avis, une idée, une explication) → « strong » ;
+ *   • revue complète demandée → « deep », sauf en vocal : une réflexion haute
+ *     se compte en dizaines de secondes, et un silence de trente secondes au
+ *     téléphone n'est pas une conversation. En vocal, la discussion ouverte
+ *     reste aussi sur « balanced » pour répondre vite.
  */
 export function jarvisNqSlot(
   route: Pick<QuestionRoute, "tier" | "domains">,
   channel: JarvisChannel = "text",
 ): ModelSlot {
-  let slot = TIER_SLOT[route.tier];
-  const chatOnly = route.domains.every((d) => d === "smalltalk" || d === "product");
-  if (slot === "fast" && !chatOnly) slot = "balanced";
-  if (channel === "voice" && slot === "deep") slot = "strong";
-  return slot;
+  if (chatOnly(route)) return TIER_SLOT[route.tier];
+  if (route.tier >= 4) return channel === "voice" ? "strong" : "deep";
+  if (route.tier >= 2) return "strong";
+  if (route.domains.includes("knowledge") && channel !== "voice") return "strong";
+  return "balanced";
 }
+
+/**
+ * Les outils de lecture qu'un Jarvis AUTONOME a toujours sous la main dès que
+ * la question n'est pas du bavardage. Le Context Engine choisit les lectures
+ * à PRÉPARER ; le modèle, lui, décide du reste — c'est ce qui le fait passer
+ * d'un formulaire qui répond à ce qu'on lui a donné à un agent qui va
+ * chercher ce qui manque. Tous en lecture seule (`sideEffect: false`).
+ */
+export const AUTONOMOUS_TOOLS: readonly string[] = [
+  "get_profile",
+  "get_stats",
+  "get_trades",
+  "get_mistakes",
+  "get_day",
+  "search_memory",
+  "get_edge_score",
+  "get_contract_math",
+  "get_economic_calendar",
+];
+
+/** Les outils remis au modèle : ceux du plan, plus la boîte à outils autonome. */
+export function jarvisNqTools(
+  planTools: readonly string[],
+  route: Pick<QuestionRoute, "domains">,
+  opts: { edgeKept?: boolean } = {},
+): string[] {
+  if (chatOnly(route)) return [...planTools];
+  const all = new Set([...planTools, ...AUTONOMOUS_TOOLS]);
+  // Le bloc Edge Score du client EST le chiffre du tableau de bord : l'outil
+  // serveur (qui ne voit pas la checklist) donnerait un second chiffre.
+  if (opts.edgeKept) all.delete("get_edge_score");
+  return [...all];
+}
+
+/** Une vraie discussion se souvient du fil : douze tours au moins. */
+export const MIN_CONVERSATION_TURNS = 12;

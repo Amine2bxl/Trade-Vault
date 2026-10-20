@@ -673,7 +673,7 @@ const fr: Dict = {
   "jarvis.think.goal.3": "Je calcule ce qu'il reste à faire",
   "jarvis.think.general.1": "Je réfléchis à la question",
   "jarvis.think.general.2": "Je la relie à ton trading",
-  "jarvis.composerPlaceholder": "Demande à Jarvis, sur ton trading…",
+  "jarvis.composerPlaceholder": "Parle à Jarvis…",
   "jarvis.composerHint": "Entrée pour envoyer · Maj+Entrée pour aller à la ligne",
   "jarvis.copy": "Copier",
   "jarvis.copied": "Copié",
@@ -696,7 +696,7 @@ const fr: Dict = {
   "assistant.subtitle": "Ton intelligence de performance trading",
   "assistant.placeholder": "Demande à Jarvis…",
   "assistant.empty":
-    "Demande à Jarvis tout sur ton trading — stats, tendances, erreurs, ou un trade précis.",
+    "Parle à Jarvis de tout — ton trading, une idée de stratégie, un doute, un plan. Il lit ton journal quand ça compte.",
   "assistant.listening": "Écoute en cours…",
   "assistant.micUnsupported": "La saisie vocale n'est pas prise en charge par ce navigateur.",
   "assistant.thinking": "Réflexion…",
@@ -830,7 +830,7 @@ const fr: Dict = {
     "Jarvis prononce chaque réponse une fois qu'il a fini de l'écrire.",
   "jarvisSettings.model": "Modèle",
   "jarvisSettings.modelHint":
-    "Lit chaque mot, répond court et concret, spécialiste des futures NQ.",
+    "Un interlocuteur polyvalent qui lit ton journal de lui-même quand ça compte. Spécialiste des futures NQ.",
   "jarvisSettings.memoryEmpty":
     "Rien pour l'instant. Jarvis retient tes engagements et ce que tu lui dis de toi au fil des conversations.",
   "jarvisSettings.memoryForget": "Oublier",
