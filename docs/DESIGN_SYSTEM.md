@@ -122,14 +122,23 @@ moteur `shared/ui/neural/`). Comme `JarvisOrb`, il est décoratif par
 décision produit : on doit VOIR l'agent respirer, écouter, comprendre,
 analyser, réfléchir, réviser, rédiger, parler — huit formes de particules et
 des morphings de ~850 ms entre elles. Il ne vit que sur les surfaces de
-Jarvis (accueil de la conversation, présence centrale persistante au-dessus
-du fil, scène vocale « live »), un seul à la fois. Son halo vient du mélange additif de
+Jarvis (accueil de la conversation, présence compacte de 40 px posée sur le
+champ de saisie, scène vocale « live »), un seul à la fois. Le petit cœur de
+la présence ne gèle pas au repos (`keepAlive`) : figé, il se lirait comme un
+Jarvis éteint, et à 40 px il ne coûte presque rien. Son halo vient du mélange additif de
 points sur un canevas : aucune ombre, aucun `filter`, aucun bloom. Garde-fous
 non négociables : WebGL sans dépendance, calcul sur la carte graphique, rien
 par particule côté JavaScript, arrêt hors écran / onglet caché / repos
 prolongé, 30 images/s pour respirer, densité adaptée à l'appareil et réduite
 en direct si les images arrivent en retard, image fixe sous
 `prefers-reduced-motion`, repli sur `JarvisOrb` sans WebGL.
+
+**Le faisceau Monte-Carlo n'est pas une exception.** Sa lumière est une
+DONNÉE : chaque pixel compte les trajectoires qui le traversent (méthode
+DenseLines, `features/monte-carlo/fanRender.ts`), lissé d'un noyau de deux
+pixels, teinté par l'issue (vert objectif, rouge limite). Aucun halo, aucun
+`filter` ; le canevas se remplit pendant le calcul, découpé en tranches de
+quelques millisecondes.
 
 **Changement de page** : un seul mouvement. L'enveloppe (`.page-in`) fond en
 180 ms sans se déplacer ; seules les cartes portent `fade-in-up` (6 px). Deux

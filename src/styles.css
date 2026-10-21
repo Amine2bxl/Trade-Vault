@@ -4309,55 +4309,6 @@ body.tv-app-type :is(.tv-figure, .tv-num, .tabular-nums) {
   }
 }
 
-/* ── LA RANGÉE DE RÉGLAGES DU MONTE-CARLO ──
- * Cinq réglages sur une ligne à partir de `lg`, deux sur tablette, un sur
- * téléphone. `auto-fit` aurait suffi s'ils avaient tous la même largeur de
- * contenu — ce n'est pas le cas (« $50,000 » contre « 30 jours »), et une
- * grille à colonnes égales garde les curseurs alignés, ce qui est la seule
- * chose qui les fait lire comme UN réglage à cinq entrées. */
-.mc-params {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1rem 1.5rem;
-}
-@media (min-width: 640px) {
-  .mc-params {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-@media (min-width: 1024px) {
-  .mc-params {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-  }
-}
-
-/* ── LES QUATRE FAITS DU VERDICT (Monte-Carlo) ──
- * Une rangée à filets sur écran large ; une grille de deux, sans filets, sur
- * téléphone — quatre faits « shrink-0 » à côté d'un chiffre de 48px
- * demandaient 499px dans les 319 disponibles. */
-.mc-facts {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.75rem 1.25rem;
-  min-width: 0;
-}
-@media (min-width: 640px) {
-  .mc-facts {
-    display: flex;
-    flex-shrink: 0;
-    align-items: stretch;
-    gap: 1.25rem;
-  }
-  .mc-facts > * {
-    padding-left: 1.25rem;
-    border-left: 1px solid rgb(255 255 255 / 0.07);
-  }
-  .mc-facts > :first-child {
-    padding-left: 0;
-    border-left: 0;
-  }
-}
-
 /* ══════════════════════════════════════════════════════════════════════════
    LES SÉLECTEURS DE DATE ET D'HEURE
    ══════════════════════════════════════════════════════════════════════════
@@ -4409,7 +4360,7 @@ body.tv-app-type :is(.tv-figure, .tv-num, .tabular-nums) {
   place-items: center;
   width: 2rem;
   flex: none;
-  color: var(--tv-text-3, #94a3b8);
+  color: var(--tv-text-muted);
   background: transparent;
   transition:
     background-color 120ms ease,
@@ -4417,7 +4368,7 @@ body.tv-app-type :is(.tv-figure, .tv-num, .tabular-nums) {
 }
 .mc-step-btn:hover:not(:disabled) {
   background: rgb(255 255 255 / 0.06);
-  color: #fff;
+  color: var(--tv-text-primary);
 }
 .mc-step-btn:active:not(:disabled) {
   background: rgb(255 255 255 / 0.1);
@@ -4435,7 +4386,8 @@ body.tv-app-type :is(.tv-figure, .tv-num, .tabular-nums) {
   padding: 0 0.15rem;
   border: 0;
   background: transparent;
-  color: #fff;
+  color: var(--tv-text-primary);
+  font-family: var(--font-figure);
   font-variant-numeric: tabular-nums;
   font-size: 0.9375rem;
   font-weight: 600;
@@ -4449,7 +4401,7 @@ body.tv-app-type :is(.tv-figure, .tv-num, .tabular-nums) {
   place-items: center;
   padding-right: 0.35rem;
   flex: none;
-  color: #64748b;
+  color: var(--tv-text-muted);
   font-variant-numeric: tabular-nums;
   font-size: 0.75rem;
 }
@@ -6164,63 +6116,23 @@ body::after {
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   MONTE-CARLO — l'outil quantitatif
+   MONTE-CARLO — dix mille futurs, l'edge expliqué, le plan modifiable
    ══════════════════════════════════════════════════════════════════════════
-   Une barre de pilotage (ce que ça fait, les réglages en une ligne,
-   relancer), puis des cartes à profondeur maîtrisée : plaque + filet de
-   lumière + ombre courte, jamais de dégradé de remplissage. */
-.mc-run {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.9rem 1.25rem;
+   Des plaques plates (valeur + liseré, aucune ombre), un seul visuel riche —
+   le faisceau — et des repères fins par-dessus. La couleur ne sert qu'aux
+   données : vert vers l'objectif, rouge vers la limite. */
+.mc-card {
+  min-width: 0;
   border-radius: 1.25rem;
   border: 1px solid var(--tv-border);
   background: var(--tv-plate-1);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05);
-  padding: 0.9rem 1rem;
+  padding: 1rem;
 }
 @media (min-width: 640px) {
-  .mc-run {
-    padding: 1rem 1.25rem;
+  .mc-card {
+    padding: 1.1rem 1.25rem;
   }
 }
-.mc-run-icon {
-  display: grid;
-  height: 2.25rem;
-  width: 2.25rem;
-  flex-shrink: 0;
-  place-items: center;
-  border-radius: 0.75rem;
-  border: 1px solid var(--tv-border-accent);
-  background: rgb(var(--tv-accent-rgb) / 0.1);
-  color: var(--tv-highlight);
-}
-.mc-summary {
-  display: inline-flex;
-  min-width: 0;
-  max-width: 100%;
-  height: 2.25rem;
-  align-items: center;
-  gap: 0.5rem;
-  border-radius: 0.75rem;
-  border: 1px solid var(--tv-border);
-  background: var(--tv-plate-2);
-  padding: 0 0.75rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  color: var(--tv-text-secondary);
-  transition-property: border-color, background-color;
-  transition-duration: var(--tv-dur-1);
-}
-.mc-summary:hover {
-  border-color: var(--tv-border-strong);
-  background: var(--tv-plate-3);
-}
-/* Sur bureau, les réglages sont dans la colonne : le résumé reste lisible
-   mais n'est plus la seule porte d'entrée. */
 .mc-rerun,
 .mc-alt {
   display: inline-flex;
@@ -6232,7 +6144,7 @@ body::after {
   border: 1px solid var(--tv-border-strong);
   background: var(--tv-plate-3);
   padding: 0 0.85rem;
-  font-size: 0.8125rem;
+  font-size: var(--tv-t-body-sm);
   font-weight: 600;
   color: var(--tv-text-primary);
   transition-property: border-color, background-color, opacity;
@@ -6245,142 +6157,374 @@ body::after {
 .mc-rerun:disabled {
   opacity: 0.6;
 }
-.mc-launch {
-  margin-top: 0.75rem;
-  border-radius: 1.5rem;
-  border: 1px solid var(--tv-border);
-  background: var(--tv-plate-2);
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.06),
-    0 18px 40px -28px rgb(0 0 0 / 0.9);
-  padding: 1.25rem;
-}
-@media (min-width: 640px) {
-  .mc-launch {
-    padding: 1.75rem;
-  }
-}
-.mc-steps {
-  display: grid;
-  gap: 0.75rem;
-}
-@media (min-width: 768px) {
-  .mc-steps {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 1.25rem;
-  }
-}
-.mc-steps li {
-  display: flex;
-  gap: 0.75rem;
-  font-size: 0.875rem;
-  line-height: 1.5;
-  color: var(--tv-text-secondary);
-}
-.mc-step-n {
-  display: grid;
-  height: 1.6rem;
-  width: 1.6rem;
-  flex-shrink: 0;
-  place-items: center;
-  border-radius: 999px;
-  border: 1px solid var(--tv-border-strong);
-  background: var(--tv-plate-3);
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: var(--tv-text-primary);
-}
-.mc-card {
-  border-radius: 1.25rem;
-  border: 1px solid var(--tv-border);
-  background: var(--tv-plate-1);
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.045),
-    0 14px 32px -26px rgb(0 0 0 / 0.9);
-  padding: 1rem;
-}
-@media (min-width: 640px) {
-  .mc-card {
-    padding: 1.1rem 1.25rem;
-  }
-}
-.mc-verdict {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1rem;
-}
-@media (min-width: 768px) {
-  .mc-verdict {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+@media (pointer: coarse) {
+  .mc-rerun,
+  .mc-alt {
+    height: 2.75rem;
   }
 }
 
-/* ── MONTE-CARLO : LES DONNÉES UTILISÉES, LA LECTURE ── */
-.mc-data {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.45rem 0.75rem;
+/* ── LE PLAN — colonne collée à droite sur bureau ── */
+.mc-plan {
   min-width: 0;
-  padding: 0.6rem 0.85rem;
+}
+.mc-plan-inner {
+  position: sticky;
+  top: 0;
+  max-height: calc(100dvh - 6rem);
+  overflow-y: auto;
+  border-radius: 1.25rem;
+  border: 1px solid var(--tv-border);
+  background: var(--tv-plate-1);
+  padding: 1rem;
+  scrollbar-width: thin;
+}
+.mc-source {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0.75rem;
   border: 1px solid var(--tv-border);
   border-radius: 0.9rem;
-  background: var(--tv-plate-1);
+  background: var(--tv-plate-2);
 }
-.mc-data-src {
-  flex-shrink: 0;
-  padding: 0.1rem 0.5rem;
+.mc-icon-btn {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.6rem;
+  color: var(--tv-text-muted);
+  transition-property: color, background-color;
+  transition-duration: var(--tv-dur-1);
+}
+.mc-icon-btn:hover {
+  background: rgb(255 255 255 / 0.06);
+  color: var(--tv-text-primary);
+}
+.mc-legend {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0;
+  margin-bottom: 0.25rem;
+}
+.mc-legend::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--tv-border);
+}
+.mc-preset {
+  height: 1.9rem;
+  padding: 0 0.7rem;
   border: 1px solid var(--tv-border-strong);
   border-radius: 999px;
-  font-size: 11px;
-  font-weight: 700;
+  color: var(--tv-text-secondary);
+  font-size: var(--tv-t-caption);
+  font-weight: 600;
+  transition-property: border-color, color, background-color;
+  transition-duration: var(--tv-dur-1);
+}
+.mc-preset:hover {
+  border-color: var(--tv-border-accent);
   color: var(--tv-text-primary);
 }
-.mc-data-facts {
-  display: flex;
-  min-width: 0;
-  flex: 1 1 16rem;
-  flex-wrap: wrap;
-  gap: 0.2rem 0.9rem;
-  font-size: 12px;
-  color: var(--tv-text-secondary);
-}
-.mc-data-edit {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  gap: 0.35rem;
-  margin-left: auto;
-  font-size: 12px;
-  font-weight: 600;
+.mc-preset-on {
+  border-color: var(--tv-border-accent);
+  background: rgb(var(--tv-accent-rgb) / 0.08);
   color: var(--tv-highlight);
 }
-.mc-read {
-  display: grid;
-  gap: 0.55rem;
+@media (pointer: coarse) {
+  .mc-preset {
+    height: 2.5rem;
+  }
 }
-.mc-read li {
-  position: relative;
-  padding-left: 0.95rem;
-  font-size: 0.875rem;
-  line-height: 1.55;
-  color: var(--tv-text-secondary);
+
+/* ── LE FAISCEAU ── */
+.mc-fan {
+  touch-action: pan-y;
 }
-.mc-read li::before {
-  content: "";
+.mc-fan-canvas {
+  image-rendering: auto;
+  transition: opacity var(--tv-dur-2);
+}
+.mc-fan-grid {
+  stroke: rgb(255 255 255 / 0.05);
+  stroke-width: 1;
+}
+.mc-fan-tick {
+  fill: var(--tv-text-muted);
+  font-family: var(--font-figure);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+.mc-fan-start {
+  stroke: rgb(255 255 255 / 0.22);
+  stroke-dasharray: 2 4;
+}
+.mc-fan-wall {
+  stroke-width: 1;
+  stroke-dasharray: 6 4;
+  stroke-opacity: 0.75;
+}
+.mc-fan-wall-pos {
+  stroke: var(--tv-chart-green);
+}
+.mc-fan-wall-neg {
+  stroke: var(--tv-chart-red);
+}
+/* Le liseré de fond sous un libellé : il reste lisible quand des courbes
+   passent dessous. Un contour à la couleur de la plaque, pas un halo. */
+.mc-fan-wall-label,
+.mc-map-iso-label {
+  font-family: var(--font-figure);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  paint-order: stroke;
+  stroke: var(--tv-plate-1);
+  stroke-width: 3px;
+}
+.mc-fan-wall-label-pos {
+  fill: var(--tv-chart-green);
+}
+.mc-fan-wall-label-neg {
+  fill: var(--tv-chart-red);
+}
+.mc-fan-band50 {
+  fill: rgb(255 255 255 / 0.05);
+  stroke: rgb(255 255 255 / 0.16);
+  stroke-width: 1;
+}
+.mc-fan-p90 {
+  fill: none;
+  stroke: rgb(255 255 255 / 0.4);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+.mc-fan-before {
+  fill: none;
+  stroke: rgb(255 255 255 / 0.55);
+  stroke-width: 1.5;
+  stroke-dasharray: 5 4;
+}
+.mc-fan-median {
+  fill: none;
+  stroke: var(--tv-text-primary);
+  stroke-width: 2.25;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.mc-fan-median-dot {
+  fill: var(--tv-text-primary);
+  stroke: var(--tv-plate-1);
+  stroke-width: 2;
+}
+.mc-fan-arrive-pos {
+  fill: var(--tv-chart-green);
+  fill-opacity: 0.7;
+}
+.mc-fan-arrive-neg {
+  fill: var(--tv-chart-red);
+  fill-opacity: 0.7;
+}
+.mc-fan-arrive-flat {
+  fill: var(--tv-text-secondary);
+  fill-opacity: 0.45;
+}
+.mc-fan-cursor {
+  stroke: rgb(255 255 255 / 0.35);
+  stroke-width: 1;
+}
+.mc-fan-tip {
   position: absolute;
-  left: 0;
-  top: 0.62em;
-  height: 0.3rem;
-  width: 0.3rem;
-  border-radius: 999px;
-  background: var(--tv-text-muted);
+  z-index: 2;
+  min-width: 12rem;
+  pointer-events: none;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--tv-border-strong);
+  border-radius: 0.75rem;
+  background: var(--tv-plate-2);
+  box-shadow: var(--tv-elev-2);
 }
-.mc-read li.mc-read-neg {
-  color: var(--tv-text-primary);
+.mc-sw {
+  display: inline-block;
+  flex: none;
+  width: 1rem;
 }
-.mc-read li.mc-read-neg::before {
+.mc-sw-median {
+  height: 2px;
+  border-radius: 2px;
+  background: var(--tv-text-primary);
+}
+.mc-sw-p90 {
+  height: 0;
+  border-top: 1px dashed rgb(255 255 255 / 0.5);
+}
+.mc-sw-band {
+  height: 0.6rem;
+  border: 1px solid rgb(255 255 255 / 0.16);
+  border-radius: 2px;
+  background: rgb(255 255 255 / 0.06);
+}
+.mc-sw-before {
+  height: 0;
+  border-top: 1.5px dashed rgb(255 255 255 / 0.6);
+}
+.mc-sw-line-pos,
+.mc-sw-line-neg {
+  height: 2px;
+  border-radius: 2px;
+}
+.mc-sw-line-pos {
+  background: var(--tv-chart-green);
+}
+.mc-sw-line-neg {
   background: var(--tv-chart-red);
+}
+.mc-sw-pos,
+.mc-sw-neg {
+  height: 0.6rem;
+  border-radius: 2px;
+}
+.mc-sw-pos {
+  background: color-mix(in srgb, var(--tv-chart-green) 60%, transparent);
+}
+.mc-sw-neg {
+  background: color-mix(in srgb, var(--tv-chart-red) 60%, transparent);
+}
+
+/* ── TON EDGE ── */
+.mc-edge-value {
+  font-size: var(--tv-t-h1);
+  line-height: 1;
+}
+.mc-be {
+  position: relative;
+  height: 8px;
+  border: 1px solid var(--tv-border);
+  border-radius: 999px;
+  background: var(--tv-plate-0);
+}
+.mc-be-gap {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 999px;
+}
+.mc-be-gap-pos {
+  background: color-mix(in srgb, var(--tv-chart-green) 50%, transparent);
+}
+.mc-be-gap-neg {
+  background: color-mix(in srgb, var(--tv-chart-red) 50%, transparent);
+}
+.mc-be-mark {
+  position: absolute;
+  top: -5px;
+  bottom: -5px;
+  width: 2px;
+  margin-left: -1px;
+  border-radius: 1px;
+  background: var(--tv-text-secondary);
+}
+.mc-be-you {
+  position: absolute;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  border: 2px solid var(--tv-plate-1);
+  border-radius: 50%;
+  background: var(--tv-text-primary);
+}
+.mc-note {
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--tv-border);
+  border-left: 2px solid var(--tv-warning);
+  border-radius: 0.6rem;
+  background: var(--tv-plate-2);
+  color: var(--tv-text-secondary);
+  font-size: var(--tv-t-caption);
+  line-height: 1.5;
+}
+
+/* ── LA CARTE DE L'EDGE ── */
+.mc-map {
+  cursor: crosshair;
+}
+.mc-map-canvas {
+  border-radius: 0.5rem;
+  image-rendering: auto;
+}
+.mc-map-be {
+  fill: none;
+  stroke: var(--tv-text-primary);
+  stroke-opacity: 0.7;
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+}
+.mc-map-iso {
+  fill: none;
+  stroke: rgb(255 255 255 / 0.28);
+  stroke-width: 1;
+}
+.mc-map-iso-label {
+  fill: var(--tv-text-secondary);
+}
+.mc-map-link {
+  stroke: rgb(255 255 255 / 0.4);
+  stroke-width: 1;
+  stroke-dasharray: 2 3;
+}
+.mc-map-base {
+  fill: var(--tv-plate-1);
+  stroke: var(--tv-text-secondary);
+  stroke-width: 2;
+}
+.mc-map-plan {
+  fill: var(--tv-text-primary);
+  stroke: var(--tv-plate-1);
+  stroke-width: 2.5;
+}
+.mc-map-dot {
+  display: inline-block;
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+}
+.mc-map-dot-plan {
+  background: var(--tv-text-primary);
+}
+.mc-map-dot-base {
+  border: 2px solid var(--tv-text-secondary);
+}
+.mc-map-swatch {
+  display: inline-block;
+  width: 1rem;
+  height: 0;
+  border-top: 1px solid rgb(255 255 255 / 0.4);
+}
+
+/* ── COMBIEN RISQUER ── */
+.mc-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2rem;
+  padding: 0.25rem 0.7rem;
+  border: 1px solid var(--tv-border);
+  border-radius: 999px;
+  background: var(--tv-plate-2);
+  font-size: var(--tv-t-caption);
+}
+.mc-chip-action {
+  transition: border-color var(--tv-dur-1);
+}
+.mc-chip-action:hover {
+  border-color: var(--tv-border-accent);
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -7297,6 +7441,78 @@ body.tv-app-type svg.lucide {
 .jarvis-presence[data-loading="true"] .jarvis-presence-status {
   color: var(--tv-highlight);
 }
+.jarvis-presence-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+}
+/* LA PRÉSENCE COMPACTE — une ligne de 44px sur le champ de saisie.
+   Le cœur respire à gauche, l'état se lit à côté ; pendant la préparation,
+   les quatre phases tiennent sur la même ligne (la seule active sur
+   téléphone). Rien ne recouvre le fil : la ligne est dans le flux du dock. */
+.jarvis-presence[data-compact="true"] {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 0 6px;
+  text-align: left;
+}
+.jarvis-presence[data-compact="true"] .jarvis-presence-core {
+  flex: none;
+  width: 40px;
+  height: 40px;
+}
+.jarvis-presence[data-compact="true"] .jarvis-presence-body {
+  flex: 1;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+.jarvis-presence[data-compact="true"] .jarvis-presence-status {
+  flex: none;
+  justify-content: flex-start;
+  min-height: 0;
+  color: var(--tv-text-muted);
+  font-size: var(--tv-t-caption);
+}
+.jarvis-presence[data-compact="true"][data-busy="true"] .jarvis-presence-status {
+  color: var(--tv-highlight);
+}
+.jarvis-presence[data-compact="true"] .jarvis-process {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 8px;
+  width: auto;
+  min-width: 0;
+  margin: 0;
+}
+.jarvis-presence[data-compact="true"] .jarvis-process-bubbles {
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  gap: 4px;
+  min-width: 0;
+  overflow: hidden;
+}
+.jarvis-presence[data-compact="true"] .jarvis-process-bubble {
+  flex: none;
+  padding: 3px 8px;
+  border-color: var(--tv-border);
+  background: transparent;
+}
+.jarvis-presence[data-compact="true"] .jarvis-process-bubble[data-active="true"] {
+  border-color: var(--tv-border-accent);
+  background: var(--tv-plate-2);
+}
+.jarvis-presence[data-compact="true"] .jarvis-process-caption {
+  margin: 0;
+}
+.jarvis-presence-action {
+  flex: none;
+  margin-left: auto;
+}
 .jarvis-process {
   width: min(100%, 560px);
   margin-top: 14px;
@@ -7407,12 +7623,17 @@ body.tv-app-type svg.lucide {
     max-width: 340px;
     margin-inline: auto;
   }
+  /* Sur téléphone, la ligne compacte ne garde que l'état : le libellé dit
+     déjà la phase en cours, les bulles disparaissent. */
+  .jarvis-presence[data-compact="true"] .jarvis-process-bubbles {
+    display: none;
+  }
   .jarvis-process-caption {
     gap: 8px;
   }
 }
 @media (max-height: 600px) {
-  .jarvis-presence-core {
+  .jarvis-presence:not([data-compact="true"]) .jarvis-presence-core {
     width: 100px;
     height: 100px;
   }
@@ -7715,7 +7936,8 @@ body.tv-app-type svg.lucide {
   font-size: var(--tv-t-caption);
   color: var(--tv-text-muted);
 }
-.jarvis-generation-controls > button {
+.jarvis-generation-controls > button,
+.jarvis-show-full {
   min-height: 36px;
   padding: 4px 8px;
   border: 1px solid var(--tv-border-strong);
@@ -7724,7 +7946,8 @@ body.tv-app-type svg.lucide {
   background: var(--tv-plate-2);
 }
 @media (pointer: coarse) {
-  .jarvis-generation-controls > button {
+  .jarvis-generation-controls > button,
+  .jarvis-show-full {
     min-height: 44px;
   }
 }

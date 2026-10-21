@@ -428,6 +428,22 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
     setReadingId(m.id);
     void voice.speak(line);
   };
+  /* « Afficher la réponse » : coupe l'écriture progressive. Si la lecture
+     automatique est active, la voix part sur le texte complet. */
+  const showFullButton = (
+    <button
+      type="button"
+      className="jarvis-show-full"
+      onClick={() => {
+        const message = messages.find((m) => m.id === typingId);
+        setTypingId(null);
+        if (message && readAutoSpeak() && !voiceSpokenRef.current.has(message.id))
+          readAloud(message);
+      }}
+    >
+      {t("jarvis.showFull")}
+    </button>
+  );
   // Limite gratuite 5/j : la bannière Premium apparaît quand la limite est
   // atteinte, pour inviter à l'upgrade plutôt que de bloquer en silence.
   const [quotaBanner, setQuotaBanner] = useState(false);
@@ -1136,12 +1152,6 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
         </div>
       )}
 
-      {/* Le cœur reste centré et visible pendant toute la conversation,
-          hors du fil défilant : un seul contexte WebGL, même en rédaction. */}
-      {neuralInThread && loaded && messages.length > 0 && (
-        <JarvisPresence mode={neuralMode} loading={loading} elapsedMs={loadingMs} />
-      )}
-
       {/* Messages — rendus UNIQUEMENT via les blocs */}
       {/* `aria-live="polite"` : les réponses arrivent de façon asynchrone. Sans
           région live, une réponse de Jarvis n'existe tout simplement PAS pour un
@@ -1373,21 +1383,27 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
       )}
       {/* Saisie */}
       <div className="jarvis-composer-dock shrink-0">
-        {typingId && (
-          <div className="jarvis-generation-controls">
-            <span role="status">{t("jarvis.generating")}</span>
-            <button
-              type="button"
-              onClick={() => {
-                const message = messages.find((m) => m.id === typingId);
-                setTypingId(null);
-                if (message && readAutoSpeak() && !voiceSpokenRef.current.has(message.id))
-                  readAloud(message);
-              }}
-            >
-              {t("jarvis.showFull")}
-            </button>
-          </div>
+        {/* LE CŒUR VIT SUR LE CHAMP DE SAISIE, PAS AU-DESSUS DU FIL.
+            Centré au-dessus de la conversation, il prenait ~300px en
+            permanence et repoussait la discussion. Une ligne de 44px suffit
+            à dire que Jarvis est là, ce qu'il fait, et où il en est — et le
+            bouton « afficher la réponse » y prend la place de l'ancienne
+            barre de rédaction : un seul endroit pour l'état de Jarvis. */}
+        {neuralInThread && loaded && messages.length > 0 ? (
+          <JarvisPresence
+            compact
+            mode={neuralMode}
+            loading={loading}
+            elapsedMs={loadingMs}
+            action={typingId ? showFullButton : undefined}
+          />
+        ) : (
+          typingId && (
+            <div className="jarvis-generation-controls">
+              <span role="status">{t("jarvis.generating")}</span>
+              {showFullButton}
+            </div>
+          )
         )}
 
         {(quotaBanner || exceedsDailyLimit(userId, dailyLimit)) && (

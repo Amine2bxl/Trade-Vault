@@ -1,12 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import { parseCsv, guessMapping, mapRowsToTrades } from "../src/app/features/journal/csvImport";
-import {
-  deriveRFromPnl,
-  extractRSamples,
-  runMonteCarlo,
-  computeStatistics,
-  type MonteCarloParams,
-} from "../src/app/features/monte-carlo/monteCarloEngine";
+import { deriveRFromPnl, extractRSamples } from "../src/app/features/monte-carlo/monteCarloEngine";
+import { modelFromSamples, poolsFromSamples } from "../src/app/features/monte-carlo/strategy";
+import { simulateAll, summarize } from "../src/app/features/monte-carlo/simulation";
 
 /**
  * L'IMPORT CSV DE MONTE-CARLO, DE BOUT EN BOUT.
@@ -99,62 +95,66 @@ describe("la dérivation du multiple R", () => {
 });
 
 describe("ce que la simulation en fait", () => {
-  const params: MonteCarloParams = {
-    startingBalance: 10000,
-    profitTarget: 1000,
-    maxDrawdown: 1000,
-    maxDailyLoss: 0,
-    trailingDrawdown: false,
-    maxTradingDays: 30,
-    maxTradesPerDay: 2,
-    riskPerTrade: 100,
-    simulations: 200,
-  };
-
   /** La chaîne complète, telle que la page l'exécute. */
-  function simulerDepuisCsv(csv: string) {
+  function lireCsv(csv: string) {
     const { headers, rows } = parseCsv(csv);
     const { valid } = mapRowsToTrades(rows, guessMapping(headers));
-    return runMonteCarlo(params, extractRSamples(deriveRFromPnl(valid)));
+    return valid;
+  }
+  function simulerDepuisCsv(csv: string) {
+    const samples = extractRSamples(deriveRFromPnl(lireCsv(csv)));
+    const pools = poolsFromSamples(samples);
+    if (!pools) throw new Error("aucune forme");
+    return simulateAll({
+      model: modelFromSamples(samples),
+      pools,
+      balance: 10000,
+      risk: 100,
+      tradesPerDay: 2,
+      days: 30,
+      targetPct: 10,
+      limitPct: 10,
+      runs: 200,
+      seed: 1,
+    });
   }
 
   test("un CSV normalisé produit une simulation VIVANTE", () => {
-    const result = simulerDepuisCsv(CSV_COURTIER);
-    expect(result.runs.length).toBe(params.simulations);
+    const sim = simulerDepuisCsv(CSV_COURTIER);
+    expect(sim.done).toBe(200);
 
     // Le symptôme exact du bug : tous les chemins finissent au solde de départ,
     // parce qu'on rejouait des R nuls.
-    const finaux = new Set(result.runs.map((r) => Math.round(r.finalBalance)));
+    const finaux = new Set(Array.from(sim.final, (b) => Math.round(b)));
     expect(finaux.size).toBeGreaterThan(1);
-    expect([...finaux].some((b) => b !== params.startingBalance)).toBe(true);
+    expect([...finaux].some((b) => b !== 10000)).toBe(true);
 
-    // Et les trois issues somment bien à 1 : c'est ce que la barre du verdict
-    // affiche.
-    const somme = result.passRate + result.failRate + result.timeOutRate;
+    // Et les trois issues somment bien à 1 : c'est ce que les chiffres de la
+    // page affichent.
+    const r = summarize(sim);
+    const somme = r.passRate + r.failRate + r.openRate;
     expect(somme).toBeGreaterThan(0.999);
     expect(somme).toBeLessThan(1.001);
   });
 
-  test("SANS la dérivation, la simulation est plate — la régression, nommée", () => {
+  test("SANS la dérivation, aucune forme à rejouer — la régression, nommée", () => {
     // Ce test documente le bug plutôt que de le corriger : il montre ce que
-    // donne la chaîne quand on retire `deriveRFromPnl`. Si un jour quelqu'un
-    // décide que cette normalisation est superflue, c'est ici qu'il verra ce
-    // qu'elle empêche.
-    const { headers, rows } = parseCsv(CSV_COURTIER);
-    const { valid } = mapRowsToTrades(rows, guessMapping(headers));
-    const brut = runMonteCarlo(params, extractRSamples(valid));
-
-    const finaux = new Set(brut.runs.map((r) => Math.round(r.finalBalance)));
-    expect(finaux.size).toBe(1);
-    expect([...finaux][0]).toBe(params.startingBalance);
-    expect(brut.passRate).toBe(0);
+    // donne la chaîne quand on retire `deriveRFromPnl`. Des R nuls ne laissent
+    // ni gain ni perte exploitable : la page refuserait le fichier (avant, elle
+    // l'acceptait et simulait une courbe plate à 0 %).
+    const brut = extractRSamples(lireCsv(CSV_COURTIER));
+    expect(brut.every((s) => s.r === 0)).toBe(true);
+    expect(poolsFromSamples(brut)).toBeNull();
   });
 
-  test("les statistiques du fichier sont exploitables", () => {
-    // Ce sont elles qui remplissent le panneau et les défauts de réglage.
-    const { headers, rows } = parseCsv(CSV_COURTIER);
-    const { valid } = mapRowsToTrades(rows, guessMapping(headers));
-    const stats = computeStatistics(extractRSamples(deriveRFromPnl(valid)));
-    expect(stats.totalSamples).toBeGreaterThanOrEqual(5);
+  test("le modèle du fichier est exploitable", () => {
+    // C'est lui qui préremplit le plan : taux de réussite, gain et perte moyens.
+    const samples = extractRSamples(deriveRFromPnl(lireCsv(CSV_COURTIER)));
+    expect(samples.length).toBeGreaterThanOrEqual(5);
+    const m = modelFromSamples(samples);
+    expect(m.winRate).toBeGreaterThan(0);
+    expect(m.avgWinR).toBeGreaterThan(0);
+    // Pertes du fichier en R : 1, 1, 0,5, 1, 2, 1 → moyenne 6,5 / 6.
+    expect(m.avgLossR).toBeCloseTo(6.5 / 6, 6);
   });
 });

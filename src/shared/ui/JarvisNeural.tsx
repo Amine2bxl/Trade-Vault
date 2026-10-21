@@ -44,6 +44,7 @@ export function JarvisNeural({
   className,
   label,
   fallback = null,
+  keepAlive = false,
 }: {
   mode: JarvisMode;
   /** Côté en pixels CSS ; absent = remplit le parent. */
@@ -53,6 +54,8 @@ export function JarvisNeural({
   label?: string;
   /** Rendu si WebGL est indisponible. */
   fallback?: ReactNode;
+  /** Ne jamais geler au repos — pour un petit cœur qui doit rester vivant. */
+  keepAlive?: boolean;
 }) {
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -78,6 +81,7 @@ export function JarvisNeural({
       count: particleBudget(side, device),
       mode: modeRef.current,
       reducedMotion,
+      idleFreeze: !keepAlive,
       onLost: () => setFailed(true),
     });
     if (!engine) {

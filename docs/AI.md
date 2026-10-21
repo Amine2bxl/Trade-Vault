@@ -145,11 +145,13 @@ encore de source — le Context Engine le DIT au modèle (`UNAVAILABLE_NOTICE`).
 | Télémétrie | `modules/ai/telemetry.ts` (contrat), `backend/telemetry.server.ts` (écriture : niveau, emplacement, domaines, outils, lectures, appels modèle, tokens de réflexion et de cache, coût estimé, validation, taille du contexte ; repli sur les colonnes historiques si la migration manque) |
 | UI Jarvis | `app/features/jarvis/` : shell, workspaces, blocs typés (`blocks.ts`, `BlockRenderer`), conversations (**localStorage**, par appareil), propositions (`components/ProposalsPanel`, `proposals.ts`), crédits (`aiUsage.ts`) |
 | Voix | `modules/voice/` (clips pré-synthétisés `public/voices/`, voix locale par langue, prosodie), `app/features/jarvis/jarvisVoice.ts` + `hostedVoice.ts`, `backend/tts.functions.ts` (ElevenLabs optionnel) |
-| Cœur neuronal (modes de fonctionnement : respire, écoute, comprend, analyse, réfléchit, révise, rédige, parle) | `shared/ui/JarvisNeural.tsx` + `shared/ui/neural/` (WebGL, formes dans le shader) ; mode dérivé par `app/features/jarvis/neuralMode.ts` ; présence centrale persistante et bulles de préparation `components/JarvisPresence.tsx`, partagées avec la scène vocale `components/LiveStage.tsx` |
+| Cœur neuronal (modes de fonctionnement : respire, écoute, comprend, analyse, réfléchit, révise, rédige, parle) | `shared/ui/JarvisNeural.tsx` + `shared/ui/neural/` (WebGL, formes dans le shader) ; mode dérivé par `app/features/jarvis/neuralMode.ts` ; présence `components/JarvisPresence.tsx` — compacte (ligne de 44 px sur le champ de saisie) dans le chat, plein écran dans la scène vocale `components/LiveStage.tsx` |
 | Conversation vocale | `app/features/jarvis/voiceConversation.ts` (reconnaissance Web Speech, fin de phrase, « stop », deux silences ferment), `components/VoiceBar.tsx`, tour tenu par `ConversationWorkspace` (écoute → question `channel: "voice"` → réponse dite → écoute ; micro jamais ouvert pendant que Jarvis parle, interruption par l'orbe) |
 
-**Attente de réponse.** L'orbe reste visible au centre, hors du fil défilant,
-pendant la lecture, la rédaction et l'écoute. Les quatre bulles sont des phases
+**Attente de réponse.** Le cœur reste visible sur le champ de saisie, hors du
+fil défilant, pendant la lecture, la rédaction et l'écoute : une ligne de
+44 px, jamais au-dessus de la discussion. Le bouton « afficher la réponse
+complète » y prend place pendant la rédaction. Les quatre bulles sont des phases
 visuelles **indicatives**, pas une trace du raisonnement privé ou des outils du
 serveur : aucun pourcentage ni coche de réussite. Le compteur donne seulement
 le temps écoulé réel. Le même composant sert au chat et au mode vocal ; le fil

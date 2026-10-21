@@ -42,6 +42,12 @@ export interface NeuralEngineOptions {
   reducedMotion: boolean;
   /** Appelé si le contexte WebGL est perdu (pilote, mémoire) : repli sur l'orbe CSS. */
   onLost?: () => void;
+  /**
+   * Au repos prolongé, la boucle s'arrête (défaut). Un petit cœur de quelques
+   * dizaines de pixels coûte trop peu pour mériter ce gel, et un cœur figé
+   * dans la barre de conversation se lit comme un Jarvis éteint.
+   */
+  idleFreeze?: boolean;
 }
 
 /** Durée d'un morphing entre deux modes. */
@@ -355,7 +361,12 @@ export function createNeuralEngine(
     tiltY += (tiltTY - tiltY) * 0.06;
 
     // Repos prolongé : une dernière image, puis plus rien jusqu'au réveil.
-    if (to === "breathing" && from === to && now - idleSince > IDLE_FREEZE_MS) {
+    if (
+      opts.idleFreeze !== false &&
+      to === "breathing" &&
+      from === to &&
+      now - idleSince > IDLE_FREEZE_MS
+    ) {
       render(now);
       return;
     }

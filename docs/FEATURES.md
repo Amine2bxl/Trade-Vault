@@ -21,7 +21,7 @@ Chemins relatifs à `src/app/` sauf mention contraire.
 | Analytics (`analytics`) | `features/analytics/` | `Analytics.tsx` | `NewsDaysCard` (jours d'annonce / jours calmes, `domain/tradeNews.newsDaySplit`), `domain/quantStats`, `domain/tradeCalcs`, `trading/EquityChart`, `trading/chartTheme` |
 | Saisonnalité (`seasonality`) | `features/seasonality/` | `Seasonality.tsx` | `SeasonalEquity`, `assetSeasonality`, `seasonalCurve` |
 | Rapports (`reports`) | `features/reports/` | `Reports.tsx` | `reportMonths`, `domain/monthlyReport`, `store/reports`, `backend/reports.functions` |
-| Monte Carlo (`montecarlo`) | `features/monte-carlo/` | `MonteCarlo.tsx` | `monteCarloEngine`, `monteCarloViz`, `propFirms`, `mistakes/mistakePlan` |
+| Monte Carlo (`montecarlo`) | `features/monte-carlo/` | `MonteCarlo.tsx` | plan modifiable prérempli depuis le journal (`plan.ts`, `PlanPanel`), edge = modèle + forme des trades (`strategy.ts`), 10 000 tirages par tranches (`simulation.ts`, `useSimulation`), faisceau de densité (`fanRender.ts`, `FanChart`), `EdgeCards` (équation, point mort, carte de l'edge), `RiskCurve` (balayage du risque), `monteCarloEngine` (R et dérivation CSV), `mistakes/mistakePlan` |
 | Jarvis (`insights`) | `features/jarvis/` | `Jarvis.tsx` (page) · `AiAssistant.tsx` (widget) | profil `jarvis_nq`, conversation vocale (`voiceConversation`, `VoiceBar`) — voir [`AI.md`](AI.md) |
 | Plan de trading (`tradingplan`) | `features/trading-plan/` | `TradingPlan.tsx` | `TradingRulesSection`, `trading/tradingPlan`, `trading/tradingRules` |
 | Objectifs (`goals`) | `features/goals/` | `Goals.tsx` | `views`, `goalPlan`, `useGoalProgress` (consommé aussi par Mistakes et Jarvis), `modules/probability/goals` |
