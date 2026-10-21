@@ -1,4 +1,12 @@
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  ReactNode,
+} from "react";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { User } from "../types";
 import { supabase } from "@/integrations/supabase/client";
@@ -113,7 +121,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let active = true;
     const settle = (u: SupabaseUser | null | undefined) => {
       if (!active) return;
-      setUser(u ? mapUser(u) : null);
+      /* LE MÊME TRADER GARDE LE MÊME OBJET. Supabase réémet `SIGNED_IN` à
+         chaque retour sur l'onglet (et au rafraîchissement du jeton, toutes
+         les heures) : un nouvel objet `user` changeait la valeur du contexte,
+         puis celle des comptes, et TOUTE l'application se re-rendait — avec
+         ses effets indexés sur `user` — pour un trader identique. */
+      const next = u ? mapUser(u) : null;
+      setUser((prev) =>
+        prev && next && prev.id === next.id && prev.email === next.email && prev.name === next.name
+          ? prev
+          : next,
+      );
       setLoading(false);
     };
     let unsubscribe = () => {};
@@ -299,22 +317,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, []);
 
-  return (
-    <AuthContext.Provider
-      value={{
-        user,
-        isAuthenticated: !!user,
-        loading,
-        login,
-        signup,
-        loginWithGoogle,
-        requestPasswordReset,
-        updatePassword,
-        deleteAccount,
-        logout,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
+  // Une valeur stable : sans `useMemo`, chaque rendu du fournisseur faisait
+  // re-rendre tous les consommateurs, même sans aucun changement.
+  const value = useMemo(
+    () => ({
+      user,
+      isAuthenticated: !!user,
+      loading,
+      login,
+      signup,
+      loginWithGoogle,
+      requestPasswordReset,
+      updatePassword,
+      deleteAccount,
+      logout,
+    }),
+    [
+      user,
+      loading,
+      login,
+      signup,
+      loginWithGoogle,
+      requestPasswordReset,
+      updatePassword,
+      deleteAccount,
+      logout,
+    ],
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

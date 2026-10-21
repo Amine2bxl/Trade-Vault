@@ -1099,7 +1099,7 @@ function Trajectoires({ result, lectures }: { result: MonteCarloResult; lectures
           .replace("{n}", result.runs.length.toLocaleString())}
       />
       <div className={H_COURBE}>
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer debounce={100} width="100%" height="100%">
           <ComposedChart data={lectures.rows} margin={{ top: 12, right: 8, bottom: 0, left: 0 }}>
             <CartesianGrid {...EQUITY_GRID} />
             <XAxis
@@ -1293,7 +1293,7 @@ function Profondeur({
     <section className="mc-card animate-fade-in-up stagger-3">
       <TitreGraphe titre={t("mc.chartDD")} sous={t("mc.chartDDSub")} />
       <div className={H_DISTRIB}>
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer debounce={100} width="100%" height="100%">
           <BarChart data={bins} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
             <CartesianGrid {...EQUITY_GRID} />
             <XAxis
@@ -1404,7 +1404,7 @@ function DonneesRejouees({ samples, source }: { samples: RMultipleSample[]; sour
           <Fait label={t("mc.stdR")} value={`${st.stdDevR.toFixed(2)}R`} />
         </div>
         <div className="h-[140px]">
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer debounce={100} width="100%" height="100%">
             <BarChart data={bins} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
               <XAxis
                 dataKey="center"
@@ -1493,7 +1493,7 @@ function Histogramme({ result }: { result: MonteCarloResult }) {
     <section className="mc-card animate-fade-in-up stagger-3">
       <TitreGraphe titre={t("mc.chartDist")} sous={t("mc.chartDistSub")} />
       <div className={H_DISTRIB}>
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer debounce={100} width="100%" height="100%">
           <BarChart data={bins} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
             <CartesianGrid {...EQUITY_GRID} />
             <XAxis

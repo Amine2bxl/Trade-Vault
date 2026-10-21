@@ -692,7 +692,7 @@ function ReportSheet({
           {/* Sur le papier, le graphe s'efface devant la table qui le suit :
               mêmes montants, cinq fois moins de hauteur. */}
           <div className="rp-screen-only h-[190px]">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer debounce={100} width="100%" height="100%">
               <BarChart data={weekly} margin={{ top: 8, right: 4, bottom: 0, left: 0 }}>
                 <CartesianGrid {...EQUITY_GRID} />
                 <XAxis
