@@ -150,9 +150,9 @@ function CurveGhost({ className }: { className?: string }) {
           <div key={i} className="h-px w-full bg-white/[0.04]" />
         ))}
       </div>
-      <svg
-        viewBox="0 0 400 120"
-        preserveAspectRatio="none"
+      {/* Un bloc masqué, pas un <svg> : le reflet du squelette est un
+          pseudo-élément, qu'un élément SVG n'affiche pas. */}
+      <div
         className="skeleton absolute inset-0 h-full w-full opacity-70"
         style={{
           WebkitMaskImage:

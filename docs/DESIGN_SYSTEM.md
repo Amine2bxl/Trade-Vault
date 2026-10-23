@@ -117,6 +117,22 @@ keyframes du prix animé (`prix-entre`/`prix-sort`), aucune nouvelle keyframe.
 Le rail se plie en 260 ms : seule sa largeur s'anime, les icônes ne bougent
 pas, les libellés s'effacent en fondu. Détail : skill `motion`.
 
+**Exception : le cœur neuronal de Jarvis** (`shared/ui/JarvisNeural.tsx`,
+moteur `shared/ui/neural/`). Comme `JarvisOrb`, il est décoratif par
+décision produit : on doit VOIR l'agent respirer, écouter, comprendre,
+analyser, réfléchir, réviser, rédiger, parler — huit formes de particules et
+des morphings de ~850 ms entre elles. Il ne vit que sur les surfaces de
+Jarvis (accueil de la conversation, présence compacte de 40 px posée sur le
+champ de saisie, scène vocale « live »), un seul à la fois. Le petit cœur de
+la présence ne gèle pas au repos (`keepAlive`) : figé, il se lirait comme un
+Jarvis éteint, et à 40 px il ne coûte presque rien. Son halo vient du mélange additif de
+points sur un canevas : aucune ombre, aucun `filter`, aucun bloom. Garde-fous
+non négociables : WebGL sans dépendance, calcul sur la carte graphique, rien
+par particule côté JavaScript, arrêt hors écran / onglet caché / repos
+prolongé, 30 images/s pour respirer, densité adaptée à l'appareil et réduite
+en direct si les images arrivent en retard, image fixe sous
+`prefers-reduced-motion`, repli sur `JarvisOrb` sans WebGL.
+
 **Changement de page** : un seul mouvement. L'enveloppe (`.page-in`) fond en
 180 ms sans se déplacer ; seules les cartes portent `fade-in-up` (6 px). Deux
 glissements superposés se lisaient comme un « zoom en deux temps ». Les pages
@@ -293,7 +309,10 @@ ni de bloc permanent de personnalisation au-dessus du contenu. `SectionTabs`,
 `SubNav` et `PageToolbar` gardent un cadre fin et une plaque neutre : un seul
 contour par groupe, sans double cadre ni retour des onglets à la ligne.
 
-**Jarvis :** conversation bornée à 760 px pour la lecture, questions sur plaque 3,
+**Jarvis :** cœur central persistant, hors du fil défilant, et bulles de phases
+indicatives pendant l’attente (aucune coche ni progression inventée). Le noyau
+clair et les particules sont rendus dans le même canevas, sans post-traitement.
+Conversation bornée à 760 px pour la lecture, questions sur plaque 3,
 réponses sur plaque 1, données dans les primitives KPI et tableaux denses qui
 se replient. Les actions de réponse vivent dans `ResponseActions` ; la copie
 utilise `responseTextOf` et n’emploie jamais le résumé tronqué envoyé à l’IA.

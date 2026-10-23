@@ -123,7 +123,7 @@ export function SeasonalEquity({
         </header>
 
         <div className="h-56 md:h-64">
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer debounce={100} width="100%" height="100%">
             <ComposedChart data={rows} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
               <defs>
                 <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
@@ -307,7 +307,7 @@ export function SeasonalEquity({
         ) : (
           <>
             <div className="h-44 md:h-48">
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer debounce={100} width="100%" height="100%">
                 <ComposedChart
                   data={[{ i: 0, cum: 0, date: "", pnl: 0 }, ...mine.points]}
                   margin={{ top: 8, right: 8, bottom: 0, left: 0 }}

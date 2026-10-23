@@ -34,25 +34,45 @@ const PREFERRED = [
   { re: /\b(male)\b.*(neural|natural|enhanced|premium)/i, score: 36 },
 ] as const;
 
+/**
+ * Les voix masculines françaises qui existent vraiment sur les appareils. En
+ * conversation vocale, Jarvis répond dans la langue du trader : une réponse
+ * française lue par une voix anglaise (« Daniel » qui écorche « pertes »)
+ * ne se lit plus comme Jarvis — elle se lit comme un bug.
+ */
+const PREFERRED_FR = [
+  { re: /(henri|remy|rémy).*(neural|online|natural|multilingual)/i, score: 60 },
+  { re: /(claude|jerome|jérôme|alain|yves|antoine|jean).*(neural|online|natural)/i, score: 52 },
+  { re: /\b(thomas|nicolas)\b/i, score: 46 },
+  { re: /google fran[cç]ais/i, score: 20 },
+  { re: /\b(male|homme)\b/i, score: 30 },
+] as const;
+
 /** Voices that are audibly female or notably thin — never the coach. */
 const AVOID =
-  /\b(zira|hazel|susan|linda|samantha|karen|moira|tessa|fiona|victoria|amelie|female|aria|jenny|michelle|sonia|libby|caroline|eloise|serena|catherine)\b/i;
+  /\b(zira|hazel|susan|linda|samantha|karen|moira|tessa|fiona|victoria|amelie|female|aria|jenny|michelle|sonia|libby|caroline|eloise|serena|catherine|denise|julie|audrey|marie|virginie|aurelie|hortense|brigitte|celeste|coralie|vivienne|josephine|yvette)\b/i;
 
 /**
- * Pick the closest deep male English voice from the browser's list.
+ * Pick the closest deep male voice from the browser's list, in the language
+ * of the line (English by default — the checklist and every fixed line).
  * Deterministic for a given list, so the voice never changes between sessions
  * on the same device.
  */
-export function pickJarvisVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | null {
+export function pickJarvisVoice(
+  voices: SpeechSynthesisVoice[],
+  lang = "en",
+): SpeechSynthesisVoice | null {
+  const base = lang.toLowerCase().slice(0, 2) === "fr" ? "fr" : "en";
+  const preferred = base === "fr" ? PREFERRED_FR : PREFERRED;
   let best: SpeechSynthesisVoice | null = null;
   let bestScore = -Infinity;
 
   for (const v of voices) {
-    if (!v.lang?.toLowerCase().startsWith("en")) continue;
+    if (!v.lang?.toLowerCase().startsWith(base)) continue;
     const name = v.name ?? "";
     let score = 0;
 
-    for (const p of PREFERRED) {
+    for (const p of preferred) {
       if (p.re.test(name)) {
         score += p.score;
         break;
@@ -64,8 +84,9 @@ export function pickJarvisVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesis
     if (/online/i.test(name)) score += 4;
     // Cloud voices generally beat the offline built-ins.
     if (v.localService === false) score += 3;
-    // British English carries the composed register the profile targets.
-    if (/^en-GB/i.test(v.lang)) score += 5;
+    // British English carries the composed register the profile targets ;
+    // en français, la voix de France plutôt que celle du Canada.
+    if (/^en-GB/i.test(v.lang) || /^fr-FR/i.test(v.lang)) score += 5;
     if (AVOID.test(name)) score -= 40;
 
     if (score > bestScore) {

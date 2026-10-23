@@ -262,8 +262,10 @@ describe("question ambiguë", () => {
       modelRouted: true,
       domains: ["performance"],
       tier: 2,
-      slot: "balanced",
+      // jarvis_nq : une analyse (niveau 2) part sur le modèle « puissant ».
+      slot: "strong",
     });
+    expect(seen[1]).toMatchObject({ reasoning: "medium", maxTokens: 8_192 });
   });
 
   test("AI_MODEL_ROUTER=off : pas d'appel de routage", async () => {

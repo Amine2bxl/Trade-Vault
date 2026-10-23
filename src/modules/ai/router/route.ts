@@ -895,9 +895,11 @@ export function ambiguityPrompt(
 ): { system: string; user: string } {
   // La question PRÉCÉDENTE du trader (jamais une réponse, jamais une donnée) :
   // « dis-m'en plus » ne se classe qu'avec elle.
+  // 1 500 caractères : assez pour classer un long récit sans payer la dictée
+  // entière au petit modèle.
   const user = previous
-    ? `Previous question: ${previous.slice(0, 300)}\nQuestion: ${question.slice(0, 500)}`
-    : question.slice(0, 500);
+    ? `Previous question: ${previous.slice(0, 300)}\nQuestion: ${question.slice(0, 1_500)}`
+    : question.slice(0, 1_500);
   return {
     system:
       "You classify a trader's question for a trading-journal assistant. Reply with STRICT JSON " +

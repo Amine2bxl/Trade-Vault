@@ -77,7 +77,7 @@ export const SLOT_POLICY: Record<ModelSlot, SlotPolicy> = {
  * Gemini — Flash-Lite pour router, Flash pour le simple et l'analyse d'un
  * domaine, Pro pour le diagnostic (l'adaptateur redescend sur Flash si la clé
  * n'a pas accès à Pro).
- * Anthropic — Haiku 4.5 pour router et le simple, Sonnet 5.5 pour l'analyse,
+ * Anthropic — Haiku 4.5 pour router, Haiku 5.5 pour le bavardage, Sonnet 5.5 pour l'analyse,
  * Opus 5.5 réservé à la revue profonde : jamais Opus partout.
  */
 export const DEFAULT_SLOT_MODELS: Record<string, Partial<Record<ModelSlot, string>>> = {
@@ -89,8 +89,11 @@ export const DEFAULT_SLOT_MODELS: Record<string, Partial<Record<ModelSlot, strin
     deep: "gemini-2.5-pro",
   },
   anthropic: {
+    // Le routeur garde Haiku 4.5 : sa réflexion est coupée, alors que Haiku
+    // 5.5 réfléchit toujours un peu — dans un plafond de 256 tokens, le JSON
+    // de classement pourrait être tronqué.
     router: "claude-haiku-4-5",
-    fast: "claude-haiku-4-5",
+    fast: "claude-haiku-5-5",
     balanced: "claude-sonnet-5-5",
     strong: "claude-sonnet-5-5",
     deep: "claude-opus-5-5",

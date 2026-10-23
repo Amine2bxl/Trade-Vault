@@ -3,7 +3,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowDown,
   ArrowUpRight,
-  Check,
   Eraser,
   RotateCcw,
   Square,
@@ -12,6 +11,19 @@ import {
 } from "@/shared/ui/icons";
 import { JarvisMark, JarvisOrb, type JarvisOrbState } from "@/shared/ui";
 import Composer from "../Composer";
+import { VoiceBar } from "../components/VoiceBar";
+import { LiveStage } from "../components/LiveStage";
+import { JarvisPresence } from "../components/JarvisPresence";
+import { JarvisNeural } from "@/shared/ui/JarvisNeural";
+import { jarvisMode, useElapsed } from "../neuralMode";
+import {
+  getSpeechRecognition,
+  speechLangTag,
+  useVoiceConversation,
+  type SpeechRecognitionLike,
+} from "../voiceConversation";
+import { AI_LIMITS } from "@/domain/ai-limits";
+import { cn } from "@/shared/ui/cn";
 import { responseTextOf } from "../responseText";
 import { ResponseActions } from "../components/ResponseActions";
 import { numericText } from "@/shared/ui/NumericText";
@@ -56,8 +68,6 @@ import { loadOnboarding, type OnboardingData } from "@/app/store";
 import { exceedsDailyLimit, incrementAiUsage, jarvisDailyLimit } from "../aiUsage";
 import { effectiveCopyLang, readAutoSpeak } from "../prefs";
 import { jarvisConversationStore } from "../conversations";
-import { INTENT_STEPS, classifyQuestion } from "../intent";
-import type { TKey } from "@/app/i18n/translations";
 import {
   listenJarvisThread,
   pendingQuestion,
@@ -78,23 +88,6 @@ import { todayLocalDate } from "@/shared/calendar-date";
  * via le ConversationStore. Aucun contenu IA n'est rendu directement — tout
  * passe par `BlockList`.
  */
-
-// Minimal typing for the Web Speech API — not in lib.dom.d.ts.
-interface SpeechRecognitionLike extends EventTarget {
-  lang: string;
-  interimResults: boolean;
-  continuous: boolean;
-  start: () => void;
-  stop: () => void;
-  onresult: ((e: any) => void) | null;
-  onend: (() => void) | null;
-  onerror: (() => void) | null;
-}
-
-function getSpeechRecognition(): (new () => SpeechRecognitionLike) | null {
-  if (typeof window === "undefined") return null;
-  return (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition || null;
-}
 
 function genId(): string {
   return typeof crypto !== "undefined" && "randomUUID" in crypto
@@ -372,6 +365,25 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
   const [listening, setListening] = useState(false);
   // La voix de Jarvis — la même que partout (voir `utils/hostedVoice`).
   const voice = useJarvisVoice();
+  /* LA CONVERSATION VOCALE (voir `voiceConversation.ts`). Le tour est tenu
+     ICI, parce que c'est ici que vivent la question et la voix :
+       listening → (phrase finie) thinking → (réponse) speaking → listening.
+     Des refs à côté de l'état : le rappel de réponse (`listenJarvisThread`)
+     et la reconnaissance vivent plus longtemps qu'un rendu. */
+  type VoiceTurn = "off" | "listening" | "thinking" | "speaking";
+  const [voiceTurn, setVoiceTurnState] = useState<VoiceTurn>("off");
+  const voiceTurnRef = useRef<VoiceTurn>("off");
+  const setVoiceTurn = useCallback((next: VoiceTurn) => {
+    voiceTurnRef.current = next;
+    setVoiceTurnState(next);
+  }, []);
+  /** La question vocale en attente de réponse — sa réponse sera DITE. */
+  const voiceQuestionRef = useRef<string | null>(null);
+  /** Réponses déjà lues par le mode vocal : la lecture auto ne les relit pas. */
+  const voiceSpokenRef = useRef<Set<string>>(new Set());
+  /** La voix a-t-elle réellement démarré pendant ce tour « speaking » ? */
+  const sawSpeechRef = useRef(false);
+  const onVoiceResultRef = useRef<((r: JarvisResult, msg: JarvisMessage) => void) | null>(null);
   // La réponse en cours de lecture, pour que SON bouton devienne « Stop ».
   const [readingId, setReadingId] = useState<string | null>(null);
   useEffect(() => {
@@ -386,12 +398,24 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
     ? "thinking"
     : voice.speaking || typingId
       ? "speaking"
-      : listening
+      : listening || voiceTurn === "listening"
         ? "listening"
         : "idle";
   useEffect(() => {
     setJarvisActivity(activity);
   }, [activity]);
+  /* LE MODE DU CŒUR NEURONAL — plus fin que l'état de l'orbe : la réflexion
+     passe par comprendre, analyser, réfléchir, réviser (voir `neuralMode`). */
+  const loadingMs = useElapsed(loading);
+  const neuralMode = jarvisMode({
+    speaking: voice.speaking,
+    writing: typingId !== null,
+    loading,
+    loadingMs,
+    listening: listening || voiceTurn === "listening",
+  });
+  /* Un seul cœur à la fois : accueil, présence centrale du chat ou scène vocale. */
+  const neuralInThread = voiceTurn === "off";
   useEffect(() => () => setJarvisActivity("idle"), []);
   const readAloud = (m: JarvisMessage) => {
     if (readingId === m.id) {
@@ -404,6 +428,22 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
     setReadingId(m.id);
     void voice.speak(line);
   };
+  /* « Afficher la réponse » : coupe l'écriture progressive. Si la lecture
+     automatique est active, la voix part sur le texte complet. */
+  const showFullButton = (
+    <button
+      type="button"
+      className="jarvis-show-full"
+      onClick={() => {
+        const message = messages.find((m) => m.id === typingId);
+        setTypingId(null);
+        if (message && readAutoSpeak() && !voiceSpokenRef.current.has(message.id))
+          readAloud(message);
+      }}
+    >
+      {t("jarvis.showFull")}
+    </button>
+  );
   // Limite gratuite 5/j : la bannière Premium apparaît quand la limite est
   // atteinte, pour inviter à l'upgrade plutôt que de bloquer en silence.
   const [quotaBanner, setQuotaBanner] = useState(false);
@@ -672,6 +712,7 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
       setLoading(false);
       const msg = resultToMessage(r);
       setMessages((prev) => [...prev, msg]);
+      onVoiceResultRef.current?.(r, msg);
       if (!r.ok) {
         console.error("[coach] request failed", r.error);
         if (coachErrorKind(r.error) === "quota") setQuotaBanner(true);
@@ -724,19 +765,21 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
     });
   };
 
+  /** Pose une question. Rend `false` quand rien n'est parti (quota, fil pas
+   *  prêt) — le mode vocal doit le savoir pour ne pas attendre une réponse. */
   const ask = useCallback(
-    async (q: string) => {
+    async (q: string, channel: "text" | "voice" = "text"): Promise<boolean> => {
       const query = q.trim();
       // Le fil est créé à l'ouverture (AiAssistant) : on n'envoie pas avant,
       // sinon la question ne serait enregistrée nulle part.
-      if (!query || loading || !loaded || (store && !conversationId)) return;
+      if (!query || loading || !loaded || (store && !conversationId)) return false;
       // Quota du jour (3 en gratuit, 20 en Pro, aucun en Elite) : au-delà, on
       // explique et on oriente vers l'offre supérieure — aucune requête n'est
       // envoyée, donc zéro token consommé.
       if (exceedsDailyLimit(userId, dailyLimit)) {
         setQuotaBanner(true);
         setQuestion("");
-        return;
+        return false;
       }
       const priorTurns = messages
         .filter((m) => m.role !== "error")
@@ -800,7 +843,7 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
         rules,
         goals: measuredGoals,
         adherence,
-        question: query.slice(0, 500),
+        question: query.slice(0, AI_LIMITS.question),
         memory: memoryRef.current,
         // Déjà mémoïsés au-dessus : sans ça, `buildCoachV1Payload` reparcourait
         // tous les trades une seconde fois à chaque question.
@@ -826,7 +869,11 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
           askCoach({
             data: {
               ...payload,
-              question: query.slice(0, 500),
+              // La question ENTIÈRE (bornée à la limite du serveur) : elle
+              // était coupée à 500 caractères, et sa fin — souvent la vraie
+              // question — n'arrivait jamais à Jarvis.
+              question: query.slice(0, AI_LIMITS.question),
+              channel,
               accountId,
               currency: getCurrency(),
               // La date LOCALE : le serveur tourne en UTC, et le modèle ne
@@ -867,6 +914,7 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
         if (r.ok && r.fromAi) incrementAiUsage(userId);
       };
       startJarvisRequest(threadId, query, run, persist);
+      return true;
     },
     [
       loading,
@@ -931,11 +979,11 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
       recognitionRef.current?.stop();
       return;
     }
-    const recognition = new SpeechRecognitionCtor();
-    recognition.lang = lang;
+    const recognition: SpeechRecognitionLike = new SpeechRecognitionCtor();
+    recognition.lang = speechLangTag(lang);
     recognition.interimResults = false;
     recognition.continuous = false;
-    recognition.onresult = (e: any) => {
+    recognition.onresult = (e) => {
       const transcript = e.results?.[0]?.[0]?.transcript;
       if (transcript) setQuestion((prev) => (prev ? `${prev} ${transcript}` : transcript));
     };
@@ -945,6 +993,144 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
     setListening(true);
     recognition.start();
   }, [SpeechRecognitionCtor, listening, lang]);
+
+  // ── Conversation vocale ────────────────────────────────────────────────
+  const copyLang = effectiveCopyLang(lang);
+  const askRef = useRef(ask);
+  useEffect(() => {
+    askRef.current = ask;
+  }, [ask]);
+  const talkStopRef = useRef<() => void>(() => {});
+  const talk = useVoiceConversation({
+    lang: copyLang,
+    onUtterance: (text) => {
+      voiceQuestionRef.current = text.trim();
+      setVoiceTurn("thinking");
+      followRef.current = true;
+      void askRef.current(text, "voice").then((sent) => {
+        if (sent) return;
+        // Rien n'est parti (quota, fil pas prêt) : on ne fait pas attendre
+        // une réponse qui ne viendra pas.
+        voiceQuestionRef.current = null;
+        talkStopRef.current();
+        setVoiceTurn("off");
+      });
+    },
+  });
+  const {
+    active: talkActive,
+    listening: talkListening,
+    interim: talkInterim,
+    error: talkError,
+    start: talkStart,
+    stop: talkStop,
+    listen: talkListen,
+    finish: talkFinish,
+  } = talk;
+  const stopVoice = voice.stop;
+  useEffect(() => {
+    talkStopRef.current = talkStop;
+  }, [talkStop]);
+  const endVoice = useCallback(() => {
+    talkStop();
+    stopVoice();
+    voiceQuestionRef.current = null;
+    setVoiceTurn("off");
+  }, [talkStop, stopVoice, setVoiceTurn]);
+  const startVoice = useCallback(() => {
+    // La dictée et la conversation ne partagent pas le micro.
+    recognitionRef.current?.stop();
+    stopVoice();
+    setVoiceTurn("listening");
+    talkStart();
+  }, [talkStart, stopVoice, setVoiceTurn]);
+
+  /* LA RÉPONSE À UNE QUESTION VOCALE SE DIT, tout de suite — pas après
+     l'animation d'écriture. Une erreur ferme le mode : relancer le micro sur
+     un service en panne ferait une boucle. */
+  useEffect(() => {
+    onVoiceResultRef.current = (r, msg) => {
+      const q = voiceQuestionRef.current;
+      if (!q || voiceTurnRef.current !== "thinking" || r.question !== q) return;
+      voiceQuestionRef.current = null;
+      if (!r.ok) {
+        endVoice();
+        return;
+      }
+      const line = spokenOf(msg);
+      if (!line) {
+        setVoiceTurn("listening");
+        return;
+      }
+      voiceSpokenRef.current.add(msg.id);
+      sawSpeechRef.current = false;
+      setVoiceTurn("speaking");
+      setReadingId(msg.id);
+      void voice.speak(line, { lang: copyLang }).finally(() => {
+        // Aucune voix n'a démarré (navigateur muet, lecture refusée) : on
+        // rend la parole au trader au lieu de rester bloqué sur « parle ».
+        window.setTimeout(() => {
+          if (voiceTurnRef.current === "speaking" && !sawSpeechRef.current)
+            setVoiceTurn("listening");
+        }, 600);
+      });
+    };
+  });
+
+  // Jarvis a fini de parler (ou a été interrompu) : le micro se rouvre.
+  useEffect(() => {
+    if (voiceTurn !== "speaking") return;
+    if (voice.speaking) {
+      sawSpeechRef.current = true;
+      return;
+    }
+    if (sawSpeechRef.current) {
+      sawSpeechRef.current = false;
+      setVoiceTurn("listening");
+    }
+  }, [voiceTurn, voice.speaking, setVoiceTurn]);
+
+  // Le tour d'écoute : rouvrir le micro s'il ne tourne pas déjà.
+  useEffect(() => {
+    if (voiceTurn === "listening" && talkActive && !talkListening) talkListen();
+  }, [voiceTurn, talkActive, talkListening, talkListen]);
+
+  // Le mode s'est fermé de lui-même (silences, « stop », micro refusé).
+  useEffect(() => {
+    if (!talkActive && voiceTurnRef.current !== "off" && voiceTurnRef.current !== "thinking")
+      setVoiceTurn("off");
+  }, [talkActive, setVoiceTurn]);
+
+  useEffect(() => {
+    if (talkError === "denied") toast(t("jarvis.voice.denied"), "error");
+  }, [talkError, toast, t]);
+
+  // Changer de conversation (ou quitter Jarvis) ferme le mode vocal : la
+  // réponse irait dans un autre fil.
+  useEffect(() => endVoice, [context.conversationId, endVoice]);
+
+  /* Le sous-titre de la scène live : ce que le trader dit pendant qu'il parle,
+     puis la dernière réponse de Jarvis — celle que la voix est en train de dire. */
+  const lastAnswer = [...messages].reverse().find((m) => m.role === "assistant");
+  const liveSubtitle =
+    voiceTurn === "listening"
+      ? talkInterim
+      : voiceTurn === "speaking" && lastAnswer
+        ? spokenOf(lastAnswer)
+        : "";
+
+  const voiceOrbState: JarvisOrbState =
+    voiceTurn === "speaking" ? "speaking" : voiceTurn === "thinking" ? "thinking" : "listening";
+  const onVoiceOrb = () => {
+    if (voiceTurn === "speaking") {
+      // Couper la parole à Jarvis : la voix s'arrête, l'écoute reprend.
+      stopVoice();
+      sawSpeechRef.current = false;
+      setVoiceTurn("listening");
+    } else if (voiceTurn === "listening") {
+      talkFinish();
+    }
+  };
 
   return (
     <div className="jarvis-conversation relative flex flex-col flex-1 min-h-0">
@@ -985,11 +1171,14 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
            bloc d'accueil se pose alors au milieu du panneau au lieu de
            s'accrocher au coin haut-gauche. Dès qu'il y a des messages, on
            repasse en flux normal — un fil de discussion se lit du haut. */
-        className={
+        className={cn(
           messages.length === 0 && loaded
             ? "jarvis-thread jarvis-thread-empty grid flex-1 place-items-center overflow-y-auto"
-            : "jarvis-thread flex-1 overflow-y-auto"
-        }
+            : "jarvis-thread flex-1 overflow-y-auto",
+          // En mode vocal, la scène « live » prend la place du fil, qui
+          // continue de s'écrire derrière.
+          !neuralInThread && "hidden",
+        )}
         aria-live="polite"
         aria-relevant="additions"
         aria-busy={loading || typingId !== null}
@@ -1027,7 +1216,15 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
              l'écran plutôt qu'une note de bas de bloc. */
           <div className="jarvis-accueil animate-fade-in-up">
             {/* L'orbe : Jarvis est là, et elle s'anime dès qu'il écoute. */}
-            <JarvisOrb state={activity} size={84} className="mx-auto mb-6" />
+            {neuralInThread ? (
+              <JarvisNeural
+                mode={neuralMode}
+                className="jarvis-accueil-core"
+                fallback={<JarvisOrb state={activity} size={84} />}
+              />
+            ) : (
+              <JarvisOrb state={activity} size={84} className="mx-auto mb-6" />
+            )}
             <p className="jarvis-accueil-invite">{t("assistant.empty")}</p>
             {knownFacts.length > 0 && (
               <div className="jarvis-known">
@@ -1082,15 +1279,11 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
                  — fin des cartes-dans-une-carte, les blocs respirent enfin. */
               <div key={m.id} className="jarvis-turn animate-fade-in-up" data-message-id={m.id}>
                 <div className="mb-2.5 flex items-center gap-2">
-                  {/* La réponse EN COURS DE LECTURE porte l'orbe qui parle ;
-                      les autres, la marque au repos. */}
-                  {readingId === m.id ? (
-                    <JarvisOrb state="speaking" size={24} />
-                  ) : (
-                    <span className="jarvis-avatar">
-                      <JarvisMark className="h-4 w-4" />
-                    </span>
-                  )}
+                  {/* L'identité du tour reste légère : le cœur animé vit
+                      dans la présence centrale, au-dessus du fil. */}
+                  <span className="jarvis-avatar">
+                    <JarvisMark className="h-4 w-4" />
+                  </span>
                   <span className="tv-label text-[var(--tv-highlight)]">
                     {t("assistant.title")}
                   </span>
@@ -1106,7 +1299,7 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
                       setTypingId(null);
                       // Réglage « lire les réponses » : la voix part quand le
                       // texte a fini de s'écrire, jamais par-dessus.
-                      if (readAutoSpeak()) readAloud(m);
+                      if (readAutoSpeak() && !voiceSpokenRef.current.has(m.id)) readAloud(m);
                     }}
                   />
                 ) : m.role === "assistant" ? (
@@ -1171,29 +1364,18 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
               </div>
             </div>
           )}
-
-        {loading && (
-          /* LE TEMPS DE RÉFLEXION SE VOIT. Jarvis prend le temps d'analyser
-             avant d'écrire : les étapes avancent pendant qu'il lit le journal,
-             au lieu d'un squelette gris qui ne dit rien. */
-          <div className="jarvis-turn animate-fade-in">
-            <div className="mb-3 flex items-center gap-2.5">
-              <span className="jarvis-thinking-mark">
-                <JarvisMark className="h-4 w-4" />
-              </span>
-              <span className="tv-label text-[var(--tv-highlight)]">{t("jarvis.thinking")}</span>
-            </div>
-            <ThinkingSteps
-              key={lastQuestionRef.current}
-              steps={INTENT_STEPS[classifyQuestion(lastQuestionRef.current)].map((k) =>
-                t(k as TKey).replace("{n}", String(context.trades.length)),
-              )}
-            />
-          </div>
-        )}
       </div>
 
-      {showLatest && (
+      {!neuralInThread && (
+        <LiveStage
+          mode={neuralMode}
+          subtitle={liveSubtitle}
+          loading={loading}
+          elapsedMs={loadingMs}
+        />
+      )}
+
+      {showLatest && neuralInThread && (
         <button type="button" className="jarvis-latest" onClick={scrollToLatest}>
           <ArrowDown className="h-3.5 w-3.5" />
           {t("jarvis.latest")}
@@ -1201,20 +1383,27 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
       )}
       {/* Saisie */}
       <div className="jarvis-composer-dock shrink-0">
-        {typingId && (
-          <div className="jarvis-generation-controls">
-            <span role="status">{t("jarvis.generating")}</span>
-            <button
-              type="button"
-              onClick={() => {
-                const message = messages.find((m) => m.id === typingId);
-                setTypingId(null);
-                if (message && readAutoSpeak()) readAloud(message);
-              }}
-            >
-              {t("jarvis.showFull")}
-            </button>
-          </div>
+        {/* LE CŒUR VIT SUR LE CHAMP DE SAISIE, PAS AU-DESSUS DU FIL.
+            Centré au-dessus de la conversation, il prenait ~300px en
+            permanence et repoussait la discussion. Une ligne de 44px suffit
+            à dire que Jarvis est là, ce qu'il fait, et où il en est — et le
+            bouton « afficher la réponse » y prend la place de l'ancienne
+            barre de rédaction : un seul endroit pour l'état de Jarvis. */}
+        {neuralInThread && loaded && messages.length > 0 ? (
+          <JarvisPresence
+            compact
+            mode={neuralMode}
+            loading={loading}
+            elapsedMs={loadingMs}
+            action={typingId ? showFullButton : undefined}
+          />
+        ) : (
+          typingId && (
+            <div className="jarvis-generation-controls">
+              <span role="status">{t("jarvis.generating")}</span>
+              {showFullButton}
+            </div>
+          )
         )}
 
         {(quotaBanner || exceedsDailyLimit(userId, dailyLimit)) && (
@@ -1243,52 +1432,31 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
             bouton qui faisait tourner un placeholder animé : trois contrôles
             sur une ligne pour écrire une phrase. Tout est dans le compositeur
             maintenant, à sa place — micro à gauche, envoi à droite. */}
-        <Composer
-          value={question}
-          onChange={setQuestion}
-          onSubmit={() => {
-            followRef.current = true;
-            setShowLatest(false);
-            void ask(question);
-          }}
-          disabled={loading}
-          listening={listening}
-          onMic={toggleMic}
-          micAvailable={!!SpeechRecognitionCtor}
-        />
+        {voiceTurn !== "off" ? (
+          <VoiceBar
+            state={voiceOrbState}
+            interim={talkInterim}
+            onOrb={onVoiceOrb}
+            onEnd={endVoice}
+          />
+        ) : (
+          <Composer
+            value={question}
+            onChange={setQuestion}
+            onSubmit={() => {
+              followRef.current = true;
+              setShowLatest(false);
+              void ask(question);
+            }}
+            disabled={loading}
+            listening={listening}
+            onMic={toggleMic}
+            micAvailable={!!SpeechRecognitionCtor}
+            onVoice={talk.supported ? startVoice : undefined}
+          />
+        )}
       </div>
     </div>
-  );
-}
-
-/**
- * Les étapes de réflexion, qui avancent pendant que la réponse se prépare.
- * La dernière reste active tant que le serveur n'a pas répondu : elle ne
- * prétend jamais avoir fini avant lui.
- */
-function ThinkingSteps({ steps }: { steps: string[] }) {
-  const [at, setAt] = useState(0);
-  useEffect(() => {
-    const id = window.setInterval(() => {
-      setAt((n) => Math.min(steps.length - 1, n + 1));
-    }, 1600);
-    return () => window.clearInterval(id);
-  }, [steps.length]);
-  return (
-    <ol className="jarvis-steps">
-      {steps.map((label, i) => (
-        <li
-          key={i}
-          className="jarvis-step"
-          data-state={i < at ? "done" : i === at ? "active" : "todo"}
-        >
-          <span className="jarvis-step-dot" aria-hidden>
-            {i < at && <Check className="h-2.5 w-2.5" />}
-          </span>
-          {label}
-        </li>
-      ))}
-    </ol>
   );
 }
 

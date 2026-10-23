@@ -16,7 +16,9 @@ import MarkdownAnswer from "@/app/components/MarkdownAnswer";
  *  • `prefers-reduced-motion` : aucune animation, le texte arrive entier.
  */
 
-const TICK_MS = 33;
+/** 20 avancées par seconde : l'œil lit une écriture fluide, et chaque avancée
+ *  re-analyse le Markdown — à 30 par seconde, c'était du temps de rendu perdu. */
+const TICK_MS = 50;
 
 /** Découpe en jetons « mot + espaces » : le texte avance par mots entiers,
  *  jamais au milieu d'un mot ni d'une balise Markdown ouverte à moitié. */

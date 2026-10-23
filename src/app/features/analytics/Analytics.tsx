@@ -192,7 +192,10 @@ export default function Analytics({ trades }: AnalyticsProps) {
       ),
     [locale],
   );
-  const stats = computeStats(cutoffTrades);
+  // Mémoïsé : recalculé à chaque rendu (un survol du camembert en déclenche),
+  // `stats` donnait de nouvelles identités aux séries, et Recharts rejouait
+  // l'animation de chaque graphique pour des valeurs identiques.
+  const stats = useMemo(() => computeStats(cutoffTrades), [cutoffTrades]);
   const dayOfWeekData = useMemo(
     () =>
       Object.entries(stats.pnlByDayOfWeek)
@@ -663,7 +666,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
               <Card className="p-4 md:p-5 animate-fade-in-up stagger-3">
                 <h3 className="tv-title mb-3">{t("analytics.winLoss")}</h3>
                 <div className="h-36 md:h-48">
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer debounce={100} width="100%" height="100%">
                     <PieChart>
                       <Pie
                         data={winLossData}
@@ -715,7 +718,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
               <p className="tv-hint mb-3">{t("analytics.monthlyPerformanceSub")}</p>
               {monthlyData.length > 0 ? (
                 <div className="h-44 md:h-52">
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer debounce={100} width="100%" height="100%">
                     <ComposedChart data={monthlyData}>
                       <CartesianGrid {...EQUITY_GRID} />
                       <XAxis dataKey="month" tick={AXIS_TICK} axisLine={false} tickLine={false} />
@@ -920,7 +923,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
               <Card className="p-4 md:p-5 animate-fade-in-up stagger-6">
                 <h3 className="tv-title mb-3">{t("analytics.pnlByStrategy")}</h3>
                 <div className="h-40 md:h-48">
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer debounce={100} width="100%" height="100%">
                     <BarChart data={strategyData} layout="vertical">
                       <XAxis
                         type="number"
@@ -990,7 +993,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
             <Card className="p-4 md:p-5 animate-fade-in-up stagger-7">
               <h3 className="tv-title mb-3">{t("analytics.pnlDistribution")}</h3>
               <div className="h-40 md:h-48">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer debounce={100} width="100%" height="100%">
                   <BarChart data={pnlDistribution}>
                     <CartesianGrid {...EQUITY_GRID} />
                     <XAxis
@@ -1104,7 +1107,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                 <p className="tv-hint mb-3">{t("analytics.byHourSub")}</p>
                 {hourData.length > 0 ? (
                   <div className="h-40 md:h-48">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer debounce={100} width="100%" height="100%">
                       <ComposedChart data={hourData}>
                         <CartesianGrid {...EQUITY_GRID} />
                         <XAxis dataKey="hour" tick={AXIS_TICK} axisLine={false} tickLine={false} />
@@ -1154,7 +1157,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
             <Card className="p-4 md:p-5 animate-fade-in-up stagger-5">
               <h3 className="tv-title mb-3">{t("analytics.pnlWinRateByDay")}</h3>
               <div className="h-40 md:h-48">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer debounce={100} width="100%" height="100%">
                   <ComposedChart data={dayOfWeekData}>
                     <CartesianGrid {...EQUITY_GRID} />
                     <XAxis dataKey="day" tick={AXIS_TICK} axisLine={false} tickLine={false} />

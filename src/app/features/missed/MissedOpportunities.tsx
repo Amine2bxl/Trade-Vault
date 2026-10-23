@@ -546,7 +546,7 @@ export function ScreenshotsView({
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
                 <span
                   className={cn(
-                    "opacity-0 group-hover:opacity-100 transition-opacity text-white font-semibold bg-black/50 rounded-md backdrop-blur-sm",
+                    "opacity-0 group-hover:opacity-100 transition-opacity text-white font-semibold bg-black/60 rounded-md",
                     size === "lg" ? "text-xs px-2.5 py-1" : "text-[10px] px-1.5 py-0.5",
                   )}
                 >
@@ -554,7 +554,7 @@ export function ScreenshotsView({
                 </span>
               </div>
               {size === "lg" && (
-                <span className="tv-num absolute bottom-1.5 right-1.5 text-[10px] font-bold text-white/80 bg-black/50 px-1.5 py-0.5 rounded-md backdrop-blur-sm">
+                <span className="tv-num absolute bottom-1.5 right-1.5 text-[10px] font-bold text-white/80 bg-black/60 px-1.5 py-0.5 rounded-md">
                   {i + 1}/{paths.length}
                 </span>
               )}

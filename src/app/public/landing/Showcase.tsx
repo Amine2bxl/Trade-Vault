@@ -92,7 +92,7 @@ const TRUST = [
 export function TrustStrip() {
   const { t } = useLandingT();
   return (
-    <div className="reveal grid grid-cols-1 gap-6 rounded-2xl border border-white/[.07] bg-white/[.02] px-6 py-7 backdrop-blur-md sm:grid-cols-3">
+    <div className="reveal grid grid-cols-1 gap-6 rounded-2xl border border-white/[.07] bg-white/[.02] px-6 py-7 sm:grid-cols-3">
       {TRUST.map(({ icon: Ico, t: titleKey, d: descKey }) => (
         <div key={titleKey} className="flex items-start gap-3">
           <Ico className="mt-0.5 h-5 w-5 shrink-0 text-slate-400" />

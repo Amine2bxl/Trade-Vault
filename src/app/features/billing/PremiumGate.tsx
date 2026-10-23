@@ -46,13 +46,16 @@ export function usePreviewMode(): boolean {
  */
 
 /** Les paliers de flou : début et fin du masque, en % de la hauteur.
- *  Le haut de l'aperçu reste net — ce sont les chiffres d'exemple qui vendent. */
+ *  Le haut de l'aperçu reste net — ce sont les chiffres d'exemple qui vendent.
+ *
+ *  DEUX paliers, plus cinq. Chaque `backdrop-filter` est une passe de flou
+ *  sur la carte graphique, recalculée à CHAQUE image où quelque chose bouge
+ *  dessous (animations des graphiques, défilement, orbe du curseur) : cinq
+ *  flous chaînés sur 82 % de l'écran faisaient ramer neuf pages pour les
+ *  comptes gratuits. Le voile dégradé posé par-dessus lisse la transition. */
 const BLUR_LAYERS = [
-  { blur: 1.5, from: 44, to: 60 },
-  { blur: 3, from: 54, to: 70 },
-  { blur: 6, from: 64, to: 80 },
-  { blur: 12, from: 74, to: 90 },
-  { blur: 20, from: 86, to: 100 },
+  { blur: 3, from: 46, to: 72 },
+  { blur: 14, from: 68, to: 100 },
 ];
 
 function maskStyle(blur: number, from: number, to: number): CSSProperties {

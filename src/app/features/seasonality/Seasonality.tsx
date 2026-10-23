@@ -212,7 +212,7 @@ function AssetSeasonality({ trades }: { trades: Trade[] }) {
           </span>
         </div>
         <div className="h-60 md:h-72">
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer debounce={100} width="100%" height="100%">
             <BarChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
               <CartesianGrid {...EQUITY_GRID} />
               <XAxis
@@ -585,7 +585,7 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
         <h3 className="tv-title mb-0.5">{t("seasonality.monthly")}</h3>
         <p className="tv-hint mb-4">{t("seasonality.monthlySub")}</p>
         <div className="h-56 md:h-64">
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer debounce={100} width="100%" height="100%">
             <BarChart data={monthly} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
               <CartesianGrid {...EQUITY_GRID} />
               <XAxis
@@ -656,7 +656,7 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
           <h3 className="tv-title mb-0.5">{t("seasonality.weekday")}</h3>
           <p className="tv-hint mb-4">{t("seasonality.weekdaySub")}</p>
           <div className="h-48">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer debounce={100} width="100%" height="100%">
               <BarChart data={weekdays} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
                 <CartesianGrid {...EQUITY_GRID} />
                 <XAxis dataKey="day" tick={AXIS_TICK} axisLine={false} tickLine={false} />
@@ -685,7 +685,7 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
           <h3 className="tv-title mb-0.5">{t("seasonality.hourly")}</h3>
           <p className="tv-hint mb-4">{t("seasonality.hourlySub")}</p>
           <div className="h-48">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer debounce={100} width="100%" height="100%">
               <BarChart data={hours} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
                 <CartesianGrid {...EQUITY_GRID} />
                 <XAxis dataKey="hour" tick={AXIS_TICK} axisLine={false} tickLine={false} />

@@ -62,9 +62,11 @@ test("les noms sont uniques et le registre se remplit une seule fois", () => {
   for (const t of manifeste) expect(t.parameters).toBeDefined();
 });
 
-test("les sept outils attendus sont présents", () => {
+test("les neuf outils attendus sont présents", () => {
   expect([...JARVIS_TOOL_NAMES].sort()).toEqual([
+    "get_contract_math",
     "get_day",
+    "get_economic_calendar",
     "get_edge_score",
     "get_mistakes",
     "get_profile",
