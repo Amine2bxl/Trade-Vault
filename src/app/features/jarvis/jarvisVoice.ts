@@ -16,19 +16,31 @@ import { JARVIS_VOICE, pickJarvisVoice, toSpeechSegments } from "@/modules/voice
  *      probed once per session, never per line.
  *   3. Any hosted failure (network, quota, autoplay refusal) falls back to the
  *      local voice mid-sentence — the trader hears a voice, never an error.
- *   4. Spoken text is ALWAYS English, whatever the UI language, so the single
- *      voice never has to mispronounce another locale.
+ *   4. Fixed lines (checklist, greetings) are English. A conversation answer is
+ *      spoken in the language it was WRITTEN in (`opts.lang`): the hosted
+ *      voice is multilingual (same timbre), and the local fallback picks a
+ *      voice of that language instead of reading French with an English one.
  */
 
 /** Back-compat alias — the Checklist imports the picker under this name. */
 export { pickJarvisVoice as pickEnglishMaleVoice } from "@/modules/voice";
 
+export interface SpeakOptions {
+  /** Langue de la réplique (« fr », « en »…). Absente : anglais. */
+  lang?: string;
+}
+
+/** « fr » → « fr-FR » ; tout le reste garde la voix anglaise du profil. */
+function utteranceLang(lang?: string): string {
+  return lang?.toLowerCase().startsWith("fr") ? "fr-FR" : JARVIS_VOICE.lang;
+}
+
 export interface JarvisVoice {
-  /** Speak a line (English). Resolves once playback has started. */
-  speak: (text: string) => Promise<void>;
+  /** Speak a line (English unless `opts.lang`). Resolves once playback has started. */
+  speak: (text: string, opts?: SpeakOptions) => Promise<void>;
   /** Speak STRICTLY with the local browser voice — no clips, no hosted TTS,
    *  no network, zero cost. Used for ambient greetings (never counted). */
-  speakLocal: (text: string) => void;
+  speakLocal: (text: string, lang?: string) => void;
   /** Stop any current playback immediately. */
   stop: () => void;
   /** True while Jarvis is talking — drive a subtle "speaking" indicator. */
@@ -42,6 +54,10 @@ export function useJarvisVoice(): JarvisVoice {
   // Incremented on every stop/new line so a queued segment from a cancelled
   // line can tell it is stale and drop itself instead of talking over the next.
   const runRef = useRef(0);
+  // Incrémenté par `stop()` SEULEMENT. Une réplique hébergée met une seconde
+  // à arriver : sans ce ticket, couper la parole à Jarvis pendant ce temps
+  // n'empêchait pas l'audio de partir ensuite — par-dessus le micro rouvert.
+  const cancelRef = useRef(0);
 
   // Keep the browser voice list warm (it populates asynchronously, and on some
   // browsers only after the first `getVoices()` call).
@@ -62,6 +78,7 @@ export function useJarvisVoice(): JarvisVoice {
 
   const stop = useCallback(() => {
     runRef.current++;
+    cancelRef.current++;
     audioRef.current?.pause();
     audioRef.current = null;
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
@@ -75,7 +92,7 @@ export function useJarvisVoice(): JarvisVoice {
    * engine asked for between them. That cadence is most of what makes the
    * browser engine read as a composed coach rather than a screen reader.
    */
-  const speakLocal = useCallback((text: string) => {
+  const speakLocal = useCallback((text: string, lang?: string) => {
     if (typeof window === "undefined" || !("speechSynthesis" in window)) {
       setSpeaking(false);
       return;
@@ -86,7 +103,7 @@ export function useJarvisVoice(): JarvisVoice {
     const run = ++runRef.current;
     try {
       speechSynthesis.cancel();
-      const voice = pickJarvisVoice(voicesRef.current);
+      const voice = pickJarvisVoice(voicesRef.current, lang);
       setSpeaking(true);
 
       const sayFrom = (i: number) => {
@@ -97,7 +114,7 @@ export function useJarvisVoice(): JarvisVoice {
         }
         const seg = segments[i];
         const u = new SpeechSynthesisUtterance(seg.text);
-        u.lang = JARVIS_VOICE.lang;
+        u.lang = utteranceLang(lang);
         u.rate = JARVIS_VOICE.rate;
         u.pitch = JARVIS_VOICE.pitch;
         u.volume = JARVIS_VOICE.volume;
@@ -119,9 +136,12 @@ export function useJarvisVoice(): JarvisVoice {
   }, []);
 
   const speak = useCallback(
-    async (text: string) => {
+    async (text: string, opts?: SpeakOptions) => {
       const line = text.trim();
       if (!line) return;
+      const english = !opts?.lang || opts.lang.toLowerCase().startsWith("en");
+      const ticket = cancelRef.current;
+      const cancelled = () => cancelRef.current !== ticket;
 
       /** Joue une URL audio ; `true` si la lecture a démarré. */
       const play = (url: string) =>
@@ -152,12 +172,20 @@ export function useJarvisVoice(): JarvisVoice {
       // 1. LA voix de Jarvis — la même sur tous les écrans (voir hostedVoice).
       if (await hostedAvailable()) {
         const audio = await hostedAudio(line);
+        if (cancelled()) return;
         if (audio && (await play(audio))) return;
         if (!audio) markHostedDown();
       }
 
-      // 2. Secours : le clip pré-rendu de la réplique, s'il existe.
+      // 2. Secours : le clip pré-rendu de la réplique, s'il existe — clips
+      //    anglais uniquement : inutile d'en chercher pour une réponse française.
+      if (cancelled()) return;
+      if (!english) {
+        speakLocal(line, opts?.lang);
+        return;
+      }
       await loadVoiceClips();
+      if (cancelled()) return;
       const clip = clipFor(line);
       if (clip && (await play(clip))) return;
       if (clip) {

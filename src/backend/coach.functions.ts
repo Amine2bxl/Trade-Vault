@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireJarvisAccess } from "@/backend/require-pro";
 import { orchestrateCoach, traceOfError } from "@/modules/ai/agents/coach.orchestrator";
 import { ensureJarvisTools } from "@/backend/ai-tools";
+import { ensureJarvisSources } from "@/backend/ai-tools/sources";
 import { recordAgentRun } from "./telemetry.server";
 import {
   ConversationSchema,
@@ -25,6 +26,8 @@ import { AI_LIMITS } from "@/domain/ai-limits";
 // de ce module pour le raisonnement de coût derrière chaque borne.
 const CoachAskShape = z.object({
   question: z.string().min(1).max(AI_LIMITS.question),
+  /** `voice` : question posée en conversation vocale — réponse courte, dite. */
+  channel: z.enum(["text", "voice"]).optional(),
   language: z.string().min(2).max(8).optional(),
   /** Devise du journal (ISO 4217) — Jarvis écrit ses montants dans celle-ci. */
   currency: z.string().length(3).optional(),
@@ -217,6 +220,7 @@ function parseCoachAsk(input: unknown) {
         ? raw.today
         : undefined,
     accountId: str(raw.accountId, 64),
+    channel: raw.channel === "voice" ? "voice" : undefined,
     conversation,
   });
 }
@@ -287,6 +291,8 @@ export const askCoach = createServerFn({ method: "POST" })
               tier: trace.tier,
               slot: trace.slot,
               route: {
+                profile: trace.profile,
+                channel: trace.channel,
                 domains: trace.domains,
                 ambiguous: trace.ambiguous,
                 modelRouted: trace.modelRouted,
@@ -321,6 +327,8 @@ export const askCoach = createServerFn({ method: "POST" })
          code. Les lectures préparées, elles, ne coûtent aucun appel modèle et
          restent actives. */
       const registered = userId ? ensureJarvisTools() : [];
+      // Le calendrier économique, branché sur le domaine « marché ».
+      if (userId) ensureJarvisSources();
       const modelTools = process.env.AI_TOOLS !== "off" ? registered : [];
       const { text: answer, trace } = await orchestrateCoach(data, {
         userId,

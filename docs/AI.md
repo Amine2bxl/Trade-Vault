@@ -19,7 +19,10 @@ Rôle produit et persona : [`PRODUCT.md`](PRODUCT.md#jarvis).
    toute statistique affiche son `n`** (garde-fous : `modules/patterns/thresholds.ts`,
    `modules/patterns/language.ts`, `modules/coaching/safety.ts`, testés par
    `tests/noCausalLanguage.test.ts`).
-6. Réponse **écrite** dans la langue de l'UI ; **voix** toujours en anglais.
+6. Réponse **écrite** dans la langue de l'UI. **Voix** : les répliques fixes
+   (checklist, salutations) sont en anglais ; une réponse de conversation est
+   dite dans la langue où elle est écrite (voix hébergée multilingue, même
+   timbre ; en secours, voix locale de cette langue).
 
 ## 2. La chaîne en production — question posée à Jarvis
 
@@ -44,7 +47,8 @@ features/jarvis (page Jarvis.tsx / widget AiAssistant.tsx)
      3. LIRE        lectures préparées EN PARALLÈLE (outils backend/ai-tools,
                     sous userId + compte actif, 6 s max chacune)
      4. RAISONNER   agents/coach.agent.ts runCoach avec le modèle du niveau
-                    (runtime/tiers.ts) et ses outils natifs (runWithTools)
+                    relevé par le profil jarvis_nq (agents/jarvis-nq.ts) et
+                    ses outils natifs (runWithTools)
      5. VÉRIFIER    validation.ts : chaque chiffre de la réponse doit figurer
                     dans les données reçues ; sinon une réparation, puis une
                     mention honnête
@@ -81,10 +85,43 @@ de réflexion rejoués tels quels), OpenAI-compatibles (`tool_calls` + messages
 est épinglé pour toute la boucle ; le dernier tour garde les outils déclarés en
 mode « none ».
 
-**Sources non branchées** : le calendrier économique et la connaissance produit
-n'ont pas encore de source côté Jarvis — le Context Engine le DIT au modèle
-(`UNAVAILABLE_NOTICE`). Une source se branche par `registerContextSource`
-(lectures + outils pour un domaine), sans autre architecture.
+**Le profil `jarvis_nq`** (`agents/jarvis-nq.ts`, nom seul dans
+`jarvis-model.ts` pour l'UI) est le cerveau de Jarvis — un nom de modèle, pas
+un second personnage. La v1 (court, chiffré) produisait un lecteur de tableau
+de bord ; la v2 en fait un interlocuteur :
+
+- **Converser** : répondre à ce qui est dit et voulu, suivre le fil (douze
+  tours au moins, `MIN_CONVERSATION_TURNS`), donner un avis argumenté,
+  construire sur une idée. Polyvalent : le trading d'abord, mais aucun sujet
+  n'est esquivé parce qu'il ne parle pas de statistiques.
+- **Les chiffres sont une preuve** : un ou deux, avec leur `n`, quand ils
+  changent la réponse — jamais un relevé non demandé. `STRICT DATA RULE` ne
+  bride que les affirmations sur les résultats du trader ; connaissance,
+  explications, avis et idées sont libres.
+- **Autonome** (`jarvisNqTools`) : hors bavardage, toute la boîte de lecture
+  (`AUTONOMOUS_TOOLS`) est offerte ; le modèle décide lui-même de lire le
+  journal. Le Context Engine ne fait que préparer les lectures évidentes.
+- **Réfléchir** (`jarvisNqSlot`) : bavardage → `fast` ; mesure simple →
+  `balanced` ; analyse, diagnostic et discussion ouverte → `strong` ; revue
+  complète → `deep` (jamais en vocal, où la discussion reste sur `balanced`).
+- **Lire chaque lettre** (fautes, dictée, unités, négations ; question
+  entière jusqu'à 4 000 caractères) et **savoir le NQ** (`NQ_DESK_KNOWLEDGE`,
+  qui compte comme source pour la validation des chiffres).
+- Formes (`answerShape`) : des repères de longueur, pas un gabarit ; en
+  vocal, une à trois phrases parlées.
+- La trace (`ai_agent_runs.route`) porte `profile` et `channel`.
+
+**L'intelligence dépend d'abord du fournisseur** : sans `ANTHROPIC_API_KEY`
+ni `OPENAI_API_KEY`, la chaîne tombe sur Gemini 2.5 (Flash pour la plupart
+des niveaux, Pro en `strong`/`deep` quand la clé y a accès). Avec une clé
+Anthropic et `AI_PROVIDER=anthropic`, les niveaux passent sur Haiku 5.5 /
+Sonnet 5.5 / Opus 5.5 (`DEFAULT_SLOT_MODELS`).
+
+**Sources branchées** : le domaine « marché » lit le calendrier économique
+(`backend/ai-tools/sources.ts`, branché par `askCoach` via
+`registerContextSource`) — lecture préparée du jour et du lendemain à New York,
+filtrée sur les devises des symboles cités. La connaissance produit n'a pas
+encore de source — le Context Engine le DIT au modèle (`UNAVAILABLE_NOTICE`).
 
 ## 3. Carte des fichiers
 
@@ -101,11 +138,25 @@ n'ont pas encore de source côté Jarvis — le Context Engine le DIT au modèle
 | Validation des chiffres | `modules/ai/validation.ts` |
 | Niveaux de modèle, coût estimé | `modules/ai/runtime/tiers.ts`, `runtime/pricing.ts` |
 | Outils de Jarvis (`get_trades`, `get_stats`, `get_mistakes`, `get_edge_score`, `search_memory`, `get_profile`, `get_day`) | `backend/ai-tools/` (enregistrés dans `modules/ai/tools`) — historique paginé (pas de plafond PostgREST silencieux), cloisonné `user_id` + compte actif ; plan, règles et objectifs lus sous leur forme jsonb (`profile-data.ts`) |
+| Outils marché (`get_contract_math`, `get_economic_calendar`) | `backend/ai-tools/market.ts` — arithmétique des contrats CME (fiche unique `domain/futuresContracts.ts`, partagée avec le calculateur de position) ; calendrier `economic_events` en heure de New York |
+| Profil `jarvis_nq` | `modules/ai/agents/jarvis-nq.ts` (identité, lecture, concision, connaissance NQ, formes, emplacement) |
 | Mémoire | `modules/ai/memory.ts` (table `ai_memory`), `memory-select.ts` (choix des souvenirs injectés), `memory-extract.ts` + `agents/memory.agent.ts` + `backend/memory.functions.ts` (extraction, **coupée** tant que `AI_MEMORY_EXTRACTION !== "1"`). Écrivains côté trader : l'onboarding (`onb:arena`, `onb:commitments`, `onb:coaching`, source `onboarding`) et l'acceptation d'une règle |
 | Validation des charges utiles | `backend/ai-payload.ts` |
 | Télémétrie | `modules/ai/telemetry.ts` (contrat), `backend/telemetry.server.ts` (écriture : niveau, emplacement, domaines, outils, lectures, appels modèle, tokens de réflexion et de cache, coût estimé, validation, taille du contexte ; repli sur les colonnes historiques si la migration manque) |
 | UI Jarvis | `app/features/jarvis/` : shell, workspaces, blocs typés (`blocks.ts`, `BlockRenderer`), conversations (**localStorage**, par appareil), propositions (`components/ProposalsPanel`, `proposals.ts`), crédits (`aiUsage.ts`) |
-| Voix | `modules/voice/` (clips pré-synthétisés `public/voices/`, voix locale, prosodie), `app/features/jarvis/jarvisVoice.ts` + `hostedVoice.ts`, `backend/tts.functions.ts` (ElevenLabs optionnel) |
+| Voix | `modules/voice/` (clips pré-synthétisés `public/voices/`, voix locale par langue, prosodie), `app/features/jarvis/jarvisVoice.ts` + `hostedVoice.ts`, `backend/tts.functions.ts` (ElevenLabs optionnel) |
+| Cœur neuronal (modes de fonctionnement : respire, écoute, comprend, analyse, réfléchit, révise, rédige, parle) | `shared/ui/JarvisNeural.tsx` + `shared/ui/neural/` (WebGL, formes dans le shader) ; mode dérivé par `app/features/jarvis/neuralMode.ts` ; présence `components/JarvisPresence.tsx` — compacte (ligne de 44 px sur le champ de saisie) dans le chat, plein écran dans la scène vocale `components/LiveStage.tsx` |
+| Conversation vocale | `app/features/jarvis/voiceConversation.ts` (reconnaissance Web Speech, fin de phrase, « stop », deux silences ferment), `components/VoiceBar.tsx`, tour tenu par `ConversationWorkspace` (écoute → question `channel: "voice"` → réponse dite → écoute ; micro jamais ouvert pendant que Jarvis parle, interruption par l'orbe) |
+
+**Attente de réponse.** Le cœur reste visible sur le champ de saisie, hors du
+fil défilant, pendant la lecture, la rédaction et l'écoute : une ligne de
+44 px, jamais au-dessus de la discussion. Le bouton « afficher la réponse
+complète » y prend place pendant la rédaction. Les quatre bulles sont des phases
+visuelles **indicatives**, pas une trace du raisonnement privé ou des outils du
+serveur : aucun pourcentage ni coche de réussite. Le compteur donne seulement
+le temps écoulé réel. Le même composant sert au chat et au mode vocal ; le fil
+ne monte aucun cœur graphique supplémentaire pendant que la scène vocale est
+active.
 
 **Fondations non branchées** (compilées, testées, appelées par aucune
 surface) : `modules/ai/infra.ts` et `router/router.ts` (ancien routeur d'intentions), `rag/types.ts`

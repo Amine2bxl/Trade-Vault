@@ -10,6 +10,7 @@ import {
   type JarvisProfile,
 } from "@/app/store";
 import { forget, loadMemory, type MemoryEntry } from "@/modules/ai/memory";
+import { JARVIS_NQ } from "@/modules/ai/jarvis-model";
 import {
   readAutoSpeak,
   readResponseLang,
@@ -164,6 +165,16 @@ export default function SettingsWorkspace({ context }: JarvisWorkspaceProps) {
             </span>
             <h3 className="tv-title">{t("jarvisSettings.prefTitle")}</h3>
           </header>
+
+          {/* LE MODÈLE, NOMMÉ. Le trader parle à Jarvis ; ce qui répond est le
+              profil `jarvis_nq` — le dire, c'est dire ce qu'il sait faire. */}
+          <div className="jarvis-pref">
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm text-slate-200">{t("jarvisSettings.model")}</span>
+              <span className="tv-row-label">{t("jarvisSettings.modelHint")}</span>
+            </span>
+            <span className="jarvis-model-id">{JARVIS_NQ.label}</span>
+          </div>
 
           <div className="jarvis-pref">
             <span className="min-w-0 flex-1">

@@ -75,7 +75,7 @@ export function StrategyDetails({ result }: { result: StrategyProjection }) {
         <Card pad="tight">
           <h4 className="strategy-detail-title">{t("lab.finalDistribution")}</h4>
           <div className={H_DISTRIB}>
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer debounce={100} width="100%" height="100%">
               <BarChart data={bins} margin={{ left: 0, right: 10, top: 12, bottom: 0 }}>
                 <CartesianGrid vertical={false} stroke="var(--tv-border)" />
                 <XAxis
@@ -113,7 +113,7 @@ export function StrategyDetails({ result }: { result: StrategyProjection }) {
         <Card pad="tight">
           <h4 className="strategy-detail-title">{t("lab.ddExceedance")}</h4>
           <div className={H_DISTRIB}>
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer debounce={100} width="100%" height="100%">
               <AreaChart
                 data={result.drawdownExceedance.map((p) => ({
                   ...p,

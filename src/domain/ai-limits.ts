@@ -70,7 +70,14 @@ export const AI_LIMITS = {
    *  nouveauté de principe mais la généralisation d'une pratique existante. */
   signalsBytes: 12_000,
   profile: 600,
-  question: 500,
+  /**
+   * La question du trader. Elle était coupée à 500 caractères, EN SILENCE,
+   * côté client comme côté serveur : un récit de séance un peu long perdait
+   * sa fin — souvent la vraie question — et Jarvis répondait à moitié.
+   * 4 000 caractères (~1 000 tokens) tiennent un message dense ou une dictée
+   * vocale, sans ouvrir la porte à un roman.
+   */
+  question: 4_000,
 } as const;
 
 /**

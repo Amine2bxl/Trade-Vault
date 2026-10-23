@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef } from "react";
-import { ArrowUp, Mic, MicOff } from "@/shared/ui/icons";
+import { ArrowUp, AudioLines, Mic, MicOff } from "@/shared/ui/icons";
 import { useT } from "@/app/i18n/LanguageContext";
 import { cn } from "@/shared/ui/cn";
 
@@ -31,6 +31,12 @@ import { cn } from "@/shared/ui/cn";
  * Le micro — la dictée est le vrai raccourci d'un journal de trading, on parle
  * plus vite qu'on ne tape après une séance — et l'envoi, qui ne s'allume que
  * lorsqu'il y a quelque chose à envoyer.
+ *
+ * ══ CE QUI EST AJOUTÉ ══
+ *
+ * La CONVERSATION VOCALE (`onVoice`) : dicter remplit le champ ; parler à
+ * Jarvis enchaîne question, réponse dite et écoute suivante, mains libres.
+ * Deux gestes différents, deux boutons : la dictée reste pour qui veut relire.
  */
 export default function Composer({
   value,
@@ -40,6 +46,7 @@ export default function Composer({
   listening,
   onMic,
   micAvailable,
+  onVoice,
 }: {
   value: string;
   onChange: (v: string) => void;
@@ -48,6 +55,8 @@ export default function Composer({
   listening?: boolean;
   onMic?: () => void;
   micAvailable?: boolean;
+  /** Ouvre la conversation vocale. Absent : navigateur sans reconnaissance. */
+  onVoice?: () => void;
 }) {
   const { t } = useT();
   const ref = useRef<HTMLTextAreaElement | null>(null);
@@ -110,20 +119,37 @@ export default function Composer({
           className="min-h-9 min-w-0 flex-1 resize-none bg-transparent px-1.5 py-2 text-sm leading-6 text-white outline-none placeholder:text-slate-600 disabled:opacity-50"
         />
 
-        <button
-          type="button"
-          onClick={() => pret && onSubmit()}
-          disabled={!pret}
-          aria-label={t("jarvis.send")}
-          className={cn(
-            "jarvis-composer-action grid shrink-0 place-items-center rounded-lg transition-colors",
-            pret
-              ? "tv-accent-fill jarvis-send-ready active:scale-95"
-              : "cursor-not-allowed bg-white/[0.05] text-slate-600",
-          )}
-        >
-          <ArrowUp className="h-4 w-4" strokeWidth={2.5} />
-        </button>
+        {/* CHAMP VIDE : LA VOIX PREND LA PLACE DE L'ENVOI. Un bouton
+            « envoyer » grisé ne sert à rien tant qu'il n'y a rien à envoyer ;
+            à sa place, la conversation vocale — dès qu'on tape, l'envoi
+            revient. Un seul bouton d'action à droite, jamais deux. */}
+        {!pret && onVoice ? (
+          <button
+            type="button"
+            onClick={onVoice}
+            disabled={disabled}
+            aria-label={t("jarvis.voice.start")}
+            title={t("jarvis.voice.start")}
+            className="jarvis-composer-action tv-accent-fill grid shrink-0 place-items-center rounded-lg active:scale-95 disabled:opacity-50"
+          >
+            <AudioLines className="h-4 w-4" />
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => pret && onSubmit()}
+            disabled={!pret}
+            aria-label={t("jarvis.send")}
+            className={cn(
+              "jarvis-composer-action grid shrink-0 place-items-center rounded-lg transition-colors",
+              pret
+                ? "tv-accent-fill jarvis-send-ready active:scale-95"
+                : "cursor-not-allowed bg-white/[0.05] text-slate-600",
+            )}
+          >
+            <ArrowUp className="h-4 w-4" strokeWidth={2.5} />
+          </button>
+        )}
       </div>
 
       <p className="tv-hint jarvis-composer-hint mt-1.5 px-1">{t("jarvis.composerHint")}</p>

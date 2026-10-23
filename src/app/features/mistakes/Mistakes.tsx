@@ -417,7 +417,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
               <div className="col-span-full min-w-0 lg:col-span-1">
                 <div className="tv-label mb-1.5 text-slate-500">{t("mistakes.weeklyTrend")}</div>
                 <div className="h-[104px]">
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer debounce={100} width="100%" height="100%">
                     <BarChart
                       data={b.weeklyTrend}
                       margin={{ top: 4, right: 0, bottom: 0, left: 0 }}
@@ -527,7 +527,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
               <div>
                 <h3 className="tv-title mb-2">{t("mistakes.byDay")}</h3>
                 <div className="h-28">
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer debounce={100} width="100%" height="100%">
                     <BarChart data={dayData}>
                       <XAxis dataKey="day" tick={AXIS_TICK} axisLine={false} tickLine={false} />
                       <YAxis hide allowDecimals={false} />

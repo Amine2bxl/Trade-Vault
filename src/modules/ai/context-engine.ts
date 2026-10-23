@@ -158,7 +158,9 @@ function mistakesFor(route: QuestionRoute): PrefetchCall[] {
 
 const RECIPES: Record<RouteDomain, Recipe> = {
   smalltalk: { blocks: ["profile"], tools: [] },
-  knowledge: { blocks: ["profile"], tools: [] },
+  // `get_contract_math` : « combien vaut un tick de NQ ? » est une question
+  // de connaissance dont la réponse est un CHIFFRE — calculé, jamais de tête.
+  knowledge: { blocks: ["profile"], tools: ["get_contract_math"] },
   product: { blocks: [], tools: [] },
   identity: {
     blocks: ["profile"],
@@ -170,7 +172,7 @@ const RECIPES: Record<RouteDomain, Recipe> = {
   trade: {
     blocks: ["trades", "intent", "reflection", "rules", "profile", "calibration"],
     signals: ["setupQuality", "conviction"],
-    tools: ["get_trades", "get_day"],
+    tools: ["get_trades", "get_day", "get_contract_math"],
     prefetch: (r) => {
       const p = r.entities.period;
       const sym = r.entities.symbols[0];
@@ -246,13 +248,13 @@ const RECIPES: Record<RouteDomain, Recipe> = {
   risk: {
     blocks: ["edge", "rules", "stats", "calibration", "profile"],
     signals: ["riskAfterLoss", "overtrading"],
-    tools: ["get_stats", "get_profile", "get_trades", "get_edge_score"],
+    tools: ["get_stats", "get_profile", "get_trades", "get_edge_score", "get_contract_math"],
     prefetch: () => [{ tool: "get_profile", args: {}, label: "written plan and rules" }],
   },
   plan: {
     blocks: ["adherence", "rules", "edge", "mistakes", "memory", "profile"],
     signals: ["riskAfterLoss", "overtrading", "disciplinePct"],
-    tools: ["get_profile", "get_stats", "get_trades", "get_mistakes"],
+    tools: ["get_profile", "get_stats", "get_trades", "get_mistakes", "get_contract_math"],
     prefetch: (r) => [
       { tool: "get_profile", args: {}, label: "written plan and rules" },
       ...(r.entities.period
@@ -370,6 +372,7 @@ export function planContext(
       "get_mistakes",
       "get_edge_score",
       "search_memory",
+      "get_contract_math",
     ])
       if (!(edgeKept && t === "get_edge_score")) tools.add(t);
   }
