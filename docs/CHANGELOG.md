@@ -3,6 +3,17 @@
 Journal des changements **structurels** (pas des features ni des correctifs,
 qui vivent dans l'historique git et les PR).
 
+## 2026-10-20 — Laboratoire Monte Carlo et projection de stratégie
+
+- Extension pure `modules/probability/strategy.ts` (`strategy_projection_v1`) :
+  bootstrap de R nets ou métriques exactes, 10 000 trajectoires reproductibles,
+  projection complète distincte du compte arrêté par les règles canoniques.
+- Calcul et rasterisation du nuage dans deux Workers annulables ; tableaux
+  typés transférés, aucune liste de 10 000 composants SVG.
+- La page orchestre les composants de courbe, d'édition et d'explication ;
+  import CSV via le parseur partagé. Plans locaux isolés par sous-compte et
+  utilisateur, conservation de la distribution empirique pour les variantes.
+
 ## 2026-10-19 — Synchro live multi-appareils, palier 1
 
 - Moyeu unique `store/liveSync.ts` : un canal Realtime par compte pour toutes
