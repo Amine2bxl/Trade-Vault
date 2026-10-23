@@ -109,3 +109,5 @@ export { selection } from "./selection";
 
 export { PageControls } from "./PageControls";
 export { FilterControls, FilterSection } from "./FilterControls";
+export { RichTextarea, RichTextView } from "./RichText";
+export type { RichTextareaProps, RichTextLabels } from "./RichText";

@@ -431,6 +431,7 @@ const fr: Dict = {
   "inbox.categories": "Catégories",
   "inbox.loadError": "Impossible de charger les notifications.",
   "inbox.title": "Boîte de réception",
+  "screenshot.unavailable": "Capture indisponible",
   "liveStatus.offline":
     "Hors ligne — les changements de tes autres appareils arriveront au retour du réseau.",
   "liveStatus.connecting": "Reconnexion de la synchro en direct…",
@@ -1101,6 +1102,10 @@ const fr: Dict = {
   "common.pasteHint": "Capture avec Win+Maj+S, puis colle avec Ctrl+V",
   "trade.notes": "Notes",
   "trade.notesPlaceholder": "Observations sur le trade, leçons apprises...",
+  "richText.toolbar": "Mise en forme",
+  "richText.bold": "Gras",
+  "richText.italic": "Italique",
+  "richText.underline": "Souligné",
   "trade.updateTrade": "Mettre à jour le trade",
   "trade.saveTrade": "Enregistrer le trade",
   "trade.pasteHint":
@@ -1117,6 +1122,7 @@ const fr: Dict = {
   "tradeDetail.mistakes": "Erreurs",
   "tradeDetail.chartScreenshots": "Captures d'écran",
   "tradeDetail.notes": "Notes",
+  "tradeDetail.details": "Détails",
   "tradeDetail.missedSetup": "Setup manqué",
   "tradeDetail.tradeCountSuffix": "trade",
   "tradeDetail.tradesCountSuffix": "trades",

@@ -6,6 +6,7 @@ import { NAV_ITEMS } from "./navigation";
 import { formatPnl, formatShortDate } from "@/domain/tradeCalcs";
 import { exportTradesCSV } from "../features/journal/exportCsv";
 import { cn } from "@/shared/ui/cn";
+import { stripRichText } from "@/shared/richText";
 import { useT } from "../i18n/LanguageContext";
 import { Modal } from "@/shared/ui";
 
@@ -51,7 +52,7 @@ export default function CommandPalette({
             (tr) =>
               tr.symbol.toLowerCase().includes(q) ||
               tr.strategy.toLowerCase().includes(q) ||
-              tr.notes.toLowerCase().includes(q),
+              stripRichText(tr.notes).toLowerCase().includes(q),
           )
           .slice(0, 8)
       : [];

@@ -148,7 +148,7 @@ Import unique : `import { … } from "@/shared/ui"`. `shared/ui` n'importe jamai
 | --- | --- |
 | Typographie | `Display`, `Heading`, `Text`, `Label` |
 | Actions | `Button`, `Chip`, `RemovableChip` |
-| Saisie | `Input`, `Textarea`, `Select`, `Field`, `DateField`, `TimeField`, `SelectPicker`, `MultiPicker`, `RangePicker`, `ColorPicker`, `ChoiceGroup`, `Disclosure`, `FormSection` / `FormLabel` (sections numérotées qui se cochent, pastille obligatoire ou de catégorie) |
+| Saisie | `Input`, `Textarea`, `RichTextarea` / `RichTextView`, `Select`, `Field`, `DateField`, `TimeField`, `SelectPicker`, `MultiPicker`, `RangePicker`, `ColorPicker`, `ChoiceGroup`, `Disclosure`, `FormSection` / `FormLabel` (sections numérotées qui se cochent, pastille obligatoire ou de catégorie) |
 | Pages de paramètres | `SettingsGroup` (un cadre, des rangées à filets), `SettingsRow` (nom + aide à gauche, commande à droite), `SettingsAction` (rangée cliquable), `Toggle` (`role="switch"`) — jamais de carte dans une carte |
 | Surfaces | `Card` (+ `CardHeader/Title/Body`), `Modal`, `Sheet`, `PageContainer` |
 | Structure de page | `PageHeader`, `SectionHeader`, `SubNav`, `PageToolbar` |
@@ -221,6 +221,7 @@ par le même moteur, y compris dans une modale ou un filtre de période.
 | Besoin | Primitive à utiliser |
 | --- | --- |
 | Texte, nombre, note | `Field` + `Input` / `Textarea` |
+| Note mise en forme (gras, italique, souligné) | `RichTextarea` (même peau que `Textarea`, mini-barre sur la sélection, ⌘/Ctrl+B/I/U) + `RichTextView` à l’affichage ; stockage en texte à marques (`shared/richText.ts`) |
 | Un choix, plusieurs choix, période | `SelectPicker`, `MultiPicker`, `RangePicker` |
 | Date civile, heure civile | `DateField`, `TimeField` |
 | Choix courts visibles | `ChoiceGroup` (radio, clavier, état neutre) |

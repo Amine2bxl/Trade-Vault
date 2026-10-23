@@ -9,6 +9,18 @@ export function storagePathsOf(screenshots: string[] | null | undefined): string
   return (screenshots ?? []).filter((s) => !s.startsWith("data:"));
 }
 
+/**
+ * Les fichiers à supprimer APRÈS l'enregistrement réussi d'un trade modifié :
+ * ceux qu'il référençait avant et plus maintenant. Les supprimer avant (comme
+ * le faisait le formulaire) laissait, si l'enregistrement échouait, un trade
+ * restauré qui pointait vers des fichiers effacés — une capture à jamais
+ * cassée.
+ */
+export function orphanedScreenshots(before: string[] | undefined, after: string[]): string[] {
+  const kept = new Set(after);
+  return storagePathsOf(before).filter((p) => !kept.has(p));
+}
+
 export async function removeScreenshotFiles(paths: string[]): Promise<void> {
   if (paths.length === 0) return;
   // Best-effort: a failed storage cleanup should never block the row delete.
@@ -52,8 +64,13 @@ export async function getScreenshotUrl(path: string): Promise<string> {
   return data.signedUrl;
 }
 
-/** Batch variant: one network call for N paths instead of N calls. */
-export async function getScreenshotUrls(paths: string[]): Promise<Record<string, string>> {
+/** Batch variant: one network call for N paths instead of N calls.
+ *  `ttlSeconds` : validité des liens — le cache de `screenshotUrls.ts` s'y
+ *  aligne (il les re-signe avant l'expiration). */
+export async function getScreenshotUrls(
+  paths: string[],
+  ttlSeconds = 60 * 60 * 24,
+): Promise<Record<string, string>> {
   const out: Record<string, string> = {};
   const storagePaths: string[] = [];
   for (const p of paths) {
@@ -63,7 +80,7 @@ export async function getScreenshotUrls(paths: string[]): Promise<Record<string,
   if (storagePaths.length > 0) {
     const { data, error } = await supabase.storage
       .from(SCREENSHOTS_BUCKET)
-      .createSignedUrls(storagePaths, 60 * 60);
+      .createSignedUrls(storagePaths, ttlSeconds);
     if (error) throw error;
     for (const item of data ?? []) {
       if (item.signedUrl && item.path) out[item.path] = item.signedUrl;

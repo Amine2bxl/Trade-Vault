@@ -2,25 +2,30 @@ import { useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { X, ChevronLeft, ChevronRight } from "@/shared/ui/icons";
 import { useT } from "../i18n/LanguageContext";
+import { useScreenshotUrls } from "../hooks/useScreenshotUrls";
+import { ScreenshotImage } from "./ScreenshotImage";
 
 interface LightboxProps {
-  images: string[];
+  /** Chemins des captures (stockage ou `data:`) : les liens sont résolus ici,
+   *  et re-signés s'ils expirent pendant qu'on regarde. */
+  paths: string[];
   index: number;
   onClose: () => void;
   onIndexChange: (i: number) => void;
 }
 
-export default function Lightbox({ images, index, onClose, onIndexChange }: LightboxProps) {
+export default function Lightbox({ paths, index, onClose, onIndexChange }: LightboxProps) {
   const { t } = useT();
-  const hasMultiple = images.length > 1;
+  const urls = useScreenshotUrls(paths);
+  const hasMultiple = paths.length > 1;
 
   const prev = useCallback(() => {
-    onIndexChange((index - 1 + images.length) % images.length);
-  }, [index, images.length, onIndexChange]);
+    onIndexChange((index - 1 + paths.length) % paths.length);
+  }, [index, paths.length, onIndexChange]);
 
   const next = useCallback(() => {
-    onIndexChange((index + 1) % images.length);
-  }, [index, images.length, onIndexChange]);
+    onIndexChange((index + 1) % paths.length);
+  }, [index, paths.length, onIndexChange]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -37,8 +42,8 @@ export default function Lightbox({ images, index, onClose, onIndexChange }: Ligh
     };
   }, [onClose, prev, next, hasMultiple]);
 
-  const src = images[index];
-  if (!src) return null;
+  const path = paths[index];
+  if (!path) return null;
 
   return createPortal(
     <div
@@ -81,7 +86,7 @@ export default function Lightbox({ images, index, onClose, onIndexChange }: Ligh
             <ChevronRight className="w-5 h-5" />
           </button>
           <div className="tv-figure tv-figure-secondary absolute bottom-5 md:bottom-8 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full glass-strong border border-white/10 text-[11px] text-slate-300 z-10">
-            {index + 1} / {images.length}
+            {index + 1} / {paths.length}
           </div>
         </>
       )}
@@ -90,12 +95,15 @@ export default function Lightbox({ images, index, onClose, onIndexChange }: Ligh
           image — closes. Only the image itself swallows the click, so on mobile
           there's a huge, forgiving exit zone and no fiddly corner-only target. */}
       <div className="w-full h-full flex items-center justify-center p-4 md:p-5">
-        <img
-          src={src}
-          alt="Screenshot"
-          onClick={(e) => e.stopPropagation()}
-          className="max-w-[92vw] max-h-[82vh] md:max-w-[80vw] md:max-h-[84vh] object-contain rounded-2xl shadow-2xl shadow-black/60 border border-white/[0.08] animate-slide-in"
-        />
+        <div onClick={(e) => e.stopPropagation()}>
+          <ScreenshotImage
+            path={path}
+            url={urls[path] ?? ""}
+            alt={`Screenshot ${index + 1}`}
+            boxClassName="h-40 w-64 rounded-2xl border border-white/[0.08] bg-black/40"
+            className="max-w-[92vw] max-h-[82vh] md:max-w-[80vw] md:max-h-[84vh] object-contain rounded-2xl shadow-2xl shadow-black/60 border border-white/[0.08] animate-slide-in"
+          />
+        </div>
       </div>
     </div>,
     document.body,

@@ -472,6 +472,7 @@ const en = {
   "inbox.categories": "Categories",
   "inbox.loadError": "Could not load notifications.",
   "inbox.title": "Inbox",
+  "screenshot.unavailable": "Screenshot unavailable",
   "liveStatus.offline":
     "You're offline — changes from your other devices will show up when you reconnect.",
   "liveStatus.connecting": "Reconnecting live sync…",
@@ -1144,6 +1145,10 @@ const en = {
   "common.pasteHint": "Snip with Win+Shift+S, then paste with Ctrl+V",
   "trade.notes": "Notes",
   "trade.notesPlaceholder": "Trade observations, lessons learned...",
+  "richText.toolbar": "Formatting",
+  "richText.bold": "Bold",
+  "richText.italic": "Italic",
+  "richText.underline": "Underline",
   "trade.updateTrade": "Update Trade",
   "trade.saveTrade": "Save Trade",
   "trade.pasteHint":
@@ -1162,6 +1167,7 @@ const en = {
   "tradeDetail.mistakes": "Mistakes",
   "tradeDetail.chartScreenshots": "Chart Screenshots",
   "tradeDetail.notes": "Notes",
+  "tradeDetail.details": "Details",
   "tradeDetail.missedSetup": "Missed Setup",
   "tradeDetail.tradeCountSuffix": "trade",
   "tradeDetail.tradesCountSuffix": "trades",

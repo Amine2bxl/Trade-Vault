@@ -5817,6 +5817,34 @@ body::after {
   background: var(--tv-plate-0);
   box-shadow: var(--tv-elev-3);
 }
+/* L'APERÇU D'UN TRADE SUR TÉLÉPHONE (`TradeDetailSheet`) — exception assumée
+   à « carte centrée partout ». Un aperçu se LIT : captures, notes. Dans une
+   carte entourée de marges, les captures restaient minuscules et le ✕ dur à
+   viser. La feuille prend tout l'écran (safe areas comprises), sans ombre ni
+   reflet, et se ferme par ✕ ou en la glissant vers le bas. */
+.tv-dialog-wrap.tv-trade-sheet-wrap {
+  padding: 0;
+  align-items: stretch;
+}
+.tv-dialog.tv-trade-sheet {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  max-height: 100dvh;
+  padding-top: env(safe-area-inset-top, 0px);
+  border-width: 0;
+  border-radius: 0;
+  background: var(--tv-bg);
+  box-shadow: none;
+}
+/* Le carrousel des captures défile au doigt, sans barre de défilement. */
+.tv-shot-track {
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.tv-shot-track::-webkit-scrollbar {
+  display: none;
+}
 /* La feuille (`Sheet`) : carte centrée sur téléphone, panneau latéral sur
    bureau — le même langage que `.tv-dialog`. */
 .tv-sheet-wrap {

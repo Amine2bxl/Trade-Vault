@@ -26,7 +26,8 @@ import {
   uploadMissedScreenshot,
   deleteScreenshot,
 } from "@/app/store";
-import { useScreenshotUrls, invalidateScreenshot } from "@/app/hooks/useScreenshotUrls";
+import { useScreenshotUrls } from "@/app/hooks/useScreenshotUrls";
+import { ScreenshotImage } from "@/app/components/ScreenshotImage";
 import { formatShortDate } from "@/domain/tradeCalcs";
 import { compressImageToFile } from "@/app/utils/image";
 import { cn } from "@/shared/ui/cn";
@@ -495,7 +496,6 @@ export function ScreenshotsView({
   // Batched + cached signed-URL resolution shared with the trade modals.
   const urls = useScreenshotUrls(paths);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
-  const resolvedUrls = paths.map((p) => urls[p]).filter(Boolean);
   const dragIndex = useRef<number | null>(null);
 
   return (
@@ -531,41 +531,34 @@ export function ScreenshotsView({
               size === "lg" ? "rounded-2xl shadow-lg shadow-black/20" : "rounded-xl",
             )}
           >
-            {urls[p] ? (
-              <button
-                type="button"
-                onClick={() => setLightboxIndex(resolvedUrls.indexOf(urls[p]))}
-                className="block w-full h-full"
-              >
-                <img
-                  src={urls[p]}
-                  alt=""
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  onError={() => {
-                    invalidateScreenshot(p);
-                  }}
-                />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
-                  <span
-                    className={cn(
-                      "opacity-0 group-hover:opacity-100 transition-opacity text-white font-semibold bg-black/50 rounded-md backdrop-blur-sm",
-                      size === "lg" ? "text-xs px-2.5 py-1" : "text-[10px] px-1.5 py-0.5",
-                    )}
-                  >
-                    {t("common.view")}
-                  </span>
-                </div>
-                {size === "lg" && (
-                  <span className="tv-num absolute bottom-1.5 right-1.5 text-[10px] font-bold text-white/80 bg-black/50 px-1.5 py-0.5 rounded-md backdrop-blur-sm">
-                    {i + 1}/{paths.length}
-                  </span>
-                )}
-              </button>
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-slate-600">
-                <Loader2 className="w-4 h-4 animate-spin" />
+            <button
+              type="button"
+              onClick={() => setLightboxIndex(i)}
+              className="block w-full h-full"
+            >
+              <ScreenshotImage
+                path={p}
+                url={urls[p] ?? ""}
+                alt=""
+                boxClassName="w-full h-full"
+                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                <span
+                  className={cn(
+                    "opacity-0 group-hover:opacity-100 transition-opacity text-white font-semibold bg-black/50 rounded-md backdrop-blur-sm",
+                    size === "lg" ? "text-xs px-2.5 py-1" : "text-[10px] px-1.5 py-0.5",
+                  )}
+                >
+                  {t("common.view")}
+                </span>
               </div>
-            )}
+              {size === "lg" && (
+                <span className="tv-num absolute bottom-1.5 right-1.5 text-[10px] font-bold text-white/80 bg-black/50 px-1.5 py-0.5 rounded-md backdrop-blur-sm">
+                  {i + 1}/{paths.length}
+                </span>
+              )}
+            </button>
             {onReorder && paths.length > 1 && (
               <div className="absolute inset-x-0 bottom-0 flex justify-between bg-black/60 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                 <button
@@ -603,7 +596,7 @@ export function ScreenshotsView({
       </div>
       {lightboxIndex !== null && (
         <Lightbox
-          images={resolvedUrls}
+          paths={paths}
           index={lightboxIndex}
           onClose={() => setLightboxIndex(null)}
           onIndexChange={setLightboxIndex}
