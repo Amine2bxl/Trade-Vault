@@ -97,61 +97,36 @@ describe("les pages plein écran", () => {
  * On exige donc qu'elle soit là, juste avant chaque conteneur.
  */
 describe("les graphes de Monte-Carlo", () => {
-  const src = read("../src/app/features/monte-carlo/MonteCarlo.tsx");
-
-  test("chaque ResponsiveContainer a un parent de hauteur DÉFINIE", () => {
-    const morceaux = src.split("<ResponsiveContainer");
-    // Le fichier en monte au moins deux : le faisceau et la distribution.
-    expect(morceaux.length - 1).toBeGreaterThanOrEqual(2);
-
-    for (let i = 1; i < morceaux.length; i++) {
-      // Le conteneur porteur de la hauteur est l'élément qui enveloppe
-      // directement le graphe : il tient dans les quelques lignes qui
-      // précèdent.
-      const avant = morceaux[i - 1].slice(-300);
-      expect(avant).toMatch(/h-\[\d+px\]|H_COURBE|H_DISTRIB/);
-    }
+  const chart = read("../src/app/features/monte-carlo/StrategyChart.tsx");
+  const details = read("../src/app/features/monte-carlo/StrategyDetails.tsx");
+  test("le nuage raster et le SVG principal ont une hauteur réelle, indépendante du parent", () => {
+    expect(chart).toMatch(/const PLOT_HEIGHT = [1-9]\d*/);
+    expect(chart).toContain("style={{ height: PLOT_HEIGHT }}");
+    expect(chart).toContain("height={PLOT_HEIGHT}");
+    expect(chart).toContain("pixelHeight = Math.round(PLOT_HEIGHT * dpr)");
+    expect(chart).toContain("height: pixelHeight");
+    const raster = read("../src/app/features/monte-carlo/cloud.worker.ts");
+    expect(raster).toContain("new OffscreenCanvas(width, height)");
   });
-
-  test("les deux hauteurs nommées sont bien des pixels, pas des pourcentages", () => {
-    // `H_COURBE = "h-full"` passerait le test précédent tout en reproduisant
-    // exactement le bug : la constante doit résoudre en pixels.
-    for (const nom of ["H_COURBE", "H_DISTRIB"]) {
-      const ligne = src.match(new RegExp(`const ${nom} = "([^"]+)"`));
-      expect(ligne).not.toBeNull();
-      expect(ligne![1]).toMatch(/h-\[\d+px\]/);
-    }
+  test("les graphes détaillés gardent des parents de hauteur définie", () => {
+    const parts = details.split("<ResponsiveContainer");
+    expect(parts.length - 1).toBeGreaterThanOrEqual(2);
+    expect(details).toMatch(/const H_DISTRIB = "h-\[\d+px\]"/);
+    for (let i = 1; i < parts.length; i++) expect(parts[i - 1].slice(-300)).toContain("H_DISTRIB");
   });
-
-  test("les cinq percentiles du faisceau atteignent tous le graphe", () => {
-    // L'INVARIANT, ET NON LA FORME. Trois formes se sont succédé — cinq aplats
-    // empilés, puis cinq lignes, puis deux bandes et une médiane — et la même
-    // question se pose à chaque fois : les cinq percentiles calculés
-    // finissent-ils réellement dessinés ? La première forme rendait quatre
-    // d'entre eux invisibles (6 % d'opacité) sans que rien ne le signale.
-    //
-    // On vérifie donc les deux bouts de la chaîne : les cinq sont CALCULÉS, et
-    // chacun est porté par une `dataKey` du graphe.
-    // Le calcul vit désormais dans `features/monte-carlo/monteCarloViz.ts` (testé à part) ;
-    // le graphe, dans `Trajectoires`.
-    const viz = read("../src/app/features/monte-carlo/monteCarloViz.ts");
+  test("les cinq percentiles calculés atteignent les bandes et la médiane", () => {
+    const engine = read("../src/modules/probability/strategy.ts");
     for (const [p, q] of [
       ["p5", "0.05"],
       ["p25", "0.25"],
       ["p50", "0.5"],
       ["p75", "0.75"],
       ["p95", "0.95"],
-    ]) {
-      expect(viz).toContain(`${p}: quantile(vals, ${q})`);
-    }
-    // p25/p75 et p5/p95 voyagent par couples dans les deux bandes ; la médiane
-    // garde sa ligne propre.
-    expect(viz).toContain("band90: [b.p5, b.p95]");
-    expect(viz).toContain("band50: [b.p25, b.p75]");
-    const graphe = src.slice(src.indexOf("function Trajectoires("));
-    for (const cle of ["band90", "band50", "p50", "p95", "p5"]) {
-      expect(graphe).toContain(`dataKey="${cle}"`);
-    }
+    ])
+      expect(engine).toContain(`${p}: percentile(column, ${q})`);
+    expect(chart).toContain('area("p5", "p95")');
+    expect(chart).toContain('area("p25", "p75")');
+    expect(chart).toContain('path("p50")');
   });
 });
 
