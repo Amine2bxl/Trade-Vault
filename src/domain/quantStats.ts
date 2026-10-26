@@ -16,43 +16,41 @@ export function getSession(entryTime: string): TradingSession | null {
   return "asia";
 }
 
-// ── Macro events (auto-derived from the trade date) ────────────────────────
-// NFP: first Friday of the month (deterministic BLS rule).
-// FOMC: hardcoded decision days (published Fed schedule 2024–2026).
-const FOMC_DECISION_DAYS = new Set([
-  "2024-01-31",
-  "2024-03-20",
-  "2024-05-01",
-  "2024-06-12",
-  "2024-07-31",
-  "2024-09-18",
-  "2024-11-07",
-  "2024-12-18",
-  "2025-01-29",
-  "2025-03-19",
-  "2025-05-07",
-  "2025-06-18",
-  "2025-07-30",
-  "2025-09-17",
-  "2025-10-29",
-  "2025-12-10",
-  "2026-01-28",
-  "2026-03-18",
-  "2026-04-29",
-  "2026-06-17",
-  "2026-07-29",
-  "2026-09-16",
-  "2026-10-28",
-  "2026-12-09",
-]);
+// ── Événements macro confirmés ─────────────────────────────────────────────
+// Les dates de NFP/FOMC ne sont jamais inférées à partir du calendrier civil.
+// Elles proviennent uniquement du cache économique externe historisé.
+export interface VerifiedMacroEvent {
+  startsAt: string;
+  title: string;
+  source: string;
+}
 
-export function getMacroEvents(date: string): string[] {
-  const events: string[] = [];
-  const d = new Date(date + "T12:00:00");
-  if (Number.isNaN(d.getTime())) return events;
-  if (d.getDay() === 5 && d.getDate() <= 7) events.push("NFP");
-  if (FOMC_DECISION_DAYS.has(date)) events.push("FOMC");
-  return events;
+/** Jour de publication à New York, indépendant du fuseau de l'appareil. */
+function macroDayNy(instant: Date): string {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(instant);
+  const part = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
+  return `${part("year")}-${part("month")}-${part("day")}`;
+}
+
+/** Ne renvoie aucun badge à partir d'une date seule ni d'un calendrier approximatif. */
+export function getMacroEvents(date: string, events: readonly VerifiedMacroEvent[] = []): string[] {
+  if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(date)) return [];
+  const found = new Set<string>();
+  for (const event of events) {
+    if (event.source === "builtin") continue;
+    const instant = new Date(event.startsAt);
+    if (Number.isNaN(instant.getTime()) || macroDayNy(instant) !== date) continue;
+    const title = event.title.toLowerCase();
+    if (/non[ -]?farm (?:payrolls|employment change)/.test(title) && !title.includes("adp"))
+      found.add("NFP");
+    if (/\\bfomc\\b|federal funds rate/.test(title)) found.add("FOMC");
+  }
+  return [...found];
 }
 
 // ── Quant metrics ───────────────────────────────────────────────────────────
