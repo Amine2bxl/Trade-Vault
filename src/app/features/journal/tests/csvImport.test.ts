@@ -2,6 +2,7 @@ import { describe, it, expect } from "bun:test";
 import {
   guessMapping,
   mapRowsToTrades,
+  JOURNAL_REQUIRED,
   parseCsv,
   parseDateTime,
   parseDirection,
@@ -190,6 +191,44 @@ describe("mapRowsToTrades", () => {
   it("un risque absent donne un R multiple de 0, pas une division par zéro", () => {
     const { valid } = mapRowsToTrades([["2026-03-14", "ES", "250"]], mapping);
     expect(valid[0].rMultiple).toBe(0);
+  });
+});
+
+describe("journal import — provenance de la direction", () => {
+  const mapping = { date: 0, symbol: 1, pnl: 2, direction: 3 };
+
+  it("rejette un sens absent au lieu de produire silencieusement un long", () => {
+    const result = mapRowsToTrades(
+      [["2026-03-14", "ES", "250", ""]],
+      mapping,
+      { required: JOURNAL_REQUIRED },
+    );
+    expect(result.valid).toHaveLength(0);
+    expect(result.invalid).toBe(1);
+  });
+
+  it("refuse une direction inconnue, mais conserve les longs et shorts prouvés", () => {
+    const result = mapRowsToTrades(
+      [
+        ["2026-03-14", "ES", "250", "Buy"],
+        ["2026-03-15", "ES", "-100", "Sell"],
+        ["2026-03-16", "ES", "12", "Unknown"],
+      ],
+      mapping,
+      { required: JOURNAL_REQUIRED },
+    );
+    expect(result.valid.map((trade) => trade.direction)).toEqual(["long", "short"]);
+    expect(result.invalid).toBe(1);
+  });
+
+  it("n'exige pas le sens pour une simulation Monte Carlo non persistée", () => {
+    const result = mapRowsToTrades(
+      [["", "", "-120", ""]],
+      mapping,
+      { required: ["pnl"] },
+    );
+    expect(result.valid).toHaveLength(1);
+    expect(result.valid[0].pnl).toBe(-120);
   });
 });
 
