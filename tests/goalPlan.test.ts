@@ -2,8 +2,13 @@ import { expect, test } from "bun:test";
 import {
   tasksForMonth,
   monthTaskCompletion,
+  isGoalMetricAvailable,
+  type MeasureCtx,
   type GoalPlan,
 } from "../src/app/features/goals/goalPlan";
+import { computeStats } from "../src/domain/tradeCalcs";
+import { computeQuantStats } from "../src/domain/quantStats";
+import type { Trade } from "../src/domain/trade";
 
 const plan: GoalPlan = {
   goals: [{ id: "g1", kind: "capital", startValue: 10000, targetValue: 20000 }],
@@ -55,4 +60,43 @@ test("falls back to the generic task when there is no logged mistake", () => {
     topMistake: { name: "won anyway", totalPnl: 120, count: 2 },
   });
   expect(c.find((t) => t.key === "0:generic:0")!.title).toBe(sharedA.title);
+});
+
+test("goals never treat unavailable Profit Factor or R as verified zero", () => {
+  const sample = (pnl: number, riskAmount: number, id: string): Trade => ({
+    id,
+    date: "2026-07-01",
+    symbol: "NQ",
+    direction: pnl < 0 ? "short" : "long",
+    pnl,
+    riskAmount,
+    rMultiple: riskAmount > 0 ? pnl / riskAmount : 0,
+    strategy: "test",
+    mistakes: [],
+    setupQuality: 3,
+    notes: "",
+    screenshots: [],
+    entryTime: "09:30",
+    exitTime: "09:35",
+    confluences: [],
+    confidence: 50,
+  });
+  const onlyWin = [sample(100, 0, "a")];
+  const emptyCtx: MeasureCtx = {
+    stats: computeStats(onlyWin),
+    quant: computeQuantStats(onlyWin),
+    startingBalance: 25000,
+    journalRate: 0,
+  };
+  expect(isGoalMetricAvailable({ kind: "profit_factor" }, emptyCtx)).toBe(false);
+  expect(isGoalMetricAvailable({ kind: "avg_rr" }, emptyCtx)).toBe(false);
+
+  const observed = [sample(100, 100, "a"), sample(-50, 100, "b")];
+  const verifiedCtx: MeasureCtx = {
+    ...emptyCtx,
+    stats: computeStats(observed),
+    quant: computeQuantStats(observed),
+  };
+  expect(isGoalMetricAvailable({ kind: "profit_factor" }, verifiedCtx)).toBe(true);
+  expect(isGoalMetricAvailable({ kind: "avg_rr" }, verifiedCtx)).toBe(true);
 });
