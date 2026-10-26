@@ -216,6 +216,7 @@ describe("journal import — provenance de la direction", () => {
       { required: JOURNAL_REQUIRED },
     );
     expect(result.valid.map((trade) => trade.direction)).toEqual(["long", "short"]);
+    expect(result.valid.every((trade) => trade.reviewPending)).toBe(true);
     expect(result.invalid).toBe(1);
   });
 
