@@ -145,8 +145,7 @@ export function buildMonthlyReport(
     losses: stats.losses,
     breakEven: stats.breakEven,
     winRate: Math.round(stats.winRate * 100) / 100,
-    profitFactor:
-      stats.profitFactor === null ? null : Math.round(stats.profitFactor * 100) / 100,
+    profitFactor: stats.profitFactor === null ? null : Math.round(stats.profitFactor * 100) / 100,
     expectancy: round2(quant.expectancy),
     expectancyR: Math.round(quant.expectancyR * 100) / 100,
     sharpe: quant.sharpe !== null ? Math.round(quant.sharpe * 100) / 100 : null,
