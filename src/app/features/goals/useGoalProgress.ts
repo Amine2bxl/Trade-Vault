@@ -3,7 +3,7 @@ import type { Trade } from "@/app/types";
 import { computeStats } from "@/domain/tradeCalcs";
 import { computeQuantStats } from "@/domain/quantStats";
 import { loadStartingBalance } from "@/app/store";
-import { loadGoalPlan, currentGoalValue, type GoalPlan, type MeasureCtx } from "./goalPlan";
+import { loadGoalPlan, currentGoalValue, isGoalMetricAvailable, type GoalPlan, type MeasureCtx } from "./goalPlan";
 import { useLiveTable } from "@/app/hooks/useLiveTable";
 
 /**
@@ -116,11 +116,13 @@ export function useGoalProgress(
 
   const measured = useMemo<MeasuredGoal[]>(
     () =>
-      (plan?.goals ?? []).map((g) => ({
-        kind: g.kind,
-        target: g.targetValue,
-        current: currentGoalValue(g, ctx),
-      })),
+      (plan?.goals ?? [])
+        .filter((g) => isGoalMetricAvailable(g, ctx))
+        .map((g) => ({
+          kind: g.kind,
+          target: g.targetValue,
+          current: currentGoalValue(g, ctx),
+        })),
     [plan, ctx],
   );
 
