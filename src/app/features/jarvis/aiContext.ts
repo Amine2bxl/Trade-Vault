@@ -63,7 +63,7 @@ function compactStats(s: TradeStats): Record<string, number | string | null> {
     avgWin: round(s.avgWin),
     avgLoss: round(s.avgLoss),
     profitFactor: s.profitFactor === null ? null : round(s.profitFactor),
-    avgRR: round(s.avgRR),
+    avgRR: s.rSampleSize > 0 ? round(s.avgRR) : null,
     maxDrawdown: round(s.maxDrawdown),
     currentStreak: s.currentStreak,
     currentStreakType: s.currentStreakType,
