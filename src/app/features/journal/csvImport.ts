@@ -433,6 +433,9 @@ export function mapRowsToTrades(
       exitTime: exitDt?.time || "",
       confluences: [],
       confidence: 50,
+      // Les valeurs par défaut de qualité/confiance ne sont PAS des réponses
+      // du trader. Le trade exige une révision avant d'alimenter ces analyses.
+      reviewPending: true,
       mae: null,
       mfe: null,
       slippage: slippage !== null ? slippage : null,
