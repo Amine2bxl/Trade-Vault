@@ -25,6 +25,8 @@ Un document par sujet ; une information vit à un seul endroit.
 | [`PRODUCT.md`](PRODUCT.md) | Positionnement, cible, offres, règles d'honnêteté, persona de Jarvis |
 | [`SEO.md`](SEO.md) | Surface publique indexable, données structurées, interdits |
 | [`ROADMAP.md`](ROADMAP.md) | Ce qui reste à faire, vérifié contre le code |
+| [`QUANT_AUDIT_COVERAGE.md`](QUANT_AUDIT_COVERAGE.md) | **Traçabilité complète de l'audit du 26 octobre** : tâches, dépendances, état, tests et critères de sortie pour les lots 0–6 |
+| [`QUANT_CORRECTNESS_PROGRESS.md`](QUANT_CORRECTNESS_PROGRESS.md) | Registre opérationnel versionné du lot en cours : changements validés, tâches ouvertes et CI |
 | [`CHANGELOG.md`](CHANGELOG.md) | Journal des changements structurels |
 
 Les règles pour les agents IA sont dans [`../AGENTS.md`](../AGENTS.md). Les lois
