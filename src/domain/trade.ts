@@ -89,6 +89,10 @@ export interface TradeStats {
   worstTrade: Trade | null;
   /** R réalisé moyen, calculé seulement sur les trades à risque initial connu. */
   avgRR: number;
+  /** Gain réalisé moyen en R, sur les gagnants à risque initial connu. */
+  avgWinR: number | null;
+  /** Perte réalisée moyenne signée en R, sur les perdants à risque connu. */
+  avgLossR: number | null;
   /** Nombre de trades permettant de calculer un R observé. */
   rSampleSize: number;
   /** Part des trades avec un R effectivement mesurable (0..100). */
