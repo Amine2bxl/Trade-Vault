@@ -1419,7 +1419,7 @@ const fr: Dict = {
   "quant.recoverySub": "du drawdown au nouveau sommet",
   "quant.avgRRSub": "R réalisé moyen, pertes incluses",
   "quant.infoAvgRR":
-    "En moyenne, combien tu vises pour chaque unité risquée. 2R = viser 2 pour 1 risqué.",
+    "R réalisé moyen par trade, avec les pertes négatives. +0,2R signifie un gain moyen observé de 0,2 unité de risque initial par trade.",
   "quant.infoExpectancy":
     "Ce que rapporte un trade moyen, gains et pertes confondus. Positif = ton système gagne de l'argent sur la durée.",
   "quant.infoSharpe":
