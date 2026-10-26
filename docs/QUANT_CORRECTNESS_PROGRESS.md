@@ -32,6 +32,37 @@ Baseline: `079d185f8e1917ca1ef48321f3e1697064db40ba`. Branch: `feat/quant-correc
 Do not mark lot 0 DONE or start lot 1 until every applicable gate has been verified.
 Do not merge to main without an explicit approval.
 
+## Revue du 26 octobre — état technique de cette session
+
+**Dernier commit applicatif vérifié :** `18ec32f2`.
+**GitHub Actions :** [40406362690](https://github.com/Amine2bxl/Trade-Vault/actions/runs/40406362690) — typecheck, lint, build, tests Bun et tests SQL **réussis**, y compris les suites multi-fuseaux.
+
+### Livraisons complémentaires vérifiées
+
+- [x] Règle `stop_after_losses` : seules les pertes effectivement clôturées avant l'entrée sont prises en compte ; heure de clôture absente ou simultanée → UNKNOWN.
+- [x] Vérification du pourcentage de risque historique uniquement sur un solde d'entrée fourni explicitement et vérifié ; le solde actuel n'est plus assimilé à celui du passé.
+- [x] Messages des règles débarrassés des affirmations causales/statistiques génériques non établies par les données du trader.
+- [x] Import Journal : direction prouvée obligatoire, sinon ligne écartée ; le CSV destiné à Monte Carlo garde une lecture P&L seule non persistée.
+- [x] Les nouvelles entrées CSV sont `reviewPending` : les notes initiales de qualité et de confiance ne produisent plus de corrélations comportementales tant que le trader ne les a pas revues.
+- [x] Saisonnalité visible : données personnelles issues du journal, avec échantillons minimums. Les chiffres historiques de marché approximatifs sont masqués, et leur absence de source vérifiée est expliquée.
+- [x] Objectifs PF, R moyen et drawdown : aucune progression affichée comme prouvée si la métrique n'est pas calculable ; les objectifs indisponibles sont exclus des mesures envoyées au coach.
+- [x] Régression automatisée de ces changements dans les tests d'import, d'adhérence, de comportement et d'objectifs.
+
+### Travail encore ouvert — NE PAS DÉCLARER LOT 0 DONE
+
+- [ ] Construire un producteur de soldes historiquement vérifiés (avec dépôts, retraits, exécutions et ordre réel). Tant qu'il est absent, les contrôles de risque historiques restent UNKNOWN.
+- [ ] Migrer définitivement les champs subjectifs importés vers des valeurs inconnues persistées, et vérifier toutes les interfaces consommatrices. `reviewPending` est un garde-fou transitoire, pas un remplacement du modèle nullable.
+- [ ] Brancher une source d'historique de marché fiable et autorisée commercialement pour les tendances saisonnières par actif. Ne pas réactiver les tableaux approximatifs.
+- [ ] Vérifier et documenter les sessions de trading avec les fuseaux importés (utilisateur/broker versus America/New_York).
+- [ ] Auditer le moteur de notation des trades : exécution 70/100 sans MAE/MFE, valeurs non observées et conclusions comportementales non prouvées.
+- [ ] Réconcilier les anciens moteurs Monte Carlo encore utilisés, les règles de trailing intraday et les conventions de Profit Factor.
+- [ ] Terminer la migration des valeurs inconnues vers tous les consommateurs et les golden datasets quantitatifs indépendants.
+- [ ] Revue finale de la PR et tests complets sur le commit final du lot 0.
+
+**Statut : IN PROGRESS.** Les lots 1 à 6 restent NOT STARTED. Aucune fusion sur `main` sans autorisation.
+
+---
+
 ## Plan de transformation verrouillé — lots strictement séquentiels
 
 Ce registre est une source de suivi, pas une déclaration de livraison. Le passage
