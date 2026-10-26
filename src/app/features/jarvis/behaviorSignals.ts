@@ -212,8 +212,11 @@ export function computeBehaviorSignals(trades: Trade[]): BehaviorSignals {
   }
 
   // ── Does the trader's own grading predict anything? ───────────────────────
-  const qHigh = trades.filter((t) => t.setupQuality >= 4);
-  const qLow = trades.filter((t) => t.setupQuality > 0 && t.setupQuality <= 2);
+  // Les imports non relus ont des notes techniques par défaut : elles ne
+  // représentent pas le jugement du trader et ne doivent pas générer d'edge.
+  const selfGraded = trades.filter((t) => !t.reviewPending);
+  const qHigh = selfGraded.filter((t) => t.setupQuality >= 4);
+  const qLow = selfGraded.filter((t) => t.setupQuality > 0 && t.setupQuality <= 2);
   if (qHigh.length >= 4 && qLow.length >= 4) {
     signals.setupQuality = {
       high: bucketOf("quality>=4", qHigh),
@@ -221,8 +224,8 @@ export function computeBehaviorSignals(trades: Trade[]): BehaviorSignals {
     };
   }
 
-  const cHigh = trades.filter((t) => t.confidence >= 75);
-  const cLow = trades.filter((t) => t.confidence > 0 && t.confidence <= 40);
+  const cHigh = selfGraded.filter((t) => t.confidence >= 75);
+  const cLow = selfGraded.filter((t) => t.confidence > 0 && t.confidence <= 40);
   if (cHigh.length >= 4 && cLow.length >= 4) {
     signals.conviction = {
       high: bucketOf("confidence>=75", cHigh),
