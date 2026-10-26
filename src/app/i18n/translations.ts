@@ -1453,6 +1453,7 @@ const en = {
   "quant.expectancy": "Expectancy",
   "quant.cleanTrades": "Clean trades",
   "quant.needTenDays": "needs ≥10 trading days",
+  "quant.noDownside": "no downside variation observed",
   "quant.annualized": "annualized, daily PnL",
   "quant.kellyHint": "indicative - from 30 trades",
   "quant.consistency": "Consistency",
