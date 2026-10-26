@@ -86,6 +86,8 @@ export function inspectRuleAdherence(
   rules: TradingRule[],
   accountBalance: number,
   windowDays: number = ADHERENCE_WINDOW_DAYS,
+  /** Soldes historiques vérifiés AVANT l'entrée de chaque trade. */
+  balanceBeforeTrade?: ReadonlyMap<string, number>,
 ): RuleAdherenceInspection[] {
   const checkable = rules.filter((r) => r.enabled && r.kind !== "custom");
   if (checkable.length === 0 || trades.length === 0) return [];
@@ -128,10 +130,15 @@ export function inspectRuleAdherence(
     for (const tr of ordered) {
       for (const rule of checkable) {
         const cumulative = rule.kind === "max_trades_day" || rule.kind === "stop_after_losses";
+        const historicalBalance = balanceBeforeTrade?.get(tr.id);
+        const riskUnverifiable = rule.kind === "max_risk_pct" && historicalBalance === undefined;
         const verdict =
-          cumulative && !deterministic
+          (cumulative && !deterministic) || riskUnverifiable
             ? "UNKNOWN"
-            : evaluateTradeRule(tr, rule, { sameDayTrades: earlier, accountBalance }).status;
+            : evaluateTradeRule(tr, rule, {
+                sameDayTrades: earlier,
+                accountBalance: rule.kind === "max_risk_pct" ? historicalBalance! : accountBalance,
+              }).status;
         const s = stats.get(rule.id) ?? { checked: 0, kept: 0, unknown: 0, total: 0 };
         s.total++;
         if (verdict === "UNKNOWN") s.unknown++;
@@ -173,8 +180,9 @@ export function computeRuleAdherence(
   rules: TradingRule[],
   accountBalance: number,
   windowDays: number = ADHERENCE_WINDOW_DAYS,
+  balanceBeforeTrade?: ReadonlyMap<string, number>,
 ): RuleAdherence[] {
-  return inspectRuleAdherence(trades, rules, accountBalance, windowDays).filter(
+  return inspectRuleAdherence(trades, rules, accountBalance, windowDays, balanceBeforeTrade).filter(
     (entry): entry is RuleAdherence => entry.ratePct !== null && entry.coveragePct === 100,
   );
 }
