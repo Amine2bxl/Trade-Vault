@@ -3,7 +3,13 @@ import type { Trade } from "@/app/types";
 import { computeStats } from "@/domain/tradeCalcs";
 import { computeQuantStats } from "@/domain/quantStats";
 import { loadStartingBalance } from "@/app/store";
-import { loadGoalPlan, currentGoalValue, isGoalMetricAvailable, type GoalPlan, type MeasureCtx } from "./goalPlan";
+import {
+  loadGoalPlan,
+  currentGoalValue,
+  isGoalMetricAvailable,
+  type GoalPlan,
+  type MeasureCtx,
+} from "./goalPlan";
 import { useLiveTable } from "@/app/hooks/useLiveTable";
 
 /**
