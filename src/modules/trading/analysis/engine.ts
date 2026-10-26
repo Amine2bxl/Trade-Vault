@@ -184,10 +184,7 @@ export function analyzeTrade(trade: Trade, ctx: AnalysisContext): TradeAnalysis 
     { value: disciplineScore, weight: 0.3 },
     { value: executionScore, weight: 0.15 },
   ];
-  const coverage = measured.reduce(
-    (sum, item) => sum + (item.value === null ? 0 : item.weight),
-    0,
-  );
+  const coverage = measured.reduce((sum, item) => sum + (item.value === null ? 0 : item.weight), 0);
   const coveragePct = Math.round(coverage * 100);
   const score =
     coveragePct === 100
