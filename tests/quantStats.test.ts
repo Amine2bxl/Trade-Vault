@@ -136,11 +136,12 @@ describe("computeQuantStats", () => {
     expect(q.sortino).not.toBeNull();
   });
 
-  it("sortino caps at 99 when no losing day", () => {
+  it("sortino remains unknown with no observed downside variance", () => {
     const days = Array.from({ length: 12 }, (_, i) =>
       mkTrade({ date: `2026-07-${String(i + 1).padStart(2, "0")}`, pnl: 50 + i }),
     );
-    expect(computeQuantStats(days).sortino).toBe(99);
+    expect(computeQuantStats(days).sortino).toBeNull();
+    expect(computeQuantStats(days).sortinoStatus).toBe("no_downside");
   });
 
   it("maxDrawdownPct uses starting balance + peak", () => {
