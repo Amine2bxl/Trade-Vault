@@ -21,6 +21,8 @@ export function computeStats(trades: Trade[]): TradeStats {
     bestTrade: null,
     worstTrade: null,
     avgRR: 0,
+    avgWinR: null,
+    avgLossR: null,
     rSampleSize: 0,
     rCoveragePct: 0,
     dailyPnl: {},
@@ -91,6 +93,14 @@ export function computeStats(trades: Trade[]): TradeStats {
   const rCoveragePct = Math.round((rSampleSize / trades.length) * 100);
   const avgRR =
     rSampleSize > 0 ? rTrades.reduce((s, t) => s + t.pnl / t.riskAmount, 0) / rSampleSize : 0;
+  const rWinners = rTrades.filter((t) => t.pnl > 0);
+  const rLosers = rTrades.filter((t) => t.pnl < 0);
+  const avgWinR = rWinners.length
+    ? rWinners.reduce((sum, t) => sum + t.pnl / t.riskAmount, 0) / rWinners.length
+    : null;
+  const avgLossR = rLosers.length
+    ? rLosers.reduce((sum, t) => sum + t.pnl / t.riskAmount, 0) / rLosers.length
+    : null;
 
   const dailyPnl: Record<string, number> = {};
   for (const t of trades) {
@@ -156,6 +166,8 @@ export function computeStats(trades: Trade[]): TradeStats {
     bestTrade,
     worstTrade,
     avgRR,
+    avgWinR,
+    avgLossR,
     rSampleSize,
     rCoveragePct,
     dailyPnl,
