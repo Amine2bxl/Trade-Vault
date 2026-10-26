@@ -165,8 +165,9 @@ export function inspectRuleAdherence(
   return out.sort((a, b) => (a.ratePct ?? Infinity) - (b.ratePct ?? Infinity));
 }
 
-/** Legacy-compatible numeric evidence for Jarvis and notifications.
- * An UNKNOWN-only rule never enters a percentage-based message. */
+/** Compatibilité Jarvis/notifications : seules les règles entièrement vérifiables
+ * alimentent les affirmations chiffrées. Les preuves partielles restent visibles
+ * dans inspectRuleAdherence(), avec leur couverture explicite. */
 export function computeRuleAdherence(
   trades: Trade[],
   rules: TradingRule[],
@@ -174,6 +175,6 @@ export function computeRuleAdherence(
   windowDays: number = ADHERENCE_WINDOW_DAYS,
 ): RuleAdherence[] {
   return inspectRuleAdherence(trades, rules, accountBalance, windowDays).filter(
-    (entry): entry is RuleAdherence => entry.ratePct !== null,
+    (entry): entry is RuleAdherence => entry.ratePct !== null && entry.coveragePct === 100,
   );
 }
