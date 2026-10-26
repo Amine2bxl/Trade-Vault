@@ -456,7 +456,10 @@ export default function Journal({
               tone={summary.totalPnl >= 0 ? "pos" : "neg"}
             />
             <Kpi label={t("stats.winRate")} value={formatPct(summary.winRate)} />
-            <Kpi label={t("dashboard.avgRR")} value={summary.rSampleSize > 0 ? `${summary.avgRR.toFixed(2)}R` : "—"} />
+            <Kpi
+                label={t("dashboard.avgRR")}
+                value={summary.rSampleSize > 0 ? `${summary.avgRR.toFixed(2)}R` : "—"}
+              />
             <Kpi
               /* « P&L » + la mention « BEST » se lisaient « P&L BEST », qui
                n'est le nom de rien. La tuile a déjà un libellé pour ça. */
