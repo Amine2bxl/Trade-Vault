@@ -67,10 +67,25 @@ interface SeasonalityProps {
   tradesLoading?: boolean;
 }
 
-export default function Seasonality({ trades }: SeasonalityProps) {
+// Aucun fournisseur historique vérifié n'alimente encore les moyennes
+// mensuelles par actif. Les approximations existantes restent isolées du
+// produit visible et ne doivent pas être présentées comme mesurées.
+const VERIFIED_ASSET_HISTORY_AVAILABLE = false;
+
+export default function Seasonality({ trades, tradesLoading }: SeasonalityProps) {
+  const { t } = useT();
   return (
     <PageContainer>
-      <AssetSeasonality trades={trades} />
+      {VERIFIED_ASSET_HISTORY_AVAILABLE ? (
+        <AssetSeasonality trades={trades} />
+      ) : (
+        <>
+          <Card className="mb-4 px-4 py-3">
+            <p className="text-xs text-slate-400">{t("seasonality.verifiedMarketUnavailable")}</p>
+          </Card>
+          <JournalSeasonality trades={trades} tradesLoading={tradesLoading} />
+        </>
+      )}
     </PageContainer>
   );
 }
