@@ -1,7 +1,7 @@
 import { formatMoney } from "@/shared/currency";
 import { AI_LIMITS } from "@/domain/ai-limits";
 import { Trade, TradeStats, isBreakEven } from "./trade";
-import { compareChronological } from "@/app/trading/tradeOrder";
+import { compareChronological } from "./tradeOrder";
 
 export function computeStats(trades: Trade[]): TradeStats {
   const empty: TradeStats = {
