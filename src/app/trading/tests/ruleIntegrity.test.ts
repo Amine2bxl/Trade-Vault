@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { evaluateTradeRule, type TradingRule } from "@/domain/ruleCheck";
-import { computeRuleAdherence } from "../ruleAdherence";
+import { computeRuleAdherence, inspectRuleAdherence } from "../ruleAdherence";
 import type { Trade } from "@/app/types";
 
 let n = 0;
@@ -38,6 +38,17 @@ describe("quant rule correctness", () => {
       evaluateTradeRule(one, target, { sameDayTrades: [], accountBalance: 25000 }).status,
     ).toBe("UNKNOWN");
     expect(computeRuleAdherence([one], [target], 25000)).toEqual([]);
+  });
+  it("shows UNKNOWN-only rules in the evidence report without inventing an adherence rate", () => {
+    const report = inspectRuleAdherence(
+      [t("2026-10-01", "")],
+      [rule("no_trade_after", "16:00")],
+      25000,
+    );
+    expect(report).toHaveLength(1);
+    expect(report[0].ratePct).toBeNull();
+    expect(report[0].unknown).toBe(1);
+    expect(report[0].coveragePct).toBe(0);
   });
   it("tracks the real verified sample and coverage", () => {
     const rows = [

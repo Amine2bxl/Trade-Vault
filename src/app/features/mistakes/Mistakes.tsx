@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from "react";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useTradingRules } from "@/app/trading/useTradingRules";
 import { useGoalProgress } from "../goals/useGoalProgress";
-import { computeRuleAdherence, ADHERENCE_WINDOW_DAYS } from "@/app/trading/ruleAdherence";
+import { inspectRuleAdherence, ADHERENCE_WINDOW_DAYS } from "@/app/trading/ruleAdherence";
 import {
   TrendingDown,
   CheckCircle2,
@@ -89,7 +89,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
   const { ctx: measureCtx } = useGoalProgress(trades, user?.id);
   const adherence = useMemo(
     () =>
-      computeRuleAdherence(trades, rules, measureCtx.startingBalance + measureCtx.stats.totalPnl),
+      inspectRuleAdherence(trades, rules, measureCtx.startingBalance + measureCtx.stats.totalPnl),
     [trades, rules, measureCtx.startingBalance, measureCtx.stats.totalPnl],
   );
   /* ── LE PLAN, LA SÉRIE, LE RYTHME ───────────────────────────────────────
@@ -467,27 +467,38 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
                     <div
                       className={cn(
                         "h-full rounded-full transition-[width] duration-250",
-                        a.ratePct >= 80
-                          ? "bg-emerald-400"
-                          : a.ratePct >= 50
-                            ? "bg-amber-400"
-                            : "bg-red-400",
+                        a.ratePct === null
+                          ? "bg-slate-500"
+                          : a.ratePct >= 80
+                            ? "bg-emerald-400"
+                            : a.ratePct >= 50
+                              ? "bg-amber-400"
+                              : "bg-red-400",
                       )}
-                      style={{ width: `${a.ratePct}%` }}
+                      style={{ width: `${a.ratePct ?? 0}%` }}
                     />
                   </div>
-                  <span
-                    className={cn(
-                      "tv-figure tv-figure-secondary text-[11px] shrink-0 w-16 text-right",
-                      a.ratePct >= 80
-                        ? "text-emerald-400"
-                        : a.ratePct >= 50
-                          ? "text-amber-400"
-                          : "text-red-400",
+                  <div className="flex w-20 shrink-0 flex-col items-end gap-0.5">
+                    <span
+                      className={cn(
+                        "tv-figure tv-figure-secondary text-[11px] text-right",
+                        a.ratePct === null
+                          ? "text-slate-500"
+                          : a.ratePct >= 80
+                            ? "text-emerald-400"
+                            : a.ratePct >= 50
+                              ? "text-amber-400"
+                              : "text-red-400",
+                      )}
+                    >
+                      {a.ratePct === null ? "—" : `${a.kept}/${a.applicable}`}
+                    </span>
+                    {a.unknown > 0 && (
+                      <span className="text-[10px] text-slate-500">
+                        {a.coveragePct}% {lang === "fr" ? "vérifiés" : "verified"}
+                      </span>
                     )}
-                  >
-                    {a.kept}/{a.applicable}
-                  </span>
+                  </div>
                 </div>
               ))}
             </div>

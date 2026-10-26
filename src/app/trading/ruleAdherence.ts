@@ -76,12 +76,17 @@ function isoDaysBefore(ref: string, n: number): string {
  *    par type de règle serait plus juste — à faire quand les kinds se
  *    diversifieront.
  */
-export function computeRuleAdherence(
+/** Inclusive evidence report: UNKNOWN-only rules are visible to the interface. */
+export interface RuleAdherenceInspection extends Omit<RuleAdherence, "ratePct"> {
+  ratePct: number | null;
+}
+
+export function inspectRuleAdherence(
   trades: Trade[],
   rules: TradingRule[],
   accountBalance: number,
   windowDays: number = ADHERENCE_WINDOW_DAYS,
-): RuleAdherence[] {
+): RuleAdherenceInspection[] {
   const checkable = rules.filter((r) => r.enabled && r.kind !== "custom");
   if (checkable.length === 0 || trades.length === 0) return [];
 
@@ -140,12 +145,10 @@ export function computeRuleAdherence(
     }
   }
 
-  const out: RuleAdherence[] = [];
+  const out: RuleAdherenceInspection[] = [];
   for (const rule of checkable) {
     const s = stats.get(rule.id);
-    // Existing consumers expect a numeric rate. If all evidence is unknown,
-    // omit the rate rather than falsely claiming 100% adherence.
-    if (!s || s.checked === 0) continue;
+    if (!s) continue;
     out.push({
       ruleId: rule.id,
       text: rule.text,
@@ -154,10 +157,24 @@ export function computeRuleAdherence(
       observations: s.total,
       unknown: s.unknown,
       coveragePct: Math.round((100 * s.checked) / s.total),
-      ratePct: Math.round((100 * s.kept) / s.checked),
+      ratePct: s.checked > 0 ? Math.round((100 * s.kept) / s.checked) : null,
     });
   }
   // La règle la MOINS tenue en premier : c'est celle sur laquelle le coach doit
   // parler. Un bilan qui ouvre sur les réussites laisse le problème invisible.
-  return out.sort((a, b) => a.ratePct - b.ratePct);
+  return out.sort((a, b) => (a.ratePct ?? Infinity) - (b.ratePct ?? Infinity));
 }
+
+/** Legacy-compatible numeric evidence for Jarvis and notifications.
+ * An UNKNOWN-only rule never enters a percentage-based message. */
+export function computeRuleAdherence(
+  trades: Trade[],
+  rules: TradingRule[],
+  accountBalance: number,
+  windowDays: number = ADHERENCE_WINDOW_DAYS,
+): RuleAdherence[] {
+  return inspectRuleAdherence(trades, rules, accountBalance, windowDays).filter(
+    (entry): entry is RuleAdherence => entry.ratePct !== null,
+  );
+}
+

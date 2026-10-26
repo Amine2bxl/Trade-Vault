@@ -9,8 +9,10 @@ Baseline: `079d185f8e1917ca1ef48321f3e1697064db40ba`. Branch: `feat/quant-correc
 - [x] Exclude UNKNOWN from adherence rate and report sample coverage.
 - [x] Reject ambiguous same-minute/missing-time ordering for cumulative rules.
 - [x] Add tests for future-trade leakage, ties, missing risk and timestamps.
-- [ ] Verify this patch in GitHub CI.
-- [ ] Propagate unknown counts and coverage to all interfaces/Jarvis.
+- [x] Initial tri-state change validated by CI run 40360602934.
+- [ ] Verify follow-up UI evidence changes in CI.
+- [x] Display unknown-only rules and data coverage on the Mistakes page.
+- [ ] Propagate evidence coverage to Jarvis and notifications.
 - [ ] Correct risk historical balance assumptions.
 - [ ] Correct Average R, Profit Factor and all downstream consumers.
 - [ ] Replace fictitious import defaults with provenance-aware missing values.
