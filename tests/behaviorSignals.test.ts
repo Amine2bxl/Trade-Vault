@@ -73,6 +73,26 @@ test("size drift after a loss is measured, not guessed", () => {
   expect(typeof drift!.driftPct).toBe("number");
 });
 
+test("unreviewed imports cannot create a false setup-quality or conviction signal", () => {
+  const imported = Array.from({ length: 10 }, (_, i) =>
+    trade({
+      date: `2026-07-${String(i + 1).padStart(2, "0")}`,
+      pnl: i % 2 ? -100 : 200,
+      setupQuality: i % 2 ? 2 : 5,
+      confidence: i % 2 ? 20 : 90,
+      reviewPending: true,
+    }),
+  );
+  const fromImports = computeBehaviorSignals(imported);
+  expect(fromImports.setupQuality).toBeUndefined();
+  expect(fromImports.conviction).toBeUndefined();
+
+  const reviewed = imported.map((t) => ({ ...t, reviewPending: false }));
+  const fromReviewed = computeBehaviorSignals(reviewed);
+  expect(fromReviewed.setupQuality).toBeDefined();
+  expect(fromReviewed.conviction).toBeDefined();
+});
+
 test("the coach prompt carries the behaviour signals as citable evidence", () => {
   const messages = buildCoachMessages({
     question: "Why do I lose on Fridays?",
