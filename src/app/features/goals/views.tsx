@@ -482,22 +482,19 @@ export function PlanView({
             const Icon = meta.icon;
             const current = currentGoalValue(g, ctx);
             const available = isGoalMetricAvailable(g, ctx);
-            const finalReached = available && milestoneReached(
-              g,
-              plan.horizonMonths - 1,
-              current,
-              plan.horizonMonths,
-            );
+            const finalReached =
+              available && milestoneReached(g, plan.horizonMonths - 1, current, plan.horizonMonths);
             // Overall progress start → final target.
             const span = g.targetValue - g.startValue;
-            const overall =
-              !available
-                ? 0
-                : span === 0
-                ? finalReached
-                  ? 1
-                  : 0
-                : Math.max(0, Math.min(1, (current - g.startValue) / span));
+            let overall = 0;
+            if (available) {
+              overall =
+                span === 0
+                  ? finalReached
+                    ? 1
+                    : 0
+                  : Math.max(0, Math.min(1, (current - g.startValue) / span));
+            }
             return (
               <div
                 key={g.id}
@@ -666,7 +663,7 @@ export function PlanView({
                             className={cn(
                               "font-bold",
                               isGoalMetricAvailable(g, ctx) &&
-                              milestoneReached(g, i, currentGoalValue(g, ctx), plan.horizonMonths)
+                                milestoneReached(g, i, currentGoalValue(g, ctx), plan.horizonMonths)
                                 ? "text-emerald-400"
                                 : "text-slate-300",
                             )}
@@ -682,7 +679,8 @@ export function PlanView({
                         {plan.goals.map((g) => {
                           const current = currentGoalValue(g, ctx);
                           const available = isGoalMetricAvailable(g, ctx);
-                          const reached = available && milestoneReached(g, i, current, plan.horizonMonths);
+                          const reached =
+                            available && milestoneReached(g, i, current, plan.horizonMonths);
                           const prog = !available
                             ? null
                             : reached
