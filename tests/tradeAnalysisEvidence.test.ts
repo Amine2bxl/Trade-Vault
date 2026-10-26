@@ -42,9 +42,7 @@ describe("trade-analysis evidence integrity", () => {
 
   it("requires an audited entry balance before computing risk percentage", () => {
     expect(analyzeTrade(trade(), ctx()).riskPct).toBeNull();
-    expect(
-      analyzeTrade(trade(), ctx({ balanceIsAtEntry: true })).riskPct,
-    ).toBeCloseTo(0.4);
+    expect(analyzeTrade(trade(), ctx({ balanceIsAtEntry: true })).riskPct).toBeCloseTo(0.4);
   });
 
   it("never treats a staged import's default quality grade as trader evidence", () => {
@@ -79,10 +77,7 @@ describe("trade-analysis evidence integrity", () => {
   });
 
   it("issues a full composite only if every weighted component is measurable", () => {
-    const out = analyzeTrade(
-      trade({ mfe: 250 }),
-      ctx({ verifiedRuleAdherencePct: 90 }),
-    );
+    const out = analyzeTrade(trade({ mfe: 250 }), ctx({ verifiedRuleAdherencePct: 90 }));
     expect(out.executionScore).toBe(80);
     expect(out.coveragePct).toBe(100);
     expect(out.score).not.toBeNull();
@@ -90,10 +85,7 @@ describe("trade-analysis evidence integrity", () => {
   });
 
   it("never calls a loss beyond 1.5R proof of a moved stop", () => {
-    const out = analyzeTrade(
-      trade({ pnl: -200, riskAmount: 100, direction: "short" }),
-      ctx(),
-    );
+    const out = analyzeTrade(trade({ pnl: -200, riskAmount: 100, direction: "short" }), ctx());
     const reason = out.flags.find((f) => f.code === "negative_expectancy_rr")?.detail;
     expect(reason).toContain("does not establish whether a stop was moved");
   });
