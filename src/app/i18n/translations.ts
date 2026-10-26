@@ -1464,7 +1464,7 @@ const en = {
   "quant.avgRRSub": "signed realized R per trade",
   // Plain-language metric explanations (info tooltips)
   "quant.infoAvgRR":
-    "On average, how much you aim to win for every unit you risk. 2R means targeting 2 for every 1 at risk.",
+    "Average signed realized R per trade. Losses count negatively; +0.2R means an observed average gain of 0.2 units of initial risk per trade.",
   "quant.infoExpectancy":
     "What you earn on an average trade, wins and losses blended together. Positive = your system makes money over time.",
   "quant.infoSharpe":
