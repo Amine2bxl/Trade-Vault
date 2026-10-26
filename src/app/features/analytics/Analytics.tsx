@@ -311,8 +311,8 @@ export default function Analytics({ trades }: AnalyticsProps) {
     const tl = Math.abs(
       cutoffTrades.filter((t) => t.direction !== "be" && t.pnl < 0).reduce((s, t) => s + t.pnl, 0),
     );
-    const pf = tl > 0 ? tp / tl : tp > 0 ? 99 : 0;
-    return { totalProfits: tp, totalLosses: tl, profitFactor: pf, isProfitable: pf > 1 };
+    const pf = tl > 0 ? tp / tl : null;
+    return { totalProfits: tp, totalLosses: tl, profitFactor: pf, isProfitable: pf !== null && pf > 1 };
   }, [cutoffTrades]);
 
   const quant = useMemo(
@@ -353,7 +353,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
           pnl: bucket.pnl,
           winRate: winRateOf(bucket),
           expectancy: bucket.pnl / list.length,
-          profitFactor: !enoughSample ? null : gl > 0 ? gp / gl : gp > 0 ? 99 : 0,
+          profitFactor: !enoughSample || gl <= 0 ? null : gp / gl,
           avgR:
             enoughSample && withRisk.length > 0
               ? withRisk.reduce((s, tr) => s + tr.pnl / tr.riskAmount, 0) / withRisk.length
@@ -531,22 +531,24 @@ export default function Analytics({ trades }: AnalyticsProps) {
                   profitFactorData.isProfitable ? "text-emerald-400" : "text-red-400",
                 )}
               >
-                {profitFactorData.profitFactor >= 99
-                  ? "99+"
+                {profitFactorData.profitFactor === null
+                  ? "—"
                   : profitFactorData.profitFactor.toFixed(2)}
               </span>
             </div>
 
-            <span
-              className={cn(
-                "shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-bold",
-                profitFactorData.isProfitable
-                  ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
-                  : "border-red-500/20 bg-red-500/10 text-red-400",
-              )}
-            >
-              {profitFactorData.isProfitable ? t("analytics.profitable") : t("analytics.losing")}
-            </span>
+            {profitFactorData.profitFactor !== null && (
+              <span
+                className={cn(
+                  "shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-bold",
+                  profitFactorData.isProfitable
+                    ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
+                    : "border-red-500/20 bg-red-500/10 text-red-400",
+                )}
+              >
+                {profitFactorData.isProfitable ? t("analytics.profitable") : t("analytics.losing")}
+              </span>
+            )}
 
             {/* Le calcul, écrit : gains ÷ pertes. C'est ce qui rend le facteur
                 lisible sans le connaître. */}
@@ -564,7 +566,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                   profitFactorData.isProfitable ? "bg-emerald-400/70" : "bg-red-400/70",
                 )}
                 style={{
-                  width: `${Math.min((profitFactorData.profitFactor / 3) * 100, 100)}%`,
+                  width: `${profitFactorData.profitFactor === null ? 0 : Math.min((profitFactorData.profitFactor / 3) * 100, 100)}%`,
                 }}
               />
             </div>
@@ -882,11 +884,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                         <td className="tv-figure tv-figure-secondary hidden px-4 py-2.5 text-xs text-right text-slate-300 sm:table-cell">
                           {/* « — » sous l'échantillon minimum : ne rien affirmer vaut
                           mieux qu'affirmer sur trois trades. */}
-                          {row.profitFactor === null
-                            ? "—"
-                            : row.profitFactor >= 99
-                              ? "99+"
-                              : row.profitFactor.toFixed(2)}
+                          {row.profitFactor === null ? "—" : row.profitFactor.toFixed(2)}
                         </td>
                         <td className="tv-figure tv-figure-secondary hidden px-4 py-2.5 text-xs text-right sm:table-cell">
                           {row.avgR === null ? (
