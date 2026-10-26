@@ -50,14 +50,37 @@ describe("getSession", () => {
 });
 
 describe("getMacroEvents", () => {
-  it("flags NFP on the first Friday of the month", () => {
-    expect(getMacroEvents("2026-07-03")).toContain("NFP"); // Fri July 3rd 2026
-    expect(getMacroEvents("2026-07-10")).not.toContain("NFP"); // second Friday
-    expect(getMacroEvents("2026-07-01")).not.toContain("NFP"); // Wednesday
+  const nfp = {
+    startsAt: "2026-07-03T12:30:00Z",
+    title: "Non-Farm Payrolls",
+    source: "forexfactory",
+  };
+  const fomc = {
+    startsAt: "2026-07-29T18:00:00Z",
+    title: "FOMC Statement",
+    source: "forexfactory",
+  };
+
+  it("never infers a macro publication from the calendar date alone", () => {
+    expect(getMacroEvents("2026-07-03")).toEqual([]);
+    expect(getMacroEvents("2026-07-29")).toEqual([]);
   });
-  it("flags FOMC decision days", () => {
-    expect(getMacroEvents("2026-07-29")).toContain("FOMC");
-    expect(getMacroEvents("2026-07-28")).not.toContain("FOMC");
+
+  it("accepts matching verified news events but excludes the approximate fallback", () => {
+    expect(getMacroEvents("2026-07-03", [nfp])).toEqual(["NFP"]);
+    expect(getMacroEvents("2026-07-03", [{ ...nfp, source: "builtin" }])).toEqual([]);
+    expect(getMacroEvents("2026-07-29", [fomc])).toEqual(["FOMC"]);
+    expect(getMacroEvents("2026-07-28", [fomc])).toEqual([]);
+  });
+
+  it("uses New York's trading day consistently across client timezones", () => {
+    const late = {
+      startsAt: "2026-07-29T23:30:00Z",
+      title: "FOMC Press Conference",
+      source: "forexfactory",
+    };
+    expect(getMacroEvents("2026-07-29", [late])).toEqual(["FOMC"]);
+    expect(getMacroEvents("2026-07-30", [late])).toEqual([]);
   });
 });
 
