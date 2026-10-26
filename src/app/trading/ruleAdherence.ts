@@ -177,4 +177,3 @@ export function computeRuleAdherence(
     (entry): entry is RuleAdherence => entry.ratePct !== null,
   );
 }
-
