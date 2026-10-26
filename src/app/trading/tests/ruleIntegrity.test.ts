@@ -89,7 +89,8 @@ describe("quant rule correctness", () => {
   it("does not invent ordering for trades with the same minute", () => {
     const date = "2026-10-01";
     const rows = [t(date, "09:30"), t(date, "09:30"), t("2026-10-02", "09:45")];
-    const [result] = computeRuleAdherence(rows, [rule("max_trades_day", "2")], 25000);
+    const [result] = inspectRuleAdherence(rows, [rule("max_trades_day", "2")], 25000);
+    expect(computeRuleAdherence(rows, [rule("max_trades_day", "2")], 25000)).toEqual([]);
     expect(result.applicable).toBe(1);
     expect(result.unknown).toBe(2);
     expect(result.coveragePct).toBe(33);
