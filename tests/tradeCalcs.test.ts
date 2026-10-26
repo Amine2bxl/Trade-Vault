@@ -63,6 +63,22 @@ describe("computeStats", () => {
     expect(s.maxDrawdown).toBe(700);
   });
 
+  it("does not treat missing initial risk as an observed zero-R trade", () => {
+    const stats = computeStats([
+      mkTrade({ pnl: 200, rMultiple: 2, riskAmount: 100 }),
+      mkTrade({ pnl: -400, rMultiple: 0, riskAmount: 0 }),
+    ]);
+    expect(stats.avgRR).toBe(2);
+    expect(stats.rSampleSize).toBe(1);
+    expect(stats.rCoveragePct).toBe(50);
+  });
+
+  it("does not expose an unmeasured R average as verified", () => {
+    const stats = computeStats([mkTrade({ pnl: 100, riskAmount: 0, rMultiple: 0 })]);
+    expect(stats.rSampleSize).toBe(0);
+    expect(stats.rCoveragePct).toBe(0);
+  });
+
   it("uses signed R rather than absolute trade magnitude", () => {
     const results = [
       mkTrade({ pnl: 200, rMultiple: 2 }),
