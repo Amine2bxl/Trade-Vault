@@ -312,7 +312,12 @@ export default function Analytics({ trades }: AnalyticsProps) {
       cutoffTrades.filter((t) => t.direction !== "be" && t.pnl < 0).reduce((s, t) => s + t.pnl, 0),
     );
     const pf = tl > 0 ? tp / tl : null;
-    return { totalProfits: tp, totalLosses: tl, profitFactor: pf, isProfitable: pf !== null && pf > 1 };
+    return {
+      totalProfits: tp,
+      totalLosses: tl,
+      profitFactor: pf,
+      isProfitable: pf !== null && pf > 1,
+    };
   }, [cutoffTrades]);
 
   const quant = useMemo(
