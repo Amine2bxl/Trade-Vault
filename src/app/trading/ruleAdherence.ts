@@ -101,26 +101,33 @@ export function computeRuleAdherence(
     byDay.set(tr.date, day);
   }
 
-  const stats = new Map<string, { checked: number; kept: number; unknown: number; total: number }>();
+  const stats = new Map<
+    string,
+    { checked: number; kept: number; unknown: number; total: number }
+  >();
   for (const dayTrades of byDay.values()) {
-    const ordered = [...dayTrades].sort((a, b) =>
-      (entryMinute(a.entryTime) ?? Infinity) - (entryMinute(b.entryTime) ?? Infinity) ||
-      a.id.localeCompare(b.id),
+    const ordered = [...dayTrades].sort(
+      (a, b) =>
+        (entryMinute(a.entryTime) ?? Infinity) - (entryMinute(b.entryTime) ?? Infinity) ||
+        a.id.localeCompare(b.id),
     );
     // A minute-level timestamp cannot order entries sharing the same minute.
     // In that case cumulative day-rules stay UNKNOWN instead of using a fake order.
     const deterministic = ordered.every((tr, i) => {
       const minute = entryMinute(tr.entryTime);
-      return minute !== null &&
-        (i === 0 || (entryMinute(ordered[i - 1].entryTime) ?? Infinity) < minute);
+      return (
+        minute !== null &&
+        (i === 0 || (entryMinute(ordered[i - 1].entryTime) ?? Infinity) < minute)
+      );
     });
     const earlier: Trade[] = [];
     for (const tr of ordered) {
       for (const rule of checkable) {
         const cumulative = rule.kind === "max_trades_day" || rule.kind === "stop_after_losses";
-        const verdict = cumulative && !deterministic
-          ? "UNKNOWN"
-          : evaluateTradeRule(tr, rule, { sameDayTrades: earlier, accountBalance }).status;
+        const verdict =
+          cumulative && !deterministic
+            ? "UNKNOWN"
+            : evaluateTradeRule(tr, rule, { sameDayTrades: earlier, accountBalance }).status;
         const s = stats.get(rule.id) ?? { checked: 0, kept: 0, unknown: 0, total: 0 };
         s.total++;
         if (verdict === "UNKNOWN") s.unknown++;

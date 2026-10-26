@@ -5,27 +5,46 @@ import type { Trade } from "@/app/types";
 
 let n = 0;
 const t = (date: string, time: string, pnl = 100): Trade => ({
-  id: "t-" + ++n, date, entryTime: time, exitTime: "", symbol: "NQ",
-  direction: pnl < 0 ? "short" : "long", pnl, riskAmount: 100,
-  rMultiple: pnl / 100, strategy: "test", mistakes: [], notes: "",
-  screenshots: [], confluences: [], confidence: 50, setupQuality: 3,
+  id: "t-" + ++n,
+  date,
+  entryTime: time,
+  exitTime: "",
+  symbol: "NQ",
+  direction: pnl < 0 ? "short" : "long",
+  pnl,
+  riskAmount: 100,
+  rMultiple: pnl / 100,
+  strategy: "test",
+  mistakes: [],
+  notes: "",
+  screenshots: [],
+  confluences: [],
+  confidence: 50,
+  setupQuality: 3,
 });
 const rule = (kind: TradingRule["kind"], value: string): TradingRule => ({
-  id: kind, kind, value, text: kind, enabled: true,
+  id: kind,
+  kind,
+  value,
+  text: kind,
+  enabled: true,
 });
 
 describe("quant rule correctness", () => {
   it("missing entry time is UNKNOWN, never PASS", () => {
     const one = t("2026-10-01", "");
     const target = rule("no_trade_after", "16:00");
-    expect(evaluateTradeRule(one, target, { sameDayTrades: [], accountBalance: 25000 }).status)
-      .toBe("UNKNOWN");
+    expect(
+      evaluateTradeRule(one, target, { sameDayTrades: [], accountBalance: 25000 }).status,
+    ).toBe("UNKNOWN");
     expect(computeRuleAdherence([one], [target], 25000)).toEqual([]);
   });
   it("tracks the real verified sample and coverage", () => {
     const rows = [
-      t("2026-10-01", "10:00"), t("2026-10-02", ""),
-      t("2026-10-03", "17:30"), t("2026-10-04", "11:00"),
+      t("2026-10-01", "10:00"),
+      t("2026-10-02", ""),
+      t("2026-10-03", "17:30"),
+      t("2026-10-04", "11:00"),
     ];
     const [result] = computeRuleAdherence(rows, [rule("no_trade_after", "16:00")], 25000);
     expect(result.applicable).toBe(3);
@@ -37,8 +56,12 @@ describe("quant rule correctness", () => {
   });
   it("does not include future losses in an earlier trade's rule status", () => {
     const date = "2026-10-01";
-    const rows = [t(date, "12:30"), t(date, "11:30", -100),
-      t(date, "09:30"), t(date, "10:30", -100)];
+    const rows = [
+      t(date, "12:30"),
+      t(date, "11:30", -100),
+      t(date, "09:30"),
+      t(date, "10:30", -100),
+    ];
     const [result] = computeRuleAdherence(rows, [rule("stop_after_losses", "2")], 25000);
     expect(result.kept).toBe(3);
     expect(result.applicable).toBe(4);
@@ -62,9 +85,11 @@ describe("quant rule correctness", () => {
   it("does not interpret an unknown initial risk as compliance", () => {
     const row = t("2026-10-01", "09:30");
     row.riskAmount = 0;
-    const status = evaluateTradeRule(
-      row, rule("max_risk_pct", "1"), { sameDayTrades: [], accountBalance: 25000 },
-    ).status;
+    const status = evaluateTradeRule(row, rule("max_risk_pct", "1"), {
+      sameDayTrades: [],
+      accountBalance: 25000,
+    }).status;
     expect(status).toBe("UNKNOWN");
   });
 });
+

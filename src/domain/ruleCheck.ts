@@ -187,7 +187,6 @@ export function checkTradeAgainstRules(
   return violations;
 }
 
-
 /** Explicit rule verdict. An empty list of violations is NOT proof if
  * an input needed for verification is missing. */
 export type RuleVerdict = "PASS" | "FAIL" | "UNKNOWN";
@@ -197,7 +196,9 @@ export interface RuleEvaluation {
   reason?: string;
 }
 const unknownRule = (reason: string): RuleEvaluation => ({
-  status: "UNKNOWN", violations: [], reason,
+  status: "UNKNOWN",
+  violations: [],
+  reason,
 });
 
 function verifiedTime(value: string): boolean {
@@ -232,11 +233,15 @@ export function evaluateTradeRule(
     case "stop_after_losses":
       if (!Number.isInteger(Number(rule.value)) || Number(rule.value) <= 0)
         return unknownRule("invalid_daily_limit");
-      if (!Array.isArray(context.sameDayTrades) ||
-          context.sameDayTrades.some((previous) => previous.date !== trade.date))
+      if (
+        !Array.isArray(context.sameDayTrades) ||
+        context.sameDayTrades.some((previous) => previous.date !== trade.date)
+      )
         return unknownRule("unknown_day_history");
-      if (rule.kind === "stop_after_losses" &&
-          context.sameDayTrades.some((previous) => !Number.isFinite(previous.pnl)))
+      if (
+        rule.kind === "stop_after_losses" &&
+        context.sameDayTrades.some((previous) => !Number.isFinite(previous.pnl))
+      )
         return unknownRule("unknown_previous_result");
       break;
     default:
@@ -245,3 +250,4 @@ export function evaluateTradeRule(
   const violations = checkTradeAgainstRules(trade, [rule], context);
   return { status: violations.length ? "FAIL" : "PASS", violations };
 }
+
