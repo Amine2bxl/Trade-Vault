@@ -1632,7 +1632,8 @@ const fr: Dict = {
   "seasonality.bestDay": "Meilleur jour",
   "seasonality.bestHour": "Meilleure heure",
   "seasonality.empty": "Pas encore assez de données",
-  "seasonality.verifiedMarketUnavailable": "Seules les statistiques calculées à partir de ton journal sont affichées. Les rendements saisonniers de marché resteront indisponibles sans données de prix historiques vérifiées.",
+  "seasonality.verifiedMarketUnavailable":
+    "Seules les statistiques calculées à partir de ton journal sont affichées. Les rendements saisonniers de marché resteront indisponibles sans données de prix historiques vérifiées.",
   "seasonality.emptySub":
     "Journalise au moins 5 trades et tes patterns saisonniers apparaîtront ici.",
   "seasonality.trades": "trades",
