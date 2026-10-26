@@ -292,7 +292,7 @@ export const getStats: ToolDefinition = {
       avgWin: arrondi(s.avgWin),
       avgLoss: arrondi(s.avgLoss),
       profitFactor: s.profitFactor === null ? null : arrondi(s.profitFactor),
-      avgRR: arrondi(s.avgRR),
+      avgRR: s.rSampleSize > 0 ? arrondi(s.avgRR) : null,
       maxDrawdown: arrondi(s.maxDrawdown),
       currentStreak: s.currentStreak,
       currentStreakType: s.currentStreakType,
