@@ -1409,6 +1409,7 @@ const fr: Dict = {
   "quant.expectancy": "Espérance",
   "quant.cleanTrades": "Trades sans erreur",
   "quant.needTenDays": "≥10 jours de trading requis",
+  "quant.noDownside": "aucune variation baissière observée",
   "quant.annualized": "annualisé, PnL journalier",
   "quant.kellyHint": "indicatif - à partir de 30 trades",
   "quant.consistency": "Régularité",
