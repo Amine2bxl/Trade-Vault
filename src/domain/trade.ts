@@ -78,7 +78,8 @@ export interface TradeStats {
   breakEven: number;
   avgWin: number;
   avgLoss: number;
-  profitFactor: number;
+  /** Gains bruts / pertes brutes ; null si aucune perte observée. */
+  profitFactor: number | null;
   maxDrawdown: number;
   /** False if the input cannot establish reliable intraday ordering. */
   maxDrawdownOrderVerified: boolean;
