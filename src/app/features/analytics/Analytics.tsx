@@ -279,14 +279,17 @@ export default function Analytics({ trades }: AnalyticsProps) {
   const monthlyData = useMemo(() => {
     const map: Record<
       string,
-      { pnl: number; count: number; wins: number; be: number; totalRR: number }
+      { pnl: number; count: number; wins: number; be: number; totalRR: number; rCount: number }
     > = {};
     for (const t of cutoffTrades) {
       const k = t.date.substring(0, 7);
-      if (!map[k]) map[k] = { pnl: 0, count: 0, wins: 0, be: 0, totalRR: 0 };
+      if (!map[k]) map[k] = { pnl: 0, count: 0, wins: 0, be: 0, totalRR: 0, rCount: 0 };
       map[k].pnl += t.pnl;
       map[k].count++;
-      map[k].totalRR += t.rMultiple;
+      if (t.riskAmount > 0 && Number.isFinite(t.pnl)) {
+        map[k].totalRR += t.pnl / t.riskAmount;
+        map[k].rCount++;
+      }
       if (isBreakEven(t)) map[k].be++;
       else if (t.pnl > 0) map[k].wins++;
     }
@@ -300,7 +303,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
           pnl: Math.round(data.pnl * 100) / 100,
           trades: data.count,
           winRate: dec > 0 ? Math.round((data.wins / dec) * 100) : 0,
-          avgRR: data.count > 0 ? +(data.totalRR / data.count).toFixed(2) : 0,
+          avgRR: data.rCount > 0 ? +(data.totalRR / data.rCount).toFixed(2) : null,
         };
       });
   }, [cutoffTrades]);
@@ -587,9 +590,9 @@ export default function Analytics({ trades }: AnalyticsProps) {
               {[
                 {
                   label: t("dashboard.avgRR"),
-                  value: `${stats.avgRR.toFixed(2)}R`,
+                  value: stats.rSampleSize > 0 ? `${stats.avgRR.toFixed(2)}R` : "—",
                   sub: t("quant.avgRRSub"),
-                  good: stats.avgRR > 0,
+                  good: stats.rSampleSize > 0 && stats.avgRR > 0,
                   info: t("quant.infoAvgRR"),
                 },
                 {
