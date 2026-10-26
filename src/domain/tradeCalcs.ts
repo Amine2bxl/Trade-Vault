@@ -59,9 +59,11 @@ export function computeStats(trades: Trade[]): TradeStats {
   // cannot establish the true intraday peak-to-trough sequence.
   const maxDrawdownOrderVerified = sorted.every((t, i) => {
     if (i === 0 || sorted[i - 1].date !== t.date) return true;
-    return /^([01]?\d|2[0-3]):[0-5]\d$/.test(t.entryTime) &&
+    return (
+      /^([01]?\d|2[0-3]):[0-5]\d$/.test(t.entryTime) &&
       /^([01]?\d|2[0-3]):[0-5]\d$/.test(sorted[i - 1].entryTime) &&
-      compareChronological(sorted[i - 1], t) < 0;
+      compareChronological(sorted[i - 1], t) < 0
+    );
   });
 
   const reversed = [...sorted].reverse();
