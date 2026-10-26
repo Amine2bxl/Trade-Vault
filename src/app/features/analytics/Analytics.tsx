@@ -286,8 +286,8 @@ export default function Analytics({ trades }: AnalyticsProps) {
       if (!map[k]) map[k] = { pnl: 0, count: 0, wins: 0, be: 0, totalRR: 0 };
       map[k].pnl += t.pnl;
       map[k].count++;
-      map[k].totalRR += Math.abs(t.rMultiple);
-      if (t.direction === "be") map[k].be++;
+      map[k].totalRR += t.rMultiple;
+      if (isBreakEven(t)) map[k].be++;
       else if (t.pnl > 0) map[k].wins++;
     }
     return Object.entries(map)
@@ -582,7 +582,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                   label: t("dashboard.avgRR"),
                   value: `${stats.avgRR.toFixed(2)}R`,
                   sub: t("quant.avgRRSub"),
-                  good: stats.avgRR >= 2,
+                  good: stats.avgRR > 0,
                   info: t("quant.infoAvgRR"),
                 },
                 {

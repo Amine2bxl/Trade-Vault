@@ -1108,7 +1108,7 @@ const fr: Dict = {
   "dashboard.noTradesCta":
     "Aucun trade pour le moment. Cliquez sur « Ajouter un trade » pour commencer !",
   "dashboard.riskSuffix": "de risque",
-  "dashboard.avgRR": "R:R moyen",
+  "dashboard.avgRR": "R moyen réalisé",
   "dashboard.bestWorst": "Meilleur / Pire",
   "dashboard.loadError": "Certaines données n'ont pas pu être chargées - vérifie ta connexion.",
 
@@ -1417,7 +1417,7 @@ const fr: Dict = {
   "quant.inDrawdown": "en drawdown",
   "quant.daysShort": "j",
   "quant.recoverySub": "du drawdown au nouveau sommet",
-  "quant.avgRRSub": "ratio gain/risque moyen visé",
+  "quant.avgRRSub": "R réalisé moyen, pertes incluses",
   "quant.infoAvgRR":
     "En moyenne, combien tu vises pour chaque unité risquée. 2R = viser 2 pour 1 risqué.",
   "quant.infoExpectancy":

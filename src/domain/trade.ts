@@ -80,6 +80,8 @@ export interface TradeStats {
   avgLoss: number;
   profitFactor: number;
   maxDrawdown: number;
+  /** False if the input cannot establish reliable intraday ordering. */
+  maxDrawdownOrderVerified: boolean;
   currentStreak: number;
   currentStreakType: "win" | "loss" | "be" | "none";
   bestTrade: Trade | null;
@@ -93,5 +95,5 @@ export interface TradeStats {
 }
 
 export function isBreakEven(t: Trade): boolean {
-  return t.direction === "be";
+  return t.direction === "be" || t.pnl === 0;
 }

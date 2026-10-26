@@ -1134,7 +1134,7 @@ const en = {
   "dashboard.recentTrades": "Recent Trades",
   "dashboard.noTradesCta": 'No trades yet. Click "Add Trade" to get started!',
   "dashboard.riskSuffix": "risk",
-  "dashboard.avgRR": "Avg R:R",
+  "dashboard.avgRR": "Avg realized R",
   "dashboard.bestWorst": "Best / Worst",
 
   // Dashboard — Copilot block (Edge Score, rule of the day, objective)
@@ -1461,7 +1461,7 @@ const en = {
   "quant.inDrawdown": "in drawdown",
   "quant.daysShort": "d",
   "quant.recoverySub": "drawdown to new high",
-  "quant.avgRRSub": "avg planned reward-to-risk",
+  "quant.avgRRSub": "signed realized R per trade",
   // Plain-language metric explanations (info tooltips)
   "quant.infoAvgRR":
     "On average, how much you aim to win for every unit you risk. 2R means targeting 2 for every 1 at risk.",

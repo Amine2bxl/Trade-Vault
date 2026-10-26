@@ -63,6 +63,37 @@ describe("computeStats", () => {
     expect(s.maxDrawdown).toBe(700);
   });
 
+  it("uses signed R rather than absolute trade magnitude", () => {
+    const results = [
+      mkTrade({ pnl: 200, rMultiple: 2 }),
+      mkTrade({ pnl: -100, rMultiple: -1 }),
+      mkTrade({ pnl: -100, rMultiple: -1 }),
+    ];
+    expect(computeStats(results).avgRR).toBe(0);
+  });
+
+  it("orders intraday drawdown by entry time, independent of import order", () => {
+    const day = "2026-07-01";
+    const a = mkTrade({ id: "a", date: day, entryTime: "09:30", pnl: 200 });
+    const b = mkTrade({ id: "b", date: day, entryTime: "10:00", pnl: -150 });
+    const c = mkTrade({ id: "c", date: day, entryTime: "10:30", pnl: -100 });
+    const result = computeStats([c, a, b]);
+    expect(result.maxDrawdown).toBe(250);
+    expect(result.maxDrawdownOrderVerified).toBe(true);
+    expect(result.currentStreakType).toBe("loss");
+    expect(result.currentStreak).toBe(2);
+  });
+
+  it("marks ambiguous intraday ordering as unverified", () => {
+    const day = "2026-07-01";
+    const stats = computeStats([
+      mkTrade({ id: "a", date: day, entryTime: "09:30", pnl: 100 }),
+      mkTrade({ id: "b", date: day, entryTime: "09:30", pnl: -100 }),
+    ]);
+    expect(stats.maxDrawdownOrderVerified).toBe(false);
+    expect(computeStats([mkTrade({ pnl: 0, direction: "long" })]).breakEven).toBe(1);
+  });
+
   it("profit factor is 99 when there are no losses", () => {
     const s = computeStats([mkTrade({ pnl: 100 }), mkTrade({ pnl: 50 })]);
     expect(s.profitFactor).toBe(99);

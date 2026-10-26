@@ -1,6 +1,7 @@
 import { formatMoney } from "@/shared/currency";
 import { AI_LIMITS } from "@/domain/ai-limits";
 import { Trade, TradeStats, isBreakEven } from "./trade";
+import { compareChronological } from "@/app/trading/tradeOrder";
 
 export function computeStats(trades: Trade[]): TradeStats {
   const empty: TradeStats = {
@@ -14,6 +15,7 @@ export function computeStats(trades: Trade[]): TradeStats {
     avgLoss: 0,
     profitFactor: 0,
     maxDrawdown: 0,
+    maxDrawdownOrderVerified: false,
     currentStreak: 0,
     currentStreakType: "none",
     bestTrade: null,
@@ -28,7 +30,7 @@ export function computeStats(trades: Trade[]): TradeStats {
 
   if (trades.length === 0) return empty;
 
-  const sorted = [...trades].sort((a, b) => a.date.localeCompare(b.date));
+  const sorted = [...trades].sort((a, b) => compareChronological(a, b) || a.id.localeCompare(b.id));
   const totalPnl = trades.reduce((s, t) => s + t.pnl, 0);
   const beTrades = trades.filter(isBreakEven);
   const decisive = trades.filter((t) => !isBreakEven(t));
@@ -53,6 +55,15 @@ export function computeStats(trades: Trade[]): TradeStats {
     if (dd > maxDrawdown) maxDrawdown = dd;
   }
 
+  // A date alone, a missing entry time or equal minute-resolution timestamps
+  // cannot establish the true intraday peak-to-trough sequence.
+  const maxDrawdownOrderVerified = sorted.every((t, i) => {
+    if (i === 0 || sorted[i - 1].date !== t.date) return true;
+    return /^([01]?\d|2[0-3]):[0-5]\d$/.test(t.entryTime) &&
+      /^([01]?\d|2[0-3]):[0-5]\d$/.test(sorted[i - 1].entryTime) &&
+      compareChronological(sorted[i - 1], t) < 0;
+  });
+
   const reversed = [...sorted].reverse();
   let currentStreak = 0;
   let currentStreakType: "win" | "loss" | "be" | "none" = "none";
@@ -69,8 +80,8 @@ export function computeStats(trades: Trade[]): TradeStats {
   const bestTrade = trades.reduce((b, t) => (t.pnl > b.pnl ? t : b), trades[0]);
   const worstTrade = trades.reduce((b, t) => (t.pnl < b.pnl ? t : b), trades[0]);
 
-  const avgRR =
-    trades.length > 0 ? trades.reduce((s, t) => s + Math.abs(t.rMultiple), 0) / trades.length : 0;
+  // Realized signed R, NOT the absolute magnitude of a winning or losing trade.
+  const avgRR = trades.reduce((s, t) => s + t.rMultiple, 0) / trades.length;
 
   const dailyPnl: Record<string, number> = {};
   for (const t of trades) {
@@ -130,6 +141,7 @@ export function computeStats(trades: Trade[]): TradeStats {
     avgLoss,
     profitFactor,
     maxDrawdown,
+    maxDrawdownOrderVerified,
     currentStreak,
     currentStreakType,
     bestTrade,

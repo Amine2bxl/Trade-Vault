@@ -14,7 +14,9 @@ Baseline: `079d185f8e1917ca1ef48321f3e1697064db40ba`. Branch: `feat/quant-correc
 - [x] Display unknown-only rules and data coverage on the Mistakes page.
 - [ ] Propagate evidence coverage to Jarvis and notifications.
 - [ ] Correct risk historical balance assumptions.
-- [ ] Correct Average R, Profit Factor and all downstream consumers.
+- [x] Fix signed Average R, monthly chart and core label semantics; add regression tests.
+- [x] Order intraday drawdown chronologically and report ambiguous ordering.
+- [ ] Correct Profit Factor and its downstream consumers.
 - [ ] Replace fictitious import defaults with provenance-aware missing values.
 - [ ] Fix all affected drawdown chronology, macro events and session timezones.
 - [ ] Finish full reference tests, integration tests and regression review.
