@@ -115,10 +115,7 @@ export function computeRuleAdherence(
     // In that case cumulative day-rules stay UNKNOWN instead of using a fake order.
     const deterministic = ordered.every((tr, i) => {
       const minute = entryMinute(tr.entryTime);
-      return (
-        minute !== null &&
-        (i === 0 || (entryMinute(ordered[i - 1].entryTime) ?? Infinity) < minute)
-      );
+      return minute !== null && (i === 0 || (entryMinute(ordered[i - 1].entryTime) ?? Infinity) < minute);
     });
     const earlier: Trade[] = [];
     for (const tr of ordered) {

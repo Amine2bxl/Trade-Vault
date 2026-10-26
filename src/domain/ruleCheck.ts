@@ -250,4 +250,3 @@ export function evaluateTradeRule(
   const violations = checkTradeAgainstRules(trade, [rule], context);
   return { status: violations.length ? "FAIL" : "PASS", violations };
 }
-

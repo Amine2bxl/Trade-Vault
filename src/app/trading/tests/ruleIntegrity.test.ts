@@ -92,4 +92,3 @@ describe("quant rule correctness", () => {
     expect(status).toBe("UNKNOWN");
   });
 });
-
