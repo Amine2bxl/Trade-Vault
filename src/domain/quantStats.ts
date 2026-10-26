@@ -1,4 +1,5 @@
 import { Trade, isBreakEven } from "./trade";
+import { compareChronological } from "./tradeOrder";
 
 // ── Trading sessions (ET, ICT convention) ──────────────────────────────────
 // Times entered in the journal are treated as US Eastern (the reference for
@@ -64,8 +65,9 @@ export interface QuantStats {
   expectancyR: number;
   /** Annualized Sharpe on daily PnL (null when < 10 trading days or flat) */
   sharpe: number | null;
-  /** Annualized Sortino on daily PnL (99 cap when no losing day) */
+  /** Sortino non défini si aucun risque baissier observé (jamais de plafond fictif). */
   sortino: number | null;
+  sortinoStatus: "insufficient" | "no_downside" | "available";
   /** Max drawdown as % of (starting balance + peak equity); null without starting balance */
   maxDrawdownPct: number | null;
   /** Kelly fraction (indication only); null when wins or losses are missing */
@@ -97,6 +99,7 @@ export function computeQuantStats(trades: Trade[], startingBalance = 0): QuantSt
     expectancyR: 0,
     sharpe: null,
     sortino: null,
+    sortinoStatus: "insufficient",
     maxDrawdownPct: null,
     kelly: null,
     bestDayShare: null,
@@ -123,18 +126,22 @@ export function computeQuantStats(trades: Trade[], startingBalance = 0): QuantSt
 
   let sharpe: number | null = null;
   let sortino: number | null = null;
+  let sortinoStatus: QuantStats["sortinoStatus"] = "insufficient";
   if (daily.length >= 10) {
+    sortinoStatus = "no_downside";
     const mean = daily.reduce((s, x) => s + x, 0) / daily.length;
     const variance = daily.reduce((s, x) => s + (x - mean) ** 2, 0) / daily.length;
     const std = Math.sqrt(variance);
     if (std > 0) sharpe = (mean / std) * Math.sqrt(252);
     const downside = Math.sqrt(daily.reduce((s, x) => s + Math.min(x, 0) ** 2, 0) / daily.length);
-    if (downside > 0) sortino = (mean / downside) * Math.sqrt(252);
-    else if (mean > 0) sortino = 99;
+    if (downside > 0) {
+      sortino = (mean / downside) * Math.sqrt(252);
+      sortinoStatus = "available";
+    }
   }
 
   // Max drawdown (trade order by date) + % + recovery
-  const sorted = [...trades].sort((a, b) => a.date.localeCompare(b.date));
+  const sorted = [...trades].sort((a, b) => compareChronological(a, b) || a.id.localeCompare(b.id));
   let equity = 0,
     peak = 0,
     maxDD = 0,
@@ -216,6 +223,7 @@ export function computeQuantStats(trades: Trade[], startingBalance = 0): QuantSt
     expectancyR,
     sharpe,
     sortino,
+    sortinoStatus,
     maxDrawdownPct,
     kelly,
     bestDayShare,
