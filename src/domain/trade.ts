@@ -87,7 +87,12 @@ export interface TradeStats {
   currentStreakType: "win" | "loss" | "be" | "none";
   bestTrade: Trade | null;
   worstTrade: Trade | null;
+  /** R réalisé moyen, calculé seulement sur les trades à risque initial connu. */
   avgRR: number;
+  /** Nombre de trades permettant de calculer un R observé. */
+  rSampleSize: number;
+  /** Part des trades avec un R effectivement mesurable (0..100). */
+  rCoveragePct: number;
   dailyPnl: Record<string, number>;
   pnlByStrategy: Record<string, { pnl: number; count: number; wins: number; breakEven: number }>;
   pnlByDayOfWeek: Record<number, { pnl: number; count: number; wins: number; breakEven: number }>;
