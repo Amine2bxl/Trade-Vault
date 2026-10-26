@@ -94,9 +94,15 @@ describe("computeStats", () => {
     expect(computeStats([mkTrade({ pnl: 0, direction: "long" })]).breakEven).toBe(1);
   });
 
-  it("profit factor is 99 when there are no losses", () => {
+  it("does not invent profit factor without observed losses", () => {
     const s = computeStats([mkTrade({ pnl: 100 }), mkTrade({ pnl: 50 })]);
-    expect(s.profitFactor).toBe(99);
+    expect(s.profitFactor).toBeNull();
+  });
+
+  it("distinguishes no sample, no losses and zero gross profit", () => {
+    expect(computeStats([]).profitFactor).toBeNull();
+    expect(computeStats([mkTrade({ pnl: 0 })]).profitFactor).toBeNull();
+    expect(computeStats([mkTrade({ pnl: -100 })]).profitFactor).toBe(0);
   });
 
   it("profit factor = grossProfit / grossLoss", () => {
