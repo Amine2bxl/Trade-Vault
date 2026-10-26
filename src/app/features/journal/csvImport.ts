@@ -164,6 +164,8 @@ export const FIELDS: Field[] = [
 
 /** Sans date, symbole et P&L, une ligne n'est pas un trade. */
 export const REQUIRED: Field[] = ["date", "symbol", "pnl"];
+/** Un journal conservé en base exige un sens prouvé, jamais supposé long. */
+export const JOURNAL_REQUIRED: Field[] = [...REQUIRED, "direction"];
 
 /**
  * CE QUE MONTE-CARLO EXIGE — beaucoup moins.
@@ -405,12 +407,19 @@ export function mapRowsToTrades(
     const risk = parseMoney(get(row, "risk"));
     const rRaw = parseMoney(get(row, "rMultiple"));
     const slippage = parseMoney(get(row, "slippage"));
+    const direction = parseDirection(get(row, "direction"));
+    if (required.includes("direction") && direction === null) {
+      invalid++;
+      continue;
+    }
     const riskAmount = risk !== null && risk > 0 ? risk : 0;
     valid.push({
       id: generateId(),
       date: dt?.date ?? "",
       symbol,
-      direction: parseDirection(get(row, "direction")) ?? "long",
+      // Un long par défaut ne sert qu'aux simulations P&L qui ne sauvegardent
+      // aucun trade ; JOURNAL_REQUIRED exige une direction explicite.
+      direction: direction ?? "long",
       pnl: Math.round(pnl * 100) / 100,
       riskAmount,
       rMultiple:
