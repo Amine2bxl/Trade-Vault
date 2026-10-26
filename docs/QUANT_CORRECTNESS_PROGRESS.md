@@ -63,6 +63,52 @@ Do not merge to main without an explicit approval.
 
 ---
 
+## Réconciliation avec l'audit d'origine — 27 octobre 2026
+
+La correspondance **point par point** entre l'audit stratégique original, le
+code et la roadmap est versionnée dans
+[`QUANT_AUDIT_COVERAGE.md`](QUANT_AUDIT_COVERAGE.md). Ce document inclut
+les 8 anomalies, les décisions produit de chaque page, les méthodes
+statistiques, les moteurs de recherche/risque/comportement, les modules
+reportés et toutes les sorties des lots 0–6.
+
+### Boucle d'exécution supplémentaire du lot 0
+
+- [x] Revue du moteur `modules/trading/analysis` : mise en évidence des
+  notes d'exécution fictives, de l'absence de couverture et des hypothèses
+  chronologiques non vérifiées.
+- [x] Retirer `executionScore=70` quand les excursions MFE sont absentes,
+  signaler `null`, publier un `coveragePct` et aucun score/grade global si
+  l'une des composantes manque.
+- [x] Ne pas assimiler `mistakes=[]` à une conformité au plan ni une note
+  subjective CSV non revue à une mesure de qualité. Exiger un taux de règles
+  explicitement vérifié pour la composante discipline.
+- [x] Supprimer les accusations causales « stop déplacé », « revenge »
+  et « statistiquement pire fenêtre » sans preuve.
+- [x] Exclure les pertes futures et les trades non classables par leurs
+  timestamps des signaux d'analyse temporels.
+- [x] Ajouter `tests/tradeAnalysisEvidence.test.ts` : entrées sans MFE,
+  notation subjective, balance historique, pertes futures, couverture et
+  scénarios entièrement mesurés.
+- [x] Distinguer `avgRR` signé, `avgWinR` positif et `avgLossR` signé,
+  uniquement parmi les trades au risque initial connu. Cas sans échantillon
+  représentés par `null`.
+- [x] Supprimer le plafonnement à 99 d'un Profit Factor réellement calculé
+  supérieur à 99 dans les objectifs et ajouter un test de régression.
+- [x] Validations CI sur les commits applicatifs, jusqu'au
+  [run 40420781901](https://github.com/Amine2bxl/Trade-Vault/actions/runs/40420781901).
+- [ ] Revoir les consommateurs de l'analyse de trade sous les conditions de
+  production ; les scores restent volontairement non disponibles tant
+  qu'aucune preuve d'adhérence vérifiée n'est transmise.
+- [ ] Validation financière sur des golden datasets indépendants (fills,
+  pics latents, plusieurs sorties, dépôts/retraits, devises, DST).
+- [ ] Aucun des blocs L1–L6 n'est terminé ni autorisé à démarrer.
+
+**Statut du lot 0 : IN PROGRESS.** Les validations applicatives
+intermédiaires ne constituent pas la sortie complète du lot.
+
+---
+
 ## Plan de transformation verrouillé — lots strictement séquentiels
 
 Ce registre est une source de suivi, pas une déclaration de livraison. Le passage
