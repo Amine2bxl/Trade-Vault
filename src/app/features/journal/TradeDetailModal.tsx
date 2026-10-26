@@ -11,8 +11,9 @@ import {
 import { Trade, MissedOpportunity, isBreakEven } from "@/app/types";
 import { formatPnl, directionLabel, directionBadgeClass } from "@/domain/tradeCalcs";
 import { getSession, getMacroEvents } from "@/domain/quantStats";
+import { useEconomicHistory } from "@/app/features/news/useTradeNews";
 import { cn } from "@/shared/ui/cn";
-import { useEffect, useReducer, useRef, useState } from "react";
+import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { useT } from "@/app/i18n/LanguageContext";
 import { useAuth } from "@/app/contexts/AuthContext";
 import {
@@ -117,7 +118,9 @@ export default function TradeDetailModal({
   const dayPnl = trades.reduce((s, t) => s + t.pnl, 0);
   const d = new Date(date + "T12:00:00");
   const dateStr = `${d.toLocaleDateString(locale, { weekday: "long", month: "long", day: "numeric" })}, '${String(d.getFullYear()).slice(-2)}`;
-  const macro = getMacroEvents(date);
+  const daysForHistory = useMemo(() => [date], [date]);
+  const economicHistory = useEconomicHistory(daysForHistory);
+  const macro = getMacroEvents(date, economicHistory.events);
 
   // Arrow keys navigate when a list context is provided
   useEffect(() => {
