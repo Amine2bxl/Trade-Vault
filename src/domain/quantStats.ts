@@ -39,7 +39,7 @@ function macroDayNy(instant: Date): string {
 
 /** Ne renvoie aucun badge à partir d'une date seule ni d'un calendrier approximatif. */
 export function getMacroEvents(date: string, events: readonly VerifiedMacroEvent[] = []): string[] {
-  if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(date)) return [];
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return [];
   const found = new Set<string>();
   for (const event of events) {
     if (event.source === "builtin") continue;
@@ -48,7 +48,7 @@ export function getMacroEvents(date: string, events: readonly VerifiedMacroEvent
     const title = event.title.toLowerCase();
     if (/non[ -]?farm (?:payrolls|employment change)/.test(title) && !title.includes("adp"))
       found.add("NFP");
-    if (/\\bfomc\\b|federal funds rate/.test(title)) found.add("FOMC");
+    if (/\bfomc\b|federal funds rate/.test(title)) found.add("FOMC");
   }
   return [...found];
 }
