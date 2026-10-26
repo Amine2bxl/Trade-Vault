@@ -537,7 +537,9 @@ export function PlanView({
                       finalReached ? "bg-emerald-400/80" : "bg-[var(--tv-accent)]",
                     )}
                     style={{
-                      width: `${Math.round((goalDirection(g) === "down" ? (finalReached ? 1 : overall === 0 && current <= g.startValue ? Math.max(0, Math.min(1, (g.startValue - current) / (g.startValue - g.targetValue || 1))) : overall) : overall) * 100)}%`,
+                      width: !available
+                        ? "0%"
+                        : `${Math.round((goalDirection(g) === "down" ? (finalReached ? 1 : overall === 0 && current <= g.startValue ? Math.max(0, Math.min(1, (g.startValue - current) / (g.startValue - g.targetValue || 1))) : overall) : overall) * 100)}%`,
                     }}
                   />
                 </div>
