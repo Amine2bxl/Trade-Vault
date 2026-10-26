@@ -12,15 +12,21 @@ Baseline: `079d185f8e1917ca1ef48321f3e1697064db40ba`. Branch: `feat/quant-correc
 - [x] Initial tri-state change validated by CI run 40360602934.
 - [x] Interface Mistakes vérifiée par la CI 40361514924.
 - [x] Display unknown-only rules and data coverage on the Mistakes page.
-- [ ] Propagate evidence coverage to Jarvis and notifications.
+- [x] Ne pas envoyer une conformité partielle à Jarvis/notifications comme preuve exhaustive.
+- [ ] Faire évoluer les contrats IA pour exposer les preuves partielles avec couverture.
 - [ ] Correct risk historical balance assumptions.
 - [x] Fix signed Average R, monthly chart and core label semantics; add regression tests.
 - [x] Order intraday drawdown chronologically and report ambiguous ordering.
 - [x] Replace fake Profit Factor 99 with a null observation in domain and core consumers.
 - [x] Profit Factor nullable vérifié par la CI 40399601185.
 - [ ] Vérifier la sémantique des objectifs Profit Factor si la métrique est non calculable.
+- [x] Calcul du R réalisé limité aux trades à risque initial connu, avec taille d'échantillon et couverture ; test de régression ajouté.
+- [x] Sortino indéfini en absence de volatilité baissière au lieu du plafond fictif 99.
+- [x] Dates macro NFP/FOMC du détail de trade fondées uniquement sur l'historique économique non approximatif, avec dates NY reproductibles.
+- [x] Comparateur de chronologie extrait dans src/domain/tradeOrder.ts pour préserver le découplage des couches.
 - [ ] Replace fictitious import defaults with provenance-aware missing values.
-- [ ] Fix all affected drawdown chronology, macro events and session timezones.
+- [ ] Revoir les sessions et tous les fuseaux de calcul ; les badges NFP/FOMC du détail utilisent désormais les événements réels.
+- [ ] Vérifier le traitement des drawdowns en cas d'exécutions partielles ou de même minute ; indicateur d'ordre ambigu ajouté.
 - [ ] Finish full reference tests, integration tests and regression review.
 
 Do not mark lot 0 DONE or start lot 1 until every applicable gate has been verified.
