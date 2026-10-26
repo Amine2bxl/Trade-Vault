@@ -291,7 +291,7 @@ export const getStats: ToolDefinition = {
       breakEven: s.breakEven,
       avgWin: arrondi(s.avgWin),
       avgLoss: arrondi(s.avgLoss),
-      profitFactor: arrondi(s.profitFactor),
+      profitFactor: s.profitFactor === null ? null : arrondi(s.profitFactor),
       avgRR: arrondi(s.avgRR),
       maxDrawdown: arrondi(s.maxDrawdown),
       currentStreak: s.currentStreak,
