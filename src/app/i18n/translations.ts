@@ -1688,7 +1688,8 @@ const en = {
   "seasonality.bestDay": "Best weekday",
   "seasonality.bestHour": "Best hour",
   "seasonality.empty": "Not enough data yet",
-  "seasonality.verifiedMarketUnavailable": "Only statistics measured from your own journal are shown. Market-level seasonal returns are unavailable until a verified historical price source is connected.",
+  "seasonality.verifiedMarketUnavailable":
+    "Only statistics measured from your own journal are shown. Market-level seasonal returns are unavailable until a verified historical price source is connected.",
   "seasonality.emptySub": "Log at least 5 trades and your seasonal patterns will appear here.",
   "seasonality.trades": "trades",
 
