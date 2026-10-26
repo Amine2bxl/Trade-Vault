@@ -99,7 +99,10 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
   };
 
   const mappedTrades = useMemo(
-    () => (parsed ? mapRowsToTrades(parsed.rows, mapping, { required: JOURNAL_REQUIRED }) : { valid: [] as Trade[], invalid: 0 }),
+    () =>
+      parsed
+        ? mapRowsToTrades(parsed.rows, mapping, { required: JOURNAL_REQUIRED })
+        : { valid: [] as Trade[], invalid: 0 },
     [parsed, mapping],
   );
 
