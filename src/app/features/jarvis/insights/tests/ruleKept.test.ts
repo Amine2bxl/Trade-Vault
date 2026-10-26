@@ -21,6 +21,9 @@ const rule = (over: Partial<RuleAdherence> = {}): RuleAdherence => ({
   text: "Pas de trade après deux pertes",
   applicable: 12,
   kept: 11,
+  observations: 12,
+  unknown: 0,
+  coveragePct: 100,
   ratePct: 92,
   ...over,
 });
