@@ -21,6 +21,8 @@ export function computeStats(trades: Trade[]): TradeStats {
     bestTrade: null,
     worstTrade: null,
     avgRR: 0,
+    rSampleSize: 0,
+    rCoveragePct: 0,
     dailyPnl: {},
     pnlByStrategy: {},
     pnlByDayOfWeek: {},
@@ -82,8 +84,14 @@ export function computeStats(trades: Trade[]): TradeStats {
   const bestTrade = trades.reduce((b, t) => (t.pnl > b.pnl ? t : b), trades[0]);
   const worstTrade = trades.reduce((b, t) => (t.pnl < b.pnl ? t : b), trades[0]);
 
-  // Realized signed R, NOT the absolute magnitude of a winning or losing trade.
-  const avgRR = trades.reduce((s, t) => s + t.rMultiple, 0) / trades.length;
+  // Le R réalisé s'obtient à partir du P&L net / risque initial connu.
+  // Un risque à zéro importé signifie souvent « inconnu », pas « trade à 0R ».
+  const rTrades = trades.filter((t) => t.riskAmount > 0 && Number.isFinite(t.pnl));
+  const rSampleSize = rTrades.length;
+  const rCoveragePct = Math.round((rSampleSize / trades.length) * 100);
+  const avgRR = rSampleSize > 0
+    ? rTrades.reduce((s, t) => s + t.pnl / t.riskAmount, 0) / rSampleSize
+    : 0;
 
   const dailyPnl: Record<string, number> = {};
   for (const t of trades) {
@@ -149,6 +157,8 @@ export function computeStats(trades: Trade[]): TradeStats {
     bestTrade,
     worstTrade,
     avgRR,
+    rSampleSize,
+    rCoveragePct,
     dailyPnl,
     pnlByStrategy,
     pnlByDayOfWeek,
