@@ -673,7 +673,10 @@ export default function Dashboard({
                   visual={{
                     kind: "bar",
                     pct: stats.profitFactor === null ? 0 : Math.min(stats.profitFactor / 3, 1),
-                    color: stats.profitFactor !== null && stats.profitFactor >= 1 ? CHART_GREEN : CHART_RED,
+                    color:
+                      stats.profitFactor !== null && stats.profitFactor >= 1
+                        ? CHART_GREEN
+                        : CHART_RED,
                   }}
                   delay={120}
                 />
