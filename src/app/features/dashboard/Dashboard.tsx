@@ -662,18 +662,18 @@ export default function Dashboard({
                 <Metric
                   compact
                   title={t("dashboard.profitFactor")}
-                  value={stats.profitFactor >= 99 ? "99+" : stats.profitFactor.toFixed(2)}
+                  value={stats.profitFactor === null ? "—" : stats.profitFactor.toFixed(2)}
                   valueClass={
-                    stats.profitFactor >= 1.5
+                    stats.profitFactor !== null && stats.profitFactor >= 1.5
                       ? "text-emerald-400"
-                      : stats.profitFactor < 1
+                      : stats.profitFactor !== null && stats.profitFactor < 1
                         ? "text-red-400"
                         : undefined
                   }
                   visual={{
                     kind: "bar",
-                    pct: Math.min(stats.profitFactor / 3, 1),
-                    color: stats.profitFactor >= 1 ? CHART_GREEN : CHART_RED,
+                    pct: stats.profitFactor === null ? 0 : Math.min(stats.profitFactor / 3, 1),
+                    color: stats.profitFactor !== null && stats.profitFactor >= 1 ? CHART_GREEN : CHART_RED,
                   }}
                   delay={120}
                 />
