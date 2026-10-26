@@ -89,9 +89,8 @@ export function computeStats(trades: Trade[]): TradeStats {
   const rTrades = trades.filter((t) => t.riskAmount > 0 && Number.isFinite(t.pnl));
   const rSampleSize = rTrades.length;
   const rCoveragePct = Math.round((rSampleSize / trades.length) * 100);
-  const avgRR = rSampleSize > 0
-    ? rTrades.reduce((s, t) => s + t.pnl / t.riskAmount, 0) / rSampleSize
-    : 0;
+  const avgRR =
+    rSampleSize > 0 ? rTrades.reduce((s, t) => s + t.pnl / t.riskAmount, 0) / rSampleSize : 0;
 
   const dailyPnl: Record<string, number> = {};
   for (const t of trades) {
