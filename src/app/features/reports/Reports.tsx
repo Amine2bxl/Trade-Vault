@@ -662,9 +662,10 @@ function ReportSheet({
         />
         <ReportKpi
           label={t("reports.profitFactor")}
-          value={r.profitFactor >= 99 ? "99+" : r.profitFactor.toFixed(2)}
+          value={r.profitFactor === null ? "—" : r.profitFactor.toFixed(2)}
           sub={`Sharpe ${r.sharpe ?? "—"} · Sortino ${r.sortino ?? "—"}`}
-          good={r.profitFactor >= 1}
+          good={r.profitFactor !== null && r.profitFactor >= 1}
+          neutral={r.profitFactor === null}
         />
         <ReportKpi
           label={t("reports.maxDrawdown")}
