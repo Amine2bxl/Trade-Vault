@@ -57,13 +57,14 @@ describe("quant rule correctness", () => {
       t("2026-10-03", "17:30"),
       t("2026-10-04", "11:00"),
     ];
-    const [result] = computeRuleAdherence(rows, [rule("no_trade_after", "16:00")], 25000);
+    const [result] = inspectRuleAdherence(rows, [rule("no_trade_after", "16:00")], 25000);
     expect(result.applicable).toBe(3);
     expect(result.kept).toBe(2);
     expect(result.unknown).toBe(1);
     expect(result.observations).toBe(4);
     expect(result.ratePct).toBe(67);
     expect(result.coveragePct).toBe(75);
+    expect(computeRuleAdherence(rows, [rule("no_trade_after", "16:00")], 25000)).toEqual([]);
   });
   it("does not include future losses in an earlier trade's rule status", () => {
     const date = "2026-10-01";
