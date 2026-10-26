@@ -3,6 +3,7 @@ import {
   tasksForMonth,
   monthTaskCompletion,
   isGoalMetricAvailable,
+  currentGoalValue,
   type MeasureCtx,
   type GoalPlan,
 } from "../src/app/features/goals/goalPlan";
@@ -99,4 +100,16 @@ test("goals never treat unavailable Profit Factor or R as verified zero", () => 
   };
   expect(isGoalMetricAvailable({ kind: "profit_factor" }, verifiedCtx)).toBe(true);
   expect(isGoalMetricAvailable({ kind: "avg_rr" }, verifiedCtx)).toBe(true);
+});
+
+test("goal Profit Factor preserves a real ratio above 99", () => {
+  const ctx: MeasureCtx = {
+    stats: { ...computeStats([]), profitFactor: 150 },
+    quant: computeQuantStats([]),
+    startingBalance: 25000,
+    journalRate: 0,
+  };
+  const goal = { id: "pf", kind: "profit_factor" as const, startValue: 0, targetValue: 200 };
+  expect(isGoalMetricAvailable(goal, ctx)).toBe(true);
+  expect(currentGoalValue(goal, ctx)).toBe(150);
 });
