@@ -63,6 +63,30 @@ describe("computeStats", () => {
     expect(s.maxDrawdown).toBe(700);
   });
 
+  it("separates signed average realized R from gain R and loss R", () => {
+    const stats = computeStats([
+      mkTrade({ id: "win", pnl: 300, riskAmount: 100, rMultiple: 3 }),
+      mkTrade({ id: "loss", pnl: -200, riskAmount: 100, rMultiple: -2 }),
+      mkTrade({ id: "unknown", pnl: 250, riskAmount: 0, rMultiple: 0 }),
+    ]);
+    expect(stats.avgRR).toBe(0.5);
+    expect(stats.avgWinR).toBe(3);
+    expect(stats.avgLossR).toBe(-2);
+    expect(stats.rSampleSize).toBe(2);
+    expect(stats.rCoveragePct).toBe(67);
+  });
+
+  it("leaves conditional R averages null when their samples are absent", () => {
+    const winOnly = computeStats([mkTrade({ pnl: 100, riskAmount: 100 })]);
+    expect(winOnly.avgWinR).toBe(1);
+    expect(winOnly.avgLossR).toBeNull();
+    const lossOnly = computeStats([mkTrade({ pnl: -100, riskAmount: 100 })]);
+    expect(lossOnly.avgWinR).toBeNull();
+    expect(lossOnly.avgLossR).toBe(-1);
+    expect(computeStats([]).avgWinR).toBeNull();
+    expect(computeStats([]).avgLossR).toBeNull();
+  });
+
   it("does not treat missing initial risk as an observed zero-R trade", () => {
     const stats = computeStats([
       mkTrade({ pnl: 200, rMultiple: 2, riskAmount: 100 }),
