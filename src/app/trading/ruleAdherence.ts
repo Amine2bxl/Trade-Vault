@@ -1,5 +1,5 @@
 import type { Trade } from "../types";
-import { checkTradeAgainstRules, type TradingRule } from "@/domain/ruleCheck";
+import { evaluateTradeRule, type TradingRule } from "@/domain/ruleCheck";
 import { localDateOf } from "@/shared/calendar-date";
 
 /**
@@ -38,6 +38,10 @@ export interface RuleAdherence {
   applicable: number;
   /** Ceux qui l'ont respectée. */
   kept: number;
+  /** Part vérifiée des observations, hors UNKNOWN. */
+  observations: number;
+  unknown: number;
+  coveragePct: number;
   /** 0–100, arrondi. */
   ratePct: number;
 }
@@ -86,47 +90,65 @@ export function computeRuleAdherence(
   const window = trades.filter((t) => t.date > cutoff);
   if (window.length === 0) return [];
 
-  // Trades du même jour, requis par le vérificateur pour les règles de volume
-  // (`max_trades_day`, `stop_after_losses`).
+  const entryMinute = (time: string): number | null => {
+    const match = /^([01]?\d|2[0-3]):([0-5]\d)$/.exec(time ?? "");
+    return match ? Number(match[1]) * 60 + Number(match[2]) : null;
+  };
   const byDay = new Map<string, Trade[]>();
-  for (const t of window) {
-    const list = byDay.get(t.date) ?? [];
-    list.push(t);
-    byDay.set(t.date, list);
+  for (const tr of window) {
+    const day = byDay.get(tr.date) ?? [];
+    day.push(tr);
+    byDay.set(tr.date, day);
   }
 
-  const stats = new Map<string, { applicable: number; kept: number }>();
-
-  for (const trade of window) {
-    const sameDay = (byDay.get(trade.date) ?? []).filter((t) => t.id !== trade.id);
-    for (const rule of checkable) {
-      // Une règle à la fois : sinon impossible de savoir laquelle a été violée.
-      const violations = checkTradeAgainstRules(trade, [rule], {
-        sameDayTrades: sameDay,
-        accountBalance,
-      });
-      // Le vérificateur ne se prononce que sur ce qu'il peut évaluer : s'il ne
-      // renvoie rien, c'est soit un respect, soit une donnée manquante (heure
-      // d'entrée vide…). On compte le trade comme applicable dans les deux cas,
-      // ce qui est le choix PRUDENT — il ne peut que sous-estimer l'adhérence,
-      // jamais la flatter.
-      const s = stats.get(rule.id) ?? { applicable: 0, kept: 0 };
-      s.applicable++;
-      if (violations.length === 0) s.kept++;
-      stats.set(rule.id, s);
+  const stats = new Map<string, { checked: number; kept: number; unknown: number; total: number }>();
+  for (const dayTrades of byDay.values()) {
+    const ordered = [...dayTrades].sort((a, b) =>
+      (entryMinute(a.entryTime) ?? Infinity) - (entryMinute(b.entryTime) ?? Infinity) ||
+      a.id.localeCompare(b.id),
+    );
+    // A minute-level timestamp cannot order entries sharing the same minute.
+    // In that case cumulative day-rules stay UNKNOWN instead of using a fake order.
+    const deterministic = ordered.every((tr, i) => {
+      const minute = entryMinute(tr.entryTime);
+      return minute !== null &&
+        (i === 0 || (entryMinute(ordered[i - 1].entryTime) ?? Infinity) < minute);
+    });
+    const earlier: Trade[] = [];
+    for (const tr of ordered) {
+      for (const rule of checkable) {
+        const cumulative = rule.kind === "max_trades_day" || rule.kind === "stop_after_losses";
+        const verdict = cumulative && !deterministic
+          ? "UNKNOWN"
+          : evaluateTradeRule(tr, rule, { sameDayTrades: earlier, accountBalance }).status;
+        const s = stats.get(rule.id) ?? { checked: 0, kept: 0, unknown: 0, total: 0 };
+        s.total++;
+        if (verdict === "UNKNOWN") s.unknown++;
+        else {
+          s.checked++;
+          if (verdict === "PASS") s.kept++;
+        }
+        stats.set(rule.id, s);
+      }
+      earlier.push(tr);
     }
   }
 
   const out: RuleAdherence[] = [];
   for (const rule of checkable) {
     const s = stats.get(rule.id);
-    if (!s || s.applicable === 0) continue;
+    // Existing consumers expect a numeric rate. If all evidence is unknown,
+    // omit the rate rather than falsely claiming 100% adherence.
+    if (!s || s.checked === 0) continue;
     out.push({
       ruleId: rule.id,
       text: rule.text,
-      applicable: s.applicable,
+      applicable: s.checked,
       kept: s.kept,
-      ratePct: Math.round((s.kept / s.applicable) * 100),
+      observations: s.total,
+      unknown: s.unknown,
+      coveragePct: Math.round((100 * s.checked) / s.total),
+      ratePct: Math.round((100 * s.kept) / s.checked),
     });
   }
   // La règle la MOINS tenue en premier : c'est celle sur laquelle le coach doit

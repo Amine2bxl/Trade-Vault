@@ -186,3 +186,62 @@ export function checkTradeAgainstRules(
   }
   return violations;
 }
+
+
+/** Explicit rule verdict. An empty list of violations is NOT proof if
+ * an input needed for verification is missing. */
+export type RuleVerdict = "PASS" | "FAIL" | "UNKNOWN";
+export interface RuleEvaluation {
+  status: RuleVerdict;
+  violations: Violation[];
+  reason?: string;
+}
+const unknownRule = (reason: string): RuleEvaluation => ({
+  status: "UNKNOWN", violations: [], reason,
+});
+
+function verifiedTime(value: string): boolean {
+  const m = /^([01]?\d|2[0-3]):([0-5]\d)$/.exec(value?.trim() ?? "");
+  return m !== null;
+}
+
+/** Compatibility: the legacy violations-only API remains unchanged.
+ * Use this function for historic adherence and numerical evidence. */
+export function evaluateTradeRule(
+  trade: Trade,
+  rule: TradingRule,
+  context: RuleContext,
+): RuleEvaluation {
+  if (!rule.enabled || rule.kind === "custom") return unknownRule("unverifiable_rule");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(trade.date)) return unknownRule("missing_date");
+  switch (rule.kind) {
+    case "no_trade_after":
+    case "no_trade_before":
+      if (!verifiedTime(rule.value)) return unknownRule("invalid_rule_time");
+      if (!verifiedTime(trade.entryTime)) return unknownRule("missing_entry_time");
+      break;
+    case "max_risk_pct":
+      if (!Number.isFinite(Number(rule.value)) || Number(rule.value) <= 0)
+        return unknownRule("invalid_risk_limit");
+      if (!Number.isFinite(context.accountBalance) || context.accountBalance <= 0)
+        return unknownRule("unknown_account_balance");
+      if (!Number.isFinite(trade.riskAmount) || trade.riskAmount <= 0)
+        return unknownRule("unknown_initial_risk");
+      break;
+    case "max_trades_day":
+    case "stop_after_losses":
+      if (!Number.isInteger(Number(rule.value)) || Number(rule.value) <= 0)
+        return unknownRule("invalid_daily_limit");
+      if (!Array.isArray(context.sameDayTrades) ||
+          context.sameDayTrades.some((previous) => previous.date !== trade.date))
+        return unknownRule("unknown_day_history");
+      if (rule.kind === "stop_after_losses" &&
+          context.sameDayTrades.some((previous) => !Number.isFinite(previous.pnl)))
+        return unknownRule("unknown_previous_result");
+      break;
+    default:
+      return unknownRule("unsupported_rule");
+  }
+  const violations = checkTradeAgainstRules(trade, [rule], context);
+  return { status: violations.length ? "FAIL" : "PASS", violations };
+}
