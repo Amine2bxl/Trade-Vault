@@ -19,7 +19,7 @@ Chemins relatifs à `src/app/` sauf mention contraire.
 | Erreurs (`mistakes`) | `features/mistakes/` | `Mistakes.tsx` | `mistakePlan`, `trading/mistakeClusters`, `domain/behavioral`, `goals/useGoalProgress` |
 | Setups manqués (`missed`) | `features/missed/` | `MissedOpportunities.tsx` | `MissedSetupDetailModal`, `store/missed` |
 | Analytics (`analytics`) | `features/analytics/` | `Analytics.tsx` | `NewsDaysCard` (jours d'annonce / jours calmes, `domain/tradeNews.newsDaySplit`), `domain/quantStats`, `domain/tradeCalcs`, `trading/EquityChart`, `trading/chartTheme` |
-| Saisonnalité (`seasonality`) | `features/seasonality/` | `Seasonality.tsx` | `SeasonalEquity`, `assetSeasonality`, `seasonalCurve` |
+| Saisonnalité (`seasonality`) | `features/seasonality/` | `Seasonality.tsx` | `JournalSeasonality` actif (trades réels, échantillons minimums) ; `assetSeasonality` et `seasonalCurve` mis en attente de données de marché historiques vérifiées |
 | Rapports (`reports`) | `features/reports/` | `Reports.tsx` | `reportMonths`, `domain/monthlyReport`, `store/reports`, `backend/reports.functions` |
 | Monte Carlo (`montecarlo`) | `features/monte-carlo/` | `MonteCarlo.tsx` | `StrategyChart`, `StrategyEditor`, `StrategyDetails`, `strategyCsv`, Workers de projection et de densité, `src/modules/probability/strategy` |
 | Jarvis (`insights`) | `features/jarvis/` | `Jarvis.tsx` (page) · `AiAssistant.tsx` (widget) | profil `jarvis_nq`, conversation vocale (`voiceConversation`, `VoiceBar`) — voir [`AI.md`](AI.md) |
