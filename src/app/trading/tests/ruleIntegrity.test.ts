@@ -104,8 +104,9 @@ describe("quant rule correctness", () => {
     );
     expect(inspected.applicable).toBe(1);
     expect(inspected.unknown).toBe(1);
-    expect(computeRuleAdherence([previous, later], [rule("stop_after_losses", "1")], 25000))
-      .toEqual([]);
+    expect(
+      computeRuleAdherence([previous, later], [rule("stop_after_losses", "1")], 25000),
+    ).toEqual([]);
   });
 
   it("requires a verified historical balance before publishing a risk verdict", () => {
@@ -113,12 +114,14 @@ describe("quant rule correctness", () => {
     row.riskAmount = 300;
     const target = rule("max_risk_pct", "1");
     expect(inspectRuleAdherence([row], [target], 25000)[0].ratePct).toBeNull();
-    const [verified] = computeRuleAdherence(
-      [row], [target], 25000, 30, new Map([[row.id, 25000]]),
-    );
+    const [verified] = computeRuleAdherence([row], [target], 25000, 30, new Map([[row.id, 25000]]));
     expect(verified.ratePct).toBe(0);
     const [largerBalance] = computeRuleAdherence(
-      [row], [target], 25000, 30, new Map([[row.id, 50000]]),
+      [row],
+      [target],
+      25000,
+      30,
+      new Map([[row.id, 50000]]),
     );
     expect(largerBalance.ratePct).toBe(100);
   });
