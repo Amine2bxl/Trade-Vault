@@ -13,7 +13,7 @@ export function computeStats(trades: Trade[]): TradeStats {
     breakEven: 0,
     avgWin: 0,
     avgLoss: 0,
-    profitFactor: 0,
+    profitFactor: null,
     maxDrawdown: 0,
     maxDrawdownOrderVerified: false,
     currentStreak: 0,
@@ -43,7 +43,7 @@ export function computeStats(trades: Trade[]): TradeStats {
   const avgLoss = losses.length > 0 ? losses.reduce((s, t) => s + t.pnl, 0) / losses.length : 0;
   const grossProfit = wins.reduce((s, t) => s + t.pnl, 0);
   const grossLoss = Math.abs(losses.reduce((s, t) => s + t.pnl, 0));
-  const profitFactor = grossLoss > 0 ? grossProfit / grossLoss : grossProfit > 0 ? 99 : 0;
+  const profitFactor = grossLoss > 0 ? grossProfit / grossLoss : null;
 
   let peak = 0,
     maxDrawdown = 0,
