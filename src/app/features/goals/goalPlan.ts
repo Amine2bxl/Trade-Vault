@@ -139,6 +139,20 @@ export interface MeasureCtx {
   journalRate: number;
 }
 
+/** Une métrique non calculable ne doit pas être affichée comme un zéro réel. */
+export function isGoalMetricAvailable(g: Pick<GoalDef, "kind">, ctx: MeasureCtx): boolean {
+  switch (g.kind) {
+    case "profit_factor":
+      return ctx.stats.profitFactor !== null;
+    case "avg_rr":
+      return ctx.stats.rSampleSize > 0;
+    case "max_drawdown":
+      return ctx.quant.maxDrawdownPct !== null;
+    default:
+      return true;
+  }
+}
+
 /** Live current value of a goal's metric (manual for custom). */
 export function currentGoalValue(g: GoalDef, ctx: MeasureCtx): number {
   switch (g.kind) {
