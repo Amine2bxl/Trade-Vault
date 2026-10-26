@@ -90,8 +90,8 @@ export function checkTradeAgainstRules(
                 ? `Trade pris à ${trade.entryTime}, après ta limite de ${rule.value}.`
                 : `Trade taken at ${trade.entryTime}, past your ${rule.value} cutoff.`,
               isFr
-                ? "Statistiquement, les trades hors de ta fenêtre ont un taux de réussite nettement plus faible : fatigue + faible liquidité = edge dégradé."
-                : "Statistically, trades outside your window win far less often: fatigue + thin liquidity = degraded edge.",
+                ? "Cette entrée se situe hors de la plage horaire que tu as définie."
+                : "This entry is outside the trading hours you defined.",
             ),
           });
         }
@@ -109,8 +109,8 @@ export function checkTradeAgainstRules(
                 ? `Trade pris à ${trade.entryTime}, avant ton heure de départ de ${rule.value}.`
                 : `Trade taken at ${trade.entryTime}, before your ${rule.value} start time.`,
               isFr
-                ? "Les entrées avant ta fenêtre sautent ta préparation — c'est exactement là que naissent les trades impulsifs."
-                : "Entries before your window skip your preparation — that's exactly where impulsive trades are born.",
+                ? "Cette entrée ne respecte pas la fenêtre horaire de ton plan."
+                : "This entry falls outside the time window in your plan.",
             ),
           });
         }
@@ -134,8 +134,8 @@ export function checkTradeAgainstRules(
                   ? `Risque de ${pct.toFixed(1)}% sur ce trade — au-dessus de ta limite de ${maxPct}%.`
                   : `${pct.toFixed(1)}% risked on this trade — above your ${maxPct}% cap.`,
                 isFr
-                  ? `À ce niveau de risque, une série de 5 pertes coûte ~${Math.min(99, Math.round(pct * 5))}% du compte. Le sur-risque est la première cause de compte cramé.`
-                  : `At this risk level, a 5-loss streak costs ~${Math.min(99, Math.round(pct * 5))}% of the account. Oversizing is the #1 account killer.`,
+                  ? `Le montant de risque renseigné dépasse la limite que tu as définie.`
+                  : `The entered risk amount exceeds the limit you defined.`,
               ),
             });
           }
@@ -154,8 +154,8 @@ export function checkTradeAgainstRules(
                 ? `${count}e trade de la journée — ta limite est de ${max}.`
                 : `Trade #${count} of the day — your limit is ${max}.`,
               isFr
-                ? "Au-delà de ta limite, chaque trade supplémentaire a statistiquement une espérance plus faible : c'est l'overtrading qui parle, pas ton edge."
-                : "Past your limit, each extra trade statistically carries lower expectancy: that's overtrading talking, not your edge.",
+                ? "Cette position dépasse le nombre maximal de trades que tu as défini."
+                : "This position exceeds the maximum number of trades you defined.",
             ),
           });
         }
@@ -174,8 +174,8 @@ export function checkTradeAgainstRules(
                   ? `Trade pris après ${losses} pertes aujourd'hui — ta règle disait stop à ${maxLosses}.`
                   : `Trade taken after ${losses} losses today — your rule said stop at ${maxLosses}.`,
                 isFr
-                  ? "Après une série de pertes, le cerveau passe en mode récupération : les décisions suivantes sont statistiquement les pires de la journée."
-                  : "After a losing streak, the brain flips into recovery mode: the next decisions are statistically the worst of the day.",
+                  ? "Cette entrée ne respecte pas ta règle d'arrêt après les pertes clôturées."
+                  : "This entry violates your stop-after-closed-losses rule.",
               ),
             });
           }
@@ -238,11 +238,28 @@ export function evaluateTradeRule(
         context.sameDayTrades.some((previous) => previous.date !== trade.date)
       )
         return unknownRule("unknown_day_history");
-      if (
-        rule.kind === "stop_after_losses" &&
-        context.sameDayTrades.some((previous) => !Number.isFinite(previous.pnl))
-      )
-        return unknownRule("unknown_previous_result");
+      if (rule.kind === "stop_after_losses") {
+        if (!verifiedTime(trade.entryTime)) return unknownRule("missing_entry_time");
+        const currentEntry = toMinutes(trade.entryTime)!;
+        const closedBeforeEntry: Trade[] = [];
+        for (const previous of context.sameDayTrades) {
+          if (!Number.isFinite(previous.pnl)) return unknownRule("unknown_previous_result");
+          if (!verifiedTime(previous.entryTime) || !verifiedTime(previous.exitTime))
+            return unknownRule("missing_previous_exit_time");
+          const previousEntry = toMinutes(previous.entryTime)!;
+          const previousExit = toMinutes(previous.exitTime)!;
+          // Un exit inférieur à l'entrée indique une position franchissant
+          // minuit, non clôturée durant cette journée d'entrée.
+          if (previousExit < previousEntry) continue;
+          if (previousExit === currentEntry) return unknownRule("simultaneous_exit_and_entry");
+          if (previousExit < currentEntry) closedBeforeEntry.push(previous);
+        }
+        const violations = checkTradeAgainstRules(trade, [rule], {
+          ...context,
+          sameDayTrades: closedBeforeEntry,
+        });
+        return { status: violations.length ? "FAIL" : "PASS", violations };
+      }
       break;
     default:
       return unknownRule("unsupported_rule");
