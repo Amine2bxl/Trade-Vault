@@ -611,13 +611,13 @@ export default function Analytics({ trades }: AnalyticsProps) {
                 },
                 {
                   label: "Sortino",
-                  value:
-                    quant.sortino !== null
-                      ? quant.sortino >= 99
-                        ? "99+"
-                        : quant.sortino.toFixed(2)
-                      : "—",
-                  sub: quant.sortino === null ? t("quant.needTenDays") : t("quant.annualized"),
+                  value: quant.sortino !== null ? quant.sortino.toFixed(2) : "—",
+                  sub:
+                    quant.sortinoStatus === "insufficient"
+                      ? t("quant.needTenDays")
+                      : quant.sortinoStatus === "no_downside"
+                        ? t("quant.noDownside")
+                        : t("quant.annualized"),
                   good: (quant.sortino ?? 0) >= 1.5,
                   info: t("quant.infoSortino"),
                 },
