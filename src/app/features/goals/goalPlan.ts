@@ -145,7 +145,7 @@ export function currentGoalValue(g: GoalDef, ctx: MeasureCtx): number {
     case "capital":
       return ctx.startingBalance + ctx.stats.totalPnl;
     case "profit_factor":
-      return Math.min(ctx.stats.profitFactor, 99);
+      return ctx.stats.profitFactor === null ? 0 : Math.min(ctx.stats.profitFactor, 99);
     case "max_drawdown":
       return (ctx.quant.maxDrawdownPct ?? 0) * 100;
     case "win_rate":
