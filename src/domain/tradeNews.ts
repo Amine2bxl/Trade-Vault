@@ -115,7 +115,7 @@ const LOCAL_CLOCK: Clock = {
 };
 
 function minutes(hhmm: string | undefined): number | null {
-  const m = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(hhmm ?? "");
+  const m = /^([01]?\d|2[0-3]):([0-5]\d)$/.exec(hhmm ?? "");
   return m ? Number(m[1]) * 60 + Number(m[2]) : null;
 }
 
