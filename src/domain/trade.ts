@@ -104,6 +104,8 @@ export interface TradeStats {
   mistakeStats: Record<string, { count: number; totalPnl: number }>;
 }
 
+/** Break-even is an outcome, not a trade direction. A broker can label a
+ * position BE while commissions leave a genuinely negative net result. */
 export function isBreakEven(t: Trade): boolean {
-  return t.direction === "be" || t.pnl === 0;
+  return t.pnl === 0;
 }
