@@ -408,7 +408,8 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
             },
             {
               label: t("calendar.totalRR"),
-              value: monthlySummary.totalRR === null ? "—" : `${monthlySummary.totalRR.toFixed(2)}R`,
+              value:
+                monthlySummary.totalRR === null ? "—" : `${monthlySummary.totalRR.toFixed(2)}R`,
               tone:
                 monthlySummary.tradingDays === 0
                   ? "neutral"
