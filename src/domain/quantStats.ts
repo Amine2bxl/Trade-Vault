@@ -183,8 +183,7 @@ export function computeQuantStats(trades: Trade[], startingBalance = 0): QuantSt
     const troughDate = sorted[troughIndex].date;
     recoveryDays = recoveredOn
       ? Math.round(
-          (Date.parse(recoveredOn + "T12:00:00Z") -
-            Date.parse(troughDate + "T12:00:00Z")) /
+          (Date.parse(recoveredOn + "T12:00:00Z") - Date.parse(troughDate + "T12:00:00Z")) /
             86400000,
         )
       : -1;
