@@ -29,7 +29,7 @@ La CI et les corrections ponctuelles ne suffisent pas pour déclarer tout le cha
 | ID | Tâche | Owner/priorité | Dépendances | État | Acceptation |
 | --- | --- | --- | --- | --- | --- |
 | B1 | Verdicts PASS / FAIL / UNKNOWN | L0 P0 | Dates, risque, historiques | PARTIAL : coeur et Mistakes implémentés | Tous consommateurs propagent status et couverture |
-| B2 | Exclure UNKNOWN des taux et éviter les fuites futures | L0 P0 | Entrées/sorties fiables | PARTIAL : protections et tests réalisés | Cas minuit, DST, positions ouvertes, simultanéité démontrés |
+| B2 | Exclure UNKNOWN des taux et éviter les fuites futures | L0 P0 | Entrées/sorties fiables | PARTIAL : règles historiques et contexte « après perte » protégés contre les clôtures futures ; filtres et Jarvis alignés, tests CI ; DST/ticks encore à confirmer | Cas minuit, DST, positions ouvertes, simultanéité démontrés |
 | B3 | Vérifier risque au solde réellement disponible à l'entrée | L0 P0 | Historique dépôts/retraits/exécutions | OPEN : absent → UNKNOWN | Preuves de chaque solde, aucun substitut de solde actuel |
 | B4 | Empêcher les notifications/IA de conclure sur une preuve partielle | L0/L4 P0 | Objet Evidence | PARTIAL : affirmation chiffrée complète uniquement | Contrat Evidence avec méthode/source/échantillon/limitations, tests IA |
 
@@ -98,7 +98,7 @@ La CI et les corrections ponctuelles ne suffisent pas pour déclarer tout le cha
 | --- | --- | --- | --- |
 | E1 | Flux raw → validation → canonical trade → moteurs versionnés → Evidence → surfaces | L1–L4 P0 | OPEN : contrats de provenance et versions |
 | E2 | Préserver migrations additives et utilisateurs existants | Chaque lot P0 | GATE : aucun schéma destructif, rollback documenté |
-| E3 | Golden datasets indépendants et invariants | L0 puis chaque lot P0 | OPEN : multi-exécutions, DST, fills, frais, PF, propagation UNKNOWN |
+| E3 | Golden datasets indépendants et invariants | L0 puis chaque lot P0 | PARTIAL : ledger fixe indépendant (PF/R/P&L réalisé/DD/erreurs), multi-fuseaux CI ; reste multi-fills, commissions et courbe de solde intratrade (lot 1/3) |
 | E4 | Évaluer les tests en production/charge | L5 P0 | OPEN : preuves test/preview/replay |
 | E5 | RLS, confidentialité, accessibilité/zoom | L5 P0 | OPEN : audit et validation manuelle |
 | E6 | Stripe abonnement/annulation/3DS/webhooks | L5 P0 | OPEN : compte test et secrets nécessaires |

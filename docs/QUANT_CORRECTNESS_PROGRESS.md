@@ -289,3 +289,21 @@ critères de sortie sont satisfaits.
 - [ ] Revue CI sur commit final et vérification des conclusions en contexte réel.
 
 Lot 0 toujours IN PROGRESS, lots suivants verrouillés.
+
+## Boucle consolidée — golden dataset quantitatif et chronologie comportementale
+
+- [x] Registre fixe de trades avec calculs de référence manuels : P&L net,
+  gains/pertes bruts, Profit Factor 5/3, R moyen +0,2R, drawdown réalisé
+  de 250 $ / 25 200 $ et récupération sur 1 jour.
+- [x] Cas où l'ordre des clôtures diffère de l'ordre des entrées ; contrôle
+  indépendant des notes des erreurs multi-tags, sans double comptage.
+- [x] Règle comportementale « après perte » réconciliée entre filtre et
+  Jarvis, sur une perte effectivement clôturée avant la nouvelle entrée.
+- [x] Contrats des sessions Eastern : import broker et CSV non relu non
+  classés comme observations de session.
+- [ ] CI finale de la PR et contrôle des consommateurs restants.
+- [ ] Migrations/additions de provenance, exécutions fractionnées, cashflows
+  et sources historiques de compte au lot 1, selon la dépendance approuvée.
+- [ ] Test réel en environnement de préproduction et audit produit final.
+
+**Statut : lot 0 IN PROGRESS, lots 1–6 NOT STARTED.**
