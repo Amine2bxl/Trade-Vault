@@ -10,7 +10,7 @@ import {
 } from "@/shared/ui/icons";
 import { Trade, MissedOpportunity, isBreakEven } from "@/app/types";
 import { formatPnl, directionLabel, directionBadgeClass } from "@/domain/tradeCalcs";
-import { getSession, getMacroEvents } from "@/domain/quantStats";
+import { getSessionForTrade, getMacroEvents } from "@/domain/quantStats";
 import { useEconomicHistory } from "@/app/features/news/useTradeNews";
 import { cn } from "@/shared/ui/cn";
 import { useEffect, useMemo, useReducer, useRef, useState } from "react";
@@ -336,9 +336,9 @@ export default function TradeDetailModal({
                       </div>
                       <div className="flex items-center gap-1.5">
                         <span className="text-xs text-slate-500">{trade.strategy}</span>
-                        {getSession(trade.entryTime) && (
+                        {getSessionForTrade(trade) && (
                           <span className="tv-label px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400">
-                            {t(`session.${getSession(trade.entryTime)}` as never)}
+                            {t(`session.${getSessionForTrade(trade)}` as never)}
                           </span>
                         )}
                       </div>
