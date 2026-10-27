@@ -141,5 +141,5 @@ test("the daily focus uses associated PnL, never proven causal cost", () => {
   const rule = deriveDailyRule(computeStats(dirty));
   expect(rule?.text).toBe("revenge trade");
   expect(rule?.leak).toContain("640");
-  expect(deriveDailyRule(computeStats([sample[0]])).toBeNull();
+  expect(deriveDailyRule(computeStats([sample[0]]))).toBeNull();
 });
