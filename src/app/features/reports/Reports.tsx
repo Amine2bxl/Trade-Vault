@@ -32,7 +32,12 @@ import { useAuth } from "@/app/contexts/AuthContext";
 import { useToast } from "@/app/contexts/ToastContext";
 import { useT } from "@/app/i18n/LanguageContext";
 import { loadMonthlyReports, type MonthlyReportRow } from "@/app/store";
-import { buildMonthlyReport, isLegacyMonthlyReport, prevMonthOf, type MonthlyReportData } from "@/domain/monthlyReport";
+import {
+  buildMonthlyReport,
+  isLegacyMonthlyReport,
+  prevMonthOf,
+  type MonthlyReportData,
+} from "@/domain/monthlyReport";
 import { useAccounts } from "@/app/contexts/AccountContext";
 import { localMonthOf, todayLocalDate } from "@/shared/calendar-date";
 import { statsBySession, MIN_BUCKET_SAMPLE } from "@/domain/quantStats";
@@ -376,7 +381,11 @@ export default function Reports({ trades }: { trades: Trade[] }) {
                     disabled={generating}
                     onClick={() => generateMonths([current.month], false)}
                   >
-                    {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                    {generating ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <RefreshCw className="h-4 w-4" />
+                    )}
                     {t("reports.recalculate")}
                   </Button>
                 </div>
