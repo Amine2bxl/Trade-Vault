@@ -340,3 +340,16 @@ preuve, de migration et de validation d'intégration documentés dans la matrice
 - [x] Le résumé mensuel IA ne peut plus additionner les tags ni qualifier leur P&L de « pertes évitables » ; pas d'edge démontré sans échantillon, pas de métrique inventée quand la donnée est nulle.
 - [x] Golden test : un seul trade à deux tags (-100 $) apparaît dans deux catégories mais reste -100 $ de P&L total, et non -200 $ de pertes imputables.
 - [ ] CI sur le dernier commit de cette itération et revue UX des mentions dans les langues secondaires (fallback anglais).
+
+## Reprise approfondie L0 — validation des imports et préparation vérifiable du lot 1
+
+- [x] CSV P&L : interdiction des préfixes numériques suivis de texte, des exposants hors contrat, de l'infini et des séparateurs de milliers malformés.
+- [x] CSV date et heure : validation de la date civile y compris février/bissextile ; refus des heures impossibles et des suffixes non reconnus ; aucun instant UTC deviné sans source.
+- [x] Régressions métier ajoutées dans `src/app/features/journal/tests/csvImport.test.ts`.
+- [x] Contrôles CI du commit `637d0fec` réussis (typecheck, lint, build, tests multi-fuseaux, SQL) et aperçu Vercel READY.
+- [x] Design préparatoire documenté dans `docs/DATA_INTEGRITY_LOT1_DESIGN.md` : modèle brut / fills / cashflows, idempotence, sécurité et contrats attendus par le lot 2. **Cela ne démarre pas le lot 1**.
+- [ ] Vérifier la CI au dernier SHA et la prévisualisation authentifiée du parcours import → journal → rapports → Jarvis ; comparaison à des comptes représentatifs avant statut DONE.
+- [ ] Revue finale des autres consommateurs de statistiques, états `UNKNOWN` et compatibilité de tous les rapports réels persistés.
+- [ ] Vérification du plan L0/L1 sur branche dédiée, sans migration sur base active ni fusion sur `main`.
+
+La connexion Supabase active a été consultée **en lecture seule** pour inventorier les colonnes ; aucune migration ni donnée utilisateur modifiée. Les futurs tests Tradovate et Stripe ne sont pas présentés comme validés. Tant que ces gates sont ouverts : **L0 IN PROGRESS, L1–L6 NOT STARTED**.
