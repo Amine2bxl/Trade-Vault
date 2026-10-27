@@ -46,6 +46,11 @@ describe("getSession", () => {
   it("returns null for missing/invalid time", () => {
     expect(getSession("")).toBeNull();
     expect(getSession("xx")).toBeNull();
+    expect(getSession("24:00")).toBeNull();
+    expect(getSession("09:60")).toBeNull();
+    expect(getSession("-1:15")).toBeNull();
+    expect(getSession("09:30garbage")).toBeNull();
+    expect(getSession("9:05")).toBe("newyork");
   });
 });
 
@@ -170,6 +175,35 @@ describe("computeQuantStats", () => {
     expect(recovered.recoveryDays).toBe(3); // 07-02 → 07-05
   });
 
+  it("recognizes a zero observed drawdown when initial capital is known", () => {
+    const trades = [
+      mkTrade({ id: "a", date: "2026-07-01", pnl: 100 }),
+      mkTrade({ id: "b", date: "2026-07-02", pnl: 200 }),
+    ];
+    expect(computeQuantStats(trades, 25000).maxDrawdownPct).toBe(0);
+    expect(computeQuantStats(trades, 0).maxDrawdownPct).toBeNull();
+  });
+
+  it("recovers during the same trading day after the actual trough", () => {
+    const date = "2026-07-01";
+    const trades = [
+      mkTrade({ id: "peak", date, entryTime: "09:30", pnl: 200 }),
+      mkTrade({ id: "trough", date, entryTime: "10:00", pnl: -150 }),
+      mkTrade({ id: "recovery", date, entryTime: "11:00", pnl: 180 }),
+    ];
+    expect(computeQuantStats(trades, 25000).recoveryDays).toBe(0);
+  });
+
+  it("does not mistake a pre-trough high for recovery", () => {
+    const date = "2026-07-01";
+    const trades = [
+      mkTrade({ id: "a", date, entryTime: "09:30", pnl: 200 }),
+      mkTrade({ id: "b", date, entryTime: "10:00", pnl: -150 }),
+      mkTrade({ id: "c", date, entryTime: "11:00", pnl: 100 }),
+    ];
+    expect(computeQuantStats(trades).recoveryDays).toBe(-1);
+  });
+
   it("consistency: best day share of total profit", () => {
     const q = computeQuantStats([
       mkTrade({ date: "2026-07-01", pnl: 800 }),
@@ -207,6 +241,19 @@ describe("breakdowns", () => {
     expect(s.newyork.count).toBe(2);
     expect(s.newyork.pnl).toBe(25);
     expect(s.asia.count).toBe(1);
+  });
+
+  it("rejects impossible entry times from all hourly and session buckets", () => {
+    const trades = [
+      mkTrade({ id: "invalid1", entryTime: "24:45", pnl: 100 }),
+      mkTrade({ id: "invalid2", entryTime: "9:80", pnl: 50 }),
+      mkTrade({ id: "valid", entryTime: "9:30", pnl: 20 }),
+    ];
+    const byHour = statsByHour(trades);
+    expect(Object.keys(byHour)).toEqual(["9"]);
+    expect(byHour[9].count).toBe(1);
+    expect(statsBySession(trades).newyork.count).toBe(1);
+    expect(dayHourMatrix(trades)["3-9"].count).toBe(1);
   });
 
   it("statsByHour regroupe par heure d'entrée", () => {

@@ -7,11 +7,15 @@ import { compareChronological } from "./tradeOrder";
 // overnight remainder.
 export type TradingSession = "asia" | "london" | "newyork";
 
+/** Horaires du Journal : 24 h, heure minute strictement valide, sans seconde inférée. */
+function entryMinute(entryTime: string): number | null {
+  const matched = /^([01]?\d|2[0-3]):([0-5]\d)$/.exec(entryTime.trim());
+  return matched ? Number(matched[1]) * 60 + Number(matched[2]) : null;
+}
+
 export function getSession(entryTime: string): TradingSession | null {
-  if (!entryTime) return null;
-  const [h, m] = entryTime.split(":").map(Number);
-  if (Number.isNaN(h) || Number.isNaN(m)) return null;
-  const mins = h * 60 + m;
+  const mins = entryMinute(entryTime);
+  if (mins === null) return null;
   if (mins >= 120 && mins < 480) return "london";
   if (mins >= 480 && mins < 990) return "newyork";
   return "asia";
@@ -146,36 +150,41 @@ export function computeQuantStats(trades: Trade[], startingBalance = 0): QuantSt
     peak = 0,
     maxDD = 0,
     peakAtMaxDD = 0;
-  let troughDate = "";
-  for (const t of sorted) {
+  let troughIndex = -1;
+  for (let i = 0; i < sorted.length; i++) {
+    const t = sorted[i];
     equity += t.pnl;
     if (equity > peak) peak = equity;
     const dd = peak - equity;
     if (dd > maxDD) {
       maxDD = dd;
       peakAtMaxDD = peak;
-      troughDate = t.date;
+      troughIndex = i;
     }
   }
   const ddBase = startingBalance > 0 ? startingBalance + peakAtMaxDD : 0;
-  const maxDrawdownPct = maxDD > 0 && ddBase > 0 ? maxDD / ddBase : null;
+  // If an initial balance is known and there is no drawdown, the observed
+  // drawdown ratio is exactly 0; it is not an unavailable measurement.
+  const maxDrawdownPct = ddBase > 0 ? maxDD / ddBase : null;
 
   let recoveryDays: number | null = null;
-  if (maxDD > 0 && troughDate) {
-    // First date after the trough where equity makes a new high vs the pre-drawdown peak
-    let eq = 0,
-      recoveredOn: string | null = null;
-    for (const t of sorted) {
-      eq += t.pnl;
-      if (t.date > troughDate && eq >= peakAtMaxDD) {
-        recoveredOn = t.date;
+  if (maxDD > 0 && troughIndex >= 0) {
+    // Recompute the equity *after the actual trough trade*, not simply after
+    // its calendar date. Recovery within the same session is 0 days.
+    let eq = 0;
+    let recoveredOn: string | null = null;
+    for (let i = 0; i < sorted.length; i++) {
+      eq += sorted[i].pnl;
+      if (i > troughIndex && eq >= peakAtMaxDD) {
+        recoveredOn = sorted[i].date;
         break;
       }
     }
+    const troughDate = sorted[troughIndex].date;
     recoveryDays = recoveredOn
       ? Math.round(
-          (new Date(recoveredOn + "T12:00:00").getTime() -
-            new Date(troughDate + "T12:00:00").getTime()) /
+          (Date.parse(recoveredOn + "T12:00:00Z") -
+            Date.parse(troughDate + "T12:00:00Z")) /
             86400000,
         )
       : -1;
@@ -265,10 +274,9 @@ export function statsBySession(trades: Trade[]): Record<TradingSession, BucketSt
 export function statsByHour(trades: Trade[]): Record<number, BucketStat> {
   const map: Record<string, BucketStat> = {};
   for (const t of trades) {
-    if (!t.entryTime) continue;
-    const h = parseInt(t.entryTime.split(":")[0], 10);
-    if (Number.isNaN(h)) continue;
-    addToBucket(map, String(h), t);
+    const minute = entryMinute(t.entryTime);
+    if (minute === null) continue;
+    addToBucket(map, String(Math.floor(minute / 60)), t);
   }
   const out: Record<number, BucketStat> = {};
   for (const [k, v] of Object.entries(map)) out[Number(k)] = v;
@@ -279,11 +287,11 @@ export function statsByHour(trades: Trade[]): Record<number, BucketStat> {
 export function dayHourMatrix(trades: Trade[]): Record<string, BucketStat> {
   const map: Record<string, BucketStat> = {};
   for (const t of trades) {
-    if (!t.entryTime) continue;
-    const h = parseInt(t.entryTime.split(":")[0], 10);
-    if (Number.isNaN(h)) continue;
-    const dow = new Date(t.date + "T12:00:00").getDay();
-    addToBucket(map, `${dow}-${h}`, t);
+    const minute = entryMinute(t.entryTime);
+    if (minute === null || !/^\d{4}-\d{2}-\d{2}$/.test(t.date)) continue;
+    const dow = new Date(t.date + "T12:00:00Z").getUTCDay();
+    if (!Number.isFinite(dow)) continue;
+    addToBucket(map, `${dow}-${Math.floor(minute / 60)}`, t);
   }
   return map;
 }

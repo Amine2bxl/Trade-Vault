@@ -174,3 +174,15 @@ critères de sortie sont satisfaits.
 3. Toute intégration sensible, migration irréversible, paiement ou accès broker
    nécessite une vérification réelle avant le statut DONE.
 4. Aucun push direct sur `main` et aucune fusion automatique de PR.
+
+## Reprise lot 0 — vérification des conventions de dates et de risque
+
+- [x] Inspection : `quantStats.getSession` acceptait des heures impossibles telles que 24:00 et 09:60 ; mêmes invalidités dans les agrégats horaires.
+- [x] Parser 24 h explicite partagé avec les buckets ; calcul du jour de semaine indépendant du fuseau de l'appareil.
+- [x] Corriger le calcul de `recoveryDays` : une récupération après le creux le même jour vaut 0 jour, et l'indice de creux prévaut sur la simple date.
+- [x] Avec un solde initial connu, zéro drawdown observé retourne 0 et non `null`.
+- [x] Nouveaux jeux de cas indépendants : horaires invalides, récupération intrajournalière et absence de drawdown.
+- [ ] Vérifier la CI sur le commit combiné de ce lot et contrôler tous les consommateurs pertinents.
+- [ ] Validation des heures des imports broker dans leur fuseau source, et normalisation temporelle du lot 1.
+
+**Dépendance approuvée :** le lot 0 valide les calculs et les états `UNKNOWN` avec des données de référence ; le lot 1 fournit les historiques broker et soldes d'entrée manquants. Aucune valeur n'est fabriquée pour contourner cette séparation.
