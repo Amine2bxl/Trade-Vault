@@ -1496,6 +1496,8 @@ const en = {
   "analytics.newsDaysUncovered":
     "{n} trades left aside: their week isn't in the calendar yet (being fetched).",
   "analytics.byHourSub": "PnL bars and win-rate line (ET)",
+  "analytics.timeZoneUnverified":
+    "Broker trade times are excluded from ET session charts until the source timezone is verified.",
 
   // Trading sessions
   "session.london": "London",
