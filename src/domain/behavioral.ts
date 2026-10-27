@@ -1,5 +1,5 @@
 import { Trade } from "./trade";
-import { getSession, TradingSession } from "./quantStats";
+import { getSessionForTrade, TradingSession } from "./quantStats";
 import { localDateOf } from "@/shared/calendar-date";
 
 // ── Behavioral taxonomy ─────────────────────────────────────────────────────
@@ -138,7 +138,7 @@ export function computeBehavioral(trades: Trade[]): BehavioralReport {
 
   for (const t of trades) {
     if (t.mistakes.length === 0) continue;
-    const session = getSession(t.entryTime);
+    const session = getSessionForTrade(t);
     const dow = new Date(t.date + "T12:00:00").getDay();
     const wk = isoWeekKey(t.date);
     // One trade can have multiple mistake tags. Count incidents by tag, but
