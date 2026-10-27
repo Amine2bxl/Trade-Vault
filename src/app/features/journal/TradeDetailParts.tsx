@@ -49,18 +49,23 @@ export function TradeMetrics({ trade }: TradeProps) {
           className={cn(
             "tv-num",
             "text-sm font-semibold",
-            trade.rMultiple >= 0 ? "text-emerald-400" : "text-red-400",
+            trade.riskAmount <= 0
+              ? "text-slate-500"
+              : trade.pnl >= 0
+                ? "text-emerald-400"
+                : "text-red-400",
           )}
         >
-          {trade.rMultiple.toFixed(2)}R
+          {trade.riskAmount > 0 ? `${(trade.pnl / trade.riskAmount).toFixed(2)}R` : "—"}
         </div>
       </div>
       <div className="bg-white/[0.03] rounded-xl p-3 text-center">
         <Star className="w-3.5 h-3.5 text-slate-500 mx-auto mb-1" />
         <div className="text-[10px] text-slate-500 mb-0.5">{t("tradeDetail.quality")}</div>
         <div className="text-sm font-semibold text-slate-300">
-          {"★".repeat(trade.setupQuality)}
-          {"☆".repeat(5 - trade.setupQuality)}
+          {trade.reviewPending
+            ? "—"
+            : "★".repeat(trade.setupQuality) + "☆".repeat(5 - trade.setupQuality)}
         </div>
       </div>
     </div>
@@ -73,7 +78,9 @@ export function TradeRisk({ trade }: TradeProps) {
     <div className="flex flex-wrap gap-3 md:gap-4 text-xs">
       <div className="bg-white/[0.03] rounded-lg px-3 py-2">
         <span className="text-slate-500">{t("tradeDetail.risk")}: </span>
-        <span className="tv-num text-white font-semibold">{formatMoney(trade.riskAmount)}</span>
+        <span className="tv-num text-white font-semibold">
+          {trade.riskAmount > 0 ? formatMoney(trade.riskAmount) : "—"}
+        </span>
       </div>
       {trade.riskAmount > 0 && (
         <div className="bg-white/[0.03] rounded-lg px-3 py-2">
@@ -113,6 +120,14 @@ export function TradeRisk({ trade }: TradeProps) {
 
 export function TradeConfidence({ trade }: TradeProps) {
   const { t } = useT();
+  if (trade.reviewPending) {
+    return (
+      <div className="flex items-center justify-between">
+        <span className="text-xs text-slate-500">{t("tradeDetail.confidenceLevel")}</span>
+        <span className="tv-num text-xs font-bold text-slate-500">—</span>
+      </div>
+    );
+  }
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
