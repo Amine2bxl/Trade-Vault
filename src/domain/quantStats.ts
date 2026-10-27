@@ -168,8 +168,7 @@ export function computeQuantStats(
       // These are account returns with cashflows neutralized and flat sessions
       // included. An annualization of trade-day PnL would be misleading.
       const mean = verified.reduce((s, x) => s + x, 0) / verified.length;
-      const variance =
-        verified.reduce((s, x) => s + (x - mean) ** 2, 0) / (verified.length - 1);
+      const variance = verified.reduce((s, x) => s + (x - mean) ** 2, 0) / (verified.length - 1);
       const std = Math.sqrt(variance);
       sharpeStatus = "no_variance";
       sortinoStatus = "no_downside";
