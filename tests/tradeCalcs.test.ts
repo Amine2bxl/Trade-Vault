@@ -42,6 +42,19 @@ describe("computeStats", () => {
     expect(s.winRate).toBeCloseTo(2 / 3);
   });
 
+  it("treats break-even as net zero rather than a direction label", () => {
+    const s = computeStats([
+      mkTrade({ direction: "be", pnl: -5 }),
+      mkTrade({ direction: "be", pnl: 10 }),
+      mkTrade({ direction: "long", pnl: 0 }),
+    ]);
+    expect(s.breakEven).toBe(1);
+    expect(s.losses).toBe(1);
+    expect(s.wins).toBe(1);
+    expect(s.winRate).toBe(0.5);
+    expect(s.profitFactor).toBe(2);
+  });
+
   it("excludes break-even trades from the win rate", () => {
     const s = computeStats([
       mkTrade({ pnl: 100 }),
