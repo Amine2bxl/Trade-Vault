@@ -2106,6 +2106,8 @@ const fr: Dict = {
   "reports.available": "Disponibles depuis ton historique",
   "reports.availableSub": "{n} mois clos avec des trades, sans rapport pour l'instant.",
   "reports.upToDate": "Chaque mois clos a son rapport.",
+  "reports.legacyWarning": "Ce rapport archivé utilise d'anciens calculs. Les métriques non vérifiables sont masquées jusqu'au recalcul.",
+  "reports.recalculate": "Recalculer",
   "reports.currentMonth": "Mois en cours",
   "reports.inProgress": "En cours",
   "reports.final": "Rapport finalisé",
