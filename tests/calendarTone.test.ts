@@ -32,12 +32,8 @@ describe("teinte d'une journée du calendrier", () => {
     expect(tone.unit).toBe("pnl");
     expect(tone.net).toBe(100);
     expect(tone.positiveShare).toBeCloseTo(2 / 3);
-    expect(dayTone([{ ...trade(200, 2), broker: "tradovate" }, trade(-100, -1)]).unit).toBe(
-      "pnl",
-    );
-    expect(dayTone([{ ...trade(200, 2), reviewPending: true }, trade(-100, -1)]).unit).toBe(
-      "pnl",
-    );
+    expect(dayTone([{ ...trade(200, 2), broker: "tradovate" }, trade(-100, -1)]).unit).toBe("pnl");
+    expect(dayTone([{ ...trade(200, 2), reviewPending: true }, trade(-100, -1)]).unit).toBe("pnl");
   });
 
   test("journée neutre : break-even seulement → gris discret, aucun filet", () => {
