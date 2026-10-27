@@ -45,6 +45,8 @@ export function dayTone(trades: Trade[]): DayTone {
 
   const useR = decisive.every(
     (t) =>
+      !t.reviewPending &&
+      !t.broker &&
       Number.isFinite(t.riskAmount) &&
       t.riskAmount > 0 &&
       Number.isFinite(t.rMultiple) &&
