@@ -97,11 +97,20 @@ describe("parseDateTime", () => {
 
   it("rejects impossible dates and hours instead of repairing them in a later layer", () => {
     for (const input of [
-      "2026-02-30", "2025-02-29", "2026-13-01", "2026-10-00",
-      "2026-04-31", "2026-03-14T24:00", "2026-03-14 09:60",
-      "2026-03-14 09:10:61", "3/14/2026 13:05 PM",
-      "3/14/2026 25:00", "2026-03-14garbage",
-    ]) expect(parseDateTime(input)).toBeNull();
+      "2026-02-30",
+      "2025-02-29",
+      "2026-13-01",
+      "2026-10-00",
+      "2026-04-31",
+      "2026-03-14T24:00",
+      "2026-03-14 09:60",
+      "2026-03-14 09:10:61",
+      "3/14/2026 13:05 PM",
+      "3/14/2026 25:00",
+      "2026-03-14garbage",
+    ]) {
+      expect(parseDateTime(input)).toBeNull();
+    }
     expect(parseDateTime("2024-02-29 09:30")).toEqual({ date: "2024-02-29", time: "09:30" });
     expect(parseDateTime("2026.01.05 09:12:22")).toEqual({ date: "2026-01-05", time: "09:12" });
   });
