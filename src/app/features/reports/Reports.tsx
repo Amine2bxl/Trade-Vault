@@ -492,7 +492,7 @@ function ReportSheet({
       );
     if (r.mistakes[0] && r.mistakes[0].cost < 0)
       out.push(
-        t("reports.tkMistake")
+        t("reports.tkMistakeObserved")
           .replace("{mistake}", r.mistakes[0].name)
           .replace("{n}", String(r.mistakes[0].count))
           .replace("{pnl}", formatPnl(r.mistakes[0].cost)),
@@ -871,8 +871,11 @@ function ReportSheet({
       {r.mistakes.length > 0 && (
         <section className="rp-section">
           <SectionTitle icon={<AlertTriangle className="h-3.5 w-3.5 text-amber-400" />}>
-            {t("reports.mistakes")}
+            {t("reports.mistakesObserved")}
           </SectionTitle>
+          <p className="mb-3 text-xs leading-relaxed text-slate-500">
+            {t("reports.mistakesNote")}
+          </p>
           <BarList
             rows={r.mistakes.map((m) => ({
               key: m.name,
