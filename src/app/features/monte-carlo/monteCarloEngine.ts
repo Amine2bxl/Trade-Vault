@@ -443,10 +443,10 @@ export function computeExpectancy(wr: number, aw: number, al: number): number {
   return wr * aw - (1 - wr) * al;
 }
 
-export function computeProfitFactor(wr: number, aw: number, al: number): number {
+export function computeProfitFactor(wr: number, aw: number, al: number): number | null {
   const gp = wr * aw;
   const gl = (1 - wr) * al;
-  return gl > 0 ? gp / gl : gp > 0 ? 99 : 0;
+  return gl > 0 ? gp / gl : null;
 }
 
 /**
