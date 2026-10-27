@@ -72,16 +72,25 @@ export function getMacroEvents(date: string, events: readonly VerifiedMacroEvent
 /** Trades décisifs requis avant d'afficher Kelly (cf. commentaire du calcul). */
 export const MIN_KELLY_SAMPLE = 30;
 
+/** One verified account-return observation for every included trading session,
+ * including zero-return sessions. Cashflows must be neutralized upstream.
+ * The Data Integrity lot will supply this source; trade P&L is not a proxy. */
+export interface VerifiedDailyReturns {
+  basis: "verified-account-equity";
+  dailyReturns: readonly number[];
+}
+
 export interface QuantStats {
   /** Average $ result per trade (all trades, BE included) */
   expectancy: number;
   /** Average R result per trade (pnl / risk, trades with risk > 0) */
   expectancyR: number | null;
-  /** Annualized Sharpe on daily PnL (null when < 10 trading days or flat) */
+  /** Annualized Sharpe on verified daily account returns only. */
   sharpe: number | null;
+  sharpeStatus: "unverified_returns" | "insufficient" | "no_variance" | "available";
   /** Sortino non défini si aucun risque baissier observé (jamais de plafond fictif). */
   sortino: number | null;
-  sortinoStatus: "insufficient" | "no_downside" | "available";
+  sortinoStatus: "unverified_returns" | "insufficient" | "no_downside" | "available";
   /** Max drawdown as % of (starting balance + peak equity); null without starting balance */
   maxDrawdownPct: number | null;
   /** Kelly fraction (indication only); null when wins or losses are missing */
@@ -107,13 +116,18 @@ export interface QuantStats {
   cleanTrades: number;
 }
 
-export function computeQuantStats(trades: Trade[], startingBalance = 0): QuantStats {
+export function computeQuantStats(
+  trades: Trade[],
+  startingBalance = 0,
+  verifiedReturns?: VerifiedDailyReturns,
+): QuantStats {
   const empty: QuantStats = {
     expectancy: 0,
     expectancyR: null,
     sharpe: null,
+    sharpeStatus: "unverified_returns",
     sortino: null,
-    sortinoStatus: "insufficient",
+    sortinoStatus: "unverified_returns",
     maxDrawdownPct: null,
     kelly: null,
     bestDayShare: null,
@@ -140,17 +154,36 @@ export function computeQuantStats(trades: Trade[], startingBalance = 0): QuantSt
 
   let sharpe: number | null = null;
   let sortino: number | null = null;
-  let sortinoStatus: QuantStats["sortinoStatus"] = "insufficient";
-  if (daily.length >= 10) {
-    sortinoStatus = "no_downside";
-    const mean = daily.reduce((s, x) => s + x, 0) / daily.length;
-    const variance = daily.reduce((s, x) => s + (x - mean) ** 2, 0) / daily.length;
-    const std = Math.sqrt(variance);
-    if (std > 0) sharpe = (mean / std) * Math.sqrt(252);
-    const downside = Math.sqrt(daily.reduce((s, x) => s + Math.min(x, 0) ** 2, 0) / daily.length);
-    if (downside > 0) {
-      sortino = (mean / downside) * Math.sqrt(252);
-      sortinoStatus = "available";
+  let sharpeStatus: QuantStats["sharpeStatus"] = "unverified_returns";
+  let sortinoStatus: QuantStats["sortinoStatus"] = "unverified_returns";
+  const verified =
+    verifiedReturns?.basis === "verified-account-equity" &&
+    verifiedReturns.dailyReturns.every((value) => Number.isFinite(value))
+      ? verifiedReturns.dailyReturns
+      : null;
+  if (verified) {
+    sharpeStatus = "insufficient";
+    sortinoStatus = "insufficient";
+    if (verified.length >= 10) {
+      // These are account returns with cashflows neutralized and flat sessions
+      // included. An annualization of trade-day PnL would be misleading.
+      const mean = verified.reduce((s, x) => s + x, 0) / verified.length;
+      const variance =
+        verified.reduce((s, x) => s + (x - mean) ** 2, 0) / (verified.length - 1);
+      const std = Math.sqrt(variance);
+      sharpeStatus = "no_variance";
+      sortinoStatus = "no_downside";
+      if (std > 0) {
+        sharpe = (mean / std) * Math.sqrt(252);
+        sharpeStatus = "available";
+      }
+      const downside = Math.sqrt(
+        verified.reduce((s, x) => s + Math.min(x, 0) ** 2, 0) / verified.length,
+      );
+      if (downside > 0) {
+        sortino = (mean / downside) * Math.sqrt(252);
+        sortinoStatus = "available";
+      }
     }
   }
 
@@ -243,6 +276,7 @@ export function computeQuantStats(trades: Trade[], startingBalance = 0): QuantSt
     expectancy,
     expectancyR,
     sharpe,
+    sharpeStatus,
     sortino,
     sortinoStatus,
     maxDrawdownPct,
