@@ -307,3 +307,17 @@ Lot 0 toujours IN PROGRESS, lots suivants verrouillés.
 - [ ] Test réel en environnement de préproduction et audit produit final.
 
 **Statut : lot 0 IN PROGRESS, lots 1–6 NOT STARTED.**
+
+## Reprise après approbation — contrôle du score de journal vide
+
+- [x] Le moteur comportemental accordait 100/100 à un compte avec zéro trade,
+  sans aucune preuve de qualité ni de discipline.
+- [x] `cleanJournalScore` est maintenant `null` sans échantillon. Le nom de
+  cette mesure reste explicite : elle concerne les erreurs auto-déclarées,
+  et ne prouve pas le respect du plan de trading.
+- [x] Test de régression : un historique vide a zéro observation et aucune
+  note de journalisation.
+- [ ] Contrôle CI sur le dernier commit et revue des consommateurs IA.
+
+**Lot 0 encore IN PROGRESS**, même si CI verte : il reste des gates de
+preuve, de migration et de validation d'intégration documentés dans la matrice.
