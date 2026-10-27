@@ -66,3 +66,40 @@ export function hasVerifiedRealizedOrder(trades: readonly Trade[]): boolean {
   }
   return trades.length > 0;
 }
+
+/** Only the immediately previous ENTRY can be called "the previous trade".
+ * Its outcome must have been finalized strictly before the current entry.
+ * Otherwise a claim about trading "after a loss" would use future P&L.
+ * Same-minute ties, overlapping positions and unverified import clocks are
+ * deliberately UNKNOWN; reconstruction from fills belongs to Lot 1. */
+export function verifiedPriorClosedTrade(
+  orderedByEntry: readonly Trade[],
+  index: number,
+): Trade | null {
+  if (index <= 0 || index >= orderedByEntry.length) return null;
+  const previous = orderedByEntry[index - 1];
+  const current = orderedByEntry[index];
+  if (
+    previous.accountId !== current.accountId ||
+    previous.broker ||
+    current.broker ||
+    previous.reviewPending ||
+    current.reviewPending
+  ) {
+    return null;
+  }
+  if (
+    !/^\d{4}-\d{2}-\d{2}$/.test(previous.date) ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(current.date)
+  ) {
+    return null;
+  }
+  const previousEntry = verifiedClock(previous.entryTime);
+  const currentEntry = verifiedClock(current.entryTime);
+  const previousExit = validSameDayExit(previous);
+  if (!previousEntry || !currentEntry || !previousExit) return null;
+  if (previous.date > current.date) return null;
+  if (previous.date < current.date) return previous;
+  if (previousEntry >= currentEntry || previousExit >= currentEntry) return null;
+  return previous;
+}
