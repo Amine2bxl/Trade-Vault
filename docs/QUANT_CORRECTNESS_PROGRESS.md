@@ -128,6 +128,54 @@ Le Score d'Edge reste intentionnellement null sur les comptes sans historique v�
 Ce n'est PAS un achèvement du lot 0. Les lots 1–6 restent NON COMMENCÉS.
 
 ---
+## Validation de la roadmap et séparation des dépendances — 27 octobre 2026
+
+Programme **approuvé** par le propriétaire pour les lots 0 à 6, avec trois
+clarifications obligatoires :
+
+1. **Lot 0 — validité des calculs, pas disponibilité magique des historiques.**
+   Les moteurs doivent être exacts avec des fixtures indépendantes, retourner
+   `UNKNOWN` / `null` quand les entrées sont invérifiables et informer tous
+   les consommateurs pertinents. L'absence de broker OAuth ou d'un flux
+   d'equity historique ne peut pas être maquilllée en preuve.
+2. **Lot 1 — provenance et historiques.** Reconstruction idempotente des
+   exécutions, dépôts/retraits, soldes à chaque entrée, dates UTC et fuseaux
+   source via des imports/brokers autorisés. Ce lot seul peut activer les
+   vérifications historiquement dépendantes de ces entrées.
+3. **Données de marché sous licence** : les fonctionnalités de saisonnalité
+   par actif sont reportées tant qu'aucune série historique utilisable
+   commercialement n'est disponible. Les approximations ne seront pas réactivées.
+4. **Tests commerciaux et partenaires réels** : pas de DONE pour une
+   intégration Stripe/Tradovate non vérifiée en environnement autorisé.
+5. **Branches dédiées et PR traçables**, aucune écriture directe sur main ni
+   fusion automatique.
+
+### Lot 0 — Ajouts et corrections de cette reprise
+
+- [x] Analyse des heures de session : refuser heures impossibles, y compris
+  horaires hors 24 h et minutes invalides.
+- [x] Conventions de récupération après drawdown : distinguer récupération
+  intrajournalière (0 jour) d'absence de récupération (-1).
+- [x] Tri du P&L réalisé par heure de **clôture**, sans modifier le tri
+  par entrée du Journal ; sorties simultanées / overnight restent invérifiables.
+- [x] Rapports mensuels et données fournies à Jarvis ne publient pas un
+  drawdown « exact » lorsque l'ordre de clôture n'est pas prouvé.
+- [x] Réconciliation des erreurs : P&L des trades multi-tags compté une seule
+  fois dans l'agrégat, sans attribution causale.
+- [x] Sessions broker : heures importées sans fuseau source ne sont pas
+  arbitrairement considérées comme heure Eastern ; exclusions et avertissement
+  visible dans Analytics.
+- [x] Scénarios de tests indépendants ajoutés : clôtures superposées,
+  passage à minuit, égalité des timestamps, sessions inconnues, P&L multi-tags.
+- [ ] Confirmer les tests complets sur le commit final de ces modifications.
+- [ ] Revue transversale de tous les consommateurs et gestion des rapports
+  préexistants, pouvant contenir d'anciens agrégats non vérifiés.
+- [ ] Validation d'accessibilité/visualisation réelle en préproduction.
+
+**Lot 0 toujours IN PROGRESS ; lots 1–6 NOT STARTED.**
+
+---
+
 ## Plan de transformation verrouillé — lots strictement séquentiels
 
 Ce registre est une source de suivi, pas une déclaration de livraison. Le passage
