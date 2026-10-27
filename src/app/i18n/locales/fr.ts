@@ -1116,14 +1116,14 @@ const fr: Dict = {
   "copilot.title": "Copilote du jour",
   "copilot.intro": "Ton score de discipline, la règle à tenir aujourd'hui, ton objectif du mois.",
   "copilot.explain":
-    "Mesure ta discipline (plan respecté, risque, régularité) sur tes 10 derniers jours tradés — jamais ton P&L.",
+    "Conformité aux règles et risque à l’entrée uniquement s’ils sont historiquement vérifiés : au moins 10 trades sur 5 séances et des preuves complètes. Les checklists déclaratives ne sont pas notées.",
   "copilot.edgeLabel": "Score d'Edge",
   "copilot.trendTitle": "Ta trajectoire de discipline sur les dernières sessions",
-  "copilot.scoreBuilding": "Score en construction - logge plus de trades",
-  "copilot.cleanDays": "Jours propres",
+  "copilot.scoreBuilding": "Preuves insuffisantes — aucune note",
+  "copilot.cleanDays": "Jours vérifiés sans violation",
   "copilot.cleanDaysWord": "jours propres",
   "copilot.jarvisBuilding":
-    "Pas encore assez de données récentes — logge tes trades et je note ta discipline.",
+    "Le respect historique des règles et le risque à l’entrée ne sont pas encore vérifiables. Aucune note sans preuves suffisantes.",
   "copilot.obsCleanTrades": "Tu coches beaucoup d'erreurs sur tes trades récents.",
   "copilot.obsRisk": "Ton sizing a récemment dépassé ta limite.",
   "copilot.obsRoutine": "Ta routine pré-market a été irrégulière.",
