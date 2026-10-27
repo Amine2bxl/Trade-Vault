@@ -3,14 +3,12 @@ import { computeEdgeScore, riskThreshold, deriveDailyRule } from "../src/domain/
 import { computeStats } from "../src/domain/tradeCalcs";
 import type { Trade } from "../src/app/types";
 
-// Minimal trade factory — only the fields the Edge Score reads.
-function trade(over: Partial<Trade> & { date: string }): Trade {
+function trade(over: Partial<Trade> & { date: string; id: string }): Trade {
   return {
-    id: crypto.randomUUID(),
     symbol: "NQ",
     direction: "long",
     strategy: "",
-    pnl: 0,
+    pnl: 100,
     rMultiple: 1,
     riskAmount: 100,
     setupQuality: 3,
@@ -18,83 +16,130 @@ function trade(over: Partial<Trade> & { date: string }): Trade {
     mistakes: [],
     screenshots: [],
     notes: "",
+    entryTime: "10:00",
+    exitTime: "10:10",
+    confidence: 50,
     ...over,
   } as Trade;
 }
+const sample = Array.from({ length: 10 }, (_, i) =>
+  trade({
+    id: "t" + i,
+    date: "2026-07-" + String(10 + Math.floor(i / 2)).padStart(2, "0"),
+  }),
+);
+const verified = Object.fromEntries(sample.map((t) => [t.id, "PASS" as const]));
+const balances = Object.fromEntries(sample.map((t) => [t.id, 25000]));
+const inputs = {
+  ruleEvidenceByTradeId: verified,
+  verifiedBalanceBeforeTrade: balances,
+  riskPlanVersionVerified: true,
+  maxRiskPct: 1,
+};
 
-test("score is null when there are no trades", () => {
-  expect(computeEdgeScore([]).score).toBeNull();
+test("no observations means no score or coverage", () => {
+  const r = computeEdgeScore([]);
+  expect(r.score).toBeNull();
+  expect(r.coveragePct).toBe(0);
 });
 
-test("a perfectly disciplined sample scores 100", () => {
-  const trades = [
-    trade({ date: "2026-07-20", mistakes: [], riskAmount: 100 }),
-    trade({ date: "2026-07-21", mistakes: [], riskAmount: 100 }),
-  ];
-  const r = computeEdgeScore(trades, { checklistByDay: { "2026-07-20": 1, "2026-07-21": 1 } });
+test("absence of mistake tags must never imply a verified 100/100 score", () => {
+  const r = computeEdgeScore(sample);
+  expect(r.score).toBeNull();
+  expect(r.coveragePct).toBe(0);
+  expect(r.subs.cleanTrades.value).toBeNull();
+  expect(r.subs.cleanDays.value).toBeNull();
+  expect(r.weakest).toBeNull();
+});
+
+test("removing self-reported mistakes cannot improve an evidence-based score", () => {
+  const tagged = sample.map((t, i) => ({ ...t, mistakes: i % 2 ? ["FOMO"] : [] }));
+  const untagged = tagged.map((t) => ({ ...t, mistakes: [] }));
+  expect(computeEdgeScore(tagged, inputs)).toEqual(computeEdgeScore(untagged, inputs));
+});
+
+test("full historic coverage across at least five sessions enables a grade", () => {
+  const r = computeEdgeScore(sample, inputs);
   expect(r.score).toBe(100);
+  expect(r.coveragePct).toBe(100);
   expect(r.subs.cleanTrades.value).toBe(100);
   expect(r.subs.cleanDays.value).toBe(100);
-  expect(r.cleanDays).toBe(2);
+  expect(r.cleanDays).toBe(5);
+  expect(r.verifiedDays).toBe(5);
 });
 
-test("les erreurs cochees font baisser cleanTrades et les jours propres", () => {
-  const trades = [
-    trade({ date: "2026-07-20", mistakes: ["overtrading"] }),
-    trade({ date: "2026-07-21", mistakes: [] }),
-  ];
-  const r = computeEdgeScore(trades);
-  expect(r.subs.cleanTrades.value).toBe(50); // 1 of 2 clean
-  expect(r.subs.cleanDays.value).toBe(50); // 1 of 2 days clean
-  expect(r.weakest).not.toBeNull();
+test("violations lower the score even if no mistakes were self-reported", () => {
+  const evidence = { ...verified, t0: "FAIL" as const };
+  const r = computeEdgeScore(sample, { ...inputs, ruleEvidenceByTradeId: evidence });
+  expect(r.subs.cleanTrades.value).toBe(90);
+  expect(r.subs.cleanDays.value).toBe(80);
+  expect(r.score).toBe(94);
+  expect(r.weakest).toBe("cleanTrades");
 });
 
-test("missing components are dropped, not invented (weights renormalise)", () => {
-  // Ni historique de checklist ni donnee de risque → seuls cleanTrades et cleanDays sont mesures.
-  const trades = [trade({ date: "2026-07-20", mistakes: [], riskAmount: 0 })];
-  const r = computeEdgeScore(trades);
-  expect(r.subs.risk.value).toBeNull();
-  expect(r.subs.routine.value).toBeNull();
-  expect(r.score).toBe(100); // averaged over the measured components only
+test("unknown rule versions or historical entry balances block scoring", () => {
+  expect(computeEdgeScore(sample, { ...inputs, verifiedBalanceBeforeTrade: {} }).score).toBeNull();
+  expect(computeEdgeScore(sample, { ...inputs, riskPlanVersionVerified: false }).score).toBeNull();
+  expect(
+    computeEdgeScore(sample, {
+      ...inputs,
+      verifiedBalanceBeforeTrade: { ...balances, t0: 0 },
+    }).score,
+  ).toBeNull();
 });
 
-test("risk threshold prefers the plan rule over the median fallback", () => {
-  const trades = [trade({ date: "2026-07-20", riskAmount: 100 })];
-  // 1% of 50 000 = 500
-  expect(riskThreshold(trades, 1, 50000)).toBe(500);
-  // No rule → 1.5 × median(100) = 150
-  expect(riskThreshold(trades, null, null)).toBe(150);
+test("partial evidence reports coverage instead of promoting a partial 100%", () => {
+  const r = computeEdgeScore(sample, {
+    ...inputs,
+    ruleEvidenceByTradeId: { t0: "PASS" },
+  });
+  expect(r.score).toBeNull();
+  expect(r.subs.cleanTrades.value).toBe(100);
+  expect(r.subs.cleanDays.value).toBeNull();
+  expect(r.coveragePct).toBe(42);
 });
 
-test("risk sub-score counts trades under the threshold", () => {
-  const trades = [
-    trade({ date: "2026-07-20", riskAmount: 100 }),
-    trade({ date: "2026-07-21", riskAmount: 1000 }), // over 1% of 50k = 500
-  ];
-  const r = computeEdgeScore(trades, { maxRiskPct: 1, startingBalance: 50000 });
-  expect(r.subs.risk.value).toBe(50);
+test("risk uses each actual balance at the time of entry", () => {
+  const highRisk = sample.map((t, i) => (i === 0 ? { ...t, riskAmount: 300 } : t));
+  const r = computeEdgeScore(highRisk, inputs);
+  expect(r.subs.risk.value).toBe(90);
+  expect(r.score).toBe(97);
 });
 
-test("only the last 10 traded days feed the window", () => {
-  const trades = Array.from({ length: 14 }, (_, i) =>
-    trade({ date: `2026-07-${String(i + 1).padStart(2, "0")}`, mistakes: i < 4 ? ["x"] : [] }),
+test("self-recorded checklist is shown separately and never graded", () => {
+  const checklistByDay = Object.fromEntries(sample.map((t) => [t.date, 1]));
+  const r = computeEdgeScore(sample, { checklistByDay });
+  expect(r.subs.routine.value).toBe(100);
+  expect(r.score).toBeNull();
+});
+
+test("10 trades across fewer than five sessions are insufficient", () => {
+  expect(computeEdgeScore(sample.slice(0, 8), inputs).score).toBeNull();
+  const sameDay = sample.map((t) => ({ ...t, date: "2026-07-15" }));
+  expect(computeEdgeScore(sameDay, inputs).score).toBeNull();
+});
+
+test("risk threshold cannot invent a plan by multiplying the historical median", () => {
+  expect(riskThreshold(sample, null, null)).toBeNull();
+  expect(riskThreshold(sample, 1, 50000)).toBe(500);
+});
+
+test("last ten trading sessions determine the window", () => {
+  const older = Array.from({ length: 6 }, (_, i) =>
+    trade({ id: "old" + i, date: "2026-06-" + String(i + 10).padStart(2, "0") }),
   );
-  // The 4 dirty days are the oldest (1–4) and fall outside the last-10 window.
-  const r = computeEdgeScore(trades);
+  const r = computeEdgeScore([...sample, ...older], inputs);
   expect(r.tradedDays).toBe(10);
-  expect(r.subs.cleanDays.value).toBe(100);
+  expect(r.score).toBeNull();
 });
 
-test("daily rule targets the costliest real leak, or nothing", () => {
+test("the daily focus uses associated PnL, never proven causal cost", () => {
   const dirty = [
-    trade({ date: "2026-07-20", pnl: -640, mistakes: ["revenge trade"] }),
-    trade({ date: "2026-07-21", pnl: -50, mistakes: ["early exit"] }),
+    trade({ id: "a", date: "2026-07-20", pnl: -640, mistakes: ["revenge trade"] }),
+    trade({ id: "b", date: "2026-07-21", pnl: -50, mistakes: ["early exit"] }),
   ];
   const rule = deriveDailyRule(computeStats(dirty));
   expect(rule?.text).toBe("revenge trade");
   expect(rule?.leak).toContain("640");
-
-  // No costly leak → no invented rule.
-  const clean = [trade({ date: "2026-07-20", pnl: 100, mistakes: [] })];
-  expect(deriveDailyRule(computeStats(clean))).toBeNull();
+  expect(deriveDailyRule(computeStats([sample[0]])).toBeNull();
 });
