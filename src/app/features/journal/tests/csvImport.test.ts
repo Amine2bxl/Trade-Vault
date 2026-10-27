@@ -71,7 +71,17 @@ describe("parseMoney", () => {
   });
 
   it("rejects corrupted P&L instead of parsing a plausible prefix", () => {
-    for (const input of ["125oops", "1.2.3", "Infinity", "NaN", "123USD", "1e9999"]) {
+    for (const input of [
+      "125oops",
+      "1.2.3",
+      "Infinity",
+      "NaN",
+      "123USD",
+      "1e9999",
+      "1,2,3",
+      "12,34,567",
+      "1,23.00",
+    ]) {
       expect(parseMoney(input)).toBeNull();
     }
     expect(parseMoney("0")).toBe(0);
