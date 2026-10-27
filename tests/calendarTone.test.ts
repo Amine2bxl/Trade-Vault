@@ -3,7 +3,7 @@ import { dayTone, dayToneFill, dayToneSegments } from "../src/app/features/calen
 import type { Trade } from "../src/app/types";
 
 const trade = (pnl: number, rMultiple: number, direction: Trade["direction"] = "long") =>
-  ({ pnl, rMultiple, direction }) as Trade;
+  ({ pnl, rMultiple, riskAmount: 100, direction }) as Trade;
 
 describe("teinte d'une journée du calendrier", () => {
   test("+2R et −1R : mixte, aux deux tiers positive", () => {
@@ -24,6 +24,14 @@ describe("teinte d'une journée du calendrier", () => {
     const tone = dayTone([trade(300, 0), trade(-100, -1)]);
     expect(tone.unit).toBe("pnl");
     expect(tone.positiveShare).toBeCloseTo(0.75, 5);
+  });
+
+  test("ne confond pas un R stocké sans risque initial avec un R mesuré", () => {
+    const imported = { ...trade(200, 2), riskAmount: 0 };
+    const tone = dayTone([imported, trade(-100, -1)]);
+    expect(tone.unit).toBe("pnl");
+    expect(tone.net).toBe(100);
+    expect(tone.positiveShare).toBeCloseTo(2 / 3);
   });
 
   test("journée neutre : break-even seulement → gris discret, aucun filet", () => {
