@@ -6,6 +6,7 @@ import { computeStats, formatPnl, formatPct, formatShortDate } from "@/domain/tr
 import {
   computeQuantStats,
   getSessionForTrade,
+  hasUnverifiedEtTime,
   statsByHour,
   winRateOf,
   MIN_BUCKET_SAMPLE,
@@ -390,9 +391,9 @@ export default function Analytics({ trades }: AnalyticsProps) {
     return { map, maxAbs };
   }, [cutoffTrades]);
 
-  // Broker display-clock times cannot be assumed Eastern without provenance.
+  // Broker and unreviewed CSV clocks cannot be assumed Eastern.
   const unverifiedTimeCount = useMemo(
-    () => cutoffTrades.filter((trade) => Boolean(trade.broker)).length,
+    () => cutoffTrades.filter(hasUnverifiedEtTime).length,
     [cutoffTrades],
   );
 

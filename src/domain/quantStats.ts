@@ -21,14 +21,19 @@ export function getSession(entryTime: string): TradingSession | null {
   return "asia";
 }
 
-/** A broker import stores display-clock times in a user-selected timezone.
- * Until that source zone is persisted, assigning an ET session is unverified.
+/** Broker and unreviewed CSV display-clock times are not evidence of
+ * America/New_York timestamps. Persisted timezone provenance is a Lot 1 gate.
  * Manual journal entries follow TradeVault's existing ET/ICT convention. */
+export function hasUnverifiedEtTime(
+  trade: Pick<Trade, "broker" | "reviewPending">,
+): boolean {
+  return Boolean(trade.broker || trade.reviewPending);
+}
+
 export function getSessionForTrade(
-  trade: Pick<Trade, "entryTime" | "broker">,
+  trade: Pick<Trade, "entryTime" | "broker" | "reviewPending">,
 ): TradingSession | null {
-  if (trade.broker) return null;
-  return getSession(trade.entryTime);
+  return hasUnverifiedEtTime(trade) ? null : getSession(trade.entryTime);
 }
 
 // ── Événements macro confirmés ─────────────────────────────────────────────
@@ -322,7 +327,7 @@ export function statsBySession(trades: Trade[]): Record<TradingSession, BucketSt
 export function statsByHour(trades: Trade[]): Record<number, BucketStat> {
   const map: Record<string, BucketStat> = {};
   for (const t of trades) {
-    if (t.broker) continue;
+    if (hasUnverifiedEtTime(t)) continue;
     const minute = entryMinute(t.entryTime);
     if (minute === null) continue;
     addToBucket(map, String(Math.floor(minute / 60)), t);
@@ -336,7 +341,7 @@ export function statsByHour(trades: Trade[]): Record<number, BucketStat> {
 export function dayHourMatrix(trades: Trade[]): Record<string, BucketStat> {
   const map: Record<string, BucketStat> = {};
   for (const t of trades) {
-    if (t.broker) continue;
+    if (hasUnverifiedEtTime(t)) continue;
     const minute = entryMinute(t.entryTime);
     if (minute === null || !/^\d{4}-\d{2}-\d{2}$/.test(t.date)) continue;
     const dow = new Date(t.date + "T12:00:00Z").getUTCDay();

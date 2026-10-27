@@ -47,6 +47,7 @@ describe("getSession", () => {
   it("does not infer an ET session for broker clock times lacking source timezone", () => {
     expect(getSessionForTrade(mkTrade({ entryTime: "09:30" }))).toBe("newyork");
     expect(getSessionForTrade(mkTrade({ entryTime: "09:30", broker: "tradovate" }))).toBeNull();
+    expect(getSessionForTrade(mkTrade({ entryTime: "09:30", reviewPending: true }))).toBeNull();
   });
 
   it("returns null for missing/invalid time", () => {
@@ -335,6 +336,10 @@ describe("breakdowns", () => {
     expect(statsBySession([manual, broker]).newyork.count).toBe(1);
     expect(statsByHour([manual, broker])[9].count).toBe(1);
     expect(dayHourMatrix([manual, broker])["3-9"].count).toBe(1);
+    const pendingCsv = mkTrade({ id: "csv", entryTime: "09:30", reviewPending: true });
+    expect(statsBySession([manual, pendingCsv]).newyork.count).toBe(1);
+    expect(statsByHour([manual, pendingCsv])[9].count).toBe(1);
+    expect(dayHourMatrix([manual, pendingCsv])["3-9"].count).toBe(1);
   });
 
   it("statsByHour regroupe par heure d'entrée", () => {

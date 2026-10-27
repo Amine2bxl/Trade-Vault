@@ -264,3 +264,10 @@ critères de sortie sont satisfaits.
 - [ ] Validation CI sur le dernier commit applicatif.
 
 **Lot 0 non terminé : dépendent encore de la vérification des consommateurs, des autres KPI et de la documentation finale des métriques.**
+
+## Lot 0 — Précision sur la provenance CSV
+
+- [x] Un CSV Journal non relu, même sans marqueur broker, n'est plus classé arbitrairement dans une session Eastern.
+- [x] Le nombre d'horaires exclus affiché dans Analytics inclut broker et CSV non relus ; tests de couverture ajoutés.
+- [ ] Limite explicitement conservée pour le lot 1 : la relecture CSV retire `reviewPending` sans enregistrer pour autant un fuseau source immuable. Un horodatage complet UTC et sa provenance devront être persistés pour une session certifiée après relecture.
+- [ ] Valider sur la CI du commit final ; ne pas considérer le lot 0 DONE pour ce seul correctif.
