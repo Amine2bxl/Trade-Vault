@@ -362,3 +362,24 @@ La connexion Supabase active a été consultée **en lecture seule** pour invent
 - [x] Association événement → trade : aucun badge d'événement « durant la position » sur heures broker/CSV sans provenance, sorties overnight sans date UTC ou heures invalides. Les annonces de la journée restent consultables sans revendication de chevauchement.
 - [x] Régressions ciblées dans `tests/calendarTone.test.ts` et `tests/tradeNews.test.ts`.
 - [ ] CI et revue réelle des consommateurs sur le SHA final. L'attribution des timestamps UTC et du risque certifié par exécution relève du lot 1.
+
+## Dernière passe ciblée du lot 0 — 27 octobre 2026 (avant transfert à Claude)
+
+### Correctifs applicatifs supplémentaires terminés
+
+- [x] **Monte Carlo legacy** : `computeStatistics` ne remplace plus le Profit Factor non définissable par `99`. Le contrat passe à `number | null`.
+- [x] **Second calcul Monte Carlo** : `computeProfitFactor(wr, aw, al)` ne renvoie plus de plafond fictif 99 si le dénominateur est nul.
+- [x] **Calendrier P&L mensuel** : suppression du R moyen `Math.abs(rMultiple)` qui masquait les pertes ; R signé uniquement sur trades au risque initial observable.
+- [x] **Indétermination calendrier** : si un trade du mois manque de risque vérifié ou porte une provenance broker/CSV non certifiée, `avgRR` et `totalRR` sont `null` et les cartes affichent « — », pas 0R artificiel.
+- [x] **Tests de régression Monte Carlo** : 0 perte → PF `null`, gains 500/pertes 300 → 5/3, PF légitime 120 et scénario PF 198, sans plafonnement.
+- [x] **CI du HEAD `69a6d75fb74269f3c98c7e9a3d19777f2aa20978`** : [workflow #40571428895](https://github.com/Amine2bxl/Trade-Vault/actions/runs/40571428895) **SUCCESS** (typecheck, lint, build, tests Bun multi-fuseaux, SQL). Les tests ciblés exécutés en sandbox passent également.
+
+### Bilan honnête des critères de sortie
+
+- **Correctifs quantitatifs du noyau et ces consommateurs** : implémentés et validés par tests/CI.
+- **Reste une gate d'acceptation** : revue **authentifiée** du parcours complet import → Journal → Analytics → Goals → Reports → Jarvis avec historique représentatif et UI mobile/desktop. Aucune preuve de ce parcours de bout en bout n'a été produite dans ce travail.
+- **Reste à faire** : revue exhaustive des consommateurs résiduels et de tous les rapports persistés réellement utilisés, ainsi que validation de certains cas broker réels.
+- **Dépendances explicitement transférées à L1** : migrations additives, données brutes immuables, snapshots du solde d'entrée, fills complets et fuseau source vérifié. **Ne jamais débloquer le score par des valeurs inventées.**
+- **Dépendances externes** : OHLC/ticks licenciés, autorisation broker, preuves de paiement Stripe sont reportées aux lots compétents.
+
+**Statut formel : L0 IN PROGRESS (tests verts, acceptation E2E non prouvée). L1–L6 NOT STARTED, `main` intacte, PR #234 draft.** Cela permet la passation mais PAS une attestation mensongère « lot 0 100 % fini ».
