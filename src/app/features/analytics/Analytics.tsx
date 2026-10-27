@@ -634,8 +634,8 @@ export default function Analytics({ trades }: AnalyticsProps) {
                       : quant.sortinoStatus === "insufficient"
                         ? t("quant.needTenDays")
                         : quant.sortinoStatus === "no_downside"
-                        ? t("quant.noDownside")
-                        : t("quant.annualized"),
+                          ? t("quant.noDownside")
+                          : t("quant.annualized"),
                   good: (quant.sortino ?? 0) >= 1.5,
                   info: t("quant.infoSortino"),
                 },
