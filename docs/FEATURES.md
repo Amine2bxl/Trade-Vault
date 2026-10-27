@@ -77,8 +77,8 @@ TAUX ou un CLASSEMENT ne l'est pas. `MIN_BUCKET_SAMPLE` (5 trades décisifs,
 | Progression des objectifs | `features/goals/useGoalProgress` | Point d'accès unique (Goals, Mistakes, Jarvis) |
 | « Violer une règle » | `domain/ruleCheck.checkTradeAgainstRules` | Même vérificateur en temps réel et en bilan 30 j |
 | `pnlAfterLoss` | `features/jarvis/behaviorSignals` | Borne haute, pas un surcoût imputable |
-| `profitFactor` | `domain/tradeCalcs` | Plafonné à 99 sans perte |
+| `profitFactor` | `domain/tradeCalcs` | `null` si aucune perte observée ; ne jamais afficher 99 artificiellement |
 
-Relation canonique : `pnl = riskAmount × rMultiple` (`domain/tradeCalcs`).
+Relation du formulaire **uniquement lorsque le risque initial est connu** : `pnl = riskAmount × rMultiple` (`domain/tradeCalcs`). Un import sans risque initial certifié ne prouve pas un multiple R ; son état est inconnu, même si un zéro de compatibilité est stocké.
 Aucune métrique ne mesure une **causalité** : le produit observe des
 associations, jamais des causes.
