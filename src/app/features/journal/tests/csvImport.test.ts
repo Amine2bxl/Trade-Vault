@@ -81,6 +81,10 @@ describe("parseMoney", () => {
       "1,2,3",
       "12,34,567",
       "1,23.00",
+      "1,234",
+      "1.234",
+      "-12,345",
+      "-12.345",
     ]) {
       expect(parseMoney(input)).toBeNull();
     }
