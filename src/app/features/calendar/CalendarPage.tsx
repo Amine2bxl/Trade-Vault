@@ -115,8 +115,14 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
       map[t.date].pnl += t.pnl;
       map[t.date].count++;
       map[t.date].trades.push(t);
-      map[t.date].avgRR += Math.abs(t.rMultiple);
-      map[t.date].totalRR += t.rMultiple;
+      map[t.date].avgRR +=
+        t.riskAmount > 0 && Number.isFinite(t.rMultiple) && !t.reviewPending && !t.broker
+          ? t.rMultiple
+          : 0;
+      map[t.date].totalRR +=
+        t.riskAmount > 0 && Number.isFinite(t.rMultiple) && !t.reviewPending && !t.broker
+          ? t.rMultiple
+          : 0;
       if (t.direction === "be") map[t.date].breakEven++;
       else if (t.pnl > 0) map[t.date].wins++;
     }
@@ -172,7 +178,7 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
         if (data.pnl > 0) winDays++;
         if (data.count > 0 && data.count === data.breakEven) beDays++;
         // data.avgRR is already the per-day average; multiply back by count so the
-        // monthly figure is a true trade-weighted average, matching Dashboard's avgRR.
+        // monthly figure is a signed trade-weighted average, not absolute R.
         absRRsum += data.avgRR * data.count;
         tradeCount += data.count;
         totalRR += data.totalRR;
