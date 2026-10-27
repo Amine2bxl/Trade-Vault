@@ -162,6 +162,11 @@ describe("newsDaySplit", () => {
     expect(split.newsDays.n).toBe(6);
     expect(split.newsDays.avgPnl).toBe(100);
     expect(split.newsDays.avgR).toBeNull();
+    const brokerTrades = Array.from({ length: 6 }, () => ({
+      ...t("2026-03-10", 100),
+      broker: "tradovate",
+    }));
+    expect(newsDaySplit(brokerTrades, events, UTC).newsDays.avgR).toBeNull();
   });
 
   test("aucun chiffre sous l'échantillon minimum", () => {
