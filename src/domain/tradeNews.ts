@@ -80,6 +80,8 @@ export interface TradeLike {
   /** `HH:MM`, heure locale — facultatif. */
   entryTime?: string;
   exitTime?: string;
+  broker?: string | null;
+  reviewPending?: boolean;
 }
 
 export interface TradeNewsItem {
@@ -113,7 +115,7 @@ const LOCAL_CLOCK: Clock = {
 };
 
 function minutes(hhmm: string | undefined): number | null {
-  const m = /^(\d{1,2}):(\d{2})/.exec(hhmm ?? "");
+  const m = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(hhmm ?? "");
   return m ? Number(m[1]) * 60 + Number(m[2]) : null;
 }
 
@@ -130,10 +132,13 @@ export function newsForTrade(
     return { currencies, items: [], approximate: false, highCount: 0 };
   }
   const ccy = new Set<string>(currencies);
-  const start = minutes(trade.entryTime);
-  const endRaw = minutes(trade.exitTime);
-  // Une sortie « avant » l'entrée est une position passée minuit.
-  const end = start !== null && endRaw !== null && endRaw < start ? endRaw + 1440 : endRaw;
+  // Without a proven source zone, imported broker/CSV times cannot establish
+  // whether an announcement overlapped an actual trade.
+  const unknownSourceTime = !!trade.broker || !!trade.reviewPending;
+  const start = unknownSourceTime ? null : minutes(trade.entryTime);
+  const end = unknownSourceTime ? null : minutes(trade.exitTime);
+  // HH:MM cannot date an overnight exit; only same-day intervals qualify.
+  const sameDayInterval = start !== null && end !== null && end >= start;
 
   const items: TradeNewsItem[] = [];
   for (const e of events) {
@@ -144,9 +149,9 @@ export function newsForTrade(
     const at = minutes(time ?? undefined);
     const duringTrade =
       at !== null &&
-      start !== null &&
-      at >= start - MARGIN_MIN &&
-      at <= (end ?? start) + MARGIN_MIN;
+      sameDayInterval &&
+      at >= start! - MARGIN_MIN &&
+      at <= end! + MARGIN_MIN;
     items.push({ event: e, time, duringTrade });
   }
   items.sort(
