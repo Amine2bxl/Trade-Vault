@@ -1450,6 +1450,8 @@ const fr: Dict = {
   "analytics.newsDaysUncovered":
     "{n} trades mis de côté : leur semaine n'est pas encore au calendrier (récupération en cours).",
   "analytics.byHourSub": "Barres PnL et courbe de réussite (ET)",
+  "analytics.timeZoneUnverified":
+    "Les heures des trades broker sont exclues des sessions ET tant que le fuseau source n’est pas vérifié.",
 
   "session.london": "Londres",
   "session.newyork": "New York",
