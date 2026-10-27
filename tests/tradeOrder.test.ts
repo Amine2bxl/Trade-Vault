@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { newestFirst } from "../src/app/trading/tradeOrder";
+import { verifiedPriorClosedTrade } from "../src/domain/tradeOrder";
 import type { Trade } from "../src/app/types";
 
 const t = (date: string, entryTime: string, exitTime = "23:59") =>
@@ -51,5 +52,26 @@ describe("realized equity chronology", () => {
     const b = t("2026-07-01", "09:45", "10:00");
     expect(hasVerifiedRealizedOrder([a, b])).toBe(false);
     expect(hasVerifiedRealizedOrder([t("2026-07-01", "23:00", "00:15")])).toBe(false);
+  });
+});
+
+describe("previously closed trade evidence", () => {
+  test("an overlapping loss is unknown, then a genuinely closed loss is known", () => {
+    const first = { ...t("2026-07-01", "09:30", "11:00"), id: "loss", pnl: -100 };
+    const overlap = { ...t("2026-07-01", "10:00", "10:20"), id: "overlap" };
+    const after = { ...t("2026-07-01", "11:05", "11:20"), id: "after" };
+    expect(verifiedPriorClosedTrade([first, overlap], 1)).toBeNull();
+    expect(verifiedPriorClosedTrade([first, after], 1)?.id).toBe("loss");
+  });
+
+  test("same-minute entries, cross-account data and unknown broker clocks stay UNKNOWN", () => {
+    const first = { ...t("2026-07-01", "09:30", "10:00"), id: "a", accountId: "a" };
+    const tie = { ...t("2026-07-01", "10:00", "10:15"), id: "tie", accountId: "a" };
+    const other = { ...t("2026-07-02", "09:30", "10:00"), id: "b", accountId: "b" };
+    expect(verifiedPriorClosedTrade([first, tie], 1)).toBeNull();
+    expect(verifiedPriorClosedTrade([first, other], 1)).toBeNull();
+    expect(
+      verifiedPriorClosedTrade([{ ...first, broker: "tradovate" }, { ...other, accountId: "a" }], 1),
+    ).toBeNull();
   });
 });

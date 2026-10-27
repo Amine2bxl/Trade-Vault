@@ -279,3 +279,13 @@ critères de sortie sont satisfaits.
 - [x] Détail des trades mobile et formulaire de relecture : ne promettent pas une session NY à partir de l'heure locale d'un broker.
 - [x] Tests de régression sur analyses Jarvis et filtres transverses ; heures identiques et origines différentes.
 - [ ] Après validation CI finale, vérifier les consommateurs statiques restants et tester les états réels d'import après relecture.
+
+## Lot 0 — Claims « after loss » sans fuite temporelle
+
+- [x] Les filtres et Jarvis partageaient un tri à la date seule : une perte encore ouverte pouvait être utilisée pour qualifier une entrée précédente.
+- [x] Prédécèsseur vérifié centralisé : entrée suivante strictement postérieure à la clôture réelle ; simultanéité, chevauchement, comptes différents et horaires importés incertains sont exclus.
+- [x] Les comparaisons de risque Jarvis excluent les risques initiaux absents et les résultats de prédécesseurs non vérifiables.
+- [x] Régressions ajoutées pour les chevauchements, égalités minute, comptes et imports incertains.
+- [ ] Revue CI sur commit final et vérification des conclusions en contexte réel.
+
+Lot 0 toujours IN PROGRESS, lots suivants verrouillés.

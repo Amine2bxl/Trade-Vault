@@ -108,6 +108,20 @@ test("size drift after a loss is measured, not guessed", () => {
   expect(typeof drift!.driftPct).toBe("number");
 });
 
+test("overlapping losses cannot fabricate Jarvis risk-after-loss evidence", () => {
+  const trades = Array.from({ length: 12 }, (_, i) =>
+    trade({
+      id: "overlap" + i,
+      date: "2026-07-01",
+      entryTime: "09:30",
+      exitTime: "11:00",
+      pnl: i % 2 ? 100 : -100,
+      riskAmount: i % 2 ? 250 : 100,
+    }),
+  );
+  expect(computeBehaviorSignals(trades).riskAfterLoss).toBeUndefined();
+});
+
 test("unreviewed imports cannot create a false setup-quality or conviction signal", () => {
   const imported = Array.from({ length: 10 }, (_, i) =>
     trade({

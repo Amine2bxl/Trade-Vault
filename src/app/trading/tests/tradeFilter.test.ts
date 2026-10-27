@@ -112,6 +112,24 @@ describe("applyFilter — contexte séquentiel", () => {
     expect(result.map((t) => t.id)).toEqual(["b"]);
   });
 
+  it("ne préjuge pas le résultat d'une position encore ouverte", () => {
+    const loss = trade({
+      id: "loss",
+      date: "2026-08-05",
+      entryTime: "09:30",
+      exitTime: "11:00",
+      pnl: -100,
+    });
+    const early = trade({ id: "early", date: "2026-08-05", entryTime: "10:00", pnl: 50 });
+    expect(applyFilter([early, loss], { context: "after_loss" })).toEqual([]);
+    const after = trade({ id: "after", date: "2026-08-05", entryTime: "11:05", pnl: 50 });
+    expect(applyFilter([loss, after], { context: "after_loss" }).map((t) => t.id)).toEqual([
+      "after",
+    ]);
+    const tied = trade({ id: "tied", date: "2026-08-05", entryTime: "11:00", pnl: 20 });
+    expect(applyFilter([loss, tied], { context: "after_loss" })).toEqual([]);
+  });
+
   it("un BE précédent interrompt la chaîne after_loss", () => {
     const a = trade({ id: "a", date: "2026-08-04", pnl: -100 });
     const be = trade({ id: "be", date: "2026-08-05", pnl: 0, direction: "be" });
