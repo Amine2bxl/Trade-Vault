@@ -186,3 +186,13 @@ critères de sortie sont satisfaits.
 - [ ] Validation des heures des imports broker dans leur fuseau source, et normalisation temporelle du lot 1.
 
 **Dépendance approuvée :** le lot 0 valide les calculs et les états `UNKNOWN` avec des données de référence ; le lot 1 fournit les historiques broker et soldes d'entrée manquants. Aucune valeur n'est fabriquée pour contourner cette séparation.
+
+## Lot 0 — P&L associé aux erreurs : pas de double comptage causal
+
+- [x] Audit : un trade comportant deux erreurs apparaissait deux fois dans `totalCost` et dans les P&L hebdomadaires.
+- [x] Les incidents restent comptés par tag, mais le P&L agrégé ne compte chaque trade qu'une fois.
+- [x] Jarvis reçoit la définition explicite : il s'agit du P&L des trades déclarés, pas d'un coût causal contrefactuel.
+- [x] Test de non-régression multi-tags avec réconciliation P&L global et ventilation.
+- [ ] Vérifier cette modification sur la CI combinée et ses consommateurs finaux.
+
+**Statut lot 0 : IN PROGRESS ; aucun lot suivant autorisé avant validation complète.**

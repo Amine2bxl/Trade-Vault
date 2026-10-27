@@ -373,6 +373,8 @@ export const getMistakes: ToolDefinition = {
           : fenetre(jours, trades),
       totalIncidents: b.totalIncidents,
       totalCost: arrondi(b.totalCost),
+      costDefinition:
+        "Net realized P&L on distinct trades with one or more self-reported mistake tags. Not a causal loss estimate; per-tag P&L overlaps and must not be summed.",
       tradesWithMistakes: b.tradesWithMistakes,
       cleanTrades: b.cleanTrades,
       cleanWinRatePct: b.cleanWinRate === null ? null : arrondi(b.cleanWinRate * 100),

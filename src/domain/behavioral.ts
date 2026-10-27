@@ -78,6 +78,7 @@ interface MistakeRow {
 interface BehavioralReport {
   rows: MistakeRow[];
   totalIncidents: number;
+  /** Net P&L on distinct tagged trades. Legacy name, NOT a causal cost. */
   totalCost: number;
   tradesWithMistakes: number;
   cleanTrades: number;
@@ -140,6 +141,11 @@ export function computeBehavioral(trades: Trade[]): BehavioralReport {
     const session = getSession(t.entryTime);
     const dow = new Date(t.date + "T12:00:00").getDay();
     const wk = isoWeekKey(t.date);
+    // One trade can have multiple mistake tags. Count incidents by tag, but
+    // count the realized P&L of this trade only ONCE in aggregate statistics.
+    const wkRecord = weekMap[wk] ?? { count: 0, cost: 0 };
+    wkRecord.cost += t.pnl;
+    weekMap[wk] = wkRecord;
     for (const m of t.mistakes) {
       if (!agg[m]) agg[m] = { count: 0, totalPnl: 0 };
       agg[m].count++;
@@ -149,9 +155,7 @@ export function computeBehavioral(trades: Trade[]): BehavioralReport {
       weightedInfractions += SEVERITY_WEIGHT[sev];
       if (session) bySession[session]++;
       byDay[dow] = (byDay[dow] || 0) + 1;
-      if (!weekMap[wk]) weekMap[wk] = { count: 0, cost: 0 };
       weekMap[wk].count++;
-      weekMap[wk].cost += t.pnl;
       // La même ventilation, mais PAR ERREUR : c'est elle qui portera la pente
       // affichée sur chaque ligne de la page Erreurs.
       if (!weekByMistake[m]) weekByMistake[m] = {};
@@ -217,7 +221,9 @@ export function computeBehavioral(trades: Trade[]): BehavioralReport {
     .sort((a, b) => SEVERITY_WEIGHT[b.severity] * b.count - SEVERITY_WEIGHT[a.severity] * a.count);
 
   const totalIncidents = rows.reduce((s, r) => s + r.count, 0);
-  const totalCost = rows.reduce((s, r) => s + r.totalPnl, 0);
+  // Sum DISTINCT trades with ≥1 self-tagged mistake, not tag-level rows.
+  // These values describe association only, never the causal cost of mistakes.
+  const totalCost = trades.reduce((sum, t) => sum + (t.mistakes.length > 0 ? t.pnl : 0), 0);
   const tradesWithMistakes = trades.filter((t) => t.mistakes.length > 0).length;
   const cleanTrades = trades.length - tradesWithMistakes;
 
