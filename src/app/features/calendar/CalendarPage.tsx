@@ -403,7 +403,7 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
             {
               label: t("dashboard.avgRR"),
               value: monthlySummary.avgRR === null ? "—" : monthlySummary.avgRR.toFixed(2),
-              tone: monthlySummary.tradingDays === 0 ? "neutral" : "accent",
+              tone: monthlySummary.avgRR === null ? "neutral" : "accent",
               delay: 3,
             },
             {
