@@ -43,7 +43,13 @@ export function dayTone(trades: Trade[]): DayTone {
   const decisive = trades.filter((t) => !isBreakEven(t));
   if (decisive.length === 0) return FLAT;
 
-  const useR = decisive.every((t) => Number.isFinite(t.rMultiple) && t.rMultiple !== 0);
+  const useR = decisive.every(
+    (t) =>
+      Number.isFinite(t.riskAmount) &&
+      t.riskAmount > 0 &&
+      Number.isFinite(t.rMultiple) &&
+      t.rMultiple !== 0,
+  );
   const value = (t: Trade) => (useR ? t.rMultiple : t.pnl);
 
   let gains = 0;
