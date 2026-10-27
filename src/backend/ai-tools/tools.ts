@@ -298,7 +298,7 @@ export const getStats: ToolDefinition = {
       currentStreak: s.currentStreak,
       currentStreakType: s.currentStreakType,
       expectancy: arrondi(q.expectancy),
-      expectancyR: arrondi(q.expectancyR),
+      expectancyR: q.expectancyR === null ? null : arrondi(q.expectancyR),
       sharpe: q.sharpe === null ? null : arrondi(q.sharpe),
       sortino: q.sortino === null ? null : arrondi(q.sortino),
       maxDrawdownPct: q.maxDrawdownPct === null ? null : arrondi(q.maxDrawdownPct),

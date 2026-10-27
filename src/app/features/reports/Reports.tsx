@@ -657,7 +657,11 @@ function ReportSheet({
         <ReportKpi
           label={t("quant.expectancy")}
           value={formatPnl(r.expectancy)}
-          sub={`${r.expectancyR >= 0 ? "+" : ""}${r.expectancyR.toFixed(2)}R ${t("reports.perTrade")}`}
+          sub={
+            r.expectancyR === null
+              ? "—"
+              : `${r.expectancyR >= 0 ? "+" : ""}${r.expectancyR.toFixed(2)}R ${t("reports.perTrade")}`
+          }
           good={r.expectancy >= 0}
         />
         <ReportKpi

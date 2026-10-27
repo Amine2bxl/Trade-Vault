@@ -604,7 +604,10 @@ export default function Analytics({ trades }: AnalyticsProps) {
                 {
                   label: t("quant.expectancy"),
                   value: formatPnl(quant.expectancy),
-                  sub: `${quant.expectancyR >= 0 ? "+" : ""}${quant.expectancyR.toFixed(2)}R`,
+                  sub:
+                    quant.expectancyR === null
+                      ? "—"
+                      : `${quant.expectancyR >= 0 ? "+" : ""}${quant.expectancyR.toFixed(2)}R`,
                   good: quant.expectancy >= 0,
                   info: t("quant.infoExpectancy"),
                 },

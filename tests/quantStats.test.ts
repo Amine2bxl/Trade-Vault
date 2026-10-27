@@ -112,6 +112,17 @@ describe("computeQuantStats", () => {
     expect(q.expectancyR).toBeCloseTo(0.5); // (2R + -1R)/2
   });
 
+  it("does not report zero R when initial risk is unknown", () => {
+    expect(computeQuantStats([]).expectancyR).toBeNull();
+    expect(computeQuantStats([mkTrade({ pnl: 200, riskAmount: 0 })]).expectancyR).toBeNull();
+    expect(
+      computeQuantStats([
+        mkTrade({ pnl: 200, riskAmount: 100 }),
+        mkTrade({ pnl: -200, riskAmount: 0 }),
+      ]).expectancyR,
+    ).toBe(2);
+  });
+
   it("kelly = W - (1-W)/R", () => {
     // W=0.5, R=2 → 0.5 - 0.5/2 = 0.25.
     // L'échantillon compte 40 trades décisifs : ce test vérifiait auparavant la

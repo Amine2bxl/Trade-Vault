@@ -76,7 +76,7 @@ export interface QuantStats {
   /** Average $ result per trade (all trades, BE included) */
   expectancy: number;
   /** Average R result per trade (pnl / risk, trades with risk > 0) */
-  expectancyR: number;
+  expectancyR: number | null;
   /** Annualized Sharpe on daily PnL (null when < 10 trading days or flat) */
   sharpe: number | null;
   /** Sortino non défini si aucun risque baissier observé (jamais de plafond fictif). */
@@ -110,7 +110,7 @@ export interface QuantStats {
 export function computeQuantStats(trades: Trade[], startingBalance = 0): QuantStats {
   const empty: QuantStats = {
     expectancy: 0,
-    expectancyR: 0,
+    expectancyR: null,
     sharpe: null,
     sortino: null,
     sortinoStatus: "insufficient",
@@ -130,7 +130,7 @@ export function computeQuantStats(trades: Trade[], startingBalance = 0): QuantSt
   const expectancyR =
     withRisk.length > 0
       ? withRisk.reduce((s, t) => s + t.pnl / t.riskAmount, 0) / withRisk.length
-      : 0;
+      : null;
 
   // Daily PnL series in date order
   const dailyMap: Record<string, number> = {};
