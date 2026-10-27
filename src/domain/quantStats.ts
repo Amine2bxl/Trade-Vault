@@ -172,7 +172,10 @@ export function computeQuantStats(
       const std = Math.sqrt(variance);
       sharpeStatus = "no_variance";
       sortinoStatus = "no_downside";
-      if (std > 0) {
+      // A constant return series has no volatility even if floating-point
+      // summation leaves an epsilon-sized nonzero standard deviation.
+      const varies = verified.some((value) => value !== verified[0]);
+      if (varies && std > 0) {
         sharpe = (mean / std) * Math.sqrt(252);
         sharpeStatus = "available";
       }
