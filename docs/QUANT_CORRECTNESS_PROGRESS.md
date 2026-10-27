@@ -109,6 +109,25 @@ intermédiaires ne constituent pas la sortie complète du lot.
 
 ---
 
+## Reprise du 27 octobre — Edge Score v2 (correctif validé)
+
+- [x] Suppression des deux mesures corrélées calculées sur l'absence de tags d'erreur.
+- [x] Suppression de la limite de risque arbitraire issue de 1,5 fois le risque médian.
+- [x] Adhérence déduite uniquement de verdicts par trade explicitement vérifiés ; UNKNOWN ne devient pas PASS.
+- [x] Risque calculé uniquement avec un solde vérifié avant l'entrée et un plafond attesté historiquement.
+- [x] Couverture pondérée indépendante de la note, exigence de 10 trades sur 5 séances au minimum.
+- [x] Checklist indicative, exclue de la note de discipline.
+- [x] Historique du score versionné sous tv.edge.v2.* : pas de mélange des algorithmes.
+- [x] UI et réponse de l'outil Jarvis adaptées à une note indéterminable.
+- [x] Tests de suppression frauduleuse des tags, couverture partielle, risque, séances et continuité.
+- [x] CI complète vérifiée : GitHub Actions #40477601517, succès (typecheck, lint, build, tests multi-TZ et SQL).
+- [ ] Bloquant : aucune source de règles historiquement versionnées ni d'equity à l'entrée n'alimente encore le score.
+- [ ] Vérifier les parcours Dashboard/Jarvis sur données réelles et réconcilier les scores affichés.
+
+Le Score d'Edge reste intentionnellement null sur les comptes sans historique vérifié.
+Ce n'est PAS un achèvement du lot 0. Les lots 1–6 restent NON COMMENCÉS.
+
+---
 ## Plan de transformation verrouillé — lots strictement séquentiels
 
 Ce registre est une source de suivi, pas une déclaration de livraison. Le passage
