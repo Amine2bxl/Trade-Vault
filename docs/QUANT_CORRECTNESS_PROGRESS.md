@@ -321,3 +321,15 @@ Lot 0 toujours IN PROGRESS, lots suivants verrouillés.
 
 **Lot 0 encore IN PROGRESS**, même si CI verte : il reste des gates de
 preuve, de migration et de validation d'intégration documentés dans la matrice.
+
+## Reprise autorisée — compatibilité des rapports persistés (27/10/2026)
+
+- [x] Inspection : des rapports JSON historiques étaient affichés après le passage à PF nullable, au drawdown par clôture et au Sortino sans valeur fictive, sans version de calcul.
+- [x] Les nouveaux rapports déclarent `reportMethodVersion=2`, sans migration destructive.
+- [x] À la lecture, les rapports non versionnés ou de version inconnue conservent leurs données originales en base ; PF, R, Sharpe, Sortino, drawdown, classements de setups, « coûts » d'erreurs et texte IA non revalidés sont masqués dans la vue.
+- [x] Avertissement visible et recalcul à la demande pour un mois archivé : le serveur réécrit le même mois via UPSERT, sans synthèse IA non vérifiée.
+- [x] Régressions ajoutées : ancien PF=99 / métriques fictives masquées, rapport originel non muté, PF légitime >99 préservé en version actuelle, version future inconnue non supposée valide.
+- [ ] Contrôle final CI/typecheck/lint/build/tests sur le HEAD de cette reprise et revue de l'interface sur un historique réel.
+- [ ] Audit transversal des consommateurs hors page Rapports ; validation en préproduction et import des historiques restent à documenter.
+
+**Statut : lot 0 IN PROGRESS. Lots 1–6 non commencés. `main` inchangée.** Les historiques de transactions et de cashflows destinés au lot 1 ne sont ni fabriqués ni annoncés comme complets.
