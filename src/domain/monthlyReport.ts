@@ -25,8 +25,12 @@ export interface WeekLine {
   trades: number;
 }
 
+export const REPORT_METHOD_VERSION = 2;
+
 export interface MonthlyReportData {
   month: string; // YYYY-MM
+  /** Missing in pre-correction archived reports; only this known version is trusted for derived metrics. */
+  reportMethodVersion?: number;
   totalPnl: number;
   trades: number;
   wins: number;
@@ -47,6 +51,31 @@ export interface MonthlyReportData {
   prev: { month: string; totalPnl: number; winRate: number; trades: number } | null;
   /** Optional Gemini synthesis (Étape 5, option A) — null when unavailable */
   aiSummary: string | null;
+}
+
+/** Older snapshots predate nullable PF, time-ordered drawdown and evidence checks.
+ * Preserve the archived source without an irreversible DB migration, but never
+ * re-issue its unverifiable quantitative claims or AI synthesis as facts.
+ * A fresh server-side recalculation upserts a new versioned snapshot.
+ */
+export function isLegacyMonthlyReport(report: MonthlyReportData): boolean {
+  return report.reportMethodVersion !== REPORT_METHOD_VERSION;
+}
+
+export function readArchivedMonthlyReport(report: MonthlyReportData): MonthlyReportData {
+  if (!isLegacyMonthlyReport(report)) return report;
+  return {
+    ...report,
+    profitFactor: null,
+    expectancyR: null,
+    sharpe: null,
+    sortino: null,
+    maxDrawdown: null,
+    bestSetups: [],
+    worstSetups: [],
+    mistakes: [],
+    aiSummary: null,
+  };
 }
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
@@ -140,6 +169,7 @@ export function buildMonthlyReport(
 
   return {
     month,
+    reportMethodVersion: REPORT_METHOD_VERSION,
     totalPnl: round2(stats.totalPnl),
     trades: stats.totalTrades,
     wins: stats.wins,
