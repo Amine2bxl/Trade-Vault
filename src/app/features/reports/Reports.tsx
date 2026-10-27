@@ -32,7 +32,7 @@ import { useAuth } from "@/app/contexts/AuthContext";
 import { useToast } from "@/app/contexts/ToastContext";
 import { useT } from "@/app/i18n/LanguageContext";
 import { loadMonthlyReports, type MonthlyReportRow } from "@/app/store";
-import { buildMonthlyReport, prevMonthOf, type MonthlyReportData } from "@/domain/monthlyReport";
+import { buildMonthlyReport, isLegacyMonthlyReport, prevMonthOf, type MonthlyReportData } from "@/domain/monthlyReport";
 import { useAccounts } from "@/app/contexts/AccountContext";
 import { localMonthOf, todayLocalDate } from "@/shared/calendar-date";
 import { statsBySession, MIN_BUCKET_SAMPLE } from "@/domain/quantStats";
@@ -190,14 +190,14 @@ export default function Reports({ trades }: { trades: Trade[] }) {
 
   /** Génère une liste de mois à la suite, puis rafraîchit une seule fois. */
   const generateMonths = useCallback(
-    async (months: string[]) => {
+    async (months: string[], withAi = true) => {
       if (generating || months.length === 0) return;
       setGenerating(true);
       let done = 0;
       try {
         for (const month of months) {
           try {
-            const res = await generateMyMonthlyReport({ data: { month } });
+            const res = await generateMyMonthlyReport({ data: { month, withAi } });
             if (res.report) done++;
           } catch (e) {
             console.error("Failed to generate report", month, e);
@@ -366,6 +366,22 @@ export default function Reports({ trades }: { trades: Trade[] }) {
                 />
               )}
 
+              {!currentIsLive && isLegacyMonthlyReport(current.report) && (
+                <div className="rp-screen-only flex flex-wrap items-center gap-3 rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3 text-xs text-amber-200">
+                  <AlertTriangle className="h-4 w-4 shrink-0" />
+                  <span className="min-w-0 flex-1">{t("reports.legacyWarning")}</span>
+                  <Button
+                    variant="subtle"
+                    size="sm"
+                    disabled={generating}
+                    onClick={() => generateMonths([current.month], false)}
+                  >
+                    {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                    {t("reports.recalculate")}
+                  </Button>
+                </div>
+              )}
+
               <ReportSheet
                 key={current.id}
                 row={current}
@@ -376,7 +392,7 @@ export default function Reports({ trades }: { trades: Trade[] }) {
                 accountName={activeAccount?.name ?? null}
               />
 
-              {missing.length === 0 && (
+              {missing.length === 0 && !rows.some((r) => isLegacyMonthlyReport(r.report)) && (
                 <p className="tv-row-label flex items-center justify-center gap-1.5 pt-1">
                   <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500/70" />
                   {t("reports.upToDate")}
