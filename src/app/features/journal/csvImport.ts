@@ -91,39 +91,53 @@ export function parseMoney(raw: string): number | null {
   else if (/^-?\d+,\d+$/.test(s))
     s = s.replace(",", "."); // 12,5
   else s = s.replace(/,/g, ""); // 1,234.56
-  const n = parseFloat(s);
-  if (Number.isNaN(n)) return null;
+  // parseFloat accepts "123garbage" as 123, silently corrupting P&L.
+  // Validate the entire normalized cell and forbid non-finite numbers.
+  if (!/^[+-]?(?:\\d+(?:\\.\\d+)?|\\.\\d+)$/.test(s)) return null;
+  const n = Number(s);
+  if (!Number.isFinite(n)) return null;
   return negative ? -Math.abs(n) : n;
 }
 
-/** Date broker → `{ date: YYYY-MM-DD, time: HH:MM }`. */
+/** Reject invalid civil dates, not only malformed-looking strings. */
+function validCivilDate(y: number, m: number, d: number): boolean {
+  if (y < 100 || m < 1 || m > 12 || d < 1 || d > 31) return false;
+  return new Date(Date.UTC(y, m - 1, d)).toISOString().slice(0, 10) ===
+    `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+}
+
+/**
+ * Parse local broker timestamps as civil date + wall-clock time only.
+ * Never guess a UTC instant without a verified source IANA zone (lot 1).
+ */
 export function parseDateTime(raw: string): { date: string; time: string } | null {
   const s = raw.trim();
   if (!s) return null;
-  /* ISO / YYYY-MM-DD [HH:MM] — et ses deux séparateurs frères.
-     MetaTrader 4 et 5 exportent leurs dates avec des POINTS
-     (« 2026.01.05 09:12 ») : aucune des deux expressions ne l'attrapait, donc
-     chaque ligne d'un export MT était rejetée pour date illisible — et le
-     fichier entier finissait à zéro trade, sans que rien ne dise pourquoi.
-     La barre oblique en ordre ISO (« 2026/01/05 ») est sans ambiguïté elle
-     aussi : l'année en tête ne peut pas se confondre avec un jour. */
-  let m = s.match(/^(\d{4})[-./](\d{2})[-./](\d{2})(?:[T ](\d{2}):(\d{2}))?/);
-  if (m) return { date: `${m[1]}-${m[2]}-${m[3]}`, time: m[4] ? `${m[4]}:${m[5]}` : "" };
-  // MM/DD/YYYY [HH:MM[:SS] [AM/PM]] — format par défaut des exports US
-  m = s.match(
-    /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:[ T](\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM|am|pm)?)?/,
-  );
+  // ISO and MetaTrader yyyy.mm.dd, with optional seconds.
+  let m = s.match(/^(\\d{4})[-./](\\d{2})[-./](\\d{2})(?:[T ](\\d{2}):(\\d{2})(?::(\\d{2}))?)?$/);
   if (m) {
-    let hh = m[4] ? parseInt(m[4], 10) : 0;
-    const ampm = m[6]?.toUpperCase();
-    if (ampm === "PM" && hh < 12) hh += 12;
-    if (ampm === "AM" && hh === 12) hh = 0;
-    return {
-      date: `${m[3]}-${m[1].padStart(2, "0")}-${m[2].padStart(2, "0")}`,
-      time: m[4] ? `${String(hh).padStart(2, "0")}:${m[5]}` : "",
-    };
+    const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
+    if (!validCivilDate(y, mo, d)) return null;
+    if (m[4] && (Number(m[4]) > 23 || Number(m[5]) > 59 || (m[6] && Number(m[6]) > 59)))
+      return null;
+    return { date: `${m[1]}-${m[2]}-${m[3]}`, time: m[4] ? `${m[4]}:${m[5]}` : "" };
   }
-  return null;
+  // American MM/DD/YYYY [hh:mm[:ss] AM/PM].
+  m = s.match(/^(\\d{1,2})\\/(\\d{1,2})\\/(\\d{4})(?:[ T](\\d{1,2}):(\\d{2})(?::(\\d{2}))?\\s*(AM|PM)?)?$/i);
+  if (!m) return null;
+  const [mo, d, y] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  if (!validCivilDate(y, mo, d)) return null;
+  if (m[5] && Number(m[5]) > 59) return null;
+  if (m[6] && Number(m[6]) > 59) return null;
+  let hour = Number(m[4] ?? "0");
+  const meridian = m[7]?.toUpperCase();
+  if (m[4] && (meridian ? hour < 1 || hour > 12 : hour > 23)) return null;
+  if (meridian === "PM" && hour < 12) hour += 12;
+  if (meridian === "AM" && hour === 12) hour = 0;
+  return {
+    date: `${m[3]}-${m[1].padStart(2, "0")}-${m[2].padStart(2, "0")}`,
+    time: m[4] ? `${String(hour).padStart(2, "0")}:${m[5]}` : "",
+  };
 }
 
 export function parseDirection(raw: string): "long" | "short" | null {
