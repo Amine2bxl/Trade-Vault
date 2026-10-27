@@ -2106,6 +2106,10 @@ const fr: Dict = {
   "reports.available": "Disponibles depuis ton historique",
   "reports.availableSub": "{n} mois clos avec des trades, sans rapport pour l'instant.",
   "reports.upToDate": "Chaque mois clos a son rapport.",
+  "reports.tkMistakeObserved": "Trades marqués « {mistake} » : {n} mentions, P&L cumulé {pnl}.",
+  "reports.mistakesObserved": "P&L des trades avec erreurs déclarées",
+  "reports.mistakesNote":
+    "Un trade peut comporter plusieurs erreurs. Ce P&L observé ne mesure pas des pertes évitables.",
   "reports.legacyWarning":
     "Ce rapport archivé utilise d'anciens calculs. Les métriques non vérifiables sont masquées jusqu'au recalcul.",
   "reports.recalculate": "Recalculer",
