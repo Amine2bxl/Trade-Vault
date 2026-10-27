@@ -1454,7 +1454,9 @@ const en = {
   "quant.cleanTrades": "Clean trades",
   "quant.needTenDays": "needs ≥10 trading days",
   "quant.noDownside": "no downside variation observed",
-  "quant.annualized": "annualized, daily PnL",
+  "quant.verifiedReturnsNeeded": "verified daily account returns required",
+  "quant.noVariance": "no variation in verified daily returns",
+  "quant.annualized": "annualized from verified daily account returns",
   "quant.kellyHint": "indicative - from 30 trades",
   "quant.consistency": "Consistency",
   "quant.bestDay": "best day",
@@ -1469,9 +1471,9 @@ const en = {
   "quant.infoExpectancy":
     "What you earn on an average trade, wins and losses blended together. Positive = your system makes money over time.",
   "quant.infoSharpe":
-    "Return compared to how bumpy the ride is. Higher is smoother, steadier gains. Above 1 is good, above 2 is excellent.",
+    "Annualized average daily account return divided by its observed standard deviation. Requires cashflow-adjusted, complete daily equity history; a journal of traded days alone is not sufficient.",
   "quant.infoSortino":
-    "Like Sharpe, but only counts the losing swings — it ignores upside volatility. Rewards systems that limit the downside.",
+    "Annualized average verified daily account return divided by downside deviation. No value is shown without a complete, cashflow-adjusted return series.",
   "quant.infoKelly":
     "The share of your account math suggests risking per trade to grow fastest. Most traders use a fraction of it to stay safe.",
   "quant.infoConsistency":
