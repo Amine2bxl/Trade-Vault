@@ -1141,14 +1141,14 @@ const en = {
   "copilot.title": "Today's copilot",
   "copilot.intro": "Your discipline score, the rule to keep today, your monthly goal.",
   "copilot.explain":
-    "Measures your discipline (plan kept, risk, consistency) over your last 10 traded days — never your P&L.",
+    "Rule and entry-risk adherence, only when historically verified: at least 10 trades across 5 sessions and complete evidence. Self-recorded checklists are not scored.",
   "copilot.edgeLabel": "Edge score",
   "copilot.trendTitle": "Your discipline trajectory over the last sessions",
-  "copilot.scoreBuilding": "Score building - log more trades",
-  "copilot.cleanDays": "Clean days",
+  "copilot.scoreBuilding": "Insufficient evidence — no grade",
+  "copilot.cleanDays": "Verified clean days",
   "copilot.cleanDaysWord": "clean days",
   "copilot.jarvisBuilding":
-    "Not enough recent data yet — log your trades and I'll start scoring your discipline.",
+    "I cannot verify historical adherence and risk at entry yet. No discipline grade is issued without sufficient evidence.",
   "copilot.obsCleanTrades": "You are flagging mistakes on many recent trades.",
   "copilot.obsRisk": "Position sizing slipped above your limit recently.",
   "copilot.obsRoutine": "Your pre-market routine has been inconsistent.",
