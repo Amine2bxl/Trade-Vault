@@ -97,6 +97,20 @@ describe("newsForTrade", () => {
     expect(n.items.find((i) => i.event.title === "FOMC Statement")?.duringTrade).toBe(false);
   });
 
+  test("never claim news overlap for broker times, pending CSV, overnight or invalid clocks", () => {
+    const overlap = ev({ startsAt: "2026-03-10T12:30:00Z" });
+    const base = { symbol: "NQ", date: "2026-03-10", entryTime: "12:20", exitTime: "12:50" };
+    expect(newsForTrade(base, [overlap], UTC).items[0].duringTrade).toBe(true);
+    expect(newsForTrade({ ...base, broker: "tradovate" }, [overlap], UTC).items[0].duringTrade)
+      .toBe(false);
+    expect(newsForTrade({ ...base, reviewPending: true }, [overlap], UTC).items[0].duringTrade)
+      .toBe(false);
+    expect(newsForTrade({ ...base, entryTime: "23:30", exitTime: "00:15" }, [overlap], UTC).items[0].duringTrade)
+      .toBe(false);
+    expect(newsForTrade({ ...base, entryTime: "99:99" }, [overlap], UTC).items[0].duringTrade)
+      .toBe(false);
+  });
+
   test("symbole inconnu : rien n'est affirmé", () => {
     const n = newsForTrade({ symbol: "XYZ123", date: "2026-03-10" }, events, UTC);
     expect(n.items).toEqual([]);
