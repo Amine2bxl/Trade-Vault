@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+import type { Trade } from "../src/domain/trade";
 import {
   REPORT_METHOD_VERSION,
   buildMonthlyReport,
@@ -47,6 +48,33 @@ describe("archived monthly reports — quantitative method compatibility", () =>
     const valid = { ...current, profitFactor: 120 };
     expect(readArchivedMonthlyReport(valid)).toBe(valid);
     expect(readArchivedMonthlyReport(valid).profitFactor).toBe(120);
+  });
+
+  it("treats overlapping mistake tags as observations, not additive avoidable costs", () => {
+    const tagged: Trade = {
+      id: "overlap",
+      date: "2026-07-01",
+      symbol: "NQ",
+      direction: "long",
+      pnl: -100,
+      riskAmount: 100,
+      rMultiple: -1,
+      strategy: "open",
+      mistakes: ["FOMO", "No stop loss"],
+      setupQuality: 3,
+      notes: "",
+      screenshots: [],
+      entryTime: "09:30",
+      exitTime: "10:00",
+      confluences: [],
+      confidence: 50,
+    };
+    const report = buildMonthlyReport("2026-07", [tagged], [], 25000);
+    expect(report.totalPnl).toBe(-100);
+    expect(report.mistakes).toHaveLength(2);
+    expect(report.mistakes.map((m) => m.cost)).toEqual([-100, -100]);
+    // Tag rows overlap and must never be summed into a purported cost of errors.
+    expect(report.mistakes.reduce((sum, m) => sum + m.cost, 0)).toBe(-200);
   });
 
   it("also quarantines snapshots from an unsupported future method version", () => {
