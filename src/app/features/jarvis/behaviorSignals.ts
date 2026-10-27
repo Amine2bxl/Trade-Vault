@@ -1,5 +1,6 @@
 import { Trade, isBreakEven } from "@/app/types";
 import { computeStats } from "@/domain/tradeCalcs";
+import { compareChronological, verifiedPriorClosedTrade } from "@/domain/tradeOrder";
 import {
   getSessionForTrade,
   statsBySession,
@@ -134,7 +135,9 @@ function median(values: number[]): number {
 export function computeBehaviorSignals(trades: Trade[]): BehaviorSignals {
   if (trades.length < 5) return {};
   const signals: BehaviorSignals = {};
-  const chronological = [...trades].sort((a, b) => a.date.localeCompare(b.date));
+  const chronological = [...trades].sort(
+    (a, b) => compareChronological(a, b) || a.id.localeCompare(b.id),
+  );
 
   // ── Weekday ───────────────────────────────────────────────────────────────
   const weekday = groupBy(trades, (t) => {
@@ -168,10 +171,13 @@ export function computeBehaviorSignals(trades: Trade[]): BehaviorSignals {
   // ── Revenge sizing: risk on the trade that follows a loss ─────────────────
   const afterLoss: Trade[] = [];
   const rest: Trade[] = [];
-  for (let i = 0; i < chronological.length; i++) {
-    const prev = chronological[i - 1];
-    const isAfterLoss = !!prev && !isBreakEven(prev) && prev.pnl < 0;
-    (isAfterLoss ? afterLoss : rest).push(chronological[i]);
+  for (let i = 1; i < chronological.length; i++) {
+    const prev = verifiedPriorClosedTrade(chronological, i);
+    const current = chronological[i];
+    if (!prev || !Number.isFinite(current.riskAmount) || current.riskAmount <= 0) continue;
+    if (!Number.isFinite(prev.pnl)) continue;
+    const isAfterLoss = !isBreakEven(prev) && prev.pnl < 0;
+    (isAfterLoss ? afterLoss : rest).push(current);
   }
   if (afterLoss.length >= 5 && rest.length >= 5) {
     const avg = (list: Trade[]) => list.reduce((s, t) => s + t.riskAmount, 0) / list.length;
