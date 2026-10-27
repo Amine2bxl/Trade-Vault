@@ -174,11 +174,11 @@ export default function WeekDetailModal({
                             tr.riskAmount > 0 &&
                             Number.isFinite(tr.rMultiple) &&
                             tr.rMultiple !== 0 && (
-                            <span className="tv-figure tv-figure-secondary text-xs text-slate-400">
-                              {tr.rMultiple > 0 ? "+" : ""}
-                              {tr.rMultiple.toFixed(1)}R
-                            </span>
-                          )}
+                              <span className="tv-figure tv-figure-secondary text-xs text-slate-400">
+                                {tr.rMultiple > 0 ? "+" : ""}
+                                {tr.rMultiple.toFixed(1)}R
+                              </span>
+                            )}
                           <span
                             className={cn(
                               "tv-figure w-20 text-right text-sm",
