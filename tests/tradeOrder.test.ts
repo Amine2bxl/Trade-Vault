@@ -71,7 +71,13 @@ describe("previously closed trade evidence", () => {
     expect(verifiedPriorClosedTrade([first, tie], 1)).toBeNull();
     expect(verifiedPriorClosedTrade([first, other], 1)).toBeNull();
     expect(
-      verifiedPriorClosedTrade([{ ...first, broker: "tradovate" }, { ...other, accountId: "a" }], 1),
+      verifiedPriorClosedTrade(
+        [
+          { ...first, broker: "tradovate" },
+          { ...other, accountId: "a" },
+        ],
+        1,
+      ),
     ).toBeNull();
   });
 });
