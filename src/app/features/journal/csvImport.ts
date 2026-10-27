@@ -90,7 +90,11 @@ export function parseMoney(raw: string): number | null {
     s = s.replace(/\./g, "").replace(",", "."); // 1.234,56
   else if (/^-?\d+,\d+$/.test(s))
     s = s.replace(",", "."); // 12,5
-  else s = s.replace(/,/g, ""); // 1,234.56
+  else if (/^[+-]?\d{1,3}(,\d{3})+(?:\.\d+)?$/.test(s))
+    s = s.replace(/,/g, ""); // 1,234.56
+  // Ungrouped amounts, e.g. 1234.56, need no transformation. Any other
+  // comma placement is ambiguous or malformed, and must never be repaired.
+  else if (s.includes(",")) return null;
   // parseFloat accepts "123garbage" as 123, silently corrupting P&L.
   // Validate the entire normalized cell and forbid non-finite numbers.
   if (!/^[+-]?(?:\d+(?:\.\d+)?|\.\d+)$/.test(s)) return null;
