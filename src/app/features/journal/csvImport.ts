@@ -102,8 +102,10 @@ export function parseMoney(raw: string): number | null {
 /** Reject invalid civil dates, not only malformed-looking strings. */
 function validCivilDate(y: number, m: number, d: number): boolean {
   if (y < 100 || m < 1 || m > 12 || d < 1 || d > 31) return false;
-  return new Date(Date.UTC(y, m - 1, d)).toISOString().slice(0, 10) ===
-    `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+  return (
+    new Date(Date.UTC(y, m - 1, d)).toISOString().slice(0, 10) ===
+    `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`
+  );
 }
 
 /**
