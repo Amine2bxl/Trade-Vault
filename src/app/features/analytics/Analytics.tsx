@@ -614,7 +614,14 @@ export default function Analytics({ trades }: AnalyticsProps) {
                 {
                   label: "Sharpe",
                   value: quant.sharpe !== null ? quant.sharpe.toFixed(2) : "—",
-                  sub: quant.sharpe === null ? t("quant.needTenDays") : t("quant.annualized"),
+                  sub:
+                    quant.sharpeStatus === "unverified_returns"
+                      ? t("quant.verifiedReturnsNeeded")
+                      : quant.sharpeStatus === "insufficient"
+                        ? t("quant.needTenDays")
+                        : quant.sharpeStatus === "no_variance"
+                          ? t("quant.noVariance")
+                          : t("quant.annualized"),
                   good: (quant.sharpe ?? 0) >= 1,
                   info: t("quant.infoSharpe"),
                 },
@@ -622,9 +629,11 @@ export default function Analytics({ trades }: AnalyticsProps) {
                   label: "Sortino",
                   value: quant.sortino !== null ? quant.sortino.toFixed(2) : "—",
                   sub:
-                    quant.sortinoStatus === "insufficient"
-                      ? t("quant.needTenDays")
-                      : quant.sortinoStatus === "no_downside"
+                    quant.sortinoStatus === "unverified_returns"
+                      ? t("quant.verifiedReturnsNeeded")
+                      : quant.sortinoStatus === "insufficient"
+                        ? t("quant.needTenDays")
+                        : quant.sortinoStatus === "no_downside"
                         ? t("quant.noDownside")
                         : t("quant.annualized"),
                   good: (quant.sortino ?? 0) >= 1.5,
