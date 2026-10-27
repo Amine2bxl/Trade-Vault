@@ -1,5 +1,6 @@
 import { isBreakEven, type Trade } from "../types";
 import { getSessionForTrade, type TradingSession } from "@/domain/quantStats";
+import { compareChronological, verifiedPriorClosedTrade } from "@/domain/tradeOrder";
 import { localDateOf } from "@/shared/calendar-date";
 
 /**
@@ -96,13 +97,6 @@ function periodCutoff(period: NonNullable<UnifiedFilter["period"]>): string | nu
   return localDateOf(d);
 }
 
-/** Tri chronologique stable — identique à `computeBehaviorSignals` (date seule),
- *  pour que le filtre `after_loss` désigne EXACTEMENT le même ensemble de trades
- *  que le détecteur qui a produit le claim. Pas de seconde définition. */
-function byDate(a: Trade, b: Trade): number {
-  return a.date.localeCompare(b.date);
-}
-
 function weekdayOf(date: string): number | null {
   const d = new Date(date + "T12:00:00");
   return Number.isNaN(d.getTime()) ? null : d.getDay();
@@ -131,12 +125,14 @@ export function applyFilter(trades: Trade[], input: Partial<UnifiedFilter>): Tra
   if (f.context) {
     afterLoss = new Set();
     afterWin = new Set();
-    const sorted = [...trades].sort(byDate);
+    const sorted = [...trades].sort(
+      (a, b) => compareChronological(a, b) || a.id.localeCompare(b.id),
+    );
     for (let i = 1; i < sorted.length; i++) {
-      const prev = sorted[i - 1];
-      const afterDecisive = !!prev && !isBreakEven(prev);
-      if (afterDecisive && prev.pnl < 0) afterLoss.add(sorted[i].id);
-      else if (afterDecisive && prev.pnl > 0) afterWin.add(sorted[i].id);
+      const prev = verifiedPriorClosedTrade(sorted, i);
+      if (!prev || isBreakEven(prev)) continue;
+      if (prev.pnl < 0) afterLoss.add(sorted[i].id);
+      else if (prev.pnl > 0) afterWin.add(sorted[i].id);
     }
   }
 
