@@ -668,3 +668,16 @@ Branches et noms sont des **suggestions de traçabilité**, non des branches que
 - [ ] Migrations, broker OAuth, Stripe, données licenciées et E2E réel validés quand autorisés.
 
 **Instruction finale :** poursuivre, vérifier, mesurer et documenter ; pas de faux « terminé », pas de chiffres inventés, pas de régression et aucune fusion sur `main`. Le critère est la vérité du produit, pas le nombre de commits.
+
+---
+
+# ADDENDUM — Derniers correctifs quantitatifs du lot 0
+
+Les éléments suivants sont **postérieurs** à l'état du HEAD `1c680115` mentionné plus haut. Pour tout travail ultérieur, consulter **la HEAD actuelle** de `feat/quant-correctness-lot0`, puis `docs/QUANT_CORRECTNESS_PROGRESS.md`, et ne pas prendre les SHA historiques de ce document pour l'état le plus récent.
+
+- `src/app/features/monte-carlo/monteCarloEngine.ts` : `SampleStatistics.profitFactor` et le calcul de PF d'un scénario retournent désormais `null` lorsque le dénominateur n'existe pas ; les PF réels supérieurs à 99 sont préservés.
+- `tests/monteCarloViz.test.ts` : goldens supplémentaires pour 500/300, PF 120, PF 198 et échantillon sans perte.
+- `src/app/features/calendar/CalendarPage.tsx` : retrait du `Math.abs(rMultiple)` dans le R moyen mensuel ; total et R moyen affichés « — » si la provenance d'un seul trade du mois ne suffit pas à prouver le R ; état neutre ; break-even déterminé sur P&L net.
+- Typecheck et tests ciblés Monte Carlo/calendrier/news exécutés en sandbox : **34 tests réussis** sur les trois suites ciblées ; CI complète du dernier SHA à confirmer via GitHub Actions.
+
+**Statut de passage de relais :** les correctifs mathématiques du lot 0 progressent, mais la validation authentifiée des parcours applicatifs avec des données représentatives et la revue exhaustive des historiques persistés n'ont toujours pas de preuve d'acceptation. Ne pas marquer `L0 DONE` ou démarrer les migrations L1 seulement sur la base de ces contrôles techniques. Les préconditions de données L1 et les validations partenaires restent séparées comme approuvé.
