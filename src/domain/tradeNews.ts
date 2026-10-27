@@ -115,7 +115,7 @@ const LOCAL_CLOCK: Clock = {
 };
 
 function minutes(hhmm: string | undefined): number | null {
-  const m = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(hhmm ?? "");
+  const m = /^([01]?\d|2[0-3]):([0-5]\d)$/.exec(hhmm ?? "");
   return m ? Number(m[1]) * 60 + Number(m[2]) : null;
 }
 
@@ -148,10 +148,7 @@ export function newsForTrade(
     const time = e.allDay ? null : clock.timeOf(e.startsAt);
     const at = minutes(time ?? undefined);
     const duringTrade =
-      at !== null &&
-      sameDayInterval &&
-      at >= start! - MARGIN_MIN &&
-      at <= end! + MARGIN_MIN;
+      at !== null && sameDayInterval && at >= start! - MARGIN_MIN && at <= end! + MARGIN_MIN;
     items.push({ event: e, time, duringTrade });
   }
   items.sort(
