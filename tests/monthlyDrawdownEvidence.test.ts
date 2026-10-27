@@ -35,10 +35,7 @@ describe("monthly report — realized drawdown evidence", () => {
   });
 
   it("does not report a guessed drawdown for simultaneous exits", () => {
-    const rows = [
-      trade("a", "09:30", "10:00", 200),
-      trade("b", "09:40", "10:00", -100),
-    ];
+    const rows = [trade("a", "09:30", "10:00", 200), trade("b", "09:40", "10:00", -100)];
     const report = buildMonthlyReport("2026-07", rows, [], 25000);
     expect(report.maxDrawdown).toBeNull();
   });
