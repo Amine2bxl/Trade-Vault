@@ -75,7 +75,7 @@ import {
 } from "@/app/store/tradeIntel";
 import { EMOTIONAL_STATES, type EmotionalState } from "@/app/trading/readiness";
 import { currencySymbol, formatMoney } from "@/shared/currency";
-import { getSession } from "@/domain/quantStats";
+import { getSessionForTrade } from "@/domain/quantStats";
 import { getDuration } from "@/domain/tradeCalcs";
 import { todayLocalDate } from "@/shared/calendar-date";
 import { useTradeNews } from "../news/useTradeNews";
@@ -618,7 +618,11 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
   const resultDone = riskOk && rOk && !rMultipleError;
   // Libellé sans l'astérisque : la pastille du champ dit déjà « obligatoire ».
   const req = (key: Parameters<typeof t>[0]) => t(key).replace(/\s*\*$/, "");
-  const session = getSession(form.entryTime);
+  const session = getSessionForTrade({
+    entryTime: form.entryTime,
+    broker: trade?.broker,
+    reviewPending: trade?.reviewPending,
+  });
   const tone =
     form.direction === "be"
       ? "flat"

@@ -1,6 +1,6 @@
 import { Trade, isBreakEven } from "@/app/types";
 import { computeStats } from "@/domain/tradeCalcs";
-import { getSession, statsBySession, winRateOf, type BucketStat } from "@/domain/quantStats";
+import { getSessionForTrade, statsBySession, winRateOf, type BucketStat } from "@/domain/quantStats";
 
 /**
  * Behaviour signals — the deterministic "why" behind the numbers.
@@ -139,7 +139,7 @@ export function computeBehaviorSignals(trades: Trade[]): BehaviorSignals {
   if (weekday.length >= 2) signals.byWeekday = weekday.sort((a, b) => a.pnl - b.pnl);
 
   // ── Session ───────────────────────────────────────────────────────────────
-  if (trades.some((t) => getSession(t.entryTime))) {
+  if (trades.some((t) => getSessionForTrade(t))) {
     const bySession = Object.entries(statsBySession(trades))
       .filter(([, b]) => b.count >= 3)
       .map(([k, b]) => fromBucketStat(k, b));

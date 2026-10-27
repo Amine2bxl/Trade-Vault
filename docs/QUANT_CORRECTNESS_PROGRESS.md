@@ -271,3 +271,11 @@ critères de sortie sont satisfaits.
 - [x] Le nombre d'horaires exclus affiché dans Analytics inclut broker et CSV non relus ; tests de couverture ajoutés.
 - [ ] Limite explicitement conservée pour le lot 1 : la relecture CSV retire `reviewPending` sans enregistrer pour autant un fuseau source immuable. Un horodatage complet UTC et sa provenance devront être persistés pour une session certifiée après relecture.
 - [ ] Valider sur la CI du commit final ; ne pas considérer le lot 0 DONE pour ce seul correctif.
+
+## Revue des consommateurs de session / fuseaux (lot 0)
+
+- [x] Moteur Jarvis behaviorSignals : même `getSessionForTrade` que les statistiques pures, évite des « pires sessions » reposant sur des horaires importés non vérifiés.
+- [x] Filtres Journal/deep-links : sessions et heures excluent broker et CSV non relus en l'absence de fuseau certifié ; un filtre et un graphique restent cohérents.
+- [x] Détail des trades mobile et formulaire de relecture : ne promettent pas une session NY à partir de l'heure locale d'un broker.
+- [x] Tests de régression sur analyses Jarvis et filtres transverses ; heures identiques et origines différentes.
+- [ ] Après validation CI finale, vérifier les consommateurs statiques restants et tester les états réels d'import après relecture.

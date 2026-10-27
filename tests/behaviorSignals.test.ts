@@ -31,6 +31,25 @@ test("no signals are emitted from a journal too thin to mean anything", () => {
   expect(Object.keys(signals)).toHaveLength(0);
 });
 
+test("Jarvis session signals exclude broker and unreviewed CSV clocks", () => {
+  const manual = [
+    ...Array.from({ length: 3 }, (_, i) =>
+      trade({ id: "ny" + i, date: "2026-07-01", pnl: 100, entryTime: "10:00" })),
+    ...Array.from({ length: 3 }, (_, i) =>
+      trade({ id: "london" + i, date: "2026-07-02", pnl: -50, entryTime: "03:00" })),
+  ];
+  const unknown = [
+    ...Array.from({ length: 3 }, (_, i) =>
+      trade({ id: "broker" + i, date: "2026-07-03", pnl: -300, entryTime: "10:00", broker: "tradovate" })),
+    ...Array.from({ length: 3 }, (_, i) =>
+      trade({ id: "csv" + i, date: "2026-07-04", pnl: 200, entryTime: "03:00", reviewPending: true })),
+  ];
+  const signals = computeBehaviorSignals([...manual, ...unknown]);
+  expect(signals.bySession).toBeDefined();
+  expect(signals.bySession!.find((x) => x.key === "newyork")?.pnl).toBe(300);
+  expect(signals.bySession!.find((x) => x.key === "london")?.pnl).toBe(-150);
+});
+
 test("the losing weekday is surfaced with its own win rate and P&L", () => {
   // 2026-07-03, -10, -17, -24 are Fridays; the Mondays are winners.
   const trades = [

@@ -69,6 +69,15 @@ describe("applyFilter — dimensions simples", () => {
     expect(applyFilter(trades, { confluence: "FVG" }).length).toBe(1);
   });
 
+  it("ne classe ni CSV non relus ni broker sans fuseau confirmé comme sessions ET", () => {
+    const manual = trade({ id: "manual", entryTime: "10:00" });
+    const broker = trade({ id: "broker", entryTime: "10:00", broker: "tradovate" });
+    const csv = trade({ id: "csv", entryTime: "10:00", reviewPending: true });
+    const rows = [manual, broker, csv];
+    expect(applyFilter(rows, { session: "newyork" }).map((t) => t.id)).toEqual(["manual"]);
+    expect(applyFilter(rows, { hour: 10 }).map((t) => t.id)).toEqual(["manual"]);
+  });
+
   it("filtre par jour de semaine (0=dimanche)", () => {
     const trades = [trade({ date: "2026-08-05" }), trade({ date: "2026-08-09" })]; // mercredi + dimanche
     expect(applyFilter(trades, { weekday: 3 }).length).toBe(1);

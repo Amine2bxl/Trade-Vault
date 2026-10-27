@@ -2,7 +2,7 @@ import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 
 import { X, Trash2, ChevronLeft, ChevronRight, Target } from "@/shared/ui/icons";
 import { Trade, MissedOpportunity, isBreakEven } from "@/app/types";
 import { formatPnl, getDuration, directionLabel, directionBadgeClass } from "@/domain/tradeCalcs";
-import { getSession } from "@/domain/quantStats";
+import { getSessionForTrade } from "@/domain/quantStats";
 import { cn } from "@/shared/ui/cn";
 import { Button, Disclosure, Modal } from "@/shared/ui";
 import { useT } from "@/app/i18n/LanguageContext";
@@ -350,7 +350,7 @@ function SheetTrade({
   const toggle = (k: keyof typeof open) => (v: boolean) => setOpen((o) => ({ ...o, [k]: v }));
   const be = isBreakEven(trade);
   const tone = be ? "text-slate-300" : trade.pnl >= 0 ? "text-emerald-400" : "text-red-400";
-  const session = getSession(trade.entryTime);
+  const session = getSessionForTrade(trade);
   const times =
     trade.entryTime || trade.exitTime
       ? `${trade.entryTime || "—"} → ${trade.exitTime || "—"} · ${getDuration(trade.entryTime, trade.exitTime)}`
