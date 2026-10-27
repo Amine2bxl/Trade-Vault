@@ -112,7 +112,8 @@ export function computeEdgeScore(allTrades: Trade[], inputs: EdgeInputs = {}): E
   if (verifiedDays > 0) {
     subs.cleanDays = {
       value: (cleanDays / verifiedDays) * 100,
-      detail: cleanDays + "/" + verifiedDays + " - " + verifiedDays + "/" + tradedDays + " verified",
+      detail:
+        cleanDays + "/" + verifiedDays + " - " + verifiedDays + "/" + tradedDays + " verified",
     };
   }
 
@@ -141,7 +142,8 @@ export function computeEdgeScore(allTrades: Trade[], inputs: EdgeInputs = {}): E
     ).length;
     subs.risk = {
       value: (within / riskKnown.length) * 100,
-      detail: within + "/" + riskKnown.length + " - " + riskKnown.length + "/" + total + " verified",
+      detail:
+        within + "/" + riskKnown.length + " - " + riskKnown.length + "/" + total + " verified",
     };
   }
 
@@ -161,28 +163,18 @@ export function computeEdgeScore(allTrades: Trade[], inputs: EdgeInputs = {}): E
   }
 
   const coveragePct = Math.round(
-    ((known.length / total) * WEIGHTS.cleanTrades +
-      (riskKnown.length / total) * WEIGHTS.risk) *
+    ((known.length / total) * WEIGHTS.cleanTrades + (riskKnown.length / total) * WEIGHTS.risk) *
       100,
   );
   // Minimum sample AND full evidence. Incomplete data cannot score 100/100.
   const complete =
-    total >= 10 &&
-    tradedDays >= 5 &&
-    known.length === total &&
-    riskKnown.length === total;
+    total >= 10 && tradedDays >= 5 && known.length === total && riskKnown.length === total;
   const score =
     complete && subs.cleanTrades.value !== null && subs.risk.value !== null
-      ? Math.round(
-          subs.cleanTrades.value * WEIGHTS.cleanTrades + subs.risk.value * WEIGHTS.risk,
-        )
+      ? Math.round(subs.cleanTrades.value * WEIGHTS.cleanTrades + subs.risk.value * WEIGHTS.risk)
       : null;
   const weakest: EdgeResult["weakest"] =
-    score === null
-      ? null
-      : subs.cleanTrades.value! <= subs.risk.value!
-        ? "cleanTrades"
-        : "risk";
+    score === null ? null : subs.cleanTrades.value! <= subs.risk.value! ? "cleanTrades" : "risk";
   return { score, coveragePct, subs, tradedDays, cleanDays, verifiedDays, weakest };
 }
 
