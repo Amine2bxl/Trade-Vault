@@ -148,8 +148,7 @@ export function buildMonthlyReport(
     winRate: Math.round(stats.winRate * 100) / 100,
     profitFactor: stats.profitFactor === null ? null : Math.round(stats.profitFactor * 100) / 100,
     expectancy: round2(quant.expectancy),
-    expectancyR:
-      quant.expectancyR === null ? null : Math.round(quant.expectancyR * 100) / 100,
+    expectancyR: quant.expectancyR === null ? null : Math.round(quant.expectancyR * 100) / 100,
     sharpe: quant.sharpe !== null ? Math.round(quant.sharpe * 100) / 100 : null,
     sortino: quant.sortino !== null ? Math.round(quant.sortino * 100) / 100 : null,
     maxDrawdown: stats.maxDrawdownOrderVerified ? round2(stats.maxDrawdown) : null,
