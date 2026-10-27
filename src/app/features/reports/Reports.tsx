@@ -873,9 +873,7 @@ function ReportSheet({
           <SectionTitle icon={<AlertTriangle className="h-3.5 w-3.5 text-amber-400" />}>
             {t("reports.mistakesObserved")}
           </SectionTitle>
-          <p className="mb-3 text-xs leading-relaxed text-slate-500">
-            {t("reports.mistakesNote")}
-          </p>
+          <p className="mb-3 text-xs leading-relaxed text-slate-500">{t("reports.mistakesNote")}</p>
           <BarList
             rows={r.mistakes.map((m) => ({
               key: m.name,
