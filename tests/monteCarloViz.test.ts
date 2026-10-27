@@ -3,6 +3,7 @@ import {
   runMonteCarlo,
   extractRSamples,
   computeStatistics,
+  computeProfitFactor,
   type MonteCarloParams,
 } from "../src/app/features/monte-carlo/monteCarloEngine";
 import {
@@ -107,6 +108,12 @@ describe("Lot 0 — Monte Carlo sample integrity", () => {
       ]),
     );
     expect(positive.profitFactor).toBeNull();
+  });
+
+  test("scenario PF never uses a fabricated cap", () => {
+    expect(computeProfitFactor(1, 2, 1)).toBeNull();
+    expect(computeProfitFactor(0.5, 2, 1)).toBe(2);
+    expect(computeProfitFactor(0.99, 2, 1)).toBeCloseTo(198);
   });
 
   test("profit factor remains exact, including values greater than 99", () => {
