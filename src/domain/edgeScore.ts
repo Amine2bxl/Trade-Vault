@@ -1,185 +1,189 @@
 import type { Trade, TradeStats } from "./trade";
 
-// ── Edge Score ───────────────────────────────────────────────────────────────
-// A deterministic 0–100 discipline score derived ONLY from the trader's real
-// data (no AI, no invented numbers). It rewards *behaviour* (plan, risk, clean
-// days, routine), never PnL. Four sub-scores are averaged with fixed weights;
-// any sub-score whose data is missing is dropped and the remaining weights are
-// renormalised, so the score never fabricates a component it can't measure.
-//
-// Window: the last N (=10) *traded* days — recent enough to react, stable
-// enough to reward consistency. Independent of the dashboard period selector.
-
+// Edge Score v2: only independently verified, historically applicable evidence.
 export const EDGE_WINDOW_DAYS = 10;
+export const EDGE_SCORE_VERSION = 2;
 
-/** Weights (sum = 1) applied when every component has data. */
-const WEIGHTS = { cleanTrades: 0.35, risk: 0.25, cleanDays: 0.25, routine: 0.15 } as const;
+// The two scored dimensions are not proxies of the same mistake tags.
+const WEIGHTS = { cleanTrades: 0.65, risk: 0.35 } as const;
+type RuleEvidence = "PASS" | "FAIL" | "UNKNOWN";
 
 export interface EdgeInputs {
-  /** Max risk per trade, in %, from the written plan (`risk.maxRiskPerTradePct`). */
   maxRiskPct?: number | null;
-  /** Starting balance, to turn maxRiskPct into an absolute threshold. */
+  /** Kept for legacy callers. A current starting balance proves nothing historic. */
   startingBalance?: number | null;
-  /**
-   * Checklist completion per ISO day, 0..1, read from localStorage by the
-   * caller (1 = locked/complete). Absent day = no entry for that day.
-   */
+  /** The supplied risk limit was actually applicable to the historical entries. */
+  riskPlanVersionVerified?: boolean;
+  /** Trade-level result from a time-valid and independent rule verifier. */
+  ruleEvidenceByTradeId?: Readonly<Record<string, RuleEvidence>>;
+  /** Reconstructed account balance immediately prior to the entry. */
+  verifiedBalanceBeforeTrade?: Readonly<Record<string, number>>;
+  /** Self-recorded preparation: displayed, but never used to grade adherence. */
   checklistByDay?: Record<string, number>;
 }
-
 export interface EdgeSubScore {
-  /** 0..100, or null when there isn't enough data to measure it honestly. */
   value: number | null;
-  /** Human-facing denominator, e.g. "8/10 jours propres". */
   detail?: string;
 }
-
 export interface EdgeResult {
-  /** 0..100 rounded, or null when the sample is too thin to score. */
   score: number | null;
+  /** Weighted proportion of evidence available, distinct from the actual grade. */
+  coveragePct: number;
   subs: {
-    /**
-     * Part des trades de la fenêtre journalisés SANS erreur cochée.
-     *
-     * Ce sous-score s'appelait `plan` et son commentaire disait « plan
-     * adherence » — la MÊME confusion que l'indicateur du tableau de bord, en
-     * pire : elle alimentait une phrase adressée au trader (« le respect du
-     * plan est ton point faible »). Jarvis pouvait donc reprocher un manque de
-     * discipline à un trader qui tient ses règles à 95 %, simplement parce
-     * qu'il coche honnêtement ses erreurs. Punir l'honnêteté de la
-     * journalisation est le pire signal possible dans un journal de trading.
-     *
-     * La tenue des règles se mesure dans `ruleAdherence.ts`, et nulle part
-     * ailleurs.
-     */
     cleanTrades: EdgeSubScore;
     risk: EdgeSubScore;
     cleanDays: EdgeSubScore;
     routine: EdgeSubScore;
   };
-  /** Distinct traded days in the window (drives "clean days" denominator). */
   tradedDays: number;
+  /** Days where ALL observed trades were verified compliant. */
   cleanDays: number;
-  /** The dominant weakness key (lowest measured sub-score), for the Jarvis line. */
+  /** Days for which ALL trades have independent PASS/FAIL verdicts. */
+  verifiedDays: number;
   weakest: "cleanTrades" | "risk" | "cleanDays" | "routine" | null;
 }
-
-function median(nums: number[]): number {
-  if (nums.length === 0) return 0;
-  const s = [...nums].sort((a, b) => a - b);
-  const mid = Math.floor(s.length / 2);
-  return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
-}
-
-/** Distinct ISO dates present in `trades`, newest first. */
 function tradedDates(trades: Trade[]): string[] {
-  const set = new Set(trades.map((t) => t.date));
-  return [...set].sort((a, b) => b.localeCompare(a));
+  return [...new Set(trades.map((t) => t.date))].sort((a, b) => b.localeCompare(a));
 }
 
-/**
- * Absolute per-trade risk threshold ($). Prefers the plan's max-risk rule
- * (`maxRiskPct` × starting balance); falls back to 1.5 × median historical
- * risk when the rule or balance is missing. Returns null if neither is usable.
- */
+/** Never infer a trading plan from 1.5x the median historical risk. */
 export function riskThreshold(
-  trades: Trade[],
+  _trades: Trade[],
   maxRiskPct?: number | null,
   startingBalance?: number | null,
 ): number | null {
-  if (maxRiskPct && maxRiskPct > 0 && startingBalance && startingBalance > 0) {
-    return (maxRiskPct / 100) * startingBalance;
+  if (
+    maxRiskPct == null ||
+    !Number.isFinite(maxRiskPct) ||
+    maxRiskPct <= 0 ||
+    startingBalance == null ||
+    !Number.isFinite(startingBalance) ||
+    startingBalance <= 0
+  ) {
+    return null;
   }
-  const risks = trades.map((t) => t.riskAmount).filter((r) => r > 0);
-  if (risks.length === 0) return null;
-  return median(risks) * 1.5;
+  return (maxRiskPct / 100) * startingBalance;
 }
 
-/**
- * Compute the Edge Score over the last `EDGE_WINDOW_DAYS` traded days.
- * `allTrades` is the full account history (not the period-filtered set).
- */
 export function computeEdgeScore(allTrades: Trade[], inputs: EdgeInputs = {}): EdgeResult {
-  const empty = (): EdgeSubScore => ({ value: null });
-  const dates = tradedDates(allTrades).slice(0, EDGE_WINDOW_DAYS);
-  const windowDates = new Set(dates);
-  const window = allTrades.filter((t) => windowDates.has(t.date));
-
+  const blank = (): EdgeSubScore => ({ value: null });
   const subs = {
-    cleanTrades: empty(),
-    risk: empty(),
-    cleanDays: empty(),
-    routine: empty(),
+    cleanTrades: blank(),
+    risk: blank(),
+    cleanDays: blank(),
+    routine: blank(),
   };
-
-  if (window.length === 0) {
-    return { score: null, subs, tradedDays: 0, cleanDays: 0, weakest: null };
-  }
-
-  // Part des trades de la fenêtre sans erreur cochée — PAS l'adhérence aux
-  // règles, qui est mesurée par `ruleAdherence.ts`.
-  subs.cleanTrades = {
-    value: (window.filter((t) => t.mistakes.length === 0).length / window.length) * 100,
-  };
-
-  // Risk respect: share of window trades at or under the risk threshold.
-  const threshold = riskThreshold(allTrades, inputs.maxRiskPct, inputs.startingBalance);
-  const risked = window.filter((t) => t.riskAmount > 0);
-  if (threshold !== null && risked.length > 0) {
-    const ok = risked.filter((t) => t.riskAmount <= threshold).length;
-    subs.risk = { value: (ok / risked.length) * 100, detail: `${ok}/${risked.length}` };
-  }
-
-  // Clean days: traded days in the window with no mistake-tagged trade.
-  const byDay = new Map<string, boolean>(); // date -> hasMistake
-  for (const t of window) {
-    byDay.set(t.date, (byDay.get(t.date) ?? false) || t.mistakes.length > 0);
-  }
-  const tradedDaysN = byDay.size;
-  const cleanDaysN = [...byDay.values()].filter((hasMistake) => !hasMistake).length;
-  subs.cleanDays = {
-    value: tradedDaysN > 0 ? (cleanDaysN / tradedDaysN) * 100 : null,
-    detail: `${cleanDaysN}/${tradedDaysN}`,
-  };
-
-  // Routine: average checklist completion across the window's traded days.
-  const checklist = inputs.checklistByDay ?? {};
-  const daysWithChecklist = dates.filter((d) => d in checklist);
-  if (daysWithChecklist.length > 0) {
-    const sum = daysWithChecklist.reduce(
-      (acc, d) => acc + Math.max(0, Math.min(1, checklist[d])),
-      0,
-    );
-    subs.routine = {
-      value: (sum / daysWithChecklist.length) * 100,
-      detail: `${daysWithChecklist.length}/${dates.length}`,
+  const dates = tradedDates(allTrades).slice(0, EDGE_WINDOW_DAYS);
+  const selected = new Set(dates);
+  const window = allTrades.filter((t) => selected.has(t.date));
+  const total = window.length;
+  const tradedDays = dates.length;
+  if (!total) {
+    return {
+      score: null,
+      coveragePct: 0,
+      subs,
+      tradedDays: 0,
+      cleanDays: 0,
+      verifiedDays: 0,
+      weakest: null,
     };
   }
 
-  // Weighted average over measured components only (renormalise weights).
-  let weightSum = 0;
-  let acc = 0;
-  (Object.keys(WEIGHTS) as (keyof typeof WEIGHTS)[]).forEach((k) => {
-    const v = subs[k].value;
-    if (v !== null) {
-      acc += v * WEIGHTS[k];
-      weightSum += WEIGHTS[k];
-    }
-  });
-  const score = weightSum > 0 ? Math.round(acc / weightSum) : null;
+  const evidence = inputs.ruleEvidenceByTradeId ?? {};
+  const known = window.filter((t) => evidence[t.id] === "PASS" || evidence[t.id] === "FAIL");
+  if (known.length > 0) {
+    const passed = known.filter((t) => evidence[t.id] === "PASS").length;
+    subs.cleanTrades = {
+      value: (passed / known.length) * 100,
+      detail: passed + "/" + known.length + " - " + known.length + "/" + total + " verified",
+    };
+  }
 
-  // Weakest measured component (lowest value) — drives the coaching line.
-  let weakest: EdgeResult["weakest"] = null;
-  let lowest = Infinity;
-  (Object.keys(subs) as (keyof typeof subs)[]).forEach((k) => {
-    const v = subs[k].value;
-    if (v !== null && v < lowest) {
-      lowest = v;
-      weakest = k;
+  let verifiedDays = 0;
+  let cleanDays = 0;
+  for (const date of dates) {
+    const daily = window.filter((t) => t.date === date);
+    if (daily.every((t) => evidence[t.id] === "PASS" || evidence[t.id] === "FAIL")) {
+      verifiedDays++;
+      if (daily.every((t) => evidence[t.id] === "PASS")) cleanDays++;
     }
-  });
+  }
+  if (verifiedDays > 0) {
+    subs.cleanDays = {
+      value: (cleanDays / verifiedDays) * 100,
+      detail: cleanDays + "/" + verifiedDays + " - " + verifiedDays + "/" + tradedDays + " verified",
+    };
+  }
 
-  return { score, subs, tradedDays: tradedDaysN, cleanDays: cleanDaysN, weakest };
+  // No verified balance at the entry or no historically valid rule => UNKNOWN.
+  const limit = inputs.maxRiskPct;
+  const balances = inputs.verifiedBalanceBeforeTrade ?? {};
+  const riskKnown =
+    inputs.riskPlanVersionVerified &&
+    typeof limit === "number" &&
+    Number.isFinite(limit) &&
+    limit > 0
+      ? window.filter((t) => {
+          const balance = balances[t.id];
+          return (
+            Number.isFinite(t.riskAmount) &&
+            t.riskAmount > 0 &&
+            typeof balance === "number" &&
+            Number.isFinite(balance) &&
+            balance > 0
+          );
+        })
+      : [];
+  if (riskKnown.length > 0 && typeof limit === "number") {
+    const within = riskKnown.filter(
+      (t) => (t.riskAmount / balances[t.id]) * 100 <= limit + 1e-9,
+    ).length;
+    subs.risk = {
+      value: (within / riskKnown.length) * 100,
+      detail: within + "/" + riskKnown.length + " - " + riskKnown.length + "/" + total + " verified",
+    };
+  }
+
+  const checklist = inputs.checklistByDay ?? {};
+  const documented = dates.filter(
+    (d) => typeof checklist[d] === "number" && Number.isFinite(checklist[d]),
+  );
+  if (documented.length > 0) {
+    const completion = documented.reduce(
+      (sum, d) => sum + Math.max(0, Math.min(1, checklist[d])),
+      0,
+    );
+    subs.routine = {
+      value: (completion / documented.length) * 100,
+      detail: documented.length + "/" + tradedDays + " recorded",
+    };
+  }
+
+  const coveragePct = Math.round(
+    ((known.length / total) * WEIGHTS.cleanTrades +
+      (riskKnown.length / total) * WEIGHTS.risk) *
+      100,
+  );
+  // Minimum sample AND full evidence. Incomplete data cannot score 100/100.
+  const complete =
+    total >= 10 &&
+    tradedDays >= 5 &&
+    known.length === total &&
+    riskKnown.length === total;
+  const score =
+    complete && subs.cleanTrades.value !== null && subs.risk.value !== null
+      ? Math.round(
+          subs.cleanTrades.value * WEIGHTS.cleanTrades + subs.risk.value * WEIGHTS.risk,
+        )
+      : null;
+  const weakest: EdgeResult["weakest"] =
+    score === null
+      ? null
+      : subs.cleanTrades.value! <= subs.risk.value!
+        ? "cleanTrades"
+        : "risk";
+  return { score, coveragePct, subs, tradedDays, cleanDays, verifiedDays, weakest };
 }
 
 // ── Règle du jour (derived from the real recurring leak) ─────────────────────
@@ -200,7 +204,7 @@ export interface DailyRule {
 export function deriveDailyRule(stats: TradeStats): DailyRule | null {
   const entries = Object.entries(stats.mistakeStats);
   if (entries.length === 0) return null;
-  // Worst leak = the mistake with the most negative cumulative PnL.
+  // Largest negative PnL associated with a tagged mistake, not proof of causal cost.
   const worst = entries
     .filter(([, s]) => s.totalPnl < 0)
     .sort((a, b) => a[1].totalPnl - b[1].totalPnl)[0];
