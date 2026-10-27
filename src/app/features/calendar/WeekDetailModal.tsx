@@ -170,7 +170,10 @@ export default function WeekDetailModal({
                               {[tr.entryTime, tr.strategy].filter(Boolean).join(" · ")}
                             </span>
                           </span>
-                          {Number.isFinite(tr.rMultiple) && tr.rMultiple !== 0 && (
+                          {Number.isFinite(tr.riskAmount) &&
+                            tr.riskAmount > 0 &&
+                            Number.isFinite(tr.rMultiple) &&
+                            tr.rMultiple !== 0 && (
                             <span className="tv-figure tv-figure-secondary text-xs text-slate-400">
                               {tr.rMultiple > 0 ? "+" : ""}
                               {tr.rMultiple.toFixed(1)}R
