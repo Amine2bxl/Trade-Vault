@@ -114,14 +114,39 @@ describe("computeStats", () => {
 
   it("orders intraday drawdown by entry time, independent of import order", () => {
     const day = "2026-07-01";
-    const a = mkTrade({ id: "a", date: day, entryTime: "09:30", pnl: 200 });
-    const b = mkTrade({ id: "b", date: day, entryTime: "10:00", pnl: -150 });
-    const c = mkTrade({ id: "c", date: day, entryTime: "10:30", pnl: -100 });
+    const a = mkTrade({ id: "a", date: day, entryTime: "09:30", exitTime: "09:45", pnl: 200 });
+    const b = mkTrade({ id: "b", date: day, entryTime: "10:00", exitTime: "10:15", pnl: -150 });
+    const c = mkTrade({ id: "c", date: day, entryTime: "10:30", exitTime: "10:45", pnl: -100 });
     const result = computeStats([c, a, b]);
     expect(result.maxDrawdown).toBe(250);
     expect(result.maxDrawdownOrderVerified).toBe(true);
     expect(result.currentStreakType).toBe("loss");
     expect(result.currentStreak).toBe(2);
+  });
+
+  it("uses realized exit order when open positions overlap", () => {
+    const date = "2026-07-01";
+    const trades = [
+      mkTrade({ id: "early", date, entryTime: "09:30", exitTime: "12:00", pnl: -100 }),
+      mkTrade({ id: "middle", date, entryTime: "10:00", exitTime: "10:15", pnl: 200 }),
+      mkTrade({ id: "late", date, entryTime: "11:00", exitTime: "11:15", pnl: -150 }),
+    ];
+    const result = computeStats([trades[2], trades[0], trades[1]]);
+    expect(result.maxDrawdown).toBe(250);
+    expect(result.maxDrawdownOrderVerified).toBe(true);
+    expect(result.currentStreakType).toBe("loss");
+    expect(result.currentStreak).toBe(2);
+  });
+
+  it("marks overnight or same-minute closes as unverified", () => {
+    const date = "2026-07-01";
+    const overnight = mkTrade({ id: "a", date, entryTime: "23:00", exitTime: "00:15", pnl: 100 });
+    expect(computeStats([overnight]).maxDrawdownOrderVerified).toBe(false);
+    const sameMinute = [
+      mkTrade({ id: "b", date, entryTime: "09:00", exitTime: "10:00", pnl: 100 }),
+      mkTrade({ id: "c", date, entryTime: "09:30", exitTime: "10:00", pnl: -150 }),
+    ];
+    expect(computeStats(sameMinute).maxDrawdownOrderVerified).toBe(false);
   });
 
   it("marks ambiguous intraday ordering as unverified", () => {

@@ -35,3 +35,21 @@ describe("ordre du journal — date puis heure d'entrée, du plus récent au plu
     expect([nine, ten].sort(newestFirst)[0]).toBe(ten);
   });
 });
+
+describe("realized equity chronology", () => {
+  test("closing order, not opening order, determines realized P&L order", async () => {
+    const { compareRealizedChronological, hasVerifiedRealizedOrder } =
+      await import("../src/domain/tradeOrder");
+    const a = { ...t("2026-07-01", "09:30", "12:00"), id: "a" };
+    const b = { ...t("2026-07-01", "10:00", "10:15"), id: "b" };
+    expect([a, b].sort(compareRealizedChronological).map((x) => x.id)).toEqual(["b", "a"]);
+    expect(hasVerifiedRealizedOrder([a, b])).toBe(true);
+  });
+  test("same-minute or overnight exits lack verified realization order", async () => {
+    const { hasVerifiedRealizedOrder } = await import("../src/domain/tradeOrder");
+    const a = t("2026-07-01", "09:30", "10:00");
+    const b = t("2026-07-01", "09:45", "10:00");
+    expect(hasVerifiedRealizedOrder([a, b])).toBe(false);
+    expect(hasVerifiedRealizedOrder([t("2026-07-01", "23:00", "00:15")])).toBe(false);
+  });
+});

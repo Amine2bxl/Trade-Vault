@@ -1,7 +1,7 @@
 import { formatMoney } from "@/shared/currency";
 import { AI_LIMITS } from "@/domain/ai-limits";
 import { Trade, TradeStats, isBreakEven } from "./trade";
-import { compareChronological } from "./tradeOrder";
+import { compareRealizedChronological, hasVerifiedRealizedOrder } from "./tradeOrder";
 
 export function computeStats(trades: Trade[]): TradeStats {
   const empty: TradeStats = {
@@ -34,7 +34,9 @@ export function computeStats(trades: Trade[]): TradeStats {
 
   if (trades.length === 0) return empty;
 
-  const sorted = [...trades].sort((a, b) => compareChronological(a, b) || a.id.localeCompare(b.id));
+  const sorted = [...trades].sort(
+    (a, b) => compareRealizedChronological(a, b) || a.id.localeCompare(b.id),
+  );
   const totalPnl = trades.reduce((s, t) => s + t.pnl, 0);
   const beTrades = trades.filter(isBreakEven);
   const decisive = trades.filter((t) => !isBreakEven(t));
@@ -59,16 +61,10 @@ export function computeStats(trades: Trade[]): TradeStats {
     if (dd > maxDrawdown) maxDrawdown = dd;
   }
 
-  // A date alone, a missing entry time or equal minute-resolution timestamps
-  // cannot establish the true intraday peak-to-trough sequence.
-  const maxDrawdownOrderVerified = sorted.every((t, i) => {
-    if (i === 0 || sorted[i - 1].date !== t.date) return true;
-    return (
-      /^([01]?\d|2[0-3]):[0-5]\d$/.test(t.entryTime) &&
-      /^([01]?\d|2[0-3]):[0-5]\d$/.test(sorted[i - 1].entryTime) &&
-      compareChronological(sorted[i - 1], t) < 0
-    );
-  });
+  // Trades can close in a different order than they opened. The numerical
+  // equity series is an estimate unless every close is time-ordered and
+  // non-overlapping in minute-resolution; overnight exits require full dates.
+  const maxDrawdownOrderVerified = hasVerifiedRealizedOrder(trades);
 
   const reversed = [...sorted].reverse();
   let currentStreak = 0;

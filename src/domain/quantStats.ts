@@ -1,5 +1,5 @@
 import { Trade, isBreakEven } from "./trade";
-import { compareChronological } from "./tradeOrder";
+import { compareRealizedChronological, hasVerifiedRealizedOrder } from "./tradeOrder";
 
 // ── Trading sessions (ET, ICT convention) ──────────────────────────────────
 // Times entered in the journal are treated as US Eastern (the reference for
@@ -145,7 +145,10 @@ export function computeQuantStats(trades: Trade[], startingBalance = 0): QuantSt
   }
 
   // Max drawdown (trade order by date) + % + recovery
-  const sorted = [...trades].sort((a, b) => compareChronological(a, b) || a.id.localeCompare(b.id));
+  const sorted = [...trades].sort(
+    (a, b) => compareRealizedChronological(a, b) || a.id.localeCompare(b.id),
+  );
+  const realizedOrderVerified = hasVerifiedRealizedOrder(trades);
   let equity = 0,
     peak = 0,
     maxDD = 0,
@@ -165,10 +168,10 @@ export function computeQuantStats(trades: Trade[], startingBalance = 0): QuantSt
   const ddBase = startingBalance > 0 ? startingBalance + peakAtMaxDD : 0;
   // If an initial balance is known and there is no drawdown, the observed
   // drawdown ratio is exactly 0; it is not an unavailable measurement.
-  const maxDrawdownPct = ddBase > 0 ? maxDD / ddBase : null;
+  const maxDrawdownPct = realizedOrderVerified && ddBase > 0 ? maxDD / ddBase : null;
 
   let recoveryDays: number | null = null;
-  if (maxDD > 0 && troughIndex >= 0) {
+  if (realizedOrderVerified && maxDD > 0 && troughIndex >= 0) {
     // Recompute the equity *after the actual trough trade*, not simply after
     // its calendar date. Recovery within the same session is 0 days.
     let eq = 0;

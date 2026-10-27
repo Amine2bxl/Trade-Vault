@@ -187,9 +187,9 @@ describe("computeQuantStats", () => {
   it("recovers during the same trading day after the actual trough", () => {
     const date = "2026-07-01";
     const trades = [
-      mkTrade({ id: "peak", date, entryTime: "09:30", pnl: 200 }),
-      mkTrade({ id: "trough", date, entryTime: "10:00", pnl: -150 }),
-      mkTrade({ id: "recovery", date, entryTime: "11:00", pnl: 180 }),
+      mkTrade({ id: "peak", date, entryTime: "09:30", exitTime: "09:45", pnl: 200 }),
+      mkTrade({ id: "trough", date, entryTime: "10:00", exitTime: "10:15", pnl: -150 }),
+      mkTrade({ id: "recovery", date, entryTime: "11:00", exitTime: "11:15", pnl: 180 }),
     ];
     expect(computeQuantStats(trades, 25000).recoveryDays).toBe(0);
   });
@@ -197,11 +197,32 @@ describe("computeQuantStats", () => {
   it("does not mistake a pre-trough high for recovery", () => {
     const date = "2026-07-01";
     const trades = [
-      mkTrade({ id: "a", date, entryTime: "09:30", pnl: 200 }),
-      mkTrade({ id: "b", date, entryTime: "10:00", pnl: -150 }),
-      mkTrade({ id: "c", date, entryTime: "11:00", pnl: 100 }),
+      mkTrade({ id: "a", date, entryTime: "09:30", exitTime: "09:45", pnl: 200 }),
+      mkTrade({ id: "b", date, entryTime: "10:00", exitTime: "10:15", pnl: -150 }),
+      mkTrade({ id: "c", date, entryTime: "11:00", exitTime: "11:15", pnl: 100 }),
     ];
     expect(computeQuantStats(trades).recoveryDays).toBe(-1);
+  });
+
+  it("uses verified realized closing order for drawdown percentage", () => {
+    const date = "2026-07-01";
+    const trades = [
+      mkTrade({ id: "a", date, entryTime: "09:30", exitTime: "12:00", pnl: -100 }),
+      mkTrade({ id: "b", date, entryTime: "10:00", exitTime: "10:15", pnl: 200 }),
+      mkTrade({ id: "c", date, entryTime: "11:00", exitTime: "11:15", pnl: -150 }),
+    ];
+    expect(computeQuantStats(trades, 25000).maxDrawdownPct).toBeCloseTo(250 / 25200);
+    expect(computeQuantStats(trades, 25000).recoveryDays).toBe(-1);
+  });
+
+  it("refuses to report exact drawdown statistics on ambiguous closes", () => {
+    const date = "2026-07-01";
+    const ambiguous = [
+      mkTrade({ id: "a", date, entryTime: "09:30", exitTime: "10:00", pnl: 200 }),
+      mkTrade({ id: "b", date, entryTime: "09:45", exitTime: "10:00", pnl: -100 }),
+    ];
+    expect(computeQuantStats(ambiguous, 25000).maxDrawdownPct).toBeNull();
+    expect(computeQuantStats(ambiguous, 25000).recoveryDays).toBeNull();
   });
 
   it("consistency: best day share of total profit", () => {

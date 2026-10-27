@@ -196,3 +196,13 @@ critères de sortie sont satisfaits.
 - [ ] Vérifier cette modification sur la CI combinée et ses consommateurs finaux.
 
 **Statut lot 0 : IN PROGRESS ; aucun lot suivant autorisé avant validation complète.**
+
+## Lot 0 — Chronologie réalisée vs ouverture
+
+- [x] Audit : trier par heure d'entrée un P&L reconnu à la clôture produit une chronologie d'equity erronée pour positions superposées.
+- [x] Tri par clôture prouvable pour le drawdown et la série de résultats ; tri d'entrée du Journal conservé indépendamment.
+- [x] Date complète de clôture absente, trades overnight ou horodatages identiques → ordre non vérifié et ratios de drawdown / récupération non publiés comme exacts.
+- [x] Jeux de référence : positions qui se chevauchent, même minute, overnight, sensibilité au fuseau de date.
+- [ ] Vérifier CI et cohérence avec les consommateurs Dashboard, Analytics, rapports et Jarvis.
+
+**Statut lot 0 : IN PROGRESS.**
