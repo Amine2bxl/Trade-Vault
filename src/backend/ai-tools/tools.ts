@@ -466,12 +466,14 @@ export const getEdgeScore: ToolDefinition = {
       windowTradedDays: EDGE_WINDOW_DAYS,
       tradedDays: e.tradedDays,
       cleanDays: e.cleanDays,
+      verifiedDays: e.verifiedDays,
+      coveragePct: e.coveragePct,
       weakest: e.weakest,
       subs: e.subs,
       /* La routine vient de la checklist, stockée sur l'APPAREIL du trader :
          elle n'existe pas côté serveur. Le dire évite que Jarvis interprète un
          `null` comme « tu ne fais jamais ta routine ». */
-      note: "The `routine` component is device-local and unavailable server-side; treat a null value as unmeasured, never as zero.",
+      note: "Edge Score v2 needs time-valid verified rules and reconstructed balances at trade entry. Without complete evidence its grade remains null. Device-local checklist data is never used to grade.",
     };
   },
 };
