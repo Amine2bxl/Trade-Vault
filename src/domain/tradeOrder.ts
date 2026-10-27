@@ -88,10 +88,7 @@ export function verifiedPriorClosedTrade(
   ) {
     return null;
   }
-  if (
-    !/^\d{4}-\d{2}-\d{2}$/.test(previous.date) ||
-    !/^\d{4}-\d{2}-\d{2}$/.test(current.date)
-  ) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(previous.date) || !/^\d{4}-\d{2}-\d{2}$/.test(current.date)) {
     return null;
   }
   const previousEntry = verifiedClock(previous.entryTime);
