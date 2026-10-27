@@ -93,7 +93,7 @@ export function parseMoney(raw: string): number | null {
   else s = s.replace(/,/g, ""); // 1,234.56
   // parseFloat accepts "123garbage" as 123, silently corrupting P&L.
   // Validate the entire normalized cell and forbid non-finite numbers.
-  if (!/^[+-]?(?:\\d+(?:\\.\\d+)?|\\.\\d+)$/.test(s)) return null;
+  if (!/^[+-]?(?:\d+(?:\.\d+)?|\.\d+)$/.test(s)) return null;
   const n = Number(s);
   if (!Number.isFinite(n)) return null;
   return negative ? -Math.abs(n) : n;
@@ -114,7 +114,7 @@ export function parseDateTime(raw: string): { date: string; time: string } | nul
   const s = raw.trim();
   if (!s) return null;
   // ISO and MetaTrader yyyy.mm.dd, with optional seconds.
-  let m = s.match(/^(\\d{4})[-./](\\d{2})[-./](\\d{2})(?:[T ](\\d{2}):(\\d{2})(?::(\\d{2}))?)?$/);
+  let m = s.match(/^(\d{4})[-./](\d{2})[-./](\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2}))?)?$/);
   if (m) {
     const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
     if (!validCivilDate(y, mo, d)) return null;
@@ -123,7 +123,7 @@ export function parseDateTime(raw: string): { date: string; time: string } | nul
     return { date: `${m[1]}-${m[2]}-${m[3]}`, time: m[4] ? `${m[4]}:${m[5]}` : "" };
   }
   // American MM/DD/YYYY [hh:mm[:ss] AM/PM].
-  m = s.match(/^(\\d{1,2})\\/(\\d{1,2})\\/(\\d{4})(?:[ T](\\d{1,2}):(\\d{2})(?::(\\d{2}))?\\s*(AM|PM)?)?$/i);
+  m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?)?$/i);
   if (!m) return null;
   const [mo, d, y] = [Number(m[1]), Number(m[2]), Number(m[3])];
   if (!validCivilDate(y, mo, d)) return null;
