@@ -5,7 +5,7 @@ import { Trade, isBreakEven } from "@/app/types";
 import { computeStats, formatPnl, formatPct, formatShortDate } from "@/domain/tradeCalcs";
 import {
   computeQuantStats,
-  getSession,
+  getSessionForTrade,
   statsByHour,
   winRateOf,
   MIN_BUCKET_SAMPLE,
@@ -377,7 +377,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
     const map: Record<string, { pnl: number; count: number }> = {};
     let maxAbs = 0;
     for (const tr of cutoffTrades) {
-      const s = getSession(tr.entryTime);
+      const s = getSessionForTrade(tr);
       if (!s) continue;
       const dow = new Date(tr.date + "T12:00:00").getDay();
       if (dow < 1 || dow > 5) continue;
@@ -389,6 +389,12 @@ export default function Analytics({ trades }: AnalyticsProps) {
     for (const v of Object.values(map)) maxAbs = Math.max(maxAbs, Math.abs(v.pnl));
     return { map, maxAbs };
   }, [cutoffTrades]);
+
+  // Broker display-clock times cannot be assumed Eastern without provenance.
+  const unverifiedTimeCount = useMemo(
+    () => cutoffTrades.filter((trade) => Boolean(trade.broker)).length,
+    [cutoffTrades],
+  );
 
   // Win rate per entry hour
   const hourData = useMemo(() => {
@@ -1036,6 +1042,11 @@ export default function Analytics({ trades }: AnalyticsProps) {
             aria-label={t("analytics.viewTiming")}
           >
             {trades.length >= 3 && <SeasonalitySection trades={cutoffTrades} />}
+            {unverifiedTimeCount > 0 && (
+              <p className="tv-hint" role="status">
+                {t("analytics.timeZoneUnverified")} ({unverifiedTimeCount})
+              </p>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Card className="p-4 md:p-5 animate-fade-in-up stagger-2">
                 <h3 className="tv-title mb-1">{t("analytics.heatmap")}</h3>
