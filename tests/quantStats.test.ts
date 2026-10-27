@@ -2,6 +2,7 @@ import { describe, it, expect } from "bun:test";
 import {
   computeQuantStats,
   getSession,
+  getSessionForTrade,
   getMacroEvents,
   statsBySession,
   statsByHour,
@@ -43,6 +44,11 @@ describe("getSession", () => {
     expect(getSession("20:00")).toBe("asia");
     expect(getSession("00:30")).toBe("asia");
   });
+  it("does not infer an ET session for broker clock times lacking source timezone", () => {
+    expect(getSessionForTrade(mkTrade({ entryTime: "09:30" }))).toBe("newyork");
+    expect(getSessionForTrade(mkTrade({ entryTime: "09:30", broker: "tradovate" }))).toBeNull();
+  });
+
   it("returns null for missing/invalid time", () => {
     expect(getSession("")).toBeNull();
     expect(getSession("xx")).toBeNull();
@@ -275,6 +281,19 @@ describe("breakdowns", () => {
     expect(byHour[9].count).toBe(1);
     expect(statsBySession(trades).newyork.count).toBe(1);
     expect(dayHourMatrix(trades)["3-9"].count).toBe(1);
+  });
+
+  it("excludes broker-local times from ET sessions, hours and weekday heatmaps", () => {
+    const manual = mkTrade({ id: "manual", entryTime: "09:30", pnl: 100 });
+    const broker = mkTrade({
+      id: "broker",
+      entryTime: "09:30",
+      pnl: 150,
+      broker: "tradovate",
+    });
+    expect(statsBySession([manual, broker]).newyork.count).toBe(1);
+    expect(statsByHour([manual, broker])[9].count).toBe(1);
+    expect(dayHourMatrix([manual, broker])["3-9"].count).toBe(1);
   });
 
   it("statsByHour regroupe par heure d'entrée", () => {
