@@ -105,7 +105,7 @@ interface BehavioralReport {
    * calculée depuis MAE/MFE. Deux choses différentes portant le même nom, c'est
    * précisément le défaut que cette série de corrections élimine.
    */
-  cleanJournalScore: number;
+  cleanJournalScore: number | null;
   severityCounts: Record<Severity, number>;
   bySession: Record<TradingSession, number>;
   byDay: Record<number, number>;
@@ -242,7 +242,7 @@ export function computeBehavioral(trades: Trade[]): BehavioralReport {
   // trade chips away. Tuned so ~1 medium mistake every 3 trades ≈ 85.
   const cleanJournalScore =
     trades.length === 0
-      ? 100
+      ? null
       : Math.max(0, Math.min(100, Math.round(100 - (weightedInfractions / trades.length) * 22)));
 
   // Le même axe que la pente de chaque erreur — voir `axeSemaines`.
