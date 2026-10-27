@@ -2176,6 +2176,10 @@ const en = {
   "reports.available": "Available from your history",
   "reports.availableSub": "{n} closed month(s) with trades but no report yet.",
   "reports.upToDate": "Every closed month has its report.",
+  "reports.tkMistakeObserved": "Trades tagged {mistake}: {n} occurrences; combined P&L {pnl}.",
+  "reports.mistakesObserved": "P&L of trades with declared mistakes",
+  "reports.mistakesNote":
+    "A trade can have multiple tags. These figures are observations, not estimated avoidable losses.",
   "reports.legacyWarning":
     "This archived report predates the verified calculation methods. Unverifiable metrics are hidden until recalculated.",
   "reports.recalculate": "Recalculate safely",
