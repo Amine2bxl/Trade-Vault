@@ -123,6 +123,7 @@ describe("newsDaySplit", () => {
     date,
     pnl,
     rMultiple: pnl / 100,
+    riskAmount: 100,
   });
 
   test("jour d'annonce FORTE face aux jours calmes, avec n", () => {
@@ -136,6 +137,17 @@ describe("newsDaySplit", () => {
     expect(s.quietDays.n).toBe(6); // une annonce moyenne ne fait pas un « jour d'annonce »
     expect(s.quietDays.winRate).toBe(1);
     expect(s.classified).toBe(11);
+  });
+
+  test("ignore un R sans risque initial vérifié dans la série des jours d'annonce", () => {
+    const trades = Array.from({ length: 6 }, () => ({
+      ...t("2026-03-10", 100),
+      riskAmount: 0,
+    }));
+    const split = newsDaySplit(trades, events, UTC);
+    expect(split.newsDays.n).toBe(6);
+    expect(split.newsDays.avgPnl).toBe(100);
+    expect(split.newsDays.avgR).toBeNull();
   });
 
   test("aucun chiffre sous l'échantillon minimum", () => {
