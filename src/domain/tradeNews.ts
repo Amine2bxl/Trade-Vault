@@ -187,14 +187,22 @@ export interface NewsDaySplit {
 }
 
 function bucket(
-  trades: { pnl: number; rMultiple?: number | null }[],
+  trades: { pnl: number; rMultiple?: number | null; riskAmount?: number | null }[],
   minSample: number,
 ): DayBucket {
   const n = trades.length;
   const wins = trades.filter((t) => t.pnl > 0).length;
   const losses = trades.filter((t) => t.pnl < 0).length;
   const totalPnl = trades.reduce((s, t) => s + t.pnl, 0);
-  const withR = trades.filter((t) => typeof t.rMultiple === "number" && t.rMultiple !== 0);
+  const withR = trades.filter(
+    (t) =>
+      typeof t.rMultiple === "number" &&
+      Number.isFinite(t.rMultiple) &&
+      t.rMultiple !== 0 &&
+      typeof t.riskAmount === "number" &&
+      Number.isFinite(t.riskAmount) &&
+      t.riskAmount > 0,
+  );
   const enough = n >= minSample;
   const decided = wins + losses;
   return {
@@ -218,7 +226,7 @@ function bucket(
  * et le nombre de trades écartés est rendu pour être affiché.
  */
 export function newsDaySplit(
-  trades: (TradeLike & { pnl: number; rMultiple?: number | null })[],
+  trades: (TradeLike & { pnl: number; rMultiple?: number | null; riskAmount?: number | null })[],
   events: NewsEvent[],
   clock: Clock = LOCAL_CLOCK,
   minSample: number = MIN_BUCKET_SAMPLE,
