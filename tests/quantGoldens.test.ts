@@ -56,7 +56,13 @@ const reference = [
 
 describe("independent quantitative golden ledger", () => {
   test("realized sums, payoff statistics and signed risk remain correct", () => {
-    const stats = computeStats([reference[4], reference[2], reference[0], reference[3], reference[1]]);
+    const stats = computeStats([
+      reference[4],
+      reference[2],
+      reference[0],
+      reference[3],
+      reference[1],
+    ]);
     expect(stats.totalPnl).toBe(200);
     expect(stats.wins).toBe(2);
     expect(stats.losses).toBe(3);
