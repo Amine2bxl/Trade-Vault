@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, type CSSProperties } from "react";
 import { ChevronLeft, ChevronRight, Target } from "@/shared/ui/icons";
-import { Trade, MissedOpportunity } from "@/app/types";
+import { isBreakEven, type Trade, type MissedOpportunity } from "@/app/types";
 import { loadMissedOpportunities } from "@/app/store";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useAccounts } from "@/app/contexts/AccountContext";
@@ -121,7 +121,7 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
         map[t.date].totalRR += t.rMultiple;
         map[t.date].knownRCount++;
       }
-      if (t.direction === "be") map[t.date].breakEven++;
+      if (isBreakEven(t)) map[t.date].breakEven++;
       else if (t.pnl > 0) map[t.date].wins++;
     }
     // Un taux de réussite PAR JOUR était calculé ici — et n'était affiché nulle
