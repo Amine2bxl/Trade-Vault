@@ -86,6 +86,9 @@ export function parseMoney(raw: string): number | null {
     s = s.slice(1, -1);
   }
   s = s.replace(/[$€£\s]/g, "");
+  // A lone three-digit group is ambiguous without a source locale:
+  // "1,234" may mean 1.234 or 1234, as can "1.234". Never guess.
+  if (/^[+-]?\d{1,3}[,.]\d{3}$/.test(s)) return null;
   if (/^-?\d{1,3}(\.\d{3})+(,\d+)?$/.test(s))
     s = s.replace(/\./g, "").replace(",", "."); // 1.234,56
   else if (/^-?\d+,\d+$/.test(s))
