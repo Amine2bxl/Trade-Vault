@@ -353,3 +353,12 @@ preuve, de migration et de validation d'intégration documentés dans la matrice
 - [ ] Vérification du plan L0/L1 sur branche dédiée, sans migration sur base active ni fusion sur `main`.
 
 La connexion Supabase active a été consultée **en lecture seule** pour inventorier les colonnes ; aucune migration ni donnée utilisateur modifiée. Les futurs tests Tradovate et Stripe ne sont pas présentés comme validés. Tant que ces gates sont ouverts : **L0 IN PROGRESS, L1–L6 NOT STARTED**.
+
+### Revue transverse des consommateurs de R et des annonces économiques
+
+- [x] Calendrier P&L : utilisation des R limitée aux observations portant un risque initial non nul, hors import broker non certifié ou CSV non relu. Sinon, composition par P&L, sans mélange d'unités.
+- [x] Détail hebdomadaire : ne pas afficher un multiple R en cas d'absence de risque initial mesurable.
+- [x] News Day Split : une moyenne de R ne peut pas intégrer un multiple sans risque initial, un import non relu ou un broker dont les stops ne sont pas certifiés.
+- [x] Association événement → trade : aucun badge d'événement « durant la position » sur heures broker/CSV sans provenance, sorties overnight sans date UTC ou heures invalides. Les annonces de la journée restent consultables sans revendication de chevauchement.
+- [x] Régressions ciblées dans `tests/calendarTone.test.ts` et `tests/tradeNews.test.ts`.
+- [ ] CI et revue réelle des consommateurs sur le SHA final. L'attribution des timestamps UTC et du risque certifié par exécution relève du lot 1.
