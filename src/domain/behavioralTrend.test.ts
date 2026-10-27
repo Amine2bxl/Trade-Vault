@@ -105,8 +105,11 @@ describe("tendance par erreur", () => {
     expect(report.weeklyTrend.reduce((sum, row) => sum + row.cost, 0)).toBe(-280);
   });
 
-  it("aucun trade = aucune ligne, aucune exception", () => {
-    expect(computeBehavioral([]).rows).toEqual([]);
+  it("aucun trade = aucune note parfaite inventée", () => {
+    const report = computeBehavioral([]);
+    expect(report.rows).toEqual([]);
+    expect(report.cleanJournalScore).toBeNull();
+    expect(report.tradesWithMistakes).toBe(0);
   });
 });
 
