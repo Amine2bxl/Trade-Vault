@@ -24,9 +24,7 @@ export function getSession(entryTime: string): TradingSession | null {
 /** Broker and unreviewed CSV display-clock times are not evidence of
  * America/New_York timestamps. Persisted timezone provenance is a Lot 1 gate.
  * Manual journal entries follow TradeVault's existing ET/ICT convention. */
-export function hasUnverifiedEtTime(
-  trade: Pick<Trade, "broker" | "reviewPending">,
-): boolean {
+export function hasUnverifiedEtTime(trade: Pick<Trade, "broker" | "reviewPending">): boolean {
   return Boolean(trade.broker || trade.reviewPending);
 }
 
