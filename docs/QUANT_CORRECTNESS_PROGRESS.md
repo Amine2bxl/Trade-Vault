@@ -206,3 +206,13 @@ critères de sortie sont satisfaits.
 - [ ] Vérifier CI et cohérence avec les consommateurs Dashboard, Analytics, rapports et Jarvis.
 
 **Statut lot 0 : IN PROGRESS.**
+
+## Lot 0 — Propagation du drawdown réalisé aux rapports et à Jarvis
+
+- [x] Rapports mensuels : un drawdown fondé sur une chronologie de clôtures ambiguë n'est plus présenté comme une mesure exacte ; retour `null` et affichage « — ».
+- [x] Jarvis : le P&L réalisé peut manquer d'un ordre prouvable ; valeur `null` + indicateur `maxDrawdownOrderVerified` au lieu d'une affirmation non établie.
+- [x] Jeu de référence indépendant, avec positions qui se chevauchent et sorties simultanées.
+- [ ] Contrôler les contrats de données historiques de rapports déjà persistés (lot 1 : éventuelle migration additive sans perte).
+- [ ] Validation CI sur le dernier commit applicatif.
+
+**Lot 0 non terminé : dépendent encore de la vérification des consommateurs, des autres KPI et de la documentation finale des métriques.**

@@ -38,7 +38,8 @@ export interface MonthlyReportData {
   expectancyR: number;
   sharpe: number | null;
   sortino: number | null;
-  maxDrawdown: number;
+  /** Realized max drawdown; null when close order is not verifiable. */
+  maxDrawdown: number | null;
   weekly: WeekLine[];
   bestSetups: SetupLine[];
   worstSetups: SetupLine[];
@@ -150,7 +151,7 @@ export function buildMonthlyReport(
     expectancyR: Math.round(quant.expectancyR * 100) / 100,
     sharpe: quant.sharpe !== null ? Math.round(quant.sharpe * 100) / 100 : null,
     sortino: quant.sortino !== null ? Math.round(quant.sortino * 100) / 100 : null,
-    maxDrawdown: round2(stats.maxDrawdown),
+    maxDrawdown: stats.maxDrawdownOrderVerified ? round2(stats.maxDrawdown) : null,
     weekly,
     bestSetups,
     worstSetups,

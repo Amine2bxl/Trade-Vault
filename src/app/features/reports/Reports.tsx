@@ -669,7 +669,7 @@ function ReportSheet({
         />
         <ReportKpi
           label={t("reports.maxDrawdown")}
-          value={formatPnl(-r.maxDrawdown)}
+          value={r.maxDrawdown === null ? "—" : formatPnl(-r.maxDrawdown)}
           sub={t("dashboard.peakToTrough")}
           good={false}
           neutral
