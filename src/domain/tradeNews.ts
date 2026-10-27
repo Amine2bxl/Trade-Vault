@@ -192,7 +192,13 @@ export interface NewsDaySplit {
 }
 
 function bucket(
-  trades: { pnl: number; rMultiple?: number | null; riskAmount?: number | null }[],
+  trades: {
+    pnl: number;
+    rMultiple?: number | null;
+    riskAmount?: number | null;
+    broker?: string | null;
+    reviewPending?: boolean;
+  }[],
   minSample: number,
 ): DayBucket {
   const n = trades.length;
@@ -204,6 +210,8 @@ function bucket(
       typeof t.rMultiple === "number" &&
       Number.isFinite(t.rMultiple) &&
       t.rMultiple !== 0 &&
+      !t.broker &&
+      !t.reviewPending &&
       typeof t.riskAmount === "number" &&
       Number.isFinite(t.riskAmount) &&
       t.riskAmount > 0,
