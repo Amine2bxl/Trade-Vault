@@ -333,3 +333,10 @@ preuve, de migration et de validation d'intégration documentés dans la matrice
 - [ ] Audit transversal des consommateurs hors page Rapports ; validation en préproduction et import des historiques restent à documenter.
 
 **Statut : lot 0 IN PROGRESS. Lots 1–6 non commencés. `main` inchangée.** Les historiques de transactions et de cashflows destinés au lot 1 ne sont ni fabriqués ni annoncés comme complets.
+
+### Contrôle supplémentaire — attribution du P&L aux erreurs
+
+- [x] Les tableaux du rapport distinguent désormais `P&L des trades avec erreurs déclarées` d'un coût causal de l'erreur. Les tags peuvent se chevaucher.
+- [x] Le résumé mensuel IA ne peut plus additionner les tags ni qualifier leur P&L de « pertes évitables » ; pas d'edge démontré sans échantillon, pas de métrique inventée quand la donnée est nulle.
+- [x] Golden test : un seul trade à deux tags (-100 $) apparaît dans deux catégories mais reste -100 $ de P&L total, et non -200 $ de pertes imputables.
+- [ ] CI sur le dernier commit de cette itération et revue UX des mentions dans les langues secondaires (fallback anglais).
