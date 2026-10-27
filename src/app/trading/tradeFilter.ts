@@ -159,8 +159,8 @@ export function applyFilter(trades: Trade[], input: Partial<UnifiedFilter>): Tra
     if (f.strategy && t.strategy !== f.strategy) return false;
     if (f.mistake && !t.mistakes.includes(f.mistake)) return false;
     if (f.session && getSessionForTrade(t) !== f.session) return false;
-    if (f.hour !== undefined &&
-      (getSessionForTrade(t) === null || hourOf(t.entryTime) !== f.hour)) return false;
+    if (f.hour !== undefined && (getSessionForTrade(t) === null || hourOf(t.entryTime) !== f.hour))
+      return false;
     if (f.confluence && !t.confluences.includes(f.confluence)) return false;
     if (f.aplus && t.setupQuality < APLUS_SETUP_QUALITY) return false;
     if (f.context === "after_loss" && afterLoss && !afterLoss.has(t.id)) return false;
