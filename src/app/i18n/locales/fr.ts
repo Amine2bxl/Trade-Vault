@@ -1410,7 +1410,9 @@ const fr: Dict = {
   "quant.cleanTrades": "Trades sans erreur",
   "quant.needTenDays": "≥10 jours de trading requis",
   "quant.noDownside": "aucune variation baissière observée",
-  "quant.annualized": "annualisé, PnL journalier",
+  "quant.verifiedReturnsNeeded": "rendements journaliers du compte vérifiés requis",
+  "quant.noVariance": "aucune variation des rendements vérifiés",
+  "quant.annualized": "annualisé à partir des rendements journaliers vérifiés",
   "quant.kellyHint": "indicatif - à partir de 30 trades",
   "quant.consistency": "Régularité",
   "quant.bestDay": "meilleur jour",
@@ -1424,9 +1426,9 @@ const fr: Dict = {
   "quant.infoExpectancy":
     "Ce que rapporte un trade moyen, gains et pertes confondus. Positif = ton système gagne de l'argent sur la durée.",
   "quant.infoSharpe":
-    "Le rendement comparé à l'ampleur des secousses. Plus c'est haut, plus les gains sont réguliers. Au-dessus de 1 c'est bien, au-dessus de 2 excellent.",
+    "Moyenne annualisée des rendements journaliers du compte divisée par leur écart-type. Nécessite un historique de capital complet, corrigé des dépôts et retraits ; les seuls jours tradés ne suffisent pas.",
   "quant.infoSortino":
-    "Comme le Sharpe, mais ne compte que les baisses — il ignore la volatilité à la hausse. Récompense les systèmes qui limitent les pertes.",
+    "Rendement journalier moyen vérifié et annualisé, rapporté à la volatilité baissière. Aucune valeur n’est affichée sans une série complète corrigée des dépôts et retraits.",
   "quant.infoKelly":
     "La part du compte que les maths suggèrent de risquer par trade pour croître le plus vite. La plupart n'en utilisent qu'une fraction par prudence.",
   "quant.infoConsistency":
