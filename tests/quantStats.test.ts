@@ -143,27 +143,57 @@ describe("computeQuantStats", () => {
     expect(computeQuantStats([mkTrade({ pnl: 100 })]).kelly).toBeNull();
   });
 
-  it("sharpe/sortino need >= 10 trading days", () => {
-    const nine = Array.from({ length: 9 }, (_, i) =>
-      mkTrade({ date: `2026-07-0${i + 1}`, pnl: 100 + i }),
+  it("refuses to annualize active trade-day PnL as verified account returns", () => {
+    const days = Array.from({ length: 11 }, (_, i) =>
+      mkTrade({ date: `2026-07-${String(i + 1).padStart(2, "0")}`, pnl: i % 2 ? -50 : 150 }),
     );
-    expect(computeQuantStats(nine).sharpe).toBeNull();
-
-    const eleven = Array.from({ length: 11 }, (_, i) =>
-      mkTrade({ date: `2026-07-${String(i + 1).padStart(2, "0")}`, pnl: i % 2 === 0 ? 150 : -50 }),
-    );
-    const q = computeQuantStats(eleven);
-    expect(q.sharpe).not.toBeNull();
-    expect(q.sharpe!).toBeGreaterThan(0);
-    expect(q.sortino).not.toBeNull();
+    const q = computeQuantStats(days, 25000);
+    expect(q.sharpe).toBeNull();
+    expect(q.sortino).toBeNull();
+    expect(q.sharpeStatus).toBe("unverified_returns");
+    expect(q.sortinoStatus).toBe("unverified_returns");
   });
 
-  it("sortino remains unknown with no observed downside variance", () => {
-    const days = Array.from({ length: 12 }, (_, i) =>
-      mkTrade({ date: `2026-07-${String(i + 1).padStart(2, "0")}`, pnl: 50 + i }),
+  it("requires at least ten sessions even with a verified daily equity series", () => {
+    const days = Array.from({ length: 3 }, (_, i) =>
+      mkTrade({ date: `2026-07-0${i + 1}`, pnl: 100 }),
     );
-    expect(computeQuantStats(days).sortino).toBeNull();
-    expect(computeQuantStats(days).sortinoStatus).toBe("no_downside");
+    const q = computeQuantStats(days, 25000, {
+      basis: "verified-account-equity",
+      dailyReturns: Array(9).fill(0.01),
+    });
+    expect(q.sharpeStatus).toBe("insufficient");
+    expect(q.sortinoStatus).toBe("insufficient");
+  });
+
+  it("computes Sharpe/Sortino only when complete verified daily returns are supplied", () => {
+    const dailyReturns = [
+      0.01, -0.005, 0.012, -0.003, 0.006, 0.014, -0.002, 0.007, 0.003, -0.001, 0.008,
+    ];
+    const q = computeQuantStats([mkTrade({ pnl: 200 })], 25000, {
+      basis: "verified-account-equity",
+      dailyReturns,
+    });
+    expect(q.sharpeStatus).toBe("available");
+    expect(q.sortinoStatus).toBe("available");
+    expect(q.sharpe).not.toBeNull();
+    expect(q.sortino).not.toBeNull();
+    expect(q.sharpe!).toBeGreaterThan(0);
+    expect(q.sortino!).toBeGreaterThan(0);
+  });
+
+  it("distinguishes zero downside from missing return observations", () => {
+    const input = { basis: "verified-account-equity" as const, dailyReturns: Array(12).fill(0.01) };
+    const q = computeQuantStats([mkTrade({ pnl: 100 })], 25000, input);
+    expect(q.sortino).toBeNull();
+    expect(q.sortinoStatus).toBe("no_downside");
+    expect(q.sharpe).toBeNull();
+    expect(q.sharpeStatus).toBe("no_variance");
+    const invalid = computeQuantStats([mkTrade({ pnl: 100 })], 25000, {
+      basis: "verified-account-equity",
+      dailyReturns: [0.01, Number.NaN],
+    });
+    expect(invalid.sharpeStatus).toBe("unverified_returns");
   });
 
   it("maxDrawdownPct uses starting balance + peak", () => {
