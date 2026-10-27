@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
   runMonteCarlo,
   extractRSamples,
+  computeStatistics,
   type MonteCarloParams,
 } from "../src/app/features/monte-carlo/monteCarloEngine";
 import {
@@ -94,5 +95,28 @@ describe("Monte-Carlo : ce que le graphe montre est calculé", () => {
     expect(h[3].count).toBe(1);
     const rh = rHistogram(samples);
     expect(rh.reduce((s, b) => s + b.count, 0)).toBe(samples.length);
+  });
+});
+
+describe("Lot 0 — Monte Carlo sample integrity", () => {
+  test("profit factor is unknown without observed losses, not 99", () => {
+    const positive = computeStatistics(extractRSamples([
+      { pnl: 200, rMultiple: 2, direction: "long" },
+      { pnl: 100, rMultiple: 1, direction: "long" },
+    ]));
+    expect(positive.profitFactor).toBeNull();
+  });
+
+  test("profit factor remains exact, including values greater than 99", () => {
+    const ordinary = computeStatistics(extractRSamples([
+      { pnl: 500, rMultiple: 5, direction: "long" },
+      { pnl: -300, rMultiple: -3, direction: "short" },
+    ]));
+    expect(ordinary.profitFactor).toBeCloseTo(5 / 3);
+    const extreme = computeStatistics(extractRSamples([
+      { pnl: 120, rMultiple: 1.2, direction: "long" },
+      { pnl: -1, rMultiple: -0.01, direction: "short" },
+    ]));
+    expect(extreme.profitFactor).toBe(120);
   });
 });
