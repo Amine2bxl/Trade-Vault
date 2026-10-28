@@ -420,7 +420,7 @@ La connexion Supabase active a été consultée **en lecture seule** pour invent
 - 49 traders avec trades, 1 467 trades ; **0 trade broker, 0 import en attente, 0 trade sans risque** : la règle stricte du R mesuré ne modifie aucun chiffre existant.
 - 15 rapports mensuels, 2 traders, **tous sans version de méthode** (2 avec PF = 99, 8 avec synthèse IA) : tous affichés comme hérités, métriques masquées, recalcul explicite sans synthèse IA ; le cron ne régénère que le mois clos.
 - 2 traders multi-comptes, dont 1 avec rapports archivés (périmètre « tous comptes » désormais affiché).
-- Dérive de schéma : `trades.replay_session_id` et `trades.calibration_factor` présents en base, absents des migrations versionnées → audit lot 1.
+- Dérive de schéma : `trades.replay_session_id` présent en base, absent des migrations versionnées → audit lot 1 (`calibration_factor` est bien versionné par `20260808020000`).
 
 ### Statut des gates du lot 0
 
@@ -435,6 +435,6 @@ La connexion Supabase active a été consultée **en lecture seule** pour invent
 | P0.7 CI du SHA final | voir la PR | typecheck, lint (0 erreur), build, 1 866 tests × 3 fuseaux en local ; CI GitHub sur chaque push |
 | P0.8 Accessibilité des avertissements | **DONE** | axe-core ci-dessus |
 
-**Transfert au lot 1 (sans valeur inventée) :** provenance du risque broker (stop observé vs risque par défaut), colonnes subjectives nullables, `account_id` des rapports mensuels, fuseau source des heures, fills et frais par exécution, soldes à l'entrée, dérive de schéma.
+**Transfert au lot 1 (sans valeur inventée) :** provenance du risque broker (stop observé vs risque par défaut), colonnes subjectives nullables, `account_id` des rapports mensuels, fuseau source des heures, fills et frais par exécution, soldes à l'entrée, dérive de schéma (`replay_session_id`).
 
 **Statut : lot 0 techniquement clos, sauf le gate P0.5 `BLOCKED_EXTERNAL`** (preuve manquante et remède documentés ci-dessus). Le passage au lot 1 suit la règle du programme : un contrôle extérieur inaccessible est consigné, pas déclaré validé.
