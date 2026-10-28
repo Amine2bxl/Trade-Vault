@@ -178,7 +178,7 @@ export function analyzeTradingViewOrders(
     const side = sideRaw === "buy" ? 1 : sideRaw === "sell" ? -1 : null;
     const qty = num(get(row, "quantity"));
     const price = num(get(row, "fillprice"));
-    const timestamp = get(row, "closingtime");
+    const timestamp = idx("closingtime") >= 0 ? get(row, "closingtime") : get(row, "executiontime");
     const dt = parseDateTime(timestamp);
     const id = get(row, "orderid");
     const key = symbol + ":" + (id || timestamp + ":" + sideRaw + ":" + qty + ":" + price);
@@ -192,7 +192,9 @@ export function analyzeTradingViewOrders(
     const commission = idx("commission") >= 0 ? parseMoney(get(row, "commission")) : null;
     const fill: Fill = { symbol, side, qty, price, date: dt.date, time: timestamp, id,
       fee: commission === null ? null : Math.abs(commission) };
-    groups.set(symbol, [...(groups.get(symbol) || []), fill]);
+    const group = groups.get(symbol);
+    if (group) group.push(fill);
+    else groups.set(symbol, [fill]);
   }
   const trades: Trade[] = [];
   const missingMultipliers: string[] = [];
