@@ -681,3 +681,12 @@ Les éléments suivants sont **postérieurs** à l'état du HEAD `1c680115` ment
 - Typecheck et tests ciblés Monte Carlo/calendrier/news exécutés en sandbox : **34 tests réussis** sur les trois suites ciblées ; CI complète du dernier SHA à confirmer via GitHub Actions.
 
 **Statut de passage de relais :** les correctifs mathématiques du lot 0 progressent, mais la validation authentifiée des parcours applicatifs avec des données représentatives et la revue exhaustive des historiques persistés n'ont toujours pas de preuve d'acceptation. Ne pas marquer `L0 DONE` ou démarrer les migrations L1 seulement sur la base de ces contrôles techniques. Les préconditions de données L1 et les validations partenaires restent séparées comme approuvé.
+
+---
+
+# ADDENDUM 2 — Reprise Claude Code du 28 octobre 2026
+
+- Point de départ vérifié : PR #234 HEAD `b7b1f87`, CI verte, `main@079d185` inchangée.
+- Lot 0 : onze défauts supplémentaires trouvés dans les consommateurs réellement montés (dont deux altérations de données : P&L importé réécrit à 0 $ à la relecture, état « à relire » d'un CSV non persisté) et corrigés avec tests reproduits sur l'ancien code. Détail, preuves, inventaire de production et statut de chaque gate : `docs/QUANT_CORRECTNESS_PROGRESS.md`, section « Reprise Claude Code — 28 octobre 2026 ».
+- Gate P0.5 (parcours authentifié réel) : **BLOCKED_EXTERNAL** — l'hôte Supabase est refusé par la politique réseau du conteneur ; une vérification de rendu sur doublure (`scripts/l0-ui-check`, 30/30) a été faite et ne s'y substitue pas.
+- Lot 1 : branche `feat/data-integrity-lot1`, empilée sur `feat/quant-correctness-lot0` (aucune fusion sur `main`).

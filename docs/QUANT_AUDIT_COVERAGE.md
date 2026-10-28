@@ -16,22 +16,22 @@ La CI et les corrections ponctuelles ne suffisent pas pour déclarer tout le cha
 | ID | Problème exact de l'audit | Responsable / priorité | Dépendances | État vérifié | Acceptation |
 | --- | --- | --- | --- | --- | --- |
 | A1 | Saisonnalité marché approximative | L0/L1 P0 | Séries OHLC fiables + licence | PARTIAL : séries fictives masquées ; journal réel affiché | Source, période, ajustements, tests reproductibles ; aucune série approximative exposée |
-| A2 | Average R:R utilise `abs` | L0 P0 | Risque initial sourcé | PARTIAL : R signé, couverture exposée | Distinguer R réalisé, gain moyen R et perte moyenne R ; tous consommateurs concordent |
-| A3 | Profit Factor `99` fictif | L0 P0 | Convention PF nullable | PARTIAL : moteur central + consommateurs majeurs migrés | Aucun `99` substitut dans les moteurs actifs, objectifs et exports ; cas sans perte documenté |
+| A2 | Average R:R utilise `abs` | L0 P0 | Risque initial sourcé | DONE (L0) : R signé, définition unique `measuredR` pour tous les consommateurs client/serveur/Jarvis (28/10) ; provenance du risque broker → L1 | Distinguer R réalisé, gain moyen R et perte moyenne R ; tous consommateurs concordent |
+| A3 | Profit Factor `99` fictif | L0 P0 | Convention PF nullable | DONE : moteurs, Goals, Monte Carlo, rapports hérités masqués ; PF Analytics aligné sur le P&L net (28/10) | Aucun `99` substitut dans les moteurs actifs, objectifs et exports ; cas sans perte documenté |
 | A4 | Edge Score redondant auto-déclaratif | L0/L2 P0 | Règles historiquement versionnées, soldes à l'entrée | PARTIAL : v2 supprime récompense auto-déclarative et seuil médian, versionne l'historique, tests CI verts ; aucune preuve historique encore branchée, score indisponible | Score ne s'améliore pas en supprimant des tags ; raccordement de données prouvées, couverture complète et revue réelle à livrer |
 | A5 | Trade Analysis attribue 70/100 sans MFE | L0 P0 | Modèle evidence-aware | PARTIAL : correctif `modules/trading/analysis` en cours de validation | Score null si composante non mesurable ; couverture ; aucun diagnostic causal inventé |
-| A6 | CSV défaut long / qualité 3 / confiance 50 | L0 puis L1 P0 | Migration additive des champs et consommateurs | PARTIAL : le Journal exige direction ; `reviewPending` neutralise signaux subjectifs ; valeurs stockées non-null | Inconnus persistés comme tels, import/export/broker/IA/UI compatibles |
-| A7 | Drawdown sans ordre intrajournalier | L0 P0 | Horodatages et fills normalisés | PARTIAL : tri canonique, indicateur d'ambiguïté | Référence indépendante avec simultanéité, positions partielles, ordre d'exécution |
+| A6 | CSV défaut long / qualité 3 / confiance 50 | L0 puis L1 P0 | Migration additive des champs et consommateurs | PARTIAL : direction exigée ; `review_pending` désormais PERSISTÉ pour un CSV (28/10) ; P&L importé protégé à la relecture ; colonnes nullables → L1 | Inconnus persistés comme tels, import/export/broker/IA/UI compatibles |
+| A7 | Drawdown sans ordre intrajournalier | L0 P0 | Horodatages et fills normalisés | DONE (L0) : tri par clôtures, ambiguïté → null ; séries « après perte »/pertes consécutives sur clôtures prouvées partout (28/10) ; fills → L1 | Référence indépendante avec simultanéité, positions partielles, ordre d'exécution |
 | A8 | FOMC/NFP calendrier présumé | L0 P0 | Cache économique sourcé + TZ NY | PARTIAL : détail trade vérifié via événements réels ; autres consommateurs à auditer | Tous usages du calendrier historisé, aucun jour NFP supposé |
 
 ## B — Vérification des règles de trading (section 4)
 
 | ID | Tâche | Owner/priorité | Dépendances | État | Acceptation |
 | --- | --- | --- | --- | --- | --- |
-| B1 | Verdicts PASS / FAIL / UNKNOWN | L0 P0 | Dates, risque, historiques | PARTIAL : coeur et Mistakes implémentés | Tous consommateurs propagent status et couverture |
-| B2 | Exclure UNKNOWN des taux et éviter les fuites futures | L0 P0 | Entrées/sorties fiables | PARTIAL : règles historiques et contexte « après perte » protégés contre les clôtures futures ; filtres et Jarvis alignés, tests CI ; DST/ticks encore à confirmer | Cas minuit, DST, positions ouvertes, simultanéité démontrés |
+| B1 | Verdicts PASS / FAIL / UNKNOWN | L0 P0 | Dates, risque, historiques | DONE (L0) : cœur, Mistakes, notifications (adhérence) ; provenance historique → L1 | Tous consommateurs propagent status et couverture |
+| B2 | Exclure UNKNOWN des taux et éviter les fuites futures | L0 P0 | Entrées/sorties fiables | DONE (L0) : `verifiedPriorClosedTrade` étendu aux motifs nocturnes, page Erreurs, observation d'après-trade, notifications ; analyse de trade protégée des sorties du lendemain (28/10) ; DST/ticks → L1 | Cas minuit, DST, positions ouvertes, simultanéité démontrés |
 | B3 | Vérifier risque au solde réellement disponible à l'entrée | L0 P0 | Historique dépôts/retraits/exécutions | OPEN : absent → UNKNOWN | Preuves de chaque solde, aucun substitut de solde actuel |
-| B4 | Empêcher les notifications/IA de conclure sur une preuve partielle | L0/L4 P0 | Objet Evidence | PARTIAL : affirmation chiffrée complète uniquement | Contrat Evidence avec méthode/source/échantillon/limitations, tests IA |
+| B4 | Empêcher les notifications/IA de conclure sur une preuve partielle | L0/L4 P0 | Objet Evidence | PARTIAL : notifications non causales, contexte IA nullable, rédacteur des motifs sensible à l'unité (28/10) ; contrat Evidence → L4 | Contrat Evidence avec méthode/source/échantillon/limitations, tests IA |
 
 ## C — Destin de chaque fonctionnalité existante (section 6)
 
@@ -98,7 +98,7 @@ La CI et les corrections ponctuelles ne suffisent pas pour déclarer tout le cha
 | --- | --- | --- | --- |
 | E1 | Flux raw → validation → canonical trade → moteurs versionnés → Evidence → surfaces | L1–L4 P0 | OPEN : contrats de provenance et versions |
 | E2 | Préserver migrations additives et utilisateurs existants | Chaque lot P0 | GATE : aucun schéma destructif, rollback documenté |
-| E3 | Golden datasets indépendants et invariants | L0 puis chaque lot P0 | PARTIAL : ledger fixe indépendant (PF/R/P&L réalisé/DD/erreurs), multi-fuseaux CI ; reste multi-fills, commissions et courbe de solde intratrade (lot 1/3) |
+| E3 | Golden datasets indépendants et invariants | L0 puis chaque lot P0 | PARTIAL : ledger fixe + `rEvidenceConsistency` (concordance des consommateurs) + harnais de rendu `scripts/l0-ui-check` ; reste multi-fills, commissions et solde intratrade (lot 1/3) |
 | E4 | Évaluer les tests en production/charge | L5 P0 | OPEN : preuves test/preview/replay |
 | E5 | RLS, confidentialité, accessibilité/zoom | L5 P0 | OPEN : audit et validation manuelle |
 | E6 | Stripe abonnement/annulation/3DS/webhooks | L5 P0 | OPEN : compte test et secrets nécessaires |

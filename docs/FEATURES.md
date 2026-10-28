@@ -78,7 +78,11 @@ TAUX ou un CLASSEMENT ne l'est pas. `MIN_BUCKET_SAMPLE` (5 trades décisifs,
 | « Violer une règle » | `domain/ruleCheck.checkTradeAgainstRules` | Même vérificateur en temps réel et en bilan 30 j |
 | `pnlAfterLoss` | `features/jarvis/behaviorSignals` | Borne haute, pas un surcoût imputable |
 | `profitFactor` | `domain/tradeCalcs` | `null` si aucune perte observée ; ne jamais afficher 99 artificiellement |
+| R réalisé d'un trade | `domain/trade.measuredR` (+ `hasMeasuredRisk`, `totalMeasuredR`) | **Seule** définition, client, serveur et Jarvis : P&L net / risque, `null` sans risque, pour un import non relu ou un trade broker (provenance du risque non persistée → lot 1). `null` n'est jamais 0R ; un total R exige un R pour chaque trade |
+| `avgRR` / `expectancyR` | `domain/tradeCalcs`, `domain/quantStats` | Sur `measuredR` uniquement ; `null` sans échantillon ; afficher `rSampleSize` |
 
-Relation du formulaire **uniquement lorsque le risque initial est connu** : `pnl = riskAmount × rMultiple` (`domain/tradeCalcs`). Un import sans risque initial certifié ne prouve pas un multiple R ; son état est inconnu, même si un zéro de compatibilité est stocké.
+Relation du formulaire **uniquement lorsque le risque initial est connu** : `pnl = riskAmount × rMultiple` (`domain/tradeCalcs`). Un import sans risque initial certifié ne prouve pas un multiple R ; son état est inconnu, même si un zéro de compatibilité est stocké. **Le P&L observé fait foi** : pour un trade broker, un import pas encore relu ou un trade au risque inconnu, éditer le risque garde le P&L et en déduit le R (`withPnlFromRiskAndR`, formulaire de relecture).
+
+« Après une perte » et « pertes consécutives » se lisent dans l'ordre des **clôtures** : `domain/tradeOrder.verifiedPriorClosedTrade` (filtres, Jarvis, page Erreurs, motifs nocturnes, observation d'après-trade) ; égalité de minute, chevauchement ou import non relu → inconnu.
 Aucune métrique ne mesure une **causalité** : le produit observe des
 associations, jamais des causes.

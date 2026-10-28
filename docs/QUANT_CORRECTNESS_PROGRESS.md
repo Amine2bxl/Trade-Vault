@@ -383,3 +383,58 @@ La connexion Supabase active a été consultée **en lecture seule** pour invent
 - **Dépendances externes** : OHLC/ticks licenciés, autorisation broker, preuves de paiement Stripe sont reportées aux lots compétents.
 
 **Statut formel : L0 IN PROGRESS (tests verts, acceptation E2E non prouvée). L1–L6 NOT STARTED, `main` intacte, PR #234 draft.** Cela permet la passation mais PAS une attestation mensongère « lot 0 100 % fini ».
+
+---
+
+## Reprise Claude Code — 28 octobre 2026 : clôture technique du lot 0
+
+**Point de départ vérifié :** PR #234 draft, HEAD `b7b1f87`, CI 40572696796 verte, `main@079d185` inchangée.
+**Méthode :** audit du code réellement monté (client, fonctions serveur, crons, Jarvis), reproduction de chaque défaut par un test qui échoue sur l'ancien code, correction, revue des consommateurs, CI.
+
+### Défauts trouvés et corrigés (tous reproduits avant correction)
+
+| # | Défaut (avant) | Correction (après) | Preuve |
+|---|---|---|---|
+| 1 | Sept définitions du « R mesuré » : Analytics/Dashboard/Goals/Jarvis comptaient un import broker non relu, le Calendrier l'écartait ; total R du Dashboard, motifs nocturnes et contexte IA lisaient le `r_multiple = 0` stocké d'un risque inconnu comme 0R | `domain/trade.measuredR` / `hasMeasuredRisk` / `totalMeasuredR`, définition unique (P&L net / risque, `null` sans risque, import non relu ou broker) ; `avgRR` nullable ; tous les consommateurs migrés | `tests/rEvidenceConsistency.test.ts` (référence calculée à la main) · `3653f58`, `239da09` |
+| 2 | Chargeurs serveur de Jarvis (`ai-tools/trades.ts`), des rapports mensuels et du scan de motifs sans `account_id`, `broker`, `review_pending` : toutes les protections de provenance du lot 0 étaient contournées côté serveur | Colonnes de preuve lues (existence vérifiée en production, lecture seule) | `3653f58` |
+| 3 | Édition rapide du risque/R et formulaire de relecture : `pnl = risque × R` réécrivait le P&L OBSERVÉ (broker, CSV) ; saisir le risque d'un import sans risque écrivait **0 $** en base | `withPnlFromRiskAndR` et le formulaire gardent le P&L observé et en déduisent le R | `rEvidenceConsistency` + harnais : sur `b7b1f87` le P&L importé de 125,50 $ tombe à 0 $, corrigé à 125,50 $ / 2,51R · `3653f58` |
+| 4 | `review_pending` n'était écrit en base que pour un trade broker : un CSV importé redevenait « relu » au rechargement (qualité 3 / confiance 50 par défaut, risque et heures non vérifiés comptés comme observations) | Écrit dès que l'état de relecture est connu | `tests/tradeStore.test.ts` + harnais (contre-épreuve sur `b7b1f87`) · `05240f3` |
+| 5 | « Après une perte » encore calculé à la date seule dans les motifs nocturnes (`modules/patterns`), la page Erreurs (`mistakePlan`), l'observation d'après-trade (`modules/coaching`) ; analyse de trade : une position ouverte plus tard et sortie le lendemain passait pour une perte antérieure | `verifiedPriorClosedTrade` partout ; série de pertes lue dans l'ordre des clôtures et tue si l'ordre d'une journée mixte est inconnu | `tests/patternDetectors.test.ts`, `tests/mistakePlan.test.ts`, `coaching/tests/afterTrade.test.ts`, `tests/tradeAnalysisEvidence.test.ts` · `3653f58`, `2badf49` |
+| 6 | Motifs : un trade à deux erreurs d'une même famille compté deux fois (part des pertes > 100 % possible) ; tranches horaires sur heures broker/CSV ; le rédacteur formatait un R moyen en pourcentage (−0,8R → « −80 % ») | Un trade par famille, impact R retenu seulement si chaque R est mesuré, heures non certifiées exclues, rédacteur sensible à l'unité | `tests/patternDetectors.test.ts`, `tests/proposalWriter.test.ts` |
+| 7 | Notifications push/e-mail causales : « « X » t'a coûté 500 $ », « signal de tilt », « ce que tu as changé fonctionne », « elle te coûte » | Constats non causaux (« P&L des trades marqués… association observée ») | `src/modules/notifications/rules.test.ts` (échoue sur l'ancien code) |
+| 8 | Analytics : taux par jour/setup/mois sans plancher d'échantillon ; PF et distribution sur l'étiquette « be » (divergent du Dashboard) ; R mensuel tracé sur l'axe 0–100 % (R négatif coupé) ; carte Tendances couronnant un mois d'un trade | `winRateOf`, P&L net, axe R dédié, `MIN_BUCKET_SAMPLE` | `3653f58`, `dec14ac` |
+| 9 | Dashboard : R net additionnant les 0 de risques inconnus ; win rate « 0,0 % » sans trade tranché ; Journal et fiches : « 0.0R » pour un risque inconnu | « — » | harnais (bureau + mobile) |
+| 10 | Rapport mensuel : win rate arrondi au centième (57,0 % vs 57,1 % au Dashboard) ; rapport archivé étiqueté du compte actif alors qu'il agrège tous les comptes | Précision au dix-millième ; « Tous les comptes » si plusieurs comptes ; `REPORT_METHOD_VERSION = 3` | `05240f3`, `17cad4a` |
+| 11 | Contexte IA : `rMultiple` et `setupQuality` obligatoirement numériques (R inconnu et qualité par défaut envoyés comme observations) ; suggestions « Pourquoi je perds le … », « Ce que me coûte … » | Champs nullables (schéma Zod) ; questions descriptives | `rEvidenceConsistency` |
+
+### Vérification de rendu (préproduction SIMULÉE — pas un E2E authentifié)
+
+`scripts/l0-ui-check/` : l'application réelle (composants, moteurs, fonctions serveur, écritures REST) tourne sur une doublure Supabase en mémoire avec 20 trades aux chiffres calculés à la main.
+
+- **Résultat : 30/30** — bureau 1440×900 et mobile 390×844 : R net « — », PF 3,06, win rate 65,0 %, R moyen 0,59R avec « 14 of 20 trades with known risk », aucun « 0.0R », rappel des imports à relire, rapport hérité masqué (PF 99, synthèse IA) ; parcours import CSV (2 valides / 1 refusée faute de direction, `review_pending` persisté) → relecture (P&L 125,50 $ conservé) → recalcul du rapport (v3, PF 5,5, sans synthèse IA) ; aucune exception de page.
+- **Contre-épreuve** sur les fichiers de `b7b1f87` : 2 échecs (P&L écrasé à 0 $, `review_pending` absent).
+- **Accessibilité (axe-core 4.10, WCAG 2 A/AA)** : bandeau d'avertissement et bouton de recalcul nommés et focalisables, aucune violation sur ces éléments. Constats globaux transférés au lot 5 : `meta viewport` interdit le zoom (`user-scalable=no`, critique, WCAG 1.4.4) ; parts SVG Recharts sans alternative textuelle.
+
+### Données de production — inventaire en lecture seule (agrégats, aucun contenu lu)
+
+- 49 traders avec trades, 1 467 trades ; **0 trade broker, 0 import en attente, 0 trade sans risque** : la règle stricte du R mesuré ne modifie aucun chiffre existant.
+- 15 rapports mensuels, 2 traders, **tous sans version de méthode** (2 avec PF = 99, 8 avec synthèse IA) : tous affichés comme hérités, métriques masquées, recalcul explicite sans synthèse IA ; le cron ne régénère que le mois clos.
+- 2 traders multi-comptes, dont 1 avec rapports archivés (périmètre « tous comptes » désormais affiché).
+- Dérive de schéma : `trades.replay_session_id` et `trades.calibration_factor` présents en base, absents des migrations versionnées → audit lot 1.
+
+### Statut des gates du lot 0
+
+| Gate (handoff §2.2) | Statut | Preuve / reste |
+|---|---|---|
+| P0.1 Consommateurs montés | **DONE** | Dashboard, Analytics, Journal, Calendrier, Goals, Rapports, Erreurs, Saisonnalité, Jarvis (contexte, outils, motifs, suggestions), notifications, observation d'après-trade, analyse de trade. Monte Carlo : PF nullable (reprise précédente) ; le R « estimé » par perte médiane de `probability/strategy.ts` est déclaré (`estimated`) et relève de l'unification du lot 3 |
+| P0.2 Rapports hérités | **DONE** | Masquage + recalcul explicite vérifiés sur l'app ; inventaire prod ; aucune réécriture automatique |
+| P0.3 Valeurs manquantes persistées | **DONE pour le lot 0** | `review_pending` persisté ; colonnes subjectives nullables et provenance du risque → **lot 1** (dépendance approuvée) |
+| P0.4 Cas quantitatifs indépendants | **DONE (portée L0)** | goldens existants + `rEvidenceConsistency` ; fills partiels / frais par exécution → lot 1 |
+| P0.5 Parcours authentifié réel | **BLOCKED_EXTERNAL** | L'hôte `tjikygsipblatubyzbrt.supabase.co` est refusé par la politique réseau du conteneur (CONNECT 403). Remède : l'ajouter aux domaines autorisés de l'environnement, puis rejouer `scripts/l0-ui-check` sans doublure avec un compte `tv*@test.dev` supprimé après usage. Vérification de rendu simulée faite (ci-dessus) — elle ne remplace pas ce gate |
+| P0.6 Assertions IA | **DONE (portée L0)** | Contexte et outils nullables, motifs/rédacteur/notifications non causaux ; contrat Evidence complet → lot 4 |
+| P0.7 CI du SHA final | voir la PR | typecheck, lint (0 erreur), build, 1 866 tests × 3 fuseaux en local ; CI GitHub sur chaque push |
+| P0.8 Accessibilité des avertissements | **DONE** | axe-core ci-dessus |
+
+**Transfert au lot 1 (sans valeur inventée) :** provenance du risque broker (stop observé vs risque par défaut), colonnes subjectives nullables, `account_id` des rapports mensuels, fuseau source des heures, fills et frais par exécution, soldes à l'entrée, dérive de schéma.
+
+**Statut : lot 0 techniquement clos, sauf le gate P0.5 `BLOCKED_EXTERNAL`** (preuve manquante et remède documentés ci-dessus). Le passage au lot 1 suit la règle du programme : un contrôle extérieur inaccessible est consigné, pas déclaré validé.
