@@ -15,7 +15,6 @@ import {
   detectFormat,
   guessMapping,
   mapRowsToTrades,
-  parseCsv,
   rejectFile,
   splitDuplicates,
   type Field,
@@ -62,6 +61,7 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
   const [repairIndex, setRepairIndex] = useState<number | null>(null);
   const [manualForm, setManualForm] = useState({ date: "", symbol: "", pnl: "", direction: "long" });
   const [manualError, setManualError] = useState("");
+  const [showManual, setShowManual] = useState(false);
   const [reading, setReading] = useState(false);
   const [error, setError] = useState<FileRejection | "unreadable" | null>(null);
   /** Étape de confirmation : ce qui SERA écrit, avant d'écrire quoi que ce soit. */
@@ -97,6 +97,7 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
       setManualTrades([]);
       setRepairedRows({});
       setRepairIndex(null);
+      setShowManual(false);
       setAnchorDecision({});
       setConfirmedData(false);
       if (headers.length === 0 || rows.length === 0) {
@@ -155,6 +156,7 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
     setPointValues({});
     setConfirmedData(false);
     setRepairIndex(null);
+    setShowManual(false);
   };
 
   const orderAnalysis = useMemo(() => {
@@ -185,6 +187,7 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
   }, [parsed, sourceMode, mapping, orderAnalysis, repairedRows, manualTrades]);
 
   const startManual = (rowIndex: number | null) => {
+    setShowManual(true);
     setManualError("");
     setRepairIndex(rowIndex);
     const row = rowIndex === null ? null : parsed?.rows[rowIndex];
@@ -212,6 +215,7 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
     else setRepairedRows((prev) => ({ ...prev, [repairIndex]: fixed }));
     setManualError("");
     setRepairIndex(null);
+    if (sourceMode !== "manual") setShowManual(false);
     setManualForm({ date: "", symbol: "", pnl: "", direction: "long" });
   };
 
@@ -385,6 +389,17 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
                 className="hidden"
               />
             </div>
+            <button type="button" onClick={() => {
+              setParsed({ headers: ["Date", "Symbol", "P&L", "Direction"], rows: [], format: "Manual" });
+              setSourceMode("manual");
+              setMapping({ date: 0, symbol: 1, pnl: 2, direction: 3 });
+              setRecovery(null);
+              setManualTrades([]);
+              setShowManual(true);
+            }} className="w-full text-sm rounded-xl border border-white/10 p-3 text-slate-300 hover:bg-white/[0.05]">
+              {tr("Je n'ai pas de CSV exploitable — encoder mes trades avec de l'aide",
+                "I don't have a usable CSV — guide me through entering my trades")}
+            </button>
           </>
         ) : (
           <>
@@ -405,7 +420,25 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
               </button>
             </div>
 
-            {/* Column mapping */}
+            <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/[0.04] p-3 text-xs text-slate-300 space-y-1">
+              <p className="font-semibold text-white">
+                {sourceMode === "orders" ? tr("Étape 1 — Reconstruction des exécutions", "Step 1 — Reconstruct fills")
+                : sourceMode === "manual" ? tr("Saisie accompagnée — un trade à la fois", "Guided entry — one trade at a time")
+                : tr("Étape 1 — Vérification des colonnes", "Step 1 — Verify columns")}
+              </p>
+              {recovery?.warnings.map((warning, i) => <p key={i} className="text-amber-300">{warning}</p>)}
+              {sourceMode === "orders" && <p>{tr(
+                "Les ordres annulés/rejetés ne créent jamais de trade. Seules les positions clôturées et vérifiables sont proposées.",
+                "Cancelled/rejected orders never create trades. Only verifiable closed positions are proposed.",
+              )}</p>}
+              {sourceMode === "journal" && <p>{tr(
+                "TradeVault importe ce qui est certain et t'aide à corriger le reste avant confirmation.",
+                "TradeVault imports reliable rows and helps you repair the rest before confirmation.",
+              )}</p>}
+            </div>
+
+            {/* Column mapping — uniquement pour les exports de TRADES, pas les ordres. */}
+            {sourceMode === "journal" && (
             <div>
               <div className="tv-label text-slate-400 mb-2">{t("import.mapColumns")}</div>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5">
@@ -459,6 +492,145 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
                 ))}
               </div>
             </div>
+
+            </div>
+            )}
+
+            {sourceMode === "orders" && orderAnalysis && (
+              <div className="space-y-3">
+                <div className="text-xs text-slate-400">
+                  <span className="text-white font-semibold">{orderAnalysis.filled}</span> {tr("exécutions Filled",
+                    "filled orders")} · <span className="text-white font-semibold">{orderAnalysis.trades.length}</span> {tr(
+                    "trades clôturés calculés", "closed trades reconstructed")} · {orderAnalysis.skipped} {tr(
+                      "ordres/lignes ignorés", "orders/rows ignored")}
+                </div>
+                <div className="rounded-xl border border-white/[0.08] p-3 space-y-3">
+                  <p className="text-xs font-semibold text-white">{tr(
+                    "Étape 2 — Vérifier la valeur monétaire du point", "Step 2 — Verify each instrument's point value")}</p>
+                  <p className="text-[11px] text-slate-400">{tr(
+                    "Le P&L = variation de prix × quantité × valeur du point. Les valeurs Futures suggérées doivent être vérifiées ; les CFD et autres instruments ne sont jamais devinés.",
+                    "P&L = price change × quantity × point value. Suggested futures values require verification; CFD and other instruments are never guessed.",
+                  )}</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {Object.keys(pointValues).map((symbol) => (
+                      <label key={symbol} className="text-xs text-slate-300 space-y-1">
+                        <span className="block truncate" title={symbol}>{symbol}</span>
+                        <input type="number" min="0.0000001" step="any" inputMode="decimal"
+                          value={pointValues[symbol]} onChange={(e) => { setPointValues((v) => ({
+                            ...v, [symbol]: e.target.value,
+                          })); setConfirmedData(false); }}
+                          placeholder={tr("Valeur du point en devise du compte", "Point value in account currency")}
+                          className="w-full bg-white/[0.04] border border-white/[0.12] rounded-lg p-2 text-white" />
+                      </label>
+                    ))}
+                  </div>
+                  {orderAnalysis.missingMultipliers.length > 0 && <p className="text-amber-300 text-xs">
+                    {tr("À compléter pour calculer : ", "Point value needed for: ")}
+                    {orderAnalysis.missingMultipliers.join(", ")}
+                  </p>}
+                </div>
+                {orderAnalysis.anchors.map((anchor) => (
+                  <div key={anchor.symbol} className="rounded-xl border border-amber-500/20 bg-amber-500/[0.04] p-3 space-y-2">
+                    <p className="text-xs font-semibold text-white">{tr("Historique possiblement incomplet : ",
+                      "Possibly incomplete history: ")}{anchor.symbol}</p>
+                    <p className="text-[11px] text-slate-300">{tr(
+                      "Les premières exécutions pourraient clôturer une position antérieure absente du CSV. Confirme ce qu'il faut en faire ; aucune opération n'est masquée automatiquement.",
+                      "The first fills may close a position opened before this export. Choose explicitly; nothing is hidden automatically.",
+                    )} ({anchor.initialExecutions} {tr("exécution(s)", "fill(s)")})</p>
+                    <div className="flex gap-2 flex-wrap">
+                      <button type="button" onClick={() => { setAnchorDecision((v) => ({ ...v, [anchor.symbol]: "exclude" })); setConfirmedData(false); }}
+                        className={cn("rounded-lg border p-2 text-xs", anchorDecision[anchor.symbol] === "exclude"
+                          ? "border-cyan-500 text-cyan-300" : "border-white/10 text-slate-300")}>
+                        {tr("Exclure les exécutions antérieures non appariables", "Exclude unmatched historic fills")}
+                      </button>
+                      <button type="button" onClick={() => { setAnchorDecision((v) => ({ ...v, [anchor.symbol]: "keep" })); setConfirmedData(false); }}
+                        className={cn("rounded-lg border p-2 text-xs", anchorDecision[anchor.symbol] === "keep"
+                          ? "border-cyan-500 text-cyan-300" : "border-white/10 text-slate-300")}>
+                        {tr("Conserver l'historique tel quel", "Keep the history as-is")}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                {orderAnalysis.warnings.length > 0 && (
+                  <div className="space-y-1 text-[11px] text-amber-300" role="status">
+                    {orderAnalysis.warnings.map((warning, i) => <p key={i}>{warning}</p>)}
+                  </div>
+                )}
+                <label className="flex gap-2 text-xs items-start text-slate-300 border border-white/[0.08] rounded-xl p-3 cursor-pointer">
+                  <input type="checkbox" className="mt-0.5" checked={confirmedData}
+                    onChange={(e) => setConfirmedData(e.target.checked)} />
+                  <span>{tr(
+                    "J'ai vérifié les multiplicateurs et compris que le P&L calculé est estimé (brut si frais manquants), que des exécutions peuvent rester non appariées et que les horaires suivent le fuseau exporté.",
+                    "I checked point values and understand that computed P&L is an estimate (gross when fees are missing), some fills may remain unmatched, and times follow the source timezone.",
+                  )}</span>
+                </label>
+              </div>
+            )}
+
+            {(sourceMode === "manual" || sourceMode === "journal") && (
+              <div className="rounded-xl border border-white/[0.08] p-3 space-y-3">
+                {sourceMode === "journal" && problems.length > 0 && (
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-xs text-amber-300">{tr("Étape 2 — ", "Step 2 — ")}{problems.length} {tr(
+                      "ligne(s) à compléter, sans les perdre.", "row(s) need your help, not discarded.")}</p>
+                    {!showManual && <button type="button" onClick={() => startManual(problems[0])}
+                      className="text-xs rounded-lg bg-cyan-500/10 border border-cyan-500/20 p-2 text-cyan-300">
+                      {tr("Corriger ensemble", "Guide me through repairs")}
+                    </button>}
+                  </div>
+                )}
+                {sourceMode === "manual" && <p className="text-xs text-slate-300">{tr(
+                  "Remplis les trois champs indispensables pour chaque trade. Ajoute-en autant que nécessaire, puis vérifie le récapitulatif.",
+                  "Fill in the three required fields for each trade. Add as many as needed, then review the summary.",
+                )}</p>}
+                {(sourceMode === "manual" || showManual) && (
+                  <div className="space-y-3">
+                    {repairIndex !== null && <div className="text-xs text-slate-400">
+                      {tr("Ligne du fichier", "File row")} {repairIndex + 2} · {parsed.rows[repairIndex]?.slice(0, 6).join(" | ")}
+                    </div>}
+                    <div className="grid grid-cols-2 gap-2">
+                      <label className="text-[11px] text-slate-400">{tr("Date", "Date")}
+                        <input type="date" value={manualForm.date} onChange={(e) => setManualForm((v) => ({ ...v, date: e.target.value }))}
+                          className="block w-full mt-1 rounded-lg bg-white/[0.04] border border-white/10 p-2 text-white" />
+                      </label>
+                      <label className="text-[11px] text-slate-400">{tr("Symbole", "Symbol")}
+                        <input value={manualForm.symbol} onChange={(e) => setManualForm((v) => ({ ...v, symbol: e.target.value }))}
+                          placeholder="NQ / ES / EURUSD"
+                          className="block w-full mt-1 rounded-lg bg-white/[0.04] border border-white/10 p-2 text-white" />
+                      </label>
+                      <label className="text-[11px] text-slate-400">{tr("P&L réalisé", "Realized P&L")}
+                        <input value={manualForm.pnl} onChange={(e) => setManualForm((v) => ({ ...v, pnl: e.target.value }))}
+                          placeholder="-125.50"
+                          className="block w-full mt-1 rounded-lg bg-white/[0.04] border border-white/10 p-2 text-white" />
+                      </label>
+                      <label className="text-[11px] text-slate-400">{tr("Sens", "Direction")}
+                        <select value={manualForm.direction} onChange={(e) => setManualForm((v) => ({ ...v, direction: e.target.value }))}
+                          className="block w-full mt-1 rounded-lg bg-slate-900 border border-white/10 p-2 text-white">
+                          <option value="long">Long</option><option value="short">Short</option>
+                        </select>
+                      </label>
+                    </div>
+                    {manualError && <p className="text-xs text-red-400" role="alert">{manualError}</p>}
+                    <div className="flex flex-wrap gap-2">
+                      <button type="button" onClick={saveManual}
+                        className="rounded-lg bg-cyan-500 text-slate-950 font-semibold px-3 py-2 text-xs">
+                        {tr("Enregistrer cette ligne", "Save this trade")}
+                      </button>
+                      {sourceMode === "journal" && <button type="button" onClick={() => { setShowManual(false); setRepairIndex(null); }}
+                        className="rounded-lg border border-white/10 px-3 py-2 text-xs text-slate-300">
+                        {tr("Passer cette ligne", "Skip this row")}
+                      </button>}
+                    </div>
+                  </div>
+                )}
+                <button type="button" onClick={() => startManual(null)}
+                  className="text-xs text-cyan-300 hover:text-cyan-200">
+                  {tr("+ Ajouter un trade manuellement", "+ Add a trade manually")}
+                </button>
+                {manualTrades.length > 0 && <p className="text-xs text-slate-400">{manualTrades.length} {tr(
+                  "trade(s) ajoutés manuellement", "trade(s) entered manually")}</p>}
+              </div>
+            )}
 
             {/* Preview */}
             <div>
