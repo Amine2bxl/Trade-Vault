@@ -86,6 +86,9 @@ export function parseMoney(raw: string): number | null {
     s = s.slice(1, -1);
   }
   s = s.replace(/[$€£\s]/g, "");
+  // Exemple "1.234" : 1234 en notation européenne OU 1.234 en notation US.
+  // Les deux lectures sont possibles : demander correction plutôt que décider.
+  if (/^[-+]?\d{1,3}(?:[.,]\d{3})+$/.test(s)) return null;
   if (/^-?\d{1,3}(\.\d{3})+(,\d+)?$/.test(s))
     s = s.replace(/\./g, "").replace(",", "."); // 1.234,56
   else if (/^-?\d+,\d+$/.test(s))
