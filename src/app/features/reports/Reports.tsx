@@ -137,7 +137,7 @@ function useLiveMonthRow(trades: Trade[], startingBalance: number): MonthlyRepor
 
 export default function Reports({ trades }: { trades: Trade[] }) {
   const { user } = useAuth();
-  const { activeAccount } = useAccounts();
+  const { activeAccount, accounts } = useAccounts();
   const { t, lang } = useT();
   const { toast } = useToast();
   const locale = LOCALE_MAP[lang] || "en-US";
@@ -398,7 +398,15 @@ export default function Reports({ trades }: { trades: Trade[] }) {
                 trades={trades}
                 generatedAt={current.createdAt}
                 inProgress={currentIsLive}
-                accountName={activeAccount?.name ?? null}
+                // Un rapport ARCHIVÉ est construit côté serveur sur tous les comptes
+                // du trader (la table n'a pas de compte) ; seul le mois en cours
+                // suit le compte actif. L'étiqueter du compte actif mentait sur
+                // son périmètre dès qu'il existe plusieurs comptes.
+                accountName={
+                  !currentIsLive && accounts.length > 1
+                    ? t("reports.allAccounts")
+                    : (activeAccount?.name ?? null)
+                }
               />
 
               {missing.length === 0 && !rows.some((r) => isLegacyMonthlyReport(r.report)) && (

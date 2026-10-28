@@ -2114,6 +2114,7 @@ const fr: Dict = {
   "reports.legacyWarning":
     "Ce rapport archivé utilise d'anciens calculs. Les métriques non vérifiables sont masquées jusqu'au recalcul.",
   "reports.recalculate": "Recalculer",
+  "reports.allAccounts": "Tous les comptes",
   "reports.currentMonth": "Mois en cours",
   "reports.inProgress": "En cours",
   "reports.final": "Rapport finalisé",

@@ -2184,6 +2184,7 @@ const en = {
   "reports.legacyWarning":
     "This archived report predates the verified calculation methods. Unverifiable metrics are hidden until recalculated.",
   "reports.recalculate": "Recalculate safely",
+  "reports.allAccounts": "All accounts",
   "reports.currentMonth": "Current month",
   "reports.inProgress": "In progress",
   "reports.final": "Final report",
