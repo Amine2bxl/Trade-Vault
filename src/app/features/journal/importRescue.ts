@@ -13,6 +13,8 @@ export interface RescuedCsv {
   warnings: string[];
   discarded: number;
   recovered: boolean;
+  /** Fragments d origine pour que le trader puisse saisir ce que le parseur a exclu. */
+  fragments: string[];
 }
 
 const cleanHeader = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -59,9 +61,9 @@ export function parseCsvWithRescue(input: string): RescuedCsv {
   // ne jamais les confondre avec de la corruption si les guillemets sont équilibrés.
   const quoteCount = (text.match(/"/g) || []).length;
   if (usable && malformed === 0 && quoteCount % 2 === 0) {
-    return { ...standard, warnings: [], discarded: 0, recovered: false };
+    return { ...standard, warnings: [], discarded: 0, recovered: false, fragments: [] };
   }
-  if (lines.length === 0) return { headers: [], rows: [], warnings: [], discarded: 0, recovered: false };
+  if (lines.length === 0) return { headers: [], rows: [], warnings: [], discarded: 0, recovered: false, fragments: [] };
 
   const sep = [",", ";", "\t"].sort((a, b) =>
     lines.slice(0, 12).reduce((n, x) => n + x.split(b).length - 1, 0) -
@@ -76,17 +78,19 @@ export function parseCsvWithRescue(input: string): RescuedCsv {
   if (headerIndex < 0) headerIndex = candidates.findIndex((f) => f && f.length >= 2);
   if (headerIndex < 0) return {
     headers: [], rows: [], warnings: ["Aucune structure tabulaire lisible dans le fichier."],
-    discarded: lines.length, recovered: true,
+    discarded: lines.length, recovered: true, fragments: lines.slice(0, 200),
   };
   const headers = candidates[headerIndex]!;
   const rows: string[][] = [];
   let discarded = headerIndex;
-  for (const record of candidates.slice(headerIndex + 1)) {
+  const fragments = lines.slice(0, headerIndex);
+  for (let i = headerIndex + 1; i < candidates.length; i++) {
+    const record = candidates[i];
     if (record && record.length === headers.length) rows.push(record);
-    else discarded++;
+    else { discarded++; if (fragments.length < 200) fragments.push(lines[i]); }
   }
   return {
-    headers, rows, discarded, recovered: true,
+    headers, rows, discarded, recovered: true, fragments,
     warnings: [
       "Le fichier présentait des lignes endommagées : seules les colonnes et lignes lisibles ont été conservées.",
       ...(discarded ? [discarded + " ligne(s) écartée(s), à vérifier dans le fichier original."] : []),
