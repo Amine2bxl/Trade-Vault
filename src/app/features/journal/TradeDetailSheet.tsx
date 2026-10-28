@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { X, Trash2, ChevronLeft, ChevronRight, Target } from "@/shared/ui/icons";
 import { Trade, MissedOpportunity, isBreakEven } from "@/app/types";
+import { measuredR } from "@/domain/trade";
 import { formatPnl, getDuration, directionLabel, directionBadgeClass } from "@/domain/tradeCalcs";
 import { getSessionForTrade } from "@/domain/quantStats";
 import { cn } from "@/shared/ui/cn";
@@ -387,14 +388,19 @@ function SheetTrade({
         </div>
         <div className="shrink-0 text-right">
           <div className={cn("tv-figure text-xl", tone)}>{formatPnl(trade.pnl)}</div>
-          <div
-            className={cn(
-              "tv-figure tv-figure-secondary text-xs",
-              trade.rMultiple >= 0 ? "text-emerald-400" : "text-red-400",
-            )}
-          >
-            {trade.rMultiple.toFixed(2)}R
-          </div>
+          {(() => {
+            const r = measuredR(trade);
+            return (
+              <div
+                className={cn(
+                  "tv-figure tv-figure-secondary text-xs",
+                  r === null ? "text-slate-500" : r >= 0 ? "text-emerald-400" : "text-red-400",
+                )}
+              >
+                {r === null ? "—" : `${r.toFixed(2)}R`}
+              </div>
+            );
+          })()}
         </div>
       </div>
 

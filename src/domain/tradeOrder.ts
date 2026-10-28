@@ -19,13 +19,16 @@ function hhmm(time: string | undefined | null): string {
   return m ? `${m[1].padStart(2, "0")}:${m[2]}` : "";
 }
 
+/** Les champs qui suffisent à ordonner des entrées. */
+type EntryClock = Pick<Trade, "date" | "entryTime">;
+
 /** Croissant : le plus ancien d'abord (date, puis heure d'entrée). */
-export function compareChronological(a: Trade, b: Trade): number {
+export function compareChronological(a: EntryClock, b: EntryClock): number {
   return a.date.localeCompare(b.date) || hhmm(a.entryTime).localeCompare(hhmm(b.entryTime));
 }
 
 /** Décroissant : le plus récent d'abord — l'ordre du journal. */
-export function newestFirst(a: Trade, b: Trade): number {
+export function newestFirst(a: EntryClock, b: EntryClock): number {
   return -compareChronological(a, b);
 }
 
@@ -37,15 +40,18 @@ function verifiedClock(time: string | undefined | null): string | null {
   return m ? `${m[1].padStart(2, "0")}:${m[2]}` : null;
 }
 
-function validSameDayExit(t: Trade): string | null {
+function validSameDayExit(t: Pick<Trade, "entryTime" | "exitTime">): string | null {
   const entry = verifiedClock(t.entryTime);
   const exit = verifiedClock(t.exitTime);
   if (!entry || !exit || exit < entry) return null;
   return exit;
 }
 
+/** Les champs qui suffisent à ordonner des clôtures. */
+type RealizedClock = Pick<Trade, "date" | "entryTime" | "exitTime">;
+
 /** Croissant : du P&L réalisé le plus ancien au plus récent, si identifiable. */
-export function compareRealizedChronological(a: Trade, b: Trade): number {
+export function compareRealizedChronological(a: RealizedClock, b: RealizedClock): number {
   const dates = a.date.localeCompare(b.date);
   if (dates !== 0) return dates;
   const first = validSameDayExit(a) ?? verifiedClock(a.entryTime) ?? "";
@@ -54,7 +60,7 @@ export function compareRealizedChronological(a: Trade, b: Trade): number {
 }
 
 /** Sans une clôture non ambiguë, aucun drawdown intrajournalier n'est certifié. */
-export function hasVerifiedRealizedOrder(trades: readonly Trade[]): boolean {
+export function hasVerifiedRealizedOrder(trades: readonly RealizedClock[]): boolean {
   const seen = new Set<string>();
   for (const trade of trades) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(trade.date)) return false;
@@ -72,10 +78,15 @@ export function hasVerifiedRealizedOrder(trades: readonly Trade[]): boolean {
  * Otherwise a claim about trading "after a loss" would use future P&L.
  * Same-minute ties, overlapping positions and unverified import clocks are
  * deliberately UNKNOWN; reconstruction from fills belongs to Lot 1. */
-export function verifiedPriorClosedTrade(
-  orderedByEntry: readonly Trade[],
+export type PriorTradeEvidence = Pick<
+  Trade,
+  "date" | "entryTime" | "exitTime" | "accountId" | "broker" | "reviewPending"
+>;
+
+export function verifiedPriorClosedTrade<T extends PriorTradeEvidence>(
+  orderedByEntry: readonly T[],
   index: number,
-): Trade | null {
+): T | null {
   if (index <= 0 || index >= orderedByEntry.length) return null;
   const previous = orderedByEntry[index - 1];
   const current = orderedByEntry[index];

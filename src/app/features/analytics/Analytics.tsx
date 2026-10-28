@@ -2,6 +2,7 @@ import { Fragment, useEffect, useMemo, useReducer, useState } from "react";
 import { InfoTip } from "@/shared/ui/InfoTip";
 import { TrendingUp, TrendingDown, CalendarDays, Clock, Sparkles } from "@/shared/ui/icons";
 import { Trade, isBreakEven } from "@/app/types";
+import { measuredR } from "@/domain/trade";
 import { computeStats, formatPnl, formatPct, formatShortDate } from "@/domain/tradeCalcs";
 import {
   computeQuantStats,
@@ -206,12 +207,14 @@ export default function Analytics({ trades }: AnalyticsProps) {
         })
         .sort(([a], [b]) => parseInt(a) - parseInt(b))
         .map(([day, data]) => {
-          const dec = data.count - data.breakEven;
+          // `winRateOf` : plancher d'échantillon unique ; `null` coupe la ligne
+          // au lieu de tracer « 0 % » ou « 100 % » sur un ou deux trades.
+          const wr = winRateOf(data);
           return {
             day: DAY_NAMES[parseInt(day)],
             pnl: Math.round(data.pnl * 100) / 100,
             trades: data.count,
-            winRate: dec > 0 ? Math.round((data.wins / dec) * 100) : 0,
+            winRate: wr === null ? null : Math.round(wr * 100),
           };
         }),
     [stats.pnlByDayOfWeek, DAY_NAMES],
@@ -220,12 +223,12 @@ export default function Analytics({ trades }: AnalyticsProps) {
     () =>
       Object.entries(stats.pnlByStrategy)
         .map(([strategy, data]) => {
-          const dec = data.count - data.breakEven;
+          const wr = winRateOf(data);
           return {
             strategy,
             pnl: Math.round(data.pnl * 100) / 100,
             trades: data.count,
-            winRate: dec > 0 ? Math.round((data.wins / dec) * 100) : 0,
+            winRate: wr === null ? null : Math.round(wr * 100),
           };
         })
         .sort((a, b) => b.pnl - a.pnl),
@@ -252,7 +255,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
       { range: `> ${m(500)}`, count: 0, fill: "#22e08a" },
     ];
     for (const trade of cutoffTrades) {
-      if (trade.direction === "be") b[3].count++;
+      if (isBreakEven(trade)) b[3].count++;
       else if (trade.pnl < -500) b[0].count++;
       else if (trade.pnl < -200) b[1].count++;
       else if (trade.pnl < 0) b[2].count++;
@@ -287,8 +290,9 @@ export default function Analytics({ trades }: AnalyticsProps) {
       if (!map[k]) map[k] = { pnl: 0, count: 0, wins: 0, be: 0, totalRR: 0, rCount: 0 };
       map[k].pnl += t.pnl;
       map[k].count++;
-      if (t.riskAmount > 0 && Number.isFinite(t.pnl)) {
-        map[k].totalRR += t.pnl / t.riskAmount;
+      const r = measuredR(t);
+      if (r !== null) {
+        map[k].totalRR += r;
         map[k].rCount++;
       }
       if (isBreakEven(t)) map[k].be++;
@@ -298,23 +302,23 @@ export default function Analytics({ trades }: AnalyticsProps) {
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([key, data]) => {
         const [y, m] = key.split("-");
-        const dec = data.count - data.be;
+        const wr = winRateOf({ count: data.count, wins: data.wins, breakEven: data.be, pnl: 0 });
+        // Le R moyen d'un mois suit le même plancher qu'un taux : sur deux
+        // trades il ne décrit rien. Il ne porte que sur les trades au R mesuré.
         return {
           month: `${MONTH_NAMES_SHORT[parseInt(m) - 1]} '${y.slice(-2)}`,
           pnl: Math.round(data.pnl * 100) / 100,
           trades: data.count,
-          winRate: dec > 0 ? Math.round((data.wins / dec) * 100) : 0,
-          avgRR: data.rCount > 0 ? +(data.totalRR / data.rCount).toFixed(2) : null,
+          winRate: wr === null ? null : Math.round(wr * 100),
+          avgRR: data.rCount >= MIN_BUCKET_SAMPLE ? +(data.totalRR / data.rCount).toFixed(2) : null,
         };
       });
   }, [cutoffTrades]);
   const profitFactorData = useMemo(() => {
-    const tp = cutoffTrades
-      .filter((t) => t.direction !== "be" && t.pnl > 0)
-      .reduce((s, t) => s + t.pnl, 0);
-    const tl = Math.abs(
-      cutoffTrades.filter((t) => t.direction !== "be" && t.pnl < 0).reduce((s, t) => s + t.pnl, 0),
-    );
+    // Gains et pertes bruts sur le P&L NET, comme `computeStats` : un trade
+    // étiqueté « BE » qui perd ses commissions reste une perte observée.
+    const tp = cutoffTrades.filter((t) => t.pnl > 0).reduce((s, t) => s + t.pnl, 0);
+    const tl = Math.abs(cutoffTrades.filter((t) => t.pnl < 0).reduce((s, t) => s + t.pnl, 0));
     const pf = tl > 0 ? tp / tl : null;
     return {
       totalProfits: tp,
@@ -342,7 +346,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
         const losses = decisive.filter((tr) => tr.pnl < 0);
         const gp = wins.reduce((s, tr) => s + tr.pnl, 0);
         const gl = Math.abs(losses.reduce((s, tr) => s + tr.pnl, 0));
-        const withRisk = list.filter((tr) => tr.riskAmount > 0);
+        const rValues = list.map(measuredR).filter((r): r is number => r !== null);
         // Le taux passe par `winRateOf`, l'UNIQUE définition du produit : cette
         // table recalculait le sien, ce qui dupliquait la logique et échappait
         // au plancher d'échantillon. Un setup joué trois fois affichait « 100 %
@@ -364,8 +368,8 @@ export default function Analytics({ trades }: AnalyticsProps) {
           expectancy: bucket.pnl / list.length,
           profitFactor: !enoughSample || gl <= 0 ? null : gp / gl,
           avgR:
-            enoughSample && withRisk.length > 0
-              ? withRisk.reduce((s, tr) => s + tr.pnl / tr.riskAmount, 0) / withRisk.length
+            rValues.length >= MIN_BUCKET_SAMPLE
+              ? rValues.reduce((s, r) => s + r, 0) / rValues.length
               : null,
         };
       })
@@ -597,9 +601,13 @@ export default function Analytics({ trades }: AnalyticsProps) {
               {[
                 {
                   label: t("dashboard.avgRR"),
-                  value: stats.rSampleSize > 0 ? `${stats.avgRR.toFixed(2)}R` : "—",
-                  sub: t("quant.avgRRSub"),
-                  good: stats.rSampleSize > 0 && stats.avgRR > 0,
+                  value: stats.avgRR === null ? "—" : `${stats.avgRR.toFixed(2)}R`,
+                  // Le n du R moyen n'est pas celui de la période : seuls les
+                  // trades au risque initial connu le portent.
+                  sub: t("quant.rSample")
+                    .replace("{n}", String(stats.rSampleSize))
+                    .replace("{total}", String(stats.totalTrades)),
+                  good: stats.avgRR !== null && stats.avgRR > 0,
                   info: t("quant.infoAvgRR"),
                 },
                 {
@@ -736,7 +744,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                 </div>
                 <div className="text-center mt-1">
                   <div className="tv-figure text-xl md:text-2xl text-white">
-                    {formatPct(stats.winRate)}
+                    {stats.wins + stats.losses > 0 ? formatPct(stats.winRate) : "—"}
                   </div>
                   <div className="text-[10px] text-slate-500">{t("analytics.winRateLabel")}</div>
                 </div>
@@ -762,6 +770,9 @@ export default function Analytics({ trades }: AnalyticsProps) {
                         domain={[0, 100]}
                         width={35}
                       />
+                      {/* Le R a SON axe (masqué) : tracé sur l'axe des % (0–100),
+                          un R négatif était coupé et +1,2R collé au zéro. */}
+                      <YAxis yAxisId="r" hide domain={["auto", "auto"]} />
                       <Tooltip
                         {...tooltipStyle}
                         formatter={(value: any, name: any) => {
@@ -787,7 +798,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                         {...chartAnimation}
                       />
                       <Line
-                        yAxisId="right"
+                        yAxisId="r"
                         type={EQUITY_CURVE_TYPE}
                         dataKey="avgRR"
                         stroke="#f59e0b"

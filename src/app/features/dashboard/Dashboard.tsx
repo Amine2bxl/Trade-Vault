@@ -11,6 +11,7 @@ import {
   Sparkles,
 } from "@/shared/ui/icons";
 import { Trade, isBreakEven } from "@/app/types";
+import { totalMeasuredR } from "@/domain/trade";
 import {
   computeStats,
   formatPnl,
@@ -215,10 +216,9 @@ export default function Dashboard({
   const recentTrades = useMemo(() => [...filtered].sort(newestFirst).slice(0, 4), [filtered]);
 
   // Le résultat de la période en R — la mesure qui ne dépend pas de la taille.
-  const netR = useMemo(
-    () => filtered.reduce((sum, tr) => sum + (Number.isFinite(tr.rMultiple) ? tr.rMultiple : 0), 0),
-    [filtered],
-  );
+  // `null` dès qu'un trade n'a pas de R mesuré : additionner le 0 stocké d'un
+  // risque inconnu affichait un « R net » faux, souvent proche de zéro.
+  const netR = useMemo(() => totalMeasuredR(filtered), [filtered]);
 
   // % variation of the period relative to the equity at its start
   // (starting balance + PnL accumulated before the period).
@@ -636,8 +636,12 @@ export default function Dashboard({
                 <Metric
                   compact
                   title={t("dashboard.netR")}
-                  value={`${netR >= 0 ? "+" : "−"}${Math.abs(netR).toFixed(1)}R`}
-                  valueClass={netR >= 0 ? "text-emerald-400" : "text-red-400"}
+                  value={
+                    netR === null ? "—" : `${netR >= 0 ? "+" : "−"}${Math.abs(netR).toFixed(1)}R`
+                  }
+                  valueClass={
+                    netR === null ? undefined : netR >= 0 ? "text-emerald-400" : "text-red-400"
+                  }
                   delay={0}
                 />
                 <Metric
@@ -649,8 +653,14 @@ export default function Dashboard({
                 <Metric
                   compact
                   title={t("stats.winRate")}
-                  value={formatPct(stats.winRate)}
-                  valueClass={stats.winRate >= 0.5 ? "text-emerald-400" : "text-red-400"}
+                  value={stats.wins + stats.losses > 0 ? formatPct(stats.winRate) : "—"}
+                  valueClass={
+                    stats.wins + stats.losses === 0
+                      ? undefined
+                      : stats.winRate >= 0.5
+                        ? "text-emerald-400"
+                        : "text-red-400"
+                  }
                   visual={{
                     kind: "radial",
                     pct: stats.winRate,

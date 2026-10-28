@@ -1421,6 +1421,7 @@ const fr: Dict = {
   "quant.daysShort": "j",
   "quant.recoverySub": "du drawdown au nouveau sommet",
   "quant.avgRRSub": "R réalisé moyen, pertes incluses",
+  "quant.rSample": "{n} trades sur {total} au risque connu",
   "quant.infoAvgRR":
     "R réalisé moyen par trade, avec les pertes négatives. +0,2R signifie un gain moyen observé de 0,2 unité de risque initial par trade.",
   "quant.infoExpectancy":
@@ -2461,6 +2462,7 @@ const fr: Dict = {
     "Tradovate n'a pas répondu à temps pour la première synchro. TradeVault réessaie seul d'ici une minute ; rien à refaire de ton côté.",
   "trade.rDerivedHint": "P&L ÷ risque — l'un ou l'autre se modifie",
   "trade.brokerPnl": "P&L net (broker)",
+  "trade.importedPnl": "P&L net (importé)",
   "trade.importedFrom": "Importé de {broker}",
   "trade.reviewHint":
     "La structure est remplie — ajoute ton setup, tes erreurs, tes notes et tes captures.",

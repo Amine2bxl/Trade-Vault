@@ -16,6 +16,7 @@
 import { localDateOf } from "@/shared/calendar-date";
 import { currenciesForSymbol } from "./instrumentCurrency";
 import { MIN_BUCKET_SAMPLE } from "./quantStats";
+import { measuredR } from "./trade";
 
 /** La forme minimale d'une annonce (structurellement compatible avec `CalendarEvent`). */
 export interface NewsEvent {
@@ -202,17 +203,20 @@ function bucket(
   const wins = trades.filter((t) => t.pnl > 0).length;
   const losses = trades.filter((t) => t.pnl < 0).length;
   const totalPnl = trades.reduce((s, t) => s + t.pnl, 0);
-  const withR = trades.filter(
-    (t) =>
-      typeof t.rMultiple === "number" &&
-      Number.isFinite(t.rMultiple) &&
-      t.rMultiple !== 0 &&
-      !t.broker &&
-      !t.reviewPending &&
-      typeof t.riskAmount === "number" &&
-      Number.isFinite(t.riskAmount) &&
-      t.riskAmount > 0,
-  );
+  // `measuredR` : même R exploitable que le reste du produit (un break-even au
+  // risque connu compte pour 0R, il n'est pas écarté de la moyenne).
+  const rValues = trades
+    .map((t) =>
+      typeof t.riskAmount === "number"
+        ? measuredR({
+            pnl: t.pnl,
+            riskAmount: t.riskAmount,
+            broker: t.broker ?? null,
+            reviewPending: t.reviewPending,
+          })
+        : null,
+    )
+    .filter((r): r is number => r !== null);
   const enough = n >= minSample;
   const decided = wins + losses;
   return {
@@ -223,8 +227,8 @@ function bucket(
     winRate: enough && decided > 0 ? wins / decided : null,
     avgPnl: enough ? totalPnl / n : null,
     avgR:
-      enough && withR.length >= minSample
-        ? withR.reduce((s, t) => s + (t.rMultiple as number), 0) / withR.length
+      enough && rValues.length >= minSample
+        ? rValues.reduce((s, r) => s + r, 0) / rValues.length
         : null,
   };
 }

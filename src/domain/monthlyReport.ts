@@ -25,7 +25,16 @@ export interface WeekLine {
   trades: number;
 }
 
-export const REPORT_METHOD_VERSION = 2;
+/**
+ * Version de la MÉTHODE de calcul d'un rapport archivé.
+ *
+ * 2 : PF nullable, drawdown ordonné par clôtures, Sortino sans plafond.
+ * 3 : R moyen limité au R MESURÉ (`domain/trade.measuredR`) — un import broker
+ *     ou non relu n'y entre plus — et colonnes de provenance lues côté serveur.
+ *     Un rapport v2 n'a jamais quitté la branche du lot 0, mais un R qu'il
+ *     aurait calculé ne se compare pas à un R v3 : il est traité comme hérité.
+ */
+export const REPORT_METHOD_VERSION = 3;
 
 export interface MonthlyReportData {
   month: string; // YYYY-MM

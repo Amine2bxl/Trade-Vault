@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, type CSSProperties } from "react";
 import { ChevronLeft, ChevronRight, Target } from "@/shared/ui/icons";
 import { isBreakEven, type Trade, type MissedOpportunity } from "@/app/types";
+import { measuredR } from "@/domain/trade";
 import { loadMissedOpportunities } from "@/app/store";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useAccounts } from "@/app/contexts/AccountContext";
@@ -115,10 +116,11 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
       map[t.date].pnl += t.pnl;
       map[t.date].count++;
       map[t.date].trades.push(t);
-      const rVerified =
-        t.riskAmount > 0 && Number.isFinite(t.rMultiple) && !t.reviewPending && !t.broker;
-      if (rVerified) {
-        map[t.date].totalRR += t.rMultiple;
+      // `measuredR` : la définition unique du R exploitable (risque saisi ou
+      // relu, hors import broker non certifié), partagée avec Analytics.
+      const r = measuredR(t);
+      if (r !== null) {
+        map[t.date].totalRR += r;
         map[t.date].knownRCount++;
       }
       if (isBreakEven(t)) map[t.date].breakEven++;

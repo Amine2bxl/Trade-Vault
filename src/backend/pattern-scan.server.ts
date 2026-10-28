@@ -41,7 +41,8 @@ import {
  */
 
 /** Les colonnes dont les détecteurs ont besoin, et rien de plus. */
-const TRADE_COLS = "user_id, trade_date, pnl, r_multiple, mistakes, entry_time";
+const TRADE_COLS =
+  "user_id, account_id, trade_date, pnl, risk_amount, r_multiple, mistakes, entry_time, exit_time, broker, review_pending";
 
 interface ScanReport {
   users: number;

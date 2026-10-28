@@ -8,13 +8,17 @@ import {
 } from "../src/modules/patterns/detectors";
 import { MIN_R_DELTA, MIN_SESSIONS, MIN_TRADES } from "../src/modules/patterns/thresholds";
 
+/** Jour i à partir du 1er janvier 2026 : un trade par jour, ordre prouvable. */
+const day = (i: number) => new Date(Date.UTC(2026, 0, 1 + i)).toISOString().slice(0, 10);
+
 function trades(n: number, over: Partial<TradeLike> = {}): TradeLike[] {
   return Array.from({ length: n }, (_, i) => ({
-    date: `2026-03-${String((i % 28) + 1).padStart(2, "0")}`,
+    date: day(i),
     pnl: i % 2 === 0 ? -100 : 200,
     rMultiple: i % 2 === 0 ? -1 : 2,
     mistakes: i % 2 === 0 ? ["No stop loss"] : [],
     entryTime: "09:30",
+    exitTime: "09:45",
     ...over,
   }));
 }
@@ -149,11 +153,12 @@ test("a difference below the effect floor is not reported, however large the sam
   // ne dépend donc pas de ce qui le précède, et les deux groupes ont la même
   // moyenne au bruit près. C'est le cas qu'il faut refuser de publier.
   const flat = Array.from({ length: 200 }, (_, i) => ({
-    date: `2026-03-${String((i % 28) + 1).padStart(2, "0")}`,
+    date: day(i),
     pnl: i % 5 === 0 ? -100 : 100,
     rMultiple: i % 2 === 0 ? 1 : 0.9,
     mistakes: [],
     entryTime: "09:30",
+    exitTime: "09:45",
   }));
   const out = afterLoss(flat);
   expect(out).toBeNull();
@@ -161,12 +166,13 @@ test("a difference below the effect floor is not reported, however large the sam
 
 test("a real difference clears the floor", () => {
   const degraded = Array.from({ length: 200 }, (_, i) => ({
-    date: `2026-03-${String((i % 28) + 1).padStart(2, "0")}`,
+    date: day(i),
     pnl: i % 2 === 0 ? -100 : 100,
     // Le trade qui SUIT une perte (index impair) est nettement pire.
     rMultiple: i % 2 === 0 ? 1 : -2,
     mistakes: [],
     entryTime: "09:30",
+    exitTime: "09:45",
   }));
   const out = degraded.length ? afterLoss(degraded) : null;
   expect(out!.status).toBe("found");
@@ -202,4 +208,85 @@ test("the cluster baseline is a constant, not a value read from the data", () =>
   };
   expect(out.evidence.baseline).toBe(0.25);
   expect(out.evidence.value).toBe(1);
+});
+
+// ── Lot 0 : preuve chronologique et R mesuré ───────────────────────────────
+
+test("after-loss never uses a loss that closed AFTER the next entry", () => {
+  // Chaque jour : une perte ouverte à 09:30 et clôturée à 11:00, puis un trade
+  // ouvert à 10:00 — PENDANT la perte. Ce trade ne « suit » pas une perte :
+  // il n'en connaissait pas l'issue. Aucun groupe « après perte » ne doit naître.
+  const overlapping: TradeLike[] = Array.from({ length: 80 }, (_, i) => {
+    const date = day(Math.floor(i / 2));
+    return i % 2 === 0
+      ? { date, pnl: -100, rMultiple: -1, entryTime: "09:30", exitTime: "11:00" }
+      : { date, pnl: 100, rMultiple: -2, entryTime: "10:00", exitTime: "10:30" };
+  });
+  const out = afterLoss(overlapping);
+  expect(out).toMatchObject({ status: "not_enough" });
+});
+
+test("after-loss treats same-minute entries as unknown order, not as a sequence", () => {
+  const ties: TradeLike[] = Array.from({ length: 80 }, (_, i) => ({
+    date: day(Math.floor(i / 4)),
+    pnl: i % 2 === 0 ? -100 : 100,
+    rMultiple: i % 2 === 0 ? -1 : -2,
+    entryTime: "09:30",
+    exitTime: "09:31",
+  }));
+  // Seul le premier trade de chaque jour a un prédécesseur vérifiable (la
+  // veille) : 19 comparaisons au plus, jamais 79.
+  const out = afterLoss(ties);
+  if (out?.status === "found") {
+    expect(out.evidence.n + (out.evidence.comparisonN ?? 0)).toBeLessThanOrEqual(19);
+  } else {
+    expect(out).toMatchObject({ status: "not_enough" });
+  }
+});
+
+test("an unmeasured R is excluded from R averages, never counted as 0R", () => {
+  // Un trade sur deux suivant une perte n'a pas de R mesuré. Compté 0R, il
+  // rapprocherait les deux groupes ; exclu, l'écart réel reste visible.
+  const withUnknown: TradeLike[] = Array.from({ length: 200 }, (_, i) => ({
+    date: day(i),
+    pnl: i % 2 === 0 ? -100 : 100,
+    rMultiple: i % 2 === 0 ? 1 : i % 4 === 1 ? null : -2,
+    entryTime: "09:30",
+    exitTime: "09:45",
+  }));
+  const out = afterLoss(withUnknown) as { evidence: { value: number; n: number } };
+  expect(out.evidence.value).toBe(-2);
+  expect(out.evidence.n).toBe(50);
+});
+
+test("a trade tagged twice in one family counts once: the loss share never exceeds 100 %", () => {
+  const doubled = trades(40).map((t) =>
+    t.pnl < 0 ? { ...t, mistakes: ["No stop loss", "Overtrading"] } : t,
+  );
+  const out = clusterConcentration(doubled) as {
+    evidence: { value: number; n: number };
+    impactR: number | null;
+  };
+  expect(out.evidence.value).toBe(1);
+  expect(out.evidence.n).toBe(20);
+  // 20 pertes à -1R, comptées une fois chacune.
+  expect(out.impactR).toBe(-20);
+});
+
+test("cluster impact in R is withheld when one of its losses has no measured R", () => {
+  const partial = trades(40).map((t, i) => (i === 0 ? { ...t, rMultiple: null } : t));
+  const out = clusterConcentration(partial) as { impactR: number | null; evidence: { n: number } };
+  expect(out.evidence.n).toBe(20); // la perte reste comptée par son P&L
+  expect(out.impactR).toBeNull();
+});
+
+test("time of day ignores broker and unreviewed clocks, which are not Eastern evidence", () => {
+  const spread = trades(90).map((t, i) => ({
+    ...t,
+    entryTime: ["09:30", "11:30", "14:30"][i % 3],
+    rMultiple: i % 3 === 2 ? -3 : 1,
+  }));
+  expect(timeOfDay(spread)).not.toBeNull();
+  expect(timeOfDay(spread.map((t) => ({ ...t, broker: "tradovate" })))).toBeNull();
+  expect(timeOfDay(spread.map((t) => ({ ...t, reviewPending: true })))).toBeNull();
 });

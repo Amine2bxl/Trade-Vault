@@ -1,5 +1,6 @@
 import { Clock, Star, BarChart3 } from "@/shared/ui/icons";
 import { Trade, isBreakEven } from "@/app/types";
+import { measuredR } from "@/domain/trade";
 import { formatPnl, getDuration } from "@/domain/tradeCalcs";
 import { cn } from "@/shared/ui/cn";
 import { useT } from "@/app/i18n/LanguageContext";
@@ -49,14 +50,17 @@ export function TradeMetrics({ trade }: TradeProps) {
           className={cn(
             "tv-num",
             "text-sm font-semibold",
-            trade.riskAmount <= 0
+            measuredR(trade) === null
               ? "text-slate-500"
               : trade.pnl >= 0
                 ? "text-emerald-400"
                 : "text-red-400",
           )}
         >
-          {trade.riskAmount > 0 ? `${(trade.pnl / trade.riskAmount).toFixed(2)}R` : "—"}
+          {(() => {
+            const r = measuredR(trade);
+            return r === null ? "—" : `${r.toFixed(2)}R`;
+          })()}
         </div>
       </div>
       <div className="bg-white/[0.03] rounded-xl p-3 text-center">
@@ -328,7 +332,12 @@ export function TradeIntentFlow({
           {formatPnl(trade.pnl)}
         </span>
         <span className="text-slate-500">·</span>
-        <span className="tv-figure text-white">{trade.rMultiple.toFixed(2)}R</span>
+        <span className="tv-figure text-white">
+          {(() => {
+            const r = measuredR(trade);
+            return r === null ? "—" : `${r.toFixed(2)}R`;
+          })()}
+        </span>
       </div>
     </div>
   );

@@ -1,3 +1,4 @@
+import { measuredR } from "@/domain/trade";
 import type { DetectedPattern, SessionLike, TradeLike } from "./detectors";
 
 /**
@@ -43,9 +44,16 @@ export function windowStart(now: Date, days = WINDOW_DAYS): string {
 export interface TradeRow {
   trade_date?: string | null;
   pnl?: number | string | null;
+  /** Lu pour compatibilité, jamais utilisé comme mesure : la colonne vaut 0
+   *  par défaut, y compris quand aucun risque n'a été saisi. */
   r_multiple?: number | string | null;
+  risk_amount?: number | string | null;
   mistakes?: string[] | null;
   entry_time?: string | null;
+  exit_time?: string | null;
+  account_id?: string | null;
+  broker?: string | null;
+  review_pending?: boolean | null;
 }
 
 export interface SessionRow {
@@ -63,22 +71,41 @@ function num(value: number | string | null | undefined): number | null {
 /**
  * Les trades exploitables, dans l'ordre reçu.
  *
- * Un trade sans date, sans P&L ou sans R est ÉCARTÉ, pas complété. Les trois
- * champs sont ce sur quoi tous les détecteurs comptent ; en fabriquer un
- * reviendrait à inventer la donnée qu'on prétend observer.
+ * Un trade sans date ou sans P&L est ÉCARTÉ, pas complété : ce sont les deux
+ * champs sur lesquels tous les détecteurs comptent ; en fabriquer un
+ * reviendrait à inventer la donnée qu'on prétend observer. Un trade sans R
+ * MESURÉ est gardé avec `rMultiple: null` : il compte dans les parts calculées
+ * sur le P&L, jamais dans une moyenne en R.
  */
 export function toTradeLikes(rows: TradeRow[]): TradeLike[] {
   const out: TradeLike[] = [];
   for (const row of rows) {
     const pnl = num(row.pnl);
-    const r = num(row.r_multiple);
-    if (!row.trade_date || pnl === null || r === null) continue;
+    if (!row.trade_date || pnl === null) continue;
+    const risk = num(row.risk_amount);
+    // Le R vient de la définition UNIQUE du produit (`measuredR`) : P&L net /
+    // risque initial exploitable, `null` sinon. Le trade reste dans la liste —
+    // sa perte ou son gain en P&L est une observation valable (part des pertes
+    // d'une famille) — mais il n'entre dans aucune moyenne en R.
+    const r =
+      risk === null
+        ? null
+        : measuredR({
+            pnl,
+            riskAmount: risk,
+            broker: row.broker ?? null,
+            reviewPending: !!row.review_pending,
+          });
     out.push({
       date: row.trade_date,
       pnl,
-      rMultiple: r,
+      rMultiple: r === null ? null : Math.round(r * 10000) / 10000,
       mistakes: row.mistakes ?? null,
       entryTime: row.entry_time ?? null,
+      exitTime: row.exit_time ?? null,
+      accountId: row.account_id ?? null,
+      broker: row.broker ?? null,
+      reviewPending: !!row.review_pending,
     });
   }
   return out;

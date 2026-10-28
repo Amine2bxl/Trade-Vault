@@ -1465,6 +1465,7 @@ const en = {
   "quant.daysShort": "d",
   "quant.recoverySub": "drawdown to new high",
   "quant.avgRRSub": "signed realized R per trade",
+  "quant.rSample": "{n} of {total} trades with known risk",
   // Plain-language metric explanations (info tooltips)
   "quant.infoAvgRR":
     "Average signed realized R per trade. Losses count negatively; +0.2R means an observed average gain of 0.2 units of initial risk per trade.",
@@ -2529,6 +2530,7 @@ const en = {
     "Tradovate didn't answer in time for the first sync. TradeVault retries on its own within a minute; nothing to redo on your side.",
   "trade.rDerivedHint": "P&L ÷ risk — edit either one",
   "trade.brokerPnl": "Net P&L (broker)",
+  "trade.importedPnl": "Net P&L (imported)",
   "trade.importedFrom": "Imported from {broker}",
   "trade.reviewHint": "Structure is filled in — add your setup, mistakes, notes and screenshots.",
   "trade.reviewHintRisk":

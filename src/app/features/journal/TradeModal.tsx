@@ -201,7 +201,10 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
         direction: trade.direction,
         // Un trade importé sans stop retrouvé arrive à risque 0 : le champ
         // reste VIDE (et non « 0 ») pour que le trader voie qu'il est à saisir.
-        riskAmount: trade.broker && !(trade.riskAmount > 0) ? "" : String(trade.riskAmount),
+        riskAmount:
+          (trade.broker || trade.reviewPending) && !(trade.riskAmount > 0)
+            ? ""
+            : String(trade.riskAmount),
         rMultiple: String(trade.rMultiple),
         pnl: trade.pnl,
         strategy: trade.strategy,
@@ -216,7 +219,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
         mae: trade.mae != null ? String(trade.mae) : "",
         mfe: trade.mfe != null ? String(trade.mfe) : "",
         slippage: trade.slippage != null ? String(trade.slippage) : "",
-        brokerPnl: trade.broker ? String(trade.pnl) : "",
+        brokerPnl: trade.broker || trade.reviewPending ? String(trade.pnl) : "",
         quantity: trade.quantity != null ? String(trade.quantity) : "",
         entryPrice: trade.entryPrice != null ? String(trade.entryPrice) : "",
         exitPrice: trade.exitPrice != null ? String(trade.exitPrice) : "",
@@ -306,7 +309,12 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
      nul par-dessus celui du broker.
      Les deux restent MODIFIABLES : corriger le P&L recalcule le R, saisir un
      R réécrit le P&L (risque × R). Le trader a toujours le dernier mot. */
-  const pnlLocked = !!trade?.broker;
+  // Un import CSV encore à relire porte lui aussi un P&L OBSERVÉ (la colonne
+  // du fichier). Le recalculer « risque × R » au moment de la relecture
+  // écrivait un P&L nul quand le fichier n'avait pas de risque (R à 0), et
+  // arrondissait le P&L réel au R près sinon.
+  const pnlLocked = !!trade?.broker || !!trade?.reviewPending;
+  const pnlLabelKey = trade?.broker ? "trade.brokerPnl" : "trade.importedPnl";
   const brokerPnl = pnlLocked ? parseFloat(form.brokerPnl) || 0 : null;
   const derivedR = pnlLocked && riskDollar > 0 ? (brokerPnl as number) / riskDollar : 0;
   // Saisie du R en cours : le champ montre ce qui est tapé, pas l'arrondi
@@ -876,10 +884,10 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                   </p>
                 </div>
                 <div className="col-span-2 min-w-0 sm:col-span-1">
-                  <FormLabel>{pnlLocked ? t("trade.brokerPnl") : t("trade.estPnl")}</FormLabel>
+                  <FormLabel>{pnlLocked ? t(pnlLabelKey) : t("trade.estPnl")}</FormLabel>
                   {pnlLocked ? (
                     <Input
-                      aria-label={t("trade.brokerPnl")}
+                      aria-label={t(pnlLabelKey)}
                       type="number"
                       step="0.01"
                       inputMode="decimal"

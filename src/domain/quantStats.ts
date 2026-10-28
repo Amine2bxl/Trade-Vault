@@ -1,4 +1,4 @@
-import { Trade, isBreakEven } from "./trade";
+import { Trade, isBreakEven, measuredR } from "./trade";
 import { compareRealizedChronological, hasVerifiedRealizedOrder } from "./tradeOrder";
 
 // ── Trading sessions (ET, ICT convention) ──────────────────────────────────
@@ -86,7 +86,7 @@ export interface VerifiedDailyReturns {
 export interface QuantStats {
   /** Average $ result per trade (all trades, BE included) */
   expectancy: number;
-  /** Average R result per trade (pnl / risk, trades with risk > 0) */
+  /** R moyen par trade, sur les seuls trades au R mesurable (`measuredR`). */
   expectancyR: number | null;
   /** Annualized Sharpe on verified daily account returns only. */
   sharpe: number | null;
@@ -143,11 +143,9 @@ export function computeQuantStats(
   const totalPnl = trades.reduce((s, t) => s + t.pnl, 0);
   const expectancy = totalPnl / trades.length;
 
-  const withRisk = trades.filter((t) => t.riskAmount > 0);
+  const rValues = trades.map(measuredR).filter((r): r is number => r !== null);
   const expectancyR =
-    withRisk.length > 0
-      ? withRisk.reduce((s, t) => s + t.pnl / t.riskAmount, 0) / withRisk.length
-      : null;
+    rValues.length > 0 ? rValues.reduce((s, r) => s + r, 0) / rValues.length : null;
 
   // Daily PnL series in date order
   const dailyMap: Record<string, number> = {};

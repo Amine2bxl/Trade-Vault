@@ -2,6 +2,7 @@ import { ChevronRight, X } from "@/shared/ui/icons";
 import { Modal } from "@/shared/ui";
 import { formatMoney } from "@/shared/currency";
 import { isBreakEven, type Trade } from "@/app/types";
+import { measuredR } from "@/domain/trade";
 import type { GridDay } from "./calendarGrid";
 import { useT } from "@/app/i18n/LanguageContext";
 import { cn } from "@/shared/ui/cn";
@@ -170,15 +171,15 @@ export default function WeekDetailModal({
                               {[tr.entryTime, tr.strategy].filter(Boolean).join(" · ")}
                             </span>
                           </span>
-                          {Number.isFinite(tr.riskAmount) &&
-                            tr.riskAmount > 0 &&
-                            Number.isFinite(tr.rMultiple) &&
-                            tr.rMultiple !== 0 && (
+                          {(() => {
+                            const r = measuredR(tr);
+                            return r === null || r === 0 ? null : (
                               <span className="tv-figure tv-figure-secondary text-xs text-slate-400">
-                                {tr.rMultiple > 0 ? "+" : ""}
-                                {tr.rMultiple.toFixed(1)}R
+                                {r > 0 ? "+" : ""}
+                                {r.toFixed(1)}R
                               </span>
-                            )}
+                            );
+                          })()}
                           <span
                             className={cn(
                               "tv-figure w-20 text-right text-sm",

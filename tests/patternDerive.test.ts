@@ -59,6 +59,7 @@ describe("deriveAction", () => {
     expect(action?.rationaleFacts).toEqual({
       kind: "cluster_concentration",
       clusterId: "fomo",
+      metric: "loss_share",
       n: 42,
       comparisonN: 18,
       comparisons: 4,

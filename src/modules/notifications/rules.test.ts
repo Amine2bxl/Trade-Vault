@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { evaluateNotificationRules, type RuleContext } from "./rules";
 import { categoryOf } from "./engine";
+import { localDateOf } from "@/shared/calendar-date";
 
 // Un trader fictif — données stables, règles prévisibles.
 function baseContext(overrides: Partial<RuleContext> = {}): RuleContext {
@@ -275,5 +276,59 @@ describe("ce qui a le droit d'ouvrir un popup", () => {
       ],
     });
     expect(interrompantes(ctx)).toHaveLength(0);
+  });
+});
+
+describe("lot 0 — série de pertes et formulations non causales", () => {
+  const today = localDateOf(new Date());
+  const streakKey = (c: RuleContext) =>
+    evaluateNotificationRules(c).find((r) => r.key.startsWith("risk_loss_streak"))?.key;
+
+  it("lit la série dans l'ordre des clôtures, pas dans l'ordre de chargement", () => {
+    // Chargées « L, L, L, W » mais le gain est clôturé en DERNIER : aucune série.
+    const c = baseContext({
+      trades: [
+        { date: today, pnl: -50, mistakes: [], entryTime: "12:00", exitTime: "12:10" },
+        { date: today, pnl: -50, mistakes: [], entryTime: "11:00", exitTime: "11:10" },
+        { date: today, pnl: -50, mistakes: [], entryTime: "09:00", exitTime: "09:10" },
+        { date: today, pnl: 120, mistakes: [], entryTime: "13:00", exitTime: "13:10" },
+      ],
+    });
+    expect(streakKey(c)).toBeUndefined();
+  });
+
+  it("se tait quand l'ordre d'une journée mixte est inconnu", () => {
+    const c = baseContext({
+      trades: [
+        { date: today, pnl: -50, mistakes: [] },
+        { date: today, pnl: -50, mistakes: [] },
+        { date: today, pnl: -50, mistakes: [] },
+        { date: today, pnl: 120, mistakes: [] },
+      ],
+    });
+    expect(streakKey(c)).toBeUndefined();
+  });
+
+  it("garde la série quand l'ordre des clôtures la prouve", () => {
+    const c = baseContext({
+      trades: [
+        { date: today, pnl: 120, mistakes: [], entryTime: "09:00", exitTime: "09:10" },
+        { date: today, pnl: -50, mistakes: [], entryTime: "10:00", exitTime: "10:10" },
+        { date: today, pnl: -50, mistakes: [], entryTime: "11:00", exitTime: "11:10" },
+        { date: today, pnl: -50, mistakes: [], entryTime: "12:00", exitTime: "12:10" },
+      ],
+    });
+    expect(streakKey(c)).toBe(`risk_loss_streak:3:${today}`);
+  });
+
+  it("aucune notification ne présente le P&L d'une étiquette comme un coût causal", () => {
+    const texts = evaluateNotificationRules(baseContext()).flatMap((r) => [
+      r.input.title,
+      r.input.body,
+      String(r.input.data?.["plan"] ?? ""),
+    ]);
+    for (const text of texts) {
+      expect(text).not.toMatch(/cost you|t'a coûté|te coûte|is working|fonctionne|tilt/i);
+    }
   });
 });

@@ -145,7 +145,10 @@ export function isGoalMetricAvailable(g: Pick<GoalDef, "kind">, ctx: MeasureCtx)
     case "profit_factor":
       return ctx.stats.profitFactor !== null;
     case "avg_rr":
-      return ctx.stats.rSampleSize > 0;
+      return ctx.stats.avgRR !== null;
+    case "win_rate":
+      // Aucun trade tranché : pas de taux, et non un taux de 0 %.
+      return ctx.stats.wins + ctx.stats.losses > 0;
     case "max_drawdown":
       return ctx.quant.maxDrawdownPct !== null;
     default:
@@ -165,7 +168,7 @@ export function currentGoalValue(g: GoalDef, ctx: MeasureCtx): number {
     case "win_rate":
       return ctx.stats.winRate * 100;
     case "avg_rr":
-      return ctx.stats.avgRR;
+      return ctx.stats.avgRR ?? 0;
     case "discipline":
       return ctx.journalRate * 100;
     case "custom":

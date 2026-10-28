@@ -10,10 +10,12 @@ export interface AITradeSummary {
   symbol: string;
   direction: string;
   pnl: number;
-  rMultiple: number;
+  /** R réalisé mesuré (`measuredR`) ; null quand le risque initial est inconnu. */
+  rMultiple: number | null;
   strategy: string;
   mistakes: string[];
-  setupQuality: number;
+  /** Note du trader ; null pour un import pas encore relu (valeur par défaut). */
+  setupQuality: number | null;
   confluences: string[];
   notes?: string;
 }

@@ -1,6 +1,6 @@
 import { formatMoney } from "@/shared/currency";
 import { AI_LIMITS } from "@/domain/ai-limits";
-import { Trade, TradeStats, isBreakEven } from "./trade";
+import { Trade, TradeStats, isBreakEven, measuredR } from "./trade";
 import { compareRealizedChronological, hasVerifiedRealizedOrder } from "./tradeOrder";
 
 export function computeStats(trades: Trade[]): TradeStats {
@@ -20,7 +20,7 @@ export function computeStats(trades: Trade[]): TradeStats {
     currentStreakType: "none",
     bestTrade: null,
     worstTrade: null,
-    avgRR: 0,
+    avgRR: null,
     avgWinR: null,
     avgLossR: null,
     rSampleSize: 0,
@@ -82,21 +82,19 @@ export function computeStats(trades: Trade[]): TradeStats {
   const bestTrade = trades.reduce((b, t) => (t.pnl > b.pnl ? t : b), trades[0]);
   const worstTrade = trades.reduce((b, t) => (t.pnl < b.pnl ? t : b), trades[0]);
 
-  // Le R réalisé s'obtient à partir du P&L net / risque initial connu.
-  // Un risque à zéro importé signifie souvent « inconnu », pas « trade à 0R ».
-  const rTrades = trades.filter((t) => t.riskAmount > 0 && Number.isFinite(t.pnl));
-  const rSampleSize = rTrades.length;
+  // Le R réalisé = P&L net / risque initial, et seulement quand ce risque est
+  // une donnée exploitable (`measuredR`, définition unique du produit). Un
+  // risque à zéro importé signifie « inconnu », pas « trade à 0R ».
+  const rValues = trades.map(measuredR).filter((r): r is number => r !== null);
+  const rSampleSize = rValues.length;
   const rCoveragePct = Math.round((rSampleSize / trades.length) * 100);
-  const avgRR =
-    rSampleSize > 0 ? rTrades.reduce((s, t) => s + t.pnl / t.riskAmount, 0) / rSampleSize : 0;
-  const rWinners = rTrades.filter((t) => t.pnl > 0);
-  const rLosers = rTrades.filter((t) => t.pnl < 0);
+  const avgRR = rSampleSize > 0 ? rValues.reduce((s, r) => s + r, 0) / rSampleSize : null;
+  const rWinners = rValues.filter((r) => r > 0);
+  const rLosers = rValues.filter((r) => r < 0);
   const avgWinR = rWinners.length
-    ? rWinners.reduce((sum, t) => sum + t.pnl / t.riskAmount, 0) / rWinners.length
+    ? rWinners.reduce((sum, r) => sum + r, 0) / rWinners.length
     : null;
-  const avgLossR = rLosers.length
-    ? rLosers.reduce((sum, t) => sum + t.pnl / t.riskAmount, 0) / rLosers.length
-    : null;
+  const avgLossR = rLosers.length ? rLosers.reduce((sum, r) => sum + r, 0) / rLosers.length : null;
 
   const dailyPnl: Record<string, number> = {};
   for (const t of trades) {
@@ -186,7 +184,24 @@ export function computeStats(trades: Trade[]): TradeStats {
  */
 export function withPnlFromRiskAndR(trade: Trade, patch: Partial<Trade>): Trade {
   const next = { ...trade, ...patch };
-  if (next.direction === "be") return { ...next, pnl: 0, rMultiple: 0 };
+  if (next.direction === "be" && !trade.broker && !trade.reviewPending) {
+    return { ...next, pnl: 0, rMultiple: 0 };
+  }
+  // LE P&L OBSERVÉ FAIT FOI. Trois cas où le P&L n'est pas « risque × R » :
+  // un trade broker (P&L net encaissé), un import pas encore relu (colonne du
+  // fichier), et un trade dont le risque était inconnu (R stocké à 0, simple
+  // valeur de compatibilité). Saisir le risque de l'un d'eux recalculait
+  // `0 × R` ou `risque × ancien R` et ÉCRASAIT le P&L réel en base. Ici, une
+  // édition du risque seul garde le P&L et en DÉDUIT le R.
+  const riskOnly = patch.riskAmount !== undefined && patch.rMultiple === undefined;
+  const observedPnl = !!trade.broker || !!trade.reviewPending || !(trade.riskAmount > 0);
+  if (riskOnly && observedPnl) {
+    const rMultiple =
+      next.riskAmount > 0 ? Math.round((next.pnl / next.riskAmount) * 10000) / 10000 : 0;
+    return { ...next, rMultiple };
+  }
+  // Sans risque, aucun P&L ne se déduit d'un R : on n'efface pas celui qui existe.
+  if (!(next.riskAmount > 0)) return { ...next, pnl: trade.pnl };
   return { ...next, pnl: Math.round(next.riskAmount * next.rMultiple * 100) / 100 };
 }
 
@@ -216,10 +231,16 @@ export function toInsightTradesPayload(trades: Trade[]) {
     symbol: cut(t.symbol, AI_LIMITS.tradeSymbol),
     direction: cut(t.direction, AI_LIMITS.tradeDirection),
     pnl: t.pnl,
-    rMultiple: t.rMultiple,
+    // Le modèle reçoit la même vérité que les écrans : `null` quand le R n'est
+    // pas mesurable, jamais le 0 de compatibilité stocké en base.
+    rMultiple: (() => {
+      const r = measuredR(t);
+      return r === null ? null : Math.round(r * 100) / 100;
+    })(),
     strategy: cut(t.strategy, AI_LIMITS.tradeStrategy),
     mistakes: tags(t.mistakes, AI_LIMITS.tradeMistakes),
-    setupQuality: t.setupQuality,
+    // Un import non relu porte une qualité par défaut, pas une note du trader.
+    setupQuality: t.reviewPending ? null : t.setupQuality,
     confluences: tags(t.confluences, AI_LIMITS.tradeConfluences),
     ...(t.notes ? { notes: t.notes.slice(0, AI_LIMITS.tradeNote) } : {}),
   }));

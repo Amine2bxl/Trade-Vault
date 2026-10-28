@@ -1,4 +1,5 @@
 import { isBreakEven, type Trade } from "@/app/types";
+import { measuredR } from "@/domain/trade";
 
 /**
  * LA TEINTE D'UNE JOURNÉE DU CALENDRIER — calculée sur les VRAIS résultats.
@@ -43,16 +44,9 @@ export function dayTone(trades: Trade[]): DayTone {
   const decisive = trades.filter((t) => !isBreakEven(t));
   if (decisive.length === 0) return FLAT;
 
-  const useR = decisive.every(
-    (t) =>
-      !t.reviewPending &&
-      !t.broker &&
-      Number.isFinite(t.riskAmount) &&
-      t.riskAmount > 0 &&
-      Number.isFinite(t.rMultiple) &&
-      t.rMultiple !== 0,
-  );
-  const value = (t: Trade) => (useR ? t.rMultiple : t.pnl);
+  // R seulement si CHAQUE trade décisif en a un mesuré (`measuredR`).
+  const useR = decisive.every((t) => measuredR(t) !== null);
+  const value = (t: Trade) => (useR ? (measuredR(t) as number) : t.pnl);
 
   let gains = 0;
   let losses = 0;

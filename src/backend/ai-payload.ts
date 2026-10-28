@@ -34,10 +34,11 @@ export const TradeSummarySchema = z.object({
   symbol: z.string().max(AI_LIMITS.tradeSymbol),
   direction: z.string().max(AI_LIMITS.tradeDirection),
   pnl: z.number(),
-  rMultiple: z.number(),
+  // `null` = inconnu : un risque non mesuré n'est pas un trade à 0R.
+  rMultiple: z.number().nullable(),
   strategy: z.string().max(AI_LIMITS.tradeStrategy),
   mistakes: z.array(z.string().max(AI_LIMITS.tradeTag)).max(AI_LIMITS.tradeMistakes),
-  setupQuality: z.number(),
+  setupQuality: z.number().nullable(),
   confluences: z.array(z.string().max(AI_LIMITS.tradeTag)).max(AI_LIMITS.tradeConfluences),
   notes: z.string().max(AI_LIMITS.tradeNote).optional(),
 });

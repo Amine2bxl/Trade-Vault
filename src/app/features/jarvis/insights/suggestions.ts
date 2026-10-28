@@ -23,8 +23,13 @@ const LABELS: Record<string, { fr: string; en: string }> = {
   page_journal: { fr: "Analyser mon dernier trade", en: "Analyze my last trade" },
   page_calendar: { fr: "Événements économiques de la semaine", en: "Economic events this week" },
   page_analytics: { fr: "Décortiquer mes analyses", en: "Break down my analytics" },
-  worst_day: { fr: "Pourquoi je perds le {day}", en: "Why I lose on {day}" },
-  costliest_mistake: { fr: "Ce que me coûte « {mistake} »", en: 'What "{mistake}" costs me' },
+  // Des questions descriptives : « pourquoi je perds » et « ce que me coûte »
+  // demandaient à Jarvis une cause que le journal ne peut pas établir.
+  worst_day: { fr: "Mes résultats du {day}", en: "My results on {day}" },
+  costliest_mistake: {
+    fr: "Mes trades marqués « {mistake} »",
+    en: 'My trades tagged "{mistake}"',
+  },
   size_after_loss: {
     fr: "Est-ce que j'augmente mon risque après une perte ?",
     en: "Do I increase size after a loss?",

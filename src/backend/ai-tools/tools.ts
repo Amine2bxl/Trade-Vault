@@ -1,5 +1,5 @@
 import type { ToolDefinition, ToolContext } from "@/modules/ai/tools/types";
-import type { Trade } from "@/domain/trade";
+import { measuredR, type Trade } from "@/domain/trade";
 import { serviceClient } from "@/backend/billing.server";
 import { loadTradeNotes, loadTradesWithMeta, type AnyClient } from "./trades";
 import {
@@ -108,6 +108,12 @@ function depuis(jours: number): string {
 }
 
 const arrondi = (n: number) => Math.round(n * 100) / 100;
+/** Le R que le modèle peut citer : mesuré (`measuredR`), sinon `null` — jamais
+ *  le 0 de compatibilité stocké pour un trade sans risque connu. */
+const rMesure = (t: Trade): number | null => {
+  const r = measuredR(t);
+  return r === null ? null : arrondi(r);
+};
 
 /** Le bloc de fenêtre commun à toutes les sorties : sans lui, le modèle citerait
  *  un chiffre sans dire sur quoi il porte. */
@@ -217,10 +223,10 @@ export const getTrades: ToolDefinition = {
         symbol: t.symbol,
         direction: t.direction,
         pnl: arrondi(t.pnl),
-        rMultiple: arrondi(t.rMultiple),
+        rMultiple: rMesure(t),
         strategy: t.strategy || null,
         mistakes: t.mistakes,
-        setupQuality: t.setupQuality,
+        setupQuality: t.reviewPending ? null : t.setupQuality,
         entryTime: t.entryTime || null,
         // Les notes du trader : sans elles, « qu'est-ce que j'avais écrit sur ce
         // trade ? » restait sans réponse. Tronquées — la sortie revient au prompt.
@@ -292,7 +298,8 @@ export const getStats: ToolDefinition = {
       avgWin: arrondi(s.avgWin),
       avgLoss: arrondi(s.avgLoss),
       profitFactor: s.profitFactor === null ? null : arrondi(s.profitFactor),
-      avgRR: s.rSampleSize > 0 ? arrondi(s.avgRR) : null,
+      avgRR: s.avgRR === null ? null : arrondi(s.avgRR),
+      rSampleSize: s.rSampleSize,
       maxDrawdown: s.maxDrawdownOrderVerified ? arrondi(s.maxDrawdown) : null,
       maxDrawdownOrderVerified: s.maxDrawdownOrderVerified,
       currentStreak: s.currentStreak,
@@ -788,7 +795,7 @@ export const getDay: ToolDefinition = {
         symbol: t.symbol,
         direction: t.direction,
         pnl: arrondi(t.pnl),
-        rMultiple: arrondi(t.rMultiple),
+        rMultiple: rMesure(t),
         strategy: t.strategy || null,
         mistakes: t.mistakes,
         notes: notes?.get(t.id)?.slice(0, LIMITES.note) ?? null,

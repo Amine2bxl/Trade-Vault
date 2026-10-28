@@ -33,6 +33,9 @@ interface DbTradeRow {
   exit_time: string | null;
   confluences: string[] | null;
   confidence: number;
+  account_id: string | null;
+  broker: string | null;
+  review_pending: boolean | null;
 }
 
 // Server-side copy of the row mapper: store.ts is a client module (it imports
@@ -56,6 +59,11 @@ function rowToTrade(r: DbTradeRow): Trade {
     exitTime: r.exit_time ?? "",
     confluences: r.confluences ?? [],
     confidence: r.confidence,
+    // Colonnes de preuve : le rapport doit appliquer les mêmes exclusions que
+    // l'Analytics client (R inconnu d'un import broker, heure non certifiée…).
+    accountId: r.account_id,
+    broker: r.broker,
+    reviewPending: !!r.review_pending,
   };
 }
 
@@ -68,7 +76,7 @@ async function loadTradesBetween(
   const { data, error } = await sb
     .from("trades")
     .select(
-      "id, trade_date, symbol, direction, pnl, risk_amount, r_multiple, strategy, mistakes, setup_quality, notes, screenshots, entry_time, exit_time, confluences, confidence",
+      "id, account_id, trade_date, symbol, direction, pnl, risk_amount, r_multiple, strategy, mistakes, setup_quality, notes, screenshots, entry_time, exit_time, confluences, confidence, broker, review_pending",
     )
     .eq("user_id", userId)
     .gte("trade_date", start)

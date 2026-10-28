@@ -21,8 +21,20 @@ describe("teinte d'une journée du calendrier", () => {
   });
 
   test("repli sur le P&L quand un trade n'a pas de R", () => {
-    const tone = dayTone([trade(300, 0), trade(-100, -1)]);
+    // « Pas de R » = pas de risque initial : c'est la définition unique du
+    // produit (`measuredR`). Un `rMultiple` stocké à 0 avec un risque de 100 et
+    // un P&L de 300 n'est pas « sans R » : son R réalisé vaut 3.
+    const tone = dayTone([{ ...trade(300, 0), riskAmount: 0 }, trade(-100, -1)]);
     expect(tone.unit).toBe("pnl");
+    expect(tone.positiveShare).toBeCloseTo(0.75, 5);
+  });
+
+  test("le R de la teinte est le R RÉALISÉ (P&L net / risque), pas la colonne stockée", () => {
+    // Même définition qu'Analytics : un R stocké incohérent avec le P&L ne
+    // change pas la teinte.
+    const tone = dayTone([trade(300, 0), trade(-100, -1)]);
+    expect(tone.unit).toBe("R");
+    expect(tone.net).toBeCloseTo(2, 10);
     expect(tone.positiveShare).toBeCloseTo(0.75, 5);
   });
 
