@@ -1,5 +1,5 @@
 import { isBreakEven, type Trade } from "../types";
-import { getSessionForTrade, type TradingSession } from "@/domain/quantStats";
+import { easternEntryMinute, getSessionForTrade, type TradingSession } from "@/domain/quantStats";
 import { compareChronological, verifiedPriorClosedTrade } from "@/domain/tradeOrder";
 import { localDateOf } from "@/shared/calendar-date";
 
@@ -102,11 +102,6 @@ function weekdayOf(date: string): number | null {
   return Number.isNaN(d.getTime()) ? null : d.getDay();
 }
 
-function hourOf(entryTime: string): number | null {
-  const [h] = entryTime.split(":").map(Number);
-  return Number.isFinite(h) ? h : null;
-}
-
 /**
  * Filtre la liste. Seule fonction publique de filtrage — pas de seconde
  * implémentation ailleurs.
@@ -155,8 +150,12 @@ export function applyFilter(trades: Trade[], input: Partial<UnifiedFilter>): Tra
     if (f.strategy && t.strategy !== f.strategy) return false;
     if (f.mistake && !t.mistakes.includes(f.mistake)) return false;
     if (f.session && getSessionForTrade(t) !== f.session) return false;
-    if (f.hour !== undefined && (getSessionForTrade(t) === null || hourOf(t.entryTime) !== f.hour))
-      return false;
+    if (f.hour !== undefined) {
+      // L'heure Eastern ÉTABLIE (instant prouvé ou convention du journal) — la
+      // même que le graphique horaire, jamais l'heure brute d'un import.
+      const minute = easternEntryMinute(t);
+      if (minute === null || Math.floor(minute / 60) !== f.hour) return false;
+    }
     if (f.confluence && !t.confluences.includes(f.confluence)) return false;
     if (f.aplus && t.setupQuality < APLUS_SETUP_QUALITY) return false;
     if (f.context === "after_loss" && afterLoss && !afterLoss.has(t.id)) return false;

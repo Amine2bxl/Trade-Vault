@@ -23,7 +23,7 @@ import {
 } from "@/shared/ui/icons";
 import { Trade } from "@/app/types";
 import { formatPnl } from "@/domain/tradeCalcs";
-import { MIN_BUCKET_SAMPLE, hasUnverifiedEtTime } from "@/domain/quantStats";
+import { MIN_BUCKET_SAMPLE, easternEntryMinute } from "@/domain/quantStats";
 import {
   AXIS_TICK,
   BAR_FILL_GREEN,
@@ -474,11 +474,10 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
       byDow[d.getDay()].pnl += tr.pnl;
       byDow[d.getDay()].count += 1;
 
-      // Même base horaire qu'Analytics (`statsByHour`) : une heure d'import
-      // broker ou de CSV non relu n'est pas une heure du journal, et une
-      // heure invalide (« 9:60 ») n'est pas une heure du tout.
-      const clock = /^([01]?\d|2[0-3]):([0-5]\d)$/.exec((tr.entryTime ?? "").trim());
-      const h = clock && !hasUnverifiedEtTime(tr) ? Number(clock[1]) : NaN;
+      // Même base horaire qu'Analytics (`statsByHour`) : l'heure Eastern
+      // établie — jamais l'heure brute d'un import, ni « 9:60 ».
+      const minute = easternEntryMinute(tr);
+      const h = minute === null ? NaN : Math.floor(minute / 60);
       if (!Number.isNaN(h)) {
         const cur = byHour.get(h) ?? { pnl: 0, count: 0 };
         cur.pnl += tr.pnl;
