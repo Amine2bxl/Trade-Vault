@@ -249,8 +249,8 @@ export function analyzeTradingViewOrders(
             " | Valeur du point : " + pointValue +
             " | Exécutions : " + ids.join(" / ") +
             " | Horaires conservés tels qu'exportés (fuseau non vérifié).",
-          screenshots: [], entryTime: start.slice(0, 16).replace(" ", "T"),
-          exitTime: end.slice(0, 16).replace(" ", "T"),
+          screenshots: [], entryTime: start.slice(11, 16),
+          exitTime: end.slice(11, 16),
           confluences: [], confidence: 50, mae: null, mfe: null, slippage: null,
           quantity: entryQty, entryPrice: entryNotional / entryQty,
           exitPrice: exitNotional / exitQty, fees: allFees ? round(fees) : null,
