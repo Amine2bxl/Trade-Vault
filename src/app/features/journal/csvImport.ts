@@ -86,14 +86,27 @@ export function parseMoney(raw: string): number | null {
     s = s.slice(1, -1);
   }
   s = s.replace(/[$€£\s]/g, "");
+  // Exemple "1.234" : 1234 en notation européenne OU 1.234 en notation US.
+  // Les deux lectures sont possibles : demander correction plutôt que décider.
+  if (/^[-+]?\d{1,3}(?:[.,]\d{3})+$/.test(s)) return null;
   if (/^-?\d{1,3}(\.\d{3})+(,\d+)?$/.test(s))
     s = s.replace(/\./g, "").replace(",", "."); // 1.234,56
   else if (/^-?\d+,\d+$/.test(s))
     s = s.replace(",", "."); // 12,5
   else s = s.replace(/,/g, ""); // 1,234.56
-  const n = parseFloat(s);
+  // Refuser plutôt que deviner un nombre ambigu ou malformé : "100USD" ou
+  // "1,234" sans séparateur décimal identifiable peut fausser tout le journal.
+  if (/^[-+]?\d{1,3},\d{3}$/.test(raw.trim().replace(/[$€£\s]/g, ""))) return null;
+  if (!/^[-+]?(?:\d+(?:\.\d+)?|\.\d+)$/.test(s)) return null;
+  const n = Number(s);
   if (Number.isNaN(n)) return null;
   return negative ? -Math.abs(n) : n;
+}
+
+function validCalendarDate(year: string, month: string, day: string): boolean {
+  const y = Number(year), m = Number(month), d = Number(day);
+  const value = new Date(Date.UTC(y, m - 1, d));
+  return value.getUTCFullYear() === y && value.getUTCMonth() + 1 === m && value.getUTCDate() === d;
 }
 
 /** Date broker → `{ date: YYYY-MM-DD, time: HH:MM }`. */
@@ -108,12 +121,15 @@ export function parseDateTime(raw: string): { date: string; time: string } | nul
      La barre oblique en ordre ISO (« 2026/01/05 ») est sans ambiguïté elle
      aussi : l'année en tête ne peut pas se confondre avec un jour. */
   let m = s.match(/^(\d{4})[-./](\d{2})[-./](\d{2})(?:[T ](\d{2}):(\d{2}))?/);
-  if (m) return { date: `${m[1]}-${m[2]}-${m[3]}`, time: m[4] ? `${m[4]}:${m[5]}` : "" };
+  if (m && validCalendarDate(m[1], m[2], m[3]) &&
+      (!m[4] || (Number(m[4]) < 24 && Number(m[5]) < 60)))
+    return { date: `${m[1]}-${m[2]}-${m[3]}`, time: m[4] ? `${m[4]}:${m[5]}` : "" };
   // MM/DD/YYYY [HH:MM[:SS] [AM/PM]] — format par défaut des exports US
   m = s.match(
     /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:[ T](\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM|am|pm)?)?/,
   );
-  if (m) {
+  if (m && validCalendarDate(m[3], m[1], m[2]) &&
+      (!m[4] || (Number(m[4]) < (m[6] ? 13 : 24) && Number(m[5]) < 60))) {
     let hh = m[4] ? parseInt(m[4], 10) : 0;
     const ampm = m[6]?.toUpperCase();
     if (ampm === "PM" && hh < 12) hh += 12;
