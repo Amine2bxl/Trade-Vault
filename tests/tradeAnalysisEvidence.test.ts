@@ -65,6 +65,26 @@ describe("trade-analysis evidence integrity", () => {
     expect(out.flags.some((f) => f.code === "revenge_window")).toBe(false);
   });
 
+  it("ignores a later position whose next-day exit clock reads earlier than the entry", () => {
+    // Ouvertes à 22:00 et 23:00, sorties à 01:00 / 02:00 LE LENDEMAIN : leur
+    // heure de sortie est « avant » 10:30, mais elles n'existaient pas encore.
+    const overnight = [
+      { entryTime: "22:00", exitTime: "01:00", pnl: -100, direction: "short" },
+      { entryTime: "23:00", exitTime: "02:00", pnl: -100, direction: "long" },
+    ];
+    const out = analyzeTrade(trade(), ctx({ sameDayTrades: overnight }));
+    expect(out.flags.some((f) => f.code === "revenge_window")).toBe(false);
+  });
+
+  it("reads a prior loss on net P&L, not on a break-even label", () => {
+    const tagged = [
+      { entryTime: "09:30", exitTime: "09:50", pnl: -12, direction: "be" },
+      { entryTime: "10:00", exitTime: "10:15", pnl: -100, direction: "long" },
+    ];
+    const out = analyzeTrade(trade(), ctx({ sameDayTrades: tagged }));
+    expect(out.flags.some((f) => f.code === "revenge_window")).toBe(true);
+  });
+
   it("labels observed post-loss entries without claiming a psychological cause", () => {
     const earlier = [
       { entryTime: "09:30", exitTime: "09:50", pnl: -100, direction: "short" },

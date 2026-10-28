@@ -107,11 +107,17 @@ export function analyzeTrade(trade: Trade, ctx: AnalysisContext): TradeAnalysis 
   const entryMinute = minuteOf(trade.entryTime);
   if (entryMinute !== null) {
     const closedLosses = ctx.sameDayTrades.filter((previous) => {
+      const previousEntry = minuteOf(previous.entryTime);
       const exitMinute = minuteOf(previous.exitTime);
+      // Une sortie « avant » l'entrée ne prouve rien si la position a été
+      // ouverte après (sortie le lendemain, horodatée 01:00) : l'entrée et la
+      // sortie précédentes doivent toutes deux précéder ce trade, le même jour.
+      // La perte se lit sur le P&L net, pas sur l'étiquette « be ».
       return (
-        previous.direction !== "be" &&
         previous.pnl < 0 &&
+        previousEntry !== null &&
         exitMinute !== null &&
+        previousEntry <= exitMinute &&
         exitMinute < entryMinute
       );
     });

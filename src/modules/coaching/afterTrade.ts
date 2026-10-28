@@ -1,4 +1,10 @@
 import type { Trade } from "@/domain";
+import {
+  compareChronological,
+  compareRealizedChronological,
+  hasVerifiedRealizedOrder,
+  verifiedPriorClosedTrade,
+} from "@/domain/tradeOrder";
 import type { AfterTradeInput, AfterTradeObservation, CoachingPriority } from "./types";
 
 /**
@@ -62,27 +68,37 @@ export function classifyPriority(
 function sameDaySequence(trade: Trade, previousTrades: Trade[]): Trade[] {
   const list = previousTrades.filter((t) => t.date === trade.date);
   list.push(trade);
-  list.sort(
-    (a, b) => (a.entryTime || "").localeCompare(b.entryTime || "") || a.id.localeCompare(b.id),
-  );
+  list.sort((a, b) => compareChronological(a, b) || a.id.localeCompare(b.id));
   return list;
 }
 
-/** Pertes consécutives du jour, en remontant depuis ce trade. */
+/**
+ * Pertes consécutives du jour, en remontant depuis ce trade, dans l'ordre des
+ * CLÔTURES. La série n'est affirmée que si elle est certaine : toutes les
+ * pertes de la journée, ou un ordre de clôture prouvé. Sinon seul ce trade
+ * compte — un gain pouvait s'intercaler sans qu'on le sache.
+ */
 function trailingLosses(seq: Trade[], tradeId: string): number {
-  const idx = seq.findIndex((t) => t.id === tradeId);
-  if (idx < 0) return 0;
+  const self = seq.find((t) => t.id === tradeId);
+  if (!self || self.pnl >= 0) return 0;
+  const upTo = seq.slice(0, seq.indexOf(self) + 1);
+  if (upTo.every((t) => t.pnl < 0)) return upTo.length;
+  if (!hasVerifiedRealizedOrder(seq)) return 1;
+  const byClose = [...seq].sort(
+    (a, b) => compareRealizedChronological(a, b) || a.id.localeCompare(b.id),
+  );
   let count = 0;
-  for (let i = idx; i >= 0 && seq[i].pnl < 0; i--) count += 1;
+  for (let i = byClose.indexOf(self); i >= 0 && byClose[i].pnl < 0; i--) count += 1;
   return count;
 }
 
-/** Le trade immédiatement précédent du jour était une perte. */
+/** Le trade précédent du jour, clôturé AVANT cette entrée, était une perte
+ *  (`verifiedPriorClosedTrade`, règle partagée). Une perte encore ouverte, une
+ *  égalité de minute ou un import non relu ne qualifient rien. */
 function afterLoss(seq: Trade[], tradeId: string): boolean {
   const idx = seq.findIndex((t) => t.id === tradeId);
-  if (idx <= 0) return false;
-  const prev = seq[idx - 1];
-  return prev.direction !== "be" && prev.pnl < 0;
+  const prev = verifiedPriorClosedTrade(seq, idx);
+  return prev !== null && prev.pnl < 0;
 }
 
 function kindOf(consecutive: number, reason: string | null | undefined): string {
@@ -142,7 +158,8 @@ export function afterTradeCopy(
     if (e.planRespected === "no") {
       body += ` Tu avais ${e.confidence ?? 0} % de confiance et un plan, mais tu ne l'as pas suivi. Le problème n'est pas le résultat — c'est l'écart entre ton intention et ton exécution.`;
     } else if (e.planRespected === "partial") {
-      body += ` Tu n'as suivi ton plan qu'en partie — l'écart entre intention et exécution se creuse.`;
+      // Un seul trade ne mesure aucune tendance : pas de « l'écart se creuse ».
+      body += ` Tu n'as suivi ton plan qu'en partie.`;
     }
     if (obs.recurrence && obs.recurrence.count >= 2) {
       body += ` C'est ta ${obs.recurrence.count}e perte d'affilée aujourd'hui.`;
@@ -158,7 +175,7 @@ export function afterTradeCopy(
   if (e.planRespected === "no") {
     body += ` You had ${e.confidence ?? 0}% confidence and a plan, but you didn't follow it. The problem isn't the result — it's the gap between your intent and your execution.`;
   } else if (e.planRespected === "partial") {
-    body += ` You only partly followed your plan — the intent-to-execution gap is widening.`;
+    body += ` You only partly followed your plan.`;
   }
   if (obs.recurrence && obs.recurrence.count >= 2) {
     body += ` That's your ${obs.recurrence.count}th straight loss today.`;
