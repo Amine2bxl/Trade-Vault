@@ -67,6 +67,9 @@ describe("parseMoney", () => {
   it("rend null sur une valeur illisible ou vide", () => {
     expect(parseMoney("")).toBeNull();
     expect(parseMoney("n/a")).toBeNull();
+    expect(parseMoney("100USD")).toBeNull();
+    expect(parseMoney("1,234")).toBeNull(); // ambigu : 1.234 ou 1234
+    expect(parseMoney("1.234")).toBeNull();
   });
 });
 
@@ -83,6 +86,8 @@ describe("parseDateTime", () => {
 
   it("rend null sur une date illisible — mieux vaut ignorer que deviner", () => {
     expect(parseDateTime("hier")).toBeNull();
+    expect(parseDateTime("2026-02-31")).toBeNull();
+    expect(parseDateTime("2026-13-01")).toBeNull();
     expect(parseDateTime("")).toBeNull();
   });
 });
