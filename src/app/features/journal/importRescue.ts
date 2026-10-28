@@ -55,7 +55,10 @@ export function parseCsvWithRescue(input: string): RescuedCsv {
   const width = standard.headers.length;
   const malformed = standard.rows.filter((r) => r.length !== width).length;
   const usable = width >= 2 && standard.rows.length > 0;
-  if (usable && malformed === 0 && standard.rows.length >= Math.floor(lines.length * 0.65) - 1) {
+  // Des champs notes valides peuvent contenir beaucoup de retours ligne :
+  // ne jamais les confondre avec de la corruption si les guillemets sont équilibrés.
+  const quoteCount = (text.match(/"/g) || []).length;
+  if (usable && malformed === 0 && quoteCount % 2 === 0) {
     return { ...standard, warnings: [], discarded: 0, recovered: false };
   }
   if (lines.length === 0) return { headers: [], rows: [], warnings: [], discarded: 0, recovered: false };
