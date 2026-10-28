@@ -102,7 +102,7 @@ describe("reconstruction prudente d'un historique TradingView", () => {
     }
     const before = analyzeTradingViewOrders(H, rows, { "CAPITALCOM:US100": 1 });
     expect(before.anchors).toHaveLength(1);
-    expect(before.trades).toHaveLength(2); // cycles are shifted by the initial orphan
+    expect(before.trades).toHaveLength(0); // une position artificiellement ouverte empêche de conclure
     const after = analyzeTradingViewOrders(H, rows, { "CAPITALCOM:US100": 1 }, ["CAPITALCOM:US100"]);
     expect(after.trades).toHaveLength(3);
     expect(after.trades.every((trade) => trade.pnl === 50)).toBe(true);
