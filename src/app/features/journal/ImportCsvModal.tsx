@@ -6,6 +6,10 @@ import { cn } from "@/shared/ui/cn";
 import { useT } from "@/app/i18n/LanguageContext";
 import { Button, Modal, SelectPicker } from "@/shared/ui";
 import {
+  analyzeTradingViewOrders, decodeImportBuffer, isTradingViewOrders,
+  parseCsvWithRescue, suggestedPointValue,
+} from "./importRescue";
+import {
   FIELDS,
   REQUIRED,
   detectFormat,
@@ -39,7 +43,8 @@ const ERROR_KEY = {
 } as const;
 
 export default function ImportCsvModal({ existing, onClose, onImport }: ImportCsvModalProps) {
-  const { t } = useT();
+  const { t, lang } = useT();
+  const tr = (fr: string, en: string) => lang === "fr" ? fr : en;
   const fileRef = useRef<HTMLInputElement>(null);
   const [parsed, setParsed] = useState<{
     headers: string[];
@@ -47,6 +52,16 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
     format: string | null;
   } | null>(null);
   const [mapping, setMapping] = useState<Partial<Record<Field, number>>>({});
+  const [sourceMode, setSourceMode] = useState<"journal" | "orders" | "manual">("journal");
+  const [recovery, setRecovery] = useState<{ warnings: string[]; discarded: number } | null>(null);
+  const [pointValues, setPointValues] = useState<Record<string, string>>({});
+  const [anchorDecision, setAnchorDecision] = useState<Record<string, "exclude" | "keep">>({});
+  const [confirmedData, setConfirmedData] = useState(false);
+  const [manualTrades, setManualTrades] = useState<Trade[]>([]);
+  const [repairedRows, setRepairedRows] = useState<Record<number, Trade>>({});
+  const [repairIndex, setRepairIndex] = useState<number | null>(null);
+  const [manualForm, setManualForm] = useState({ date: "", symbol: "", pnl: "", direction: "long" });
+  const [manualError, setManualError] = useState("");
   const [reading, setReading] = useState(false);
   const [error, setError] = useState<FileRejection | "unreadable" | null>(null);
   /** Étape de confirmation : ce qui SERA écrit, avant d'écrire quoi que ce soit. */
@@ -74,18 +89,54 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
     }
     setReading(true);
     try {
-      const text = await file.text();
-      const { headers, rows } = parseCsv(text);
+      const decoded = decodeImportBuffer(await file.arrayBuffer());
+      const recovered = parseCsvWithRescue(decoded.text);
+      const { headers, rows } = recovered;
+      const warnings = [...(decoded.warning ? [decoded.warning] : []), ...recovered.warnings];
+      setRecovery({ warnings, discarded: recovered.discarded });
+      setManualTrades([]);
+      setRepairedRows({});
+      setRepairIndex(null);
+      setAnchorDecision({});
+      setConfirmedData(false);
       if (headers.length === 0 || rows.length === 0) {
-        setError("noHeaders");
-        return;
+        // Même si le fichier est irrécupérable, le parcours de saisie reste ouvert.
+        setParsed({ headers: ["Date", "Symbol", "P&L", "Direction"], rows: [], format: "Manual" });
+        setMapping({ date: 0, symbol: 1, pnl: 2, direction: 3 });
+        setSourceMode("manual");
+        setRecovery({ warnings: [...warnings, tr(
+          "Le fichier ne contient aucune ligne exploitable. Tu peux encoder tes trades ici.",
+          "No usable rows found. You can enter your trades here.",
+        )], discarded: recovered.discarded });
+      } else {
+        const orders = isTradingViewOrders(headers);
+        setParsed({ headers, rows, format: orders ? "TradingView Paper Trading" : detectFormat(headers) });
+        setMapping(guessMapping(headers));
+        setSourceMode(orders ? "orders" : "journal");
+        if (orders) {
+          const symIndex = headers.findIndex((h) => h.trim().toLowerCase() === "symbol");
+          const values: Record<string, string> = {};
+          for (const row of rows) {
+            const symbol = (row[symIndex] || "").trim().toUpperCase();
+            if (symbol && values[symbol] === undefined) {
+              values[symbol] = String(suggestedPointValue(symbol) ?? "");
+            }
+          }
+          setPointValues(values);
+        }
       }
-      setParsed({ headers, rows, format: detectFormat(headers) });
-      setMapping(guessMapping(headers));
       setResult(null);
+      setConfirming(false);
     } catch (e) {
       console.error("Could not read the CSV file", e);
       setError("unreadable");
+      setParsed({ headers: ["Date", "Symbol", "P&L", "Direction"], rows: [], format: "Manual" });
+      setMapping({ date: 0, symbol: 1, pnl: 2, direction: 3 });
+      setSourceMode("manual");
+      setRecovery({ warnings: [tr(
+        "Le fichier est illisible. Saisie manuelle disponible ci-dessous.",
+        "The file is unreadable. Manual entry is available below.",
+      )], discarded: 0 });
     } finally {
       setReading(false);
     }
@@ -96,12 +147,73 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
     setMapping({});
     setError(null);
     setConfirming(false);
+    setSourceMode("journal");
+    setRecovery(null);
+    setRepairedRows({});
+    setManualTrades([]);
+    setAnchorDecision({});
+    setPointValues({});
+    setConfirmedData(false);
+    setRepairIndex(null);
   };
 
-  const mappedTrades = useMemo(
-    () => (parsed ? mapRowsToTrades(parsed.rows, mapping) : { valid: [] as Trade[], invalid: 0 }),
-    [parsed, mapping],
-  );
+  const orderAnalysis = useMemo(() => {
+    if (!parsed || sourceMode !== "orders") return null;
+    const values: Record<string, number> = {};
+    for (const [symbol, value] of Object.entries(pointValues)) {
+      if (value.trim() && Number.isFinite(Number(value)) && Number(value) > 0) values[symbol] = Number(value);
+    }
+    return analyzeTradingViewOrders(parsed.headers, parsed.rows, values,
+      Object.entries(anchorDecision).filter(([, decision]) => decision === "exclude").map(([symbol]) => symbol));
+  }, [parsed, sourceMode, pointValues, anchorDecision]);
+
+  const problems = useMemo(() => {
+    if (!parsed || sourceMode !== "journal") return [] as number[];
+    return parsed.rows.map((row, index) => mapRowsToTrades([row], mapping).valid.length ? -1 : index)
+      .filter((index) => index >= 0 && repairedRows[index] === undefined);
+  }, [parsed, sourceMode, mapping, repairedRows]);
+
+  const mappedTrades = useMemo(() => {
+    const base = parsed && sourceMode === "journal"
+      ? mapRowsToTrades(parsed.rows, mapping)
+      : { valid: [] as Trade[], invalid: 0 };
+    return {
+      valid: [...(sourceMode === "orders" ? (orderAnalysis?.trades ?? []) : base.valid),
+        ...Object.values(repairedRows), ...manualTrades],
+      invalid: sourceMode === "journal" ? Math.max(0, base.invalid - Object.keys(repairedRows).length) : 0,
+    };
+  }, [parsed, sourceMode, mapping, orderAnalysis, repairedRows, manualTrades]);
+
+  const startManual = (rowIndex: number | null) => {
+    setManualError("");
+    setRepairIndex(rowIndex);
+    const row = rowIndex === null ? null : parsed?.rows[rowIndex];
+    const get = (f: Field) => row?.[mapping[f] ?? -1] ?? "";
+    setManualForm({
+      date: get("date").slice(0, 10), symbol: get("symbol"), pnl: get("pnl"),
+      direction: /short|sell/i.test(get("direction")) ? "short" : "long",
+    });
+  };
+  const saveManual = () => {
+    const { date, symbol, pnl, direction } = manualForm;
+    const fixed = mapRowsToTrades([[date, symbol, pnl, direction]], {
+      date: 0, symbol: 1, pnl: 2, direction: 3,
+    }).valid[0];
+    if (!fixed || !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
+        !Number.isFinite(new Date(date + "T00:00:00").getTime())) {
+      setManualError(tr("Vérifie la date, le symbole et le P&L.", "Check the date, symbol, and P&L."));
+      return;
+    }
+    fixed.reviewPending = true;
+    fixed.notes = repairIndex === null
+      ? "Trade saisi manuellement pendant l'import."
+      : "Ligne " + (repairIndex + 2) + " corrigée manuellement pendant l'import ; vérifier la source.";
+    if (repairIndex === null) setManualTrades((prev) => [...prev, fixed]);
+    else setRepairedRows((prev) => ({ ...prev, [repairIndex]: fixed }));
+    setManualError("");
+    setRepairIndex(null);
+    setManualForm({ date: "", symbol: "", pnl: "", direction: "long" });
+  };
 
   /** Ce que l'import fera exactement — calculé AVANT toute écriture, pour que
    *  la confirmation porte sur des chiffres et pas sur une promesse. */
@@ -137,8 +249,12 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
     }
   };
 
-  const canImport =
-    REQUIRED.every((f) => mapping[f] !== undefined) && mappedTrades.valid.length > 0;
+  const anchorsReviewed = orderAnalysis?.anchors.every((candidate) => Boolean(anchorDecision[candidate.symbol])) ?? true;
+  const canImport = mappedTrades.valid.length > 0 &&
+    (sourceMode !== "journal" || REQUIRED.every((f) => mapping[f] !== undefined) || manualTrades.length > 0) &&
+    (sourceMode !== "orders" || (
+      (orderAnalysis?.missingMultipliers.length ?? 0) === 0 && anchorsReviewed && confirmedData
+    ));
   const selectClass =
     "w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500/40 cursor-pointer";
 
