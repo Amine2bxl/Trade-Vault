@@ -1276,7 +1276,10 @@ function SeasonalitySection({ trades }: { trades: Trade[] }) {
       pnl: Math.round(m.pnl * 100) / 100,
       count: m.count,
     }));
-    const traded = monthly.filter((m) => m.count > 0);
+    // Couronner un mois est un classement : même plancher que la page
+    // Saisonnalité, dont cette carte est le résumé (sinon « meilleur mois »
+    // désignait un mois d'un seul trade ici, et aucun là-bas).
+    const traded = monthly.filter((m) => m.count >= MIN_BUCKET_SAMPLE);
     const best = traded.length ? traded.reduce((a, b) => (b.pnl > a.pnl ? b : a)) : null;
     const worst = traded.length ? traded.reduce((a, b) => (b.pnl < a.pnl ? b : a)) : null;
     const years = [...byYearMonth.entries()].sort((a, b) => b[0] - a[0]);
