@@ -171,7 +171,7 @@ export function buildMonthlyReport(
     prev = {
       month: prevMonthOf(month),
       totalPnl: round2(p.totalPnl),
-      winRate: Math.round(p.winRate * 100) / 100,
+      winRate: Math.round(p.winRate * 10000) / 10000,
       trades: p.totalTrades,
     };
   }
@@ -184,7 +184,10 @@ export function buildMonthlyReport(
     wins: stats.wins,
     losses: stats.losses,
     breakEven: stats.breakEven,
-    winRate: Math.round(stats.winRate * 100) / 100,
+    // Précision du dix-millième : `formatPct` affiche une décimale, et un taux
+    // arrondi au centième (0,57) s'affichait « 57,0 % » là où le Dashboard
+    // lisait 57,1 % pour les mêmes 8 gains sur 14 trades tranchés.
+    winRate: Math.round(stats.winRate * 10000) / 10000,
     profitFactor: stats.profitFactor === null ? null : Math.round(stats.profitFactor * 100) / 100,
     expectancy: round2(quant.expectancy),
     expectancyR: quant.expectancyR === null ? null : Math.round(quant.expectancyR * 100) / 100,
