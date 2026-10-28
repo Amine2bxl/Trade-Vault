@@ -52,7 +52,8 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
   } | null>(null);
   const [mapping, setMapping] = useState<Partial<Record<Field, number>>>({});
   const [sourceMode, setSourceMode] = useState<"journal" | "orders" | "manual">("journal");
-  const [recovery, setRecovery] = useState<{ warnings: string[]; discarded: number } | null>(null);
+  const [recovery, setRecovery] = useState<{ warnings: string[]; discarded: number; fragments: string[] } | null>(null);
+  const [fragmentIndex, setFragmentIndex] = useState(0);
   const [pointValues, setPointValues] = useState<Record<string, string>>({});
   const [anchorDecision, setAnchorDecision] = useState<Record<string, "exclude" | "keep">>({});
   const [confirmedData, setConfirmedData] = useState(false);
@@ -93,7 +94,8 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
       const recovered = parseCsvWithRescue(decoded.text);
       const { headers, rows } = recovered;
       const warnings = [...(decoded.warning ? [decoded.warning] : []), ...recovered.warnings];
-      setRecovery({ warnings, discarded: recovered.discarded });
+      setRecovery({ warnings, discarded: recovered.discarded, fragments: recovered.fragments });
+      setFragmentIndex(0);
       setManualTrades([]);
       setRepairedRows({});
       setRepairIndex(null);
@@ -108,7 +110,7 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
         setRecovery({ warnings: [...warnings, tr(
           "Le fichier ne contient aucune ligne exploitable. Tu peux encoder tes trades ici.",
           "No usable rows found. You can enter your trades here.",
-        )], discarded: recovered.discarded });
+        )], discarded: recovered.discarded, fragments: recovered.fragments });
       } else {
         const orders = isTradingViewOrders(headers);
         setParsed({ headers, rows, format: orders ? "TradingView Paper Trading" : detectFormat(headers) });
@@ -137,7 +139,7 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
       setRecovery({ warnings: [tr(
         "Le fichier est illisible. Saisie manuelle disponible ci-dessous.",
         "The file is unreadable. Manual entry is available below.",
-      )], discarded: 0 });
+      )], discarded: 0, fragments: [] });
     } finally {
       setReading(false);
     }
@@ -150,6 +152,7 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
     setConfirming(false);
     setSourceMode("journal");
     setRecovery(null);
+    setFragmentIndex(0);
     setRepairedRows({});
     setManualTrades([]);
     setAnchorDecision({});
@@ -237,7 +240,7 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
       setResult({
         imported: saved,
         duplicates: plan.duplicates,
-        invalid: mappedTrades.invalid,
+        invalid: mappedTrades.invalid + (recovery?.discarded ?? 0),
         failed,
       });
     } catch (e) {
@@ -245,7 +248,7 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
       setResult({
         imported: 0,
         duplicates: plan.duplicates,
-        invalid: mappedTrades.invalid,
+        invalid: mappedTrades.invalid + (recovery?.discarded ?? 0),
         failed: plan.fresh.length,
       });
     } finally {
@@ -436,6 +439,43 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
                 "TradeVault imports reliable rows and helps you repair the rest before confirmation.",
               )}</p>}
             </div>
+
+            {recovery && recovery.fragments.length > 0 && (
+              <div className="rounded-xl border border-amber-500/20 p-3 space-y-2">
+                <p className="text-xs font-semibold text-amber-300">
+                  {tr("Données abîmées à examiner", "Damaged data to review")} ·
+                  {" "}{fragmentIndex + 1}/{recovery.fragments.length}
+                </p>
+                <p className="text-[11px] text-slate-400">{tr(
+                  "Le contenu brut n'a pas été supprimé. S'il contient un trade, utilise la saisie guidée ; TradeVault ne complète jamais les valeurs illisibles à ta place.",
+                  "The raw content was kept. If it contains a trade, use guided entry; TradeVault never invents unreadable values.",
+                )}</p>
+                <pre className="text-[11px] text-slate-200 whitespace-pre-wrap break-all p-2 rounded-lg bg-white/[0.04] max-h-24 overflow-y-auto">
+                  {recovery.fragments[fragmentIndex]?.slice(0, 800)}
+                </pre>
+                <div className="flex items-center gap-2">
+                  <button type="button" onClick={() => setFragmentIndex((i) => Math.max(0, i - 1))}
+                    disabled={fragmentIndex === 0}
+                    className="text-xs rounded-lg border border-white/10 px-2 py-1 text-slate-300 disabled:opacity-40">
+                    {tr("Précédent", "Previous")}
+                  </button>
+                  <button type="button" onClick={() => setFragmentIndex((i) => Math.min(recovery.fragments.length - 1, i + 1))}
+                    disabled={fragmentIndex === recovery.fragments.length - 1}
+                    className="text-xs rounded-lg border border-white/10 px-2 py-1 text-slate-300 disabled:opacity-40">
+                    {tr("Suivant", "Next")}
+                  </button>
+                  {sourceMode !== "orders" && (
+                    <button type="button" onClick={() => {
+                      startManual(null);
+                      const candidate = recovery.fragments[fragmentIndex].match(/\b\d{4}-\d{2}-\d{2}\b/);
+                      if (candidate) setManualForm((v) => ({ ...v, date: candidate[0] }));
+                    }} className="ml-auto text-xs rounded-lg border border-cyan-500/20 bg-cyan-500/10 px-2 py-1 text-cyan-300">
+                      {tr("Saisir ce trade", "Enter this trade")}
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Column mapping — uniquement pour les exports de TRADES, pas les ordres. */}
             {sourceMode === "journal" && (
