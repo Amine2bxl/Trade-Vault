@@ -492,8 +492,6 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
                 ))}
               </div>
             </div>
-
-            </div>
             )}
 
             {sourceMode === "orders" && orderAnalysis && (
