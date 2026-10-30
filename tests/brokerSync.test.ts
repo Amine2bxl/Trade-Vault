@@ -50,6 +50,8 @@ let redirectFor: ((url: string) => string | null) | null = null;
 let accountsByHost: Record<string, unknown[]> | null = null;
 /** Statut HTTP imposé au serveur de jetons (panne passagère simulée). */
 let tokenStatus: number | null = null;
+/** L'API de frais répond en erreur (lot 1 : frais inconnus, jamais 0). */
+let feeOutage = false;
 
 function tradovateResponse(path: string): unknown {
   if (path.endsWith("/account/list")) {
@@ -126,6 +128,9 @@ beforeAll(() => {
     const headers = (init?.headers ?? {}) as Record<string, string>;
     auths.push(headers.authorization ?? null);
     bodies.push(typeof init?.body === "string" ? init.body : "");
+    if (feeOutage && path.includes("/fillFee/items")) {
+      return new Response("unavailable", { status: 503 });
+    }
     if (tokenStatus && path.endsWith("/auth/oauthtoken")) {
       return new Response("<html>Bad gateway</html>", { status: tokenStatus });
     }
@@ -150,6 +155,7 @@ function fakeSb() {
   return {
     from(table: string) {
       const filters: [string, unknown][] = [];
+      const inFilters: [string, unknown[]][] = [];
       let op: "select" | "update" | "upsert" = "select";
       let payload: Row[] = [];
       let patch: Row = {};
@@ -157,6 +163,10 @@ function fakeSb() {
         select: () => builder,
         eq: (col: string, v: unknown) => {
           filters.push([col, v]);
+          return builder;
+        },
+        in: (col: string, values: unknown[]) => {
+          inFilters.push([col, values]);
           return builder;
         },
         update: (p: Row) => {
@@ -184,7 +194,11 @@ function fakeSb() {
             return Promise.resolve({ data: null, error: null }).then(resolve);
           }
           if (op === "upsert") return Promise.resolve({ data: payload, error: null }).then(resolve);
-          const data = (tables[table] ?? []).filter((r) => filters.every(([c, v]) => r[c] === v));
+          const data = (tables[table] ?? []).filter(
+            (r) =>
+              filters.every(([c, v]) => r[c] === v) &&
+              inFilters.every(([c, vs]) => vs.includes(r[c])),
+          );
           return Promise.resolve({ data, error: null }).then(resolve);
         },
       };
@@ -229,6 +243,7 @@ beforeEach(() => {
   redirectFor = null;
   accountsByHost = null;
   tokenStatus = null;
+  feeOutage = false;
 });
 
 describe("le chiffrement des secrets broker", () => {
@@ -301,9 +316,54 @@ describe("la synchronisation", () => {
     expect(t.exitTime).toBe("09:42");
     expect(t.reviewPending).toBe(true);
     expect(t.brokerAccount).toBe("APEX-123-01");
-    expect(t.externalId).toBe("tradovate:900:1");
+    // La clé porte l'environnement : démo et live ont leurs propres numéros.
+    expect(t.externalId).toBe("tradovate:demo:900:1");
+    // Provenance (lot 1) : risque OBSERVÉ (stop), instants UTC du broker, et
+    // le fuseau dans lequel date et heures ont été écrites.
+    expect(t.source).toBe("broker");
+    expect(t.riskSource).toBe("broker_stop");
+    expect(t.entryAt).toBe("2026-10-08T13:30:00.000Z");
+    expect(t.exitAt).toBe("2026-10-08T13:42:00.000Z");
+    expect(t.sourceTimezone).toBe("America/New_York");
+    expect(tables.trades[0].risk_source).toBe("broker_stop");
+    expect(tables.trades[0].entry_at).toBe("2026-10-08T13:30:00.000Z");
     // Aucun appel d'authentification : le jeton était valide.
     expect(calls.some((c) => c.includes("/auth/"))).toBe(false);
+  });
+
+  test("API de frais en panne : frais INCONNUS et P&L brut, jamais 0 $ de frais", async () => {
+    feeOutage = true;
+    const res = await syncConnection(fakeSb(), await connection("tv-acc-50k"));
+    expect(res.error).toBeNull();
+    const t = res.inserted[0];
+    // 0 aurait fait passer 50 $ bruts pour un net.
+    expect(t.fees).toBeNull();
+    expect(tables.trades[0].fees).toBeNull();
+    expect(t.pnl).toBe(50);
+  });
+
+  test("un aller-retour journalisé sous l'ANCIENNE clé n'est pas doublé", async () => {
+    const sb = fakeSb();
+    tables.trades.push({ id: "old", user_id: "user-1", external_id: "tradovate:900:1" });
+    const res = await syncConnection(sb, await connection("tv-acc-50k"));
+    expect(res.error).toBeNull();
+    expect(res.inserted).toEqual([]);
+    expect(tables.trades).toHaveLength(1);
+    // Traité : le curseur passe, le passage suivant ne le rejoue pas.
+    const cursor = updates.filter((u) => u.table === "broker_connections").at(-1)?.patch
+      .sync_cursor as { syncedThrough?: Record<string, string> };
+    expect(cursor.syncedThrough?.["900"]).toBe("2026-10-08T13:42:00.000Z");
+  });
+
+  test("le même numéro en démo et en live : deux trades, aucun ignoré en silence", async () => {
+    const sb = fakeSb();
+    const demo = await connection("tv-acc-50k");
+    await syncConnection(sb, demo);
+    await syncConnection(sb, { ...demo, id: "conn-2", environment: "live" });
+    expect(tables.trades.map((r) => r.external_id).sort()).toEqual([
+      "tradovate:demo:900:1",
+      "tradovate:live:900:1",
+    ]);
   });
 
   test("rejouer la synchro n'écrit rien de plus", async () => {

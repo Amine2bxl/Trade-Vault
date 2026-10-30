@@ -1,5 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Trade } from "@/domain/trade";
+import {
+  provenanceFromRow,
+  selectWithProvenance,
+  type ProvenanceRow,
+} from "@/domain/tradeProvenance";
 
 /**
  * L'accès aux trades DU CÔTÉ SERVEUR, pour les outils de Jarvis.
@@ -31,7 +36,7 @@ export type AnyClient = SupabaseClient<any, any, any>;
 export const TRADE_COLS =
   "id, account_id, trade_date, symbol, direction, pnl, risk_amount, r_multiple, strategy, mistakes, setup_quality, entry_time, exit_time, confluences, confidence, mae, mfe, broker, review_pending";
 
-interface TradeRow {
+interface TradeRow extends ProvenanceRow {
   id: string;
   trade_date: string;
   symbol: string | null;
@@ -82,6 +87,10 @@ export function rowToTrade(r: TradeRow): Trade {
     accountId: r.account_id ?? null,
     broker: r.broker ?? null,
     reviewPending: !!r.review_pending,
+    // Provenance (lot 1) : source du risque et instants UTC prouvés. Sans
+    // elles, un trade broker n'aurait côté serveur ni R ni heure Eastern
+    // vérifiables, quand l'écran du trader, lui, les connaît.
+    ...provenanceFromRow(r),
   };
 }
 
@@ -133,16 +142,21 @@ export async function loadTradesWithMeta(
 ): Promise<LoadedTrades> {
   const trades: Trade[] = [];
   for (let from = 0; from < TRADES_HARD_CAP; from += TRADES_PAGE_SIZE) {
-    let q = sb.from("trades").select(TRADE_COLS).eq("user_id", userId);
-    if (opts.accountId) q = q.eq("account_id", opts.accountId);
-    if (opts.since) q = q.gte("trade_date", opts.since);
-    if (opts.until) q = q.lte("trade_date", opts.until);
-    const { data, error } = await q
-      .order("trade_date", { ascending: false })
-      .order("id", { ascending: false })
-      .range(from, from + TRADES_PAGE_SIZE - 1);
+    const { data, error } = await selectWithProvenance((extra) => {
+      let q = sb
+        .from("trades")
+        .select(TRADE_COLS + extra)
+        .eq("user_id", userId);
+      if (opts.accountId) q = q.eq("account_id", opts.accountId);
+      if (opts.since) q = q.gte("trade_date", opts.since);
+      if (opts.until) q = q.lte("trade_date", opts.until);
+      return q
+        .order("trade_date", { ascending: false })
+        .order("id", { ascending: false })
+        .range(from, from + TRADES_PAGE_SIZE - 1);
+    });
     if (error) throw new Error(error.message);
-    const rows = (data ?? []) as TradeRow[];
+    const rows = (data ?? []) as unknown as TradeRow[];
     for (const r of rows) trades.push(rowToTrade(r));
     if (rows.length < TRADES_PAGE_SIZE) return { trades, truncated: false };
   }

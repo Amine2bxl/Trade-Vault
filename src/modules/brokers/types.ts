@@ -31,13 +31,23 @@ export interface BrokerFill {
   price: number;
   /** Horodatage ISO 8601 (UTC). */
   time: string;
-  /** Frais de CETTE exécution (commission + frais d'échange…), ≥ 0. */
-  fee: number;
+  /**
+   * Frais de CETTE exécution (commission + frais d'échange…), ≥ 0 — ou `null`
+   * quand le broker ne les a pas fournis (API de frais indisponible, exécution
+   * absente de sa réponse). `null` n'est pas 0 : un P&L « net » calculé avec
+   * 0 serait un P&L brut présenté comme net.
+   */
+  fee: number | null;
 }
 
 /** Un aller-retour complet : plat → position → plat. */
 export interface RoundTrip {
-  /** Clé de déduplication : broker, compte, première exécution. */
+  /**
+   * Clé de déduplication : broker, ENVIRONNEMENT (live/démo), compte, première
+   * exécution. Les identifiants de compte et d'exécution de Tradovate sont
+   * propres à chaque environnement : sans lui, un trade démo et un trade live
+   * pouvaient porter la même clé, et le second était ignoré en silence.
+   */
   externalId: string;
   accountId: string;
   contractId: string;
@@ -54,9 +64,11 @@ export interface RoundTrip {
   exitTime: string;
   /** P&L brut, avant frais. */
   grossPnl: number;
-  fees: number;
-  /** P&L net = brut − frais : ce que le compte a réellement gagné. */
-  netPnl: number;
+  /** Somme des frais des exécutions, ou `null` si l'une d'elles est inconnue. */
+  fees: number | null;
+  /** P&L net = brut − frais : ce que le compte a réellement gagné. `null`
+   *  quand les frais sont inconnus — jamais le brut déguisé en net. */
+  netPnl: number | null;
   fillIds: string[];
 }
 

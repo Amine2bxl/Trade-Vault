@@ -1,4 +1,5 @@
 import { measuredR } from "@/domain/trade";
+import { provenanceFromRow, type ProvenanceRow } from "@/domain/tradeProvenance";
 import type { DetectedPattern, SessionLike, TradeLike } from "./detectors";
 
 /**
@@ -41,7 +42,7 @@ export function windowStart(now: Date, days = WINDOW_DAYS): string {
   return new Date(now.getTime() - days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 }
 
-export interface TradeRow {
+export interface TradeRow extends ProvenanceRow {
   trade_date?: string | null;
   pnl?: number | string | null;
   /** Lu pour compatibilité, jamais utilisé comme mesure : la colonne vaut 0
@@ -87,6 +88,7 @@ export function toTradeLikes(rows: TradeRow[]): TradeLike[] {
     // risque initial exploitable, `null` sinon. Le trade reste dans la liste —
     // sa perte ou son gain en P&L est une observation valable (part des pertes
     // d'une famille) — mais il n'entre dans aucune moyenne en R.
+    const provenance = provenanceFromRow(row);
     const r =
       risk === null
         ? null
@@ -95,6 +97,7 @@ export function toTradeLikes(rows: TradeRow[]): TradeLike[] {
             riskAmount: risk,
             broker: row.broker ?? null,
             reviewPending: !!row.review_pending,
+            riskSource: provenance.riskSource,
           });
     out.push({
       date: row.trade_date,
@@ -103,6 +106,8 @@ export function toTradeLikes(rows: TradeRow[]): TradeLike[] {
       mistakes: row.mistakes ?? null,
       entryTime: row.entry_time ?? null,
       exitTime: row.exit_time ?? null,
+      entryAt: provenance.entryAt,
+      exitAt: provenance.exitAt,
       accountId: row.account_id ?? null,
       broker: row.broker ?? null,
       reviewPending: !!row.review_pending,

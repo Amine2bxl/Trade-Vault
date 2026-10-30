@@ -77,6 +77,7 @@ import { EMOTIONAL_STATES, type EmotionalState } from "@/app/trading/readiness";
 import { currencySymbol, formatMoney } from "@/shared/currency";
 import { getSessionForTrade } from "@/domain/quantStats";
 import { getDuration } from "@/domain/tradeCalcs";
+import { provenanceAfterEdit } from "@/domain/tradeProvenance";
 import { todayLocalDate } from "@/shared/calendar-date";
 import { useTradeNews } from "../news/useTradeNews";
 import { useLiveTable } from "@/app/hooks/useLiveTable";
@@ -579,6 +580,14 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
         copiedFrom: trade?.copiedFrom,
         // Enregistré depuis le formulaire = relu.
         reviewPending: false,
+        // Provenance (lot 1) : un risque modifié devient déclaré par le
+        // trader, une heure corrigée retire l'instant qui ne la prouve plus.
+        ...provenanceAfterEdit(trade ?? null, {
+          date: form.date,
+          entryTime: form.entryTime,
+          exitTime: form.exitTime,
+          riskAmount: Math.round(risk * 100) / 100,
+        }),
       },
       {
         intent: isIntentEmpty(intent) ? null : intent,

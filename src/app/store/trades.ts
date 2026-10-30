@@ -1,4 +1,9 @@
 import { supabase } from "@/integrations/supabase/client";
+import {
+  isMissingProvenanceColumn,
+  provenanceColumns,
+  provenanceFromRow,
+} from "@/domain/tradeProvenance";
 import { Trade } from "../types";
 import { getActiveAccountId } from "./accounts";
 import { storagePathsOf, removeScreenshotFiles, uploadScreenshot } from "./storage";
@@ -88,21 +93,8 @@ export function rowToTrade(r: TradeRow): Trade {
     brokerAccount: r.broker_account ?? null,
     reviewPending: !!r.review_pending,
     copiedFrom: r.copied_from ?? null,
-    source: oneOf(r.source, TRADE_SOURCES),
-    riskSource: oneOf(r.risk_source, RISK_SOURCES),
-    sourceTimezone: r.source_timezone ?? null,
-    entryAt: r.entry_at ?? null,
-    exitAt: r.exit_at ?? null,
-    importKey: r.import_key ?? null,
+    ...provenanceFromRow(r),
   };
-}
-
-const TRADE_SOURCES = ["manual", "csv", "broker", "copy"] as const;
-const RISK_SOURCES = ["user", "csv", "broker_stop", "broker_default"] as const;
-
-/** Une valeur connue de la liste, sinon `null` (inconnue) — jamais devinée. */
-function oneOf<T extends string>(v: string | null | undefined, allowed: readonly T[]): T | null {
-  return allowed.includes(v as T) ? (v as T) : null;
 }
 
 // Money values are rounded to cents at the storage boundary so float noise
@@ -118,45 +110,14 @@ function tradeToRow(t: Trade, userId: string): TradeRow {
 }
 
 /**
- * Les colonnes de provenance (lot 1) ne partent que si elles sont CONNUES.
- *
- * Même prudence que les colonnes d'exécution : l'application peut être
- * déployée avant sa migration. Une écriture qui nomme une colonne inexistante
- * est refusée en entier (PostgREST `PGRST204`) ; `writeTradeRows` détecte ce
- * cas, retire ces colonnes et réessaie — le trade est enregistré, sa
- * provenance simplement non persistée, jamais inventée plus tard.
+ * Faux dès qu'une écriture a prouvé que la base n'a pas encore les colonnes de
+ * provenance (lot 1). Même prudence que les colonnes d'exécution : une
+ * écriture qui nomme une colonne inexistante est refusée en entier ;
+ * `writeTradeRows` retire alors ces colonnes et réessaie — le trade est
+ * enregistré, sa provenance simplement non persistée, jamais inventée plus
+ * tard (`domain/tradeProvenance`).
  */
-function provenanceColumns(t: Trade): Partial<TradeRow> {
-  const row: Partial<TradeRow> = {};
-  if (t.source) row.source = t.source;
-  if (t.riskSource) row.risk_source = t.riskSource;
-  if (t.sourceTimezone) row.source_timezone = t.sourceTimezone;
-  if (t.entryAt) row.entry_at = t.entryAt;
-  if (t.exitAt) row.exit_at = t.exitAt;
-  if (t.importKey) row.import_key = t.importKey;
-  return row;
-}
-
-/** Faux dès qu'une écriture a prouvé que la base n'a pas encore ces colonnes. */
 let provenanceSupported = true;
-
-const PROVENANCE_COLUMNS = [
-  "source",
-  "risk_source",
-  "source_timezone",
-  "entry_at",
-  "exit_at",
-  "import_key",
-];
-
-/** Refus PostgREST « colonne inconnue » portant sur une colonne de provenance. */
-export function isMissingProvenanceColumn(error: unknown): boolean {
-  const e = error as { code?: string; message?: string } | null;
-  if (!e) return false;
-  const text = `${e.code ?? ""} ${e.message ?? ""}`;
-  if (!/PGRST204|42703|column/i.test(text)) return false;
-  return PROVENANCE_COLUMNS.some((c) => text.includes(c));
-}
 
 /**
  * Écrit des lignes de trades ; en cas de colonne de provenance inconnue,

@@ -1,6 +1,7 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { chainNextInvocation, cursorFrom, runUserBatch } from "./cron-batch";
 import type { Trade } from "@/domain/trade";
+import { loadTrades } from "./ai-tools/trades";
 import {
   buildMonthlyReport,
   monthRange,
@@ -16,73 +17,23 @@ import { currencySymbol, formatMoney, parseCurrency, type CurrencyCode } from "@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type AnyClient = SupabaseClient<any, any, any>;
 
-interface DbTradeRow {
-  id: string;
-  trade_date: string;
-  symbol: string;
-  direction: string;
-  pnl: number;
-  risk_amount: number;
-  r_multiple: number;
-  strategy: string;
-  mistakes: string[] | null;
-  setup_quality: number;
-  notes: string | null;
-  screenshots: string[] | null;
-  entry_time: string | null;
-  exit_time: string | null;
-  confluences: string[] | null;
-  confidence: number;
-  account_id: string | null;
-  broker: string | null;
-  review_pending: boolean | null;
-}
-
-// Server-side copy of the row mapper: store.ts is a client module (it imports
-// the browser Supabase client), so it can't be imported here.
-function rowToTrade(r: DbTradeRow): Trade {
-  const dir = r.direction === "short" ? "short" : r.direction === "be" ? "be" : "long";
-  return {
-    id: r.id,
-    date: r.trade_date,
-    symbol: r.symbol,
-    direction: dir,
-    pnl: Number(r.pnl),
-    riskAmount: Number(r.risk_amount),
-    rMultiple: Number(r.r_multiple),
-    strategy: r.strategy,
-    mistakes: r.mistakes ?? [],
-    setupQuality: r.setup_quality,
-    notes: r.notes ?? "",
-    screenshots: r.screenshots ?? [],
-    entryTime: r.entry_time ?? "",
-    exitTime: r.exit_time ?? "",
-    confluences: r.confluences ?? [],
-    confidence: r.confidence,
-    // Colonnes de preuve : le rapport doit appliquer les mêmes exclusions que
-    // l'Analytics client (R inconnu d'un import broker, heure non certifiée…).
-    accountId: r.account_id,
-    broker: r.broker,
-    reviewPending: !!r.review_pending,
-  };
-}
-
-async function loadTradesBetween(
+/**
+ * Les trades d'un mois, TOUS comptes confondus — par le chargeur UNIQUE du
+ * serveur (`ai-tools/trades`), paginé et porteur de la provenance.
+ *
+ * L'ancienne copie locale lisait sans `.range()` : au-delà de `db.max_rows`
+ * (1 000) le rapport était calculé sur une partie du mois sans le dire, et
+ * elle ignorait la source du risque et les instants UTC prouvés — le R d'un
+ * trade broker et son heure Eastern y restaient inconnus quand l'Analytics,
+ * lui, les connaissait.
+ */
+function loadTradesBetween(
   sb: AnyClient,
   userId: string,
   start: string,
   end: string,
 ): Promise<Trade[]> {
-  const { data, error } = await sb
-    .from("trades")
-    .select(
-      "id, account_id, trade_date, symbol, direction, pnl, risk_amount, r_multiple, strategy, mistakes, setup_quality, notes, screenshots, entry_time, exit_time, confluences, confidence, broker, review_pending",
-    )
-    .eq("user_id", userId)
-    .gte("trade_date", start)
-    .lte("trade_date", end);
-  if (error) throw error;
-  return ((data ?? []) as DbTradeRow[]).map(rowToTrade);
+  return loadTrades(sb, userId, { since: start, until: end });
 }
 
 const LANG_NAMES: Record<string, string> = {

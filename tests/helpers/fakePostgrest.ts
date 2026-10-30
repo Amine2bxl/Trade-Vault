@@ -27,6 +27,8 @@ export interface PgCall {
 
 export interface FakePostgrest {
   calls: PgCall[];
+  /** Les écritures acceptées (`acceptWrites`), corps décodé. */
+  writes: { table: string; method: string; body: unknown }[];
   /** Les appels à une table donnée. */
   callsTo(table: string): PgCall[];
 }
@@ -69,11 +71,21 @@ const RESERVED = new Set(["select", "order", "offset", "limit", "columns", "on_c
 /**
  * Exécute `fn` avec un PostgREST factice branché sur `serviceClient()`.
  * `fail` : tables qui répondent une erreur (pour vérifier qu'un échec se DIT).
+ * `missingColumns` : colonnes que la base n'a pas encore (migration non
+ * passée) — un `select` qui les nomme est refusé comme par Postgres (42703).
+ * `acceptWrites` : tables dont les écritures sont acceptées et enregistrées.
+ * `maxRows` : le plafond `db.max_rows` de PostgREST (1 000 chez Supabase),
+ * appliqué EN SILENCE comme le vrai à toute réponse.
  */
 export async function withFakePostgrest<T>(
   tables: Record<string, Row[]>,
   fn: (db: FakePostgrest) => Promise<T>,
-  opts: { fail?: string[] } = {},
+  opts: {
+    fail?: string[];
+    missingColumns?: string[];
+    acceptWrites?: string[];
+    maxRows?: number;
+  } = {},
 ): Promise<T> {
   const realFetch = globalThis.fetch;
   const url = process.env.SUPABASE_URL;
@@ -81,9 +93,12 @@ export async function withFakePostgrest<T>(
   process.env.SUPABASE_URL = BASE;
   process.env.SUPABASE_SERVICE_ROLE_KEY = "service-role-test";
   const fail = new Set(opts.fail ?? []);
+  const writable = new Set(opts.acceptWrites ?? []);
   const calls: PgCall[] = [];
+  const writes: FakePostgrest["writes"] = [];
   const db: FakePostgrest = {
     calls,
+    writes,
     callsTo: (table) => calls.filter((c) => c.table === table),
   };
 
@@ -105,7 +120,20 @@ export async function withFakePostgrest<T>(
         headers: { "content-type": "application/json" },
       });
     }
+    const selected = (params.select ?? "").split(",").map((c) => c.trim());
+    const missing = (opts.missingColumns ?? []).find((c) => selected.includes(c));
+    if (method === "GET" && missing) {
+      return new Response(
+        JSON.stringify({ message: `column ${table}.${missing} does not exist`, code: "42703" }),
+        { status: 400, headers: { "content-type": "application/json" } },
+      );
+    }
     if (method !== "GET") {
+      if (writable.has(table)) {
+        const body = typeof init?.body === "string" ? init.body : "";
+        writes.push({ table, method, body: body ? JSON.parse(body) : null });
+        return new Response(null, { status: 201 });
+      }
       throw new Error(`fakePostgrest : écriture inattendue (${method} ${table})`);
     }
     let rows = [...(tables[table] ?? [])];
@@ -115,7 +143,7 @@ export async function withFakePostgrest<T>(
     }
     const offset = Number(params.offset ?? 0);
     const limit = params.limit !== undefined ? Number(params.limit) : rows.length;
-    rows = rows.slice(offset, offset + limit);
+    rows = rows.slice(offset, offset + Math.min(limit, opts.maxRows ?? Infinity));
     return new Response(JSON.stringify(rows), {
       status: 200,
       headers: { "content-type": "application/json" },

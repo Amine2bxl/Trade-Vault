@@ -35,7 +35,8 @@ const round8 = (n: number) => Math.round(n * 1e8) / 1e8;
 interface Leg {
   fill: BrokerFill;
   qty: number;
-  fee: number;
+  /** Part des frais de l'exécution, `null` si ses frais sont inconnus. */
+  fee: number | null;
 }
 
 interface OpenTrip {
@@ -55,7 +56,7 @@ function vwap(legs: Leg[]): number {
   return round8(legs.reduce((s, l) => s + l.qty * l.fill.price, 0) / qty);
 }
 
-function closeTrip(broker: BrokerId, t: OpenTrip): RoundTrip {
+function closeTrip(broker: BrokerId, t: OpenTrip, environment?: string): RoundTrip {
   const first = t.entries[0].fill;
   const last = t.exits[t.exits.length - 1].fill;
   const sign = t.direction === "long" ? 1 : -1;
@@ -63,9 +64,14 @@ function closeTrip(broker: BrokerId, t: OpenTrip): RoundTrip {
   const entryValue = t.entries.reduce((s, l) => s + l.qty * l.fill.price, 0);
   const exitValue = t.exits.reduce((s, l) => s + l.qty * l.fill.price, 0);
   const grossPnl = round2(sign * (exitValue - entryValue) * first.pointValue);
-  const fees = round2([...t.entries, ...t.exits].reduce((s, l) => s + l.fee, 0));
+  const legs = [...t.entries, ...t.exits];
+  const fees = legs.some((l) => l.fee === null)
+    ? null
+    : round2(legs.reduce((s, l) => s + (l.fee ?? 0), 0));
   return {
-    externalId: `${broker}:${first.accountId}:${first.id}`,
+    externalId: environment
+      ? `${broker}:${environment}:${first.accountId}:${first.id}`
+      : `${broker}:${first.accountId}:${first.id}`,
     accountId: first.accountId,
     contractId: first.contractId,
     symbol: first.symbol,
@@ -78,7 +84,7 @@ function closeTrip(broker: BrokerId, t: OpenTrip): RoundTrip {
     exitTime: last.time,
     grossPnl,
     fees,
-    netPnl: round2(grossPnl - fees),
+    netPnl: fees === null ? null : round2(grossPnl - fees),
     fillIds: [...new Set([...t.entries, ...t.exits].map((l) => l.fill.id))],
   };
 }
@@ -90,6 +96,17 @@ export interface RoundTripOptions {
    * l'entrée.
    */
   openingPositions?: ReadonlyMap<string, number>;
+  /**
+   * Environnement du broker (`live`, `demo`), intégré à `externalId`. Absent :
+   * l'ancien format sans environnement (`legacyExternalId`).
+   */
+  environment?: string;
+}
+
+/** La clé d'un aller-retour au format antérieur au lot 1 (sans environnement) :
+ *  sert à reconnaître un trade déjà journalisé sous l'ancienne clé. */
+export function legacyExternalId(broker: BrokerId, trip: Pick<RoundTrip, "accountId" | "fillIds">) {
+  return `${broker}:${trip.accountId}:${trip.fillIds[0]}`;
 }
 
 export function buildRoundTrips(
@@ -112,7 +129,8 @@ export function buildRoundTrips(
     const key = positionKey(fill.accountId, fill.contractId);
     const delta = fill.side === "buy" ? fill.qty : -fill.qty;
     let remaining = fill.qty;
-    const feePerUnit = fill.qty > EPS ? fill.fee / fill.qty : 0;
+    const feePerUnit = fill.fee === null ? null : fill.qty > EPS ? fill.fee / fill.qty : 0;
+    const legFee = (qty: number) => (feePerUnit === null ? null : feePerUnit * qty);
 
     // 1. Absorber d'abord une position héritée qui se referme.
     const inherited = legacy.get(key) ?? 0;
@@ -137,7 +155,7 @@ export function buildRoundTrips(
       if (!cur) {
         open.set(key, {
           direction: side === "buy" ? "long" : "short",
-          entries: [{ fill, qty: remaining, fee: feePerUnit * remaining }],
+          entries: [{ fill, qty: remaining, fee: legFee(remaining) }],
           exits: [],
           position: side === "buy" ? remaining : -remaining,
           maxAbs: remaining,
@@ -147,18 +165,18 @@ export function buildRoundTrips(
       }
       const adds = (cur.direction === "long") === (side === "buy");
       if (adds) {
-        cur.entries.push({ fill, qty: remaining, fee: feePerUnit * remaining });
+        cur.entries.push({ fill, qty: remaining, fee: legFee(remaining) });
         cur.position += side === "buy" ? remaining : -remaining;
         cur.maxAbs = Math.max(cur.maxAbs, Math.abs(cur.position));
         remaining = 0;
         break;
       }
       const closing = Math.min(remaining, Math.abs(cur.position));
-      cur.exits.push({ fill, qty: closing, fee: feePerUnit * closing });
+      cur.exits.push({ fill, qty: closing, fee: legFee(closing) });
       cur.position += side === "buy" ? closing : -closing;
       remaining -= closing;
       if (Math.abs(cur.position) <= EPS) {
-        trips.push(closeTrip(broker, cur));
+        trips.push(closeTrip(broker, cur, opts.environment));
         open.delete(key);
         // S'il reste de la quantité, la boucle ouvre le trade inverse.
       }

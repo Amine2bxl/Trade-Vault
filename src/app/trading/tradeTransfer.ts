@@ -118,6 +118,9 @@ export function planTransfer(
       id,
       accountId: opts.targetAccountId,
       copiedFrom: t.id,
+      // Provenance : une copie. Le reste (source du risque, instants, clé
+      // d'import — unique PAR compte) voyage avec elle depuis l'original.
+      source: "copy",
       // Une copie n'est pas un import broker : elle ne doit ni rouvrir le
       // formulaire de relecture, ni entrer en conflit avec la clé de
       // déduplication de l'original (`user_id, external_id` est unique).

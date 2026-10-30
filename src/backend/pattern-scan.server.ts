@@ -4,6 +4,7 @@ import { chainNextInvocation, cursorFrom, runUserBatch } from "./cron-batch";
 import { scan } from "@/modules/patterns/scan";
 import { deriveAction } from "@/modules/patterns/derive";
 import type { DetectedPattern } from "@/modules/patterns/detectors";
+import { selectWithProvenance } from "@/domain/tradeProvenance";
 import {
   parseWriterOutput,
   writerSystemPrompt,
@@ -17,6 +18,7 @@ import {
   toTradeLikes,
   windowStart,
   type KnownPatternRow,
+  type TradeRow,
 } from "@/modules/patterns/persist";
 
 /**
@@ -108,7 +110,15 @@ async function scanUser(
   since: string,
 ): Promise<{ written: number; suppressed: number; proposed: boolean }> {
   const [trades, sessions, known] = await Promise.all([
-    sb.from("trades").select(TRADE_COLS).eq("user_id", userId).gte("trade_date", since),
+    // Provenance (lot 1) lue quand la base la porte : sans elle, l'ordre et
+    // l'heure Eastern d'un trade broker restent invérifiables.
+    selectWithProvenance<{ data: TradeRow[] | null; error: unknown }>((extra) =>
+      sb
+        .from("trades")
+        .select(TRADE_COLS + extra)
+        .eq("user_id", userId)
+        .gte("trade_date", since),
+    ),
     sb
       .from("trading_sessions")
       .select("session_date, readiness_score")
