@@ -32,6 +32,8 @@ export interface BalanceSnapshot {
   /** Instant ISO 8601 de l'observation. */
   observedAt: string;
   source: EvidenceSource;
+  /** Code ISO 4217. Absent = devise du compte. */
+  currency?: string;
 }
 
 export interface CashMovement {
@@ -40,6 +42,8 @@ export interface CashMovement {
   amount: number;
   occurredAt: string;
   source: EvidenceSource;
+  /** Code ISO 4217. Absent = devise du compte. */
+  currency?: string;
 }
 
 export type BalanceTrade = Pick<Trade, "id" | "date" | "pnl"> &
@@ -56,7 +60,8 @@ export type BalanceGap =
   | "order_unproven"
   | "fees_unknown"
   | "declared_cashflow"
-  | "interval_unreconciled";
+  | "interval_unreconciled"
+  | "currency_mismatch";
 
 export interface BalanceAtEntry {
   status: BalanceStatus;
@@ -189,6 +194,14 @@ export function balanceBeforeEntry(trade: BalanceTrade, ledger: BalanceLedger): 
 
   const trades = ledger.trades.filter((t) => t.accountId === accountId);
   const cash = ledger.cash.filter((c) => c.accountId === accountId);
+  // Aucune conversion implicite : un mouvement ou un solde dans une autre
+  // devise que le snapshot d'ancrage rend la somme dénuée de sens.
+  if (
+    anchor.currency &&
+    [...cash, ...snapshots].some((x) => x.currency && x.currency !== anchor.currency)
+  ) {
+    return unknown("currency_mismatch");
+  }
   const from: Bound = { ms: anchor.ms, day: dayOf(anchor.ms) };
   const sum = sumInterval(trades, cash, from, entry, trade.id);
   if (!sum.estimable) return unknown("order_unproven");

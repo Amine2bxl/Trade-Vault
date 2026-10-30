@@ -43,7 +43,7 @@ import {
 } from "@/domain/tradeProvenance";
 import { effectiveTier, type EntitlementRow } from "@/domain/entitlement";
 import { tierAtLeast } from "@/domain/plans";
-import { decryptSecret, encryptSecret } from "./broker-crypto.server";
+import { decryptSecret, encryptSecret, sha256Hex } from "./broker-crypto.server";
 import {
   TradovateError,
   newSession,
@@ -425,6 +425,70 @@ async function insertTrades(
   return { inserted, processed, planLimit, failed };
 }
 
+/** JSON à clés triées : la même exécution donne toujours la même empreinte. */
+function stableJson(v: unknown): string {
+  if (Array.isArray(v)) return `[${v.map(stableJson).join(",")}]`;
+  if (v && typeof v === "object") {
+    const o = v as Record<string, unknown>;
+    return `{${Object.keys(o)
+      .sort()
+      .filter((k) => o[k] !== undefined)
+      .map((k) => `${JSON.stringify(k)}:${stableJson(o[k])}`)
+      .join(",")}}`;
+  }
+  return JSON.stringify(v);
+}
+
+/**
+ * Les FAITS BRUTS de la synchro (lot 1) : chaque exécution et chaque relevé
+ * de frais reçus, tels que Tradovate les a rendus, sous une clé qualifiée
+ * (broker, environnement, compte broker, exécution). Rejouer la synchro
+ * n'ajoute rien (même clé, même empreinte) ; une exécution CORRIGÉE par le
+ * broker (même clé, autre contenu — un fill annulé, par exemple) est classée
+ * `conflict` par la base au lieu d'écraser l'original. Les frais ont leur
+ * propre fait : une API de frais en panne ne fait pas passer l'exécution pour
+ * corrigée au passage suivant.
+ *
+ * Best-effort, comme la preuve d'un import CSV : la consigne qui échoue (base
+ * sans la migration) est journalisée, la synchro continue.
+ */
+async function recordRawFills(
+  sb: Sb,
+  conn: ConnectionRow,
+  fills: readonly tv.TvFill[],
+  orderById: ReadonlyMap<number, tv.TvOrder>,
+  target: ReadonlyMap<string, { account_id: string | null }>,
+  fees: ReadonlyMap<number, tv.TvFillFee>,
+): Promise<void> {
+  const rows: Record<string, unknown>[] = [];
+  const push = async (accountId: string, key: string, payload: unknown) =>
+    rows.push({
+      user_id: conn.user_id,
+      account_id: accountId,
+      source_kind: "broker",
+      source_key: key.slice(0, 300),
+      payload,
+      payload_sha256: await sha256Hex(stableJson(payload)),
+      status: "accepted",
+    });
+  for (const f of fills) {
+    const order = orderById.get(f.orderId);
+    const accountId = order ? target.get(String(order.accountId))?.account_id : null;
+    if (!order || !accountId) continue;
+    const base = `tradovate:${conn.environment}:${order.accountId}`;
+    // L'ordre n'entre que par son compte : son état évolue (statut, prix
+    // modifié) sans que l'exécution, elle, change.
+    await push(accountId, `${base}:fill:${f.id}`, { fill: f, accountId: order.accountId });
+    const fee = fees.get(f.id);
+    if (fee) await push(accountId, `${base}:fee:${f.id}`, { fee });
+  }
+  if (!rows.length) return;
+  const { error } = await sb
+    .from("raw_ingest_events")
+    .upsert(rows, { onConflict: "user_id,source_key,payload_sha256", ignoreDuplicates: true });
+  if (error) console.warn("[broker-sync] faits bruts non consignés", error.message);
+}
+
 /**
  * Les `externalId` (nouveau format) des allers-retours que le journal porte
  * déjà sous l'ANCIENNE clé, sans environnement. Lecture par paquets : la liste
@@ -557,6 +621,9 @@ export async function syncConnection(sb: Sb, conn: ConnectionRow): Promise<SyncO
         relevant.map((f) => f.id),
       ).catch(() => [] as tv.TvFillFee[]);
       const fees = new Map(feeList.map((f) => [f.id, f]));
+      // BRUT D'ABORD : chaque exécution reçue est consignée telle quelle,
+      // avant tout trade (`raw_ingest_events`, insert-only).
+      await recordRawFills(sb, conn, relevant, orderById, target, fees);
       const { fills: normalized } = tv.normalizeFills(relevant, orderById, contracts, fees);
 
       // Position AVANT la fenêtre reçue = position actuelle − somme des

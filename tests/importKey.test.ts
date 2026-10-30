@@ -68,6 +68,24 @@ describe("clés d'occurrence", () => {
     expect(plan.duplicates).toBe(2);
   });
 
+  test("un export dans un AUTRE ordre, mêmes faits : zéro trade, zéro P&L ajouté", async () => {
+    const a = row({ pnl: 50 });
+    const b = row({ pnl: -20, direction: "short" });
+    const c = row({ date: "2026-10-22", pnl: 75 });
+    const first = planCsvImport(await assignImportKeys([a, b, a, c]), []);
+    const journal = first.fresh.map((r) => ({ ...r.trade, importKey: r.key }));
+    for (const permuted of [
+      [c, a, b, a],
+      [a, a, c, b],
+      [b, c, a, a],
+    ]) {
+      const again = planCsvImport(await assignImportKeys(permuted), journal);
+      expect(again.fresh).toHaveLength(0);
+      expect(again.fresh.reduce((s, r) => s + r.trade.pnl, 0)).toBe(0);
+      expect(again.duplicates).toBe(4);
+    }
+  });
+
   test("les annotations ne changent pas l'identité d'une ligne", () => {
     expect(canonicalTradeContent(row({ notes: "a" } as Partial<Row>))).toBe(
       canonicalTradeContent(row({ notes: "b" } as Partial<Row>)),

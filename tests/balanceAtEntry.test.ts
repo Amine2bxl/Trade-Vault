@@ -160,6 +160,20 @@ describe("UNKNOWN : rien d'honnête à dire", () => {
     expect(b).toEqual({ status: "UNKNOWN", balance: null, gaps: ["order_unproven"] });
   });
 
+  test("aucune conversion implicite : un retrait dans une autre devise rend le solde inconnu", () => {
+    const b = balanceBeforeEntry(
+      target,
+      ledger({
+        snapshots: [
+          { ...snap(50_000, "2026-10-19T21:00:00Z"), currency: "USD" },
+          { ...snap(49_200, "2026-10-21T21:00:00Z"), currency: "USD" },
+        ],
+        cash: [{ ...cash(-1_000, "2026-10-20T22:00:00Z"), currency: "EUR" }],
+      }),
+    );
+    expect(b).toEqual({ status: "UNKNOWN", balance: null, gaps: ["currency_mismatch"] });
+  });
+
   test("un trade sans compte", () => {
     expect(balanceBeforeEntry({ ...target, accountId: null }, ledger()).status).toBe("UNKNOWN");
   });

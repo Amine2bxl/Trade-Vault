@@ -355,6 +355,35 @@ describe("la synchronisation", () => {
     expect(cursor.syncedThrough?.["900"]).toBe("2026-10-08T13:42:00.000Z");
   });
 
+  test("chaque exécution et ses frais sont consignés BRUTS, une seule fois", async () => {
+    const sb = fakeSb();
+    const conn = await connection("tv-acc-50k");
+    await syncConnection(sb, conn);
+    const raw = tables.raw_ingest_events ?? [];
+    expect(raw.map((r) => r.source_key).sort()).toEqual([
+      "tradovate:demo:900:fee:1",
+      "tradovate:demo:900:fee:2",
+      "tradovate:demo:900:fill:1",
+      "tradovate:demo:900:fill:2",
+    ]);
+    expect(raw.every((r) => r.source_kind === "broker" && r.account_id === "tv-acc-50k")).toBe(
+      true,
+    );
+    expect(raw.every((r) => /^[0-9a-f]{64}$/.test(String(r.payload_sha256)))).toBe(true);
+    // Rejouer : même clé, même empreinte — rien de plus.
+    await syncConnection(sb, conn);
+    expect(tables.raw_ingest_events).toHaveLength(4);
+  });
+
+  test("API de frais en panne : l'exécution est consignée, pas un faux relevé de frais", async () => {
+    feeOutage = true;
+    await syncConnection(fakeSb(), await connection("tv-acc-50k"));
+    expect((tables.raw_ingest_events ?? []).map((r) => r.source_key).sort()).toEqual([
+      "tradovate:demo:900:fill:1",
+      "tradovate:demo:900:fill:2",
+    ]);
+  });
+
   test("le même numéro en démo et en live : deux trades, aucun ignoré en silence", async () => {
     const sb = fakeSb();
     const demo = await connection("tv-acc-50k");
