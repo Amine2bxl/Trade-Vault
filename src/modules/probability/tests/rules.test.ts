@@ -42,7 +42,7 @@ describe("drawdown STATIQUE — le plancher ne bouge jamais", () => {
   });
 });
 
-describe("trailing INTRADAY — le plancher suit chaque nouveau plus haut", () => {
+describe("trailing sur trades clôturés — le plancher suit chaque nouveau plus haut", () => {
   const rules: AccountRules = { ...base, maxDrawdown: 2000, drawdownType: "trailing" };
 
   it("un gain resserre immédiatement la marge", () => {
@@ -225,3 +225,34 @@ describe("suivi du drawdown", () => {
     expect(s.maxDrawdown).toBe(1800);
   });
 });
+
+describe("trailing sur le plus haut LATENT — refusé sans trajectoire de prix", () => {
+  it("le moteur refuse au lieu d'approcher en silence", () => {
+    expect(() =>
+      initState({ ...base, maxDrawdown: 2000, drawdownType: "trailingLatent" }),
+    ).toThrow("LATENT_PATH_REQUIRED");
+  });
+
+  it("l'approximation sur trades clôturés est PLUS clémente qu'un trailing latent", () => {
+    // Trade +1 500 qui a touché +2 500 en cours de route, puis −2 300.
+    // Latent : plancher 52 500 − 2 000 = 50 500 → 50 000 − … échec dès 50 200.
+    // Clôturé : plancher 51 500 − 2 000 = 49 500 → 49 200 échoue aussi, mais
+    // un −1 900 (solde 49 600) passe en clôturé et échouerait en latent.
+    const closed: AccountRules = { ...base, maxDrawdown: 2000, drawdownType: "trailing" };
+    const s = play(closed, [1500, -1900]);
+    expect(s.outcome).toBe("open");
+    // Le même parcours en latent aurait un plancher à 50 500 > 49 600.
+    expect(49_600).toBeLessThan(50_000 + 2500 - 2000);
+  });
+});
+
+describe("frais : un trade à P&L brut nul devient une perte", () => {
+  it("le coût par trade fait franchir le plancher", () => {
+    const rules: AccountRules = { ...base, maxDrawdown: 100, drawdownType: "static" };
+    const fee = 5;
+    const s = play(rules, Array.from({ length: 20 }, () => 0 - fee));
+    expect(s.outcome).toBe("failed");
+    expect(s.trades).toBe(20);
+  });
+});
+

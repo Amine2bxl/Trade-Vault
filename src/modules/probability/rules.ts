@@ -25,11 +25,19 @@
  *                Plancher = solde initial − drawdown max. Gagner ne le
  *                remonte jamais.
  *
- *   `trailing` — le plancher suit le PLUS HAUT solde atteint, trade par
- *                trade (intraday). Plancher = plus haut − drawdown max. Un
- *                gain intra-journalier resserre immédiatement la marge, même
- *                si le trader rend ce gain avant la clôture. C'est le plus
- *                sévère des trois.
+ *   `trailing` — le plancher suit le PLUS HAUT solde atteint APRÈS CHAQUE
+ *                TRADE CLÔTURÉ. Plancher = plus haut − drawdown max. Un gain
+ *                intra-journalier resserre immédiatement la marge, même si le
+ *                trader le rend avant la clôture. C'est une APPROXIMATION de
+ *                clôture : une firme qui suit le plus haut LATENT (le gain non
+ *                réalisé au meilleur moment du trade) est plus sévère encore,
+ *                et ce moteur, qui ne connaît que des résultats de trades, la
+ *                sous-estime toujours.
+ *
+ *   `trailingLatent` — ce plus haut latent. Il exige la trajectoire de prix
+ *                de chaque trade (MFE, ticks), que le simulateur n'a pas :
+ *                il est REFUSÉ (`LATENT_PATH_REQUIRED`) plutôt qu'approché
+ *                en silence.
  *
  *   `trailingEod` — le plancher suit le plus haut solde de CLÔTURE de
  *                journée. Un pic atteint puis rendu dans la même séance ne
@@ -42,7 +50,10 @@
  */
 
 /** Comment le plancher de perte évolue. Voir le commentaire d'en-tête. */
-export type DrawdownType = "static" | "trailing" | "trailingEod";
+export type DrawdownType = "static" | "trailing" | "trailingEod" | "trailingLatent";
+
+/** Les types que ce moteur sait calculer sans trajectoire de prix. */
+export const SIMULATABLE_DRAWDOWNS: readonly DrawdownType[] = ["static", "trailing", "trailingEod"];
 
 /**
  * Les règles d'un compte, telles que le trader les lit sur son contrat.
@@ -124,6 +135,9 @@ function computeFloor(rules: AccountRules, peak: number, peakEod: number): numbe
 }
 
 export function initState(rules: AccountRules): AccountState {
+  // Un trailing sur le plus haut LATENT ne se simule pas à partir de
+  // résultats de trades : le refuser vaut mieux qu'une certitude fausse.
+  if (rules.drawdownType === "trailingLatent") throw new Error("LATENT_PATH_REQUIRED");
   const start = rules.startingBalance;
   return {
     balance: start,
