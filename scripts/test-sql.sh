@@ -202,6 +202,20 @@ for passe in 1 2; do
 done
 echo "→ assertions expériences de progression (RLS A/B, protocole figé, clôture définitive)"
 psql_run -f tests/sql/progress-experiments.sql
+TENANT_MIGRATION="supabase/migrations/20261030220000_restrict_cross_tenant_functions.sql"
+echo "→ migration $TENANT_MIGRATION (appliquée deux fois)"
+for passe in 1 2; do
+  MIGRATION_LOG=$(mktemp)
+  if ! psql_run -f "$TENANT_MIGRATION" >"$MIGRATION_LOG" 2>&1; then
+    grep -v "^NOTICE:" "$MIGRATION_LOG" >&2 || true
+    rm -f "$MIGRATION_LOG"
+    echo "ÉCHEC : la migration restrict_cross_tenant_functions ne s'applique pas (passe $passe)." >&2
+    exit 1
+  fi
+  rm -f "$MIGRATION_LOG"
+done
+echo "→ assertions fonctions privilégiées (lecture limitée à soi, anon exclu)"
+psql_run -f tests/sql/tenant-functions.sql
 echo "→ concurrence (deux sessions simultanées)"
 if [ -n "$CONN" ]; then
   PSQL_ARGS="$CONN" bash tests/sql/concurrency.sh

@@ -32,7 +32,6 @@ const ROOT_DESCRIPTION =
 const GOOGLE_FONTS_URL =
   "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Mono:wght@400;500;600;700&display=swap";
 
-import { lockZoom } from "../shared/lock-zoom";
 import { PAGES } from "@/app/types";
 import { pageFromPath } from "@/app/utils/pageUrl";
 
@@ -169,8 +168,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       {
         name: "viewport",
-        content:
-          "width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover",
+        // Le zoom reste au trader (WCAG 1.4.4). Le zoom AUTOMATIQUE d'iOS sur un
+        // champ est déjà évité à la source : champs à 16 px sur téléphone
+        // (`styles.css`, « iOS focus-zoom guard »).
+        content: "width=device-width, initial-scale=1, viewport-fit=cover",
       },
       { name: "theme-color", content: "#0a0b0d" },
       {
@@ -320,8 +321,6 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-
-  useEffect(() => lockZoom(), []);
 
   // GA4 — injecté uniquement si VITE_GA4_MEASUREMENT_ID est défini (sinon no-op).
   useEffect(() => {

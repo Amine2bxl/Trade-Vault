@@ -507,7 +507,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
                     </span>
                     {a.unknown > 0 && (
                       <span className="text-[10px] text-slate-500">
-                        {a.coveragePct}% {lang === "fr" ? "vérifiés" : "verified"}
+                        {t("mistakes.verifiedPct").replace("{pct}", String(a.coveragePct))}
                       </span>
                     )}
                   </div>
