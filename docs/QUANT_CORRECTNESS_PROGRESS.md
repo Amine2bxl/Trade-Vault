@@ -572,7 +572,7 @@ Protocole figé, respect vérifiable séance par séance, P&L descriptif face à
 
 ## Lot 5 — Product Hardening (30 octobre 2026)
 
-Branche `chore/product-hardening-lot5`, empilée sur `feat/jarvis-evidence-lot4`. Migration additive `20261030220000_restrict_cross_tenant_functions.sql` — **non appliquée en production** (autorisation demandée : elle corrige une fuite active).
+Branche `chore/product-hardening-lot5`, empilée sur `feat/jarvis-evidence-lot4`. Migration additive `20261030220000_restrict_cross_tenant_functions.sql` — **appliquée en production le 30 octobre 2026 sur autorisation du propriétaire** (version distante `restrict_cross_tenant_functions`).
 
 ### Défauts corrigés
 | Défaut | Correctif | Preuve |
@@ -588,14 +588,14 @@ Branche `chore/product-hardening-lot5`, empilée sur `feat/jarvis-evidence-lot4`
 ### Critères de sortie L5 (handoff §9)
 | Critère | Statut | Preuve |
 |---|---|---|
-| Sécurité multi-tenant des fonctions privilégiées | **DONE (code + test SQL)** ; **application en production en attente d'autorisation** | `tenant-functions.sql` ; constat `pg_proc` en lecture seule |
+| Sécurité multi-tenant des fonctions privilégiées | **DONE, appliqué en production** | `tenant-functions.sql` ; en production après application : `has_function_privilege` (`anon` : aucun `EXECUTE` ; déclencheurs non appelables par `authenticated`), garde éprouvée avec des identifiants fictifs (soi : autorisé ; autre : `insufficient_privilege`) ; l'advisor « Public Can Execute » ne cite plus ces fonctions. Appelants en base vérifiés : tous passent l'utilisateur lui-même |
 | Accessibilité : zoom | **DONE** | viewport, `lock-zoom.ts` retiré |
 | Accessibilité : graphiques Recharts sans alternative textuelle | **OPEN** | constat axe du lot 0, non traité |
 | Documentation publique (`llms.txt`) vs intégration broker | **DONE** | ci-dessus |
 | Landing : « No broker connection — there is no API » (`landing/i18n.tsx`) | **DÉCISION PRODUIT** | vrai pour l'utilisateur tant que la liaison Tradovate n'est pas activée en production ; à réécrire le jour où elle l'est |
 | i18n : chaînes codées en dur | **PARTIAL** | cas `lang === "fr" ?` corrigés ; restent 111 ternaires `fr ? "…"` bilingues (facturation, `ChecklistWizard`, un `aria-label` de Goals) — les dix autres langues y voient l'anglais |
-| Stripe sandbox (checkout, 3DS, refus, webhooks rejoués, portail) | **BLOCKED_EXTERNAL** | aucun compte de test ni secret dans la session |
-| OAuth Tradovate réel (refresh, 403/429, idempotence) | **BLOCKED_EXTERNAL** | accès partenaire absent |
+| Stripe sandbox (checkout, 3DS, refus, webhooks rejoués, portail) | **NON VALIDÉ — écarté par le propriétaire** (30 octobre 2026) | aucune preuve ; ne pas présenter Stripe comme validé |
+| OAuth Tradovate réel (refresh, 403/429, idempotence) | **NON VALIDÉ — écarté par le propriétaire** (30 octobre 2026) | aucune preuve ; ne pas présenter la synchro Tradovate comme validée |
 | E2E authentifié, charge, reprise après panne | **BLOCKED_EXTERNAL** | hôte Supabase bloqué par le réseau de la session |
 | Protection de `main` | **BLOCKED_EXTERNAL** | réglage du dépôt, hors de portée de la session |
 | Advisor Supabase « Leaked Password Protection Disabled » | **ACTION PROPRIÉTAIRE** | réglage Auth du tableau de bord Supabase |

@@ -100,7 +100,7 @@ La CI et les corrections ponctuelles ne suffisent pas pour déclarer tout le cha
 | E2 | Préserver migrations additives et utilisateurs existants | Chaque lot P0 | GATE : aucun schéma destructif, rollback documenté |
 | E3 | Golden datasets indépendants et invariants | L0 puis chaque lot P0 | PARTIAL : ledger fixe + `rEvidenceConsistency` (concordance des consommateurs) + harnais de rendu `scripts/l0-ui-check` ; reste multi-fills, commissions et solde intratrade (lot 1/3) |
 | E4 | Évaluer les tests en production/charge | L5 P0 | OPEN : preuves test/preview/replay |
-| E5 | RLS, confidentialité, accessibilité/zoom | L5 P0 | PARTIAL : fuite entre comptes des fonctions de palier corrigée (test SQL, production en attente d'autorisation), zoom rendu ; graphiques Recharts sans alternative textuelle OPEN |
+| E5 | RLS, confidentialité, accessibilité/zoom | L5 P0 | PARTIAL : fuite entre comptes des fonctions de palier corrigée et appliquée en production (test SQL + vérification en production), zoom rendu ; graphiques Recharts sans alternative textuelle OPEN |
 | E6 | Stripe abonnement/annulation/3DS/webhooks | L5 P0 | OPEN : compte test et secrets nécessaires |
 | E7 | Broker OAuth et synchronisation réelle | L1/L5 P0 | OPEN : permissions, déduplication, migrations, vérification réelle |
 | E8 | Traductions, navigation, mauvais composants montés | L5/L6 P1 | PARTIAL : ternaires `lang === "fr"` corrigés ; 111 ternaires `fr ? "…"` restants (facturation, checklist) |
