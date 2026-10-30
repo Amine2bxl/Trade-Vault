@@ -599,3 +599,19 @@ Branche `chore/product-hardening-lot5`, empilée sur `feat/jarvis-evidence-lot4`
 | E2E authentifié, charge, reprise après panne | **BLOCKED_EXTERNAL** | hôte Supabase bloqué par le réseau de la session |
 | Protection de `main` | **BLOCKED_EXTERNAL** | réglage du dépôt, hors de portée de la session |
 | Advisor Supabase « Leaked Password Protection Disabled » | **ACTION PROPRIÉTAIRE** | réglage Auth du tableau de bord Supabase |
+
+## Lot 6 — Consolidation : cartographie préalable (30 octobre 2026)
+
+**Consolidation non démarrée, volontairement.** Le handoff (§10) la conditionne à des lots 0–5 validés, et l'audit E12 interdit de déplacer du code avant cette validation. Or les lots 0–5 sont des PR empilées, non fusionnées, avec des contrôles `BLOCKED_EXTERNAL`. Ce lot livre seulement la carte et le plan, preuves comprises, pour que la suppression se fasse d'un bloc une fois la pile fusionnée.
+
+### Carte d'usage (recherche statique, dynamique, `lazyPage`, `import.meta.glob`, `PAGES`, routes, scripts, config)
+| Fichier | Consommateurs de production | Lu par des tests | Décision |
+|---|---|---|---|
+| `features/monte-carlo/monteCarloEngine.ts` | **Aucun appel.** Seuls ses types (`MonteCarloResult`, `RMultipleSample`, `SimulationRun`) sont lus, par `monteCarloViz.ts`. | `monteCarloCsv`, `csvBrokerFormats` (§ « ce que Monte-Carlo exige d'un fichier »), `monteCarloViz` | **À supprimer après fusion de L0–L5.** Avant cela, réécrire sur `strategyCsv` + `historicalModel` (moteur canonique) les assertions de `csvBrokerFormats` et de `monteCarloCsv` qui passent par l'ancien moteur : la couverture du code vivant ne doit pas baisser. |
+| `features/monte-carlo/monteCarloViz.ts` | Seul `histogram` est utilisé (`StrategyDetails.tsx`). `pathBands`, `samplePaths`, `chartRows`, `drawdownStats`, `streakStats`, `probabilityOfProfit` et `rHistogram` n'ont aucun consommateur ; le champ `samplePaths` de `probability/engine.ts` est homonyme, mais ce n'est pas un usage. | `monteCarloViz` | Garder `histogram`. Retirer le reste avec l'ancien moteur, et ses tests avec lui. |
+| `features/simulator/Simulator.tsx` (+ `datasetQuality.ts`) | **Non monté** : absent de `PAGES`, de `pageModules.ts` et des routes ; aucun import, ni statique ni dynamique. | `staticCards.test.ts` (lecture du fichier), `simulator/tests/datasetQuality.test.ts` | **Garder.** Fonction mise en attente, pas du code mort : la ROADMAP la cite, et son moteur `modules/probability/engine` reste vivant (Jarvis `ConversationWorkspace`, `probability/goals`, `compare`, `sensitivity`). Le monter ou le retirer est une décision produit. |
+
+### Reste du lot 6 (après fusion de L0–L5)
+- Suppression ci-dessus ; dédoublonnage des KPI et des conventions d'adhérence.
+- Traduction des 111 ternaires `fr ? "…"` restants (E8).
+- Revue transverse finale (E13), sur une base fusionnée.
