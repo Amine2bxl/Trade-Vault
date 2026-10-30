@@ -961,6 +961,8 @@ export default function Analytics({ trades }: AnalyticsProps) {
             </Card>
             <EdgeLabCard
               trades={cutoffTrades}
+              allTrades={trades}
+              accountId={activeId ?? null}
               accountName={(id) => accounts.find((a) => a.id === id)?.name ?? id}
             />
             <div className="grid gap-3 md:grid-cols-2 md:gap-4">

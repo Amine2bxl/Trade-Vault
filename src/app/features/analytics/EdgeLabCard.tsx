@@ -1,4 +1,11 @@
 import { useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/app/contexts/AuthContext";
+import { useToast } from "@/app/contexts/ToastContext";
+import { createResearchNote } from "@/app/store/research";
+import { todayLocalDate } from "@/shared/calendar-date";
+import { ResearchNotes } from "./ResearchNotes";
+import { researchNotesKey, useResearchNotes } from "./useResearchNotes";
 import type { Trade } from "@/app/types";
 import { useT } from "@/app/i18n/LanguageContext";
 import { intlLocale } from "@/app/i18n/locale";
@@ -6,12 +13,13 @@ import { formatPnl } from "@/domain/tradeCalcs";
 import { MIN_SESSIONS, MIN_TRADES } from "@/modules/patterns/thresholds";
 import {
   analyzeDimension,
+  draftProtocol,
   outOfSample,
   type EdgeCell,
   type EdgeDimension,
   type HoldoutStatus,
 } from "@/modules/research";
-import { Card, SelectPicker, cn } from "@/shared/ui";
+import { Button, Card, SelectPicker, cn } from "@/shared/ui";
 
 /**
  * CONDITIONS DE PERFORMANCE — EdgeLab (lot 2), dans Analytics.
@@ -29,12 +37,26 @@ type Cost = (typeof COSTS)[number];
 
 export function EdgeLabCard({
   trades,
+  allTrades,
+  accountId,
   accountName,
 }: {
+  /** Trades de la période affichée. */
   trades: Trade[];
+  /** Historique COMPLET du compte : base des hypothèses suivies. */
+  allTrades: Trade[];
+  accountId: string | null;
   accountName: (id: string) => string;
 }) {
   const { t, lang } = useT();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const notesQuery = useResearchNotes();
+  const notes = (notesQuery.data?.notes ?? []).filter(
+    (n) => !n.archived && n.accountId === accountId,
+  );
+  const followed = new Set(notes.map((n) => `${n.protocol.dimension}:${n.protocol.cellKey}`));
   const [dimension, setDimension] = useState<EdgeDimension>("strategy");
   const [cost, setCost] = useState<Cost>("0");
   const extraCostPerTrade = Number(cost);
@@ -72,6 +94,30 @@ export function EdgeLabCard({
     return c.fragile ? `${base} · ${t("edge.fragile")}` : base;
   };
   const holdoutText = (s: HoldoutStatus) => t(`edge.holdout.${s}`);
+
+  // Suivre un écart : son protocole se fige MAINTENANT, holdout prospectif.
+  const follow = async (c: EdgeCell) => {
+    if (!user) return;
+    const direction = c.verdict === "positive_observed" ? 1 : -1;
+    const protocol = draftProtocol(
+      allTrades,
+      {
+        dimension,
+        cellKey: c.key,
+        direction,
+        hypothesis: t(
+          direction > 0 ? "research.hypothesisPositive" : "research.hypothesisNegative",
+        ),
+      },
+      todayLocalDate(),
+    );
+    try {
+      await createResearchNote(user.id, accountId, protocol);
+      await queryClient.invalidateQueries({ queryKey: researchNotesKey(user.id) });
+    } catch {
+      toast(t("research.saveFailed"), "error");
+    }
+  };
 
   return (
     <Card className="overflow-hidden animate-fade-in-up stagger-3">
@@ -159,11 +205,37 @@ export function EdgeLabCard({
                       .replace("{n}", String(o.holdoutN))}
                   </p>
                 )}
+                {notesQuery.data?.available &&
+                  (c.verdict === "positive_observed" || c.verdict === "negative_observed") &&
+                  !followed.has(`${dimension}:${c.key}`) && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="mt-2"
+                      onClick={() => void follow(c)}
+                    >
+                      {t("research.follow")}
+                    </Button>
+                  )}
               </li>
             );
           })}
         </ul>
       )}
+
+      <ResearchNotes
+        notes={notes}
+        allTrades={allTrades}
+        cellLabel={(n) =>
+          n.protocol.dimension === "session"
+            ? t(`session.${n.protocol.cellKey as "asia" | "london" | "newyork"}`)
+            : n.protocol.dimension === "weekday"
+              ? weekdayFmt.format(new Date(Date.UTC(2026, 0, 4 + Number(n.protocol.cellKey))))
+              : n.protocol.dimension === "account"
+                ? accountName(n.protocol.cellKey)
+                : n.protocol.cellKey
+        }
+      />
 
       <p className="tv-hint border-t border-white/[0.06] px-4 py-3 md:px-5">
         {t("edge.method")

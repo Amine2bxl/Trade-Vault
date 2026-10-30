@@ -2203,6 +2203,23 @@ const en = {
   "behavior.excluded": "{n} sessions set aside: order of closes or entry times not proven.",
   "behavior.caveat":
     "A trader who stops earlier does not have the same session. This scenario is not a gain you missed.",
+  "research.title": "Followed hypotheses",
+  "research.follow": "Follow this difference on future sessions",
+  "research.hypothesisPositive": "keeps a positive net expectancy on sessions recorded after today",
+  "research.hypothesisNegative": "keeps a negative net expectancy on sessions recorded after today",
+  "research.verdict.insufficient": "Waiting for data",
+  "research.verdict.supported": "Supported out of sample",
+  "research.verdict.contradicted": "Contradicted out of sample",
+  "research.verdict.inconclusive": "Inconclusive",
+  "research.holdoutFrom": "holdout from {date}",
+  "research.progress": "{n} trades · {sessions} sessions",
+  "research.missing": "{trades} more trades and {sessions} more sessions before concluding.",
+  "research.trainingChanged":
+    "Trades of the learning period changed since this hypothesis was written (import, edit, deletion): the comparison is no longer valid.",
+  "research.methodChanged":
+    "The analysis method changed since this hypothesis was written: the comparison is no longer valid.",
+  "research.archive": "Archive",
+  "research.saveFailed": "Could not save. Try again.",
   "edge.title": "Performance conditions",
   "edge.subtitle":
     "Where your results differ from zero, and how sure that is. An observed difference is not a proven, lasting edge.",

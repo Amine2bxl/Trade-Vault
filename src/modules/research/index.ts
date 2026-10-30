@@ -33,3 +33,11 @@ export {
   type ScenarioTrade,
   type StopAfterLossesScenario,
 } from "./behaviorLab";
+export {
+  draftProtocol,
+  evaluateProtocol,
+  type ProtocolEvaluation,
+  type ProtocolSnapshot,
+  type ProtocolVerdict,
+  type ResearchProtocol,
+} from "./notebook";

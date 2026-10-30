@@ -74,7 +74,8 @@ Ces trois décisions prévalent sur une checklist antérieure ambiguë du regist
 | Commit applicatif HEAD vérifié | `1c6801155de5e69dfad357ede9a01a5cf7c17202` |
 | CI | Workflow **40556362836 — SUCCESS** : TypeScript, ESLint, build, Bun multi-TZ, SQL |
 | Lot 1 | **Implémenté, en revue** (PR #236) ; gates externes `BLOCKED_EXTERNAL` — voir ADDENDUM 3 |
-| Lots 2–6 | **NOT STARTED** |
+| Lot 2 | **Implémenté, en revue** (PR à la branche `feat/research-edge-behavior-lot2`) — voir ADDENDUM 4 |
+| Lots 3–6 | **NOT STARTED** |
 | Supabase | Projet TradeVault ; inspection de schéma en lecture seule dans la reprise ; aucune nouvelle migration distante appliquée au titre de ces lots |
 | Preview | Une preview Vercel READY a été observée sur la branche ; ne pas confondre ce constat avec un E2E authentifié |
 | Protection GitHub `main` | **À vérifier via des droits appropriés** : consultation API de protection refusée (403). Le document d'audit ancien la signalait non protégée ; ne pas annoncer que cela a été revalidé aujourd'hui |
@@ -696,4 +697,9 @@ Les éléments suivants sont **postérieurs** à l'état du HEAD `1c680115` ment
 - Branche `feat/data-integrity-lot1`, PR #236 (brouillon, base `feat/quant-correctness-lot0`). Aucune fusion sur `main`, migration non appliquée en production.
 - Réalisé, écarts et reste : `docs/DATA_INTEGRITY_LOT1_DESIGN.md` § Réalisation ; preuves et statut des gates : `docs/QUANT_CORRECTNESS_PROGRESS.md` § Lot 1.
 - Entrées disponibles pour le lot 2 : `measuredR` tenant compte de `risk_source`, instants UTC prouvés (`entry_at`/`exit_at`) et minute Eastern déduite, ordre de clôture vérifié, frais inconnus distingués de zéro, soldes avant entrée avec niveau de preuve, rapport de qualité (`domain/dataQuality`).
+
+# ADDENDUM 4 — Lot 2 (30 octobre 2026)
+
+- Branche `feat/research-edge-behavior-lot2`, empilée sur le lot 1. Livré, critères et restes : `docs/QUANT_CORRECTNESS_PROGRESS.md` § Lot 2 ; indicateurs : `docs/FEATURES.md`.
+- Entrées pour le lot 3 : bootstrap par séances reproductible (`modules/research/bootstrap`), séances NY prouvées, R mesuré, ordre de clôture vérifié ; pour le lot 4 : verdicts EdgeLab avec méthode, n, intervalle, q et version — la matière du contrat de preuve de Jarvis.
 

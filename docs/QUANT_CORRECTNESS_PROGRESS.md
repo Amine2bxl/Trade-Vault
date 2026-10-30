@@ -475,3 +475,38 @@ Branche `feat/data-integrity-lot1`, empilée sur `feat/quant-correctness-lot0`. 
 **Vérification de rendu (doublure, pas un E2E authentifié)** : section Trésorerie et soldes, bureau 1 360 px et mobile 360 px — aucune erreur de page, aucun débordement horizontal, ajout d'un dépôt reflété, lignes en quarantaine affichées.
 
 **Statut : lot 1 implémenté et testé ; non clos à 100 %** — deux gates `BLOCKED_EXTERNAL` (preview Supabase, Tradovate réel) et deux restes internes documentés (fills normalisés persistés, arbitrage des conflits). Aucune donnée historique n'a été réécrite.
+
+## Lot 2 — EdgeLab, BehaviorLab, Research Notebook (30 octobre 2026)
+
+Branche `feat/research-edge-behavior-lot2`, empilée sur `feat/data-integrity-lot1`. Migration additive `20261030160000_research_notebook.sql` — **non appliquée en production**.
+
+### Livré
+
+- **Moteur pur `modules/research`** :
+  - bootstrap par blocs de séances, avec graine, tirages et version rendus avec le résultat ;
+  - Benjamini-Hochberg ;
+  - analyse par dimension (setup, symbole, session NY prouvée, jour, compte) ;
+  - verdicts « écart observé » / « indiscernable », jamais « meilleur » ;
+  - fragilité au trade extrême ;
+  - stress de coût par trade ;
+  - découpe chronologique 60/20/20 par séances ;
+  - scénario BehaviorLab hypothétique ;
+  - protocole du Research Notebook.
+- **Seuils** : ceux du produit (`modules/patterns/thresholds` : 30 trades, 20 séances). Aucun nouveau seuil.
+- **Interface** : une carte dans Analytics → Exécution (Conditions de performance, hypothèses suivies) et une carte dans la page Erreurs (scénario). Aucune nouvelle page.
+
+### Critères de sortie L2 (handoff §6)
+
+| Critère | Statut | Preuve |
+|---|---|---|
+| Bootstrap reproductible à graine identique, variation compréhensible sinon | **DONE** | `research.test.ts` |
+| Faible n bloqué ; holdout jamais utilisé pour sélectionner | **DONE** | `research.test.ts` (mutation détectée : sélection sur tout l'historique → échec) |
+| Détails chronologiques : séances, découpe par jour, multi-comptes | **DONE** | Séance = jour NY de l'instant prouvé, sinon date ; scénario groupé par compte et séance |
+| Tests multiples corrigés, couverture incomplète visible | **DONE** | BH sur les seules valeurs testées ; couverture et inconnus affichés |
+| Gains contrefactuels étiquetés hypothétiques | **DONE** | `behaviorLab` (`label: "hypothetical"`), badge et avertissement à l'écran |
+| Research Notebook : protocole figé, révisions sans altérer l'hypothèse, invalidation après ingestion | **DONE (local)** | `notebook.test.ts` ; `tests/sql/research-notebook.sql` (protocole figé — mutation détectée, RLS A/B) |
+| Cohérence analytique / rapports / exports / coach | **PARTIAL** | EdgeLab réutilise `measuredR`, les sessions et l'ordre du lot 1 ; Jarvis n'interroge pas encore EdgeLab (→ lot 4, contrat de preuve) |
+| Expériences comportementales prospectives (hypothèse, durée, conformité) | **PARTIAL** | Le Notebook couvre l'hypothèse d'espérance ; une expérience de RÈGLE (conformité mesurée) n'est pas encore modélisée |
+
+**Validations manquantes** : migration non appliquée sur une base Supabase (réseau bloqué) ; rendu vérifié sur doublure, pas en parcours authentifié réel.
+

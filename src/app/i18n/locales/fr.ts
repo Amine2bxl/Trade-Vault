@@ -2133,6 +2133,25 @@ const fr: Dict = {
   "behavior.excluded": "{n} séances écartées : ordre des clôtures ou heures d'entrée non prouvés.",
   "behavior.caveat":
     "Un trader qui s'arrête plus tôt n'a pas la même séance. Ce scénario n'est pas un gain manqué.",
+  "research.title": "Hypothèses suivies",
+  "research.follow": "Suivre cet écart sur les séances à venir",
+  "research.hypothesisPositive":
+    "garde une espérance nette positive sur les séances enregistrées après aujourd'hui",
+  "research.hypothesisNegative":
+    "garde une espérance nette négative sur les séances enregistrées après aujourd'hui",
+  "research.verdict.insufficient": "En attente de données",
+  "research.verdict.supported": "Soutenue hors échantillon",
+  "research.verdict.contradicted": "Contredite hors échantillon",
+  "research.verdict.inconclusive": "Non concluante",
+  "research.holdoutFrom": "holdout depuis le {date}",
+  "research.progress": "{n} trades · {sessions} séances",
+  "research.missing": "Encore {trades} trades et {sessions} séances avant de conclure.",
+  "research.trainingChanged":
+    "Des trades de la période d'apprentissage ont changé depuis l'écriture de l'hypothèse (import, correction, suppression) : la comparaison n'est plus valide.",
+  "research.methodChanged":
+    "La méthode d'analyse a changé depuis l'écriture de l'hypothèse : la comparaison n'est plus valide.",
+  "research.archive": "Archiver",
+  "research.saveFailed": "Enregistrement impossible. Réessaie.",
   "edge.title": "Conditions de performance",
   "edge.subtitle":
     "Là où tes résultats s'écartent de zéro, et avec quelle certitude. Un écart observé n'est pas un avantage durable prouvé.",
