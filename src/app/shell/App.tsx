@@ -137,7 +137,8 @@ import { canLogTrade, isPlanLimitError } from "../utils/planLimits";
 import { computeBehavioral } from "@/domain/behavioral";
 import { useEconomicCalendar } from "../features/news/useEconomicCalendar";
 import { startOfWeek } from "../features/news/economicEvents";
-import { computeRuleAdherence } from "../trading/ruleAdherence";
+import { ADHERENCE_WINDOW_DAYS, computeRuleAdherence } from "../trading/ruleAdherence";
+import { useVerifiedBalances } from "../trading/useBalanceLedger";
 import type { MorphOrigin, OnboardingAction } from "../features/onboarding/Onboarding";
 import { AuthProvider, useAuth } from "../contexts/AuthContext";
 import { hasLikelySession } from "../utils/sessionHint";
@@ -718,6 +719,11 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
   /* Les clés déjà émises par ce compte, lues en base : la déduplication vaut
      pour tous ses appareils. Relue au plus toutes les dix minutes. */
   const dedupRef = useRef<{ at: number; keys: Set<string> } | null>(null);
+  // Soldes avant entrée PROUVÉS (`domain/balanceAtEntry`) : seuls juges d'une
+  // règle de risque en % sur un trade passé.
+  const verifiedBalances = useVerifiedBalances(trades);
+  const verifiedBalancesRef = useRef(verifiedBalances);
+  verifiedBalancesRef.current = verifiedBalances;
 
   useEffect(() => {
     if (!user?.id || !accountsReady || tradesLoading) return;
@@ -766,7 +772,13 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
               recent: r.trend!.recent,
               previous: r.trend!.previous,
             })),
-          adherence: computeRuleAdherence(trades, rulesRef.current, balance).map((a) => ({
+          adherence: computeRuleAdherence(
+            trades,
+            rulesRef.current,
+            balance,
+            ADHERENCE_WINDOW_DAYS,
+            verifiedBalancesRef.current,
+          ).map((a) => ({
             text: a.text,
             kept: a.kept,
             applicable: a.applicable,

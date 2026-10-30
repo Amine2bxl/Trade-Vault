@@ -3,6 +3,7 @@ import { useAuth } from "@/app/contexts/AuthContext";
 import { useTradingRules } from "@/app/trading/useTradingRules";
 import { useGoalProgress } from "../goals/useGoalProgress";
 import { inspectRuleAdherence, ADHERENCE_WINDOW_DAYS } from "@/app/trading/ruleAdherence";
+import { useVerifiedBalances } from "@/app/trading/useBalanceLedger";
 import {
   TrendingDown,
   CheckCircle2,
@@ -87,10 +88,19 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
   const { user } = useAuth();
   const rules = useTradingRules();
   const { ctx: measureCtx } = useGoalProgress(trades, user?.id);
+  // Le risque en % se juge sur le solde AVANT l'entrée, et seulement quand il
+  // est prouvé (`domain/balanceAtEntry`) — sinon le verdict reste inconnu.
+  const verifiedBalances = useVerifiedBalances(trades);
   const adherence = useMemo(
     () =>
-      inspectRuleAdherence(trades, rules, measureCtx.startingBalance + measureCtx.stats.totalPnl),
-    [trades, rules, measureCtx.startingBalance, measureCtx.stats.totalPnl],
+      inspectRuleAdherence(
+        trades,
+        rules,
+        measureCtx.startingBalance + measureCtx.stats.totalPnl,
+        ADHERENCE_WINDOW_DAYS,
+        verifiedBalances,
+      ),
+    [trades, rules, measureCtx.startingBalance, measureCtx.stats.totalPnl, verifiedBalances],
   );
   /* ── LE PLAN, LA SÉRIE, LE RYTHME ───────────────────────────────────────
      Les trois calculs vivent dans `mistakePlan.ts`, pas ici : ce sont eux qui

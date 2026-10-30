@@ -5,6 +5,7 @@ import { loadTradingPlan } from "./tradingPlan";
 import type { Trade } from "../types";
 import { localDateOf } from "@/shared/calendar-date";
 import { useLiveTable } from "../hooks/useLiveTable";
+import { useVerifiedBalances } from "./useBalanceLedger";
 
 /**
  * Edge Score — hook PARTAGÉ, sur le modèle de `useGoalProgress`.
@@ -81,8 +82,19 @@ export function useEdgeScore(trades: Trade[], userId: string | null | undefined)
 
   const checklistByDay = useMemo(() => readChecklistByDay(userId), [userId]);
 
+  // Soldes avant entrée PROUVÉS seulement. Le risque reste UNKNOWN tant que
+  // la limite du plan n'est pas, elle aussi, historiquement datée
+  // (`riskPlanVersionVerified`) : un solde exact ne suffit pas à juger une
+  // règle qui n'existait peut-être pas encore.
+  const verified = useVerifiedBalances(trades);
   return useMemo(
-    () => computeEdgeScore(trades, { maxRiskPct, startingBalance, checklistByDay }),
-    [trades, maxRiskPct, startingBalance, checklistByDay],
+    () =>
+      computeEdgeScore(trades, {
+        maxRiskPct,
+        startingBalance,
+        checklistByDay,
+        verifiedBalanceBeforeTrade: Object.fromEntries(verified),
+      }),
+    [trades, maxRiskPct, startingBalance, checklistByDay, verified],
   );
 }
