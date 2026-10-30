@@ -62,22 +62,36 @@ function enteredAfter(t: ScenarioTrade, stop: ScenarioTrade): boolean | null {
   return e > x;
 }
 
-export function stopAfterLossesScenario(
+/** Le verdict d'UNE séance face à la règle « s'arrêter après N pertes ». */
+export type SessionRuleStatus =
+  /** Ordre des clôtures ou heures d'entrée non prouvés : ni respect ni écart. */
+  | "unknown"
+  /** N pertes d'affilée jamais atteintes : la règle n'a pas été éprouvée. */
+  | "not_triggered"
+  /** Déclenchée, et aucun trade ouvert après la N-ième perte. */
+  | "complied"
+  /** Déclenchée, et au moins un trade ouvert après la N-ième perte. */
+  | "violated";
+
+export interface SessionRuleResult {
+  /** `compte|jour` de la séance. */
+  key: string;
+  /** Jour de la séance (New York prouvé, sinon date du journal). */
+  day: string;
+  status: SessionRuleStatus;
+  pnl: number;
+  tradesAfterStop: number;
+  pnlAfterStop: number;
+}
+
+/**
+ * Séance par séance — la SEULE lecture de la règle, partagée par le scénario
+ * hypothétique et par les expériences de progression (`experiment.ts`).
+ */
+export function stopAfterLossesSessions(
   trades: readonly ScenarioTrade[],
   maxLosses: number,
-): StopAfterLossesScenario {
-  const out: StopAfterLossesScenario = {
-    label: "hypothetical",
-    maxLosses,
-    sessionsEvaluated: 0,
-    sessionsUnknown: 0,
-    sessionsTriggered: 0,
-    tradesRemoved: 0,
-    removedPnl: 0,
-    actualPnl: 0,
-    hypotheticalPnl: 0,
-    version: BEHAVIOR_LAB_VERSION,
-  };
+): SessionRuleResult[] {
   const groups = new Map<string, ScenarioTrade[]>();
   for (const t of trades) {
     const k = `${t.accountId ?? ""}|${sessionKey(t)}`;
@@ -85,9 +99,20 @@ export function stopAfterLossesScenario(
     list.push(t);
     groups.set(k, list);
   }
-  for (const list of groups.values()) {
+  const out: SessionRuleResult[] = [];
+  for (const [key, list] of [...groups.entries()].sort(([a], [b]) => (a < b ? -1 : 1))) {
+    const day = key.slice(key.indexOf("|") + 1);
+    const pnl = list.reduce((s, t) => s + t.pnl, 0);
+    const unknown: SessionRuleResult = {
+      key,
+      day,
+      status: "unknown",
+      pnl,
+      tradesAfterStop: 0,
+      pnlAfterStop: 0,
+    };
     if (!hasVerifiedRealizedOrder(list)) {
-      out.sessionsUnknown++;
+      out.push(unknown);
       continue;
     }
     const ordered = [...list].sort(compareRealizedChronological);
@@ -118,15 +143,47 @@ export function stopAfterLossesScenario(
       }
     }
     if (undecidable) {
+      out.push(unknown);
+      continue;
+    }
+    out.push({
+      key,
+      day,
+      status: !stop ? "not_triggered" : removed > 0 ? "violated" : "complied",
+      pnl,
+      tradesAfterStop: removed,
+      pnlAfterStop: removedPnl,
+    });
+  }
+  return out;
+}
+
+export function stopAfterLossesScenario(
+  trades: readonly ScenarioTrade[],
+  maxLosses: number,
+): StopAfterLossesScenario {
+  const out: StopAfterLossesScenario = {
+    label: "hypothetical",
+    maxLosses,
+    sessionsEvaluated: 0,
+    sessionsUnknown: 0,
+    sessionsTriggered: 0,
+    tradesRemoved: 0,
+    removedPnl: 0,
+    actualPnl: 0,
+    hypotheticalPnl: 0,
+    version: BEHAVIOR_LAB_VERSION,
+  };
+  for (const s of stopAfterLossesSessions(trades, maxLosses)) {
+    if (s.status === "unknown") {
       out.sessionsUnknown++;
       continue;
     }
-    const actual = list.reduce((s, t) => s + t.pnl, 0);
     out.sessionsEvaluated++;
-    if (stop) out.sessionsTriggered++;
-    out.tradesRemoved += removed;
-    out.removedPnl += removedPnl;
-    out.actualPnl += actual;
+    if (s.status !== "not_triggered") out.sessionsTriggered++;
+    out.tradesRemoved += s.tradesAfterStop;
+    out.removedPnl += s.pnlAfterStop;
+    out.actualPnl += s.pnl;
   }
   const round2 = (n: number) => Math.round(n * 100) / 100;
   out.removedPnl = round2(out.removedPnl);

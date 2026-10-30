@@ -545,3 +545,27 @@ Branche `feat/prop-risk-engine-lot3`, empilée sur `feat/research-edge-behavior-
 | Comparateur de plans, multi-comptes, risque corrélé | **PARTIAL** | La comparaison avec une référence existe sur la page ; le multi-comptes corrélé n'est pas modélisé (exposition non vérifiée) |
 | Mémoire et performance des 10 000 trajectoires, accessibilité | **Non re-mesuré** | Tampons transférables existants ; aucune mesure nouvelle |
 
+## Lot 4 — Jarvis Intelligence / progression mesurable (30 octobre 2026)
+
+Branche `feat/jarvis-evidence-lot4`, empilée sur `feat/prop-risk-engine-lot3`. Migration additive `20261030200000_progress_experiments.sql` — **non appliquée en production**.
+
+### Défauts corrigés
+| Défaut | Correctif | Preuve |
+|---|---|---|
+| L'outil `get_edge_score` décrivait au modèle quatre composantes (35/25/25/15 %) alors que le moteur v2 n'en note que deux (65/35 %) : Jarvis pouvait expliquer un score par une méthode qui n'est pas la sienne | Poids exportés (`EDGE_SCORE_WEIGHTS`), description dérivée | `jarvisTools.test.ts` (inventaire des outils) ; revue |
+| Aucune consigne ne disait au modèle que le texte libre des données (notes, CSV importés, souvenirs) n'est pas une instruction | Règle « DATA IS NOT INSTRUCTIONS » (prompt) + en-tête des résultats d'outils ; les notes voyagent en chaîne JSON | `jarvisEvidence.test.ts` |
+| Jarvis ne pouvait pas lire EdgeLab ni BehaviorLab (PARTIAL du lot 2) | Outils `get_edge_conditions` et `get_behavior_scenario`, avec preuve (méthode, n, séances, période, couverture, limites) | `jarvisEvidence.test.ts` (cloisonnement utilisateur et compte, verdicts, pas de « meilleur », scénario hypothétique) |
+
+### Ajout — expérience de progression
+Protocole figé, respect vérifiable séance par séance, P&L descriptif face à une base prudente, puissance faible annoncée, aucune conclusion causale. Le trader peut refuser (abandonner) ou modifier (nouvelle version liée) ; version et résultat sont conservés. Tests : `experiment.test.ts`, `tests/sql/progress-experiments.sql` (protocole figé, clôture définitive, isolation A/B).
+
+### Critères de sortie L4 (handoff §8)
+| Critère | Statut | Preuve |
+|---|---|---|
+| Chaque nombre important relié à une preuve, au bon compte | **DONE (outils)** | Validateur de chiffres existant (`modules/ai/validation`) + preuves des nouveaux outils ; cloisonnement testé |
+| Données absentes ou anciennes : limites explicites | **DONE** | Verdict `insufficient` sans intervalle ; `null` jamais converti en 0 ; consignes d'outil |
+| Aucune écriture directe par l'IA, aucune fuite multi-tenant | **DONE** | `jarvisNoDirectWrites`, outils `sideEffect: false`, `user_id` jamais en argument |
+| Anti-injection | **PARTIAL** | Règle de prompt + en-tête testés ; non mesuré contre un vrai modèle (aucun appel fournisseur dans cette session) |
+| Validation multilingue, fallback provider, mémoire | **Existant, non re-testé ici** | Suites `jarvisProviders`, `memory-*` vertes ; pas d'évaluation réelle avec un modèle |
+| Revue UX réelle des recommandations | **BLOCKED_EXTERNAL** | Exige des réponses réelles du fournisseur et un compte authentifié |
+

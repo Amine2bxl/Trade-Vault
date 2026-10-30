@@ -41,3 +41,16 @@ export {
   type ProtocolVerdict,
   type ResearchProtocol,
 } from "./notebook";
+export {
+  stopAfterLossesSessions,
+  type SessionRuleResult,
+  type SessionRuleStatus,
+} from "./behaviorLab";
+export {
+  draftExperiment,
+  evaluateExperiment,
+  EXPERIMENT_VERSION,
+  MIN_EXPERIMENT_SESSIONS,
+  type ExperimentProtocol,
+  type ExperimentResult,
+} from "./experiment";

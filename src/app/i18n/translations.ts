@@ -2199,6 +2199,27 @@ const en = {
     "This archived report predates the verified calculation methods. Unverifiable metrics are hidden until recalculated.",
   "reports.recalculate": "Recalculate safely",
   "reports.allAccounts": "All accounts",
+  "experiment.title": "Experiment: a pause after losses",
+  "experiment.running": "Running",
+  "experiment.subtitle":
+    "Fix a rule before trading with it, then measure whether you kept it. Results are described, not credited to the rule.",
+  "experiment.after": "Stop after",
+  "experiment.duration": "For",
+  "experiment.sessionsN": "{n} sessions",
+  "experiment.start": "Start the experiment",
+  "experiment.protocol":
+    "Rule: stop after {n} losses in a row, for {sessions} sessions from {date}. Fixed when started.",
+  "experiment.progress":
+    "{observed}/{target} sessions · rule kept in {complied} of {tested} sessions where it applied · {notTriggered} without the trigger · {unknown} unverifiable.",
+  "experiment.pnl": "Average P&L per session:",
+  "experiment.baseline": "previous {n} sessions:",
+  "experiment.lowPower": "Too few sessions to tell a difference from chance.",
+  "experiment.caveat": "Keeping a rule does not prove it caused your result.",
+  "experiment.complete": "Close the experiment",
+  "experiment.abandon": "Abandon",
+  "experiment.modify": "Change the rule (starts a new version)",
+  "experiment.restart": "Close this version and start the new one",
+  "experiment.saveFailed": "Could not save. Try again.",
   "behavior.title": "Scenario: stop after a losing streak",
   "behavior.hypothetical": "Hypothetical",
   "behavior.subtitle":

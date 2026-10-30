@@ -5,7 +5,10 @@ export const EDGE_WINDOW_DAYS = 10;
 export const EDGE_SCORE_VERSION = 2;
 
 // The two scored dimensions are not proxies of the same mistake tags.
-const WEIGHTS = { cleanTrades: 0.65, risk: 0.35 } as const;
+// Exported: every description of the score (Jarvis tools, docs) is DERIVED
+// from these weights, never restated by hand.
+export const EDGE_SCORE_WEIGHTS = { cleanTrades: 0.65, risk: 0.35 } as const;
+const WEIGHTS = EDGE_SCORE_WEIGHTS;
 type RuleEvidence = "PASS" | "FAIL" | "UNKNOWN";
 
 export interface EdgeInputs {
