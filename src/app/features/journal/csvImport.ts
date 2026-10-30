@@ -19,6 +19,7 @@ import type { Trade } from "@/app/types";
 // Supabase, ce qui rendrait ce module impossible à tester hors navigateur —
 // exactement le problème qu'il vient résoudre.
 import { generateId } from "@/domain";
+import { easternClockOf } from "@/domain/easternClock";
 
 // ── Découpage ───────────────────────────────────────────────────────────────
 
@@ -119,16 +120,40 @@ function validCivilDate(y: number, m: number, d: number): boolean {
  * Parse local broker timestamps as civil date + wall-clock time only.
  * Never guess a UTC instant without a verified source IANA zone (lot 1).
  */
-export function parseDateTime(raw: string): { date: string; time: string } | null {
+export function parseDateTime(
+  raw: string,
+): { date: string; time: string; instant?: string } | null {
   const s = raw.trim();
   if (!s) return null;
-  // ISO and MetaTrader yyyy.mm.dd, with optional seconds.
-  let m = s.match(/^(\d{4})[-./](\d{2})[-./](\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2}))?)?$/);
+  // ISO and MetaTrader yyyy.mm.dd, with optional seconds and fraction, and an
+  // optional UTC offset. WITH an offset (« Z », « +02:00 »), the cell names an
+  // INSTANT : it is kept (`instant`) and the journal clock is derived in New
+  // York time, the journal's convention. WITHOUT one, the clock is taken as
+  // written and no instant is guessed.
+  let m = s.match(
+    /^(\d{4})[-./](\d{2})[-./](\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2})(?:\.\d{1,6})?)?)?(Z|[+-]\d{2}:?\d{2})?$/i,
+  );
   if (m) {
     const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
     if (!validCivilDate(y, mo, d)) return null;
     if (m[4] && (Number(m[4]) > 23 || Number(m[5]) > 59 || (m[6] && Number(m[6]) > 59)))
       return null;
+    if (m[7]) {
+      // Un décalage sans heure ne désigne aucun instant.
+      if (!m[4]) return null;
+      const offset =
+        m[7].toUpperCase() === "Z" ? "Z" : m[7].replace(/^([+-]\d{2})(\d{2})$/, "$1:$2");
+      const iso = `${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:${m[6] ?? "00"}${offset}`;
+      const ny = easternClockOf(iso);
+      if (!ny) return null;
+      const hh = String(Math.floor(ny.minute / 60)).padStart(2, "0");
+      const mm = String(ny.minute % 60).padStart(2, "0");
+      return {
+        date: ny.date,
+        time: `${hh}:${mm}`,
+        instant: new Date(Date.parse(iso)).toISOString(),
+      };
+    }
     return { date: `${m[1]}-${m[2]}-${m[3]}`, time: m[4] ? `${m[4]}:${m[5]}` : "" };
   }
   // American MM/DD/YYYY [hh:mm[:ss] AM/PM].
@@ -168,7 +193,9 @@ export type Field =
   | "entryTime"
   | "exitTime"
   | "strategy"
+  | "fees"
   | "slippage"
+  | "tradeId"
   | "notes";
 
 export const FIELDS: Field[] = [
@@ -181,7 +208,9 @@ export const FIELDS: Field[] = [
   "risk",
   "rMultiple",
   "strategy",
+  "fees",
   "slippage",
+  "tradeId",
   "notes",
 ];
 
@@ -297,7 +326,30 @@ const GUESSES: Record<Field, string[]> = {
   entryTime: ["entry time", "entrytime", "enteredat", "open time", "opened", "heure entree"],
   exitTime: ["exit time", "exittime", "exitedat", "close time", "closed", "heure sortie"],
   strategy: ["strategy", "strategie", "setup", "signal", "systeme"],
-  slippage: ["slippage", "fees", "commission", "frais", "glissement"],
+  /* Les FRAIS ne sont pas du slippage : « Commission » était rangée dans la
+     colonne slippage. Ils vont désormais dans `fees`, déclarés tels quels — le
+     P&L du fichier reste celui du fichier (net ou brut : le fichier ne le dit
+     pas, et le produit ne le devine pas). */
+  fees: ["fees", "fee", "commission", "commissions", "frais", "comm"],
+  slippage: ["slippage", "glissement"],
+  /* L'identifiant de ligne du broker : avec lui, un export corrigé met la
+     ligne en CONFLIT au lieu de créer un second trade (domain/importKey). Pas
+     de « id » nu : il se glisserait dans « Side » ou « Paid ». */
+  tradeId: [
+    "trade id",
+    "tradeid",
+    "trade #",
+    "trade number",
+    "order id",
+    "orderid",
+    "ticket",
+    "position id",
+    "positionid",
+    "deal id",
+    "dealid",
+    "execution id",
+    "fill id",
+  ],
   notes: ["notes", "note", "comment", "commentaire", "description", "remarque"],
 };
 
@@ -403,13 +455,25 @@ export function mapRowsToTrades(
    * synonymes à maintenir, dont un qui prendrait du retard.
    */
   opts?: { required?: Field[] },
-): { valid: Trade[]; invalid: number } {
+): {
+  valid: Trade[];
+  invalid: number;
+  /** Identifiant de ligne (`tradeId`), aligné sur `valid`. */
+  sourceIds: (string | null)[];
+  /** Ligne brute d'origine, alignée sur `valid` (preuve d'import). */
+  sourceRows: string[][];
+  /** Lignes refusées, avec la raison (preuve d'import). */
+  rejected: { row: string[]; reason: "missing_required" | "missing_direction" }[];
+} {
   const required = opts?.required ?? REQUIRED;
   const get = (row: string[], f: Field) => {
     const idx = mapping[f];
     return idx !== undefined ? (row[idx] ?? "").trim() : "";
   };
   const valid: Trade[] = [];
+  const sourceIds: (string | null)[] = [];
+  const sourceRows: string[][] = [];
+  const rejected: { row: string[]; reason: "missing_required" | "missing_direction" }[] = [];
   let invalid = 0;
   for (const row of rows) {
     const dt = parseDateTime(get(row, "date"));
@@ -423,6 +487,7 @@ export function mapRowsToTrades(
       (required.includes("pnl") && pnl === null);
     if (manque || pnl === null) {
       invalid++;
+      rejected.push({ row, reason: "missing_required" });
       continue;
     }
     const entryDt = parseDateTime(get(row, "entryTime"));
@@ -430,15 +495,23 @@ export function mapRowsToTrades(
     const risk = parseMoney(get(row, "risk"));
     const rRaw = parseMoney(get(row, "rMultiple"));
     const slippage = parseMoney(get(row, "slippage"));
+    const fees = parseMoney(get(row, "fees"));
     const direction = parseDirection(get(row, "direction"));
     if (required.includes("direction") && direction === null) {
       invalid++;
+      rejected.push({ row, reason: "missing_direction" });
       continue;
     }
     const riskAmount = risk !== null && risk > 0 ? risk : 0;
+    // L'instant d'entrée n'est connu que si le fichier l'écrit avec son
+    // décalage UTC ; la date du journal suit alors l'heure de New York.
+    const entryAt = entryDt?.instant ?? (entryDt ? null : (dt?.instant ?? null));
+    const exitAt = exitDt?.instant ?? null;
+    sourceIds.push(get(row, "tradeId") || null);
+    sourceRows.push(row);
     valid.push({
       id: generateId(),
-      date: dt?.date ?? "",
+      date: (entryDt?.instant ? entryDt.date : null) ?? dt?.date ?? "",
       symbol,
       // Un long par défaut ne sert qu'aux simulations P&L qui ne sauvegardent
       // aucun trade ; JOURNAL_REQUIRED exige une direction explicite.
@@ -462,44 +535,19 @@ export function mapRowsToTrades(
       mae: null,
       mfe: null,
       slippage: slippage !== null ? slippage : null,
+      fees: fees !== null ? Math.abs(fees) : null,
+      source: "csv",
+      riskSource: riskAmount > 0 ? "csv" : null,
+      entryAt,
+      exitAt: exitAt && entryAt && Date.parse(exitAt) < Date.parse(entryAt) ? null : exitAt,
+      sourceTimezone: entryAt ? "America/New_York" : null,
     });
   }
-  return { valid, invalid };
+  return { valid, invalid, sourceIds, sourceRows, rejected };
 }
 
-/**
- * Signature d'un trade pour la détection de doublons.
- *
- * Date + symbole + P&L + heure d'entrée : deux trades réellement distincts
- * partagent rarement les quatre. Réimporter le même fichier deux fois ne doit
- * pas doubler l'historique — c'est l'erreur la plus courante à l'import.
- */
-export function tradeSignature(tr: Pick<Trade, "date" | "symbol" | "pnl" | "entryTime">): string {
-  return `${tr.date}|${tr.symbol}|${tr.pnl}|${tr.entryTime}`;
-}
-
-/**
- * Sépare les trades à écrire des doublons — ceux déjà au journal ET ceux
- * répétés à l'intérieur du fichier lui-même.
- */
-export function splitDuplicates(
-  candidates: readonly Trade[],
-  existing: readonly Pick<Trade, "date" | "symbol" | "pnl" | "entryTime">[],
-): { fresh: Trade[]; duplicates: number } {
-  const known = new Set(existing.map(tradeSignature));
-  const fresh: Trade[] = [];
-  let duplicates = 0;
-  for (const tr of candidates) {
-    const s = tradeSignature(tr);
-    if (known.has(s)) {
-      duplicates++;
-      continue;
-    }
-    known.add(s);
-    fresh.push(tr);
-  }
-  return { fresh, duplicates };
-}
+// La détection de doublons vit dans `domain/importKey` (lot 1) : clés
+// d'occurrence par compte, multi-ensemble contre l'historique sans clé.
 
 // ── Garde-fous sur le fichier ───────────────────────────────────────────────
 

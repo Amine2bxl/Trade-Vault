@@ -1530,6 +1530,9 @@ const fr: Dict = {
   "import.importBtn": "Importer",
   "import.imported": "trades importés",
   "import.duplicatesSkipped": "doublons ignorés",
+  "import.probableSkipped": "probablement déjà au journal (même date, symbole et P&L) — ignorés",
+  "import.conflictsQuarantined":
+    "lignes en conflit mises en quarantaine (même identifiant, autre contenu) — non importées",
   "import.analyzing": "Analyse de ton fichier…",
   "import.importing": "Import en cours… {done} / {total}",
   "import.dontClose": "Garde cette fenêtre ouverte jusqu'à la fin.",

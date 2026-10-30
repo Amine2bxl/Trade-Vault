@@ -186,6 +186,19 @@ begin
   insert into public.trades (user_id, account_id, trade_date, pnl)
   values ('d0000000-0000-4000-8000-0000000000a1', 'd0000000-0000-4000-8000-00000000aa01', '2026-10-21', 125.5),
          ('d0000000-0000-4000-8000-0000000000a1', 'd0000000-0000-4000-8000-00000000aa01', '2026-10-21', 125.5);
+  -- Sans compte, NULL n'égale rien : l'index partiel refuse quand même le doublon.
+  insert into public.trades (user_id, account_id, trade_date, pnl, import_key)
+  values ('d0000000-0000-4000-8000-0000000000a1', null, '2026-10-21', 125.5, 'csv:k#0');
+  begin
+    insert into public.trades (user_id, account_id, trade_date, pnl, import_key)
+    values ('d0000000-0000-4000-8000-0000000000a1', null, '2026-10-21', 125.5, 'csv:k#0');
+    raise exception 'ASSERT: the same import key was written twice without an account';
+  exception when unique_violation then null;
+  end;
+  -- Sans compte et sans clé : l'historique reste libre.
+  insert into public.trades (user_id, account_id, trade_date, pnl)
+  values ('d0000000-0000-4000-8000-0000000000a1', null, '2026-10-21', 125.5),
+         ('d0000000-0000-4000-8000-0000000000a1', null, '2026-10-21', 125.5);
 end $$;
 
 -- 8. Provenance : valeurs connues seulement, instants ordonnés.

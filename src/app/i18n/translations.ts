@@ -1583,6 +1583,9 @@ const en = {
   "import.importBtn": "Import",
   "import.imported": "trades imported",
   "import.duplicatesSkipped": "duplicates skipped",
+  "import.probableSkipped": "likely already in your journal (same date, symbol and P&L) — skipped",
+  "import.conflictsQuarantined":
+    "conflicting rows quarantined (same ID, different content) — not imported",
   "import.analyzing": "Analysing your file…",
   "import.importing": "Importing… {done} / {total}",
   "import.dontClose": "Keep this window open until it finishes.",

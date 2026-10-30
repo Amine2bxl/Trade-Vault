@@ -88,6 +88,14 @@ import { useRealtimeTrades } from "../trading/useRealtimeTrades";
 import { useLiveSync } from "../hooks/useLiveSync";
 import { useLiveTable } from "../hooks/useLiveTable";
 import { orphanedScreenshots, removeScreenshotFiles } from "../store/storage";
+import { getActiveAccountId } from "../store/accounts";
+import {
+  completeImportBatch,
+  qualifiedSourceKey,
+  recordCsvImport,
+  type ImportMeta,
+  type RawRowRecord,
+} from "../store/imports";
 import { onTable } from "../store/liveSync";
 import { useBrokerSync } from "../features/brokers/useBrokerSync";
 import { useSubscription } from "../hooks/useSubscription";
@@ -1043,9 +1051,42 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
     async (
       imported: Trade[],
       onProgress?: (done: number, total: number) => void,
-    ): Promise<{ saved: number; failed: number; planLimitReached?: boolean }> => {
+      provenance?: { meta: ImportMeta; records: RawRowRecord[] },
+    ): Promise<{
+      saved: number;
+      failed: number;
+      planLimitReached?: boolean;
+      conflicts?: number;
+    }> => {
       if (!user) return { saved: 0, failed: imported.length };
-      const { saved, failed, planLimitReached } = await importTrades(user.id, imported, onProgress);
+      // BRUT D'ABORD : chaque ligne est enregistrée telle que reçue, et la base
+      // met en quarantaine une ligne qui contredit un fait déjà reçu (même
+      // identifiant, autre contenu). Seul le reste devient un trade.
+      let toWrite = imported;
+      let batchId: string | null = null;
+      let conflicts = 0;
+      const accountId = getActiveAccountId();
+      if (provenance) {
+        const rec = await recordCsvImport(user.id, accountId, provenance.meta, provenance.records);
+        batchId = rec.batchId;
+        if (rec.conflicts.size > 0) {
+          toWrite = imported.filter(
+            (tr) =>
+              !tr.importKey || !rec.conflicts.has(qualifiedSourceKey(accountId, tr.importKey)),
+          );
+          conflicts = imported.length - toWrite.length;
+        }
+      }
+      const { saved, failed, planLimitReached } = await importTrades(user.id, toWrite, onProgress);
+      if (batchId) {
+        const inFile =
+          provenance?.records.filter((r) => r.status === "in_file_conflict").length ?? 0;
+        void completeImportBatch(user.id, batchId, {
+          accepted: saved.length,
+          failed,
+          conflicts: inFile + conflicts,
+        });
+      }
       if (saved.length > 0) {
         setTrades((prev) => [...saved, ...prev]);
         // Backfill: a multi-month CSV history should come with its monthly
@@ -1078,7 +1119,7 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
           }
         })();
       }
-      return { saved: saved.length, failed, planLimitReached };
+      return { saved: saved.length, failed, planLimitReached, conflicts };
     },
     [user, generateReport, t, toast],
   );

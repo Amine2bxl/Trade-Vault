@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { X, Upload, FileSpreadsheet, Check, Loader2, AlertCircle } from "@/shared/ui/icons";
 import { Trade } from "@/app/types";
 import { formatPnl } from "@/domain/tradeCalcs";
@@ -13,19 +13,22 @@ import {
   mapRowsToTrades,
   parseCsv,
   rejectFile,
-  splitDuplicates,
   type Field,
   type FileRejection,
 } from "./csvImport";
+import { assignImportKeys, planCsvImport, sha256Hex, type KeyedRow } from "@/domain/importKey";
+import type { ImportMeta, RawRowRecord } from "@/app/store/imports";
 
 interface ImportCsvModalProps {
   existing: Trade[];
   onClose: () => void;
-  /** Rend le nombre de trades réellement écrits et le nombre d'échecs. */
+  /** Rend le nombre de trades réellement écrits, d'échecs et de conflits
+   *  mis en quarantaine par la base. */
   onImport: (
     trades: Trade[],
     onProgress?: (done: number, total: number) => void,
-  ) => Promise<{ saved: number; failed: number }>;
+    provenance?: { meta: ImportMeta; records: RawRowRecord[] },
+  ) => Promise<{ saved: number; failed: number; conflicts?: number }>;
 }
 
 /** Chaque refus a son message : « il ne s'est rien passé » n'est pas une
@@ -55,9 +58,12 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
   const [result, setResult] = useState<{
     imported: number;
     duplicates: number;
+    probableDuplicates: number;
+    conflicts: number;
     invalid: number;
     failed: number;
   } | null>(null);
+  const [fileMeta, setFileMeta] = useState<{ name: string; sha256: string } | null>(null);
   const [dragOver, setDragOver] = useState(false);
 
   const importing = progress !== null;
@@ -75,6 +81,7 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
     setReading(true);
     try {
       const text = await file.text();
+      setFileMeta({ name: file.name, sha256: await sha256Hex(text) });
       const { headers, rows } = parseCsv(text);
       if (headers.length === 0 || rows.length === 0) {
         setError("noHeaders");
@@ -102,28 +109,97 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
     () =>
       parsed
         ? mapRowsToTrades(parsed.rows, mapping, { required: JOURNAL_REQUIRED })
-        : { valid: [] as Trade[], invalid: 0 },
+        : {
+            valid: [] as Trade[],
+            invalid: 0,
+            sourceIds: [] as (string | null)[],
+            sourceRows: [] as string[][],
+            rejected: [] as { row: string[]; reason: string }[],
+          },
     [parsed, mapping],
   );
+
+  /** Clés d'occurrence (empreinte asynchrone) : tant qu'elles ne sont pas
+   *  calculées, rien ne peut être confirmé. */
+  const [keyed, setKeyed] = useState<KeyedRow<Trade>[] | null>(null);
+  useEffect(() => {
+    let live = true;
+    setKeyed(null);
+    void assignImportKeys(mappedTrades.valid, mappedTrades.sourceIds).then((rows) => {
+      if (live) setKeyed(rows);
+    });
+    return () => {
+      live = false;
+    };
+  }, [mappedTrades]);
 
   /** Ce que l'import fera exactement — calculé AVANT toute écriture, pour que
    *  la confirmation porte sur des chiffres et pas sur une promesse. */
   const plan = useMemo(
-    () => splitDuplicates(mappedTrades.valid, existing),
-    [mappedTrades.valid, existing],
+    () =>
+      keyed
+        ? planCsvImport(keyed, existing)
+        : { fresh: [], statuses: [], duplicates: 0, probableDuplicates: 0, inFileConflicts: 0 },
+    [keyed, existing],
   );
+
+  /** La ligne brute (en-tête → cellule) d'un trade lu. */
+  const rawOf = (row: string[]): Record<string, string> => {
+    const out: Record<string, string> = {};
+    (parsed?.headers ?? []).forEach((h, i) => (out[h || `col${i + 1}`] = row[i] ?? ""));
+    return out;
+  };
+
+  /** La preuve de l'import : chaque ligne du fichier, acceptée ou non. */
+  const buildRecords = async (): Promise<RawRowRecord[]> => {
+    const indexOf = new Map(mappedTrades.valid.map((tr, i) => [tr.id, i]));
+    const records: RawRowRecord[] = plan.statuses.map(({ row, status }) => ({
+      key: row.key,
+      sha256: row.contentSha256,
+      status,
+      raw: rawOf(mappedTrades.sourceRows[indexOf.get(row.trade.id) ?? -1] ?? []),
+      tradeId: status === "accepted" ? row.trade.id : undefined,
+    }));
+    for (const r of mappedTrades.rejected) {
+      const raw = rawOf(r.row);
+      const sha = await sha256Hex(JSON.stringify(raw));
+      records.push({
+        key: `rejected:${sha.slice(0, 40)}`,
+        sha256: sha,
+        status: "rejected",
+        raw,
+        diagnostic: r.reason,
+      });
+    }
+    return records;
+  };
 
   const doImport = async () => {
     if (plan.fresh.length === 0) return;
     setConfirming(false);
     setProgress({ done: 0, total: plan.fresh.length });
+    const fresh = plan.fresh.map((r) => ({ ...r.trade, importKey: r.key }));
     try {
-      const { saved, failed } = await onImport(plan.fresh, (done, total) =>
-        setProgress({ done, total }),
+      const provenance = fileMeta
+        ? {
+            meta: {
+              fileName: fileMeta.name,
+              fileSha256: fileMeta.sha256,
+              rowCount: parsed?.rows.length ?? 0,
+            },
+            records: await buildRecords(),
+          }
+        : undefined;
+      const { saved, failed, conflicts } = await onImport(
+        fresh,
+        (done, total) => setProgress({ done, total }),
+        provenance,
       );
       setResult({
         imported: saved,
         duplicates: plan.duplicates,
+        probableDuplicates: plan.probableDuplicates,
+        conflicts: plan.inFileConflicts + (conflicts ?? 0),
         invalid: mappedTrades.invalid,
         failed,
       });
@@ -132,6 +208,8 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
       setResult({
         imported: 0,
         duplicates: plan.duplicates,
+        probableDuplicates: plan.probableDuplicates,
+        conflicts: plan.inFileConflicts,
         invalid: mappedTrades.invalid,
         failed: plan.fresh.length,
       });
@@ -141,7 +219,9 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
   };
 
   const canImport =
-    JOURNAL_REQUIRED.every((f) => mapping[f] !== undefined) && mappedTrades.valid.length > 0;
+    JOURNAL_REQUIRED.every((f) => mapping[f] !== undefined) &&
+    mappedTrades.valid.length > 0 &&
+    keyed !== null;
   const selectClass =
     "w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500/40 cursor-pointer";
 
@@ -206,6 +286,16 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
               {result.duplicates > 0 && (
                 <span className="tv-num">
                   {result.duplicates} {t("import.duplicatesSkipped")} ·{" "}
+                </span>
+              )}
+              {result.probableDuplicates > 0 && (
+                <span className="tv-num">
+                  {result.probableDuplicates} {t("import.probableSkipped")} ·{" "}
+                </span>
+              )}
+              {result.conflicts > 0 && (
+                <span className="tv-num">
+                  {result.conflicts} {t("import.conflictsQuarantined")} ·{" "}
                 </span>
               )}
               {result.invalid > 0 && (
@@ -396,6 +486,18 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
                     <li>
                       <span className="tv-figure text-slate-300">{plan.duplicates}</span>{" "}
                       {t("import.duplicatesSkipped")}
+                    </li>
+                  )}
+                  {plan.probableDuplicates > 0 && (
+                    <li>
+                      <span className="tv-figure text-slate-300">{plan.probableDuplicates}</span>{" "}
+                      {t("import.probableSkipped")}
+                    </li>
+                  )}
+                  {plan.inFileConflicts > 0 && (
+                    <li>
+                      <span className="tv-figure text-amber-300">{plan.inFileConflicts}</span>{" "}
+                      {t("import.conflictsQuarantined")}
                     </li>
                   )}
                   {mappedTrades.invalid > 0 && (

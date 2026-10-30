@@ -23,7 +23,8 @@
 --
 -- ── ROLLBACK ────────────────────────────────────────────────────────────────
 -- Aucune colonne existante n'est modifiée. Revenir en arrière = supprimer les
--- nouveaux objets (index `trades_user_account_import_key_uidx`, contraintes
+-- nouveaux objets (index `trades_user_account_import_key_uidx` et
+-- `trades_user_no_account_import_key_uidx`, contraintes
 -- `trades_*_known`, colonnes ajoutées, tables `account_snapshots`,
 -- `cash_ledger`, `raw_ingest_events`, `import_batches`, fonctions
 -- `raw_ingest_*`, `owns_account`). L'application tolère leur absence (voir
@@ -85,6 +86,15 @@ end $$;
 -- deux séries de faits indépendantes.
 create unique index if not exists trades_user_account_import_key_uidx
   on public.trades (user_id, account_id, import_key);
+
+-- Un trade SANS compte (historique antérieur aux sous-comptes, ou compte actif
+-- non chargé) échapperait à l'index ci-dessus : NULL n'est égal à rien. Cet
+-- index partiel ferme ce trou. `on_conflict` ne le cible pas : un doublon y
+-- est REFUSÉ (23505) au lieu d'être ignoré — l'écriture échoue, visible,
+-- plutôt que de doubler un trade en silence.
+create unique index if not exists trades_user_no_account_import_key_uidx
+  on public.trades (user_id, import_key)
+  where account_id is null and import_key is not null;
 
 -- ── 2. Lots d'import ────────────────────────────────────────────────────────
 create table if not exists public.import_batches (
