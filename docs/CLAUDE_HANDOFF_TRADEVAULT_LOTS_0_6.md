@@ -79,7 +79,7 @@ Ces trois décisions prévalent sur une checklist antérieure ambiguë du regist
 | Lot 4 | **Implémenté, en revue** (PR #239, branche `feat/jarvis-evidence-lot4`) — voir ADDENDUM 6 |
 | Lot 5 | **Partiel, en revue** (PR #240) ; migration de sécurité appliquée en production ; Stripe et OAuth Tradovate écartés (non validés) ; E2E authentifié `BLOCKED_EXTERNAL` — voir ADDENDUM 7 |
 | Lot 6 | **NOT STARTED (bloqué par la porte §10 / E12)** — cartographie et plan livrés (branche `chore/consolidation-lot6`), voir ADDENDUM 8 |
-| Supabase | Projet TradeVault ; inspection de schéma en lecture seule dans la reprise ; aucune nouvelle migration distante appliquée au titre de ces lots |
+| Supabase | Projet TradeVault ; inspection de schéma en lecture seule dans la reprise ; **une seule** migration distante appliquée au titre de ces lots : `20261030220000_restrict_cross_tenant_functions` (lot 5, sécurité, sur autorisation du propriétaire). Les migrations des lots 1, 2 et 4 ne sont **pas** appliquées |
 | Preview | Une preview Vercel READY a été observée sur la branche ; ne pas confondre ce constat avec un E2E authentifié |
 | Protection GitHub `main` | **À vérifier via des droits appropriés** : consultation API de protection refusée (403). Le document d'audit ancien la signalait non protégée ; ne pas annoncer que cela a été revalidé aujourd'hui |
 
