@@ -246,7 +246,7 @@ par le même moteur, y compris dans une modale ou un filtre de période.
 
 | Besoin | Primitive à utiliser |
 | --- | --- |
-| Texte, nombre, note | `Field` + `Input` / `Textarea` |
+| Texte, nombre, note | `Field` + `Input` / `Textarea` ; `SignedNumberInput` pour un nombre signé (bouton +/− tactile, virgule décimale acceptée) |
 | Note mise en forme (gras, italique, souligné) | `RichTextarea` (même peau que `Textarea`, mini-barre sur la sélection, ⌘/Ctrl+B/I/U) + `RichTextView` à l’affichage ; stockage en texte à marques (`shared/richText.ts`) |
 | Un choix, plusieurs choix, période | `SelectPicker`, `MultiPicker`, `RangePicker` |
 | Date civile, heure civile | `DateField`, `TimeField` |
