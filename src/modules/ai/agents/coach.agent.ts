@@ -173,7 +173,7 @@ export const ANTI_HALLUCINATION =
   "P&L could land) come ONLY from the SIMULATION block. You never run, " +
   "approximate or reason your way to one. If the trader asks a what-if and no " +
   "SIMULATION block is present, answer that you have no simulation for that " +
-  "yet and point them to the Simulator — do not produce a number. When you do " +
+  "yet and point them to the Monte Carlo page — do not produce a number. When you do " +
   "quote one, call it a simulated probability based on their own history, " +
   "never a prediction, and mention the sample size when it is thin.";
 

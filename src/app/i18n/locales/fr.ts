@@ -296,6 +296,18 @@ const fr: Dict = {
   "lab.csvAwaiting": "Choisis un export de courtier contenant le P&L net ou des multiples R.",
   "lab.trailingCaption":
     "Les comptes s’arrêtent à la première cible ou limite. Le plancher suiveur évolue séparément pour chaque compte : aucune ligne unique ne vaut pour tous les parcours.",
+  "lab.trailingApprox":
+    "Calculé sur le solde après chaque trade CLÔTURÉ. Une règle de firme qui suit ton plus haut latent en cours de trade est plus sévère et exige une trajectoire de prix que ce simulateur n'a pas : ce résultat surestime ta marge.",
+  "lab.winHaircut": "Stress : gains réduits",
+  "lab.haircutNone": "Gains observés",
+  "lab.haircutPct": "Gains −{n} %",
+  "lab.sampling": "Tirage",
+  "lab.samplingTrade": "Trades indépendants",
+  "lab.samplingSession": "Séances entières (garde l'enchaînement de chaque jour)",
+  "lab.effectiveTrades":
+    "Fondé sur {n} trades observés — plus de trajectoires n'ajoute aucune observation.",
+  "lab.effectiveSessions":
+    "Fondé sur {n} séances observées — plus de trajectoires n'ajoute aucune observation.",
   "lab.winRate": "Win rate net",
   "lab.calibratedSample": "{n} trades sources · hypothèses ajustées",
   "lab.title": "Laboratoire de stratégie",

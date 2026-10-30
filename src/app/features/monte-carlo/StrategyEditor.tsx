@@ -76,6 +76,8 @@ export function NumberControl({
 
 export function StrategyEditor({
   model,
+  sessionsAvailable,
+  effectiveSample,
   metrics,
   onMetrics,
   config,
@@ -85,6 +87,10 @@ export function StrategyEditor({
   objective,
 }: {
   model: StrategyModel | null;
+  /** L'historique permet un tirage par séances (mode C). */
+  sessionsAvailable: boolean;
+  /** Observations indépendantes derrière la projection affichée. */
+  effectiveSample: number | null;
   metrics: StrategyMetrics;
   onMetrics: (patch: Partial<StrategyMetrics>) => void;
   config: StrategyConfig;
@@ -234,6 +240,9 @@ export function StrategyEditor({
           ]}
           variant="field"
         />
+        {config.drawdownType === "trailing" && (
+          <p className="tv-prose text-amber-300">{t("lab.trailingApprox")}</p>
+        )}
         <p className="tv-prose text-slate-500">{t("lab.rulesHint")}</p>
       </details>
       <details className="strategy-editor-section">
@@ -250,6 +259,41 @@ export function StrategyEditor({
             t("lab.costHelp"),
           )}
         </div>
+        <SelectPicker
+          label={t("lab.winHaircut")}
+          value={String(config.winHaircut ?? 0)}
+          neutralValue="0"
+          onChange={(v) => onConfig({ winHaircut: Number(v) })}
+          options={["0", "0.1", "0.2", "0.3"].map((v) => ({
+            value: v,
+            label:
+              v === "0"
+                ? t("lab.haircutNone")
+                : t("lab.haircutPct").replace("{n}", String(Number(v) * 100)),
+          }))}
+          variant="field"
+        />
+        {sessionsAvailable && (
+          <SelectPicker
+            label={t("lab.sampling")}
+            value={config.sampling ?? "trade"}
+            onChange={(v) => onConfig({ sampling: v })}
+            options={[
+              { value: "trade", label: t("lab.samplingTrade") },
+              { value: "session", label: t("lab.samplingSession") },
+            ]}
+            variant="field"
+          />
+        )}
+        {effectiveSample !== null && (
+          <p className="tv-prose text-slate-500">
+            {t(
+              config.sampling === "session" && sessionsAvailable
+                ? "lab.effectiveSessions"
+                : "lab.effectiveTrades",
+            ).replace("{n}", String(effectiveSample))}
+          </p>
+        )}
       </details>
       <p className="strategy-editor-foot">
         {t(

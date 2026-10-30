@@ -28,7 +28,9 @@ export function readStrategyCsv(text: string): StrategyModel {
     };
   }
   const { valid, invalid } = mapRowsToTrades(rows, mapping, { required: MC_REQUIRED });
-  const model = historicalModel(valid);
+  // Le fichier du laboratoire n'est pas un import de journal : son risque est
+  // une colonne du fichier (source `csv`), pas une valeur « à relire ».
+  const model = historicalModel(valid.map((t) => ({ ...t, reviewPending: false })));
   model.excluded += invalid;
   if (model.sampleSize < 5) throw new Error("TOO_FEW");
   return model;
