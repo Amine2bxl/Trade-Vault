@@ -228,9 +228,9 @@ describe("suivi du drawdown", () => {
 
 describe("trailing sur le plus haut LATENT — refusé sans trajectoire de prix", () => {
   it("le moteur refuse au lieu d'approcher en silence", () => {
-    expect(() =>
-      initState({ ...base, maxDrawdown: 2000, drawdownType: "trailingLatent" }),
-    ).toThrow("LATENT_PATH_REQUIRED");
+    expect(() => initState({ ...base, maxDrawdown: 2000, drawdownType: "trailingLatent" })).toThrow(
+      "LATENT_PATH_REQUIRED",
+    );
   });
 
   it("l'approximation sur trades clôturés est PLUS clémente qu'un trailing latent", () => {
@@ -240,9 +240,13 @@ describe("trailing sur le plus haut LATENT — refusé sans trajectoire de prix"
     // un −1 900 (solde 49 600) passe en clôturé et échouerait en latent.
     const closed: AccountRules = { ...base, maxDrawdown: 2000, drawdownType: "trailing" };
     const s = play(closed, [1500, -1900]);
+    // Plus haut CLÔTURÉ 51 500 → plancher 49 500 ; solde 49 600 : ouvert.
+    expect(s.peak).toBe(51_500);
+    expect(s.floor).toBe(49_500);
+    expect(s.balance).toBe(49_600);
     expect(s.outcome).toBe("open");
-    // Le même parcours en latent aurait un plancher à 50 500 > 49 600.
-    expect(49_600).toBeLessThan(50_000 + 2500 - 2000);
+    // Avec un plus haut LATENT de 52 500, le plancher serait 50 500 : ce même
+    // parcours aurait échoué. Le moteur ne le sait pas — d'où le refus.
   });
 });
 
@@ -250,9 +254,11 @@ describe("frais : un trade à P&L brut nul devient une perte", () => {
   it("le coût par trade fait franchir le plancher", () => {
     const rules: AccountRules = { ...base, maxDrawdown: 100, drawdownType: "static" };
     const fee = 5;
-    const s = play(rules, Array.from({ length: 20 }, () => 0 - fee));
+    const s = play(
+      rules,
+      Array.from({ length: 20 }, () => 0 - fee),
+    );
     expect(s.outcome).toBe("failed");
     expect(s.trades).toBe(20);
   });
 });
-
