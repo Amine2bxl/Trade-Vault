@@ -2226,6 +2226,8 @@ const en = {
   "ledger.time": "Time",
   "ledger.note": "Note (optional)",
   "ledger.noteRequired": "Reason (required)",
+  "ledger.quarantined":
+    "{n} imported row(s) contradict a fact already received (same ID, different content): kept aside, none became a trade.",
   "reports.currentMonth": "Current month",
   "reports.inProgress": "In progress",
   "reports.final": "Final report",

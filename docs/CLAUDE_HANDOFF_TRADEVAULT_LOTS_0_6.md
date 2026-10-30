@@ -73,7 +73,7 @@ Ces trois décisions prévalent sur une checklist antérieure ambiguë du regist
 | PR lot 0 | **#234**, ouverte, draft ; ne pas fusionner |
 | Commit applicatif HEAD vérifié | `1c6801155de5e69dfad357ede9a01a5cf7c17202` |
 | CI | Workflow **40556362836 — SUCCESS** : TypeScript, ESLint, build, Bun multi-TZ, SQL |
-| Lot 1 | **NOT STARTED** ; conception préparatoire dans `DATA_INTEGRITY_LOT1_DESIGN.md` |
+| Lot 1 | **Implémenté, en revue** (PR #236) ; gates externes `BLOCKED_EXTERNAL` — voir ADDENDUM 3 |
 | Lots 2–6 | **NOT STARTED** |
 | Supabase | Projet TradeVault ; inspection de schéma en lecture seule dans la reprise ; aucune nouvelle migration distante appliquée au titre de ces lots |
 | Preview | Une preview Vercel READY a été observée sur la branche ; ne pas confondre ce constat avec un E2E authentifié |
@@ -690,3 +690,10 @@ Les éléments suivants sont **postérieurs** à l'état du HEAD `1c680115` ment
 - Lot 0 : onze défauts supplémentaires trouvés dans les consommateurs réellement montés (dont deux altérations de données : P&L importé réécrit à 0 $ à la relecture, état « à relire » d'un CSV non persisté) et corrigés avec tests reproduits sur l'ancien code. Détail, preuves, inventaire de production et statut de chaque gate : `docs/QUANT_CORRECTNESS_PROGRESS.md`, section « Reprise Claude Code — 28 octobre 2026 ».
 - Gate P0.5 (parcours authentifié réel) : **BLOCKED_EXTERNAL** — l'hôte Supabase est refusé par la politique réseau du conteneur ; une vérification de rendu sur doublure (`scripts/l0-ui-check`, 30/30) a été faite et ne s'y substitue pas.
 - Lot 1 : branche `feat/data-integrity-lot1`, empilée sur `feat/quant-correctness-lot0` (aucune fusion sur `main`).
+
+# ADDENDUM 3 — Lot 1 (30 octobre 2026)
+
+- Branche `feat/data-integrity-lot1`, PR #236 (brouillon, base `feat/quant-correctness-lot0`). Aucune fusion sur `main`, migration non appliquée en production.
+- Réalisé, écarts et reste : `docs/DATA_INTEGRITY_LOT1_DESIGN.md` § Réalisation ; preuves et statut des gates : `docs/QUANT_CORRECTNESS_PROGRESS.md` § Lot 1.
+- Entrées disponibles pour le lot 2 : `measuredR` tenant compte de `risk_source`, instants UTC prouvés (`entry_at`/`exit_at`) et minute Eastern déduite, ordre de clôture vérifié, frais inconnus distingués de zéro, soldes avant entrée avec niveau de preuve, rapport de qualité (`domain/dataQuality`).
+

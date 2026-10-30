@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Plus, Trash2, X } from "@/shared/ui/icons";
 import { useAccounts } from "@/app/contexts/AccountContext";
 import { useAuth } from "@/app/contexts/AuthContext";
@@ -14,6 +15,7 @@ import {
   type CashKind,
 } from "@/app/store/cashLedger";
 import { useCashLedger } from "@/app/trading/useBalanceLedger";
+import { countQuarantined } from "@/app/store/imports";
 import type { Trade } from "@/app/types";
 import { assessDataQuality } from "@/domain/dataQuality";
 import { todayLocalDate } from "@/shared/calendar-date";
@@ -45,6 +47,13 @@ export default function AccountLedger({ trades }: { trades: Trade[] }) {
   const { toast } = useToast();
   const { data, loading, invalidate } = useCashLedger();
   const [form, setForm] = useState<"cash" | "snapshot" | null>(null);
+  // Lignes d'import contradictoires mises en quarantaine (tous comptes).
+  const quarantined = useQuery({
+    queryKey: ["raw-ingest-conflicts", user?.id ?? null],
+    queryFn: () => countQuarantined(user!.id),
+    enabled: !!user,
+    staleTime: 60_000,
+  }).data;
 
   const accountId = activeAccount?.id ?? null;
   const currency = parseCurrency(activeAccount?.currency);
@@ -114,6 +123,11 @@ export default function AccountLedger({ trades }: { trades: Trade[] }) {
             </span>
           </li>
         </ul>
+        {!!quarantined && (
+          <p className="tv-prose mt-3 border-t border-[var(--tv-border)] pt-3 text-amber-300">
+            {t("ledger.quarantined").replace("{n}", String(quarantined))}
+          </p>
+        )}
         {gaps.length > 0 && (
           <ul className="mt-3 space-y-1 border-t border-[var(--tv-border)] pt-3">
             {gaps.map((g) => (

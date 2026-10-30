@@ -1,6 +1,19 @@
-# TradeVault — Lot 1 / Data Integrity (design préparatoire, NON DÉMARRÉ)
+# TradeVault — Lot 1 / Data Integrity
 
-**État : spécification uniquement.** Ce document ne clôt pas le lot 0 et ne constitue pas une autorisation de déployer des migrations. Lot 1 commence exclusivement après acceptation des gates L0.
+**État (30 octobre 2026) : implémenté sur `feat/data-integrity-lot1` (PR #236, empilée sur #234), migration NON appliquée en production.** La conception d'origine est conservée ci-dessous ; la section « Réalisation » dit ce qui a été construit, ce qui s'en écarte et pourquoi, et ce qui reste.
+
+## Réalisation
+
+| Élément de la conception | Réalisé | Écart / reste |
+|---|---|---|
+| `raw_ingest_events` immuables | Table insert-only (déclencheur `RAW_INGEST_IMMUTABLE`), unique `(user_id, source_key, payload_sha256)`, même clé + autre empreinte → `conflict` forcé en base. CSV : une ligne par ligne du fichier (`store/imports`), AVANT tout trade. Broker : chaque exécution et chaque relevé de frais (`broker-sync.recordRawFills`) | Pas d'outil de décision sur un conflit : il est compté et affiché (Réglages → Comptes), pas encore arbitrable |
+| `canonical_fills` / `canonical_trades` (projection versionnée) | Les exécutions brutes sont conservées ; l'appariement plat → plat reste la machine à états déterministe en mémoire (`modules/brokers/roundTrips`, testée : renforts, sorties partielles, retournement, frais au prorata, exécution annulée) | Pas de table de fills normalisés ni de projection versionnée : à reprendre quand une synchro réelle autorisée permettra de valider le format (gate broker `BLOCKED_EXTERNAL`) |
+| `cash_ledger`, `account_snapshots` | Tables, RLS (le client n'écrit que `source = 'user'`), signe contraint, UI de saisie (Réglages → Comptes) | Aucun écrivain `broker`/`statement` : aucune source observée n'est encore branchée (Tradovate non validable ici) |
+| Solde avant l'entrée `VERIFIED / PARTIAL / UNKNOWN` | `domain/balanceAtEntry` : VERIFIED exige snapshot observé antérieur + instant d'entrée prouvé + intervalle placé, frais connus, aucune déclaration, réconcilié au cent par le snapshot observé suivant ; devise différente → UNKNOWN ; le solde de départ actuel n'est jamais un substitut | Tant qu'aucun snapshot observé n'existe, tout solde est au mieux PARTIAL : la règle de risque en % reste UNKNOWN, ce qui est exact |
+| ID broker qualifié | `tradovate:<env>:<compte>:<exécution>` ; l'ancienne clé sans environnement est reconnue (pas de doublon) | La connexion n'entre pas dans la clé : se reconnecter au même login ne doit pas recréer les mêmes faits |
+| Dates d'origine, fuseau, instant UTC | `source_timezone`, `entry_at`, `exit_at` ; sessions et ordre DÉDUITS de l'instant (`domain/easternClock`, heure d'été comprise) | Heures CSV sans décalage : aucun instant deviné |
+| CSV : empreinte + ligne | Clé d'occurrence `csv:<empreinte>#<rang>` ou `csv-id:<id>` ; multi-ensemble face à l'historique sans clé ; permutation d'ordre sans effet (test) | — |
+| Rapports et trades manuels existants | Aucune réécriture ; colonnes de provenance NULL = inconnues ; repli de lecture/écriture tant que la migration n'est pas passée | — |
 
 ## Contrat de données et preuves
 

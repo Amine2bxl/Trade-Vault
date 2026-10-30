@@ -438,3 +438,40 @@ La connexion Supabase active a été consultée **en lecture seule** pour invent
 **Transfert au lot 1 (sans valeur inventée) :** provenance du risque broker (stop observé vs risque par défaut), colonnes subjectives nullables, `account_id` des rapports mensuels, fuseau source des heures, fills et frais par exécution, soldes à l'entrée, dérive de schéma (`replay_session_id`).
 
 **Statut : lot 0 techniquement clos, sauf le gate P0.5 `BLOCKED_EXTERNAL`** (preuve manquante et remède documentés ci-dessus). Le passage au lot 1 suit la règle du programme : un contrôle extérieur inaccessible est consigné, pas déclaré validé.
+
+## Lot 1 — Data Integrity (30 octobre 2026, PR #236)
+
+Branche `feat/data-integrity-lot1`, empilée sur `feat/quant-correctness-lot0`. Migration additive `20261028140000_data_integrity_provenance.sql` — **non appliquée en production ni sur une branche de preview**. Détail de la réalisation : `docs/DATA_INTEGRITY_LOT1_DESIGN.md` § Réalisation.
+
+### Défauts corrigés (reproduits par un test qui échoue sur l'ancien code)
+
+| Défaut | Correctif | Preuve |
+|---|---|---|
+| Deux trades réels identiques d'un même CSV : le second compté « doublon » et perdu | Clé d'occurrence par ligne, plan multi-ensemble | `tests/importKey.test.ts` |
+| Frais d'un CSV rangés dans le slippage | Colonne `fees` distincte | `csvImport.test.ts` (lot 1) |
+| API de frais Tradovate en panne : frais écrits à 0, P&L brut présenté comme net | Frais `null` (inconnus) | `brokerSync.test.ts`, `roundTrips.test.ts` |
+| Risque forfaitaire de la connexion broker indiscernable d'un stop observé | `risk_source` `broker_default` / `broker_stop` ; le forfait ne mesure pas de R | idem + `provenanceEvidence.test.ts` |
+| Même numéro de compte/exécution en démo et en live : le second trade ignoré en silence | Clé `tradovate:<env>:<compte>:<exécution>` + reconnaissance de l'ancienne clé | `brokerSync.test.ts` |
+| Heure d'un trade broker (fuseau du trader) lue comme heure de New York | Instant UTC enregistré, minute Eastern déduite | `provenanceEvidence.test.ts` (DST mars/novembre) |
+| Rapport mensuel lu sans pagination : calculé sur 1 000 trades au plus, sans le dire | Chargeur serveur paginé unique | `tradeProvenance.test.ts` (faux PostgREST plafonné à 1 000 ; mutation détectée) |
+| Trades sans compte (299/1 470 en prod) hors de l'index d'idempotence (NULL ≠ NULL) | Index partiel dédié | `tests/sql/data-integrity.sql` (mutation détectée) |
+| Copie de trades sans provenance | `source = copy` | revue de code |
+
+### Gates de sortie L1 (handoff §5)
+
+| Gate | Statut | Preuve / reste |
+|---|---|---|
+| Même export deux fois = zéro P&L ajouté ; permutation d'ordre sans effet | **DONE** | `importKey.test.ts` ; index unique par compte (SQL) |
+| Même ID broker sur deux comptes / environnements ≠ collision | **DONE** | `brokerSync.test.ts` ; clés par compte (SQL bloc 7) |
+| Multi-fills, partiels, commissions, minuit, DST, mêmes horodatages, annulations | **DONE (moteur), PARTIAL (persistance)** | Appariement déterministe testé ; exécutions brutes conservées ; pas de table de fills normalisés (voir design) |
+| Snapshot sans un retrait historique → jamais « exact » | **DONE** | `balanceAtEntry.test.ts` (PARTIAL + écart chiffré au rapprochement) |
+| RLS tenant A/B | **DONE (Postgres local)** | `tests/sql/data-integrity.sql`, 12 blocs en rôle `authenticated` ; non rejoué sur la base Supabase (accès réseau bloqué) |
+| Compatibilité des historiques et trades manuels | **DONE** | Provenance NULL = inconnue ; repli sans colonnes (`tradeProvenance.test.ts`) |
+| CI, SQL | **DONE** localement : typecheck, lint 0 erreur, build, 1 933 tests × 3 fuseaux, SQL vert ; CI GitHub sur la PR |
+| Intégration preview | **BLOCKED_EXTERNAL** | Hôte Supabase refusé par la politique réseau du conteneur ; migration à appliquer sur une branche de preview Supabase avant fusion |
+| Tests broker réels et rapprochement avec relevés | **BLOCKED_EXTERNAL** | Aucun environnement Tradovate autorisé ; aucune « synchro validée » n'est affirmée |
+| Data Quality (L1.7) | **PARTIAL** | Comptages et écarts affichés (`domain/dataQuality`, Réglages → Comptes) ; arbitrage manuel traçable d'un conflit non construit |
+
+**Vérification de rendu (doublure, pas un E2E authentifié)** : section Trésorerie et soldes, bureau 1 360 px et mobile 360 px — aucune erreur de page, aucun débordement horizontal, ajout d'un dépôt reflété, lignes en quarantaine affichées.
+
+**Statut : lot 1 implémenté et testé ; non clos à 100 %** — deux gates `BLOCKED_EXTERNAL` (preview Supabase, Tradovate réel) et deux restes internes documentés (fills normalisés persistés, arbitrage des conflits). Aucune donnée historique n'a été réécrite.

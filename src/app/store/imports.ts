@@ -157,3 +157,18 @@ export function countByStatus(rows: readonly { status: RawRowStatus }[]) {
   for (const r of rows) counts[r.status]++;
   return counts;
 }
+
+/**
+ * Les faits reçus que la base a mis en QUARANTAINE (même identifiant source,
+ * autre contenu) : ils ne sont devenus aucun trade, et restent à examiner.
+ * `null` quand la table n'existe pas encore.
+ */
+export async function countQuarantined(userId: string): Promise<number | null> {
+  const { count, error } = await db
+    .from("raw_ingest_events")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .eq("status", "conflict");
+  if (error) return null;
+  return count ?? 0;
+}

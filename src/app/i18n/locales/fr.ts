@@ -2158,6 +2158,8 @@ const fr: Dict = {
   "ledger.time": "Heure",
   "ledger.note": "Note (facultative)",
   "ledger.noteRequired": "Justification (obligatoire)",
+  "ledger.quarantined":
+    "{n} ligne(s) importée(s) contredisent un fait déjà reçu (même identifiant, autre contenu) : mises de côté, aucune n'est devenue un trade.",
   "reports.currentMonth": "Mois en cours",
   "reports.inProgress": "En cours",
   "reports.final": "Rapport finalisé",

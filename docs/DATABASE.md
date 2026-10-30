@@ -32,6 +32,7 @@ Postgres via Supabase (projet `tjikygsipblatubyzbrt`, constante
 | Calendrier économique | `economic_events`, `economic_calendar_sync` — **lecture publique**, écriture service-role (cron) ; `economic_calendar_backfill` (semaines passées récupérées, service-role uniquement) |
 | Synchro broker | `broker_connections` (une par login broker ; seuls les **jetons** OAuth — accès et renouvellement — **chiffrés AES-256-GCM** par le serveur, aucun identifiant ni mot de passe ; `api_hosts` (hôte d'API dédié), `oauth_redirect_uri` (adresse de retour de la tentative en cours), `sync_cursor`), `broker_accounts` (comptes du login → compte TradeVault cible) |
 | Fondation IA sans code consommateur | `ai_embeddings` (pgvector `vector(1536)`), `ai_jobs` |
+| Intégrité des données (lot 1, `20261028140000_data_integrity_provenance`) | `import_batches` (un lot d'import ; le client ne met à jour que ses compteurs), `raw_ingest_events` (chaque ligne CSV et chaque exécution / relevé de frais broker reçus, **insert-only** — déclencheur `RAW_INGEST_IMMUTABLE` ; même `source_key` + autre empreinte → statut `conflict` forcé en base), `cash_ledger` (dépôts, retraits, frais hors trades, payouts, ajustements justifiés ; signe contraint par la nature), `account_snapshots` (soldes observés datés). Sources `user` / `broker` / `statement` : le client n'écrit que `user` |
 
 Colonnes de `trades` (mapping vers le type `Trade` dans `store/trades.ts`) :
 `symbol`, `direction` (`long`/`short`/`be`, contrainte CHECK), `pnl`,
@@ -44,8 +45,18 @@ Storage), `trade_date` (→ `Trade.date`), `entry_time`, `exit_time`, `mae`,
 `copied_from` (transfert entre comptes — garanti indépendamment du broker par
 `20261016221756_account_transfer_schema` ; une nouvelle copie exige le palier
 Pro, vérifié par le trigger `trades_enforce_copy_pro`). **`(user_id,
-external_id)` est unique** : c'est la déduplication de la synchro. `is_default` sur `accounts`
+external_id)` est unique** : c'est la déduplication de la synchro, la clé
+portant l'environnement (`tradovate:<live|demo>:<compte>:<exécution>`). `is_default` sur `accounts`
 désigne le **compte principal**.
+
+Provenance (lot 1, colonnes **inconnues = NULL**, jamais rétro-remplies) :
+`source` (`manual`/`csv`/`broker`/`copy`), `risk_source` (`user`/`csv`/
+`broker_stop`/`broker_default` — le forfait ne mesure pas de R), `source_timezone`
+(fuseau d'écriture des heures), `entry_at`/`exit_at` (instants UTC **prouvés**),
+`import_key` (idempotence d'un import, **unique par compte** ; un index partiel
+couvre les trades sans compte). Lecture et écriture : `domain/tradeProvenance`
+(repli sans ces colonnes tant que la migration n'est pas passée). `fees` NULL
+sur un trade broker = frais inconnus, P&L brut.
 
 ## 3. RLS — motif et exceptions
 
