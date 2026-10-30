@@ -44,6 +44,7 @@ import {
   DateField,
   TimeField,
   Input,
+  SignedNumberInput,
   Field,
   ChoiceGroup,
   Disclosure,
@@ -862,26 +863,22 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                 <div className="min-w-0">
                   <FormLabel ok={rOk && !rMultipleError}>{req("trade.rrMultiple")}</FormLabel>
                   {pnlLocked ? (
-                    <Input
+                    <SignedNumberInput
                       aria-label={t("trade.rrMultiple")}
-                      type="number"
-                      step="0.1"
-                      inputMode="decimal"
                       value={rDraft ?? (riskDollar > 0 ? derivedR.toFixed(2) : "")}
-                      onChange={(e) => editBrokerR(e.target.value)}
+                      onValueChange={editBrokerR}
+                      signToggleLabel={t("trade.toggleSign")}
                       onBlur={() => setRDraft(null)}
                       disabled={!(riskDollar > 0)}
                       placeholder="—"
                       className="tv-figure"
                     />
                   ) : (
-                    <Input
+                    <SignedNumberInput
                       aria-label={t("trade.rrMultiple")}
-                      type="number"
-                      step="0.1"
-                      inputMode="decimal"
                       value={form.rMultiple}
-                      onChange={(e) => setForm((f) => ({ ...f, rMultiple: e.target.value }))}
+                      onValueChange={(value) => setForm((f) => ({ ...f, rMultiple: value }))}
+                      signToggleLabel={t("trade.toggleSign")}
                       disabled={form.direction === "be"}
                       placeholder="2.0"
                       className={cn("tv-figure", rMultipleError && "border-red-500/50")}
@@ -895,16 +892,14 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                 <div className="col-span-2 min-w-0 sm:col-span-1">
                   <FormLabel>{pnlLocked ? t(pnlLabelKey) : t("trade.estPnl")}</FormLabel>
                   {pnlLocked ? (
-                    <Input
+                    <SignedNumberInput
                       aria-label={t(pnlLabelKey)}
-                      type="number"
-                      step="0.01"
-                      inputMode="decimal"
                       value={form.brokerPnl}
-                      onChange={(e) => {
+                      onValueChange={(value) => {
                         setRDraft(null);
-                        setForm((f) => ({ ...f, brokerPnl: e.target.value }));
+                        setForm((f) => ({ ...f, brokerPnl: value }));
                       }}
+                      signToggleLabel={t("trade.toggleSign")}
                       className="tv-figure tv-trade-pnl-input"
                       data-tone={tone}
                     />
