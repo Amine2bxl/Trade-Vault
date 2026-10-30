@@ -49,6 +49,7 @@ export type { ButtonProps, ButtonVariant, ButtonSize } from "./Button";
 
 export { Input, Textarea, Select, Field, FIELD_BASE } from "./Input";
 export type { TextareaProps } from "./Input";
+export { SignedNumberInput } from "./SignedNumberInput";
 
 export { Card, CardHeader, CardTitle, CardBody } from "./Card";
 export type { CardVariant, CardPad } from "./Card";
