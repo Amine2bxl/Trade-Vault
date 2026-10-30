@@ -36,6 +36,7 @@ import {
 } from "recharts";
 import { useT } from "@/app/i18n/LanguageContext";
 import { NewsDaysCard } from "./NewsDaysCard";
+import { EdgeLabCard } from "./EdgeLabCard";
 import {
   EmptyState,
   PageContainer,
@@ -109,7 +110,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
   const [view, setView] = useState<"overview" | "execution" | "timing">("overview");
   const { t, lang } = useT();
   const { user } = useAuth();
-  const { activeId } = useAccounts();
+  const { activeId, accounts } = useAccounts();
   const locale = LOCALE_MAP[lang] || "en-US";
   const [period, setPeriod] = useState<RangeValue<AnalyticsPeriod>>({
     kind: "preset",
@@ -958,6 +959,10 @@ export default function Analytics({ trades }: AnalyticsProps) {
                 </table>
               </div>
             </Card>
+            <EdgeLabCard
+              trades={cutoffTrades}
+              accountName={(id) => accounts.find((a) => a.id === id)?.name ?? id}
+            />
             <div className="grid gap-3 md:grid-cols-2 md:gap-4">
               <Card className="p-4 md:p-5 animate-fade-in-up stagger-6">
                 <h3 className="tv-title mb-3">{t("analytics.pnlByStrategy")}</h3>

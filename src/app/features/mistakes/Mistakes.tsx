@@ -27,6 +27,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recha
 import { useT } from "@/app/i18n/LanguageContext";
 import { AXIS_TICK, BAR_RADIUS, useChartAnimation, tooltipStyle } from "@/app/trading/chartTheme";
 import { PageContainer, EmptyState, Card } from "@/shared/ui";
+import { BehaviorScenarioCard } from "./BehaviorScenarioCard";
 
 interface MistakesProps {
   trades: Trade[];
@@ -514,6 +515,8 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
             </div>
           </Card>
         )}
+
+        <BehaviorScenarioCard trades={trades} />
 
         {/* ── QUAND LES ERREURS ARRIVENT ──────────────────────────────────
             La tendance hebdomadaire a quitté cette rangée : elle appartient au

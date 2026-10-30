@@ -2188,6 +2188,53 @@ const en = {
     "This archived report predates the verified calculation methods. Unverifiable metrics are hidden until recalculated.",
   "reports.recalculate": "Recalculate safely",
   "reports.allAccounts": "All accounts",
+  "behavior.title": "Scenario: stop after a losing streak",
+  "behavior.hypothetical": "Hypothetical",
+  "behavior.subtitle":
+    "Replays your sessions without the trades taken after N consecutive losses. It shows what those trades returned — not what would have happened.",
+  "behavior.after": "Stop after",
+  "behavior.afterN": "{n} losses in a row",
+  "behavior.none":
+    "No session can be replayed: the order of closes is not proven ({unknown} sessions set aside).",
+  "behavior.result":
+    "The rule would have triggered in {triggered} of {evaluated} replayed sessions, removing {removed} trades.",
+  "behavior.removedPnl": "Those trades returned",
+  "behavior.compare": "replayed sessions",
+  "behavior.excluded": "{n} sessions set aside: order of closes or entry times not proven.",
+  "behavior.caveat":
+    "A trader who stops earlier does not have the same session. This scenario is not a gain you missed.",
+  "edge.title": "Performance conditions",
+  "edge.subtitle":
+    "Where your results differ from zero, and how sure that is. An observed difference is not a proven, lasting edge.",
+  "edge.dimension": "Dimension",
+  "edge.costStress": "Cost stress",
+  "edge.costNone": "Costs as recorded",
+  "edge.costPlus": "+{n} per trade",
+  "edge.dim.strategy": "Setup",
+  "edge.dim.symbol": "Symbol",
+  "edge.dim.session": "Session (proven NY time)",
+  "edge.dim.weekday": "Weekday",
+  "edge.dim.account": "Account",
+  "edge.sample": "{n} trades · {sessions} sessions",
+  "edge.expectancy": "Net per trade",
+  "edge.interval": "95% interval",
+  "edge.nR": "n={n}",
+  "edge.verdict.insufficient":
+    "Not enough data to conclude: {trades} more trades and {sessions} more sessions needed",
+  "edge.verdict.positive_observed":
+    "Positive difference observed (after multiple-testing correction)",
+  "edge.verdict.negative_observed":
+    "Negative difference observed (after multiple-testing correction)",
+  "edge.verdict.indistinguishable": "Not distinguishable from zero",
+  "edge.fragile": "fragile: depends on a single trade",
+  "edge.holdout.confirmed": "same direction",
+  "edge.holdout.not_confirmed": "not confirmed",
+  "edge.holdout.insufficient_holdout": "too few trades",
+  "edge.oos":
+    "Selected on the earliest 60% of sessions — validation: {validation}; holdout: {holdout} (n={n})",
+  "edge.empty": "No trade has a known value for this dimension.",
+  "edge.method":
+    "Session-block bootstrap ({iterations} draws, fixed seed), Benjamini-Hochberg correction at {alpha}% over {tests} tests. Coverage {coverage}% ({unknown} without a known value). Method v{version}.",
   "ledger.title": "Cash flows & balances",
   "ledger.intro":
     "Deposits, withdrawals and balances you record here rebuild your balance before each trade. A balance you type in is an estimate; only a balance observed by your broker or a statement proves it.",

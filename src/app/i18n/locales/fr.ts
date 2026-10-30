@@ -2118,6 +2118,51 @@ const fr: Dict = {
     "Ce rapport archivé utilise d'anciens calculs. Les métriques non vérifiables sont masquées jusqu'au recalcul.",
   "reports.recalculate": "Recalculer",
   "reports.allAccounts": "Tous les comptes",
+  "behavior.title": "Scénario : s'arrêter après une série de pertes",
+  "behavior.hypothetical": "Hypothétique",
+  "behavior.subtitle":
+    "Rejoue tes séances sans les trades pris après N pertes consécutives. Il montre ce que ces trades ont rapporté — pas ce qui se serait passé.",
+  "behavior.after": "S'arrêter après",
+  "behavior.afterN": "{n} pertes d'affilée",
+  "behavior.none":
+    "Aucune séance ne peut être rejouée : l'ordre des clôtures n'est pas prouvé ({unknown} séances écartées).",
+  "behavior.result":
+    "La règle se serait déclenchée dans {triggered} des {evaluated} séances rejouées, en retirant {removed} trades.",
+  "behavior.removedPnl": "Ces trades ont rapporté",
+  "behavior.compare": "séances rejouées",
+  "behavior.excluded": "{n} séances écartées : ordre des clôtures ou heures d'entrée non prouvés.",
+  "behavior.caveat":
+    "Un trader qui s'arrête plus tôt n'a pas la même séance. Ce scénario n'est pas un gain manqué.",
+  "edge.title": "Conditions de performance",
+  "edge.subtitle":
+    "Là où tes résultats s'écartent de zéro, et avec quelle certitude. Un écart observé n'est pas un avantage durable prouvé.",
+  "edge.dimension": "Dimension",
+  "edge.costStress": "Stress des coûts",
+  "edge.costNone": "Coûts enregistrés",
+  "edge.costPlus": "+{n} par trade",
+  "edge.dim.strategy": "Setup",
+  "edge.dim.symbol": "Symbole",
+  "edge.dim.session": "Session (heure de New York prouvée)",
+  "edge.dim.weekday": "Jour de la semaine",
+  "edge.dim.account": "Compte",
+  "edge.sample": "{n} trades · {sessions} séances",
+  "edge.expectancy": "Net par trade",
+  "edge.interval": "Intervalle 95 %",
+  "edge.nR": "n={n}",
+  "edge.verdict.insufficient":
+    "Pas assez de données pour conclure : encore {trades} trades et {sessions} séances",
+  "edge.verdict.positive_observed": "Écart positif observé (après correction des tests multiples)",
+  "edge.verdict.negative_observed": "Écart négatif observé (après correction des tests multiples)",
+  "edge.verdict.indistinguishable": "Indiscernable de zéro",
+  "edge.fragile": "fragile : tient à un seul trade",
+  "edge.holdout.confirmed": "même sens",
+  "edge.holdout.not_confirmed": "non confirmé",
+  "edge.holdout.insufficient_holdout": "trop peu de trades",
+  "edge.oos":
+    "Sélectionné sur les 60 % de séances les plus anciennes — validation : {validation} ; holdout : {holdout} (n={n})",
+  "edge.empty": "Aucun trade n'a de valeur connue pour cette dimension.",
+  "edge.method":
+    "Bootstrap par séances ({iterations} tirages, graine fixe), correction de Benjamini-Hochberg à {alpha} % sur {tests} tests. Couverture {coverage} % ({unknown} sans valeur connue). Méthode v{version}.",
   "ledger.title": "Trésorerie et soldes",
   "ledger.intro":
     "Les dépôts, retraits et soldes enregistrés ici reconstruisent le solde avant chaque trade. Un solde saisi à la main est une estimation ; seul un solde observé par le broker ou un relevé le prouve.",
