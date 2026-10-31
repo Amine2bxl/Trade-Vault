@@ -56,8 +56,6 @@ export default function PageHead({
     return () => io.disconnect();
   }, []);
 
-  const hasRow = hasTabs || lead || actions;
-
   return (
     <>
       <div className="page-compact" aria-hidden={!compact}>
@@ -66,18 +64,35 @@ export default function PageHead({
         </div>
       </div>
       <div className={cn("app-page-head mx-auto w-full px-4 pt-4 md:px-6 md:pt-6", width)}>
-        <div className="flex items-center gap-2">
-          <h1 ref={titleRef} className="tv-large-title min-w-0 flex-1 truncate">
-            {title}
-          </h1>
-          <MobileActions page={page} setPage={setPage} />
-        </div>
-        {hasRow && (
-          <div className="mt-3 flex items-center gap-2 md:mt-4 md:gap-3">
-            <div className="min-w-0 flex-1">
-              {hasTabs ? <SectionTabs section={section} page={page} setPage={setPage} /> : lead}
+        {hasTabs ? (
+          <>
+            <div className="flex items-center gap-2">
+              <h1 ref={titleRef} className="tv-large-title min-w-0 flex-1 truncate">
+                {title}
+              </h1>
+              <MobileActions page={page} setPage={setPage} />
             </div>
-            {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
+            {/* Section à plusieurs vues : la rangée d'ORIGINE, inchangée —
+                onglets à gauche, actions de la page à droite. */}
+            <div className="mt-3 flex items-center gap-2 md:mt-4 md:gap-3">
+              <div className="min-w-0 flex-1">
+                <SectionTabs section={section} page={page} setPage={setPage} />
+              </div>
+              {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
+            </div>
+          </>
+        ) : (
+          /* Vue unique (maquette Liquid v1) : le titre et son sous-titre à
+             gauche, les actions de la page à droite, sur la même ligne. */
+          <div className="flex items-start gap-2 md:gap-3">
+            <div className="min-w-0 flex-1">
+              <h1 ref={titleRef} className="tv-large-title truncate">
+                {title}
+              </h1>
+              {lead && <div className="mt-1.5 min-w-0">{lead}</div>}
+            </div>
+            {actions && <div className="flex shrink-0 items-center gap-2 pt-1">{actions}</div>}
+            <MobileActions page={page} setPage={setPage} />
           </div>
         )}
       </div>

@@ -319,7 +319,14 @@ function DashboardHarness({ trades }: { trades: Trade[] }) {
   const openTrade = useCallback(() => setOpen(true), []);
   return (
     <>
-      <Dashboard trades={trades} onAddTrade={openTrade} />
+      <Dashboard
+        trades={trades}
+        onAddTrade={openTrade}
+        onOpenImport={noop}
+        onOpenChecklist={noop}
+        onSetObjective={noop}
+        onOpenJournal={noop}
+      />
       {open && (
         <TradeModal trade={null} onClose={() => setOpen(false)} onSave={() => setOpen(false)} />
       )}

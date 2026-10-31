@@ -30,6 +30,7 @@ Décisions prises avec le propriétaire du produit :
 | Sidebar | Esprit de la **v1** (panneau de verre, entrées en pilule, pilule active claire avec icône menthe), **pliable** (72 px, icônes seules, infobulles). |
 | Journal | **Ordre et structure actuels conservés** ; seule la matière change (rayons, plaques, en-tête). |
 | Chiffre héros | **44 px** (`--tv-t-display`). |
+| Dashboard (retour 2) | **La maquette v1 remplace le Dashboard** et sert de référence de DA : en-tête Rechercher/cloche/+ Trade, pilule de compte, périodes calendaires, actions Trade/Importer/Checklist/Jarvis, courbe + 4 widgets avec `n`, derniers trades + objectif. Sidebar v1 : réglages et boîte de réception en bas, carte utilisateur en pied. |
 
 Hors périmètre : comportement produit, calculs, données, copy de la landing,
 zone Trustpilot (`#00b67a`), moteur neuronal de Jarvis, logique des

@@ -551,8 +551,15 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
         setPaletteOpen((v) => !v);
       }
     };
+    // La capsule « Rechercher » d'un en-tête ouvre la même palette, sans
+    // connaître l'état de la coque : un événement, comme `tv:navigate`.
+    const onOpen = () => setPaletteOpen(true);
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    window.addEventListener("tv:open-palette", onOpen);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("tv:open-palette", onOpen);
+    };
   }, []);
 
   useEffect(() => {

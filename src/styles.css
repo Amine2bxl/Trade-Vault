@@ -3044,6 +3044,35 @@ a:focus-visible,
   }
 }
 
+/* LA CARTE UTILISATEUR du pied de rail (maquette v1) : un disque d'initiale,
+   le nom, l'adresse, le menu. Une plaque à peine posée sur le verre. */
+.rail-me {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border-radius: 16px;
+  border: 1px solid var(--tv-border);
+  background: rgb(255 255 255 / 0.04);
+  transition: background-color var(--tv-dur-1) var(--tv-ease);
+}
+.rail-me:hover {
+  background: rgb(255 255 255 / 0.07);
+}
+.rail-me-disc {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 9999px;
+  background: var(--tv-plate-3);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--tv-text-primary);
+}
+
 /* Séparateur interne : un trait blanc à peine visible, pas une bordure. */
 .rail-divider {
   height: 1px;
@@ -5685,45 +5714,325 @@ thead .plan-cmp-col.is-pro {
   }
 }
 
-/* Le sélecteur de période — le segmented de la page (piste creuse, pastille
-   pleine), à la taille d'un contrôle secondaire. C'est une VUE, pas une
-   action : la pastille active est une plaque claire, jamais un aplat
-   d'accent. */
+/* Le sélecteur de période — Jour · Semaine · Mois · Année · Tout. Une
+   capsule de verre, la pastille active en verre clair (maquette v1). C'est une
+   VUE, pas une action : jamais d'aplat d'accent. */
 .dash-period {
+  position: relative;
+  isolation: isolate;
   display: inline-flex;
   gap: 2px;
   padding: 3px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--tv-border);
-  background: var(--tv-plate-0);
+  border-radius: 9999px;
+  border: 1px solid var(--tv-glass-edge);
+  box-shadow: var(--tv-glass-specular);
+}
+.dash-period::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--tv-glass-fill);
+  -webkit-backdrop-filter: blur(var(--tv-glass-blur)) saturate(var(--tv-glass-saturate));
+  backdrop-filter: blur(var(--tv-glass-blur)) saturate(var(--tv-glass-saturate));
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .dash-period::before {
+    background: var(--tv-plate-1);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .dash-period::before {
+    background: var(--tv-plate-1);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
 }
 .dash-period-btn {
-  height: 30px;
-  min-width: 44px;
-  padding: 0 12px;
-  border-radius: 9px;
-  font-family: var(--font-figure);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  color: var(--tv-text-muted);
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 9999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tv-text-secondary);
   transition:
     background-color var(--tv-dur-1) var(--tv-ease),
     color var(--tv-dur-1) var(--tv-ease);
+}
+@media (min-width: 640px) {
+  .dash-period-btn {
+    padding: 0 16px;
+  }
 }
 .dash-period-btn:hover {
   color: var(--tv-text-primary);
 }
 .dash-period-btn[aria-pressed="true"] {
-  background: var(--tv-plate-3);
-  color: var(--tv-text-primary);
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.08),
-    0 1px 2px rgb(0 0 0 / 0.5);
+  background: rgb(255 255 255 / 0.14);
+  color: #fff;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16);
 }
 .dash-period-btn:focus-visible {
   outline: 2px solid var(--tv-accent);
   outline-offset: 1px;
+}
+
+/* La pilule du compte, au-dessus du chiffre héros. */
+.tv-account-pill {
+  display: inline-flex;
+  max-width: min(100%, 320px);
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 9999px;
+  border: 1px solid var(--tv-glass-edge);
+  background: rgb(255 255 255 / 0.05);
+  box-shadow: var(--tv-glass-specular);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tv-text-primary);
+  transition: background-color var(--tv-dur-1) var(--tv-ease);
+}
+.tv-account-pill:hover {
+  background: rgb(255 255 255 / 0.09);
+}
+
+/* L'en-tête du Dashboard : la recherche en capsule, la cloche en disque. */
+.dash-search {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 8px 0 14px;
+  border-radius: 9999px;
+  border: 1px solid var(--tv-glass-edge);
+  background: rgb(255 255 255 / 0.04);
+  box-shadow: var(--tv-glass-specular);
+  font-size: 13px;
+  color: var(--tv-text-secondary);
+  transition:
+    background-color var(--tv-dur-1) var(--tv-ease),
+    color var(--tv-dur-1) var(--tv-ease);
+}
+.dash-search:hover {
+  background: rgb(255 255 255 / 0.08);
+  color: var(--tv-text-primary);
+}
+.dash-search kbd {
+  padding: 3px 7px;
+  border-radius: 9999px;
+  background: rgb(255 255 255 / 0.08);
+  font: 600 11px var(--font-figure);
+  color: var(--tv-text-secondary);
+}
+.dash-icon-btn {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 9999px;
+  border: 1px solid var(--tv-glass-edge);
+  background: rgb(255 255 255 / 0.04);
+  box-shadow: var(--tv-glass-specular);
+  color: var(--tv-text-primary);
+  transition: background-color var(--tv-dur-1) var(--tv-ease);
+}
+.dash-icon-btn:hover {
+  background: rgb(255 255 255 / 0.08);
+}
+.dash-icon-dot {
+  position: absolute;
+  top: 9px;
+  right: 10px;
+  width: 7px;
+  height: 7px;
+  border-radius: 9999px;
+  background: var(--tv-accent);
+}
+.dash-lead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: var(--tv-t-body-sm);
+  color: var(--tv-text-muted);
+}
+.dash-lead-date::first-letter {
+  text-transform: uppercase;
+}
+
+/* Les deux rangées de la maquette : deux tiers / un tiers. */
+.dash-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  margin-bottom: 16px;
+}
+@media (min-width: 1024px) {
+  .dash-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .dash-span-2 {
+    grid-column: span 2;
+  }
+}
+.dash-widgets {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.dash-widgets .metric-tile {
+  border-radius: var(--radius-2xl);
+}
+.dash-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.dash-card-title {
+  font-size: var(--tv-t-h3);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--tv-text-primary);
+}
+.dash-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 32px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tv-accent);
+}
+.dash-link:hover {
+  color: var(--tv-highlight);
+}
+
+/* Les derniers trades : la liste de transactions de Revolut. */
+.dash-list {
+  display: flex;
+  flex-direction: column;
+}
+.dash-row {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--tv-border);
+  text-align: left;
+}
+.dash-row:first-child {
+  border-top: 0;
+  padding-top: 2px;
+}
+.dash-row-action {
+  cursor: pointer;
+  border-radius: 12px;
+  transition: background-color var(--tv-dur-1) var(--tv-ease);
+}
+.dash-row-action:hover {
+  background: rgb(255 255 255 / 0.03);
+}
+.dash-row-action:focus-visible {
+  outline: 2px solid rgb(var(--tv-accent-rgb) / 0.7);
+  outline-offset: 2px;
+}
+.dash-row-avatar {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 9999px;
+  background: var(--tv-plate-3);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: var(--tv-text-primary);
+}
+.dash-row-main {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+}
+.dash-row-title {
+  overflow: hidden;
+  font-size: var(--tv-t-body);
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--tv-text-primary);
+}
+.dash-row-sub {
+  overflow: hidden;
+  font-size: var(--tv-t-caption);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--tv-text-muted);
+}
+.dash-row-end {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+.dash-row-pnl {
+  font-size: 15px;
+}
+
+/* L'objectif du mois. */
+.dash-goal {
+  display: flex;
+  flex-direction: column;
+}
+.dash-goal-figure {
+  font-size: 34px;
+  line-height: 1;
+  color: var(--tv-text-primary);
+}
+.dash-goal-track,
+.metric-track {
+  display: block;
+  overflow: hidden;
+  border-radius: 9999px;
+  background: rgb(255 255 255 / 0.07);
+}
+.dash-goal-track {
+  height: 8px;
+  margin: 12px 0 16px;
+}
+.metric-track {
+  height: 5px;
+  margin-top: 8px;
+}
+.dash-goal-tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 12px;
+}
+.dash-goal-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  border-radius: 16px;
+  background: var(--tv-plate-2);
+}
+.dash-goal-tile b {
+  font-size: 17px;
+  color: var(--tv-text-primary);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
