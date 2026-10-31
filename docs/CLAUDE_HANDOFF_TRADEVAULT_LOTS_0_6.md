@@ -67,18 +67,15 @@ Ces trois décisions prévalent sur une checklist antérieure ambiguë du regist
 | Élément | État au 27/10/2026 |
 |---|---|
 | Dépôt | `Amine2bxl/Trade-Vault` |
-| `main` | `079d185f8e1917ca1ef48321f3e1697064db40ba` ; inchangée durant la reprise |
-| Lot 0 | **IN PROGRESS** : partie substantielle implémentée, non signée techniquement et fonctionnellement |
-| Branche lot 0 | `feat/quant-correctness-lot0` |
-| PR lot 0 | **#234**, ouverte, draft ; ne pas fusionner |
-| Commit applicatif HEAD vérifié | `1c6801155de5e69dfad357ede9a01a5cf7c17202` |
-| CI | Workflow **40556362836 — SUCCESS** : TypeScript, ESLint, build, Bun multi-TZ, SQL |
-| Lot 1 | **Implémenté, en revue** (PR #236) ; gates externes `BLOCKED_EXTERNAL` — voir ADDENDUM 3 |
-| Lot 2 | **Implémenté, en revue** (PR à la branche `feat/research-edge-behavior-lot2`) — voir ADDENDUM 4 |
-| Lot 3 | **Implémenté, en revue** (branche `feat/prop-risk-engine-lot3`) — voir ADDENDUM 5 |
-| Lot 4 | **Implémenté, en revue** (PR #239, branche `feat/jarvis-evidence-lot4`) — voir ADDENDUM 6 |
-| Lot 5 | **Partiel, en revue** (PR #240) ; migration de sécurité appliquée en production ; Stripe et OAuth Tradovate écartés (non validés) ; E2E authentifié `BLOCKED_EXTERNAL` — voir ADDENDUM 7 |
-| Lot 6 | **Implémenté** (PR #241) : ancien moteur Monte Carlo retiré avec preuve d'usage, tests portés sur le moteur monté — voir ADDENDUM 8 |
+| `main` | Pile des lots 0 à 6 **fusionnée le 31 octobre 2026** (commits de fusion, sans réécriture d'historique, sans conflit) ; tête après le lot 6 : `598f4c9c545cfbd9e84a3518cff21d57771fe84f` |
+| Lot 0 | **Fusionné** (#234, `774cd11`) — P0.5 parcours authentifié réel `BLOCKED_EXTERNAL` |
+| Lot 1 | **Fusionné** (#236, `9ca42a7`) ; migration appliquée en production — voir ADDENDUM 3 |
+| Lot 2 | **Fusionné** (#237, `13ea173`) ; migration appliquée en production — voir ADDENDUM 4 |
+| Lot 3 | **Fusionné** (#238, `61fc2c6`) — voir ADDENDUM 5 |
+| Lot 4 | **Fusionné** (#239, `8264b8e`) ; migration appliquée en production ; anti-injection non mesurée contre un vrai modèle — voir ADDENDUM 6 |
+| Lot 5 | **Fusionné** (#240, `5dbcec6`) ; migration de sécurité appliquée en production ; Stripe et OAuth Tradovate écartés par le propriétaire (non validés) ; E2E authentifié `BLOCKED_EXTERNAL` — voir ADDENDUM 7 |
+| Lot 6 | **Fusionné** (#241, `598f4c9`) : ancien moteur Monte Carlo retiré avec preuve d'usage — voir ADDENDUM 8 |
+| CI `main` | Workflow CI vert sur chaque commit de fusion des lots 0 à 6 |
 | Supabase | Projet TradeVault ; inspection de schéma en lecture seule dans la reprise ; migrations des lots appliquées en production : `restrict_cross_tenant_functions` (lot 5, 30 octobre) puis, le 31 octobre sur décision du propriétaire, `data_integrity_provenance` (lot 1), `research_notebook` (lot 2), `progress_experiments` (lot 4) et `trigger_functions_search_path` (lot 6). Vérifiées : 1 471 trades intacts, aucune valeur rétro-écrite, RLS et politiques présentes |
 | Preview | Une preview Vercel READY a été observée sur la branche ; ne pas confondre ce constat avec un E2E authentifié |
 | Protection GitHub `main` | **À vérifier via des droits appropriés** : consultation API de protection refusée (403). Le document d'audit ancien la signalait non protégée ; ne pas annoncer que cela a été revalidé aujourd'hui |
@@ -724,3 +721,9 @@ Les éléments suivants sont **postérieurs** à l'état du HEAD `1c680115` ment
 # ADDENDUM 8 — Lot 6, cartographie (30 octobre 2026)
 
 - Porte §10 levée par la décision du propriétaire du 31 octobre 2026 (terminer les lots et fusionner sur `main`). `monteCarloEngine` retiré, `monteCarloViz` réduit à `histogram`, `Simulator` gardé. Carte d'usage et critères : `docs/QUANT_CORRECTNESS_PROGRESS.md` § Lot 6.
+
+# ADDENDUM 9 — Clôture et fusion (31 octobre 2026)
+
+- Sur décision du propriétaire (« terminer le travail de toutes les PR, fusionner sur `main` sans conflit »), la pile #234 → #241 est fusionnée dans l'ordre, chaque PR re-ciblée sur `main` avant sa fusion, CI verte sur chaque tête et sur chaque commit de fusion.
+- Restent **non validés** (aucune preuve, rien n'est présenté comme validé) : parcours authentifié réel (réseau de la session), Stripe sandbox et OAuth Tradovate (écartés par le propriétaire), anti-injection mesurée contre un vrai modèle, protection de branche de `main`.
+- Action propriétaire : activer la protection contre les mots de passe divulgués (Supabase Auth).
