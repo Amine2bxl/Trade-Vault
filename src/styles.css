@@ -2113,48 +2113,52 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
   }
 }
 
-/* Floating premium dock — detached rounded pill (Lucid-style) instead of a
- * full-width edge bar. Horizontal margin + big radius + layered shadow. */
+/* ══ LA BARRE MOBILE — LIQUID, version SOLIDE ══
+ *
+ * Une barre détachée, presque opaque (90 % + flou) : le contenu qui défile
+ * dessous ne la traverse plus, il s'y estompe. Le voile en dégradé sous la
+ * barre dissout la dernière ligne avant qu'elle n'atteigne le bord. */
 .bottom-nav {
   padding: 0 12px calc(env(safe-area-inset-bottom, 0px) + 10px);
-  /* Le fond n'est plus transparent. La capsule flotte à 10px du bord bas, et
-     ces 10px laissaient voir le contenu DÉFILER SOUS ELLE, en une bande hachée
-     tout en bas de l'écran. Le contenu se dissout maintenant dans la couleur
-     de la page avant de l'atteindre : la capsule flotte toujours, mais sur du
-     vide et non sur du texte tronqué. */
   background: linear-gradient(
     to top,
     var(--tv-bg) 0%,
-    var(--tv-bg) 62%,
+    var(--tv-bg) 55%,
     rgb(var(--tv-bg-rgb) / 0) 100%
   );
   pointer-events: none;
 }
 .bottom-nav-shell {
   pointer-events: auto;
-}
-.bottom-nav-shell {
-  /* Le rayon de coque, partagé avec le rail et la fenêtre : les trois pièces
-     de navigation du produit ont la même courbure, sur téléphone comme sur
-     bureau. */
-  border-radius: var(--tv-shell-radius);
-  /* C'est LE RAIL, couché. Même dégradé vert, même grammaire de pastille :
-     sur téléphone la navigation doit être reconnaissable comme la même pièce
-     que sur desktop, pas comme un autre composant. Elle flotte réellement
-     au-dessus du contenu qui défile dessous — l'un des trois seuls endroits
-     du produit où une ombre a un sens. */
-  background: linear-gradient(180deg, var(--tv-rail-mid) 0%, var(--tv-rail-bot) 100%);
-  /* LA SÉPARATION. Sur un contenu sombre, la capsule se fondait dans la page :
-     un dégradé presque noir sur un fond presque noir. Elle reçoit un liseré
-     (la même valeur que les plaques fortes) et une arête haute éclairée à la
-     couleur du thème — une lueur d'un pixel, pas un halo. Aucun flou, aucune
-     barre opaque pleine largeur : elle reste une pièce qui flotte. */
-  border: 1px solid var(--tv-border-strong);
-  box-shadow:
-    inset 0 1px 0 rgb(var(--tv-accent-rgb) / 0.22),
-    0 -1px 0 rgb(var(--tv-accent-rgb) / 0.06),
-    var(--tv-elev-3);
+  position: relative;
+  isolation: isolate;
+  border-radius: 24px;
+  border: 1px solid var(--tv-glass-edge);
+  box-shadow: var(--tv-glass-specular), var(--tv-glass-shadow);
   overflow: visible;
+}
+.bottom-nav-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--tv-glass-fill-solid);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  backdrop-filter: blur(24px) saturate(160%);
+  pointer-events: none;
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .bottom-nav-shell::before {
+    background: var(--tv-plate-1);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .bottom-nav-shell::before {
+    background: var(--tv-plate-1);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
 }
 /* Bulles flottantes (dock Jarvis + pilule sous-comptes) : la MÊME surface que
    la barre de navigation — même dégradé (opacité renforcée), même liseré
@@ -2169,56 +2173,62 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
 .bottom-nav-item {
   position: relative;
   min-width: 44px;
-  min-height: 52px;
+  min-height: 54px;
   width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 4px;
-  border-radius: 14px;
+  border-radius: 16px;
+  color: rgb(255 255 255 / 0.5);
   transition:
     color var(--tv-dur-2) var(--tv-ease),
+    background-color var(--tv-dur-2) var(--tv-ease),
     transform var(--tv-dur-1) var(--tv-ease);
   -webkit-tap-highlight-color: transparent;
 }
 .bottom-nav-item:active {
-  transform: scale(0.94);
+  transform: var(--tv-press);
 }
 .bottom-nav-item:focus-visible {
   outline: 2px solid rgb(var(--tv-accent-rgb) / 0.7);
   outline-offset: -2px;
 }
-/* L'ONGLET ACTIF — un trait d'accent sous le libellé, rien d'autre. La
-   pastille pleine découpée dans la barre était un aplat lourd, difficile à
-   lire comme « tu es ici ». */
-.bottom-nav-dot {
-  height: 3px;
-  width: 14px;
-  border-radius: 9999px;
-  background: transparent;
-  transform: scaleX(0.4);
-  transition:
-    background-color var(--tv-dur-2) var(--tv-ease),
-    transform var(--tv-dur-2) var(--tv-ease);
+/* L'ONGLET ACTIF — une tuile sombre posée dans la barre, l'icône à l'accent,
+   le libellé en blanc. Un état qui se lit d'un coup d'œil, sans trait ni
+   point à chercher. */
+.bottom-nav-item-on {
+  color: #fff;
+  background: rgb(255 255 255 / 0.07);
 }
-.bottom-nav-dot-on {
-  background: var(--tv-accent);
-  transform: scaleX(1);
+.bottom-nav-item-on > svg {
+  color: var(--tv-accent);
 }
 
-/* LA TUILE D'AJOUT — l'accent de la barre, à l'échelle d'une icône. Elle
-   remplace le « + » de 52px surélevé : même hauteur que les autres onglets,
-   un aplat d'accent teinté et un liseré, jamais d'ombre ni d'anneau. */
+/* L'AJOUT — LE bouton d'action de la barre : un carré adouci plein, à
+   l'accent, icône blanche. Même hauteur que les onglets, au centre exact :
+   le pouce le trouve sans regarder. Aucune ombre colorée, aucun anneau. */
 .bottom-nav-add {
   display: grid;
-  height: 26px;
-  width: 38px;
+  height: 48px;
+  width: 48px;
   place-items: center;
-  border-radius: 9px;
-  border: 1px solid rgb(var(--tv-accent-rgb) / 0.45);
-  background: rgb(var(--tv-accent-rgb) / 0.16);
-  color: var(--tv-highlight);
+  border-radius: 16px;
+  background: var(--tv-cta);
+  color: #fff;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.22),
+    inset 0 -1px 0 rgb(0 0 0 / 0.18);
+  transition:
+    background-color var(--tv-dur-1) var(--tv-ease),
+    transform var(--tv-dur-1) var(--tv-ease);
+}
+.bottom-nav-add > svg {
+  filter: drop-shadow(0 1px 1px rgb(4 18 11 / 0.45));
+}
+button:active > .bottom-nav-add {
+  transform: var(--tv-press);
 }
 
 /* Setup-quality stars — soft amber glow + spring pop on select */
@@ -2638,62 +2648,52 @@ a:focus-visible,
 }
 
 /* ══════════════════════════════════════════════════════════════════════
- * LE RAIL DE NAVIGATION
+ * LE RAIL DE NAVIGATION — LIQUID
  *
- * Une capsule verte qui FLOTTE sur la page, pas une colonne collée au bord.
- * C'est la pièce qui donne son caractère au produit, et elle obéit à quatre
- * règles :
+ * Un panneau de VERRE qui flotte sur le papier peint (la barre latérale
+ * d'iPadOS 27), et non plus une colonne verte éclairée. Quatre règles :
  *
- *   1. Elle est DÉTACHÉE — une marge tout autour, un très grand rayon. On
- *      doit voir le fond de la page passer derrière elle.
- *   2. Elle est VERTE, alors que tout le reste est neutre. C'est la seule
- *      surface colorée de l'application : elle dit « ceci est la navigation,
- *      ce n'est pas le contenu ».
- *   3. Chaque entrée est une PILULE. Au repos, un voile blanc à peine posé ;
- *      active, une pilule BLANCHE PLEINE avec du texte vert foncé. L'état
- *      actif se lit d'un bout à l'autre de la pièce, sans halo, sans liseré,
- *      sans barre latérale — par le seul contraste.
- *   4. Pliée, elle garde EXACTEMENT la même grammaire : la pilule blanche
- *      devient un disque blanc. Rien d'autre ne change.
+ *   1. Il est DÉTACHÉ — marge tout autour, rayon de coque. On voit le papier
+ *      peint passer derrière lui, et à travers lui.
+ *   2. Il est NEUTRE : la seule couleur y est celle de l'icône active.
+ *   3. Chaque entrée est une PILULE transparente ; l'active est désignée par
+ *      une pilule de verre clair qui GLISSE d'une entrée à l'autre (ressort).
+ *   4. Plié, il garde la même grammaire : la pilule devient un disque.
+ *
+ * Le flou vit sur `::before` (voir `.tv-glass`) : le rail porte des
+ * infobulles et des menus, qu'un `backdrop-filter` posé sur lui piégerait.
  * ══════════════════════════════════════════════════════════════════════ */
 .rail {
+  isolation: isolate;
   border-radius: var(--tv-shell-radius);
-  /* La lumière tombe DU HAUT et s'éteint vite : vert franc sur le premier
-     quart, presque noir aux deux tiers. Un dégradé qui descend lentement sur
-     toute la hauteur donne une colonne verte uniforme — exactement ce qu'on
-     ne veut pas. Ici la couleur est un éclairage, pas un aplat. */
-  background:
-    /* La colonne verte ne doit PAS devenir l'identité : on l'assourdit au
-       sommet et à la base pour ne garder qu'une lueur discrète, et la page
-       noire reprend le dessus. Le rail s'INTÈGRE au site au lieu de flotter
-       comme une lampe. */
-    linear-gradient(
-      180deg,
-      rgb(0 0 0 / 0.5) 0%,
-      rgb(0 0 0 / 0.12) 32%,
-      rgb(0 0 0 / 0) 55%,
-      rgb(0 0 0 / 0.4) 100%
-    ),
-    /* … et la lumière tombe aussi DE BIAIS. Cette seconde couche assombrit le
-       tiers droit du rail : la capsule « tourne » vers la fenêtre au lieu de
-       finir sur un bord franc. */
-    linear-gradient(90deg, rgb(0 0 0 / 0.18) 0%, rgb(0 0 0 / 0) 60%, rgb(0 0 0 / 0.34) 100%),
-    linear-gradient(180deg, var(--tv-rail-top) 0%, var(--tv-rail-mid) 40%, var(--tv-rail-bot) 100%);
-  /* Un liseré interne complet (l'épaisseur de la capsule) + un reflet plus
-     marqué sur l'arête haute, là où la lumière frappe. Adouci pour rester un
-     outil, pas un néon. */
-  box-shadow:
-    inset 0 0 0 1px rgb(255 255 255 / 0.06),
-    inset 0 1px 0 rgb(255 255 255 / 0.08),
-    /* L'arête qui FAIT FACE à la fenêtre s'éclaire comme celle du haut. */ inset -1px 0 0
-      rgb(255 255 255 / 0.08),
-    0 18px 50px -24px rgb(0 0 0 / 0.8);
-  /* La largeur est la SEULE chose qui s'anime au pli/dépli — en 260 ms et
-     non plus 400 : la loi de mouvement plafonne l'app à 300 ms, et un pli
-     qu'on attend est un pli qui rame. Rien d'autre ne change de géométrie
-     pendant ce temps : les icônes ne bougent pas d'un pixel (voir
-     `.rail-item`), les libellés s'effacent en fondu. */
+  border: 1px solid var(--tv-glass-edge);
+  box-shadow: var(--tv-glass-specular), var(--tv-glass-shadow);
+  /* La largeur est la SEULE chose qui s'anime au pli/dépli (260 ms) : les
+     icônes ne bougent pas d'un pixel, les libellés s'effacent en fondu. */
   transition: width var(--tv-dur-3) var(--tv-ease);
+}
+.rail::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: rgb(24 26 29 / 0.62);
+  -webkit-backdrop-filter: blur(var(--tv-glass-blur)) saturate(var(--tv-glass-saturate));
+  backdrop-filter: blur(var(--tv-glass-blur)) saturate(var(--tv-glass-saturate));
+  pointer-events: none;
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .rail::before {
+    background: var(--tv-plate-1);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .rail::before {
+    background: var(--tv-plate-1);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
 }
 
 /* Une entrée de navigation. La forme est la même pliée ou dépliée : une
@@ -2718,13 +2718,13 @@ a:focus-visible,
   padding-left: 15px;
   padding-right: 0.75rem;
   overflow: hidden;
-  border-radius: var(--radius-lg);
-  font-size: 0.8125rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
   font-weight: 600;
   letter-spacing: -0.01em;
   white-space: nowrap;
-  color: rgb(255 255 255 / 0.72);
-  background: rgb(255 255 255 / 0.06);
+  color: rgb(255 255 255 / 0.7);
+  background: transparent;
   transition:
     background-color var(--tv-dur-2) var(--tv-ease),
     color var(--tv-dur-2) var(--tv-ease),
@@ -2773,11 +2773,11 @@ a:focus-visible,
  */
 @media (hover: hover) {
   .rail-item:hover {
-    background: rgb(255 255 255 / 0.13);
+    background: rgb(255 255 255 / 0.06);
     color: #fff;
   }
   .rail-collapsed .rail-item:hover:not(.rail-item-active) {
-    background: rgb(255 255 255 / 0.18);
+    background: rgb(255 255 255 / 0.08);
   }
   .rail-item:hover .rail-icon {
     transform: scale(1.12);
@@ -2823,18 +2823,18 @@ a:focus-visible,
  * CSS ne donne l'ordonnée de la n-ième entrée à travers un séparateur.
  */
 .rail-tab {
+  /* LIQUID — une pilule de verre clair, DANS le rail : elle ne rejoint plus la
+     fenêtre de contenu (il n'y a plus de fenêtre, le contenu flotte sur le
+     papier peint). Arête spéculaire d'1px, aucune ombre, aucune couleur. */
   position: absolute;
   left: 0.625rem;
   top: 0;
-  width: calc(100% - 1.25rem + var(--rail-bridge));
-  border-radius: var(--radius-lg);
-  border-top-right-radius: 0;
-  border-bottom-right-radius: 0;
-  background: var(--tv-plate-0);
-  border: 1px solid var(--tv-border);
-  border-right: 0;
-  /* Elle passe DEVANT le liseré gauche de la fenêtre, qu'elle enterre sur sa
-     hauteur : sans ça une paroi d'un pixel resterait en travers du couloir. */
+  width: calc(100% - 1.25rem);
+  border-radius: 9999px;
+  background: rgb(255 255 255 / 0.1);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.14),
+    inset 0 0 0 1px rgb(255 255 255 / 0.04);
   z-index: 1;
   pointer-events: none;
 }
@@ -2845,8 +2845,8 @@ a:focus-visible,
    mise en page. La largeur, elle, suit le pli du rail sur sa propre durée. */
 .rail-tab-ready {
   transition:
-    transform var(--tv-dur-3) var(--tv-ease),
-    height var(--tv-dur-3) var(--tv-ease);
+    transform var(--tv-dur-spring) var(--tv-spring),
+    height var(--tv-dur-spring) var(--tv-spring);
 }
 @media (prefers-reduced-motion: reduce) {
   .rail-tab-ready {
@@ -2854,60 +2854,8 @@ a:focus-visible,
   }
 }
 
-/* ══ LES CONGÉS ══
- *
- * Un CONGÉ (en anglais *fillet*, ou *inverted corner radius*) est le raccord
- * CONCAVE entre deux surfaces perpendiculaires. C'est lui qui fait la
- * différence entre « une planche posée en travers d'un vide » et « une
- * languette moulée dans la fenêtre ».
- *
- * Sans congé, l'arête haute de la languette rencontre l'arête gauche de la
- * fenêtre à angle droit : deux droites qui se croisent, donc deux objets qui
- * se touchent. Avec, la surface passe de l'une à l'autre par un arc, sans
- * jamais casser — la construction d'un onglet de navigateur qui rejoint sa
- * barre d'outils.
- *
- * Chaque congé est un carré posé juste au-dessus (et au-dessous) de
- * l'extrémité droite, peint d'un dégradé radial centré sur son coin
- * INTÉRIEUR : transparent jusqu'au rayon, liseré sur 1px, surface au-delà. Le
- * trait de la languette se prolonge donc dans l'arc au lieu de s'arrêter net.
- *
- * Le rayon vaut 14px et non 10 : mesuré, à 10 la masse du congé tombait à
- * droite du bord de la fenêtre — donc sur une surface de la même couleur,
- * donc invisible ; seul l'arc du liseré se voyait. Le décalage d'1px sur
- * `top`/`bottom` compense le liseré, les offsets d'un absolu se comptant
- * depuis la boîte de padding.
- */
-.rail-tab::before,
-.rail-tab::after {
-  content: "";
-  position: absolute;
-  right: 0;
-  width: var(--rail-fillet);
-  height: var(--rail-fillet);
-  pointer-events: none;
-}
-.rail-tab::before {
-  top: calc(-1 * var(--rail-fillet) - 1px);
-  background: radial-gradient(
-    circle at 0 0,
-    transparent calc(var(--rail-fillet) - 1px),
-    var(--tv-border) calc(var(--rail-fillet) - 1px),
-    var(--tv-border) var(--rail-fillet),
-    var(--tv-plate-0) var(--rail-fillet)
-  );
-}
-.rail-tab::after {
-  bottom: calc(-1 * var(--rail-fillet) - 1px);
-  background: radial-gradient(
-    circle at 0 100%,
-    transparent calc(var(--rail-fillet) - 1px),
-    var(--tv-border) calc(var(--rail-fillet) - 1px),
-    var(--tv-border) var(--rail-fillet),
-    var(--tv-plate-0) var(--rail-fillet)
-  );
-}
-
+/* LES CONGÉS ont disparu avec la fenêtre : la languette ne raccorde plus
+   rien, elle ne fait que désigner. */
 /* L'ENTRÉE ACTIVE ne porte plus aucune surface : la languette est derrière
    elle. Il ne lui reste que ce qui est à elle — la couleur de son texte et
    l'accent de son icône. Elle passe au-dessus de la languette pour rester
@@ -2932,7 +2880,7 @@ a:focus-visible,
            la page, elle doit la REJOINDRE.
    Déclarée ici, une seule fois ; l'état plié la reprend telle quelle. */
 .rail {
-  --rail-bridge: 20px;
+  --rail-bridge: 0px;
   /* LA TAILLE DU DISQUE — la zone tactile d'une entrée pliée, et la hauteur
      d'une entrée dépliée. 44px et non 40 : c'est le minimum tactile d'Apple et
      d'Android, et surtout la languette cessait d'exister par rapport à son
@@ -2969,12 +2917,6 @@ a:focus-visible,
      redevient une pilule ordinaire, qui glisse toujours. */
   .rail-tab {
     width: calc(100% - 1.25rem);
-    border: 0;
-    border-radius: var(--radius-lg);
-  }
-  .rail-tab::before,
-  .rail-tab::after {
-    display: none;
   }
 }
 
@@ -3076,7 +3018,7 @@ a:focus-visible,
   border-radius: 9999px;
   color: rgb(255 255 255 / 0.75);
   background: var(--tv-plate-3);
-  box-shadow: 0 0 0 2px var(--tv-rail-bot);
+  box-shadow: 0 0 0 2px var(--tv-plate-1);
   transition: color var(--tv-dur-2) var(--tv-ease);
 }
 @media (hover: hover) {
@@ -3094,37 +3036,13 @@ a:focus-visible,
  * marge, le contenu va d'un bord à l'autre. */
 @media (min-width: 768px) {
   .app-frame {
-    /* La fenêtre n'est plus un à-plat. Elle reçoit la MÊME lumière que le
-       rail — tombant du haut et éteinte vite — parce que deux surfaces
-       éclairées différemment se lisent toujours comme deux objets posés l'un
-       à côté de l'autre.
-
-       Deux précautions :
-         • la nuance est un VOILE BLANC de 3 %, pas une teinte : le contenu
-           ne doit être coloré par rien.
-         • la chute se mesure en PIXELS (150) et non en pourcentage. En
-           pourcentage, la lumière s'étirerait sur toute la hauteur de la
-           fenêtre — sur une page longue, un bandeau clair de 300px en haut,
-           qu'on lit comme un en-tête et non comme un éclairage. */
-    /* La plaque laisse passer le fond du site (grille + lumières) : légèrement
-       translucide, pour que la fenêtre et la page soient une seule scène. */
-    background:
-      linear-gradient(180deg, rgb(255 255 255 / 0.03) 0px, rgb(255 255 255 / 0) 150px),
-      color-mix(in srgb, var(--tv-plate-0) 82%, transparent);
+    /* LIQUID — plus de fenêtre. Le contenu se pose directement sur le papier
+       peint : ce sont les cartes qui font les plans, pas un cadre autour
+       d'elles. Le rayon reste pour rogner proprement le défilement. */
+    background: transparent;
     border: 0;
     border-radius: var(--tv-shell-radius);
-    /* Le liseré devient un liseré INTERNE, comme celui du rail, avec le même
-       reflet sur l'arête haute et la même ombre portée. Trois raisons :
-         • une `border` déplace la boîte, un `inset` non — la fenêtre et le
-           rail gardent exactement la même hauteur utile ;
-         • l'arête haute éclairée est ce qui fait qu'une plaque a une
-           épaisseur plutôt qu'un contour ;
-         • l'entrée active du rail enterre ce liseré sur sa hauteur (elle
-           passe devant), et un inset se laisse recouvrir proprement. */
-    box-shadow:
-      inset 0 0 0 1px var(--tv-border),
-      inset 0 1px 0 rgb(255 255 255 / 0.05),
-      0 18px 50px -24px rgb(0 0 0 / 0.8);
+    box-shadow: none;
   }
 }
 
@@ -3519,6 +3437,79 @@ body.tv-app-type :is(.tv-figure, .tv-num, .tabular-nums) {
  * Animer `left`/`width` aurait fait recalculer la disposition à chaque frame ;
  * `transform` compose sur le GPU et ne touche à rien d'autre.
  */
+/* ══ LE GRAND TITRE — LIQUID ══
+ * Le Large Title d'iOS : 30px, 700, approche serrée. Un seul par page, posé
+ * par `PageHead` à partir de la navigation. */
+.tv-large-title {
+  font-size: var(--tv-t-h1);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.025em;
+  color: var(--tv-text-primary);
+}
+/* La barre compacte : un conteneur collant de hauteur NULLE (il ne prend
+   aucune place) qui porte une barre de verre absolue. Elle n'apparaît qu'une
+   fois le grand titre sorti de la fenêtre — fondu + 6px, rien d'autre. */
+.page-compact {
+  position: sticky;
+  top: 0;
+  z-index: var(--tv-z-nav);
+  height: 0;
+}
+.page-compact-bar {
+  position: absolute;
+  inset: 0 0 auto;
+  isolation: isolate;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 52px;
+  padding: env(safe-area-inset-top, 0px) 64px 0;
+  box-sizing: content-box;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--tv-text-primary);
+  border-bottom: 1px solid var(--tv-glass-edge);
+  opacity: 0;
+  transform: translateY(-6px);
+  pointer-events: none;
+  transition:
+    opacity var(--tv-dur-2) var(--tv-ease),
+    transform var(--tv-dur-2) var(--tv-ease);
+}
+.page-compact-bar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--tv-glass-fill-solid);
+  -webkit-backdrop-filter: blur(var(--tv-glass-blur)) saturate(var(--tv-glass-saturate));
+  backdrop-filter: blur(var(--tv-glass-blur)) saturate(var(--tv-glass-saturate));
+}
+.page-compact-bar-on {
+  opacity: 1;
+  transform: none;
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .page-compact-bar::before {
+    background: var(--tv-plate-1);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .page-compact-bar::before {
+    background: var(--tv-plate-1);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-compact-bar {
+    transform: none;
+    transition: opacity var(--tv-dur-1) linear;
+  }
+}
+
 /* ── Onglets de section — CONTRÔLE SEGMENTÉ ──
  * Un cadre unique, des pastilles dedans, celle qui est active posée sur une
  * surface pleine. L'ancienne version était une rangée soulignée : à côté de la
@@ -3535,12 +3526,15 @@ body.tv-app-type :is(.tv-figure, .tv-num, .tabular-nums) {
    de plus que la fenêtre. En dessous, c'est le sélecteur compact (le même
    menu que sur téléphone) qui porte la navigation. */
 .section-tabs {
+  /* LIQUID — le segmented d'iOS en version « solide » : une piste creuse
+     (plate-0) et une pastille pleine posée dedans, rayons concentriques
+     (14 dehors, 11 dedans). */
   display: none;
   max-width: 100%;
   padding: 3px;
-  border-radius: var(--radius-xl);
-  background: var(--tv-plate-1);
-  border: 1px solid var(--tv-border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--tv-plate-0);
+  border: 1px solid var(--tv-border);
   box-shadow: none;
 }
 @media (min-width: 1024px) {
@@ -3572,9 +3566,9 @@ body.tv-app-type :is(.tv-figure, .tv-num, .tabular-nums) {
   align-items: center;
   gap: 0.5rem;
   height: 2.25rem;
-  padding: 0 0.9rem;
-  border-radius: var(--radius-lg);
-  font-size: 0.82rem;
+  padding: 0 0.95rem;
+  border-radius: 11px;
+  font-size: 0.8125rem;
   font-weight: 600;
   line-height: 1;
   white-space: nowrap;
@@ -3603,7 +3597,14 @@ body.tv-app-type :is(.tv-figure, .tv-num, .tabular-nums) {
 .section-tab-active {
   color: var(--tv-text-primary);
   background: var(--tv-plate-3);
-  box-shadow: none;
+  /* L'arête claire et une ombre NOIRE d'un pixel : la pastille est posée sur
+     la piste, elle n'y est pas peinte. */
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.08),
+    0 1px 2px rgb(0 0 0 / 0.5);
+}
+.section-tab-active svg {
+  color: var(--tv-accent);
 }
 .section-tab:focus-visible {
   outline: 2px solid rgb(var(--tv-accent-rgb) / 0.7);
@@ -5760,20 +5761,67 @@ body::after {
   max-height: calc(
     100dvh - 24px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)
   );
-  border-radius: 20px;
-  border-color: rgb(255 255 255 / 0.08);
-  background:
-    linear-gradient(180deg, rgb(var(--tv-accent-rgb) / 0.035), transparent 140px), var(--tv-plate-2);
+  /* LIQUID — une FEUILLE de verre fort : rayon de feuille (28), papier peint
+     et page devinés derrière, arête spéculaire, ombre noire large. */
+  border-radius: var(--radius-3xl);
+  border-color: var(--tv-glass-edge);
+  background: var(--tv-glass-fill-strong);
+  -webkit-backdrop-filter: blur(var(--tv-glass-blur)) saturate(var(--tv-glass-saturate));
+  backdrop-filter: blur(var(--tv-glass-blur)) saturate(var(--tv-glass-saturate));
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.06),
+    var(--tv-glass-specular),
     0 30px 80px -24px rgb(0 0 0 / 0.85);
+}
+/* TÉLÉPHONE : la feuille MONTE DU BAS, pleine largeur, coins hauts arrondis —
+   la feuille d'iOS. Le pouce atteint ses boutons sans changer de prise.
+   Exceptions : les fenêtres ancrées en haut (palette de commandes) et
+   l'aperçu plein écran d'un trade, qui ont leur propre géométrie. */
+@media (max-width: 639px) {
+  .tv-dialog-wrap:not(.items-start):not(.tv-trade-sheet-wrap) {
+    align-items: flex-end;
+    padding: max(12px, env(safe-area-inset-top, 0px)) 0 0;
+  }
+  .tv-dialog-wrap:not(.items-start):not(.tv-trade-sheet-wrap) > .tv-dialog {
+    max-width: none;
+    max-height: calc(100dvh - max(12px, env(safe-area-inset-top, 0px)));
+    border-radius: var(--radius-3xl) var(--radius-3xl) 0 0;
+    border-bottom: 0;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .tv-dialog {
+    background: var(--tv-plate-2);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .tv-dialog {
+    background: var(--tv-plate-2);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
 }
 @media (prefers-reduced-motion: no-preference) {
   .tv-dialog {
     animation: tv-dialog-in 200ms var(--tv-ease) both;
   }
+  @media (max-width: 639px) {
+    .tv-dialog-wrap:not(.items-start):not(.tv-trade-sheet-wrap) > .tv-dialog {
+      animation: tv-sheet-up var(--tv-dur-spring) var(--tv-spring) both;
+    }
+  }
   .tv-dialog-backdrop {
     animation: fade-in 160ms ease-out both;
+  }
+}
+@keyframes tv-sheet-up {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
   }
 }
 @keyframes tv-dialog-in {
@@ -5877,14 +5925,28 @@ body::after {
   display: grid;
   gap: 2px;
   padding: 6px;
-  border: 1px solid rgb(255 255 255 / 0.08);
-  border-radius: 16px;
-  background:
-    linear-gradient(180deg, rgb(var(--tv-accent-rgb) / 0.03), transparent 120px), var(--tv-plate-2);
+  /* LIQUID — verre fort, comme les menus d'iOS. */
+  border: 1px solid var(--tv-glass-edge);
+  border-radius: 20px;
+  background: var(--tv-glass-fill-strong);
+  -webkit-backdrop-filter: blur(var(--tv-glass-blur)) saturate(var(--tv-glass-saturate));
+  backdrop-filter: blur(var(--tv-glass-blur)) saturate(var(--tv-glass-saturate));
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.05),
+    var(--tv-glass-specular),
     0 24px 60px -20px rgb(0 0 0 / 0.85);
   transform-origin: top center;
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .section-menu {
+    background: var(--tv-plate-2);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .section-menu {
+    background: var(--tv-plate-2);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
 }
 @media (prefers-reduced-motion: no-preference) {
   .section-menu {
@@ -5925,13 +5987,13 @@ body::after {
    Safari), pour un verre que personne ne voit sur un fond presque noir. */
 .float-shell,
 .tv-jarvis-dock {
-  background:
-    linear-gradient(180deg, rgb(255 255 255 / 0.05), rgb(255 255 255 / 0) 60%), var(--tv-plate-2);
-  border: 1px solid rgb(255 255 255 / 0.1);
+  /* LIQUID — la même matière SOLIDE que la barre du bas : plaque pleine,
+     arête spéculaire, ombre noire. Aucune lueur d'accent. */
+  background: var(--tv-plate-2);
+  border: 1px solid var(--tv-glass-edge);
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.08),
-    0 10px 30px -12px rgb(0 0 0 / 0.8),
-    0 0 0 1px rgb(var(--tv-accent-rgb) / 0.06);
+    var(--tv-glass-specular),
+    0 10px 30px -12px rgb(0 0 0 / 0.8);
   transition:
     transform var(--tv-dur-2) var(--tv-ease),
     border-color var(--tv-dur-2) var(--tv-ease),
@@ -5944,11 +6006,10 @@ body::after {
 @media (hover: hover) {
   .float-shell:hover,
   .tv-jarvis-dock:hover {
-    border-color: rgb(var(--tv-accent-rgb) / 0.3);
+    border-color: var(--tv-border-strong);
     box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.1),
-      0 12px 34px -12px rgb(0 0 0 / 0.85),
-      0 0 24px -8px rgb(var(--tv-accent-rgb) / 0.35);
+      var(--tv-glass-specular),
+      0 12px 34px -12px rgb(0 0 0 / 0.85);
   }
 }
 .tv-jarvis-dock-active,
