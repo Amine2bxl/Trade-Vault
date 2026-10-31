@@ -76,7 +76,8 @@ Ces trois décisions prévalent sur une checklist antérieure ambiguë du regist
 | Lot 1 | **Implémenté, en revue** (PR #236) ; gates externes `BLOCKED_EXTERNAL` — voir ADDENDUM 3 |
 | Lot 2 | **Implémenté, en revue** (PR à la branche `feat/research-edge-behavior-lot2`) — voir ADDENDUM 4 |
 | Lot 3 | **Implémenté, en revue** (branche `feat/prop-risk-engine-lot3`) — voir ADDENDUM 5 |
-| Lots 4–6 | **NOT STARTED** |
+| Lot 4 | **Implémenté, en revue** (branche `feat/jarvis-evidence-lot4`) — voir ADDENDUM 6 |
+| Lots 5–6 | **NOT STARTED** |
 | Supabase | Projet TradeVault ; inspection de schéma en lecture seule dans la reprise ; aucune nouvelle migration distante appliquée au titre de ces lots |
 | Preview | Une preview Vercel READY a été observée sur la branche ; ne pas confondre ce constat avec un E2E authentifié |
 | Protection GitHub `main` | **À vérifier via des droits appropriés** : consultation API de protection refusée (403). Le document d'audit ancien la signalait non protégée ; ne pas annoncer que cela a été revalidé aujourd'hui |
@@ -708,4 +709,8 @@ Les éléments suivants sont **postérieurs** à l'état du HEAD `1c680115` ment
 
 - Branche `feat/prop-risk-engine-lot3`, empilée sur le lot 2. Défauts, ajouts, critères et restes : `docs/QUANT_CORRECTNESS_PROGRESS.md` § Lot 3.
 - `main` a reçu d720f78 (saisie signée +/−) pendant les lots ; elle est fusionnée dans les lots 0 à 3 par des commits de fusion, sans réécriture d'historique.
+
+# ADDENDUM 6 — Lot 4 (30 octobre 2026)
+
+- Branche `feat/jarvis-evidence-lot4`, empilée sur le lot 3. Défauts, ajouts et critères : `docs/QUANT_CORRECTNESS_PROGRESS.md` § Lot 4 ; outils : `docs/AI.md`.
 

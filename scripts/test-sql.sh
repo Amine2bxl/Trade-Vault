@@ -188,6 +188,20 @@ for passe in 1 2; do
 done
 echo "→ assertions Research Notebook (RLS A/B, protocole figé, résultats ajoutés)"
 psql_run -f tests/sql/research-notebook.sql
+EXPERIMENT_MIGRATION="supabase/migrations/20261030200000_progress_experiments.sql"
+echo "→ migration $EXPERIMENT_MIGRATION (appliquée deux fois)"
+for passe in 1 2; do
+  MIGRATION_LOG=$(mktemp)
+  if ! psql_run -f "$EXPERIMENT_MIGRATION" >"$MIGRATION_LOG" 2>&1; then
+    grep -v "^NOTICE:" "$MIGRATION_LOG" >&2 || true
+    rm -f "$MIGRATION_LOG"
+    echo "ÉCHEC : la migration progress_experiments ne s'applique pas (passe $passe)." >&2
+    exit 1
+  fi
+  rm -f "$MIGRATION_LOG"
+done
+echo "→ assertions expériences de progression (RLS A/B, protocole figé, clôture définitive)"
+psql_run -f tests/sql/progress-experiments.sql
 echo "→ concurrence (deux sessions simultanées)"
 if [ -n "$CONN" ]; then
   PSQL_ARGS="$CONN" bash tests/sql/concurrency.sh

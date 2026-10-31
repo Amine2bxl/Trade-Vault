@@ -2131,6 +2131,27 @@ const fr: Dict = {
     "Ce rapport archivé utilise d'anciens calculs. Les métriques non vérifiables sont masquées jusqu'au recalcul.",
   "reports.recalculate": "Recalculer",
   "reports.allAccounts": "Tous les comptes",
+  "experiment.title": "Expérience : une pause après des pertes",
+  "experiment.running": "En cours",
+  "experiment.subtitle":
+    "Fixe une règle avant de trader avec, puis mesure si tu l'as tenue. Les résultats sont décrits, pas attribués à la règle.",
+  "experiment.after": "S'arrêter après",
+  "experiment.duration": "Pendant",
+  "experiment.sessionsN": "{n} séances",
+  "experiment.start": "Commencer l'expérience",
+  "experiment.protocol":
+    "Règle : s'arrêter après {n} pertes d'affilée, pendant {sessions} séances à partir du {date}. Figée au démarrage.",
+  "experiment.progress":
+    "{observed}/{target} séances · règle tenue dans {complied} des {tested} séances où elle s'appliquait · {notTriggered} sans déclenchement · {unknown} invérifiables.",
+  "experiment.pnl": "P&L moyen par séance :",
+  "experiment.baseline": "{n} séances précédentes :",
+  "experiment.lowPower": "Trop peu de séances pour départager un écart du hasard.",
+  "experiment.caveat": "Tenir une règle ne prouve pas qu'elle a causé ton résultat.",
+  "experiment.complete": "Clore l'expérience",
+  "experiment.abandon": "Abandonner",
+  "experiment.modify": "Changer la règle (démarre une nouvelle version)",
+  "experiment.restart": "Clore cette version et démarrer la nouvelle",
+  "experiment.saveFailed": "Enregistrement impossible. Réessaie.",
   "behavior.title": "Scénario : s'arrêter après une série de pertes",
   "behavior.hypothetical": "Hypothétique",
   "behavior.subtitle":

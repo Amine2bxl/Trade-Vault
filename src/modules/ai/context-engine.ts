@@ -371,6 +371,8 @@ export function planContext(
       "get_trades",
       "get_mistakes",
       "get_edge_score",
+      "get_edge_conditions",
+      "get_behavior_scenario",
       "search_memory",
       "get_contract_math",
     ])

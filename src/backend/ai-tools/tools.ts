@@ -13,9 +13,18 @@ import {
 import { computeStats } from "@/domain/tradeCalcs";
 import { computeQuantStats, statsBySession } from "@/domain/quantStats";
 import { computeBehavioral } from "@/domain/behavioral";
-import { computeEdgeScore, EDGE_WINDOW_DAYS } from "@/domain/edgeScore";
+import { computeEdgeScore, EDGE_SCORE_WEIGHTS, EDGE_WINDOW_DAYS } from "@/domain/edgeScore";
 import { todayLocalDate } from "@/shared/calendar-date";
 import { getContractMath, getEconomicCalendar } from "./market";
+import {
+  analyzeDimension,
+  outOfSample,
+  stopAfterLossesScenario,
+  BOOTSTRAP_METHOD,
+  BOOTSTRAP_VERSION,
+  type EdgeDimension,
+} from "@/modules/research";
+import { MIN_SESSIONS, MIN_TRADES } from "@/modules/patterns/thresholds";
 
 /**
  * LES OUTILS DE JARVIS — ce qui le sépare d'un texte pré-rempli.
@@ -432,9 +441,11 @@ export const getMistakes: ToolDefinition = {
 export const getEdgeScore: ToolDefinition = {
   name: "get_edge_score",
   description:
-    `Read the trader's Edge Score over its own ${EDGE_WINDOW_DAYS}-traded-day window, with ` +
-    "its four weighted components (clean trades 35%, risk 25%, clean days 25%, routine 15%) " +
-    "and the weakest one. The plan's max risk and the account starting balance are read " +
+    `Read the trader's Edge Score over its own ${EDGE_WINDOW_DAYS}-traded-day window. Only two ` +
+    `components are GRADED: clean trades ${Math.round(EDGE_SCORE_WEIGHTS.cleanTrades * 100)}% ` +
+    `and risk ${Math.round(EDGE_SCORE_WEIGHTS.risk * 100)}%; clean days and routine are shown ` +
+    "but never graded. The score is null unless every trade of the window has independent " +
+    "evidence — explain what is missing, never estimate a grade. The plan's max risk and the account starting balance are read " +
     "automatically, exactly like the dashboard. The `routine` component comes from the " +
     "pre-market checklist stored on the trader's device: it is unavailable here, so this " +
     "score can differ from the one shown in the app when the trader uses the checklist — " +
@@ -817,6 +828,154 @@ export const getDay: ToolDefinition = {
   },
 };
 
+// ── get_edge_conditions ──────────────────────────────────────────────────────
+
+const DIMENSIONS: readonly EdgeDimension[] = [
+  "strategy",
+  "symbol",
+  "session",
+  "weekday",
+  "account",
+];
+
+/**
+ * EdgeLab (lot 2), tel que la page Analytics l'affiche : pour chaque valeur
+ * d'une dimension, l'espérance nette, l'intervalle bootstrap par séances, le q
+ * corrigé des tests multiples et le verdict — avec sa PREUVE (méthode, n,
+ * séances, période, couverture, limites). Jarvis formule ; il ne recalcule rien
+ * et ne dit jamais « meilleur setup ».
+ */
+export const getEdgeConditions: ToolDefinition = {
+  name: "get_edge_conditions",
+  description:
+    "Read where the trader's results differ from zero for ONE dimension (strategy, symbol, " +
+    "session, weekday or account): per value, n trades, sessions, net expectancy per trade, " +
+    "95% session-block bootstrap interval, Benjamini-Hochberg q and a verdict " +
+    "(positive_observed, negative_observed, indistinguishable, insufficient), plus an " +
+    "out-of-sample check (selected on the earliest 60% of sessions). Quote the verdict and its " +
+    "n and interval; an observed difference is NOT a proven or lasting edge, and 'insufficient' " +
+    "means say nothing about that value. Never call any value the 'best'. Args: dimension " +
+    "(required), days (window, default 365), extraCostPerTrade (stress, optional).",
+  inputSchema: {
+    type: "object",
+    properties: {
+      dimension: { type: "string", enum: [...DIMENSIONS] },
+      days: { type: "number", description: "Window in calendar days (max 1825)." },
+      extraCostPerTrade: { type: "number", description: "Extra cost per trade (stress)." },
+    },
+    required: ["dimension"],
+    additionalProperties: false,
+  },
+  sideEffect: false,
+  source: "local",
+  async execute(input, ctx) {
+    const args = (input ?? {}) as Record<string, unknown>;
+    const dimension = DIMENSIONS.includes(args.dimension as EdgeDimension)
+      ? (args.dimension as EdgeDimension)
+      : "strategy";
+    const jours = entier(args.days, 365, LIMITES.joursMax);
+    const cost =
+      typeof args.extraCostPerTrade === "number" && args.extraCostPerTrade > 0
+        ? Math.min(args.extraCostPerTrade, 1000)
+        : 0;
+    const trades = await tradesDe(ctx, { jours });
+    const report = analyzeDimension(trades, dimension, { extraCostPerTrade: cost });
+    const oos = outOfSample(trades, dimension, { extraCostPerTrade: cost });
+    const oosByKey = new Map(oos.cells.map((c) => [c.key, c]));
+    const days = trades.map((t) => t.date).sort();
+    return {
+      dimension,
+      cells: report.cells.map((c) => ({
+        value: c.key,
+        trades: c.n,
+        sessions: c.sessions,
+        netExpectancyPerTrade: arrondi(c.netExpectancy),
+        interval95: c.bootstrap ? [arrondi(c.bootstrap.low), arrondi(c.bootstrap.high)] : null,
+        q: c.q === null ? null : Math.round(c.q * 1000) / 1000,
+        verdict: c.verdict,
+        fragile: c.fragile,
+        expectancyR: c.expectancyR === null ? null : arrondi(c.expectancyR),
+        rSample: c.nR,
+        outOfSample: oosByKey.get(c.key)
+          ? {
+              validation: oosByKey.get(c.key)!.validation,
+              holdout: oosByKey.get(c.key)!.holdout,
+              holdoutTrades: oosByKey.get(c.key)!.holdoutN,
+            }
+          : null,
+      })),
+      evidence: {
+        metric: "net P&L per trade",
+        unit: "account currency",
+        method: `${BOOTSTRAP_METHOD} v${BOOTSTRAP_VERSION}, Benjamini-Hochberg at ${report.alpha}, EdgeLab v${report.version}`,
+        iterations: report.iterations,
+        period: { from: days[0] ?? null, to: days.at(-1) ?? null },
+        tradesInWindow: trades.length,
+        testedValues: report.tests,
+        coverage: Math.round(report.coverage * 100) / 100,
+        tradesWithoutValue: report.unknown,
+        extraCostPerTrade: cost,
+        minimumPerValue: { trades: MIN_TRADES, sessions: MIN_SESSIONS },
+        limits: [
+          "Associations, not causes.",
+          "An observed difference is not a proven or durable edge.",
+          "Values under the minimum sample carry no verdict.",
+          ...(trades.truncated ? ["History truncated by the server safety cap."] : []),
+        ],
+      },
+    };
+  },
+};
+
+// ── get_behavior_scenario ────────────────────────────────────────────────────
+
+/**
+ * BehaviorLab (lot 2) : « et si je m'étais arrêté après N pertes ? » —
+ * HYPOTHÉTIQUE, toujours. Les séances à ordre non prouvé sont écartées et
+ * comptées ; le résultat n'est jamais un gain manqué.
+ */
+export const getBehaviorScenario: ToolDefinition = {
+  name: "get_behavior_scenario",
+  description:
+    "Replay the trader's sessions without the trades taken after N consecutive losses " +
+    "(N = maxLosses, 1-5). The output is HYPOTHETICAL: present it as what those trades " +
+    "returned, never as money the trader would have saved or earned — a trader who stops " +
+    "earlier does not have the same session. Sessions whose close order is not proven are " +
+    "excluded and counted. Args: maxLosses (required), days (default 365).",
+  inputSchema: {
+    type: "object",
+    properties: {
+      maxLosses: { type: "number", description: "Consecutive losses before stopping (1-5)." },
+      days: { type: "number", description: "Window in calendar days (max 1825)." },
+    },
+    required: ["maxLosses"],
+    additionalProperties: false,
+  },
+  sideEffect: false,
+  source: "local",
+  async execute(input, ctx) {
+    const args = (input ?? {}) as Record<string, unknown>;
+    const maxLosses = entier(args.maxLosses, 2, 5);
+    const trades = await tradesDe(ctx, { jours: entier(args.days, 365, LIMITES.joursMax) });
+    const r = stopAfterLossesScenario(trades, maxLosses);
+    return {
+      label: "hypothetical",
+      maxLosses,
+      sessionsReplayed: r.sessionsEvaluated,
+      sessionsExcludedUnprovenOrder: r.sessionsUnknown,
+      sessionsWhereRuleWouldTrigger: r.sessionsTriggered,
+      tradesRemoved: r.tradesRemoved,
+      pnlOfRemovedTrades: r.removedPnl,
+      actualPnlReplayedSessions: r.actualPnl,
+      hypotheticalPnlReplayedSessions: r.hypotheticalPnl,
+      limits: [
+        "Hypothetical replay, not a counterfactual gain.",
+        "Only sessions with a proven close order are replayed.",
+      ],
+    };
+  },
+};
+
 /** Les outils, dans l'ordre où ils servent. */
 export const JARVIS_TOOL_DEFS: readonly ToolDefinition[] = [
   getProfile,
@@ -825,6 +984,8 @@ export const JARVIS_TOOL_DEFS: readonly ToolDefinition[] = [
   getTrades,
   getMistakes,
   getEdgeScore,
+  getEdgeConditions,
+  getBehaviorScenario,
   searchMemory,
   // Marché (`market.ts`) : arithmétique des contrats et calendrier économique.
   getContractMath,
