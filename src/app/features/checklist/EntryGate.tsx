@@ -22,15 +22,32 @@ interface Props {
   blocked: string | null;
   /** « Go » : ouvre le formulaire de trade, pré-rempli. */
   onGo: () => void;
+  /**
+   * Essai à blanc (séance close, réglages) : on voit et on teste ses
+   * questions, rien n'est encodé et le « go » se contente de refermer.
+   */
+  practice?: boolean;
+  /** Prévenu à l'ouverture et à la fermeture (l'aperçu se masque pendant l'essai). */
+  onOpenChange?: (open: boolean) => void;
 }
 
-export default function EntryGate({ questions, blocked, onGo }: Props) {
+export default function EntryGate({
+  questions,
+  blocked,
+  onGo,
+  practice = false,
+  onOpenChange,
+}: Props) {
   const { t } = useT();
-  const [open, setOpen] = useState(false);
+  const [open, setOpenState] = useState(false);
   const [answers, setAnswers] = useState<Record<string, boolean>>({});
   const verdict = gateVerdict(questions, answers);
   const answered = questions.filter((q) => answers[q.id] !== undefined).length;
 
+  const setOpen = (v: boolean) => {
+    setOpenState(v);
+    onOpenChange?.(v);
+  };
   const close = () => {
     setOpen(false);
     setAnswers({});
@@ -39,11 +56,12 @@ export default function EntryGate({ questions, blocked, onGo }: Props) {
   if (!open) {
     return (
       <Button
-        className="h-12 w-full text-sm font-bold"
+        variant={practice ? "subtle" : "primary"}
+        className={practice ? "w-full" : "h-12 w-full text-sm font-bold"}
         disabled={blocked !== null}
         onClick={() => setOpen(true)}
       >
-        {t("chk.wantEntry")}
+        {practice ? t("chk.tryGate") : t("chk.wantEntry")}
       </Button>
     );
   }
@@ -121,10 +139,10 @@ export default function EntryGate({ questions, blocked, onGo }: Props) {
             size="sm"
             onClick={() => {
               close();
-              onGo();
+              if (!practice) onGo();
             }}
           >
-            {t("chk.logTrade")}
+            {practice ? t("common.close") : t("chk.logTrade")}
           </Button>
         </div>
       )}

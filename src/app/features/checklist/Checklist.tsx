@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Clock, Flame, SlidersHorizontal } from "@/shared/ui/icons";
-import { PageContainer, PageToolbar } from "@/shared/ui";
+import { Button, PageContainer, PageToolbar } from "@/shared/ui";
 import { cn } from "@/shared/ui/cn";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useT } from "@/app/i18n/LanguageContext";
@@ -562,7 +562,8 @@ export default function Checklist({ setPage, onAddTrade, onEditTrade, trades }: 
   const questions = useMemo(() => {
     const p = activePlan(day);
     const values = {
-      bias: biasWord(p.bias),
+      // Biais pas encore choisi : « — », pas « observation » (ce serait un choix).
+      bias: p.bias ? biasWord(p.bias) : "",
       target: p.target,
       entry: p.entry,
       inv: p.invalidation,
@@ -624,15 +625,18 @@ export default function Checklist({ setPage, onAddTrade, onEditTrade, trades }: 
 
       <PageToolbar
         actions={
-          <button
-            type="button"
+          // Une icône seule ne disait pas qu'ici se règlent la fenêtre et les
+          // questions d'entrée : le mot accompagne l'icône dès qu'il y a la place.
+          <Button
+            variant="subtle"
+            size="sm"
             onClick={() => setShowSettings(true)}
             aria-label={t("chk.settings")}
             title={t("chk.settings")}
-            className="tv-chk-tool"
           >
             <SlidersHorizontal className="h-4 w-4" />
-          </button>
+            <span className="hidden sm:inline">{t("chk.settingsShort")}</span>
+          </Button>
         }
       >
         <PhaseSteps
@@ -656,6 +660,8 @@ export default function Checklist({ setPage, onAddTrade, onEditTrade, trades }: 
           memory={memory}
           reminder={reminder}
           minRR={minRR}
+          questions={questions}
+          onCustomize={() => setShowSettings(true)}
         />
       )}
 
@@ -694,6 +700,8 @@ export default function Checklist({ setPage, onAddTrade, onEditTrade, trades }: 
           onEncodeTrade={() => encodeTrade(true)}
           onEncodeMissed={encodeMissed}
           onReviewTrade={reviewTrade}
+          questions={questions}
+          onCustomize={() => setShowSettings(true)}
         />
       )}
 

@@ -1,15 +1,18 @@
+import { useState } from "react";
 import { Check, X } from "@/shared/ui/icons";
 import { Button, Card, Chip, CHIP_ROW, ChoiceGroup, Field, Textarea } from "@/shared/ui";
 import { cn } from "@/shared/ui/cn";
 import type { Trade } from "@/domain/trade";
 import { useT } from "@/app/i18n/LanguageContext";
-import { HistoryLine, SectionLabel, TradeLines } from "./checklistParts";
+import { GatePreview, HistoryLine, SectionLabel, TradeLines } from "./checklistParts";
 import { BREACH_KEYS, END_KEYS } from "./checklistLabels";
+import EntryGate from "./EntryGate";
 import {
   BREACHES,
   type Breach,
   type DayAction,
   type DayFacts,
+  type GateQuestion,
   type PlanHistory,
   type SessionDay,
 } from "./sessionPlan";
@@ -144,6 +147,9 @@ interface ClosedProps {
   onEncodeTrade: () => void;
   /** Ajoute le bilan à un trade déjà au journal (saisi ou importé). */
   onReviewTrade: (trade: Trade, index: number) => void;
+  /** Questions d'entrée de la prochaine séance, et leur réglage. */
+  questions: GateQuestion[];
+  onCustomize: () => void;
   onEncodeMissed: () => void;
 }
 
@@ -156,8 +162,11 @@ export function ClosedCard({
   onEncodeTrade,
   onEncodeMissed,
   onReviewTrade,
+  questions,
+  onCustomize,
 }: ClosedProps) {
   const { t } = useT();
+  const [trying, setTrying] = useState(false);
   const { review } = day;
   const directional = day.plan.bias === "long" || day.plan.bias === "short";
   // Le geste le plus probable passe devant : un setup parti sans soi se note
@@ -233,7 +242,24 @@ export function ClosedCard({
       </section>
 
       <HistoryLine history={history} />
-      <p className="tv-prose text-slate-500">{t("chk.tomorrow")}</p>
+
+      {/* La séance est close, mais la suivante se prépare d'ici : on revoit
+          ses questions, on les ajuste, on les essaie à blanc. */}
+      <section className="space-y-2.5 border-t border-[var(--tv-border)] pt-4">
+        <SectionLabel>{t("chk.nextSession")}</SectionLabel>
+        <p className="tv-prose text-slate-500">{t("chk.tomorrow")}</p>
+        <GatePreview questions={questions} onCustomize={onCustomize} hideList={trying}>
+          {questions.length > 0 && (
+            <EntryGate
+              questions={questions}
+              blocked={null}
+              onGo={() => {}}
+              practice
+              onOpenChange={setTrying}
+            />
+          )}
+        </GatePreview>
+      </section>
       <div className="flex flex-wrap gap-2">
         <Button variant="subtle" size="sm" onClick={onJournal}>
           {t("chk.journal")}

@@ -12,7 +12,7 @@ import {
 } from "@/shared/ui";
 import { useT } from "@/app/i18n/LanguageContext";
 import { EMOTIONAL_STATES } from "@/app/trading/readiness";
-import { HistoryLine, MemoryLines, RRBadge, SectionLabel } from "./checklistParts";
+import { GatePreview, HistoryLine, MemoryLines, RRBadge, SectionLabel } from "./checklistParts";
 import PlanLadder from "./PlanLadder";
 import { planLadder } from "./ladderGeometry";
 import { FIELD_KEYS, MOOD_KEYS, useBiasWord, useRFormat } from "./checklistLabels";
@@ -26,6 +26,7 @@ import {
   type AltScenario,
   type Bias,
   type DayAction,
+  type GateQuestion,
   type Direction,
   type PlanHistory,
   type PlanWarning,
@@ -52,6 +53,9 @@ interface Props {
   history: PlanHistory;
   memory: SessionMemory;
   reminder: MissedReminder | null;
+  /** Questions d'entrée, déjà remplies avec le plan en cours. */
+  questions: GateQuestion[];
+  onCustomize: () => void;
   /** `risk.minRR` du plan de trading ; `null` sans règle. */
   minRR: number | null;
 }
@@ -65,6 +69,8 @@ export default function PlanCard({
   history,
   memory,
   reminder,
+  questions,
+  onCustomize,
   minRR,
 }: Props) {
   const { t } = useT();
@@ -108,6 +114,11 @@ export default function PlanCard({
             <PlanLadder ladder={ladder} />
           </Card>
         )}
+        {/* Les questions d'entrée se règlent pendant la préparation : sur
+            grand écran elles vivent ici, à côté de la carte. */}
+        <Card variant="glass" pad="tight" className="hidden lg:block">
+          <GatePreview questions={questions} onCustomize={onCustomize} />
+        </Card>
         {history.inPlan.n + history.offPlan.n > 0 && (
           <Card variant="glass" pad="tight">
             <HistoryLine history={history} />
@@ -290,6 +301,11 @@ export default function PlanCard({
             </section>
           </>
         )}
+
+        {/* Téléphone : les questions d'entrée juste avant l'état et le verrou. */}
+        <div className="lg:hidden">
+          <GatePreview questions={questions} onCustomize={onCustomize} />
+        </div>
 
         {/* ══ État ══ */}
         <section className="space-y-3">

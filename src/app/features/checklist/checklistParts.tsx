@@ -1,4 +1,6 @@
 import { useMemo } from "react";
+import { SlidersHorizontal } from "@/shared/ui/icons";
+import { Button } from "@/shared/ui";
 import { cn } from "@/shared/ui/cn";
 import { useT } from "@/app/i18n/LanguageContext";
 import { intlLocale } from "@/app/i18n/locale";
@@ -8,6 +10,7 @@ import { BREACH_KEYS, DIRECTION_KEYS, useRFormat } from "./checklistLabels";
 import {
   tradeBreaches,
   type DayFacts,
+  type GateQuestion,
   type PlanHistory,
   type Scenario,
   type SessionDay,
@@ -289,6 +292,58 @@ export function MemoryLines({
           )}
         </div>
       )}
+    </section>
+  );
+}
+
+/**
+ * Les questions d'entrée, montrées là où on les prépare. Elles ne servent
+ * qu'au moment d'entrer, mais on les règle AVANT : invisibles hors séance, on
+ * ne savait ni qu'elles existaient ni comment les adapter. Elles s'affichent
+ * remplies avec le plan en cours, comme elles seront posées.
+ */
+export function GatePreview({
+  questions,
+  onCustomize,
+  hideList = false,
+  children,
+}: {
+  questions: GateQuestion[];
+  onCustomize: () => void;
+  /** Liste masquée quand l'essai la reprend déjà, question par question. */
+  hideList?: boolean;
+  /** Geste en plus (ex. « Essayer la porte » en séance close). */
+  children?: React.ReactNode;
+}) {
+  const { t } = useT();
+  return (
+    <section className="space-y-2.5">
+      <div className="flex items-center justify-between gap-2">
+        <h3 className="tv-label text-slate-400">
+          {t("chk.gatePreview")}{" "}
+          <span className="tv-figure tv-figure-secondary text-slate-500">· {questions.length}</span>
+        </h3>
+        <Button variant="subtle" size="sm" onClick={onCustomize}>
+          <SlidersHorizontal className="h-3.5 w-3.5" /> {t("chk.customize")}
+        </Button>
+      </div>
+      <p className="tv-prose text-slate-500">{t("chk.gatePreviewHint")}</p>
+      {questions.length === 0 ? (
+        <p className="text-xs text-slate-400">{t("chk.gateEmpty")}</p>
+      ) : hideList ? null : (
+        <ol className="space-y-1.5">
+          {questions.map((q) => (
+            <li key={q.id} className="flex items-start gap-2 text-sm text-slate-200">
+              <span
+                aria-hidden
+                className="mt-0.5 h-4 w-4 shrink-0 rounded border border-[var(--tv-border-strong)] bg-[var(--tv-plate-0)]"
+              />
+              <span className="min-w-0">{q.text}</span>
+            </li>
+          ))}
+        </ol>
+      )}
+      {children}
     </section>
   );
 }

@@ -1883,6 +1883,14 @@ const en = {
   "chk.dashLocked": "Plan locked — now execute it",
   "chk.dashStart": "Write your plan before the open",
   "chk.dashCta": "Open",
+  "chk.gatePreview": "Your entry questions",
+  "chk.gatePreviewHint":
+    "Asked during the session, when you want to enter — filled with today's plan. Edit them, change template, reorder.",
+  "chk.gateEmpty": "No active question: the gate opens straight away.",
+  "chk.customize": "Customize",
+  "chk.tryGate": "Try the gate (nothing is logged)",
+  "chk.nextSession": "Next session",
+  "chk.settingsShort": "Settings",
   "chk.reviewTrade": "Add the review",
   "chk.encodeAnother": "Log another trade",
   "chk.encodeHintTrades":
