@@ -204,7 +204,12 @@ function DevUiPage() {
                         />
                       )}
                       {ecran === "checklist" && (
-                        <Checklist trades={trades} setPage={noop} onAddTrade={noop} />
+                        <Checklist
+                          trades={trades}
+                          setPage={noop}
+                          onAddTrade={noop}
+                          onEditTrade={noop}
+                        />
                       )}
                       {ecran === "calculator" && (
                         <LotSizeCalculator onAddTrade={noop} setPage={noop} />

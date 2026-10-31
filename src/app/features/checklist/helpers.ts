@@ -1,9 +1,10 @@
 /* Helpers purs de la checklist — extrait de Checklist.tsx (Phase D). */
-import { type ChkConfig, defaultConfigFor, localTimeZone } from "./checklistDefaults";
-import { todayLocalDate } from "@/shared/calendar-date";
-
-export const FOMO_ICONS = ["◎", "◈", "◉", "⬤"];
-export const FOMO_CLASSES = ["s-calm", "s-focus", "s-imp", "s-fomo"];
+import {
+  type ChkConfig,
+  defaultConfigFor,
+  localTimeZone,
+  migrateConfig,
+} from "./checklistDefaults";
 
 /* ══ Helpers ══ */
 export const pad = (n: number) => String(n).padStart(2, "0");
@@ -32,8 +33,35 @@ export function parseTimeToMinutes(v: string) {
   return m ? +m[1] * 60 + +m[2] : 0;
 }
 export function isWindowOpen(cfg: ChkConfig, date = new Date()) {
-  const parts = getTimeInZone(date, cfg.timeZone);
-  return parts.hour * 60 + parts.minute >= parseTimeToMinutes(cfg.startTime);
+  return windowState(cfg, date).phase === "open";
+}
+
+export interface WindowState {
+  phase: "before" | "open" | "after";
+  /** Minutes avant l'ouverture (phase `before`), sinon 0. */
+  toStart: number;
+  /** Minutes avant la fin (phase `open` avec une fin), sinon `null`. */
+  toEnd: number | null;
+  /** Minutes écoulées depuis l'ouverture (négatives avant) : l'avance d'un verrou. */
+  sinceStart: number;
+}
+
+/**
+ * La fenêtre de séance à un instant, dans SON fuseau. Une fin vide, ou
+ * antérieure au début, veut dire « pas de fin » : la fenêtre reste ouverte
+ * jusqu'à minuit, comme avant l'existence du réglage.
+ */
+export function windowState(cfg: ChkConfig, date = new Date()): WindowState {
+  const p = getTimeInZone(date, cfg.timeZone);
+  const now = p.hour * 60 + p.minute;
+  const start = parseTimeToMinutes(cfg.startTime);
+  const end = cfg.endTime ? parseTimeToMinutes(cfg.endTime) : null;
+  const hasEnd = end !== null && end > start;
+  if (now < start)
+    return { phase: "before", toStart: start - now, toEnd: null, sinceStart: now - start };
+  if (hasEnd && now >= end)
+    return { phase: "after", toStart: 0, toEnd: null, sinceStart: now - start };
+  return { phase: "open", toStart: 0, toEnd: hasEnd ? end - now : null, sinceStart: now - start };
 }
 export function getTimeZoneOptions(): string[] {
   let zones: string[] = [];
@@ -59,12 +87,6 @@ export function getTimeZoneOptions(): string[] {
   if (!zones.includes(local)) zones.unshift(local);
   return [...new Set(zones)].sort();
 }
-function dayOfYear() {
-  const d = new Date();
-  const s = new Date(d.getFullYear(), 0, 0);
-  return Math.floor((d.getTime() - s.getTime()) / 864e5);
-}
-export const todayKey = () => todayLocalDate();
 
 /* Merge stored config with defaults so new fields never break old saves */
 export function hydrateConfig(raw: string | null, lang: string): ChkConfig {
@@ -72,11 +94,18 @@ export function hydrateConfig(raw: string | null, lang: string): ChkConfig {
   if (!raw) return def;
   try {
     const p = JSON.parse(raw) as Partial<ChkConfig>;
-    return {
-      ...def,
-      ...p,
-      fomo: Array.isArray(p.fomo) && p.fomo.length === 4 ? p.fomo : def.fomo,
-    };
+    return migrateConfig(
+      {
+        ...def,
+        ...p,
+        // Une liste enregistrée sans version date d'avant les questions
+        // d'entrée : la version des défauts ne doit pas la masquer. Sans liste
+        // enregistrée, ce sont les défauts — déjà à jour.
+        gateV: Array.isArray(p.items) ? p.gateV : def.gateV,
+        fomo: Array.isArray(p.fomo) && p.fomo.length === 4 ? p.fomo : def.fomo,
+      },
+      lang,
+    );
   } catch {
     return def;
   }

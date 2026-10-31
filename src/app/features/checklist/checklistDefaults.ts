@@ -48,8 +48,18 @@ export interface ChkConfig {
   cycle: CycleStep[];
   cycleAlert: string;
   startTime: string; // "HH:MM"
+  /**
+   * Fin de la fenêtre (« HH:MM ») ; absente ou vide = pas de fin. Après elle,
+   * la porte d'entrée se ferme : c'est l'heure des entrées tardives.
+   */
+  endTime?: string;
   timeZone: string;
   countdown: number; // lock countdown seconds
+  /**
+   * Version des questions d'entrée. Absente ou < `GATE_VERSION` : la liste
+   * date d'avant le plan de séance et passe par `migrateConfig`.
+   */
+  gateV?: number;
 }
 
 export function localTimeZone(): string {
@@ -369,154 +379,123 @@ export function defaultConfigFor(lang: string): ChkConfig {
   const base = lang === "fr" ? FR : EN;
   return {
     ...structuredClone(base),
+    items: templateItems("essential", lang),
     startTime: "09:49",
     timeZone: localTimeZone(),
     countdown: 5,
+    gateV: GATE_VERSION,
   };
 }
 
-/* ══ One-click templates ══ */
-export interface ChkTemplate {
-  id: string;
-  name: string;
-  items: ChkItem[];
+/* ════════════════════════════════════════════════════════════════
+   Questions d'entrée — posées par la porte au moment d'entrer.
+
+   Les quatre questions « du plan » citent les valeurs écrites le matin via
+   des variables ({bias}, {target}, {entry}, {inv}, {risk}, voir
+   `sessionPlan.fillGate`). Chaque modèle les reprend, puis ajoute les
+   critères de sa méthode. Tout reste éditable : un modèle est un point de
+   départ, pas un gabarit imposé.
+   ════════════════════════════════════════════════════════════════ */
+
+export const GATE_VERSION = 2;
+
+export type GateTemplateId = "essential" | "ict" | "priceAction" | "orderFlow";
+export const GATE_TEMPLATES: readonly GateTemplateId[] = [
+  "essential",
+  "ict",
+  "priceAction",
+  "orderFlow",
+];
+
+const q = (title: string): ChkItem => ({ title, desc: "" });
+
+/** Les questions qui confrontent l'entrée au plan écrit — communes à tous les modèles. */
+export function planQuestions(lang: string): ChkItem[] {
+  return lang === "fr"
+    ? [
+        q("{bias} : dans le sens du plan ?"),
+        q("Prix dans ta zone : {entry} ?"),
+        q("Stop là où l'idée est fausse : {inv} ?"),
+        q("Taille = {risk}, pas plus ?"),
+      ]
+    : [
+        q("{bias}: in the plan's direction?"),
+        q("Price in your zone: {entry}?"),
+        q("Stop where the idea is wrong: {inv}?"),
+        q("Size = {risk}, not more?"),
+      ];
 }
 
-export function templatesFor(lang: string): ChkTemplate[] {
-  if (lang === "fr") {
-    return [
-      { id: "ict", name: "ICT / Smart Money", items: FR.items },
-      {
-        id: "simple",
-        name: "Essentiel — 3 critères",
-        items: [
-          {
-            title: "Mon setup exact est présent",
-            desc: "Tous les critères de mon plan, sans exception.",
-          },
-          {
-            title: "SL sur structure, taille calculée",
-            desc: "Le risque est défini avant l'entrée, pas après.",
-          },
-          {
-            title: "Je suis calme et je suis le plan",
-            desc: "Aucune urgence, aucune émotion aux commandes.",
-          },
-        ],
-      },
-      {
-        id: "swing",
-        name: "Swing Trader",
-        items: [
-          {
-            title: "Biais HTF confirmé (D/W)",
-            desc: "La structure daily et weekly pointent dans la même direction.",
-          },
-          {
-            title: "Prix dans ma zone d'intérêt",
-            desc: "Zone marquée à l'avance — pas dessinée après coup.",
-          },
-          {
-            title: "Pas de news majeure sous 24h",
-            desc: "FOMC, NFP, CPI : je connais le calendrier.",
-          },
-          { title: "Plan d'entrée écrit", desc: "Entrée, SL, TP écrits AVANT de cliquer." },
-          { title: "R:R ≥ 3", desc: "Sinon le trade ne paie pas son risque sur la durée." },
-          {
-            title: "Alerte posée, chart fermé",
-            desc: "Le marché me préviendra. Pas besoin de fixer l'écran.",
-          },
-        ],
-      },
-      {
-        id: "prop",
-        name: "Prop Firm — Risque",
-        items: [
-          {
-            title: "Drawdown journalier vérifié",
-            desc: "Je connais ma marge restante exacte avant d'entrer.",
-          },
-          {
-            title: "Risque ≤ 0.5% du compte",
-            desc: "Taille calculée depuis le SL, jamais l'inverse.",
-          },
-          {
-            title: "Pas de news rouge dans 15 min",
-            desc: "Spread et slippage tuent les comptes fundés.",
-          },
-          {
-            title: "Max 2 trades aujourd'hui",
-            desc: "Au-delà, c'est de l'overtrading statistique.",
-          },
-          {
-            title: "Journal à jour",
-            desc: "Le trade précédent est loggé avant d'en prendre un nouveau.",
-          },
-          {
-            title: "Perte acceptée à l'avance",
-            desc: "Je peux perdre ce trade sans que ça change mon état.",
-          },
-        ],
-      },
-    ];
-  }
-  return [
-    { id: "ict", name: "ICT / Smart Money", items: EN.items },
-    {
-      id: "simple",
-      name: "Essential — 3 checks",
-      items: [
-        { title: "My exact setup is present", desc: "Every criterion of my plan, no exceptions." },
-        {
-          title: "SL on structure, size computed",
-          desc: "Risk is defined before the entry, not after.",
-        },
-        {
-          title: "I am calm and following the plan",
-          desc: "No urgency, no emotion at the controls.",
-        },
-      ],
-    },
-    {
-      id: "swing",
-      name: "Swing Trader",
-      items: [
-        {
-          title: "HTF bias confirmed (D/W)",
-          desc: "Daily and weekly structure point the same way.",
-        },
-        {
-          title: "Price inside my zone of interest",
-          desc: "Zone marked in advance — not drawn after the fact.",
-        },
-        { title: "No major news within 24h", desc: "FOMC, NFP, CPI: I know the calendar." },
-        { title: "Written entry plan", desc: "Entry, SL, TP written BEFORE clicking." },
-        { title: "R:R ≥ 3", desc: "Otherwise the trade doesn't pay for its risk long-term." },
-        {
-          title: "Alert set, chart closed",
-          desc: "The market will notify me. No screen-staring needed.",
-        },
-      ],
-    },
-    {
-      id: "prop",
-      name: "Prop Firm — Risk",
-      items: [
-        {
-          title: "Daily drawdown checked",
-          desc: "I know my exact remaining margin before entering.",
-        },
-        { title: "Risk ≤ 0.5% of account", desc: "Size computed from the SL, never the reverse." },
-        { title: "No red news within 15 min", desc: "Spread and slippage kill funded accounts." },
-        { title: "Max 2 trades today", desc: "Beyond that it's statistical overtrading." },
-        { title: "Journal up to date", desc: "Previous trade logged before taking a new one." },
-        {
-          title: "Loss accepted in advance",
-          desc: "I can lose this trade without it changing my state.",
-        },
-      ],
-    },
-  ];
+const METHOD: Record<GateTemplateId, { fr: string[]; en: string[] }> = {
+  essential: {
+    fr: ["Mon setup est complet, sans exception ?"],
+    en: ["Is my setup complete, no exception?"],
+  },
+  ict: {
+    fr: [
+      "Liquidité prise (sweep) avant l'entrée ?",
+      "Déplacement + MSS / CISD confirmé ?",
+      "Entrée sur FVG / IFVG dans ma zone ?",
+      "Dans la macro / l'heure prévue ?",
+    ],
+    en: [
+      "Liquidity taken (sweep) before the entry?",
+      "Displacement + MSS / CISD confirmed?",
+      "Entry on an FVG / IFVG inside my zone?",
+      "Inside the macro / planned time?",
+    ],
+  },
+  priceAction: {
+    fr: [
+      "Niveau clé testé et rejeté ?",
+      "Bougie de confirmation clôturée ?",
+      "Structure dans le sens du biais ?",
+    ],
+    en: [
+      "Key level tested and rejected?",
+      "Confirmation candle closed?",
+      "Structure in the bias direction?",
+    ],
+  },
+  orderFlow: {
+    fr: [
+      "Absorption / delta dans le sens du plan ?",
+      "Liquidité visée visible sur la heatmap ?",
+      "VWAP / profil de volume en accord ?",
+    ],
+    en: [
+      "Absorption / delta in the plan's direction?",
+      "Targeted liquidity visible on the heatmap?",
+      "VWAP / volume profile in agreement?",
+    ],
+  },
+};
+
+export function templateItems(id: GateTemplateId, lang: string): ChkItem[] {
+  return [...planQuestions(lang), ...METHOD[id][lang === "fr" ? "fr" : "en"].map(q)];
+}
+
+/**
+ * Critères de l'ancienne checklist que l'écran VÉRIFIE désormais lui-même
+ * (fenêtre, pertes du jour) ou qui sont devenus des champs du plan (DoL).
+ * Retirés à la migration — sur titre exact uniquement : un critère reformulé
+ * par le trader lui appartient et reste.
+ */
+const AUTOMATED_TITLES = new Set([
+  "Heure de début atteinte",
+  "Heure de session atteinte",
+  "J'ai une DoL claire identifiée",
+  "Pas de loss déjà prise aujourd'hui",
+  "Session start time reached",
+  "Clear draw on liquidity identified",
+  "No loss taken today",
+]);
+
+/** Amène une configuration d'avant le plan de séance au format des questions d'entrée. */
+export function migrateConfig(cfg: ChkConfig, lang: string): ChkConfig {
+  if ((cfg.gateV ?? 0) >= GATE_VERSION) return cfg;
+  const kept = cfg.items.filter((it) => !AUTOMATED_TITLES.has(it.title.trim()));
+  return { ...cfg, items: [...planQuestions(lang), ...kept], gateV: GATE_VERSION };
 }
 
 /* ════════════════════════════════════════════════════════════════
@@ -791,72 +770,4 @@ export function generateChecklist(
     .map(({ item }) => item);
 
   return { items, ...sessionTimeFor(primary) };
-}
-
-/* ══ Patience ranks ══ */
-export function ranksFor(lang: string): { ranks: [number, string][]; descs: string[] } {
-  if (lang === "fr") {
-    return {
-      ranks: [
-        [0, "NIVEAU 0 — INITIALISATION"],
-        [3, "NIVEAU 1 — OBSERVATEUR"],
-        [10, "NIVEAU 2 — SNIPER"],
-        [20, "NIVEAU 3 — MACHINE"],
-        [40, "NIVEAU MAX — EDGE INCARNÉ"],
-      ],
-      descs: [
-        "Chaque minute passée à observer sans agir renforce ton edge. La patience est une position.",
-        "Tu observes. Le marché ne te contrôle pas. Continue.",
-        "Mode sniper actif. Tu ne tires qu'une fois, sur la cible parfaite.",
-        "Exécution mécanique. L'émotion n'a plus accès au poste de pilotage.",
-        "Tu es devenu l'attente elle-même. L'edge travaille pour toi.",
-      ],
-    };
-  }
-  return {
-    ranks: [
-      [0, "LEVEL 0 — INITIALIZATION"],
-      [3, "LEVEL 1 — OBSERVER"],
-      [10, "LEVEL 2 — SNIPER"],
-      [20, "LEVEL 3 — MACHINE"],
-      [40, "MAX LEVEL — EDGE EMBODIED"],
-    ],
-    descs: [
-      "Every minute spent observing without acting strengthens your edge. Patience is a position.",
-      "You observe. The market doesn't control you. Keep going.",
-      "Sniper mode active. You only shoot once, at the perfect target.",
-      "Mechanical execution. Emotion no longer has cockpit access.",
-      "You have become the wait itself. The edge works for you.",
-    ],
-  };
-}
-
-/* ══ Coach prompts (sent to the in-app AI coach) ══ */
-export function coachPromptsFor(lang: string) {
-  if (lang === "fr") {
-    return {
-      analyze:
-        "Analyse mon dernier trade et dis-moi quelle erreur de mon plan j'ai commise, en te basant sur mes trades.",
-      fomo: "J'ai ressenti du FOMO aujourd'hui pendant ma préparation pre-market. Aide-moi à comprendre ce qui s'est passé dans ma tête et comment l'éviter la prochaine fois.",
-      loss: "J'ai fait une loss aujourd'hui. Aide-moi à identifier l'erreur exacte et à éviter de la répéter.",
-      errors:
-        "Donne-moi un résumé de mes 3 erreurs les plus récurrentes dans mes trades et un plan d'action pour chacune.",
-      interference:
-        "Ma checklist pre-market vient de détecter une motivation émotionnelle (pas process). Aide-moi à me recentrer avant de faire une bêtise.",
-      checklistReview:
-        "Je fais ma checklist pre-market. Passe en revue mon état d'esprit et ma préparation du jour, et dis-moi en 3 points si je suis prêt à trader ou si je dois attendre.",
-    };
-  }
-  return {
-    analyze:
-      "Analyze my latest trade and tell me which mistake from my plan I made, based on my trades.",
-    fomo: "I felt FOMO today during my pre-market prep. Help me understand what happened in my head and how to avoid it next time.",
-    loss: "I took a loss today. Help me identify the exact mistake and avoid repeating it.",
-    errors:
-      "Give me a summary of my 3 most recurring mistakes in my trades and an action plan for each.",
-    interference:
-      "My pre-market checklist just flagged an emotional (non-process) motivation. Help me re-center before I do something stupid.",
-    checklistReview:
-      "I'm doing my pre-market checklist. Review my mindset and today's preparation, and tell me in 3 points whether I'm ready to trade or should wait.",
-  };
 }

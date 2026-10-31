@@ -57,6 +57,7 @@ import { useDraftAutosave } from "@/app/hooks/useDraftAutosave";
 import { nsKey, readJSON, removeKey } from "@/app/utils/persistence";
 import { usePageActions } from "@/app/contexts/PageActionsContext";
 import { todayLocalDate } from "@/shared/calendar-date";
+import { takeHandoff } from "@/app/utils/handoff";
 
 function emptyMissed(): MissedOpportunity {
   return {
@@ -171,6 +172,14 @@ export default function MissedOpportunities() {
   // Live entre appareils : un setup manqué ajouté sur le téléphone apparaît
   // ici sans rafraîchir.
   useRealtimeTable("missed_opportunities", user?.id, reload);
+
+  // Arrivée depuis le bilan de séance : le formulaire s'ouvre déjà rempli
+  // (date, symbole, R estimé par le plan, raison, leçon). Consommé une fois.
+  useEffect(() => {
+    if (preview) return;
+    const prefill = takeHandoff("missed");
+    if (prefill) setEditing({ ...emptyMissed(), ...prefill });
+  }, [preview]);
 
   const handleSave = useCallback(
     async (m: MissedOpportunity) => {

@@ -1306,7 +1306,12 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
                       />
                     )}
                     {page === "checklist" && (
-                      <Checklist setPage={setPage} onAddTrade={handleAdd} trades={trades} />
+                      <Checklist
+                        setPage={setPage}
+                        onAddTrade={handleAdd}
+                        onEditTrade={handleEdit}
+                        trades={trades}
+                      />
                     )}
                     {page === "calendar" && (
                       <CalendarPage trades={trades} onDelete={handleDelete} />
