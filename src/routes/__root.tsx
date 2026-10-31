@@ -173,7 +173,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         // (`styles.css`, « iOS focus-zoom guard »).
         content: "width=device-width, initial-scale=1, viewport-fit=cover",
       },
-      { name: "theme-color", content: "#0a0b0d" },
+      { name: "theme-color", content: "#050607" },
       {
         name: "trustpilot-one-time-domain-verification-id",
         content: "3a2800eb-0ad2-4c9a-bda2-1d3833f70ef0",

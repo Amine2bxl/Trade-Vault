@@ -23,8 +23,10 @@ import { PageActionsProvider } from "@/app/contexts/PageActionsContext";
 import { previewTrades } from "@/app/utils/previewTrades";
 import { computeStats } from "@/domain/tradeCalcs";
 import { computeQuantStats } from "@/domain/quantStats";
-import { isPage, type Trade } from "@/app/types";
+import { isPage, type Page, type Trade } from "@/app/types";
 import PageHead from "@/app/shell/PageHead";
+import Sidebar from "@/app/shell/Sidebar";
+import MobileNav from "@/app/shell/MobileNav";
 
 /**
  * BANC D'ESSAI VISUEL — `/dev/ui`, EN DÉVELOPPEMENT UNIQUEMENT.
@@ -133,21 +135,16 @@ function DevUiPage() {
     };
   }, []);
 
-  const [head, setHead] = useState<{ actions: ReactNode; lead: ReactNode }>({
-    actions: null,
-    lead: null,
-  });
-  const setHeader = useCallback((slot: "actions" | "lead", node: ReactNode) => {
-    setHead((previous) => ({ ...previous, [slot]: node }));
-  }, []);
-
   const trades = useMemo(
     () => (new URLSearchParams(location.search).get("empty") === "1" ? [] : previewTrades()),
     [],
   );
   if (!import.meta.env.DEV) return null;
-  const previewPage = ecran === "jarvis" ? "insights" : ecran === "goalsplan" ? "goals" : ecran;
 
+  /* Les fournisseurs restent AU-DESSUS de l'état de l'en-tête : posé ici, cet
+     état re-rendait toute la pile de fournisseurs à chaque déclaration
+     d'actions, la page recréait ses nœuds d'en-tête, les redéclarait… et le
+     banc tombait en boucle (« Maximum update depth exceeded »). */
   return (
     <ThemeProvider>
       <AuthProvider>
@@ -155,98 +152,121 @@ function DevUiPage() {
           <LanguageProvider>
             <ToastProvider>
               <ConfirmProvider>
-                <PageActionsProvider setActions={setHeader}>
-                  <div className="min-h-screen bg-[var(--tv-bg)]">
-                    <div
-                      data-dev-ui-navigation
-                      className="flex flex-wrap items-center gap-1.5 border-b border-[var(--tv-border)] px-3 py-2"
-                    >
-                      {IDS.map((id) => (
-                        <button
-                          key={id}
-                          onClick={() => {
-                            setEcran(id);
-                            try {
-                              localStorage.setItem("tv.devUi", id);
-                            } catch {
-                              /* mode privé : le banc marche quand même */
-                            }
-                          }}
-                          className={`tv-subnav-item ${id === ecran ? "tv-subnav-item-active" : ""}`}
-                        >
-                          {id}
-                        </button>
-                      ))}
-                    </div>
-                    {isPage(previewPage) && (
-                      <PageHead
-                        page={previewPage}
-                        setPage={noop}
-                        actions={head.actions}
-                        lead={head.lead}
-                      />
-                    )}
-                    <Suspense fallback={<div className="p-6 text-sm text-slate-500">…</div>}>
-                      {ecran === "trade" && <TradeHarness />}
-                      {ecran === "missedform" && <MissedHarness />}
-                      {ecran === "controls" && <ControlHarness />}
-                      {ecran === "icons" && <IconHarness />}
-                      {ecran === "calendar" && <CalendarPage trades={trades} />}
-                      {ecran === "dashboard" && <DashboardHarness trades={trades} />}
-                      {ecran === "journal" && (
-                        <Journal
-                          trades={trades}
-                          onEdit={noop}
-                          onDelete={noop}
-                          onDeleteAll={noop}
-                          onAdd={noop}
-                          onOpenMissed={noop}
-                        />
-                      )}
-                      {ecran === "checklist" && (
-                        <Checklist trades={trades} setPage={noop} onAddTrade={noop} />
-                      )}
-                      {ecran === "calculator" && (
-                        <LotSizeCalculator onAddTrade={noop} setPage={noop} />
-                      )}
-                      {ecran === "news" && <EconomicNews />}
-                      {ecran === "missed" && <MissedOpportunities />}
-                      {ecran === "seasonality" && <Seasonality trades={trades} />}
-                      {ecran === "reports" && <Reports trades={trades} />}
-                      {ecran === "accounts" && (
-                        <PageContainer className="max-w-3xl">
-                          <AccountsManager trades={trades} />
-                        </PageContainer>
-                      )}
-                      {ecran === "settings" && (
-                        <Settings
-                          trades={trades}
-                          onDeleteAll={noop}
-                          onOpenImport={noop}
-                          onOpenReports={noop}
-                        />
-                      )}
-                      {ecran === "profile" && <Profile trades={trades} />}
-                      {ecran === "appearance" && <Appearance />}
-                      {ecran === "brokers" && <Brokers />}
-                      {ecran === "jarvis" && <Jarvis />}
-                      {ecran === "montecarlo" && <MonteCarlo trades={trades} />}
-                      {ecran === "analytics" && <Analytics trades={trades} />}
-                      {ecran === "mistakes" && <Mistakes trades={trades} />}
-                      {ecran === "goals" && <Goals trades={trades} />}
-                      {ecran === "goalsplan" && <PlanHarness trades={trades} />}
-                      {ecran === "tradingplan" && <TradingPlan setPage={noop} />}
-                      {ecran === "subscription" && <Subscription />}
-                      {ecran === "inbox" && <Inbox />}
-                    </Suspense>
-                  </div>
-                </PageActionsProvider>
+                <DevUiBody ecran={ecran} setEcran={setEcran} trades={trades} />
               </ConfirmProvider>
             </ToastProvider>
           </LanguageProvider>
         </AccountProvider>
       </AuthProvider>
     </ThemeProvider>
+  );
+}
+
+function DevUiBody({
+  ecran,
+  setEcran,
+  trades,
+}: {
+  ecran: EcranId;
+  setEcran: (id: EcranId) => void;
+  trades: Trade[];
+}) {
+  const [actions, setActions] = useState<ReactNode>(null);
+  const [lead, setLead] = useState<ReactNode>(null);
+  const setHeader = useCallback((slot: "actions" | "lead", node: ReactNode) => {
+    if (slot === "lead") setLead(node);
+    else setActions(node);
+  }, []);
+  const head = { actions, lead };
+  const previewPage = ecran === "jarvis" ? "insights" : ecran === "goalsplan" ? "goals" : ecran;
+  /* `&shell=1` monte le rail et la barre mobile autour de l'écran, comme dans
+     `App` : la coque se vérifie avec la page, pas à part. */
+  const withShell = new URLSearchParams(location.search).get("shell") === "1";
+  const shellPage: Page = isPage(previewPage) ? previewPage : "dashboard";
+
+  const body = (
+    <PageActionsProvider setActions={setHeader}>
+      <div className="min-h-screen bg-[var(--tv-bg)]">
+        <div
+          data-dev-ui-navigation
+          className="flex flex-wrap items-center gap-1.5 border-b border-[var(--tv-border)] px-3 py-2"
+        >
+          {IDS.map((id) => (
+            <button
+              key={id}
+              onClick={() => {
+                setEcran(id);
+                try {
+                  localStorage.setItem("tv.devUi", id);
+                } catch {
+                  /* mode privé : le banc marche quand même */
+                }
+              }}
+              className={`tv-subnav-item ${id === ecran ? "tv-subnav-item-active" : ""}`}
+            >
+              {id}
+            </button>
+          ))}
+        </div>
+        {isPage(previewPage) && (
+          <PageHead page={previewPage} setPage={noop} actions={head.actions} lead={head.lead} />
+        )}
+        <Suspense fallback={<div className="p-6 text-sm text-slate-500">…</div>}>
+          {ecran === "trade" && <TradeHarness />}
+          {ecran === "missedform" && <MissedHarness />}
+          {ecran === "controls" && <ControlHarness />}
+          {ecran === "icons" && <IconHarness />}
+          {ecran === "calendar" && <CalendarPage trades={trades} />}
+          {ecran === "dashboard" && <DashboardHarness trades={trades} />}
+          {ecran === "journal" && (
+            <Journal
+              trades={trades}
+              onEdit={noop}
+              onDelete={noop}
+              onDeleteAll={noop}
+              onAdd={noop}
+              onOpenMissed={noop}
+            />
+          )}
+          {ecran === "checklist" && <Checklist trades={trades} setPage={noop} onAddTrade={noop} />}
+          {ecran === "calculator" && <LotSizeCalculator onAddTrade={noop} setPage={noop} />}
+          {ecran === "news" && <EconomicNews />}
+          {ecran === "missed" && <MissedOpportunities />}
+          {ecran === "seasonality" && <Seasonality trades={trades} />}
+          {ecran === "reports" && <Reports trades={trades} />}
+          {ecran === "accounts" && (
+            <PageContainer className="max-w-3xl">
+              <AccountsManager trades={trades} />
+            </PageContainer>
+          )}
+          {ecran === "settings" && (
+            <Settings trades={trades} onDeleteAll={noop} onOpenImport={noop} onOpenReports={noop} />
+          )}
+          {ecran === "profile" && <Profile trades={trades} />}
+          {ecran === "appearance" && <Appearance />}
+          {ecran === "brokers" && <Brokers />}
+          {ecran === "jarvis" && <Jarvis />}
+          {ecran === "montecarlo" && <MonteCarlo trades={trades} />}
+          {ecran === "analytics" && <Analytics trades={trades} />}
+          {ecran === "mistakes" && <Mistakes trades={trades} />}
+          {ecran === "goals" && <Goals trades={trades} />}
+          {ecran === "goalsplan" && <PlanHarness trades={trades} />}
+          {ecran === "tradingplan" && <TradingPlan setPage={noop} />}
+          {ecran === "subscription" && <Subscription />}
+          {ecran === "inbox" && <Inbox />}
+        </Suspense>
+      </div>
+    </PageActionsProvider>
+  );
+  if (!withShell) return body;
+  return (
+    <div className="flex h-dvh overflow-hidden">
+      <Sidebar page={shellPage} setPage={noop} totalPnl={0} />
+      <main className="app-main app-frame relative z-0 flex-1 overflow-y-auto md:my-3 md:mr-3 md:ml-2">
+        {body}
+      </main>
+      <MobileNav page={shellPage} setPage={noop} onAddTrade={noop} />
+    </div>
   );
 }
 
@@ -293,9 +313,13 @@ function PlanHarness({ trades }: { trades: Trade[] }) {
 /** Le vrai déclencheur ouvre le vrai formulaire, sans écriture de compte. */
 function DashboardHarness({ trades }: { trades: Trade[] }) {
   const [open, setOpen] = useState(false);
+  /* Stable, comme `handleAdd` dans `App` : une flèche neuve à chaque rendu
+     recréait les actions d'en-tête du Dashboard, qui se redéclaraient… en
+     boucle. */
+  const openTrade = useCallback(() => setOpen(true), []);
   return (
     <>
-      <Dashboard trades={trades} onAddTrade={() => setOpen(true)} />
+      <Dashboard trades={trades} onAddTrade={openTrade} />
       {open && (
         <TradeModal trade={null} onClose={() => setOpen(false)} onSave={() => setOpen(false)} />
       )}

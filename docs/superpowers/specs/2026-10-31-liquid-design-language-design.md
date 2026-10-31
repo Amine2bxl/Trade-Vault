@@ -1,6 +1,6 @@
 # Langage « Liquid » — verre iOS 27 + matière Revolut
 
-Date : 2026-10-31 · Statut : design validé en conversation, spec à relire.
+Date : 2026-10-31 · Statut : validé (maquettes v1/v2 + retours du propriétaire, §1.1).
 
 ## 1. Intention
 
@@ -19,6 +19,17 @@ Décisions prises avec le propriétaire du produit :
 | Fond | **Papier peint d'ambiance sobre**, fixe, sans animation. |
 | Accent | **Menthe `#31d68a` conservée**. P&L `#61f8ab` / `#f87171` inchangé. |
 | Mode clair | **Non**. Sombre uniquement. |
+
+### 1.1 Retours sur maquette (priment sur le reste du document)
+
+| Point | Décision |
+| --- | --- |
+| Courbe d'equity | On garde **le tracé actuel** (spline `natural`, aire en dégradé 32 → 8 %, plancher rouge pointillé, points de retournement) et on ajoute une **texture fine** (trame de points) dans l'aire. |
+| CTA (« Ajouter un trade », « Enregistrer ») | **Rectangles adoucis pleins** (rayon 12 → 16), menthe, **texte blanc** (ombre de lettre conservée pour la lisibilité). Plus de pilule pour les boutons d'action ; plus d'ombre colorée. |
+| Barre mobile | **Solide** (plaque opaque 90 % + flou), 5 places, onglet actif sur tuile sombre avec icône menthe, **« + » central** carré adouci menthe plein. |
+| Sidebar | Esprit de la **v1** (panneau de verre, entrées en pilule, pilule active claire avec icône menthe), **pliable** (72 px, icônes seules, infobulles). |
+| Journal | **Ordre et structure actuels conservés** ; seule la matière change (rayons, plaques, en-tête). |
+| Chiffre héros | **44 px** (`--tv-t-display`). |
 
 Hors périmètre : comportement produit, calculs, données, copy de la landing,
 zone Trustpilot (`#00b67a`), moteur neuronal de Jarvis, logique des
@@ -117,7 +128,7 @@ chiffres Inter 800 inchangés ; vitrine en Inter.
 
 | Token | Avant | Après | Rôle |
 | --- | --- | --- | --- |
-| `--tv-t-display` | 34 | **40** | Chiffre héros |
+| `--tv-t-display` | 34 | **44** | Chiffre héros |
 | `--tv-t-h1` | 26 | **30** | Grand titre de page (Large Title) |
 | `--tv-t-h2` | 18 | **20** | Titre de section |
 | `--tv-t-h3` | 14 | **15** | Titre de carte |
@@ -200,7 +211,7 @@ peint. `<main>` reste l'unique zone qui défile (structure inchangée).
 
 | Primitive | Changement |
 | --- | --- |
-| `Button` | Toutes variantes en pilule. `primary` menthe texte quasi noir ; `subtle` = pilule `--tv-plate-3` ; `ghost` transparent ; `accent` teinté ; `danger`. Pression `--tv-press`. Hauteurs 44 (md) / 34 (sm). |
+| `Button` | Rectangles adoucis pleins (rayon `xl`). `primary` menthe **texte blanc** ; `subtle` = plaque `--tv-plate-3` ; `ghost` transparent ; `accent` teinté ; `danger`. Pression `--tv-press`. Hauteur 40 (md) / 34 (sm). |
 | **`ActionButton`** (nouveau) | Disque 52 px `--tv-plate-3` + icône, libellé `caption` dessous ; variante `primary` (disque menthe). Rangée d'actions Revolut. Exporté par `index.ts`. |
 | `Card` | Rayon 22, padding 20, `CardHeader` titre `h3` 600 + action « Tout voir » (lien accent). |
 | `Metric` / `Kpi` | Widget Revolut : rayon 22, libellé au-dessus, chiffre `tv-figure`, tendance en pastille. Géométrie compacte conservée pour le Dashboard. |
