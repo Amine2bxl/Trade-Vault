@@ -15,6 +15,8 @@ import { cn } from "@/shared/ui/cn";
 import type { ChkItem } from "./checklistDefaults";
 import { Button, TimeField } from "@/shared/ui";
 import { intlLocale } from "@/app/i18n/locale";
+import { useT } from "@/app/i18n/LanguageContext";
+import type { TKey } from "@/app/i18n/translations";
 
 /* Adaptive setup for the pre-market checklist. A short, visual questionnaire
    whose answers BUILD the checklist — every option carries the exact checks it
@@ -69,7 +71,7 @@ function baseItems(fr: boolean): ChkItem[] {
       ];
 }
 
-function buildQuestions(fr: boolean): Question[] {
+function buildQuestions(fr: boolean, t: (k: TKey) => string): Question[] {
   const I = (f: string, e: string, df: string, de: string): ChkItem => ({
     title: fr ? f : e,
     desc: fr ? df : de,
@@ -78,15 +80,13 @@ function buildQuestions(fr: boolean): Question[] {
     {
       id: "style",
       icon: Crosshair,
-      title: fr ? "Ton style de trading ?" : "Your trading style?",
-      sub: fr
-        ? "On cible les checks qui comptent pour toi."
-        : "We target the checks that matter to you.",
+      title: t("chkWiz.yourTradingStyle"),
+      sub: t("chkWiz.weTargetTheChecks"),
       options: [
         {
           id: "scalp",
-          label: fr ? "Scalping" : "Scalping",
-          hint: fr ? "Très court terme" : "Very short term",
+          label: t("chkWiz.scalping"),
+          hint: t("chkWiz.veryShortTerm"),
           items: [
             I(
               "Spread & liquidité OK",
@@ -98,8 +98,8 @@ function buildQuestions(fr: boolean): Question[] {
         },
         {
           id: "intraday",
-          label: fr ? "Intraday" : "Intraday",
-          hint: fr ? "Clôturé le jour même" : "Closed same day",
+          label: t("chkWiz.intraday"),
+          hint: t("chkWiz.closedSameDay"),
           items: [
             I(
               "Niveaux clés du jour marqués",
@@ -111,8 +111,8 @@ function buildQuestions(fr: boolean): Question[] {
         },
         {
           id: "swing",
-          label: fr ? "Swing" : "Swing",
-          hint: fr ? "Sur plusieurs jours" : "Multi-day",
+          label: t("chkWiz.swing"),
+          hint: t("chkWiz.multiDay"),
           items: [
             I(
               "Alignement H4 / Daily",
@@ -127,8 +127,8 @@ function buildQuestions(fr: boolean): Question[] {
     {
       id: "market",
       icon: LineChart,
-      title: fr ? "Ton marché principal ?" : "Your main market?",
-      sub: fr ? "Chaque marché a son piège du matin." : "Each market has its morning trap.",
+      title: t("chkWiz.yourMainMarket"),
+      sub: t("chkWiz.eachMarketHasIts"),
       options: [
         {
           id: "forex",
@@ -144,7 +144,7 @@ function buildQuestions(fr: boolean): Question[] {
         },
         {
           id: "indices",
-          label: fr ? "Indices" : "Indices",
+          label: t("chkWiz.indices"),
           items: [
             I(
               "Pas de news rouge < 30 min",
@@ -168,7 +168,7 @@ function buildQuestions(fr: boolean): Question[] {
         },
         {
           id: "stocks",
-          label: fr ? "Actions" : "Stocks",
+          label: t("chkWiz.stocks"),
           items: [
             I(
               "Earnings / catalyseurs vérifiés",
@@ -183,10 +183,8 @@ function buildQuestions(fr: boolean): Question[] {
     {
       id: "read",
       icon: Sparkles,
-      title: fr ? "Ta lecture du marché ?" : "How do you read the market?",
-      sub: fr
-        ? "On ajoute le check de validation de ton approche."
-        : "We add the validation check for your approach.",
+      title: t("chkWiz.howDoYouRead"),
+      sub: t("chkWiz.weAddTheValidation"),
       options: [
         {
           id: "ict",
@@ -214,7 +212,7 @@ function buildQuestions(fr: boolean): Question[] {
         },
         {
           id: "indic",
-          label: fr ? "Indicateurs" : "Indicators",
+          label: t("chkWiz.indicators"),
           items: [
             I(
               "Confluence d'indicateurs alignée",
@@ -229,15 +227,13 @@ function buildQuestions(fr: boolean): Question[] {
     {
       id: "weakness",
       icon: Brain,
-      title: fr ? "Ta plus grosse fuite ?" : "Your biggest leak?",
-      sub: fr
-        ? "C'est LE garde-fou qu'on met en avant pour toi."
-        : "This is THE guardrail we put front and center for you.",
+      title: t("chkWiz.yourBiggestLeak"),
+      sub: t("chkWiz.thisIsTheGuardrail"),
       options: [
         {
           id: "fomo",
           label: "FOMO",
-          hint: fr ? "Peur de rater" : "Fear of missing out",
+          hint: t("chkWiz.fearOfMissingOut"),
           items: [
             I(
               "J'attends MA config — pas de chasse",
@@ -250,7 +246,7 @@ function buildQuestions(fr: boolean): Question[] {
         {
           id: "overtrading",
           label: "Overtrading",
-          hint: fr ? "Trop de trades" : "Too many trades",
+          hint: t("chkWiz.tooManyTrades"),
           items: [
             I(
               "Max 1 trade — une perte = chart fermé",
@@ -262,8 +258,8 @@ function buildQuestions(fr: boolean): Question[] {
         },
         {
           id: "revenge",
-          label: fr ? "Revenge trading" : "Revenge trading",
-          hint: fr ? "Reprendre après une perte" : "Trading back a loss",
+          label: t("chkWiz.revengeTrading"),
+          hint: t("chkWiz.tradingBackALoss"),
           items: [
             I(
               "Après une perte : 15 min de pause",
@@ -275,8 +271,8 @@ function buildQuestions(fr: boolean): Question[] {
         },
         {
           id: "risk",
-          label: fr ? "Sur-risque" : "Over-risking",
-          hint: fr ? "Taille trop grosse" : "Size too big",
+          label: t("chkWiz.overRisking"),
+          hint: t("chkWiz.sizeTooBig"),
           items: [
             I(
               "Risque fixe — jamais augmenté",
@@ -288,8 +284,8 @@ function buildQuestions(fr: boolean): Question[] {
         },
         {
           id: "noplan",
-          label: fr ? "Manque de plan" : "No plan",
-          hint: fr ? "Entrées impulsives" : "Impulsive entries",
+          label: t("chkWiz.noPlan"),
+          hint: t("chkWiz.impulsiveEntries"),
           items: [
             I(
               "Aucune entrée sans plan complet",
@@ -305,14 +301,12 @@ function buildQuestions(fr: boolean): Question[] {
       id: "guards",
       icon: ShieldCheck,
       multi: true,
-      title: fr ? "Garde-fous risque ?" : "Risk guardrails?",
-      sub: fr
-        ? "Active ce qui te parle (plusieurs possibles)."
-        : "Turn on what speaks to you (pick any).",
+      title: t("chkWiz.riskGuardrails"),
+      sub: t("chkWiz.turnOnWhatSpeaks"),
       options: [
         {
           id: "rr",
-          label: fr ? "Gain visé ≥ 2× le risque" : "Target ≥ 2× the risk",
+          label: t("chkWiz.target2TheRisk"),
           items: [
             I(
               "Gain visé ≥ 2× mon risque",
@@ -324,7 +318,7 @@ function buildQuestions(fr: boolean): Question[] {
         },
         {
           id: "dd",
-          label: fr ? "Limite de perte journalière" : "Daily loss limit",
+          label: t("chkWiz.dailyLossLimit"),
           items: [
             I(
               "Limite de perte journalière vérifiée",
@@ -336,7 +330,7 @@ function buildQuestions(fr: boolean): Question[] {
         },
         {
           id: "size",
-          label: fr ? "Taille = mon % exact" : "Size = my exact %",
+          label: t("chkWiz.sizeMyExact"),
           items: [
             I(
               "Taille = mon % de risque exact",
@@ -394,8 +388,8 @@ export default function ChecklistWizard({
   onClose: () => void;
 }) {
   const fr = isFr(lang);
-  const tr = (f: string, e: string) => (fr ? f : e);
-  const questions = useMemo(() => buildQuestions(fr), [fr]);
+  const { t } = useT();
+  const questions = useMemo(() => buildQuestions(fr, t), [fr, t]);
 
   /* `-1` = l'accueil. Les questions occupent `0..n-1`, l'heure de séance `n`.
      Un pas négatif plutôt qu'un état séparé : toute la navigation (avant,
@@ -478,7 +472,7 @@ export default function ChecklistWizard({
           <div className="mb-5 flex items-center gap-3">
             <button
               onClick={back}
-              aria-label={tr("Retour", "Back")}
+              aria-label={t("chkWiz.back")}
               className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 transition hover:bg-white/[0.06] hover:text-white"
             >
               <ArrowLeft className="h-4.5 w-4.5" />
@@ -501,7 +495,7 @@ export default function ChecklistWizard({
 
             <button
               onClick={onClose}
-              aria-label={tr("Fermer", "Close")}
+              aria-label={t("chkWiz.close")}
               className="grid h-8 w-8 place-items-center rounded-lg text-slate-500 transition hover:bg-white/[0.06] hover:text-white"
             >
               <X className="h-4.5 w-4.5" />
@@ -521,40 +515,35 @@ export default function ChecklistWizard({
               </span>
               <button
                 onClick={onClose}
-                aria-label={tr("Fermer", "Close")}
+                aria-label={t("chkWiz.close")}
                 className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-slate-500 transition hover:bg-white/[0.06] hover:text-white"
               >
                 <X className="h-4.5 w-4.5" />
               </button>
             </div>
             <h2 className="font-display text-[22px] font-bold leading-tight tracking-[-0.02em] text-white">
-              {tr("On monte ta checklist ensemble", "Let's build your checklist together")}
+              {t("chkWiz.letSBuildYour")}
             </h2>
-            <p className="tv-prose mt-2 text-slate-400">
-              {tr(
-                "Quatre questions sur ta façon de trader. Chaque réponse ajoute les vérifications qui te concernent — tu n'hérites pas d'une liste générique.",
-                "Four questions about how you trade. Each answer adds the checks that apply to you — you don't inherit a generic list.",
-              )}
-            </p>
+            <p className="tv-prose mt-2 text-slate-400">{t("chkWiz.fourQuestionsAboutHow")}</p>
             <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1.5">
               <span className="inline-flex items-center gap-1.5 text-[12px] text-slate-500">
                 <Clock className="h-3.5 w-3.5" />
-                {tr("Moins d'une minute", "Under a minute")}
+                {t("chkWiz.underAMinute")}
               </span>
               <span className="inline-flex items-center gap-1.5 text-[12px] text-slate-500">
                 <ShieldCheck className="h-3.5 w-3.5" />
-                {tr("Modifiable à tout moment", "Editable at any time")}
+                {t("chkWiz.editableAtAnyTime")}
               </span>
             </div>
             <div className="mt-6 flex items-center gap-3">
               <Button onClick={next} className="flex-1">
-                {tr("C'est parti", "Let's go")}
+                {t("chkWiz.letSGo")}
               </Button>
               <button
                 onClick={onClose}
                 className="shrink-0 px-2 text-xs font-semibold text-slate-500 transition-colors hover:text-slate-300"
               >
-                {tr("Plus tard", "Later")}
+                {t("chkWiz.later")}
               </button>
             </div>
           </div>
@@ -623,9 +612,9 @@ export default function ChecklistWizard({
                     onClick={next}
                     className="text-xs font-semibold text-slate-500 transition-colors hover:text-slate-300"
                   >
-                    {tr("Passer", "Skip")}
+                    {t("chkWiz.skip")}
                   </button>
-                  {q.multi && <Button onClick={next}>{tr("Continuer", "Continue")}</Button>}
+                  {q.multi && <Button onClick={next}>{t("chkWiz.continue")}</Button>}
                 </div>
               </div>
             );
@@ -636,16 +625,9 @@ export default function ChecklistWizard({
           <div key="time" className={anim}>
             <div className="mb-1.5 flex items-center gap-2">
               <Clock className="h-5 w-5 text-[var(--tv-highlight)]" />
-              <h2 className="tv-title">
-                {tr("Quand commence ta session ?", "When does your session start?")}
-              </h2>
+              <h2 className="tv-title">{t("chkWiz.whenDoesYourSession")}</h2>
             </div>
-            <p className="tv-prose mb-5 text-slate-500">
-              {tr(
-                "On s'en sert pour verrouiller la checklist avant l'ouverture et t'alerter au départ.",
-                "We use it to lock the checklist before the open and alert you at the start.",
-              )}
-            </p>
+            <p className="tv-prose mb-5 text-slate-500">{t("chkWiz.weUseItTo")}</p>
             <div className="onb-in mb-4 grid gap-2.5">
               {TIME_PRESETS.map((p) => {
                 const active = time.startTime === p.start && time.timeZone === p.tz;
@@ -667,21 +649,21 @@ export default function ChecklistWizard({
                 );
               })}
               <label className="flex items-center gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.04] p-3.5">
-                <span className="text-sm text-slate-300">{tr("Heure perso", "Custom time")}</span>
+                <span className="text-sm text-slate-300">{t("chkWiz.customTime")}</span>
                 <div className="ml-auto">
                   <TimeField
                     value={time.startTime}
                     onChange={(v) => v && setTime((t) => ({ ...t, startTime: v }))}
                     locale={intlLocale(lang)}
-                    doneLabel={tr("Valider", "Done")}
-                    aria-label={tr("Heure perso", "Custom time")}
+                    doneLabel={t("chkWiz.done")}
+                    aria-label={t("chkWiz.customTime")}
                     className="h-9 w-[9.5rem] px-2.5 text-sm"
                   />
                 </div>
               </label>
             </div>
             <Button onClick={terminer} className="w-full">
-              <Gauge className="h-4 w-4" /> {tr("Créer ma checklist", "Create my checklist")}
+              <Gauge className="h-4 w-4" /> {t("chkWiz.createMyChecklist")}
             </Button>
           </div>
         )}
@@ -696,13 +678,10 @@ export default function ChecklistWizard({
               <Gauge className="h-5 w-5" />
             </span>
             <h2 className="font-display text-lg font-bold text-white">
-              {tr("Ta checklist est prête", "Your checklist is ready")}
+              {t("chkWiz.yourChecklistIsReady")}
             </h2>
             <p className="tv-row-label mt-1">
-              {tr(
-                `${construction.length} vérifications, taillées sur tes réponses`,
-                `${construction.length} checks, built from your answers`,
-              )}
+              {t("chkWiz.aChecksBuiltFrom").replace("{a}", String(construction.length))}
             </p>
             <ul className="onb-in mt-4 space-y-1.5 text-left">
               {construction.map((it) => (

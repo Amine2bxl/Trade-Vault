@@ -43,7 +43,6 @@ export default function Goals({ trades }: { trades: Trade[] }) {
   const { toast } = useToast();
   const confirm = useConfirm();
   const fr = lang === "fr";
-  const tr = useCallback((f: string, e: string) => (fr ? f : e), [fr]);
   const sendPush = useServerFn(sendPushToSelf);
 
   const [plan, setPlan] = useState<GoalPlan | null>(null);
@@ -129,21 +128,14 @@ export default function Goals({ trades }: { trades: Trade[] }) {
       try {
         await saveGoalPlan(user.id, activeId, p);
         setPlan(p);
-        toast(
-          tr(
-            "Plan d'action généré — 6 mois, c'est parti !",
-            "Action plan generated — 6 months, let's go!",
-          ),
-          "success",
-        );
+        toast(t("goals.actionPlanGenerated6"), "success");
         // Confirmation push (mobile + desktop) — best-effort.
         sendPush({
           data: {
-            title: tr("Ton plan d'action est prêt 🎯", "Your action plan is ready 🎯"),
-            body: tr(
-              `${goals.length} objectif(s), ${HORIZON} étapes mensuelles. Première mission : les tâches de ce mois-ci.`,
-              `${goals.length} goal(s), ${HORIZON} monthly steps. First mission: this month's tasks.`,
-            ),
+            title: t("goals.yourActionPlanIs"),
+            body: t("goals.aGoalSB")
+              .replace("{a}", String(goals.length))
+              .replace("{b}", String(HORIZON)),
             url: "/",
           },
         }).catch(() => {});
@@ -154,21 +146,12 @@ export default function Goals({ trades }: { trades: Trade[] }) {
         setBusy(false);
       }
     },
-    [user, activeId, busy, toast, tr, t, sendPush],
+    [user, activeId, busy, toast, t, sendPush],
   );
 
   const removePlan = useCallback(async () => {
     if (!user || !activeId || busy || !plan) return;
-    if (
-      !(await confirm(
-        tr(
-          "Supprimer ce plan et repartir de zéro ? La progression des tâches sera perdue.",
-          "Delete this plan and start over? Task progress will be lost.",
-        ),
-        { danger: true },
-      ))
-    )
-      return;
+    if (!(await confirm(t("goals.deleteThisPlanAnd"), { danger: true }))) return;
     setBusy(true);
     try {
       await deleteGoalPlan(user.id, activeId);
@@ -178,7 +161,7 @@ export default function Goals({ trades }: { trades: Trade[] }) {
     } finally {
       setBusy(false);
     }
-  }, [user, activeId, busy, plan, confirm, tr]);
+  }, [user, activeId, busy, plan, confirm, t]);
 
   const toggleTask = useCallback(
     async (key: string, done: boolean) => {
@@ -203,11 +186,10 @@ export default function Goals({ trades }: { trades: Trade[] }) {
           setFete({ mois: i + 1, total: optimistic.horizonMonths });
           sendPush({
             data: {
-              title: tr("Mois validé 🔥", "Month complete 🔥"),
-              body: tr(
-                `Étape ${i + 1}/${optimistic.horizonMonths} : toutes les actions sont faites. Le plan avance.`,
-                `Step ${i + 1}/${optimistic.horizonMonths}: every action done. The plan is moving.`,
-              ),
+              title: t("goals.monthComplete"),
+              body: t("goals.stepABEvery")
+                .replace("{a}", String(i + 1))
+                .replace("{b}", String(optimistic.horizonMonths)),
               url: "/",
             },
           }).catch(() => {});
@@ -217,7 +199,7 @@ export default function Goals({ trades }: { trades: Trade[] }) {
         setPlan(prev);
       }
     },
-    [user, activeId, plan, toast, tr, sendPush],
+    [user, activeId, plan, toast, t, sendPush],
   );
 
   const [fete, setFete] = useState<{ mois: number; total: number } | null>(null);
@@ -252,7 +234,7 @@ export default function Goals({ trades }: { trades: Trade[] }) {
   return (
     <PageContainer>
       {!plan ? (
-        <GoalPicker ctx={ctx} fr={fr} busy={busy} onGenerate={generate} />
+        <GoalPicker ctx={ctx} busy={busy} onGenerate={generate} />
       ) : (
         <PlanView
           plan={plan}

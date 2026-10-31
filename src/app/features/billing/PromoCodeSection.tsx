@@ -61,7 +61,7 @@ async function api<T>(path: string, method: "GET" | "POST", body?: unknown): Pro
 }
 
 export default function PromoCodeSection() {
-  const { lang } = useT();
+  const { t, lang } = useT();
   const fr = lang === "fr";
   const { toast } = useToast();
   const [promos, setPromos] = useState<PromoCode[]>([]);
@@ -122,14 +122,14 @@ export default function PromoCodeSection() {
     setBusy(true);
     await api("/api/admin/promos/revoke", "POST", { code: r.code, email: r.email });
     setBusy(false);
-    toast(fr ? "Accès retiré" : "Access revoked");
+    toast(t("promo.accessRevoked"));
     void loadRedemptions();
   };
 
   const add = async () => {
     const clean = code.trim().toUpperCase();
     if (!clean) {
-      toast(fr ? "Code invalide" : "Invalid code", "error");
+      toast(t("promo.invalidCode"), "error");
       return;
     }
     setBusy(true);
@@ -144,10 +144,10 @@ export default function PromoCodeSection() {
     });
     setBusy(false);
     if (!r?.ok) {
-      toast(fr ? "Échec de la création" : "Create failed", "error");
+      toast(t("promo.createFailed"), "error");
       return;
     }
-    toast(fr ? "Code créé" : "Code created");
+    toast(t("promo.codeCreated"));
     setCode("");
     setOwnerEmail("");
     setDiscount("");
@@ -161,7 +161,7 @@ export default function PromoCodeSection() {
     const parts: string[] = [];
     if (p.owner_email) parts.push(parts.length ? "· titulaire" : "titulaire");
     if (p.discount_percent) parts.push(`-${p.discount_percent}%`);
-    if (!p.owner_email && !p.discount_percent) parts.push(fr ? "invite" : "invite");
+    if (!p.owner_email && !p.discount_percent) parts.push(t("promo.invite"));
     return parts.join(" ");
   };
 
@@ -172,12 +172,8 @@ export default function PromoCodeSection() {
           <Tag className="h-4 w-4 text-white" />
         </span>
         <div className="min-w-0">
-          <h2 className="tv-title">{fr ? "Codes promo" : "Promo codes"}</h2>
-          <p className="tv-row-label">
-            {fr
-              ? "Un code = accès permanent pour un influenceur + réduction pour sa communauté."
-              : "One code = lifetime access for an influencer + a discount for their community."}
-          </p>
+          <h2 className="tv-title">{t("promo.promoCodes")}</h2>
+          <p className="tv-row-label">{t("promo.oneCodeLifetimeAccess")}</p>
         </div>
       </div>
 
@@ -191,7 +187,7 @@ export default function PromoCodeSection() {
         />
         <SelectPicker
           variant="field"
-          label={fr ? "Offre" : "Plan"}
+          label={t("promo.plan")}
           value={plan}
           onChange={(v) => setPlan(v as PaidPlan)}
           className="h-10"
@@ -207,7 +203,7 @@ export default function PromoCodeSection() {
         <Input
           value={ownerEmail}
           onChange={(e) => setOwnerEmail(e.target.value)}
-          placeholder={fr ? "E-mail du titulaire (influenceur)" : "Owner email (influencer)"}
+          placeholder={t("promo.ownerEmailInfluencer")}
           autoComplete="off"
         />
         <Input
@@ -216,7 +212,7 @@ export default function PromoCodeSection() {
           max={100}
           value={discount}
           onChange={(e) => setDiscount(e.target.value)}
-          placeholder={fr ? "Réduction communauté, %" : "Community discount, %"}
+          placeholder={t("promo.communityDiscount")}
         />
       </div>
 
@@ -226,25 +222,25 @@ export default function PromoCodeSection() {
           min={1}
           value={maxUses}
           onChange={(e) => setMaxUses(e.target.value)}
-          placeholder={fr ? "Usages max (vide = ∞)" : "Max uses (blank = ∞)"}
+          placeholder={t("promo.maxUsesBlank")}
         />
         {/* Le sélecteur de date de la famille, pas le calendrier blanc du système. */}
         <DateField value={expires} onChange={setExpires} aria-label="Expires" />
         <Button onClick={add} disabled={busy}>
           <Plus className="h-4 w-4" />
-          {fr ? "Créer" : "Create"}
+          {t("promo.create")}
         </Button>
       </div>
 
       <Input
         value={note}
         onChange={(e) => setNote(e.target.value)}
-        placeholder={fr ? "Note (facultatif) — ex. « partenariat Thomas »" : "Note (optional)"}
+        placeholder={t("promo.noteOptional")}
       />
 
       {promos.length === 0 ? (
         <p className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-3 text-[13px] text-slate-500">
-          {fr ? "Aucun code promo pour l'instant." : "No promo codes yet."}
+          {t("promo.noPromoCodesYet")}
         </p>
       ) : (
         <div className="space-y-1.5">
@@ -267,7 +263,7 @@ export default function PromoCodeSection() {
                           : "bg-white/[0.05] text-slate-500"
                       }`}
                     >
-                      {p.active ? (fr ? "Actif" : "Active") : fr ? "Désactivé" : "Paused"}
+                      {p.active ? t("promo.active") : t("promo.paused")}
                     </span>
                   </div>
                   <div className="truncate text-[11px] text-slate-500">
@@ -275,9 +271,9 @@ export default function PromoCodeSection() {
                     {p.discount_percent ? ` · ${kindLabel(p)}` : kindLabel(p)}
                     {p.max_uses
                       ? ` · ${p.uses_count}/${p.max_uses}`
-                      : ` · ${p.uses_count} ${fr ? "usages" : "uses"}`}
+                      : ` · ${p.uses_count} ${t("promo.uses")}`}
                     {p.expires_at
-                      ? ` · ${fr ? "expire" : "expires"} ${new Date(p.expires_at).toLocaleDateString()}`
+                      ? ` · ${t("promo.expires")} ${new Date(p.expires_at).toLocaleDateString()}`
                       : ""}
                     {p.note ? ` · ${p.note}` : ""}
                   </div>
@@ -285,7 +281,7 @@ export default function PromoCodeSection() {
                 <button
                   onClick={() => showRedemptions(p)}
                   disabled={busy}
-                  aria-label={fr ? "Utilisations" : "Redemptions"}
+                  aria-label={t("promo.redemptions")}
                   className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-slate-500 transition hover:bg-white/[0.06] hover:text-slate-200 disabled:opacity-50"
                 >
                   <Users className="h-4 w-4" />
@@ -293,9 +289,7 @@ export default function PromoCodeSection() {
                 <button
                   onClick={() => toggle(p)}
                   disabled={busy}
-                  aria-label={
-                    p.active ? (fr ? "Désactiver" : "Pause") : fr ? "Activer" : "Activate"
-                  }
+                  aria-label={p.active ? t("promo.pause") : t("promo.activate")}
                   className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg transition disabled:opacity-50 ${
                     p.active
                       ? "text-slate-500 hover:bg-white/[0.06] hover:text-slate-200"
@@ -307,7 +301,7 @@ export default function PromoCodeSection() {
                 <button
                   onClick={() => remove(p)}
                   disabled={busy}
-                  aria-label={fr ? "Supprimer" : "Delete"}
+                  aria-label={t("promo.delete")}
                   className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-slate-500 transition hover:bg-red-500/10 hover:text-red-400 disabled:opacity-50"
                 >
                   <Trash2 className="h-4 w-4" />
@@ -318,12 +312,10 @@ export default function PromoCodeSection() {
                 <div className="mt-2.5 space-y-1.5 border-t border-white/[0.05] pt-2.5">
                   <div className="tv-label flex items-center gap-1.5 px-1 text-slate-500">
                     <ChevronDown className="h-3 w-3" />
-                    {fr ? "Utilisations" : "Redemptions"}
+                    {t("promo.redemptions")}
                   </div>
                   {redemptions.filter((r) => r.code === p.code).length === 0 ? (
-                    <p className="px-1 text-[12px] text-slate-600">
-                      {fr ? "Aucune pour l'instant." : "None yet."}
-                    </p>
+                    <p className="px-1 text-[12px] text-slate-600">{t("promo.noneYet")}</p>
                   ) : (
                     redemptions
                       .filter((r) => r.code === p.code)
@@ -354,7 +346,7 @@ export default function PromoCodeSection() {
                           <button
                             onClick={() => revoke(r)}
                             disabled={busy}
-                            aria-label={fr ? "Retirer l'accès" : "Revoke access"}
+                            aria-label={t("promo.revokeAccess")}
                             className="grid h-6 w-6 shrink-0 place-items-center rounded text-slate-500 transition hover:bg-red-500/10 hover:text-red-400 disabled:opacity-50"
                           >
                             <Trash2 className="h-3 w-3" />

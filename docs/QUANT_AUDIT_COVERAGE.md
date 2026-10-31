@@ -100,10 +100,10 @@ La CI et les corrections ponctuelles ne suffisent pas pour déclarer tout le cha
 | E2 | Préserver migrations additives et utilisateurs existants | Chaque lot P0 | GATE : aucun schéma destructif, rollback documenté |
 | E3 | Golden datasets indépendants et invariants | L0 puis chaque lot P0 | PARTIAL : ledger fixe + `rEvidenceConsistency` (concordance des consommateurs) + harnais de rendu `scripts/l0-ui-check` ; reste multi-fills, commissions et solde intratrade (lot 1/3) |
 | E4 | Évaluer les tests en production/charge | L5 P0 | OPEN : preuves test/preview/replay |
-| E5 | RLS, confidentialité, accessibilité/zoom | L5 P0 | PARTIAL : fuite entre comptes des fonctions de palier corrigée et appliquée en production (test SQL + vérification en production), zoom rendu ; graphiques Recharts sans alternative textuelle OPEN |
+| E5 | RLS, confidentialité, accessibilité/zoom | L5 P0 | PARTIAL : fuite entre comptes des fonctions de palier corrigée et appliquée en production (test SQL + vérification en production), zoom rendu ; secteurs Recharts nommés (`pieA11y.test.tsx`) — DONE hors E2E authentifié |
 | E6 | Stripe abonnement/annulation/3DS/webhooks | L5 P0 | OPEN : compte test et secrets nécessaires |
 | E7 | Broker OAuth et synchronisation réelle | L1/L5 P0 | OPEN : permissions, déduplication, migrations, vérification réelle |
-| E8 | Traductions, navigation, mauvais composants montés | L5/L6 P1 | PARTIAL : ternaires `lang === "fr"` corrigés ; 111 ternaires `fr ? "…"` restants (facturation, checklist) |
+| E8 | Traductions, navigation, mauvais composants montés | L5/L6 P1 | DONE pour l'interface : libellés FR/EN en dur passés en clés ; restent bilingues par conception la grille tarifaire partagée avec la vitrine et le contenu pré-rempli |
 | E9 | Nettoyer moteurs IA jamais branchés et calculs redondants | L6 P1 | OPEN : usage vérifié avant suppression |
 | E10 | Faire concorder `public/llms.txt` et intégration broker | L5/L6 P1 | DONE pour `llms.txt` ; landing « No broker connection » = décision produit à l'activation de Tradovate |
 | E11 | `main` protégée, branches par lots, PR revue | Chaque lot P0 | PARTIAL : PR dédiée, mais protection de branche à vérifier |
