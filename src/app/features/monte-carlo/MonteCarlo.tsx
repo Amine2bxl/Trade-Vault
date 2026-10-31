@@ -39,6 +39,7 @@ import {
   plannedModel,
   strategyEdge,
   validStrategyConfig,
+  MIN_SESSION_BLOCKS,
   type StrategyConfig,
   type StrategyMetrics,
   type StrategyModel,
@@ -133,11 +134,22 @@ function StrategyLab({
             : null,
     [source, journal, csvModel, metrics, reference],
   );
-  const { result, running, error, retry } = useStrategyProjection(model, config);
+  // Le tirage par séances n'existe que pour un historique daté et assez long ;
+  // ailleurs le sélecteur disparaît et la projection reste par trades.
+  const sessionsAvailable = (model?.sessions?.length ?? 0) >= MIN_SESSION_BLOCKS;
+  const runConfig = useMemo(
+    () =>
+      config.sampling === "session" && !sessionsAvailable
+        ? { ...config, sampling: "trade" as const }
+        : config,
+    [config, sessionsAvailable],
+  );
+  const { result, running, error, retry } = useStrategyProjection(model, runConfig);
   const liveMetrics = model?.metrics ?? metrics;
   const edge = useMemo(
-    () => (model ? strategyEdge(model, config.risk, config.extraCost) : null),
-    [model, config.risk, config.extraCost],
+    () =>
+      model ? strategyEdge(model, config.risk, config.extraCost, config.winHaircut ?? 0) : null,
+    [model, config.risk, config.extraCost, config.winHaircut],
   );
   const isDemo =
     source === "journal" && selectedTrades.length > 0 && selectedTrades.every((tr) => tr.isExample);
@@ -312,6 +324,8 @@ function StrategyLab({
   const editor = (
     <StrategyEditor
       model={model}
+      sessionsAvailable={sessionsAvailable}
+      effectiveSample={result?.effectiveSample ?? null}
       metrics={liveMetrics}
       onMetrics={(patch) => setMetrics((m) => ({ ...m, ...patch }))}
       config={config}

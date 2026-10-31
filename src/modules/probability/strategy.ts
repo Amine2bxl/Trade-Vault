@@ -1,3 +1,5 @@
+import { measuredR, type RiskSource } from "@/domain/trade";
+import { easternClockOf } from "@/domain/easternClock";
 import { percentile } from "./engine";
 import { makeRng } from "./rng";
 import { applyTrade, closeDay, initState, type DrawdownType } from "./rules";
@@ -17,6 +19,12 @@ export interface StrategyMetrics {
 export interface StrategyModel {
   kind: "historical" | "planned";
   values: number[];
+  /**
+   * Les mêmes valeurs regroupées par SÉANCE (jour de New York de l'instant
+   * prouvé, sinon date du journal), dans l'ordre reçu — base du tirage par
+   * blocs (mode C). Absent pour une hypothèse ou un fichier sans dates.
+   */
+  sessions?: number[][];
   metrics: StrategyMetrics;
   sampleSize: number;
   estimated: number;
@@ -33,6 +41,14 @@ export interface StrategyConfig {
   dailyLimit: number;
   drawdownType: DrawdownType;
   seed: number;
+  /**
+   * Unité de tirage : `trade` (mode A, trades indépendants — défaut) ou
+   * `session` (mode C, séances entières : la dépendance au sein d'une journée
+   * est conservée, l'échantillon effectif devient le nombre de séances).
+   */
+  sampling?: "trade" | "session";
+  /** Stress (mode B) : part retirée à chaque gain, 0–0,5. Une hypothèse, pas une prévision. */
+  winHaircut?: number;
 }
 export interface ProjectionBand {
   step: number;
@@ -73,10 +89,21 @@ export interface StrategyProjection {
   medianPnl: number;
   mcInterval95: { low: number; high: number };
   drawdownExceedance: { amount: number; probability: number }[];
+  /** Ce qui a été tiré, et combien d'observations INDÉPENDANTES le portent. */
+  samplingUnit: "trade" | "session";
+  effectiveSample: number;
+  /**
+   * `closed_trade` quand le drawdown suiveur est calculé sur les soldes après
+   * chaque trade clôturé — une approximation plus clémente qu'une règle de
+   * firme fondée sur le plus haut latent. `null` sinon.
+   */
+  trailingBasis: "closed_trade" | null;
 }
 
-/** Le P&L / risque initial est le R NET réel. Sans risque, la perte médiane
- * sert seulement d'unité estimée, marquée comme telle, jamais de R mesuré.
+/** Le R NET réel vient de la définition UNIQUE du produit (`measuredR` :
+ * P&L / risque initial, refusé pour un import non relu ou un risque broker
+ * forfaitaire). Sans R mesuré, la perte médiane sert seulement d'unité
+ * estimée, marquée comme telle (`estimated`), jamais de R mesuré.
  * Les lignes non finies, les exemples mêlés au réel et les résultats sans
  * échelle exploitable ne deviennent pas des zéros artificiels. */
 export function historicalModel(
@@ -85,6 +112,11 @@ export function historicalModel(
     riskAmount?: number | null;
     rMultiple?: number;
     isExample?: boolean;
+    broker?: string | null;
+    reviewPending?: boolean;
+    riskSource?: RiskSource | null;
+    date?: string;
+    entryAt?: string | null;
   }[],
 ): StrategyModel {
   const real = trades.some((t) => !t.isExample) ? trades.filter((t) => !t.isExample) : trades;
@@ -94,12 +126,24 @@ export function historicalModel(
     .sort((a, b) => a - b);
   const unit = losses.length ? percentile(losses, 0.5) : 0;
   const values: number[] = [];
+  const bySession = new Map<string, number[]>();
   let estimated = 0;
   for (const t of real) {
     if (!Number.isFinite(t.pnl)) continue;
     let r: number;
-    if (t.riskAmount && Number.isFinite(t.riskAmount) && t.riskAmount > 0) r = t.pnl / t.riskAmount;
+    const measured = measuredR({
+      pnl: t.pnl,
+      riskAmount: t.riskAmount ?? 0,
+      broker: t.broker ?? null,
+      reviewPending: !!t.reviewPending,
+      riskSource: t.riskSource ?? null,
+    });
+    if (measured !== null) r = measured;
+    // Un R DÉCLARÉ à la main (saisie, sans risque) compte ; celui d'un import
+    // broker ou non relu n'est qu'un calcul sur un risque non attesté.
     else if (
+      !t.broker &&
+      !t.reviewPending &&
       t.rMultiple &&
       Number.isFinite(t.rMultiple) &&
       Math.sign(t.rMultiple) === Math.sign(t.pnl)
@@ -110,11 +154,20 @@ export function historicalModel(
       r = t.pnl / unit;
       estimated++;
     } else continue;
-    if (Number.isFinite(r)) values.push(r);
+    if (!Number.isFinite(r)) continue;
+    values.push(r);
+    const day = easternClockOf(t.entryAt)?.date ?? t.date;
+    if (day) bySession.set(day, [...(bySession.get(day) ?? []), r]);
   }
+  // Toutes les valeurs doivent avoir une séance pour qu'un tirage par blocs
+  // ne perde rien en silence.
+  const sessionsTotal = [...bySession.values()].reduce((n, v) => n + v.length, 0);
   return {
     kind: "historical",
     values,
+    ...(sessionsTotal === values.length && bySession.size > 0
+      ? { sessions: [...bySession.keys()].sort().map((k) => bySession.get(k)!) }
+      : {}),
     metrics: metricsOf(values),
     sampleSize: values.length,
     estimated,
@@ -173,15 +226,21 @@ export function plannedModel(
   };
 }
 
-export function strategyEdge(model: StrategyModel, risk: number, extraCost: number) {
-  const m = model.metrics,
+export function strategyEdge(
+  model: StrategyModel,
+  risk: number,
+  extraCost: number,
+  winHaircut = 0,
+) {
+  const keep = 1 - Math.min(0.5, Math.max(0, winHaircut));
+  const m = { ...model.metrics, avgWinR: model.metrics.avgWinR * keep },
     decisive = 1 - m.breakEvenRate;
   const mean = decisive * (m.winRate * m.avgWinR - (1 - m.winRate) * m.avgLossR);
   const fee = risk > 0 ? extraCost / risk : 0;
   let gains = 0,
     losses = 0;
   const add = (r: number, p: number) => {
-    const net = r - fee;
+    const net = (r > 0 && model.kind === "historical" ? r * keep : r) - fee;
     if (net > 0) gains += net * p;
     else losses -= net * p;
   };
@@ -286,9 +345,16 @@ export function validStrategyConfig(value: unknown): value is StrategyConfig {
     Number.isInteger(c.perDay) &&
     c.perDay >= 1 &&
     c.perDay <= 10 &&
-    ["static", "trailing", "trailingEod"].includes(c.drawdownType)
+    ["static", "trailing", "trailingEod"].includes(c.drawdownType) &&
+    (c.sampling === undefined || c.sampling === "trade" || c.sampling === "session") &&
+    (c.winHaircut === undefined ||
+      (Number.isFinite(c.winHaircut) && c.winHaircut >= 0 && c.winHaircut <= 0.5))
   );
 }
+
+/** Minimum de séances pour un tirage par blocs : en dessous, le moteur
+ *  rééchantillonnerait quelques journées et passerait pour représentatif. */
+export const MIN_SESSION_BLOCKS = 10;
 
 /** Calcul entièrement hors du fil d'affichage. Tous les pas sont simulés ;
  * seul le tampon de dessin est décimé (121 abscisses au maximum).
@@ -310,6 +376,10 @@ export function projectStrategy(
   )
     throw new Error("INVALID_PROJECTION");
   if (model.kind === "planned") plannedModel(model.metrics);
+  const bySession = c.sampling === "session";
+  if (bySession && (!model.sessions || model.sessions.length < MIN_SESSION_BLOCKS))
+    throw new Error("INSUFFICIENT_SESSIONS");
+  const keep = 1 - (c.winHaircut ?? 0);
   const possible =
     model.kind === "historical"
       ? model.values
@@ -366,11 +436,24 @@ export function projectStrategy(
     paths[offset] = c.balance;
     objectivePaths[offset] = c.balance;
     stops[run] = steps;
+    // Mode C : une séance tirée est jouée en entier, dans son ordre, puis la
+    // journée est close — la fréquence journalière est celle de l'historique.
+    let block: number[] = [];
+    let blockAt = 0;
     for (let step = 1; step <= steps; step++) {
-      const u = rng(); // une seule source aléatoire pour le modèle entier
       let r: number;
-      if (model.kind === "historical") r = pool[Math.floor(u * pool.length)];
-      else {
+      if (bySession) {
+        if (blockAt >= block.length) {
+          if (step > 1 && account.outcome === "open") closeDay(account, rules);
+          block = model.sessions![Math.floor(rng() * model.sessions!.length)];
+          blockAt = 0;
+        }
+        r = block[blockAt++];
+      } else if (model.kind === "historical") {
+        const u = rng(); // une seule source aléatoire pour le modèle entier
+        r = pool[Math.floor(u * pool.length)];
+      } else {
+        const u = rng();
         const m = model.metrics;
         const lossP = (1 - m.breakEvenRate) * (1 - m.winRate),
           winP = (1 - m.breakEvenRate) * m.winRate;
@@ -390,7 +473,7 @@ export function projectStrategy(
             : m.avgWinR;
         }
       }
-      const pnl = c.risk * r - c.extraCost;
+      const pnl = c.risk * (r > 0 ? r * keep : r) - c.extraCost;
       // La projection est arithmétique à risque fixe. Pas de composition ni
       // de marge implicite ; la vue Objectif est celle qui applique l'arrêt.
       equity += pnl;
@@ -402,7 +485,7 @@ export function projectStrategy(
       if (account.outcome === "open") {
         applyTrade(account, pnl, rules);
         if (account.outcome !== "open") stops[run] = step;
-        if (step % c.perDay === 0) closeDay(account, rules);
+        if (!bySession && step % c.perDay === 0) closeDay(account, rules);
       }
       if (points[col] === step) {
         paths[offset + col] = equity;
@@ -464,11 +547,14 @@ export function projectStrategy(
     failProbability: failed / runs,
     openProbability: (runs - passed - failed) / runs,
     medianTargetTrades: targetTrades.length ? percentile(targetTrades, 0.5) : null,
-    ...strategyEdge(model, c.risk, c.extraCost),
+    ...strategyEdge(model, c.risk, c.extraCost, c.winHaircut ?? 0),
     longestStreak95: percentile(streaks, 0.95),
     drawdown95: percentile(maxDrawdowns, 0.95),
     medianPnl: percentile(finalPnl, 0.5),
     mcInterval95: simulationInterval(positive, runs),
     drawdownExceedance: exceedance,
+    samplingUnit: bySession ? "session" : "trade",
+    effectiveSample: bySession ? model.sessions!.length : model.values.length,
+    trailingBasis: c.drawdownType === "trailing" ? "closed_trade" : null,
   };
 }

@@ -510,3 +510,38 @@ Branche `feat/research-edge-behavior-lot2`, empilée sur `feat/data-integrity-lo
 
 **Validations manquantes** : migration non appliquée sur une base Supabase (réseau bloqué) ; rendu vérifié sur doublure, pas en parcours authentifié réel.
 
+## Lot 3 — Risk Engine V2 / PropRisk / Monte Carlo (30 octobre 2026)
+
+Branche `feat/prop-risk-engine-lot3`, empilée sur `feat/research-edge-behavior-lot2`. Aucune migration.
+
+### Audit — trois moteurs
+1. `modules/probability/strategy` + `rules` : **moteur canonique**, monté (page Monte Carlo, Workers).
+2. `features/monte-carlo/monteCarloEngine.ts` : ancien moteur. Ses fonctions ne sont plus appelées par aucun écran, seulement par des tests (`monteCarloCsv`, `csvBrokerFormats`). Ses types restent lus par `monteCarloViz`. Rien de discordant n'est affiché. Candidat à suppression au lot 6, avec la preuve exigée par `ARCHITECTURE.md` §7.
+3. `features/simulator/Simulator.tsx` : interface complète sur `probability/engine` (mêmes règles), **non montée**. Le prompt de Jarvis renvoyait le trader vers « the Simulator » : corrigé vers la page Monte Carlo.
+
+### Défauts corrigés (test qui échoue sur l'ancien code)
+
+| Défaut | Correctif | Preuve |
+|---|---|---|
+| Le R du Monte Carlo ignorait la définition unique : un risque broker forfaitaire ou un import non relu étaient comptés comme R mesuré (transféré depuis le lot 0) | `historicalModel` passe par `measuredR` ; sinon unité estimée, comptée | `strategy.test.ts` |
+| Drawdown « trailing intraday » calculé sur les soldes de trades clôturés, sans le dire ; une règle de firme sur le plus haut latent est plus sévère | `trailing` documenté et marqué `trailingBasis: closed_trade` + avertissement dans l'éditeur ; `trailingLatent` refusé (`LATENT_PATH_REQUIRED`) | `rules.test.ts`, `strategy.test.ts` |
+| Jarvis renvoyait vers une page inexistante | Prompt du coach → page Monte Carlo | revue de code |
+
+### Ajouts
+- **Mode C** : tirage par séances entières, qui conserve l'enchaînement de chaque journée. L'échantillon effectif est le nombre de séances, avec un minimum de 10 ; en dessous, la projection est refusée.
+- **Mode B** : stress « gains réduits » (0 à 50 %), en plus du coût par trade existant.
+- **Échantillon effectif affiché** : plus de trajectoires n'ajoute aucune observation (test).
+
+### Critères de sortie L3 (handoff §7)
+
+| Critère | Statut | Preuve |
+|---|---|---|
+| Trajectoires manuelles : ordre, perte journalière, trailing contre clôture, gel, consistance, jours minimum, frais transformant un P&L brut nul en perte | **DONE** | `rules.test.ts` |
+| Même graine et mêmes entrées : résultats identiques ; Worker et thread principal cohérents | **DONE** | `strategy.test.ts` ; le Worker appelle la même fonction pure |
+| Plus de simulations n'augmente pas la certitude des entrées | **DONE** | `effectiveSample` invariant (test) |
+| Refus du trailing intraday exact sans MFE/ticks | **DONE** | `LATENT_PATH_REQUIRED` |
+| Contrats de firms datés ou marqués non vérifiés | **DONE** | Aucune règle de firme codée en dur ; règles saisies par le trader, avec l'avertissement `lab.rulesHint` |
+| Un seul moteur canonique, aucun algorithme concurrent affichant des résultats discordants | **PARTIAL** | Rien de discordant n'est affiché ; l'ancien moteur et le simulateur non monté subsistent dans le code (lot 6) |
+| Comparateur de plans, multi-comptes, risque corrélé | **PARTIAL** | La comparaison avec une référence existe sur la page ; le multi-comptes corrélé n'est pas modélisé (exposition non vérifiée) |
+| Mémoire et performance des 10 000 trajectoires, accessibilité | **Non re-mesuré** | Tampons transférables existants ; aucune mesure nouvelle |
+

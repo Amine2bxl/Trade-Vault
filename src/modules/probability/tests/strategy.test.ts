@@ -36,6 +36,18 @@ describe("laboratoire : provenance et hypothèses", () => {
     expect(m.excluded).toBe(2);
     expect(m.estimated).toBe(0);
   });
+  test("un risque broker forfaitaire ou un import non relu n'est PAS un R mesuré : unité estimée", () => {
+    const m = historicalModel([
+      { pnl: 200, riskAmount: 100, broker: "tradovate", riskSource: "broker_default" },
+      { pnl: -100, riskAmount: 100, broker: "tradovate", riskSource: "broker_stop" },
+      { pnl: 150, riskAmount: 50, reviewPending: true, rMultiple: 3 },
+      { pnl: -50, riskAmount: 50 },
+    ]);
+    // Stop observé (−1) et saisie (−1) sont mesurés ; les deux autres sont
+    // ramenés à l'unité estimée (perte médiane 75) et comptés comme tels.
+    expect(m.estimated).toBe(2);
+    expect(m.values).toEqual([200 / 75, -1, 150 / 75, -1]);
+  });
   test("un P&L sans risque est explicitement estimé, ou exclu si aucune échelle n'existe", () => {
     const m = historicalModel([{ pnl: 200 }, { pnl: -100 }, { pnl: 0 }]);
     expect(m.values).toEqual([2, -1, 0]);
@@ -177,5 +189,70 @@ describe("incertitude de simulation", () => {
     expect(all.high).toBe(1);
     expect(half.low).toBeCloseTo(0.4902, 4);
     expect(half.high).toBeCloseTo(0.5098, 4);
+  });
+});
+
+describe("lot 3 — modes de tirage, stress et approximation déclarée", () => {
+  const day = (i: number) => `2026-03-${String(1 + i).padStart(2, "0")}`;
+  // 12 séances : chaque journée enchaîne une perte puis un gain (dépendance
+  // intra-journalière que le tirage par trades détruit).
+  const journal = Array.from({ length: 12 }, (_, i) => [
+    { pnl: -100, riskAmount: 100, date: day(i) },
+    { pnl: 150, riskAmount: 100, date: day(i) },
+  ]).flat();
+  const hist = historicalModel(journal);
+
+  test("les séances sont regroupées dans l'ordre du journal", () => {
+    expect(hist.sessions).toHaveLength(12);
+    expect(hist.sessions![0]).toEqual([-1, 1.5]);
+  });
+
+  test("mode C : une séance tirée est jouée en entier — jamais deux pertes d'affilée ici", () => {
+    const r = projectStrategy(hist, { ...config, trades: 24, sampling: "session" }, 300);
+    expect(r.samplingUnit).toBe("session");
+    // L'échantillon effectif est le nombre de séances, pas de trades.
+    expect(r.effectiveSample).toBe(12);
+    expect(r.longestStreak95).toBe(1);
+    // Par trades indépendants, des séries de pertes apparaissent.
+    const iid = projectStrategy(hist, { ...config, trades: 24 }, 300);
+    expect(iid.effectiveSample).toBe(24);
+    expect(iid.longestStreak95).toBeGreaterThan(1);
+  });
+
+  test("mode C refusé sans assez de séances : quelques journées ne représentent rien", () => {
+    const few = historicalModel(journal.slice(0, 10));
+    expect(() => projectStrategy(few, { ...config, sampling: "session" }, 50)).toThrow(
+      "INSUFFICIENT_SESSIONS",
+    );
+    expect(() =>
+      projectStrategy(plannedModel(metrics), { ...config, sampling: "session" }, 50),
+    ).toThrow("INSUFFICIENT_SESSIONS");
+  });
+
+  test("mode B : réduire les gains de 20 % réduit l'espérance nette d'autant sur les gains", () => {
+    const base = projectStrategy(hist, { ...config, trades: 10 }, 200);
+    const stressed = projectStrategy(hist, { ...config, trades: 10, winHaircut: 0.2 }, 200);
+    // Gains moyens 1,5R × 0,8 = 1,2R ; pertes inchangées : 0,25R → 0,1R.
+    expect(base.netExpectancyR).toBeCloseTo(0.25, 10);
+    expect(stressed.netExpectancyR).toBeCloseTo(0.1, 10);
+    expect(stressed.medianPnl).toBeLessThan(base.medianPnl);
+  });
+
+  test("un stress hors bornes est refusé", () => {
+    expect(validStrategyConfig({ ...config, winHaircut: 0.9 })).toBe(false);
+    expect(validStrategyConfig({ ...config, sampling: "weekly" })).toBe(false);
+  });
+
+  test("le suiveur sur trades clôturés est déclaré comme une approximation", () => {
+    const r = projectStrategy(plannedModel(metrics), { ...config, drawdownType: "trailing" }, 50);
+    expect(r.trailingBasis).toBe("closed_trade");
+    expect(projectStrategy(plannedModel(metrics), config, 50).trailingBasis).toBeNull();
+  });
+
+  test("plus de trajectoires ne crée pas plus d'observations : l'échantillon effectif ne bouge pas", () => {
+    const a = projectStrategy(hist, { ...config, trades: 10 }, 100);
+    const b = projectStrategy(hist, { ...config, trades: 10 }, 10_000);
+    expect(a.effectiveSample).toBe(b.effectiveSample);
+    expect(b.model.sampleSize).toBe(24);
   });
 });

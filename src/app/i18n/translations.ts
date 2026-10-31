@@ -336,6 +336,16 @@ const en = {
   "lab.csvAwaiting": "Choose a broker export containing net P&L or R multiples.",
   "lab.trailingCaption":
     "Accounts stop at the first target or loss limit. The trailing floor follows each account separately; no single floor line applies to all paths.",
+  "lab.trailingApprox":
+    "Computed on balances after each CLOSED trade. A firm rule that trails your unrealized intraday high is stricter and needs price paths this simulator does not have: this result overstates your margin.",
+  "lab.winHaircut": "Stress: smaller wins",
+  "lab.haircutNone": "Wins as observed",
+  "lab.haircutPct": "Wins −{n}%",
+  "lab.sampling": "Draw",
+  "lab.samplingTrade": "Independent trades",
+  "lab.samplingSession": "Whole sessions (keeps each day's sequence)",
+  "lab.effectiveTrades": "Based on {n} observed trades — more paths do not add observations.",
+  "lab.effectiveSessions": "Based on {n} observed sessions — more paths do not add observations.",
   "lab.winRate": "Net win rate",
   "lab.calibratedSample": "{n} source trades · adjusted assumptions",
   "lab.title": "Strategy lab",
