@@ -68,4 +68,4 @@ discipline, rappels pré-market, « Share my week ».
 | Design | 422 tailles `text-[Npx]` arbitraires, 61 couleurs hex dans le JSX, 33 keyframes pour 8 autorisées |
 | Types | 31 `as any` / `@ts-ignore` ; `no-unused-vars` et `no-explicit-any` en `warn` |
 | Build | Preset `@lovable.dev/vite-tanstack-config` opaque ; verrou lié à un registre npm privé |
-| Accessibilité | Zoom verrouillé (`shared/lock-zoom.ts`) : choix produit assumé, contraire à WCAG 1.4.4 |
+| Accessibilité | ~~Zoom verrouillé~~ — rendu au trader au lot 5 (viewport sans `user-scalable=no`, `lock-zoom.ts` retiré) ; le zoom automatique d'iOS sur un champ reste évité par les champs à 16 px sur téléphone |

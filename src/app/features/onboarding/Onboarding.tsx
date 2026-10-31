@@ -708,7 +708,7 @@ export default function Onboarding({
         const goal = answers.goal ? L.goal[answers.goal] : null;
         const plan = planFromAnswers(answers, existing, {
           mission: goal
-            ? `${goal.label} — ${goal.desc}${answers.monthlyTarget ? ` (${answers.monthlyTarget}%/${lang === "fr" ? "mois" : "month"})` : ""}`
+            ? `${goal.label} — ${goal.desc}${answers.monthlyTarget ? ` (${answers.monthlyTarget}%/${c.perMonth})` : ""}`
             : "",
           markets: answers.assets.map((m) => L.market[m].label),
           sessions: answers.assets.length
@@ -1493,7 +1493,7 @@ export default function Onboarding({
               min={0.25}
               max={5}
               disabled={g.riskPct === null}
-              format={(v) => `${num(v)}${lang === "fr" ? " %" : "%"}`}
+              format={(v) => `${num(v)}${c.pctSuffix}`}
               onChange={(v) => setGuard({ riskPct: v })}
             />,
             1,

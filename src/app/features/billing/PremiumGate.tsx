@@ -84,7 +84,7 @@ export function PreviewWall({
   children: ReactNode;
   className?: string;
 }) {
-  const { lang } = useT();
+  const { t, lang } = useT();
   const fr = lang === "fr";
   if (!locked) return <>{children}</>;
 
@@ -122,15 +122,15 @@ export function PreviewWall({
           <div className="flex items-center gap-3">
             <div className="min-w-0 flex-1">
               <p className="line-clamp-2 text-sm font-bold leading-snug text-white">
-                {benefit ?? (fr ? "Cette page, avec tes trades." : "This page, with your trades.")}
+                {benefit ?? t("gate.thisPageWithYour")}
               </p>
               <p className="mt-1 text-[11px] font-medium text-slate-400">
                 {tier.name[fr ? "fr" : "en"]} ·{" "}
                 <span className="tv-figure text-white">{perMonth}</span>
-                {fr ? "/mois" : "/month"}
+                {t("gate.month")}
                 {freeMonths > 0 && (
                   <span className="tv-num ml-1 text-emerald-400">
-                    · {freeMonths} {fr ? "mois offerts" : "mo. free"}
+                    · {freeMonths} {t("gate.moFree")}
                   </span>
                 )}
               </p>
@@ -140,20 +140,16 @@ export function PreviewWall({
               className="inline-flex shrink-0 items-center gap-2 rounded-xl tv-accent-fill px-5 py-3 text-sm font-bold transition"
             >
               <Lock className="h-4 w-4" />
-              {fr ? `Passer à ${tier.name.fr}` : `Go ${tier.name.en}`}
+              {t("upgrade.goTier").replace("{tier}", fr ? tier.name.fr : tier.name.en)}
               <ArrowRight className="h-4 w-4" />
             </button>
           </div>
           <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[11px] text-slate-500">
             <span className="inline-flex items-center gap-1">
               <Eye className="h-3 w-3" />
-              {fr ? "Aperçu — données d'exemple" : "Preview — sample data"}
+              {t("gate.previewSampleData")}
             </span>
-            <span>
-              {fr
-                ? "Sans engagement · Annulation en 1 clic"
-                : "No commitment · Cancel in one click"}
-            </span>
+            <span>{t("gate.noCommitmentCancelIn")}</span>
           </div>
         </div>
       </div>

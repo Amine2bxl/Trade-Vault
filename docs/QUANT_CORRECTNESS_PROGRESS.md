@@ -569,3 +569,33 @@ Protocole figé, respect vérifiable séance par séance, P&L descriptif face à
 | Validation multilingue, fallback provider, mémoire | **Existant, non re-testé ici** | Suites `jarvisProviders`, `memory-*` vertes ; pas d'évaluation réelle avec un modèle |
 | Revue UX réelle des recommandations | **BLOCKED_EXTERNAL** | Exige des réponses réelles du fournisseur et un compte authentifié |
 
+
+## Lot 5 — Product Hardening (30 octobre 2026)
+
+Branche `chore/product-hardening-lot5`, empilée sur `feat/jarvis-evidence-lot4`. Migration additive `20261030220000_restrict_cross_tenant_functions.sql` — **appliquée en production le 30 octobre 2026 sur autorisation du propriétaire** (version distante `restrict_cross_tenant_functions`).
+
+### Défauts corrigés
+| Défaut | Correctif | Preuve |
+|---|---|---|
+| `effective_tier(p_user_id)` et `count_trades_in_month(p_user_id, …)` sont SECURITY DEFINER et exécutables par `PUBLIC`, `anon` et `authenticated` : n'importe qui, sans compte, lit le palier et le nombre de trades mensuels de n'importe quel utilisateur dont il a l'id. Constaté **en production** (lecture seule de `pg_proc` : `proacl` contient `=X`, `anon=X`, `authenticated=X` ; corps identiques à la migration du 29 août) | Garde « un utilisateur connecté n'interroge que lui-même », `EXECUTE` retiré à `PUBLIC`/`anon` ; les fonctions de déclencheur de quota ne sont plus appelables en RPC. Corps repris à l'identique, rollback documenté dans la migration | `tests/sql/tenant-functions.sql` (A ≠ B, `anon`, déclencheur de quota pour soi, rôle de service) ; mutation (garde retirée) détectée |
+| `meta viewport` interdisait le zoom (`user-scalable=no`) et `lock-zoom.ts` bloquait le pincement : WCAG 1.4.4 (constat axe du lot 0) | Viewport `width=device-width, initial-scale=1, viewport-fit=cover` ; `src/shared/lock-zoom.ts` retiré (seul import : `__root.tsx`) | typecheck, build, suite complète |
+| `public/llms.txt` affirmait « never connects to a brokerage account » alors que l'app contient une liaison Tradovate (OAuth, lecture seule par construction : `tradovate.server.ts` refuse tout chemin hors liste) — audit E10 | Formulation vraie que la liaison soit activée ou non : pas de courtier, aucun ordre ; liaison Tradovate optionnelle, en lecture seule, quand elle est activée | relecture ; `seo.test.ts` (présence du fichier) |
+| Libellés visibles codés en dur `lang === "fr" ? … : …` (code promo de l'abonnement, « vérifiés » des règles dans Mistakes, unité « mois » et suffixe « % » de l'onboarding) | Clés `billing.promo*`, `mistakes.verifiedPct` (EN + FR) ; `perMonth`, `pctSuffix` dans `onboardingCopy.ts` | typecheck, lint, suite complète |
+
+### Mesures
+- **Performance EdgeLab / BehaviorLab, 10 000 trades** (≈ 1 250 séances, CPU du conteneur, thread principal) : dimension stratégie 407 ms + hors-échantillon 205 ms ; symbole 279 + 174 ms ; jour 84 + 53 ms ; BehaviorLab 27 ms. Le bootstrap travaille déjà sur des blocs pré-sommés ; calcul mémoïsé par dimension. Risque résiduel : plusieurs secondes sur un téléphone lent pour un historique de cette taille — un worker serait la suite si ce cas apparaît.
+
+### Critères de sortie L5 (handoff §9)
+| Critère | Statut | Preuve |
+|---|---|---|
+| Sécurité multi-tenant des fonctions privilégiées | **DONE, appliqué en production** | `tenant-functions.sql` ; en production après application : `has_function_privilege` (`anon` : aucun `EXECUTE` ; déclencheurs non appelables par `authenticated`), garde éprouvée avec des identifiants fictifs (soi : autorisé ; autre : `insufficient_privilege`) ; l'advisor « Public Can Execute » ne cite plus ces fonctions. Appelants en base vérifiés : tous passent l'utilisateur lui-même |
+| Accessibilité : zoom | **DONE** | viewport, `lock-zoom.ts` retiré |
+| Accessibilité : graphiques Recharts sans alternative textuelle | **DONE** | La violation axe venait des secteurs du camembert (`<path role="img">` sans nom, seul `<Pie>` de l'app : Analytics) ; chaque `Cell` porte `aria-label` (libellé : n). `tests/pieA11y.test.tsx` vérifie le rendu et la source |
+| Documentation publique (`llms.txt`) vs intégration broker | **DONE** | ci-dessus |
+| Landing : « No broker connection — there is no API » (`landing/i18n.tsx`) | **DÉCISION PRODUIT** | vrai pour l'utilisateur tant que la liaison Tradovate n'est pas activée en production ; à réécrire le jour où elle l'est |
+| i18n : chaînes codées en dur | **DONE (interface)** | ≈ 245 libellés FR/EN en dur (facturation, checklist, plan de trading, objectifs) passés en clés EN + FR ; plus aucun `tr("…", "…")` ni ternaire de libellé. Restent bilingues **par conception** : `PricingPlans` et `PlanMatrix` (partagés avec la vitrine, qui n'a que EN/FR et son propre système `useLandingT`), et le **contenu pré-rempli** (items de checklist proposés par l'assistant, modèles de règles) qui devient une donnée du trader |
+| Stripe sandbox (checkout, 3DS, refus, webhooks rejoués, portail) | **NON VALIDÉ — écarté par le propriétaire** (30 octobre 2026) | aucune preuve ; ne pas présenter Stripe comme validé |
+| OAuth Tradovate réel (refresh, 403/429, idempotence) | **NON VALIDÉ — écarté par le propriétaire** (30 octobre 2026) | aucune preuve ; ne pas présenter la synchro Tradovate comme validée |
+| E2E authentifié, charge, reprise après panne | **BLOCKED_EXTERNAL** | hôte Supabase bloqué par le réseau de la session |
+| Protection de `main` | **BLOCKED_EXTERNAL** | réglage du dépôt, hors de portée de la session |
+| Advisor Supabase « Leaked Password Protection Disabled » | **ACTION PROPRIÉTAIRE** | réglage Auth du tableau de bord Supabase |

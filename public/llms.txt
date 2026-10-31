@@ -31,8 +31,10 @@ interface supports twelve languages once signed in.
 
 ## What it is not
 
-- It is not a broker and never connects to a brokerage account.
-- It does not place, copy or signal trades.
+- It is not a broker. It does not place, modify, copy or signal trades.
+- Trades come in by CSV import, copy-paste or manual entry. The app also
+  includes an optional, read-only Tradovate link that imports executions when
+  it is enabled; it has no access to order placement.
 - It does not provide financial advice. Nothing in the product is a
   recommendation to buy or sell.
 - It does not guarantee any trading result.

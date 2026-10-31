@@ -76,9 +76,10 @@ Ces trois décisions prévalent sur une checklist antérieure ambiguë du regist
 | Lot 1 | **Implémenté, en revue** (PR #236) ; gates externes `BLOCKED_EXTERNAL` — voir ADDENDUM 3 |
 | Lot 2 | **Implémenté, en revue** (PR à la branche `feat/research-edge-behavior-lot2`) — voir ADDENDUM 4 |
 | Lot 3 | **Implémenté, en revue** (branche `feat/prop-risk-engine-lot3`) — voir ADDENDUM 5 |
-| Lot 4 | **Implémenté, en revue** (branche `feat/jarvis-evidence-lot4`) — voir ADDENDUM 6 |
-| Lots 5–6 | **NOT STARTED** |
-| Supabase | Projet TradeVault ; inspection de schéma en lecture seule dans la reprise ; aucune nouvelle migration distante appliquée au titre de ces lots |
+| Lot 4 | **Implémenté, en revue** (PR #239, branche `feat/jarvis-evidence-lot4`) — voir ADDENDUM 6 |
+| Lot 5 | **Partiel, en revue** (PR #240) ; migration de sécurité appliquée en production ; Stripe et OAuth Tradovate écartés (non validés) ; E2E authentifié `BLOCKED_EXTERNAL` — voir ADDENDUM 7 |
+| Lot 6 | **NOT STARTED** |
+| Supabase | Projet TradeVault ; inspection de schéma en lecture seule dans la reprise ; **une seule** migration distante appliquée au titre de ces lots : `20261030220000_restrict_cross_tenant_functions` (lot 5, sécurité, sur autorisation du propriétaire). Les migrations des lots 1, 2 et 4 ne sont **pas** appliquées |
 | Preview | Une preview Vercel READY a été observée sur la branche ; ne pas confondre ce constat avec un E2E authentifié |
 | Protection GitHub `main` | **À vérifier via des droits appropriés** : consultation API de protection refusée (403). Le document d'audit ancien la signalait non protégée ; ne pas annoncer que cela a été revalidé aujourd'hui |
 
@@ -714,3 +715,8 @@ Les éléments suivants sont **postérieurs** à l'état du HEAD `1c680115` ment
 
 - Branche `feat/jarvis-evidence-lot4`, empilée sur le lot 3. Défauts, ajouts et critères : `docs/QUANT_CORRECTNESS_PROGRESS.md` § Lot 4 ; outils : `docs/AI.md`.
 
+# ADDENDUM 7 — Lot 5 (30 octobre 2026)
+
+- Branche `chore/product-hardening-lot5`, empilée sur le lot 4. Défauts, mesures, critères et blocages : `docs/QUANT_CORRECTNESS_PROGRESS.md` § Lot 5.
+- Fuite active en production : `effective_tier` / `count_trades_in_month` lisibles par `anon` pour n'importe quel utilisateur. Correctif : migration `20261030220000_restrict_cross_tenant_functions.sql`, **appliquée en production le 30 octobre 2026 sur autorisation du propriétaire** et vérifiée (droits, garde, advisor).
+- Tests Stripe sandbox et OAuth Tradovate : écartés par le propriétaire le 30 octobre 2026 ; ils restent **non validés**.

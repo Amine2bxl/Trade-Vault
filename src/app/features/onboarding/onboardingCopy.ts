@@ -130,6 +130,10 @@ export interface OnboardingCopy {
   grTitle: string;
   grRisk: string;
   grRiskUnit: string;
+  /** Suffixe d'un pourcentage affiché (espace fine en français). */
+  pctSuffix: string;
+  /** Unité de l'objectif mensuel, « 3 %/mois ». */
+  perMonth: string;
   grTrades: string;
   grTradesUnit: string;
   grStop: string;
@@ -315,6 +319,8 @@ const en: OnboardingCopy = {
   grTitle: "Your guardrails.",
   grRisk: "Max risk per trade",
   grRiskUnit: "% of account",
+  pctSuffix: "%",
+  perMonth: "month",
   grTrades: "Max trades per day",
   grTradesUnit: "trades",
   grStop: "Stop for the day after",
@@ -503,6 +509,8 @@ const fr: OnboardingCopy = {
   grTitle: "Tes garde-fous.",
   grRisk: "Risque max. par trade",
   grRiskUnit: "% du compte",
+  pctSuffix: " %",
+  perMonth: "mois",
   grTrades: "Trades max. par jour",
   grTradesUnit: "trades",
   grStop: "Stop pour la journée après",

@@ -93,7 +93,7 @@ export default function SubscriptionSection({
           </span>
           <button
             onClick={() => setPromo(undefined)}
-            aria-label={lang === "fr" ? "Retirer le code" : "Remove code"}
+            aria-label={t("billing.promoRemove")}
             className="grid h-6 w-6 shrink-0 place-items-center rounded-md text-emerald-300/70 transition hover:bg-emerald-500/10 hover:text-emerald-200"
           >
             <X className="h-3.5 w-3.5" />
@@ -109,8 +109,8 @@ export default function SubscriptionSection({
             value={typed}
             onChange={(e) => setTyped(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && applyCode()}
-            placeholder={lang === "fr" ? "Code promo (facultatif)" : "Promo code (optional)"}
-            aria-label={lang === "fr" ? "Code promo" : "Promo code"}
+            placeholder={t("billing.promoPlaceholder")}
+            aria-label={t("billing.promoLabel")}
             className="uppercase"
           />
           <button
@@ -118,7 +118,7 @@ export default function SubscriptionSection({
             disabled={!typed.trim()}
             className="shrink-0 px-4 rounded-xl border border-white/[0.1] bg-white/[0.04] text-sm font-semibold text-slate-200 transition hover:bg-white/[0.07] disabled:opacity-50"
           >
-            {lang === "fr" ? "Appliquer" : "Apply"}
+            {t("billing.promoApply")}
           </button>
         </div>
       )}

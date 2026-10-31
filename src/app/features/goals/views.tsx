@@ -18,6 +18,8 @@ import {
   ChevronDown,
 } from "@/shared/ui/icons";
 import { cn } from "@/shared/ui/cn";
+import { useT } from "@/app/i18n/LanguageContext";
+import type { TKey } from "@/app/i18n/translations";
 import {
   type GoalDef,
   type GoalKind,
@@ -42,76 +44,44 @@ const KIND_META: Record<
   GoalKind,
   {
     icon: typeof Target;
-    fr: string;
-    en: string;
     unit: string;
     ph: string;
-    frDesc: string;
-    enDesc: string;
   }
 > = {
   capital: {
     icon: Wallet,
-    fr: "Capital cible",
-    en: "Target capital",
     unit: "$",
     ph: "100000",
-    frDesc: "Faire grandir le compte jusqu'à un montant précis",
-    enDesc: "Grow the account to a specific amount",
   },
   profit_factor: {
     icon: TrendingUp,
-    fr: "Profit factor",
-    en: "Profit factor",
     unit: "",
     ph: "2.0",
-    frDesc: "Gagner plus sur les gains que tu ne perds sur les pertes",
-    enDesc: "Win more on winners than you lose on losers",
   },
   max_drawdown: {
     icon: ShieldAlert,
-    fr: "Drawdown max",
-    en: "Max drawdown",
     unit: "%",
     ph: "5",
-    frDesc: "Réduire la pire baisse de ton compte",
-    enDesc: "Shrink your account's worst dip",
   },
   win_rate: {
     icon: Percent,
-    fr: "Taux de réussite",
-    en: "Win rate",
     unit: "%",
     ph: "60",
-    frDesc: "Augmenter la part de trades gagnants",
-    enDesc: "Raise the share of winning trades",
   },
   avg_rr: {
     icon: Scale,
-    fr: "R:R moyen",
-    en: "Average R:R",
     unit: "R",
     ph: "2.0",
-    frDesc: "Améliorer ton ratio risque/récompense moyen",
-    enDesc: "Improve your average risk/reward",
   },
   discipline: {
     icon: NotebookPen,
-    fr: "Discipline de journal",
-    en: "Journal discipline",
     unit: "%",
     ph: "100",
-    frDesc: "% de trades journalisés avec notes",
-    enDesc: "% of trades journaled with notes",
   },
   custom: {
     icon: PenLine,
-    fr: "Objectif personnalisé",
-    en: "Custom goal",
     unit: "",
     ph: "10",
-    frDesc: "Ton objectif, tes mots, ton unité",
-    enDesc: "Your goal, your words, your unit",
   },
 };
 
@@ -136,16 +106,14 @@ interface Draft {
 
 export function GoalPicker({
   ctx,
-  fr,
   busy,
   onGenerate,
 }: {
   ctx: MeasureCtx;
-  fr: boolean;
   busy: boolean;
   onGenerate: (goals: GoalDef[]) => void;
 }) {
-  const tr = (f: string, e: string) => (fr ? f : e);
+  const { t } = useT();
   const kinds = Object.keys(KIND_META) as GoalKind[];
   const [drafts, setDrafts] = useState<Record<GoalKind, Draft>>(
     () =>
@@ -203,13 +171,8 @@ export function GoalPicker({
     /* La carte porte `glass`, pas `glass-strong` : elle est POSÉE sur la page,
        elle ne flotte pas au-dessus. La plaque forte est celle des modales. */
     <div className="glass animate-fade-in-up rounded-3xl p-4 md:p-5">
-      <h2 className="tv-title">{tr("Choisis tes objectifs", "Pick your goals")}</h2>
-      <p className="tv-row-label mt-0.5 mb-3">
-        {tr(
-          "Sélectionnes-en autant que tu veux — le plan les combine en 6 étapes mensuelles.",
-          "Select as many as you want — the plan combines them into 6 monthly steps.",
-        )}
-      </p>
+      <h2 className="tv-title">{t("goals.pickYourGoals")}</h2>
+      <p className="tv-row-label mt-0.5 mb-3">{t("goals.selectAsManyAs")}</p>
 
       <div className="mb-4 grid gap-1.5">
         {kinds.map((k) => {
@@ -248,15 +211,15 @@ export function GoalPicker({
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-[13px] font-semibold text-white">
-                    {fr ? m.fr : m.en}
+                    {t(`goals.kind.${k}` as TKey)}
                   </span>
                   <span className="tv-row-label block truncate">
-                    {fr ? m.frDesc : m.enDesc}
+                    {t(`goals.kind.${k}.desc` as TKey)}
                     {cur !== null && (
                       <>
                         {" · "}
                         <span className="tv-figure text-slate-300">
-                          {tr("actuel", "current")}:{" "}
+                          {t("goals.current")}:{" "}
                           {m.unit === "$"
                             ? formatMoney(cur, { whole: k === "capital" })
                             : `${cur.toFixed(k === "capital" ? 0 : 2)}${m.unit ?? ""}`}
@@ -284,16 +247,13 @@ export function GoalPicker({
                       <input
                         value={d.label}
                         onChange={(e) => patch(k, { label: e.target.value })}
-                        placeholder={tr(
-                          "Nom (ex : Heures de backtest)",
-                          "Name (e.g.: Backtest hours)",
-                        )}
+                        placeholder={t("goals.nameEGBacktest")}
                         className="col-span-2 h-11 bg-white/[0.05] border border-white/[0.1] rounded-xl px-3.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/40"
                       />
                       <input
                         value={d.unit}
                         onChange={(e) => patch(k, { unit: e.target.value })}
-                        placeholder={tr("Unité (h, trades…)", "Unit (h, trades…)")}
+                        placeholder={t("goals.unitHTrades")}
                         className="h-11 bg-white/[0.05] border border-white/[0.1] rounded-xl px-3.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/40"
                       />
                       <div className="flex rounded-xl overflow-hidden border border-white/[0.1]">
@@ -308,9 +268,7 @@ export function GoalPicker({
                                 : "bg-white/[0.03] text-slate-500",
                             )}
                           >
-                            {dir === "up"
-                              ? tr("Augmenter ↑", "Increase ↑")
-                              : tr("Réduire ↓", "Decrease ↓")}
+                            {dir === "up" ? t("goals.increase") : t("goals.decrease")}
                           </button>
                         ))}
                       </div>
@@ -319,7 +277,7 @@ export function GoalPicker({
                         inputMode="decimal"
                         value={d.current}
                         onChange={(e) => patch(k, { current: e.target.value })}
-                        placeholder={tr("Valeur actuelle", "Current value")}
+                        placeholder={t("goals.currentValue2")}
                         className="col-span-2 h-11 bg-white/[0.05] border border-white/[0.1] rounded-xl px-3.5 text-sm font-bold text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/40"
                       />
                     </div>
@@ -334,7 +292,7 @@ export function GoalPicker({
                       className="w-full h-11 bg-white/[0.05] border border-white/[0.1] rounded-xl px-3.5 pr-16 text-sm font-bold text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/40"
                     />
                     <span className="tv-label absolute right-3 top-1/2 -translate-y-1/2 text-slate-500">
-                      {tr("cible 6 mois", "6-mo target")}
+                      {t("goals.6MoTarget")}
                     </span>
                   </div>
                 </div>
@@ -354,20 +312,14 @@ export function GoalPicker({
       >
         {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
         {busy
-          ? tr("Génération…", "Generating…")
+          ? t("goals.generating")
           : selectedCount > 1
-            ? tr(
-                `Générer mon plan d'action (${selectedCount} objectifs)`,
-                `Generate my action plan (${selectedCount} goals)`,
-              )
-            : tr("Générer mon plan d'action", "Generate my action plan")}
+            ? t("goals.generateMyActionPlan2").replace("{a}", String(selectedCount))
+            : t("goals.generateMyActionPlan")}
       </button>
       <p className="mt-3 flex items-center justify-center gap-1.5 tv-row-label">
         <Bell className="w-3 h-3" />
-        {tr(
-          "Tu recevras des rappels push pour les actions importantes.",
-          "You'll get push reminders for the important actions.",
-        )}
+        {t("goals.youLlGetPush")}
       </p>
     </div>
   );
@@ -399,7 +351,7 @@ export function PlanView({
    *  deja atteint. L'interface n'affiche alors rien. */
   forecast?: GoalForecast | null;
 }) {
-  const tr = (f: string, e: string) => (fr ? f : e);
+  const { t } = useT();
   const cur = currentMonthIndex(plan);
   const [openMonth, setOpenMonth] = useState<number>(cur);
 
@@ -431,9 +383,9 @@ export function PlanView({
           aujourd'hui. */}
       <div className="glass flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl px-4 py-3">
         <div className="min-w-0">
-          <div className="tv-label text-slate-500">{tr("Étape en cours", "Current step")}</div>
+          <div className="tv-label text-slate-500">{t("goals.currentStep")}</div>
           <div className="tv-figure mt-0.5 text-base leading-none text-white">
-            {tr("Mois", "Month")} {cur + 1}
+            {t("goals.month")} {cur + 1}
             <span className="text-slate-600">/{plan.horizonMonths}</span>
             <span className="ml-2 text-[11px] font-semibold text-slate-500">
               {monthLabel(monthOf(plan, cur))}
@@ -443,9 +395,7 @@ export function PlanView({
 
         <div className="min-w-[120px] flex-1">
           <div className="mb-1 flex items-baseline justify-between gap-2">
-            <span className="tv-label text-slate-500">
-              {tr("Actions du mois", "This month's actions")}
-            </span>
+            <span className="tv-label text-slate-500">{t("goals.thisMonthSActions")}</span>
             <span className="tv-figure tv-figure-secondary text-[11px] text-slate-400">
               {Math.round(monthTaskCompletion(plan, cur) * 100)}%
             </span>
@@ -461,7 +411,7 @@ export function PlanView({
         <button
           onClick={onDelete}
           disabled={busy}
-          aria-label={tr("Supprimer le plan", "Delete plan")}
+          aria-label={t("goals.deletePlan")}
           className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-slate-600 transition hover:bg-red-500/10 hover:text-red-400"
         >
           <Trash2 className="h-3.5 w-3.5" />
@@ -471,9 +421,9 @@ export function PlanView({
       {/* ── Les objectifs eux-mêmes ── */}
       <div className="glass rounded-3xl p-4">
         <div className="mb-2.5 flex items-baseline gap-2">
-          <h2 className="tv-title">{tr("Mes objectifs", "My goals")}</h2>
+          <h2 className="tv-title">{t("goals.myGoals")}</h2>
           <span className="tv-num tv-row-label truncate">
-            {tr("depuis", "since")} {monthLabel(monthOf(plan, 0))}
+            {t("goals.since")} {monthLabel(monthOf(plan, 0))}
           </span>
         </div>
         <div className="grid gap-1.5">
@@ -506,20 +456,20 @@ export function PlanView({
                   </span>
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-[13px] font-semibold text-white">
-                      {g.kind === "custom" ? g.label : fr ? meta.fr : meta.en}
+                      {g.kind === "custom" ? g.label : t(`goals.kind.${g.kind}` as TKey)}
                     </div>
                     <div className="tv-figure tv-figure-secondary truncate text-[11px] text-slate-500">
                       {fmtVal(g, g.startValue)} →{" "}
                       <span className="text-cyan-300 font-bold">{fmtVal(g, g.targetValue)}</span>
                       {" · "}
-                      {tr("auj.", "now")}:{" "}
+                      {t("goals.now")}:{" "}
                       <span className="text-slate-300 font-semibold">
                         {available ? fmtVal(g, current) : "—"}
                       </span>
                     </div>
                   </div>
                   {g.kind === "custom" && (
-                    <ManualValueInput goal={g} onCommit={(v) => onManualValue(g.id, v)} fr={fr} />
+                    <ManualValueInput goal={g} onCommit={(v) => onManualValue(g.id, v)} />
                   )}
                   {finalReached && (
                     <span className="shrink-0 w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center">
@@ -547,16 +497,16 @@ export function PlanView({
                     pourcentage serait inventer un chiffre. */}
                 {g.kind === "capital" && !finalReached && forecast && (
                   <p className="tv-figure tv-figure-secondary mt-2 text-[11px] text-slate-400">
-                    {tr(
-                      `${Math.round(forecast.probability * 100)} % de chances d'y arriver au rythme actuel`,
-                      `${Math.round(forecast.probability * 100)}% chance at your current pace`,
+                    {t("goals.aChanceAtYour").replace(
+                      "{a}",
+                      String(Math.round(forecast.probability * 100)),
                     )}
                     {forecast.medianDaysToTarget !== null && (
                       <span className="text-slate-500">
                         {" · "}
-                        {tr(
-                          `~${Math.round(forecast.medianDaysToTarget)} j si ça passe`,
-                          `~${Math.round(forecast.medianDaysToTarget)}d if it lands`,
+                        {t("goals.aDIfIt").replace(
+                          "{a}",
+                          String(Math.round(forecast.medianDaysToTarget)),
                         )}
                       </span>
                     )}
@@ -620,11 +570,11 @@ export function PlanView({
                         i === cur ? "text-white" : "text-slate-300",
                       )}
                     >
-                      {tr("Mois", "Month")} {i + 1} · {monthLabel(monthOf(plan, i))}
+                      {t("goals.month")} {i + 1} · {monthLabel(monthOf(plan, i))}
                     </span>
                     {i === cur && (
                       <span className="tv-label ml-2 rounded-full border border-cyan-500/25 bg-cyan-500/15 px-1.5 py-0.5 text-cyan-300">
-                        {tr("en cours", "current")}
+                        {t("goals.current2")}
                       </span>
                     )}
                   </span>
@@ -653,11 +603,7 @@ export function PlanView({
                           key={g.id}
                           className="tv-figure tv-figure-secondary text-[10px] text-slate-500"
                         >
-                          {g.kind === "custom"
-                            ? g.label
-                            : fr
-                              ? KIND_META[g.kind].fr
-                              : KIND_META[g.kind].en}
+                          {g.kind === "custom" ? g.label : t(`goals.kind.${g.kind}` as TKey)}
                           {": "}
                           <span
                             className={cn(
@@ -689,11 +635,7 @@ export function PlanView({
                           return (
                             <div key={g.id} className="flex items-center gap-2.5">
                               <span className="text-[10px] text-slate-500 w-28 truncate shrink-0">
-                                {g.kind === "custom"
-                                  ? g.label
-                                  : fr
-                                    ? KIND_META[g.kind].fr
-                                    : KIND_META[g.kind].en}
+                                {g.kind === "custom" ? g.label : t(`goals.kind.${g.kind}` as TKey)}
                               </span>
                               <div className="flex-1 h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
                                 <div
@@ -723,7 +665,7 @@ export function PlanView({
                       <div className="flex items-center gap-1.5 mb-2">
                         <Sparkles className="w-3.5 h-3.5 text-cyan-300" />
                         <span className="tv-label text-cyan-300">
-                          {tr("Actions du mois", "This month's actions")}
+                          {t("goals.thisMonthSActions")}
                         </span>
                       </div>
                       <div className="grid gap-2">
@@ -780,15 +722,8 @@ export function PlanView({
 }
 
 /** Inline editor for a custom goal's manually-tracked current value. */
-function ManualValueInput({
-  goal,
-  onCommit,
-  fr,
-}: {
-  goal: GoalDef;
-  onCommit: (v: number) => void;
-  fr: boolean;
-}) {
+function ManualValueInput({ goal, onCommit }: { goal: GoalDef; onCommit: (v: number) => void }) {
+  const { t } = useT();
   const [draft, setDraft] = useState(String(goal.manualValue ?? goal.startValue));
   useEffect(() => {
     setDraft(String(goal.manualValue ?? goal.startValue));
@@ -805,7 +740,7 @@ function ManualValueInput({
       onChange={(e) => setDraft(e.target.value)}
       onBlur={commit}
       onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
-      aria-label={fr ? "Valeur actuelle" : "Current value"}
+      aria-label={t("goals.currentValue")}
       className="tv-figure tv-figure-secondary w-20 h-9 shrink-0 bg-white/[0.05] border border-white/[0.1] rounded-lg px-2 text-xs text-white text-right focus:outline-none focus:border-cyan-500/40"
     />
   );

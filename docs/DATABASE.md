@@ -81,7 +81,7 @@ Toute fonction `SECURITY DEFINER` voit son `EXECUTE` révoqué pour
 | Fonction | Rôle |
 | --- | --- |
 | `consume_ai_quota`, `consume_ai_quota_scoped` | Quota IA atomique en fenêtre fixe |
-| `effective_tier`, `enforce_trade_quota`, `enforce_account_quota`, `count_trades_in_month` | Limites de plan appliquées **en base** |
+| `effective_tier`, `enforce_trade_quota`, `enforce_account_quota`, `count_trades_in_month` | Limites de plan appliquées **en base**. `effective_tier` et `count_trades_in_month` : un utilisateur connecté n'interroge que lui-même, `anon` n'exécute rien, le rôle de service garde l'accès ; les fonctions de déclencheur ne sont pas appelables en RPC (`20261030220000`) |
 | `enforce_proposal_budget` | Budget des propositions de Jarvis (3 en attente, 1 par jour) |
 | `apply_subscription_event` | Transitions d'abonnement idempotentes (webhooks) |
 | `redeem_promo_code`, `release_promo_redemption` | Codes promo |
