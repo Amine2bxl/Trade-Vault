@@ -38,7 +38,7 @@ import type { Trade } from "@/app/types";
  * un chiffre de sable coûte plus cher que pas de chiffre du tout.
  */
 export default function PlanScaleBlock({ trades }: { trades: Trade[] }) {
-  const { lang } = useT();
+  const { t, lang } = useT();
   const fr = lang === "fr";
   const echelle = useMemo(() => planScale(trades, MONTHLY_EUR), [trades]);
 
@@ -66,25 +66,23 @@ export default function PlanScaleBlock({ trades }: { trades: Trade[] }) {
   return (
     <section className="sub-scale animate-fade-in-up stagger-2">
       <div className="min-w-0 sm:w-[38%]">
-        <p className="tv-label text-slate-500">
-          {fr ? "À l'échelle de ton journal" : "On the scale of your journal"}
-        </p>
+        <p className="tv-label text-slate-500">{t("planScale.onTheScaleOf")}</p>
         <p className="mt-2 text-sm leading-snug text-slate-300">
           <span className="tv-figure mr-1.5 text-3xl font-semibold text-white">
             {echelle.partDUnePerte}%
           </span>
-          {fr ? "d'une perte moyenne, pour un mois." : "of one average loss, for a month."}
+          {t("planScale.ofOneAverageLoss")}
         </p>
       </div>
       <div className="min-w-0 flex-1 space-y-3">
         <Barre
-          label={fr ? "Ta perte moyenne, sur un trade" : "Your average loss, on one trade"}
+          label={t("planScale.yourAverageLossOn")}
           valeur={euro(echelle.perteMoyenne)}
           largeur={part(echelle.perteMoyenne)}
           ton="neg"
         />
         <Barre
-          label={fr ? "TradeVault Pro, pour un mois" : "TradeVault Pro, for a month"}
+          label={t("planScale.tradevaultProForA")}
           valeur={euro(MONTHLY_EUR)}
           largeur={part(MONTHLY_EUR)}
           ton="accent"
@@ -92,9 +90,7 @@ export default function PlanScaleBlock({ trades }: { trades: Trade[] }) {
         {/* LA LIMITE, ÉCRITE. Sans elle, la comparaison se lirait comme une
             promesse de rendement — ce qu'elle n'est pas et ne peut pas être. */}
         <p className="tv-row-label">
-          {fr
-            ? `Mesuré sur tes ${echelle.nLosses} trades perdants. Une mise à l'échelle, pas une promesse : TradeVault n'exécute aucun trade.`
-            : `Measured across your ${echelle.nLosses} losing trades. A scale, not a promise: TradeVault places no trades.`}
+          {t("planScale.measuredAcrossYourA").replace("{a}", String(echelle.nLosses))}
         </p>
       </div>
     </section>

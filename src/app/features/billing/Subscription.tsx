@@ -71,7 +71,6 @@ type TFn = (k: TKey) => string;
 export default function Subscription({ trades = [] }: { trades?: Trade[] } = {}) {
   const { t, lang } = useT();
   const fr = lang === "fr";
-  const tr = useCallback((f: string, e: string) => (fr ? f : e), [fr]);
   const { sub, loading, openPortal, cryptoCheckout } = useSubscription();
   const [busy, setBusy] = useState(false);
 
@@ -83,8 +82,8 @@ export default function Subscription({ trades = [] }: { trades?: Trade[] } = {})
       ? t("billing.planFree")
       : `TradeVault ${TIER_BY_ID[currentTier].name[fr ? "fr" : "en"]} · ${
           intervalOf(sub?.plan ?? "free") === "yearly"
-            ? tr("annuel", "yearly")
-            : tr("mensuel", "monthly")
+            ? t("subscription.yearly")
+            : t("subscription.monthly")
         }`;
 
   const dateFmt = useCallback(
@@ -129,10 +128,10 @@ export default function Subscription({ trades = [] }: { trades?: Trade[] } = {})
         <span className="font-display shrink-0 text-sm font-bold tracking-tight text-white">
           {loading ? "TradeVault" : planLabel}
         </span>
-        {!loading && sub && <Pastille etat={etat} tr={tr} t={t} />}
+        {!loading && sub && <Pastille etat={etat} t={t} />}
       </div>
     ),
-    [etat, loading, planLabel, sub, t, tr],
+    [etat, loading, planLabel, sub, t],
   );
   usePageLead(lead);
 
@@ -171,7 +170,7 @@ export default function Subscription({ trades = [] }: { trades?: Trade[] } = {})
             </h1>
             {!loading && (
               <div className="mt-2 flex flex-wrap items-center gap-2">
-                {sub && <Pastille etat={etat} tr={tr} t={t} />}
+                {sub && <Pastille etat={etat} t={t} />}
                 {paid && (
                   <span className="tv-row-label">
                     {intervalOf(sub?.plan ?? "free") === "yearly"
@@ -182,7 +181,7 @@ export default function Subscription({ trades = [] }: { trades?: Trade[] } = {})
               </div>
             )}
             <p className="tv-prose mt-3 max-w-xl text-slate-400">
-              {loading ? t("sub.loading") : meta.body(tr, fin)}
+              {loading ? t("sub.loading") : meta.body(t, fin)}
             </p>
           </div>
 
@@ -271,7 +270,7 @@ export default function Subscription({ trades = [] }: { trades?: Trade[] } = {})
               ) : (
                 <meta.actionIcon className="h-4 w-4" />
               )}
-              {meta.action!(tr)}
+              {meta.action!(t)}
               {!busy && <ExternalLink className="h-3.5 w-3.5 opacity-60" />}
             </button>
             {sub?.hasStripeCustomer && (
@@ -304,9 +303,9 @@ export default function Subscription({ trades = [] }: { trades?: Trade[] } = {})
       {/* ══ 5 · CE QUI RASSURE ═════════════════════════════════════════════ */}
       <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 pt-1 pb-2">
         {[
-          [Lock, tr("Paiement sécurisé Stripe", "Secure Stripe payment")],
-          [CheckCircle2, tr("Annulation en 1 clic", "Cancel in one click")],
-          [Download, tr("Données exportables", "Your data stays exportable")],
+          [Lock, t("subscription.secureStripePayment")],
+          [CheckCircle2, t("subscription.cancelInOneClick")],
+          [Download, t("subscription.yourDataStaysExportable")],
         ].map(([Ico, label]) => {
           const I = Ico as typeof Lock;
           return (
@@ -358,10 +357,10 @@ interface EtatMeta {
   /** Vignette d'icône. */
   badge: string;
   titleClass: string;
-  title: (tr: (f: string, e: string) => string, planLabel: string) => string;
-  body: (tr: (f: string, e: string) => string, fin: string | null) => string;
+  title: (t: (k: TKey) => string, planLabel: string) => string;
+  body: (t: (k: TKey) => string, fin: string | null) => string;
   /** Libellé de l'action principale — `null` quand l'état n'en propose pas. */
-  action: ((tr: (f: string, e: string) => string) => string) | null;
+  action: ((t: (k: TKey) => string) => string) | null;
   actionIcon: typeof Crown;
   /** L'action est-elle l'action PRINCIPALE de la page (vert plein) ? */
   actionStrong: boolean;
@@ -374,12 +373,8 @@ const ETATS: Record<EtatId, EtatMeta> = {
     badge:
       "border-[var(--tv-border-accent)] bg-[rgb(var(--tv-accent-rgb)/0.12)] text-[var(--tv-highlight)]",
     titleClass: "text-white",
-    title: (tr) => tr("Tu es sur l'offre gratuite", "You're on the free plan"),
-    body: (tr) =>
-      tr(
-        "Passe à Pro pour chiffrer tes erreurs en euros, projeter ton compte et débloquer le coach.",
-        "Go Pro to price your mistakes in euros, project your account and unlock the coach.",
-      ),
+    title: (t) => t("subscription.youReOnThe"),
+    body: (t) => t("subscription.goProToPrice"),
     action: null,
     actionIcon: Sparkles,
     actionStrong: true,
@@ -390,12 +385,12 @@ const ETATS: Record<EtatId, EtatMeta> = {
     badge:
       "border-[var(--tv-border-accent)] bg-[rgb(var(--tv-accent-rgb)/0.12)] text-[var(--tv-highlight)]",
     titleClass: "text-white",
-    title: (tr) => tr("Essai en cours", "Trial running"),
-    body: (tr, fin) =>
+    title: (t) => t("subscription.trialRunning"),
+    body: (t, fin) =>
       fin
-        ? tr(`Ton essai court jusqu'au ${fin}.`, `Your trial runs until ${fin}.`)
-        : tr("Ton essai est en cours.", "Your trial is running."),
-    action: (tr) => tr("Gérer mon abonnement", "Manage subscription"),
+        ? t("subscription.yourTrialRunsUntil").replace("{a}", String(fin))
+        : t("subscription.yourTrialIsRunning"),
+    action: (t) => t("subscription.manageSubscription"),
     actionIcon: CreditCard,
     actionStrong: false,
   },
@@ -404,15 +399,12 @@ const ETATS: Record<EtatId, EtatMeta> = {
     surface: "glass border-emerald-500/20",
     badge: "border-emerald-500/25 bg-emerald-500/10 text-emerald-400",
     titleClass: "text-white",
-    title: (tr, planLabel) => tr(`${planLabel} — actif`, `${planLabel} — active`),
-    body: (tr, fin) =>
+    title: (t, planLabel) => t("subscription.aActive").replace("{a}", String(planLabel)),
+    body: (t, fin) =>
       fin
-        ? tr(
-            `Ton accès se renouvelle automatiquement le ${fin}. Rien à faire.`,
-            `Your access renews automatically on ${fin}. Nothing to do.`,
-          )
-        : tr("Ton accès est actif.", "Your access is active."),
-    action: (tr) => tr("Gérer mon abonnement", "Manage subscription"),
+        ? t("subscription.yourAccessRenewsAutomatically").replace("{a}", String(fin))
+        : t("subscription.yourAccessIsActive"),
+    action: (t) => t("subscription.manageSubscription"),
     actionIcon: CreditCard,
     actionStrong: false,
   },
@@ -423,18 +415,12 @@ const ETATS: Record<EtatId, EtatMeta> = {
     surface: "border-amber-500/25 bg-amber-500/[0.06]",
     badge: "border-amber-500/30 bg-amber-500/10 text-amber-300",
     titleClass: "text-amber-200",
-    title: (tr) => tr("Abonnement annulé", "Subscription cancelled"),
-    body: (tr, fin) =>
+    title: (t) => t("subscription.subscriptionCancelled"),
+    body: (t, fin) =>
       fin
-        ? tr(
-            `Ton accès reste complet jusqu'au ${fin}. Après cette date, tu repasses sur l'offre gratuite — ton journal et tes données restent intacts.`,
-            `You keep full access until ${fin}. After that you move back to the free plan — your journal and data stay intact.`,
-          )
-        : tr(
-            "Ton abonnement ne sera pas reconduit. Ton journal et tes données restent intacts.",
-            "Your subscription won't renew. Your journal and data stay intact.",
-          ),
-    action: (tr) => tr("Réactiver mon abonnement", "Reactivate my subscription"),
+        ? t("subscription.youKeepFullAccess").replace("{a}", String(fin))
+        : t("subscription.yourSubscriptionWonT"),
+    action: (t) => t("subscription.reactivateMySubscription"),
     actionIcon: RefreshCw,
     actionStrong: true,
   },
@@ -443,13 +429,9 @@ const ETATS: Record<EtatId, EtatMeta> = {
     surface: "border-red-500/25 bg-red-500/[0.06]",
     badge: "border-red-500/30 bg-red-500/10 text-red-400",
     titleClass: "text-red-200",
-    title: (tr) => tr("Paiement en échec", "Payment failed"),
-    body: (tr) =>
-      tr(
-        "Le dernier prélèvement n'est pas passé. Mets ta carte à jour pour garder ton accès.",
-        "The last charge didn't go through. Update your card to keep your access.",
-      ),
-    action: (tr) => tr("Mettre à jour ma carte", "Update my card"),
+    title: (t) => t("subscription.paymentFailed"),
+    body: (t) => t("subscription.theLastChargeDidn"),
+    action: (t) => t("subscription.updateMyCard"),
     actionIcon: CreditCard,
     actionStrong: true,
   },
@@ -458,13 +440,9 @@ const ETATS: Record<EtatId, EtatMeta> = {
     surface: "glass border-[var(--tv-border-strong)]",
     badge: "border-[var(--tv-border-strong)] bg-[var(--tv-plate-3)] text-slate-300",
     titleClass: "text-white",
-    title: (tr) => tr("Abonnement terminé", "Subscription ended"),
-    body: (tr) =>
-      tr(
-        "Ton accès Pro est arrivé à son terme. Reprends quand tu veux — tout ton historique t'attend.",
-        "Your Pro access has ended. Come back whenever — your whole history is waiting.",
-      ),
-    action: (tr) => tr("Reprendre mon abonnement", "Restart my subscription"),
+    title: (t) => t("subscription.subscriptionEnded"),
+    body: (t) => t("subscription.yourProAccessHas"),
+    action: (t) => t("subscription.restartMySubscription"),
     actionIcon: RefreshCw,
     actionStrong: true,
   },
@@ -473,12 +451,8 @@ const ETATS: Record<EtatId, EtatMeta> = {
     surface: "glass border-emerald-500/20",
     badge: "border-emerald-500/25 bg-emerald-500/10 text-emerald-400",
     titleClass: "text-white",
-    title: (tr) => tr("Accès permanent", "Permanent access"),
-    body: (tr) =>
-      tr(
-        "Tout TradeVault t'est ouvert, sans échéance et sans renouvellement.",
-        "All of TradeVault is open to you, with no end date and nothing to renew.",
-      ),
+    title: (t) => t("subscription.permanentAccess"),
+    body: (t) => t("subscription.allOfTradevaultIs"),
     action: null,
     actionIcon: Crown,
     actionStrong: false,
@@ -486,7 +460,7 @@ const ETATS: Record<EtatId, EtatMeta> = {
 };
 
 /** La pastille de la barre de tête — le même état, en un mot. */
-function Pastille({ etat, tr, t }: { etat: EtatId; tr: (f: string, e: string) => string; t: TFn }) {
+function Pastille({ etat, t }: { etat: EtatId; t: TFn }) {
   const style: Record<EtatId, string> = {
     free: "bg-white/[0.05] border-white/[0.08] text-slate-400",
     trialing:
@@ -503,8 +477,8 @@ function Pastille({ etat, tr, t }: { etat: EtatId; tr: (f: string, e: string) =>
     active: t("billing.active"),
     cancelling: t("billing.cancelsAtPeriodEnd"),
     pastDue: t("billing.pastDue"),
-    expired: tr("Terminé", "Ended"),
-    lifetime: tr("Offert", "Complimentary"),
+    expired: t("subscription.ended"),
+    lifetime: t("subscription.complimentary"),
   };
   const Icone = ETATS[etat].icon;
   return (

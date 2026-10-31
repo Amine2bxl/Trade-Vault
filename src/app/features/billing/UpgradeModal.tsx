@@ -30,7 +30,7 @@ import {
 const ICONS = { pro: Sparkles, elite: Zap } as const;
 
 export default function UpgradeModal({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { lang } = useT();
+  const { t, lang } = useT();
   const fr = lang === "fr";
   const { checkout } = useSubscription();
   const [interval, setInterval] = useState<Interval>("yearly");
@@ -81,17 +81,15 @@ export default function UpgradeModal({ open, onClose }: { open: boolean; onClose
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2 className="font-display text-sm font-bold tracking-tight text-white">
-              {fr ? "Débloque TradeVault" : "Unlock TradeVault"}
+              {t("upgrade.unlockTradevault")}
             </h2>
             <p className="mt-0.5 text-[13px] text-slate-500">
-              {fr
-                ? "Toutes les analyses, tes erreurs chiffrées, Monte-Carlo."
-                : "Full analytics, your mistakes priced, Monte Carlo."}
+              {t("upgrade.fullAnalyticsYourMistakes")}
             </p>
           </div>
           <button
             onClick={onClose}
-            aria-label={fr ? "Fermer" : "Close"}
+            aria-label={t("upgrade.close")}
             className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-slate-500 hover:bg-white/[0.06] hover:text-white transition"
           >
             <X className="h-4 w-4" />
@@ -102,7 +100,7 @@ export default function UpgradeModal({ open, onClose }: { open: boolean; onClose
         <div className="mt-4 flex justify-start">
           <div
             role="tablist"
-            aria-label={fr ? "Période de facturation" : "Billing period"}
+            aria-label={t("upgrade.billingPeriod")}
             className="inline-flex items-center gap-1 rounded-full border border-white/[0.08] bg-white/[0.03] p-1"
           >
             {(["monthly", "yearly"] as const).map((value) => (
@@ -118,7 +116,7 @@ export default function UpgradeModal({ open, onClose }: { open: boolean; onClose
                     : "text-slate-500 hover:text-slate-200",
                 )}
               >
-                {value === "monthly" ? (fr ? "Mensuel" : "Monthly") : fr ? "Annuel" : "Yearly"}
+                {value === "monthly" ? t("upgrade.monthly") : t("upgrade.yearly")}
                 {value === "yearly" && (
                   <span className="tv-num ml-1.5 text-[11px] font-bold text-emerald-500">
                     −{monthsFree("pro")}
@@ -147,7 +145,7 @@ export default function UpgradeModal({ open, onClose }: { open: boolean; onClose
               >
                 {tier === "pro" && (
                   <span className="absolute right-3 top-3 rounded-full bg-emerald-400 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#041018]">
-                    {fr ? "Recommandé" : "Recommended"}
+                    {t("upgrade.recommended")}
                   </span>
                 )}
                 <div className="flex items-center gap-2">
@@ -169,16 +167,14 @@ export default function UpgradeModal({ open, onClose }: { open: boolean; onClose
                 </div>
                 <div className="mt-3 flex items-baseline gap-1">
                   <span className="tv-figure text-3xl text-white">{perMonth(tier)}</span>
-                  <span className="text-sm text-slate-400">{fr ? "/mois" : "/mo"}</span>
+                  <span className="text-sm text-slate-400">{t("upgrade.mo")}</span>
                 </div>
                 <p className="mt-0.5 text-[11px] text-slate-500">
                   {interval === "yearly"
-                    ? fr
-                      ? `Facturé ${eur(def.yearly, lang)}/an · ${monthsFree(tier)} mois offerts`
-                      : `Billed ${eur(def.yearly, lang)}/yr · ${monthsFree(tier)} months free`
-                    : fr
-                      ? "Sans engagement"
-                      : "No commitment"}
+                    ? t("upgrade.billedAYrB")
+                        .replace("{a}", String(eur(def.yearly, lang)))
+                        .replace("{b}", String(monthsFree(tier)))
+                    : t("upgrade.noCommitment")}
                 </p>
 
                 <div className="mt-3 space-y-1.5">
@@ -209,8 +205,7 @@ export default function UpgradeModal({ open, onClose }: { open: boolean; onClose
                       ))}
                   {tier === "pro" && (
                     <p className="tv-num pt-0.5 text-[11px] font-semibold text-cyan-300/80">
-                      + {pagesOfTier("pro").length - 3}{" "}
-                      {fr ? "autres pages Premium" : "more Premium pages"}
+                      + {pagesOfTier("pro").length - 3} {t("upgrade.morePremiumPages")}
                     </p>
                   )}
                 </div>
@@ -226,15 +221,11 @@ export default function UpgradeModal({ open, onClose }: { open: boolean; onClose
                   )}
                 >
                   {busy === plan ? (
-                    fr ? (
-                      "Ouverture…"
-                    ) : (
-                      "Opening…"
-                    )
+                    t("upgrade.opening")
                   ) : (
                     <>
                       <Lock className="h-4 w-4" />
-                      {fr ? `Passer à ${def.name.fr}` : `Go ${def.name.en}`}
+                      {t("upgrade.goTier").replace("{tier}", fr ? def.name.fr : def.name.en)}
                       <ArrowRight className="h-4 w-4" />
                     </>
                   )}
@@ -248,10 +239,10 @@ export default function UpgradeModal({ open, onClose }: { open: boolean; onClose
         <div className="mt-4">
           {promo ? (
             <div className="flex items-center justify-between rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-3.5 py-2.5 text-[13px] font-semibold text-emerald-300">
-              <span>{fr ? `Code ${promo} appliqué` : `Code ${promo} applied`}</span>
+              <span>{t("upgrade.codeAApplied").replace("{a}", String(promo))}</span>
               <button
                 onClick={() => setPromo(undefined)}
-                aria-label={fr ? "Retirer le code" : "Remove code"}
+                aria-label={t("upgrade.removeCode")}
                 className="grid h-6 w-6 place-items-center rounded-md text-emerald-300/70 hover:bg-emerald-500/10 hover:text-emerald-200"
               >
                 <X className="h-3.5 w-3.5" />
@@ -263,8 +254,8 @@ export default function UpgradeModal({ open, onClose }: { open: boolean; onClose
                 value={typed}
                 onChange={(e) => setTyped(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && applyCode()}
-                placeholder={fr ? "Code promo (facultatif)" : "Promo code (optional)"}
-                aria-label={fr ? "Code promo" : "Promo code"}
+                placeholder={t("upgrade.promoCodeOptional")}
+                aria-label={t("upgrade.promoCode")}
                 className="w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-3 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-500/40 h-9"
               />
               <button
@@ -272,7 +263,7 @@ export default function UpgradeModal({ open, onClose }: { open: boolean; onClose
                 disabled={!typed.trim()}
                 className="shrink-0 rounded-xl border border-white/[0.1] bg-white/[0.04] px-4 text-sm font-semibold text-slate-200 hover:bg-white/[0.07] disabled:opacity-50"
               >
-                {fr ? "Appliquer" : "Apply"}
+                {t("upgrade.apply")}
               </button>
             </div>
           )}
@@ -285,9 +276,7 @@ export default function UpgradeModal({ open, onClose }: { open: boolean; onClose
         )}
 
         <p className="mt-3 text-center text-[11px] text-slate-600">
-          {fr
-            ? "Sans engagement · Annulation en 1 clic · Ton journal reste gratuit"
-            : "No commitment · Cancel in one click · Your journal stays free"}
+          {t("upgrade.noCommitmentCancelIn")}
         </p>
       </div>
     </Modal>

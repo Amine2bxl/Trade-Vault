@@ -727,6 +727,9 @@ export default function Analytics({ trades }: AnalyticsProps) {
                         {winLossData.map((e, i) => (
                           <Cell
                             key={i}
+                            // Le secteur est un `role="img"` : sans nom, un lecteur d'écran
+                            // n'annonce rien (axe `svg-img-alt`, constat du lot 0).
+                            aria-label={`${e.name} : ${e.value}`}
                             fill={e.color}
                             style={{
                               opacity: activePieIndex === null || activePieIndex === i ? 1 : 0.45,

@@ -46,9 +46,7 @@ const PARTIE_KEY = "tv.planSection";
 
 export default function TradingPlan({ setPage }: { setPage: (p: Page) => void }) {
   const { user } = useAuth();
-  const { lang } = useT();
-  const fr = lang === "fr";
-  const tr = useCallback((f: string, e: string) => (fr ? f : e), [fr]);
+  const { t } = useT();
   const MAX_SETUPS = 5;
 
   const [plan, setPlan] = useState<TradingPlanData>(EMPTY_PLAN);
@@ -205,9 +203,9 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
 
   usePageActions(
     useMemo(
-      () => <CompletionRing value={completion} label={tr("complet", "complete")} />,
+      () => <CompletionRing value={completion} label={t("tplan.complete")} />,
 
-      [completion, tr],
+      [completion, t],
     ),
   );
 
@@ -244,41 +242,41 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
     () => [
       {
         id: "mission",
-        label: tr("Mission", "Mission"),
+        label: t("tplan.mission"),
         icon: <Compass className="hidden h-3.5 w-3.5 sm:block" />,
         count: restes.mission[1] - restes.mission[0] || undefined,
       },
       {
         id: "risk",
-        label: tr("Risque", "Risk"),
+        label: t("tplan.risk"),
         icon: <ShieldAlert className="hidden h-3.5 w-3.5 sm:block" />,
         count: restes.risk[1] - restes.risk[0] || undefined,
       },
       {
         id: "setups",
-        label: tr("Setups", "Setups"),
+        label: t("tplan.setups"),
         icon: <Layers className="hidden h-3.5 w-3.5 sm:block" />,
         count: restes.setups[1] - restes.setups[0] || undefined,
       },
       {
         id: "limits",
-        label: tr("Limites", "Limits"),
+        label: t("tplan.limits"),
         icon: <Ban className="hidden h-3.5 w-3.5 sm:block" />,
         count: restes.limits[1] - restes.limits[0] || undefined,
       },
       {
         id: "routine",
-        label: tr("Routine", "Routine"),
+        label: t("tplan.routine"),
         icon: <SunMedium className="hidden h-3.5 w-3.5 sm:block" />,
         count: restes.routine[1] - restes.routine[0] || undefined,
       },
       {
         id: "rules",
-        label: tr("Règles", "Rules"),
+        label: t("tplan.rules"),
         icon: <Scale className="hidden h-3.5 w-3.5 sm:block" />,
       },
     ],
-    [restes, tr],
+    [restes, t],
   );
 
   if (loading) {
@@ -297,12 +295,12 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
           Les six parties à gauche, l'état d'enregistrement à droite. Elle est
           collante : on passe de « Risque » à « Setups » depuis n'importe quel
           point du formulaire, sans remonter. */}
-      <PageToolbar actions={<EtatSauvegarde etat={saveState} tr={tr} />}>
+      <PageToolbar actions={<EtatSauvegarde etat={saveState} />}>
         <SubNav
           items={onglets}
           value={partie}
           onChange={ouvrirPartie}
-          ariaLabel={tr("Parties du plan", "Plan sections")}
+          ariaLabel={t("tplan.planSections")}
         />
       </PageToolbar>
 
@@ -310,42 +308,31 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
       {partie === "mission" && (
         <Section
           icon={Compass}
-          title={tr("Mission & terrain de jeu", "Mission & playing field")}
-          sub={tr(
-            "Pourquoi tu trades, sur quoi, et quand.",
-            "Why you trade, what you trade, and when.",
-          )}
+          title={t("tplan.missionPlayingField")}
+          sub={t("tplan.whyYouTradeWhat")}
         >
-          <Field
-            label={tr("Ma mission (relue les jours de tilt)", "My mission (re-read on tilt days)")}
-          >
+          <Field label={t("tplan.myMissionReRead")}>
             <Textarea
               value={plan.mission}
               onChange={(e) => update({ mission: e.target.value })}
-              placeholder={tr(
-                "Ex : Devenir constant avant de devenir gros. Je protège mon capital d'abord.",
-                "E.g.: Become consistent before becoming big. I protect my capital first.",
-              )}
+              placeholder={t("tplan.eGBecomeConsistent")}
               rows={3}
               className={inputCls}
             />
           </Field>
           <div className="grid gap-3 md:grid-cols-2">
-            <Field label={tr("Marchés tradés", "Markets traded")}>
+            <Field label={t("tplan.marketsTraded")}>
               <MarketChips
                 markets={plan.markets}
                 onChange={(m) => update({ markets: m })}
-                placeholder={tr("NQ, EURUSD… + Entrée", "NQ, EURUSD… + Enter")}
+                placeholder={t("tplan.nqEurusdEnter")}
               />
             </Field>
-            <Field label={tr("Fenêtre de trading", "Trading window")}>
+            <Field label={t("tplan.tradingWindow")}>
               <input
                 value={plan.sessions}
                 onChange={(e) => update({ sessions: e.target.value })}
-                placeholder={tr(
-                  "Ex : 15h30 – 17h30 (ouverture NY)",
-                  "E.g.: 9:30 – 11:30 (NY open)",
-                )}
+                placeholder={t("tplan.eG930")}
                 className={inputCls}
               />
             </Field>
@@ -357,15 +344,12 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
       {partie === "risk" && (
         <Section
           icon={ShieldAlert}
-          title={tr("Gestion du risque", "Risk management")}
-          sub={tr(
-            "Les chiffres qui te gardent en vie. Non négociables.",
-            "The numbers that keep you alive. Non-negotiable.",
-          )}
+          title={t("tplan.riskManagement")}
+          sub={t("tplan.theNumbersThatKeep")}
         >
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             <NumField
-              label={tr("Risque max / trade", "Max risk / trade")}
+              label={t("tplan.maxRiskTrade")}
               unit="%"
               value={plan.risk.maxRiskPerTradePct}
               onChange={(v) =>
@@ -374,21 +358,21 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
               placeholder="1"
             />
             <NumField
-              label={tr("Perte max / jour", "Max daily loss")}
+              label={t("tplan.maxDailyLoss")}
               unit="%"
               value={plan.risk.maxDailyLossPct}
               onChange={(v) => update((p) => ({ ...p, risk: { ...p.risk, maxDailyLossPct: v } }))}
               placeholder="3"
             />
             <NumField
-              label={tr("Perte max / semaine", "Max weekly loss")}
+              label={t("tplan.maxWeeklyLoss")}
               unit="%"
               value={plan.risk.maxWeeklyLossPct}
               onChange={(v) => update((p) => ({ ...p, risk: { ...p.risk, maxWeeklyLossPct: v } }))}
               placeholder="6"
             />
             <NumField
-              label={tr("R:R minimum", "Minimum R:R")}
+              label={t("tplan.minimumRR")}
               unit="R"
               value={plan.risk.minRR}
               onChange={(v) => update((p) => ({ ...p, risk: { ...p.risk, minRR: v } }))}
@@ -406,22 +390,14 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
             )}
           >
             <NumField
-              label={tr("Objectif mensuel", "Monthly target")}
+              label={t("tplan.monthlyTarget")}
               unit="%"
               value={monthly}
               onChange={updateMonthly}
               placeholder="4"
             />
             <p className="pb-2.5 text-[12px] leading-snug text-slate-500">
-              {monthly
-                ? tr(
-                    "Suivi chaque mois dans le copilote du tableau de bord.",
-                    "Tracked every month in the dashboard copilot.",
-                  )
-                : tr(
-                    "Pas encore défini — fixe-le ici, le copilote du tableau de bord le suivra.",
-                    "Not set yet — set it here and the dashboard copilot will track it.",
-                  )}
+              {monthly ? t("tplan.trackedEveryMonthIn") : t("tplan.notSetYetSet")}
             </p>
           </div>
         </Section>
@@ -431,11 +407,8 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
       {partie === "setups" && (
         <Section
           icon={Layers}
-          title={tr("Mes setups", "My setups")}
-          sub={tr(
-            "Seuls les setups écrits ici méritent ton argent.",
-            "Only the setups written here deserve your money.",
-          )}
+          title={t("tplan.mySetups")}
+          sub={t("tplan.onlyTheSetupsWritten")}
           action={
             <span
               className={cn(
@@ -452,10 +425,7 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
           <div className="space-y-3">
             {plan.setups.length === 0 && (
               <div className="rounded-2xl border border-dashed border-white/[0.1] px-4 py-6 text-center text-xs text-slate-500">
-                {tr(
-                  "Aucun setup défini. Ajoute ton premier setup — nom, conditions, invalidation.",
-                  "No setup defined yet. Add your first one — name, conditions, invalidation.",
-                )}
+                {t("tplan.noSetupDefinedYet")}
               </div>
             )}
 
@@ -473,14 +443,10 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
                 <Layers className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                 <span>
                   {plan.setups.length >= MAX_SETUPS
-                    ? tr(
-                        `Tu as atteint la limite de ${MAX_SETUPS} setups. Trop de setups disperse l'attention. Maîtrise ces ${MAX_SETUPS} avant d'en changer.`,
-                        `You've reached the ${MAX_SETUPS} setup limit. Too many setups scatter focus. Master these ${MAX_SETUPS} before switching.`,
-                      )
-                    : tr(
-                        `Déjà ${plan.setups.length} setup${plan.setups.length > 1 ? "s" : ""}. Reste concentré : 3-5 setups maîtrisés valent mieux que 10 survolés.`,
-                        `Already ${plan.setups.length} setup${plan.setups.length > 1 ? "s" : ""}. Stay focused: 3-5 mastered setups beat 10 half-known ones.`,
-                      )}
+                    ? t("tplan.setupLimit").split("{n}").join(String(MAX_SETUPS))
+                    : t("tplan.alreadyASetupB")
+                        .replace("{a}", String(plan.setups.length))
+                        .replace("{b}", String(plan.setups.length > 1 ? "s" : ""))}
                 </span>
               </p>
             )}
@@ -490,7 +456,6 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
                 key={s.id}
                 setup={s}
                 index={i}
-                fr={fr}
                 onChange={(next) =>
                   update((p) => ({
                     ...p,
@@ -516,7 +481,7 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
                 }
                 className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-dashed border-[var(--tv-border-accent)] text-sm font-semibold text-[var(--tv-highlight)] transition hover:bg-[rgb(var(--tv-accent-rgb)/0.07)]"
               >
-                <Plus className="h-4 w-4" /> {tr("Ajouter un setup", "Add a setup")}
+                <Plus className="h-4 w-4" /> {t("tplan.addASetup")}
               </button>
             )}
           </div>
@@ -527,15 +492,12 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
       {partie === "limits" && (
         <Section
           icon={Ban}
-          title={tr("Limites & discipline", "Limits & discipline")}
-          sub={tr(
-            "Les garde-fous qui coupent l'overtrading avant qu'il commence.",
-            "The guardrails that stop overtrading before it starts.",
-          )}
+          title={t("tplan.limitsDiscipline")}
+          sub={t("tplan.theGuardrailsThatStop")}
         >
           <div className="mb-3 grid grid-cols-2 gap-3">
             <NumField
-              label={tr("Trades max / jour", "Max trades / day")}
+              label={t("tplan.maxTradesDay")}
               unit=""
               value={plan.limits.maxTradesPerDay}
               onChange={(v) =>
@@ -544,7 +506,7 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
               placeholder="3"
             />
             <NumField
-              label={tr("Stop après X pertes", "Stop after X losses")}
+              label={t("tplan.stopAfterXLosses")}
               unit=""
               value={plan.limits.stopAfterLosses}
               onChange={(v) =>
@@ -557,15 +519,12 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
             <Toggle
               checked={plan.limits.noNews}
               onChange={(v) => update((p) => ({ ...p, limits: { ...p.limits, noNews: v } }))}
-              label={tr(
-                "Pas de trade pendant les news à fort impact",
-                "No trading during high-impact news",
-              )}
+              label={t("tplan.noTradingDuringHigh")}
             />
             <Toggle
               checked={plan.limits.noRevenge}
               onChange={(v) => update((p) => ({ ...p, limits: { ...p.limits, noRevenge: v } }))}
-              label={tr("Pas de revenge trade — jamais", "No revenge trading — ever")}
+              label={t("tplan.noRevengeTradingEver")}
             />
           </div>
         </Section>
@@ -573,50 +532,37 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
 
       {/* ── Routine ── */}
       {partie === "routine" && (
-        <Section
-          icon={SunMedium}
-          title={tr("Routine", "Routine")}
-          sub={tr(
-            "Ce que tu fais avant, après, et chaque semaine.",
-            "What you do before, after, and every week.",
-          )}
-        >
+        <Section icon={SunMedium} title={t("tplan.routine")} sub={t("tplan.whatYouDoBefore")}>
           <div className="grid gap-3 md:grid-cols-3">
-            <Field label={tr("Avant la session", "Pre-market")}>
+            <Field label={t("tplan.preMarket")}>
               <Textarea
                 value={plan.routine.preMarket}
                 onChange={(e) =>
                   update((p) => ({ ...p, routine: { ...p.routine, preMarket: e.target.value } }))
                 }
-                placeholder={tr("Checklist, niveaux clés, news…", "Checklist, key levels, news…")}
+                placeholder={t("tplan.checklistKeyLevelsNews")}
                 rows={4}
                 className={inputCls}
               />
             </Field>
-            <Field label={tr("Après la session", "Post-market")}>
+            <Field label={t("tplan.postMarket")}>
               <Textarea
                 value={plan.routine.postMarket}
                 onChange={(e) =>
                   update((p) => ({ ...p, routine: { ...p.routine, postMarket: e.target.value } }))
                 }
-                placeholder={tr(
-                  "Journal, screenshots, note /10…",
-                  "Journal, screenshots, grade /10…",
-                )}
+                placeholder={t("tplan.journalScreenshotsGrade10")}
                 rows={4}
                 className={inputCls}
               />
             </Field>
-            <Field label={tr("Chaque semaine", "Weekly")}>
+            <Field label={t("tplan.weekly")}>
               <Textarea
                 value={plan.routine.weekly}
                 onChange={(e) =>
                   update((p) => ({ ...p, routine: { ...p.routine, weekly: e.target.value } }))
                 }
-                placeholder={tr(
-                  "Revue des trades, stats, leçons…",
-                  "Trade review, stats, lessons…",
-                )}
+                placeholder={t("tplan.tradeReviewStatsLessons")}
                 rows={4}
                 className={inputCls}
               />
@@ -641,15 +587,8 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
       >
         <Target className="h-4 w-4 shrink-0 text-[var(--tv-highlight)]" />
         <span className="min-w-0 flex-1">
-          <span className="block text-[13px] font-semibold text-white">
-            {tr("Mes objectifs", "My goals")}
-          </span>
-          <span className="tv-row-label block truncate">
-            {tr(
-              "Fixe tes objectifs — TradeVault génère ton plan d'action mensuel.",
-              "Set your goals — TradeVault generates your monthly action plan.",
-            )}
-          </span>
+          <span className="block text-[13px] font-semibold text-white">{t("tplan.myGoals")}</span>
+          <span className="tv-row-label block truncate">{t("tplan.setYourGoalsTradevault")}</span>
         </span>
         <ChevronRight className="h-4 w-4 shrink-0 text-slate-500" />
       </button>
@@ -665,13 +604,8 @@ export default function TradingPlan({ setPage }: { setPage: (p: Page) => void })
  * ligne vide en tête de page, en permanence. Ici il occupe une place qui
  * existe déjà.
  */
-function EtatSauvegarde({
-  etat,
-  tr,
-}: {
-  etat: "idle" | "saving" | "saved";
-  tr: (f: string, e: string) => string;
-}) {
+function EtatSauvegarde({ etat }: { etat: "idle" | "saving" | "saved" }) {
+  const { t } = useT();
   if (etat === "idle") return null;
   return (
     <span
@@ -684,12 +618,12 @@ function EtatSauvegarde({
       {etat === "saved" ? (
         <>
           <Check className="h-3 w-3" />
-          <span className="hidden sm:inline">{tr("Enregistré", "Saved")}</span>
+          <span className="hidden sm:inline">{t("tplan.saved")}</span>
         </>
       ) : (
         <>
           <Loader2 className="h-3 w-3 animate-spin" />
-          <span className="hidden sm:inline">{tr("Enregistrement…", "Saving…")}</span>
+          <span className="hidden sm:inline">{t("tplan.saving")}</span>
         </>
       )}
     </span>
@@ -884,17 +818,15 @@ function MarketChips({
 function SetupCard({
   setup,
   index,
-  fr,
   onChange,
   onDelete,
 }: {
   setup: PlanSetup;
   index: number;
-  fr: boolean;
   onChange: (s: PlanSetup) => void;
   onDelete: () => void;
 }) {
-  const tr = (f: string, e: string) => (fr ? f : e);
+  const { t } = useT();
   return (
     <div className="rounded-2xl bg-white/[0.03] border border-white/[0.07] p-4 space-y-2.5">
       <div className="flex items-center gap-2.5">
@@ -904,12 +836,12 @@ function SetupCard({
         <input
           value={setup.name}
           onChange={(e) => onChange({ ...setup, name: e.target.value })}
-          placeholder={tr("Nom du setup (ex : FVG London)", "Setup name (e.g.: FVG London)")}
+          placeholder={t("tplan.setupNameEG")}
           className="flex-1 bg-transparent text-sm font-bold text-white placeholder:text-slate-600 focus:outline-none"
         />
         <button
           onClick={onDelete}
-          aria-label={tr("Supprimer le setup", "Delete setup")}
+          aria-label={t("tplan.deleteSetup")}
           className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-600 hover:text-red-400 hover:bg-red-500/10 transition shrink-0"
         >
           <Trash2 className="w-3.5 h-3.5" />
@@ -919,17 +851,14 @@ function SetupCard({
         <Textarea
           value={setup.rules}
           onChange={(e) => onChange({ ...setup, rules: e.target.value })}
-          placeholder={tr("Conditions d'entrée / confluences…", "Entry conditions / confluences…")}
+          placeholder={t("tplan.entryConditionsConfluences")}
           rows={3}
           className={inputCls + " text-xs"}
         />
         <Textarea
           value={setup.invalidation}
           onChange={(e) => onChange({ ...setup, invalidation: e.target.value })}
-          placeholder={tr(
-            "Invalidation — quand NE PAS le prendre…",
-            "Invalidation — when NOT to take it…",
-          )}
+          placeholder={t("tplan.invalidationWhenNotTo")}
           rows={3}
           className={inputCls + " text-xs"}
         />

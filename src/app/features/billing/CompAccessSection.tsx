@@ -60,7 +60,7 @@ export function useIsAdmin(): boolean {
 }
 
 export default function CompAccessSection() {
-  const { lang } = useT();
+  const { t, lang } = useT();
   const fr = lang === "fr";
   const { toast } = useToast();
   const [grants, setGrants] = useState<Grant[]>([]);
@@ -81,7 +81,7 @@ export default function CompAccessSection() {
   const add = async () => {
     const clean = email.trim().toLowerCase();
     if (!clean.includes("@")) {
-      toast(fr ? "Adresse e-mail invalide" : "Invalid email address", "error");
+      toast(t("comp.invalidEmailAddress"), "error");
       return;
     }
     setBusy(true);
@@ -92,17 +92,11 @@ export default function CompAccessSection() {
     });
     setBusy(false);
     if (!r?.ok) {
-      toast(fr ? "Échec de l'ajout" : "Grant failed", "error");
+      toast(t("comp.grantFailed"), "error");
       return;
     }
     toast(
-      r.applied
-        ? fr
-          ? "Accès activé immédiatement"
-          : "Access granted immediately"
-        : fr
-          ? "Accès enregistré — actif à son inscription"
-          : "Saved — applies when they sign up",
+      r.applied ? t("comp.accessGrantedImmediately") : t("comp.savedAppliesWhenThey"),
       "success",
     );
     setEmail("");
@@ -124,12 +118,8 @@ export default function CompAccessSection() {
           <Gift className="h-4 w-4" />
         </span>
         <div className="min-w-0">
-          <h2 className="tv-title">{fr ? "Accès offert" : "Complimentary access"}</h2>
-          <p className="tv-row-label">
-            {fr
-              ? "Premium gratuit pour une adresse e-mail, avec ou sans compte existant."
-              : "Free premium for an email address, with or without an existing account."}
-          </p>
+          <h2 className="tv-title">{t("comp.complimentaryAccess")}</h2>
+          <p className="tv-row-label">{t("comp.freePremiumForAn")}</p>
         </div>
       </div>
 
@@ -143,7 +133,7 @@ export default function CompAccessSection() {
         />
         <SelectPicker
           variant="field"
-          label={fr ? "Offre" : "Plan"}
+          label={t("comp.plan")}
           value={plan}
           onChange={(v) => setPlan(v as PaidPlan)}
           className="h-10"
@@ -155,19 +145,19 @@ export default function CompAccessSection() {
         />
         <Button onClick={add} disabled={busy}>
           <Plus className="h-4 w-4" />
-          {fr ? "Ajouter" : "Add"}
+          {t("comp.add")}
         </Button>
       </div>
 
       <Input
         value={note}
         onChange={(e) => setNote(e.target.value)}
-        placeholder={fr ? "Note (facultatif) — ex. « partenariat Instagram »" : "Note (optional)"}
+        placeholder={t("comp.noteOptional")}
       />
 
       {grants.length === 0 ? (
         <p className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-3 text-[13px] text-slate-500">
-          {fr ? "Aucun accès offert pour l'instant." : "No complimentary access yet."}
+          {t("comp.noComplimentaryAccessYet")}
         </p>
       ) : (
         <div className="space-y-1.5">
@@ -187,7 +177,7 @@ export default function CompAccessSection() {
               <button
                 onClick={() => revoke(g.email)}
                 disabled={busy}
-                aria-label={fr ? "Retirer l'accès" : "Revoke access"}
+                aria-label={t("comp.revokeAccess")}
                 className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-slate-500 transition hover:bg-red-500/10 hover:text-red-400 disabled:opacity-50"
               >
                 <Trash2 className="h-4 w-4" />

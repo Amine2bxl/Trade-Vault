@@ -31,8 +31,7 @@ export default function UpgradeSuccessOverlay({
   onClose: () => void;
   onExplore: () => void;
 }) {
-  const { lang } = useT();
-  const fr = lang === "fr";
+  const { t } = useT();
 
   const pieces = useMemo<Piece[]>(
     () =>
@@ -74,7 +73,7 @@ export default function UpgradeSuccessOverlay({
       <div className="relative w-full max-w-sm rounded-3xl border border-white/[0.12] bg-[#08111e]/95 p-6 text-center shadow-[0_40px_120px_-40px_rgba(0,0,0,.9)] backdrop-blur-xl animate-scale-in">
         <button
           onClick={onClose}
-          aria-label={fr ? "Fermer" : "Close"}
+          aria-label={t("upgradeOk.close")}
           className="absolute right-4 top-4 grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:bg-white/[0.06] hover:text-white transition"
         >
           <X className="h-4 w-4" />
@@ -85,12 +84,10 @@ export default function UpgradeSuccessOverlay({
         </span>
 
         <h2 className="mt-4 font-display text-2xl font-extrabold tracking-tight text-white">
-          {fr ? "Bienvenue dans Pro" : "Welcome to Pro"}
+          {t("upgradeOk.welcomeToPro")}
         </h2>
         <p className="mx-auto mt-1.5 max-w-[260px] text-[13px] leading-snug text-slate-400">
-          {fr
-            ? "Toutes les analyses sont débloquées : tes erreurs chiffrées, Monte-Carlo, la saisonnalité."
-            : "Everything is unlocked: your mistakes priced, Monte Carlo, seasonality."}
+          {t("upgradeOk.everythingIsUnlockedYour")}
         </p>
 
         <button
@@ -98,13 +95,13 @@ export default function UpgradeSuccessOverlay({
           className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl tv-accent-fill px-5 py-3 text-sm font-bold transition"
         >
           <Sparkles className="h-4 w-4" />
-          {fr ? "Voir mes analyses" : "See my analytics"}
+          {t("upgradeOk.seeMyAnalytics")}
         </button>
         <button
           onClick={onClose}
           className="mt-2 w-full rounded-xl px-4 py-2 text-[12px] font-semibold text-slate-500 hover:text-slate-300 transition"
         >
-          {fr ? "Explorer l'app" : "Browse the app"}
+          {t("upgradeOk.browseTheApp")}
         </button>
       </div>
     </div>
