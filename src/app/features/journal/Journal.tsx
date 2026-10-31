@@ -17,6 +17,7 @@ import {
   Cable,
 } from "@/shared/ui/icons";
 import { Trade, isBreakEven } from "@/app/types";
+import { measuredR } from "@/domain/trade";
 import {
   computeStats,
   formatPct,
@@ -456,7 +457,10 @@ export default function Journal({
               tone={summary.totalPnl >= 0 ? "pos" : "neg"}
             />
             <Kpi label={t("stats.winRate")} value={formatPct(summary.winRate)} />
-            <Kpi label={t("dashboard.avgRR")} value={`${summary.avgRR.toFixed(2)}R`} />
+            <Kpi
+              label={t("dashboard.avgRR")}
+              value={summary.avgRR === null ? "—" : `${summary.avgRR.toFixed(2)}R`}
+            />
             <Kpi
               /* « P&L » + la mention « BEST » se lisaient « P&L BEST », qui
                n'est le nom de rien. La tuile a déjà un libellé pour ça. */
@@ -690,18 +694,25 @@ export default function Journal({
                       >
                         {formatPnl(trade.pnl)}
                       </span>
-                      <span
-                        className={cn(
-                          "tv-figure tv-figure-secondary block text-xs",
-                          be
-                            ? "text-slate-400"
-                            : trade.rMultiple >= 0
-                              ? "text-emerald-400/60"
-                              : "text-red-400/60",
-                        )}
-                      >
-                        {trade.rMultiple.toFixed(1)}R
-                      </span>
+                      {(() => {
+                        // R MESURÉ seulement : « 0.0R » pour un risque inconnu
+                        // se lisait comme un trade neutre.
+                        const r = measuredR(trade);
+                        return (
+                          <span
+                            className={cn(
+                              "tv-figure tv-figure-secondary block text-xs",
+                              be || r === null
+                                ? "text-slate-400"
+                                : r >= 0
+                                  ? "text-emerald-400/60"
+                                  : "text-red-400/60",
+                            )}
+                          >
+                            {r === null ? "—" : `${r.toFixed(1)}R`}
+                          </span>
+                        );
+                      })()}
                     </span>
                   </button>
                   <div className="flex min-w-0 items-center gap-2 border-t border-[var(--tv-border)] px-3">
@@ -832,22 +843,29 @@ export default function Journal({
                           </span>
                         </td>
                         <td className="px-4 py-1.5" onClick={(e) => e.stopPropagation()}>
-                          <QuickEditCell
-                            value={trade.rMultiple}
-                            suffix="R"
-                            decimals={2}
-                            disabled={be || !onQuickEdit}
-                            onCommit={(v) => onQuickEdit?.(trade.id, { rMultiple: v })}
-                            title={t("journal.quickEditR")}
-                            className={cn(
-                              "tv-figure text-sm",
-                              be
-                                ? "text-slate-300"
-                                : trade.rMultiple >= 0
-                                  ? "text-emerald-400"
-                                  : "text-red-400",
-                            )}
-                          />
+                          {measuredR(trade) === null ? (
+                            // Sans R mesuré (risque inconnu, import broker ou à
+                            // relire), rien à éditer ici : le formulaire du
+                            // trade garde le P&L observé et en déduit le R.
+                            <span className="tv-figure text-sm text-slate-500">—</span>
+                          ) : (
+                            <QuickEditCell
+                              value={trade.rMultiple}
+                              suffix="R"
+                              decimals={2}
+                              disabled={be || !onQuickEdit}
+                              onCommit={(v) => onQuickEdit?.(trade.id, { rMultiple: v })}
+                              title={t("journal.quickEditR")}
+                              className={cn(
+                                "tv-figure text-sm",
+                                be
+                                  ? "text-slate-300"
+                                  : trade.rMultiple >= 0
+                                    ? "text-emerald-400"
+                                    : "text-red-400",
+                              )}
+                            />
+                          )}
                         </td>
                         <td className="px-4 py-1.5">
                           <span

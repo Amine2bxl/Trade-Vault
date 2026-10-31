@@ -48,6 +48,8 @@ export interface CandidateAction {
   rationaleFacts: {
     kind: string;
     clusterId: MistakeClusterId | null;
+    /** Unité de `value`/`baseline` : `avg_r` en R, les autres sont des parts. */
+    metric: string;
     n: number;
     comparisonN: number | null;
     comparisons: number;
@@ -69,6 +71,7 @@ export function deriveAction(pattern: DetectedPattern): CandidateAction | null {
   const facts: CandidateAction["rationaleFacts"] = {
     kind: pattern.kind,
     clusterId: pattern.clusterId,
+    metric: pattern.evidence.metric,
     n: pattern.evidence.n,
     comparisonN: pattern.evidence.comparisonN,
     comparisons: pattern.evidence.comparisons,

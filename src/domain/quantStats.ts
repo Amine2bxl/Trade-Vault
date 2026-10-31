@@ -1,4 +1,5 @@
-import { Trade, isBreakEven } from "./trade";
+import { Trade, isBreakEven, measuredR } from "./trade";
+import { compareRealizedChronological, hasVerifiedRealizedOrder } from "./tradeOrder";
 
 // ── Trading sessions (ET, ICT convention) ──────────────────────────────────
 // Times entered in the journal are treated as US Eastern (the reference for
@@ -6,68 +7,93 @@ import { Trade, isBreakEven } from "./trade";
 // overnight remainder.
 export type TradingSession = "asia" | "london" | "newyork";
 
+/** Horaires du Journal : 24 h, heure minute strictement valide, sans seconde inférée. */
+function entryMinute(entryTime: string): number | null {
+  const matched = /^([01]?\d|2[0-3]):([0-5]\d)$/.exec(entryTime.trim());
+  return matched ? Number(matched[1]) * 60 + Number(matched[2]) : null;
+}
+
 export function getSession(entryTime: string): TradingSession | null {
-  if (!entryTime) return null;
-  const [h, m] = entryTime.split(":").map(Number);
-  if (Number.isNaN(h) || Number.isNaN(m)) return null;
-  const mins = h * 60 + m;
+  const mins = entryMinute(entryTime);
+  if (mins === null) return null;
   if (mins >= 120 && mins < 480) return "london";
   if (mins >= 480 && mins < 990) return "newyork";
   return "asia";
 }
 
-// ── Macro events (auto-derived from the trade date) ────────────────────────
-// NFP: first Friday of the month (deterministic BLS rule).
-// FOMC: hardcoded decision days (published Fed schedule 2024–2026).
-const FOMC_DECISION_DAYS = new Set([
-  "2024-01-31",
-  "2024-03-20",
-  "2024-05-01",
-  "2024-06-12",
-  "2024-07-31",
-  "2024-09-18",
-  "2024-11-07",
-  "2024-12-18",
-  "2025-01-29",
-  "2025-03-19",
-  "2025-05-07",
-  "2025-06-18",
-  "2025-07-30",
-  "2025-09-17",
-  "2025-10-29",
-  "2025-12-10",
-  "2026-01-28",
-  "2026-03-18",
-  "2026-04-29",
-  "2026-06-17",
-  "2026-07-29",
-  "2026-09-16",
-  "2026-10-28",
-  "2026-12-09",
-]);
+/** Broker and unreviewed CSV display-clock times are not evidence of
+ * America/New_York timestamps. Persisted timezone provenance is a Lot 1 gate.
+ * Manual journal entries follow TradeVault's existing ET/ICT convention. */
+export function hasUnverifiedEtTime(trade: Pick<Trade, "broker" | "reviewPending">): boolean {
+  return Boolean(trade.broker || trade.reviewPending);
+}
 
-export function getMacroEvents(date: string): string[] {
-  const events: string[] = [];
-  const d = new Date(date + "T12:00:00");
-  if (Number.isNaN(d.getTime())) return events;
-  if (d.getDay() === 5 && d.getDate() <= 7) events.push("NFP");
-  if (FOMC_DECISION_DAYS.has(date)) events.push("FOMC");
-  return events;
+export function getSessionForTrade(
+  trade: Pick<Trade, "entryTime" | "broker" | "reviewPending">,
+): TradingSession | null {
+  return hasUnverifiedEtTime(trade) ? null : getSession(trade.entryTime);
+}
+
+// ── Événements macro confirmés ─────────────────────────────────────────────
+// Les dates de NFP/FOMC ne sont jamais inférées à partir du calendrier civil.
+// Elles proviennent uniquement du cache économique externe historisé.
+export interface VerifiedMacroEvent {
+  startsAt: string;
+  title: string;
+  source: string;
+}
+
+/** Jour de publication à New York, indépendant du fuseau de l'appareil. */
+function macroDayNy(instant: Date): string {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(instant);
+  const part = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
+  return `${part("year")}-${part("month")}-${part("day")}`;
+}
+
+/** Ne renvoie aucun badge à partir d'une date seule ni d'un calendrier approximatif. */
+export function getMacroEvents(date: string, events: readonly VerifiedMacroEvent[] = []): string[] {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return [];
+  const found = new Set<string>();
+  for (const event of events) {
+    if (event.source === "builtin") continue;
+    const instant = new Date(event.startsAt);
+    if (Number.isNaN(instant.getTime()) || macroDayNy(instant) !== date) continue;
+    const title = event.title.toLowerCase();
+    if (/non[ -]?farm (?:payrolls|employment change)/.test(title) && !title.includes("adp"))
+      found.add("NFP");
+    if (/\bfomc\b|federal funds rate/.test(title)) found.add("FOMC");
+  }
+  return [...found];
 }
 
 // ── Quant metrics ───────────────────────────────────────────────────────────
 /** Trades décisifs requis avant d'afficher Kelly (cf. commentaire du calcul). */
 export const MIN_KELLY_SAMPLE = 30;
 
+/** One verified account-return observation for every included trading session,
+ * including zero-return sessions. Cashflows must be neutralized upstream.
+ * The Data Integrity lot will supply this source; trade P&L is not a proxy. */
+export interface VerifiedDailyReturns {
+  basis: "verified-account-equity";
+  dailyReturns: readonly number[];
+}
+
 export interface QuantStats {
   /** Average $ result per trade (all trades, BE included) */
   expectancy: number;
-  /** Average R result per trade (pnl / risk, trades with risk > 0) */
-  expectancyR: number;
-  /** Annualized Sharpe on daily PnL (null when < 10 trading days or flat) */
+  /** R moyen par trade, sur les seuls trades au R mesurable (`measuredR`). */
+  expectancyR: number | null;
+  /** Annualized Sharpe on verified daily account returns only. */
   sharpe: number | null;
-  /** Annualized Sortino on daily PnL (99 cap when no losing day) */
+  sharpeStatus: "unverified_returns" | "insufficient" | "no_variance" | "available";
+  /** Sortino non défini si aucun risque baissier observé (jamais de plafond fictif). */
   sortino: number | null;
+  sortinoStatus: "unverified_returns" | "insufficient" | "no_downside" | "available";
   /** Max drawdown as % of (starting balance + peak equity); null without starting balance */
   maxDrawdownPct: number | null;
   /** Kelly fraction (indication only); null when wins or losses are missing */
@@ -93,12 +119,18 @@ export interface QuantStats {
   cleanTrades: number;
 }
 
-export function computeQuantStats(trades: Trade[], startingBalance = 0): QuantStats {
+export function computeQuantStats(
+  trades: Trade[],
+  startingBalance = 0,
+  verifiedReturns?: VerifiedDailyReturns,
+): QuantStats {
   const empty: QuantStats = {
     expectancy: 0,
-    expectancyR: 0,
+    expectancyR: null,
     sharpe: null,
+    sharpeStatus: "unverified_returns",
     sortino: null,
+    sortinoStatus: "unverified_returns",
     maxDrawdownPct: null,
     kelly: null,
     bestDayShare: null,
@@ -111,11 +143,9 @@ export function computeQuantStats(trades: Trade[], startingBalance = 0): QuantSt
   const totalPnl = trades.reduce((s, t) => s + t.pnl, 0);
   const expectancy = totalPnl / trades.length;
 
-  const withRisk = trades.filter((t) => t.riskAmount > 0);
+  const rValues = trades.map(measuredR).filter((r): r is number => r !== null);
   const expectancyR =
-    withRisk.length > 0
-      ? withRisk.reduce((s, t) => s + t.pnl / t.riskAmount, 0) / withRisk.length
-      : 0;
+    rValues.length > 0 ? rValues.reduce((s, r) => s + r, 0) / rValues.length : null;
 
   // Daily PnL series in date order
   const dailyMap: Record<string, number> = {};
@@ -125,52 +155,84 @@ export function computeQuantStats(trades: Trade[], startingBalance = 0): QuantSt
 
   let sharpe: number | null = null;
   let sortino: number | null = null;
-  if (daily.length >= 10) {
-    const mean = daily.reduce((s, x) => s + x, 0) / daily.length;
-    const variance = daily.reduce((s, x) => s + (x - mean) ** 2, 0) / daily.length;
-    const std = Math.sqrt(variance);
-    if (std > 0) sharpe = (mean / std) * Math.sqrt(252);
-    const downside = Math.sqrt(daily.reduce((s, x) => s + Math.min(x, 0) ** 2, 0) / daily.length);
-    if (downside > 0) sortino = (mean / downside) * Math.sqrt(252);
-    else if (mean > 0) sortino = 99;
+  let sharpeStatus: QuantStats["sharpeStatus"] = "unverified_returns";
+  let sortinoStatus: QuantStats["sortinoStatus"] = "unverified_returns";
+  const verified =
+    verifiedReturns?.basis === "verified-account-equity" &&
+    verifiedReturns.dailyReturns.every((value) => Number.isFinite(value))
+      ? verifiedReturns.dailyReturns
+      : null;
+  if (verified) {
+    sharpeStatus = "insufficient";
+    sortinoStatus = "insufficient";
+    if (verified.length >= 10) {
+      // These are account returns with cashflows neutralized and flat sessions
+      // included. An annualization of trade-day PnL would be misleading.
+      const mean = verified.reduce((s, x) => s + x, 0) / verified.length;
+      const variance = verified.reduce((s, x) => s + (x - mean) ** 2, 0) / (verified.length - 1);
+      const std = Math.sqrt(variance);
+      sharpeStatus = "no_variance";
+      sortinoStatus = "no_downside";
+      // A constant return series has no volatility even if floating-point
+      // summation leaves an epsilon-sized nonzero standard deviation.
+      const varies = verified.some((value) => value !== verified[0]);
+      if (varies && std > 0) {
+        sharpe = (mean / std) * Math.sqrt(252);
+        sharpeStatus = "available";
+      }
+      const downside = Math.sqrt(
+        verified.reduce((s, x) => s + Math.min(x, 0) ** 2, 0) / verified.length,
+      );
+      if (downside > 0) {
+        sortino = (mean / downside) * Math.sqrt(252);
+        sortinoStatus = "available";
+      }
+    }
   }
 
   // Max drawdown (trade order by date) + % + recovery
-  const sorted = [...trades].sort((a, b) => a.date.localeCompare(b.date));
+  const sorted = [...trades].sort(
+    (a, b) => compareRealizedChronological(a, b) || a.id.localeCompare(b.id),
+  );
+  const realizedOrderVerified = hasVerifiedRealizedOrder(trades);
   let equity = 0,
     peak = 0,
     maxDD = 0,
     peakAtMaxDD = 0;
-  let troughDate = "";
-  for (const t of sorted) {
+  let troughIndex = -1;
+  for (let i = 0; i < sorted.length; i++) {
+    const t = sorted[i];
     equity += t.pnl;
     if (equity > peak) peak = equity;
     const dd = peak - equity;
     if (dd > maxDD) {
       maxDD = dd;
       peakAtMaxDD = peak;
-      troughDate = t.date;
+      troughIndex = i;
     }
   }
   const ddBase = startingBalance > 0 ? startingBalance + peakAtMaxDD : 0;
-  const maxDrawdownPct = maxDD > 0 && ddBase > 0 ? maxDD / ddBase : null;
+  // If an initial balance is known and there is no drawdown, the observed
+  // drawdown ratio is exactly 0; it is not an unavailable measurement.
+  const maxDrawdownPct = realizedOrderVerified && ddBase > 0 ? maxDD / ddBase : null;
 
   let recoveryDays: number | null = null;
-  if (maxDD > 0 && troughDate) {
-    // First date after the trough where equity makes a new high vs the pre-drawdown peak
-    let eq = 0,
-      recoveredOn: string | null = null;
-    for (const t of sorted) {
-      eq += t.pnl;
-      if (t.date > troughDate && eq >= peakAtMaxDD) {
-        recoveredOn = t.date;
+  if (realizedOrderVerified && maxDD > 0 && troughIndex >= 0) {
+    // Recompute the equity *after the actual trough trade*, not simply after
+    // its calendar date. Recovery within the same session is 0 days.
+    let eq = 0;
+    let recoveredOn: string | null = null;
+    for (let i = 0; i < sorted.length; i++) {
+      eq += sorted[i].pnl;
+      if (i > troughIndex && eq >= peakAtMaxDD) {
+        recoveredOn = sorted[i].date;
         break;
       }
     }
+    const troughDate = sorted[troughIndex].date;
     recoveryDays = recoveredOn
       ? Math.round(
-          (new Date(recoveredOn + "T12:00:00").getTime() -
-            new Date(troughDate + "T12:00:00").getTime()) /
+          (Date.parse(recoveredOn + "T12:00:00Z") - Date.parse(troughDate + "T12:00:00Z")) /
             86400000,
         )
       : -1;
@@ -217,7 +279,9 @@ export function computeQuantStats(trades: Trade[], startingBalance = 0): QuantSt
     expectancy,
     expectancyR,
     sharpe,
+    sharpeStatus,
     sortino,
+    sortinoStatus,
     maxDrawdownPct,
     kelly,
     bestDayShare,
@@ -246,7 +310,7 @@ function addToBucket(map: Record<string, BucketStat>, key: string, t: Trade) {
 export function statsBySession(trades: Trade[]): Record<TradingSession, BucketStat> {
   const map: Record<string, BucketStat> = {};
   for (const t of trades) {
-    const s = getSession(t.entryTime);
+    const s = getSessionForTrade(t);
     if (s) addToBucket(map, s, t);
   }
   return {
@@ -259,10 +323,10 @@ export function statsBySession(trades: Trade[]): Record<TradingSession, BucketSt
 export function statsByHour(trades: Trade[]): Record<number, BucketStat> {
   const map: Record<string, BucketStat> = {};
   for (const t of trades) {
-    if (!t.entryTime) continue;
-    const h = parseInt(t.entryTime.split(":")[0], 10);
-    if (Number.isNaN(h)) continue;
-    addToBucket(map, String(h), t);
+    if (hasUnverifiedEtTime(t)) continue;
+    const minute = entryMinute(t.entryTime);
+    if (minute === null) continue;
+    addToBucket(map, String(Math.floor(minute / 60)), t);
   }
   const out: Record<number, BucketStat> = {};
   for (const [k, v] of Object.entries(map)) out[Number(k)] = v;
@@ -273,11 +337,12 @@ export function statsByHour(trades: Trade[]): Record<number, BucketStat> {
 export function dayHourMatrix(trades: Trade[]): Record<string, BucketStat> {
   const map: Record<string, BucketStat> = {};
   for (const t of trades) {
-    if (!t.entryTime) continue;
-    const h = parseInt(t.entryTime.split(":")[0], 10);
-    if (Number.isNaN(h)) continue;
-    const dow = new Date(t.date + "T12:00:00").getDay();
-    addToBucket(map, `${dow}-${h}`, t);
+    if (hasUnverifiedEtTime(t)) continue;
+    const minute = entryMinute(t.entryTime);
+    if (minute === null || !/^\d{4}-\d{2}-\d{2}$/.test(t.date)) continue;
+    const dow = new Date(t.date + "T12:00:00Z").getUTCDay();
+    if (!Number.isFinite(dow)) continue;
+    addToBucket(map, `${dow}-${Math.floor(minute / 60)}`, t);
   }
   return map;
 }

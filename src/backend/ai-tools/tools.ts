@@ -1,5 +1,5 @@
 import type { ToolDefinition, ToolContext } from "@/modules/ai/tools/types";
-import type { Trade } from "@/domain/trade";
+import { measuredR, type Trade } from "@/domain/trade";
 import { serviceClient } from "@/backend/billing.server";
 import { loadTradeNotes, loadTradesWithMeta, type AnyClient } from "./trades";
 import {
@@ -108,6 +108,12 @@ function depuis(jours: number): string {
 }
 
 const arrondi = (n: number) => Math.round(n * 100) / 100;
+/** Le R que le modèle peut citer : mesuré (`measuredR`), sinon `null` — jamais
+ *  le 0 de compatibilité stocké pour un trade sans risque connu. */
+const rMesure = (t: Trade): number | null => {
+  const r = measuredR(t);
+  return r === null ? null : arrondi(r);
+};
 
 /** Le bloc de fenêtre commun à toutes les sorties : sans lui, le modèle citerait
  *  un chiffre sans dire sur quoi il porte. */
@@ -217,10 +223,10 @@ export const getTrades: ToolDefinition = {
         symbol: t.symbol,
         direction: t.direction,
         pnl: arrondi(t.pnl),
-        rMultiple: arrondi(t.rMultiple),
+        rMultiple: rMesure(t),
         strategy: t.strategy || null,
         mistakes: t.mistakes,
-        setupQuality: t.setupQuality,
+        setupQuality: t.reviewPending ? null : t.setupQuality,
         entryTime: t.entryTime || null,
         // Les notes du trader : sans elles, « qu'est-ce que j'avais écrit sur ce
         // trade ? » restait sans réponse. Tronquées — la sortie revient au prompt.
@@ -291,13 +297,15 @@ export const getStats: ToolDefinition = {
       breakEven: s.breakEven,
       avgWin: arrondi(s.avgWin),
       avgLoss: arrondi(s.avgLoss),
-      profitFactor: arrondi(s.profitFactor),
-      avgRR: arrondi(s.avgRR),
-      maxDrawdown: arrondi(s.maxDrawdown),
+      profitFactor: s.profitFactor === null ? null : arrondi(s.profitFactor),
+      avgRR: s.avgRR === null ? null : arrondi(s.avgRR),
+      rSampleSize: s.rSampleSize,
+      maxDrawdown: s.maxDrawdownOrderVerified ? arrondi(s.maxDrawdown) : null,
+      maxDrawdownOrderVerified: s.maxDrawdownOrderVerified,
       currentStreak: s.currentStreak,
       currentStreakType: s.currentStreakType,
       expectancy: arrondi(q.expectancy),
-      expectancyR: arrondi(q.expectancyR),
+      expectancyR: q.expectancyR === null ? null : arrondi(q.expectancyR),
       sharpe: q.sharpe === null ? null : arrondi(q.sharpe),
       sortino: q.sortino === null ? null : arrondi(q.sortino),
       maxDrawdownPct: q.maxDrawdownPct === null ? null : arrondi(q.maxDrawdownPct),
@@ -373,6 +381,8 @@ export const getMistakes: ToolDefinition = {
           : fenetre(jours, trades),
       totalIncidents: b.totalIncidents,
       totalCost: arrondi(b.totalCost),
+      costDefinition:
+        "Net realized P&L on distinct trades with one or more self-reported mistake tags. Not a causal loss estimate; per-tag P&L overlaps and must not be summed.",
       tradesWithMistakes: b.tradesWithMistakes,
       cleanTrades: b.cleanTrades,
       cleanWinRatePct: b.cleanWinRate === null ? null : arrondi(b.cleanWinRate * 100),
@@ -466,12 +476,14 @@ export const getEdgeScore: ToolDefinition = {
       windowTradedDays: EDGE_WINDOW_DAYS,
       tradedDays: e.tradedDays,
       cleanDays: e.cleanDays,
+      verifiedDays: e.verifiedDays,
+      coveragePct: e.coveragePct,
       weakest: e.weakest,
       subs: e.subs,
       /* La routine vient de la checklist, stockée sur l'APPAREIL du trader :
          elle n'existe pas côté serveur. Le dire évite que Jarvis interprète un
          `null` comme « tu ne fais jamais ta routine ». */
-      note: "The `routine` component is device-local and unavailable server-side; treat a null value as unmeasured, never as zero.",
+      note: "Edge Score v2 needs time-valid verified rules and reconstructed balances at trade entry. Without complete evidence its grade remains null. Device-local checklist data is never used to grade.",
     };
   },
 };
@@ -783,7 +795,7 @@ export const getDay: ToolDefinition = {
         symbol: t.symbol,
         direction: t.direction,
         pnl: arrondi(t.pnl),
-        rMultiple: arrondi(t.rMultiple),
+        rMultiple: rMesure(t),
         strategy: t.strategy || null,
         mistakes: t.mistakes,
         notes: notes?.get(t.id)?.slice(0, LIMITES.note) ?? null,

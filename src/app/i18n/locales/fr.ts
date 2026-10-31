@@ -1108,7 +1108,7 @@ const fr: Dict = {
   "dashboard.noTradesCta":
     "Aucun trade pour le moment. Cliquez sur « Ajouter un trade » pour commencer !",
   "dashboard.riskSuffix": "de risque",
-  "dashboard.avgRR": "R:R moyen",
+  "dashboard.avgRR": "R moyen réalisé",
   "dashboard.bestWorst": "Meilleur / Pire",
   "dashboard.loadError": "Certaines données n'ont pas pu être chargées - vérifie ta connexion.",
 
@@ -1116,14 +1116,14 @@ const fr: Dict = {
   "copilot.title": "Copilote du jour",
   "copilot.intro": "Ton score de discipline, la règle à tenir aujourd'hui, ton objectif du mois.",
   "copilot.explain":
-    "Mesure ta discipline (plan respecté, risque, régularité) sur tes 10 derniers jours tradés — jamais ton P&L.",
+    "Conformité aux règles et risque à l’entrée uniquement s’ils sont historiquement vérifiés : au moins 10 trades sur 5 séances et des preuves complètes. Les checklists déclaratives ne sont pas notées.",
   "copilot.edgeLabel": "Score d'Edge",
   "copilot.trendTitle": "Ta trajectoire de discipline sur les dernières sessions",
-  "copilot.scoreBuilding": "Score en construction - logge plus de trades",
-  "copilot.cleanDays": "Jours propres",
+  "copilot.scoreBuilding": "Preuves insuffisantes — aucune note",
+  "copilot.cleanDays": "Jours vérifiés sans violation",
   "copilot.cleanDaysWord": "jours propres",
   "copilot.jarvisBuilding":
-    "Pas encore assez de données récentes — logge tes trades et je note ta discipline.",
+    "Le respect historique des règles et le risque à l’entrée ne sont pas encore vérifiables. Aucune note sans preuves suffisantes.",
   "copilot.obsCleanTrades": "Tu coches beaucoup d'erreurs sur tes trades récents.",
   "copilot.obsRisk": "Ton sizing a récemment dépassé ta limite.",
   "copilot.obsRoutine": "Ta routine pré-market a été irrégulière.",
@@ -1410,7 +1410,10 @@ const fr: Dict = {
   "quant.expectancy": "Espérance",
   "quant.cleanTrades": "Trades sans erreur",
   "quant.needTenDays": "≥10 jours de trading requis",
-  "quant.annualized": "annualisé, PnL journalier",
+  "quant.noDownside": "aucune variation baissière observée",
+  "quant.verifiedReturnsNeeded": "rendements journaliers du compte vérifiés requis",
+  "quant.noVariance": "aucune variation des rendements vérifiés",
+  "quant.annualized": "annualisé à partir des rendements journaliers vérifiés",
   "quant.kellyHint": "indicatif - à partir de 30 trades",
   "quant.consistency": "Régularité",
   "quant.bestDay": "meilleur jour",
@@ -1418,15 +1421,16 @@ const fr: Dict = {
   "quant.inDrawdown": "en drawdown",
   "quant.daysShort": "j",
   "quant.recoverySub": "du drawdown au nouveau sommet",
-  "quant.avgRRSub": "ratio gain/risque moyen visé",
+  "quant.avgRRSub": "R réalisé moyen, pertes incluses",
+  "quant.rSample": "{n} trades sur {total} au risque connu",
   "quant.infoAvgRR":
-    "En moyenne, combien tu vises pour chaque unité risquée. 2R = viser 2 pour 1 risqué.",
+    "R réalisé moyen par trade, avec les pertes négatives. +0,2R signifie un gain moyen observé de 0,2 unité de risque initial par trade.",
   "quant.infoExpectancy":
     "Ce que rapporte un trade moyen, gains et pertes confondus. Positif = ton système gagne de l'argent sur la durée.",
   "quant.infoSharpe":
-    "Le rendement comparé à l'ampleur des secousses. Plus c'est haut, plus les gains sont réguliers. Au-dessus de 1 c'est bien, au-dessus de 2 excellent.",
+    "Moyenne annualisée des rendements journaliers du compte divisée par leur écart-type. Nécessite un historique de capital complet, corrigé des dépôts et retraits ; les seuls jours tradés ne suffisent pas.",
   "quant.infoSortino":
-    "Comme le Sharpe, mais ne compte que les baisses — il ignore la volatilité à la hausse. Récompense les systèmes qui limitent les pertes.",
+    "Rendement journalier moyen vérifié et annualisé, rapporté à la volatilité baissière. Aucune valeur n’est affichée sans une série complète corrigée des dépôts et retraits.",
   "quant.infoKelly":
     "La part du compte que les maths suggèrent de risquer par trade pour croître le plus vite. La plupart n'en utilisent qu'une fraction par prudence.",
   "quant.infoConsistency":
@@ -1450,6 +1454,8 @@ const fr: Dict = {
   "analytics.newsDaysUncovered":
     "{n} trades mis de côté : leur semaine n'est pas encore au calendrier (récupération en cours).",
   "analytics.byHourSub": "Barres PnL et courbe de réussite (ET)",
+  "analytics.timeZoneUnverified":
+    "Les heures broker et CSV non relues sont exclues des sessions ET tant que leur fuseau source n’est pas vérifié.",
 
   "session.london": "Londres",
   "session.newyork": "New York",
@@ -1632,6 +1638,8 @@ const fr: Dict = {
   "seasonality.bestDay": "Meilleur jour",
   "seasonality.bestHour": "Meilleure heure",
   "seasonality.empty": "Pas encore assez de données",
+  "seasonality.verifiedMarketUnavailable":
+    "Seules les statistiques calculées à partir de ton journal sont affichées. Les rendements saisonniers de marché resteront indisponibles sans données de prix historiques vérifiées.",
   "seasonality.emptySub":
     "Journalise au moins 5 trades et tes patterns saisonniers apparaîtront ici.",
   "seasonality.trades": "trades",
@@ -2100,6 +2108,14 @@ const fr: Dict = {
   "reports.available": "Disponibles depuis ton historique",
   "reports.availableSub": "{n} mois clos avec des trades, sans rapport pour l'instant.",
   "reports.upToDate": "Chaque mois clos a son rapport.",
+  "reports.tkMistakeObserved": "Trades marqués « {mistake} » : {n} mentions, P&L cumulé {pnl}.",
+  "reports.mistakesObserved": "P&L des trades avec erreurs déclarées",
+  "reports.mistakesNote":
+    "Un trade peut comporter plusieurs erreurs. Ce P&L observé ne mesure pas des pertes évitables.",
+  "reports.legacyWarning":
+    "Ce rapport archivé utilise d'anciens calculs. Les métriques non vérifiables sont masquées jusqu'au recalcul.",
+  "reports.recalculate": "Recalculer",
+  "reports.allAccounts": "Tous les comptes",
   "reports.currentMonth": "Mois en cours",
   "reports.inProgress": "En cours",
   "reports.final": "Rapport finalisé",
@@ -2448,6 +2464,7 @@ const fr: Dict = {
     "Tradovate n'a pas répondu à temps pour la première synchro. TradeVault réessaie seul d'ici une minute ; rien à refaire de ton côté.",
   "trade.rDerivedHint": "P&L ÷ risque — l'un ou l'autre se modifie",
   "trade.brokerPnl": "P&L net (broker)",
+  "trade.importedPnl": "P&L net (importé)",
   "trade.importedFrom": "Importé de {broker}",
   "trade.reviewHint":
     "La structure est remplie — ajoute ton setup, tes erreurs, tes notes et tes captures.",

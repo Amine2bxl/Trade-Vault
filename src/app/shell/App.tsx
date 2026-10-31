@@ -726,7 +726,13 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
       await dispatchCodedNotifications(
         uid,
         {
-          trades: trades.map((t) => ({ date: t.date, pnl: t.pnl, mistakes: t.mistakes ?? [] })),
+          trades: trades.map((t) => ({
+            date: t.date,
+            pnl: t.pnl,
+            mistakes: t.mistakes ?? [],
+            entryTime: t.entryTime,
+            exitTime: t.exitTime,
+          })),
           stats: {
             totalPnl: stats.totalPnl,
             winRate: stats.winRate,

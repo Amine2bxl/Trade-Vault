@@ -32,7 +32,12 @@ import { useAuth } from "@/app/contexts/AuthContext";
 import { useToast } from "@/app/contexts/ToastContext";
 import { useT } from "@/app/i18n/LanguageContext";
 import { loadMonthlyReports, type MonthlyReportRow } from "@/app/store";
-import { buildMonthlyReport, prevMonthOf, type MonthlyReportData } from "@/domain/monthlyReport";
+import {
+  buildMonthlyReport,
+  isLegacyMonthlyReport,
+  prevMonthOf,
+  type MonthlyReportData,
+} from "@/domain/monthlyReport";
 import { useAccounts } from "@/app/contexts/AccountContext";
 import { localMonthOf, todayLocalDate } from "@/shared/calendar-date";
 import { statsBySession, MIN_BUCKET_SAMPLE } from "@/domain/quantStats";
@@ -132,7 +137,7 @@ function useLiveMonthRow(trades: Trade[], startingBalance: number): MonthlyRepor
 
 export default function Reports({ trades }: { trades: Trade[] }) {
   const { user } = useAuth();
-  const { activeAccount } = useAccounts();
+  const { activeAccount, accounts } = useAccounts();
   const { t, lang } = useT();
   const { toast } = useToast();
   const locale = LOCALE_MAP[lang] || "en-US";
@@ -190,14 +195,14 @@ export default function Reports({ trades }: { trades: Trade[] }) {
 
   /** Génère une liste de mois à la suite, puis rafraîchit une seule fois. */
   const generateMonths = useCallback(
-    async (months: string[]) => {
+    async (months: string[], withAi = true) => {
       if (generating || months.length === 0) return;
       setGenerating(true);
       let done = 0;
       try {
         for (const month of months) {
           try {
-            const res = await generateMyMonthlyReport({ data: { month } });
+            const res = await generateMyMonthlyReport({ data: { month, withAi } });
             if (res.report) done++;
           } catch (e) {
             console.error("Failed to generate report", month, e);
@@ -366,6 +371,26 @@ export default function Reports({ trades }: { trades: Trade[] }) {
                 />
               )}
 
+              {!currentIsLive && isLegacyMonthlyReport(current.report) && (
+                <div className="rp-screen-only flex flex-wrap items-center gap-3 rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3 text-xs text-amber-200">
+                  <AlertTriangle className="h-4 w-4 shrink-0" />
+                  <span className="min-w-0 flex-1">{t("reports.legacyWarning")}</span>
+                  <Button
+                    variant="subtle"
+                    size="sm"
+                    disabled={generating}
+                    onClick={() => generateMonths([current.month], false)}
+                  >
+                    {generating ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <RefreshCw className="h-4 w-4" />
+                    )}
+                    {t("reports.recalculate")}
+                  </Button>
+                </div>
+              )}
+
               <ReportSheet
                 key={current.id}
                 row={current}
@@ -373,10 +398,18 @@ export default function Reports({ trades }: { trades: Trade[] }) {
                 trades={trades}
                 generatedAt={current.createdAt}
                 inProgress={currentIsLive}
-                accountName={activeAccount?.name ?? null}
+                // Un rapport ARCHIVÉ est construit côté serveur sur tous les comptes
+                // du trader (la table n'a pas de compte) ; seul le mois en cours
+                // suit le compte actif. L'étiqueter du compte actif mentait sur
+                // son périmètre dès qu'il existe plusieurs comptes.
+                accountName={
+                  !currentIsLive && accounts.length > 1
+                    ? t("reports.allAccounts")
+                    : (activeAccount?.name ?? null)
+                }
               />
 
-              {missing.length === 0 && (
+              {missing.length === 0 && !rows.some((r) => isLegacyMonthlyReport(r.report)) && (
                 <p className="tv-row-label flex items-center justify-center gap-1.5 pt-1">
                   <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500/70" />
                   {t("reports.upToDate")}
@@ -467,7 +500,7 @@ function ReportSheet({
       );
     if (r.mistakes[0] && r.mistakes[0].cost < 0)
       out.push(
-        t("reports.tkMistake")
+        t("reports.tkMistakeObserved")
           .replace("{mistake}", r.mistakes[0].name)
           .replace("{n}", String(r.mistakes[0].count))
           .replace("{pnl}", formatPnl(r.mistakes[0].cost)),
@@ -657,18 +690,23 @@ function ReportSheet({
         <ReportKpi
           label={t("quant.expectancy")}
           value={formatPnl(r.expectancy)}
-          sub={`${r.expectancyR >= 0 ? "+" : ""}${r.expectancyR.toFixed(2)}R ${t("reports.perTrade")}`}
+          sub={
+            r.expectancyR === null
+              ? "—"
+              : `${r.expectancyR >= 0 ? "+" : ""}${r.expectancyR.toFixed(2)}R ${t("reports.perTrade")}`
+          }
           good={r.expectancy >= 0}
         />
         <ReportKpi
           label={t("reports.profitFactor")}
-          value={r.profitFactor >= 99 ? "99+" : r.profitFactor.toFixed(2)}
+          value={r.profitFactor === null ? "—" : r.profitFactor.toFixed(2)}
           sub={`Sharpe ${r.sharpe ?? "—"} · Sortino ${r.sortino ?? "—"}`}
-          good={r.profitFactor >= 1}
+          good={r.profitFactor !== null && r.profitFactor >= 1}
+          neutral={r.profitFactor === null}
         />
         <ReportKpi
           label={t("reports.maxDrawdown")}
-          value={formatPnl(-r.maxDrawdown)}
+          value={r.maxDrawdown === null ? "—" : formatPnl(-r.maxDrawdown)}
           sub={t("dashboard.peakToTrough")}
           good={false}
           neutral
@@ -841,8 +879,9 @@ function ReportSheet({
       {r.mistakes.length > 0 && (
         <section className="rp-section">
           <SectionTitle icon={<AlertTriangle className="h-3.5 w-3.5 text-amber-400" />}>
-            {t("reports.mistakes")}
+            {t("reports.mistakesObserved")}
           </SectionTitle>
+          <p className="mb-3 text-xs leading-relaxed text-slate-500">{t("reports.mistakesNote")}</p>
           <BarList
             rows={r.mistakes.map((m) => ({
               key: m.name,

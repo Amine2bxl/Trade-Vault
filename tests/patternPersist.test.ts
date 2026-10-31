@@ -9,28 +9,51 @@ import type { DetectedPattern } from "@/modules/patterns/detectors";
  */
 
 describe("toTradeLikes", () => {
-  it("lit les numeric rendus en chaîne par PostgREST", () => {
+  it("lit les numeric rendus en chaîne par PostgREST et dérive le R du risque", () => {
     const out = toTradeLikes([
-      { trade_date: "2026-01-05", pnl: "-120.5", r_multiple: "-1.2", mistakes: ["fomo"] },
+      {
+        trade_date: "2026-01-05",
+        pnl: "-120.5",
+        risk_amount: "100",
+        r_multiple: "-1.2",
+        mistakes: ["fomo"],
+      },
     ]);
     expect(out).toEqual([
       {
         date: "2026-01-05",
         pnl: -120.5,
-        rMultiple: -1.2,
+        // P&L net / risque initial (`measuredR`), pas la colonne r_multiple.
+        rMultiple: -1.205,
         mistakes: ["fomo"],
         entryTime: null,
+        exitTime: null,
+        accountId: null,
+        broker: null,
+        reviewPending: false,
       },
     ]);
   });
 
-  it("écarte un trade sans R plutôt que de compter 0", () => {
+  it("un risque inconnu donne un R nul (null), jamais 0R — le trade reste pour son P&L", () => {
+    // `r_multiple` vaut 0 par défaut en base : c'est le cas réel d'un trade
+    // saisi sans risque. Il ne doit pas devenir une observation à 0R.
     const out = toTradeLikes([
-      { trade_date: "2026-01-05", pnl: 100, r_multiple: null },
-      { trade_date: "2026-01-06", pnl: 100, r_multiple: 1 },
+      { trade_date: "2026-01-05", pnl: 100, risk_amount: 0, r_multiple: 0 },
+      { trade_date: "2026-01-06", pnl: 100, r_multiple: null },
+      { trade_date: "2026-01-07", pnl: 100, risk_amount: 50, r_multiple: 2 },
     ]);
-    expect(out).toHaveLength(1);
-    expect(out[0].date).toBe("2026-01-06");
+    expect(out.map((t) => t.rMultiple)).toEqual([null, null, 2]);
+  });
+
+  it("un import broker ou non relu n'a pas de R mesuré, même avec un risque stocké", () => {
+    const out = toTradeLikes([
+      { trade_date: "2026-01-05", pnl: 100, risk_amount: 50, broker: "tradovate" },
+      { trade_date: "2026-01-06", pnl: 100, risk_amount: 50, review_pending: true },
+    ]);
+    expect(out.map((t) => t.rMultiple)).toEqual([null, null]);
+    expect(out[0].broker).toBe("tradovate");
+    expect(out[1].reviewPending).toBe(true);
   });
 
   it("écarte un trade sans P&L et un trade sans date", () => {

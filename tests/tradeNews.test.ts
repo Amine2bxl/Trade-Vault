@@ -97,6 +97,25 @@ describe("newsForTrade", () => {
     expect(n.items.find((i) => i.event.title === "FOMC Statement")?.duringTrade).toBe(false);
   });
 
+  test("never claim news overlap for broker times, pending CSV, overnight or invalid clocks", () => {
+    const overlap = ev({ startsAt: "2026-03-10T12:30:00Z" });
+    const base = { symbol: "NQ", date: "2026-03-10", entryTime: "12:20", exitTime: "12:50" };
+    expect(newsForTrade(base, [overlap], UTC).items[0].duringTrade).toBe(true);
+    expect(
+      newsForTrade({ ...base, broker: "tradovate" }, [overlap], UTC).items[0].duringTrade,
+    ).toBe(false);
+    expect(
+      newsForTrade({ ...base, reviewPending: true }, [overlap], UTC).items[0].duringTrade,
+    ).toBe(false);
+    expect(
+      newsForTrade({ ...base, entryTime: "23:30", exitTime: "00:15" }, [overlap], UTC).items[0]
+        .duringTrade,
+    ).toBe(false);
+    expect(newsForTrade({ ...base, entryTime: "99:99" }, [overlap], UTC).items[0].duringTrade).toBe(
+      false,
+    );
+  });
+
   test("symbole inconnu : rien n'est affirmé", () => {
     const n = newsForTrade({ symbol: "XYZ123", date: "2026-03-10" }, events, UTC);
     expect(n.items).toEqual([]);
@@ -123,6 +142,7 @@ describe("newsDaySplit", () => {
     date,
     pnl,
     rMultiple: pnl / 100,
+    riskAmount: 100,
   });
 
   test("jour d'annonce FORTE face aux jours calmes, avec n", () => {
@@ -136,6 +156,22 @@ describe("newsDaySplit", () => {
     expect(s.quietDays.n).toBe(6); // une annonce moyenne ne fait pas un « jour d'annonce »
     expect(s.quietDays.winRate).toBe(1);
     expect(s.classified).toBe(11);
+  });
+
+  test("ignore un R sans risque initial vérifié dans la série des jours d'annonce", () => {
+    const trades = Array.from({ length: 6 }, () => ({
+      ...t("2026-03-10", 100),
+      riskAmount: 0,
+    }));
+    const split = newsDaySplit(trades, events, UTC);
+    expect(split.newsDays.n).toBe(6);
+    expect(split.newsDays.avgPnl).toBe(100);
+    expect(split.newsDays.avgR).toBeNull();
+    const brokerTrades = Array.from({ length: 6 }, () => ({
+      ...t("2026-03-10", 100),
+      broker: "tradovate",
+    }));
+    expect(newsDaySplit(brokerTrades, events, UTC).newsDays.avgR).toBeNull();
   });
 
   test("aucun chiffre sous l'échantillon minimum", () => {

@@ -31,17 +31,24 @@ export interface WriterOutput {
 /** Les langues dans lesquelles une proposition peut être rédigée. */
 export type WriterLanguage = "fr" | "en";
 
+const isRMetric = (metric: string) => metric === "avg_r";
+/** R à deux décimales, sans zéro superflu : « -0.8 », « 1.25 ». */
+const rText = (v: number) => String(Math.round(v * 100) / 100);
+
 function factLines(action: CandidateAction, language: WriterLanguage): string[] {
   const f = action.rationaleFacts;
-  const pct = (v: number) => `${Math.round(v * 100)} %`;
+  // L'unité suit la métrique : un R moyen de -0,8 formaté en part devenait
+  // « -80 % », un chiffre faux remis au rédacteur comme un fait.
+  const inR = isRMetric(f.metric);
+  const fmt = (v: number) => (inR ? `${rText(v)} R` : `${Math.round(v * 100)} %`);
   const fr = language === "fr";
   const lines = [
     fr ? `Motif observé : ${f.kind}` : `Observed pattern: ${f.kind}`,
     fr ? `Taille du groupe (n) : ${f.n}` : `Group size (n): ${f.n}`,
-    fr ? `Valeur observée : ${pct(f.value)}` : `Observed value: ${pct(f.value)}`,
+    fr ? `Valeur observée : ${fmt(f.value)}` : `Observed value: ${fmt(f.value)}`,
   ];
   if (f.baseline !== null) {
-    lines.push(fr ? `Référence : ${pct(f.baseline)}` : `Baseline: ${pct(f.baseline)}`);
+    lines.push(fr ? `Référence : ${fmt(f.baseline)}` : `Baseline: ${fmt(f.baseline)}`);
   }
   if (f.comparisonN !== null) {
     lines.push(
@@ -54,7 +61,12 @@ function factLines(action: CandidateAction, language: WriterLanguage): string[] 
       : `Slices examined to reach this: ${f.comparisons}`,
   );
   if (f.impactR !== null) {
-    lines.push(fr ? `Impact observé : ${f.impactR} R` : `Observed impact: ${f.impactR} R`);
+    // Une somme ou un écart OBSERVÉ, jamais un gain récupérable.
+    lines.push(
+      fr
+        ? `Écart cumulé observé (descriptif, pas un gain récupérable) : ${f.impactR} R`
+        : `Observed cumulative gap (descriptive, not a recoverable gain): ${f.impactR} R`,
+    );
   }
   if (f.clusterId) {
     lines.push(fr ? `Famille d'erreurs : ${f.clusterId}` : `Mistake family: ${f.clusterId}`);
@@ -141,11 +153,20 @@ function allowedNumbers(action: CandidateAction): Set<string> {
     add(v);
     out.add(String(Math.round(v * 100)));
   };
+  // Une valeur en R est donnée telle quelle (arrondie au centième) : l'élargir
+  // aux pourcentages autoriserait « 80 % » pour un R de 0,8.
+  const addValue = (v: number | null) => {
+    if (v === null) return;
+    if (!isRMetric(f.metric)) return addShare(v);
+    add(v);
+    out.add(rText(v));
+    out.add(rText(Math.abs(v)));
+  };
   add(f.n);
   add(f.comparisonN);
   add(f.comparisons);
-  addShare(f.value);
-  addShare(f.baseline);
+  addValue(f.value);
+  addValue(f.baseline);
   add(f.impactR);
   for (const v of Object.values(action.payloadDraft)) {
     if (typeof v === "number") add(v);

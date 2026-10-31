@@ -2,10 +2,12 @@ import { Fragment, useEffect, useMemo, useReducer, useState } from "react";
 import { InfoTip } from "@/shared/ui/InfoTip";
 import { TrendingUp, TrendingDown, CalendarDays, Clock, Sparkles } from "@/shared/ui/icons";
 import { Trade, isBreakEven } from "@/app/types";
+import { measuredR } from "@/domain/trade";
 import { computeStats, formatPnl, formatPct, formatShortDate } from "@/domain/tradeCalcs";
 import {
   computeQuantStats,
-  getSession,
+  getSessionForTrade,
+  hasUnverifiedEtTime,
   statsByHour,
   winRateOf,
   MIN_BUCKET_SAMPLE,
@@ -205,12 +207,14 @@ export default function Analytics({ trades }: AnalyticsProps) {
         })
         .sort(([a], [b]) => parseInt(a) - parseInt(b))
         .map(([day, data]) => {
-          const dec = data.count - data.breakEven;
+          // `winRateOf` : plancher d'échantillon unique ; `null` coupe la ligne
+          // au lieu de tracer « 0 % » ou « 100 % » sur un ou deux trades.
+          const wr = winRateOf(data);
           return {
             day: DAY_NAMES[parseInt(day)],
             pnl: Math.round(data.pnl * 100) / 100,
             trades: data.count,
-            winRate: dec > 0 ? Math.round((data.wins / dec) * 100) : 0,
+            winRate: wr === null ? null : Math.round(wr * 100),
           };
         }),
     [stats.pnlByDayOfWeek, DAY_NAMES],
@@ -219,12 +223,12 @@ export default function Analytics({ trades }: AnalyticsProps) {
     () =>
       Object.entries(stats.pnlByStrategy)
         .map(([strategy, data]) => {
-          const dec = data.count - data.breakEven;
+          const wr = winRateOf(data);
           return {
             strategy,
             pnl: Math.round(data.pnl * 100) / 100,
             trades: data.count,
-            winRate: dec > 0 ? Math.round((data.wins / dec) * 100) : 0,
+            winRate: wr === null ? null : Math.round(wr * 100),
           };
         })
         .sort((a, b) => b.pnl - a.pnl),
@@ -251,7 +255,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
       { range: `> ${m(500)}`, count: 0, fill: "#22e08a" },
     ];
     for (const trade of cutoffTrades) {
-      if (trade.direction === "be") b[3].count++;
+      if (isBreakEven(trade)) b[3].count++;
       else if (trade.pnl < -500) b[0].count++;
       else if (trade.pnl < -200) b[1].count++;
       else if (trade.pnl < 0) b[2].count++;
@@ -279,40 +283,49 @@ export default function Analytics({ trades }: AnalyticsProps) {
   const monthlyData = useMemo(() => {
     const map: Record<
       string,
-      { pnl: number; count: number; wins: number; be: number; totalRR: number }
+      { pnl: number; count: number; wins: number; be: number; totalRR: number; rCount: number }
     > = {};
     for (const t of cutoffTrades) {
       const k = t.date.substring(0, 7);
-      if (!map[k]) map[k] = { pnl: 0, count: 0, wins: 0, be: 0, totalRR: 0 };
+      if (!map[k]) map[k] = { pnl: 0, count: 0, wins: 0, be: 0, totalRR: 0, rCount: 0 };
       map[k].pnl += t.pnl;
       map[k].count++;
-      map[k].totalRR += Math.abs(t.rMultiple);
-      if (t.direction === "be") map[k].be++;
+      const r = measuredR(t);
+      if (r !== null) {
+        map[k].totalRR += r;
+        map[k].rCount++;
+      }
+      if (isBreakEven(t)) map[k].be++;
       else if (t.pnl > 0) map[k].wins++;
     }
     return Object.entries(map)
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([key, data]) => {
         const [y, m] = key.split("-");
-        const dec = data.count - data.be;
+        const wr = winRateOf({ count: data.count, wins: data.wins, breakEven: data.be, pnl: 0 });
+        // Le R moyen d'un mois suit le même plancher qu'un taux : sur deux
+        // trades il ne décrit rien. Il ne porte que sur les trades au R mesuré.
         return {
           month: `${MONTH_NAMES_SHORT[parseInt(m) - 1]} '${y.slice(-2)}`,
           pnl: Math.round(data.pnl * 100) / 100,
           trades: data.count,
-          winRate: dec > 0 ? Math.round((data.wins / dec) * 100) : 0,
-          avgRR: data.count > 0 ? +(data.totalRR / data.count).toFixed(2) : 0,
+          winRate: wr === null ? null : Math.round(wr * 100),
+          avgRR: data.rCount >= MIN_BUCKET_SAMPLE ? +(data.totalRR / data.rCount).toFixed(2) : null,
         };
       });
   }, [cutoffTrades]);
   const profitFactorData = useMemo(() => {
-    const tp = cutoffTrades
-      .filter((t) => t.direction !== "be" && t.pnl > 0)
-      .reduce((s, t) => s + t.pnl, 0);
-    const tl = Math.abs(
-      cutoffTrades.filter((t) => t.direction !== "be" && t.pnl < 0).reduce((s, t) => s + t.pnl, 0),
-    );
-    const pf = tl > 0 ? tp / tl : tp > 0 ? 99 : 0;
-    return { totalProfits: tp, totalLosses: tl, profitFactor: pf, isProfitable: pf > 1 };
+    // Gains et pertes bruts sur le P&L NET, comme `computeStats` : un trade
+    // étiqueté « BE » qui perd ses commissions reste une perte observée.
+    const tp = cutoffTrades.filter((t) => t.pnl > 0).reduce((s, t) => s + t.pnl, 0);
+    const tl = Math.abs(cutoffTrades.filter((t) => t.pnl < 0).reduce((s, t) => s + t.pnl, 0));
+    const pf = tl > 0 ? tp / tl : null;
+    return {
+      totalProfits: tp,
+      totalLosses: tl,
+      profitFactor: pf,
+      isProfitable: pf !== null && pf > 1,
+    };
   }, [cutoffTrades]);
 
   const quant = useMemo(
@@ -333,7 +346,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
         const losses = decisive.filter((tr) => tr.pnl < 0);
         const gp = wins.reduce((s, tr) => s + tr.pnl, 0);
         const gl = Math.abs(losses.reduce((s, tr) => s + tr.pnl, 0));
-        const withRisk = list.filter((tr) => tr.riskAmount > 0);
+        const rValues = list.map(measuredR).filter((r): r is number => r !== null);
         // Le taux passe par `winRateOf`, l'UNIQUE définition du produit : cette
         // table recalculait le sien, ce qui dupliquait la logique et échappait
         // au plancher d'échantillon. Un setup joué trois fois affichait « 100 %
@@ -353,10 +366,10 @@ export default function Analytics({ trades }: AnalyticsProps) {
           pnl: bucket.pnl,
           winRate: winRateOf(bucket),
           expectancy: bucket.pnl / list.length,
-          profitFactor: !enoughSample ? null : gl > 0 ? gp / gl : gp > 0 ? 99 : 0,
+          profitFactor: !enoughSample || gl <= 0 ? null : gp / gl,
           avgR:
-            enoughSample && withRisk.length > 0
-              ? withRisk.reduce((s, tr) => s + tr.pnl / tr.riskAmount, 0) / withRisk.length
+            rValues.length >= MIN_BUCKET_SAMPLE
+              ? rValues.reduce((s, r) => s + r, 0) / rValues.length
               : null,
         };
       })
@@ -369,7 +382,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
     const map: Record<string, { pnl: number; count: number }> = {};
     let maxAbs = 0;
     for (const tr of cutoffTrades) {
-      const s = getSession(tr.entryTime);
+      const s = getSessionForTrade(tr);
       if (!s) continue;
       const dow = new Date(tr.date + "T12:00:00").getDay();
       if (dow < 1 || dow > 5) continue;
@@ -381,6 +394,12 @@ export default function Analytics({ trades }: AnalyticsProps) {
     for (const v of Object.values(map)) maxAbs = Math.max(maxAbs, Math.abs(v.pnl));
     return { map, maxAbs };
   }, [cutoffTrades]);
+
+  // Broker and unreviewed CSV clocks cannot be assumed Eastern.
+  const unverifiedTimeCount = useMemo(
+    () => cutoffTrades.filter(hasUnverifiedEtTime).length,
+    [cutoffTrades],
+  );
 
   // Win rate per entry hour
   const hourData = useMemo(() => {
@@ -531,22 +550,24 @@ export default function Analytics({ trades }: AnalyticsProps) {
                   profitFactorData.isProfitable ? "text-emerald-400" : "text-red-400",
                 )}
               >
-                {profitFactorData.profitFactor >= 99
-                  ? "99+"
+                {profitFactorData.profitFactor === null
+                  ? "—"
                   : profitFactorData.profitFactor.toFixed(2)}
               </span>
             </div>
 
-            <span
-              className={cn(
-                "shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-bold",
-                profitFactorData.isProfitable
-                  ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
-                  : "border-red-500/20 bg-red-500/10 text-red-400",
-              )}
-            >
-              {profitFactorData.isProfitable ? t("analytics.profitable") : t("analytics.losing")}
-            </span>
+            {profitFactorData.profitFactor !== null && (
+              <span
+                className={cn(
+                  "shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-bold",
+                  profitFactorData.isProfitable
+                    ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
+                    : "border-red-500/20 bg-red-500/10 text-red-400",
+                )}
+              >
+                {profitFactorData.isProfitable ? t("analytics.profitable") : t("analytics.losing")}
+              </span>
+            )}
 
             {/* Le calcul, écrit : gains ÷ pertes. C'est ce qui rend le facteur
                 lisible sans le connaître. */}
@@ -564,7 +585,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                   profitFactorData.isProfitable ? "bg-emerald-400/70" : "bg-red-400/70",
                 )}
                 style={{
-                  width: `${Math.min((profitFactorData.profitFactor / 3) * 100, 100)}%`,
+                  width: `${profitFactorData.profitFactor === null ? 0 : Math.min((profitFactorData.profitFactor / 3) * 100, 100)}%`,
                 }}
               />
             </div>
@@ -580,34 +601,50 @@ export default function Analytics({ trades }: AnalyticsProps) {
               {[
                 {
                   label: t("dashboard.avgRR"),
-                  value: `${stats.avgRR.toFixed(2)}R`,
-                  sub: t("quant.avgRRSub"),
-                  good: stats.avgRR >= 2,
+                  value: stats.avgRR === null ? "—" : `${stats.avgRR.toFixed(2)}R`,
+                  // Le n du R moyen n'est pas celui de la période : seuls les
+                  // trades au risque initial connu le portent.
+                  sub: t("quant.rSample")
+                    .replace("{n}", String(stats.rSampleSize))
+                    .replace("{total}", String(stats.totalTrades)),
+                  good: stats.avgRR !== null && stats.avgRR > 0,
                   info: t("quant.infoAvgRR"),
                 },
                 {
                   label: t("quant.expectancy"),
                   value: formatPnl(quant.expectancy),
-                  sub: `${quant.expectancyR >= 0 ? "+" : ""}${quant.expectancyR.toFixed(2)}R`,
+                  sub:
+                    quant.expectancyR === null
+                      ? "—"
+                      : `${quant.expectancyR >= 0 ? "+" : ""}${quant.expectancyR.toFixed(2)}R`,
                   good: quant.expectancy >= 0,
                   info: t("quant.infoExpectancy"),
                 },
                 {
                   label: "Sharpe",
                   value: quant.sharpe !== null ? quant.sharpe.toFixed(2) : "—",
-                  sub: quant.sharpe === null ? t("quant.needTenDays") : t("quant.annualized"),
+                  sub:
+                    quant.sharpeStatus === "unverified_returns"
+                      ? t("quant.verifiedReturnsNeeded")
+                      : quant.sharpeStatus === "insufficient"
+                        ? t("quant.needTenDays")
+                        : quant.sharpeStatus === "no_variance"
+                          ? t("quant.noVariance")
+                          : t("quant.annualized"),
                   good: (quant.sharpe ?? 0) >= 1,
                   info: t("quant.infoSharpe"),
                 },
                 {
                   label: "Sortino",
-                  value:
-                    quant.sortino !== null
-                      ? quant.sortino >= 99
-                        ? "99+"
-                        : quant.sortino.toFixed(2)
-                      : "—",
-                  sub: quant.sortino === null ? t("quant.needTenDays") : t("quant.annualized"),
+                  value: quant.sortino !== null ? quant.sortino.toFixed(2) : "—",
+                  sub:
+                    quant.sortinoStatus === "unverified_returns"
+                      ? t("quant.verifiedReturnsNeeded")
+                      : quant.sortinoStatus === "insufficient"
+                        ? t("quant.needTenDays")
+                        : quant.sortinoStatus === "no_downside"
+                          ? t("quant.noDownside")
+                          : t("quant.annualized"),
                   good: (quant.sortino ?? 0) >= 1.5,
                   info: t("quant.infoSortino"),
                 },
@@ -707,7 +744,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                 </div>
                 <div className="text-center mt-1">
                   <div className="tv-figure text-xl md:text-2xl text-white">
-                    {formatPct(stats.winRate)}
+                    {stats.wins + stats.losses > 0 ? formatPct(stats.winRate) : "—"}
                   </div>
                   <div className="text-[10px] text-slate-500">{t("analytics.winRateLabel")}</div>
                 </div>
@@ -733,6 +770,9 @@ export default function Analytics({ trades }: AnalyticsProps) {
                         domain={[0, 100]}
                         width={35}
                       />
+                      {/* Le R a SON axe (masqué) : tracé sur l'axe des % (0–100),
+                          un R négatif était coupé et +1,2R collé au zéro. */}
+                      <YAxis yAxisId="r" hide domain={["auto", "auto"]} />
                       <Tooltip
                         {...tooltipStyle}
                         formatter={(value: any, name: any) => {
@@ -758,7 +798,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                         {...chartAnimation}
                       />
                       <Line
-                        yAxisId="right"
+                        yAxisId="r"
                         type={EQUITY_CURVE_TYPE}
                         dataKey="avgRR"
                         stroke="#f59e0b"
@@ -882,11 +922,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                         <td className="tv-figure tv-figure-secondary hidden px-4 py-2.5 text-xs text-right text-slate-300 sm:table-cell">
                           {/* « — » sous l'échantillon minimum : ne rien affirmer vaut
                           mieux qu'affirmer sur trois trades. */}
-                          {row.profitFactor === null
-                            ? "—"
-                            : row.profitFactor >= 99
-                              ? "99+"
-                              : row.profitFactor.toFixed(2)}
+                          {row.profitFactor === null ? "—" : row.profitFactor.toFixed(2)}
                         </td>
                         <td className="tv-figure tv-figure-secondary hidden px-4 py-2.5 text-xs text-right sm:table-cell">
                           {row.avgR === null ? (
@@ -1030,6 +1066,11 @@ export default function Analytics({ trades }: AnalyticsProps) {
             aria-label={t("analytics.viewTiming")}
           >
             {trades.length >= 3 && <SeasonalitySection trades={cutoffTrades} />}
+            {unverifiedTimeCount > 0 && (
+              <p className="tv-hint" role="status">
+                {t("analytics.timeZoneUnverified")} ({unverifiedTimeCount})
+              </p>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Card className="p-4 md:p-5 animate-fade-in-up stagger-2">
                 <h3 className="tv-title mb-1">{t("analytics.heatmap")}</h3>
@@ -1235,7 +1276,10 @@ function SeasonalitySection({ trades }: { trades: Trade[] }) {
       pnl: Math.round(m.pnl * 100) / 100,
       count: m.count,
     }));
-    const traded = monthly.filter((m) => m.count > 0);
+    // Couronner un mois est un classement : même plancher que la page
+    // Saisonnalité, dont cette carte est le résumé (sinon « meilleur mois »
+    // désignait un mois d'un seul trade ici, et aucun là-bas).
+    const traded = monthly.filter((m) => m.count >= MIN_BUCKET_SAMPLE);
     const best = traded.length ? traded.reduce((a, b) => (b.pnl > a.pnl ? b : a)) : null;
     const worst = traded.length ? traded.reduce((a, b) => (b.pnl < a.pnl ? b : a)) : null;
     const years = [...byYearMonth.entries()].sort((a, b) => b[0] - a[0]);

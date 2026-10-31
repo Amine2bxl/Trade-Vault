@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { X, Trash2, ChevronLeft, ChevronRight, Target } from "@/shared/ui/icons";
 import { Trade, MissedOpportunity, isBreakEven } from "@/app/types";
+import { measuredR } from "@/domain/trade";
 import { formatPnl, getDuration, directionLabel, directionBadgeClass } from "@/domain/tradeCalcs";
-import { getSession } from "@/domain/quantStats";
+import { getSessionForTrade } from "@/domain/quantStats";
 import { cn } from "@/shared/ui/cn";
 import { Button, Disclosure, Modal } from "@/shared/ui";
 import { useT } from "@/app/i18n/LanguageContext";
@@ -350,7 +351,7 @@ function SheetTrade({
   const toggle = (k: keyof typeof open) => (v: boolean) => setOpen((o) => ({ ...o, [k]: v }));
   const be = isBreakEven(trade);
   const tone = be ? "text-slate-300" : trade.pnl >= 0 ? "text-emerald-400" : "text-red-400";
-  const session = getSession(trade.entryTime);
+  const session = getSessionForTrade(trade);
   const times =
     trade.entryTime || trade.exitTime
       ? `${trade.entryTime || "—"} → ${trade.exitTime || "—"} · ${getDuration(trade.entryTime, trade.exitTime)}`
@@ -387,14 +388,19 @@ function SheetTrade({
         </div>
         <div className="shrink-0 text-right">
           <div className={cn("tv-figure text-xl", tone)}>{formatPnl(trade.pnl)}</div>
-          <div
-            className={cn(
-              "tv-figure tv-figure-secondary text-xs",
-              trade.rMultiple >= 0 ? "text-emerald-400" : "text-red-400",
-            )}
-          >
-            {trade.rMultiple.toFixed(2)}R
-          </div>
+          {(() => {
+            const r = measuredR(trade);
+            return (
+              <div
+                className={cn(
+                  "tv-figure tv-figure-secondary text-xs",
+                  r === null ? "text-slate-500" : r >= 0 ? "text-emerald-400" : "text-red-400",
+                )}
+              >
+                {r === null ? "—" : `${r.toFixed(2)}R`}
+              </div>
+            );
+          })()}
         </div>
       </div>
 

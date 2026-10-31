@@ -25,20 +25,34 @@ export interface WeekLine {
   trades: number;
 }
 
+/**
+ * Version de la MÉTHODE de calcul d'un rapport archivé.
+ *
+ * 2 : PF nullable, drawdown ordonné par clôtures, Sortino sans plafond.
+ * 3 : R moyen limité au R MESURÉ (`domain/trade.measuredR`) — un import broker
+ *     ou non relu n'y entre plus — et colonnes de provenance lues côté serveur.
+ *     Un rapport v2 n'a jamais quitté la branche du lot 0, mais un R qu'il
+ *     aurait calculé ne se compare pas à un R v3 : il est traité comme hérité.
+ */
+export const REPORT_METHOD_VERSION = 3;
+
 export interface MonthlyReportData {
   month: string; // YYYY-MM
+  /** Missing in pre-correction archived reports; only this known version is trusted for derived metrics. */
+  reportMethodVersion?: number;
   totalPnl: number;
   trades: number;
   wins: number;
   losses: number;
   breakEven: number;
   winRate: number;
-  profitFactor: number;
+  profitFactor: number | null;
   expectancy: number;
-  expectancyR: number;
+  expectancyR: number | null;
   sharpe: number | null;
   sortino: number | null;
-  maxDrawdown: number;
+  /** Realized max drawdown; null when close order is not verifiable. */
+  maxDrawdown: number | null;
   weekly: WeekLine[];
   bestSetups: SetupLine[];
   worstSetups: SetupLine[];
@@ -46,6 +60,31 @@ export interface MonthlyReportData {
   prev: { month: string; totalPnl: number; winRate: number; trades: number } | null;
   /** Optional Gemini synthesis (Étape 5, option A) — null when unavailable */
   aiSummary: string | null;
+}
+
+/** Older snapshots predate nullable PF, time-ordered drawdown and evidence checks.
+ * Preserve the archived source without an irreversible DB migration, but never
+ * re-issue its unverifiable quantitative claims or AI synthesis as facts.
+ * A fresh server-side recalculation upserts a new versioned snapshot.
+ */
+export function isLegacyMonthlyReport(report: MonthlyReportData): boolean {
+  return report.reportMethodVersion !== REPORT_METHOD_VERSION;
+}
+
+export function readArchivedMonthlyReport(report: MonthlyReportData): MonthlyReportData {
+  if (!isLegacyMonthlyReport(report)) return report;
+  return {
+    ...report,
+    profitFactor: null,
+    expectancyR: null,
+    sharpe: null,
+    sortino: null,
+    maxDrawdown: null,
+    bestSetups: [],
+    worstSetups: [],
+    mistakes: [],
+    aiSummary: null,
+  };
 }
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
@@ -132,25 +171,29 @@ export function buildMonthlyReport(
     prev = {
       month: prevMonthOf(month),
       totalPnl: round2(p.totalPnl),
-      winRate: Math.round(p.winRate * 100) / 100,
+      winRate: Math.round(p.winRate * 10000) / 10000,
       trades: p.totalTrades,
     };
   }
 
   return {
     month,
+    reportMethodVersion: REPORT_METHOD_VERSION,
     totalPnl: round2(stats.totalPnl),
     trades: stats.totalTrades,
     wins: stats.wins,
     losses: stats.losses,
     breakEven: stats.breakEven,
-    winRate: Math.round(stats.winRate * 100) / 100,
-    profitFactor: Math.round(stats.profitFactor * 100) / 100,
+    // Précision du dix-millième : `formatPct` affiche une décimale, et un taux
+    // arrondi au centième (0,57) s'affichait « 57,0 % » là où le Dashboard
+    // lisait 57,1 % pour les mêmes 8 gains sur 14 trades tranchés.
+    winRate: Math.round(stats.winRate * 10000) / 10000,
+    profitFactor: stats.profitFactor === null ? null : Math.round(stats.profitFactor * 100) / 100,
     expectancy: round2(quant.expectancy),
-    expectancyR: Math.round(quant.expectancyR * 100) / 100,
+    expectancyR: quant.expectancyR === null ? null : Math.round(quant.expectancyR * 100) / 100,
     sharpe: quant.sharpe !== null ? Math.round(quant.sharpe * 100) / 100 : null,
     sortino: quant.sortino !== null ? Math.round(quant.sortino * 100) / 100 : null,
-    maxDrawdown: round2(stats.maxDrawdown),
+    maxDrawdown: stats.maxDrawdownOrderVerified ? round2(stats.maxDrawdown) : null,
     weekly,
     bestSetups,
     worstSetups,

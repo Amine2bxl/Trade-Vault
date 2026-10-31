@@ -2,6 +2,7 @@ import { describe, it, expect } from "bun:test";
 import {
   computeQuantStats,
   getSession,
+  getSessionForTrade,
   getMacroEvents,
   statsBySession,
   statsByHour,
@@ -43,21 +44,55 @@ describe("getSession", () => {
     expect(getSession("20:00")).toBe("asia");
     expect(getSession("00:30")).toBe("asia");
   });
+  it("does not infer an ET session for broker clock times lacking source timezone", () => {
+    expect(getSessionForTrade(mkTrade({ entryTime: "09:30" }))).toBe("newyork");
+    expect(getSessionForTrade(mkTrade({ entryTime: "09:30", broker: "tradovate" }))).toBeNull();
+    expect(getSessionForTrade(mkTrade({ entryTime: "09:30", reviewPending: true }))).toBeNull();
+  });
+
   it("returns null for missing/invalid time", () => {
     expect(getSession("")).toBeNull();
     expect(getSession("xx")).toBeNull();
+    expect(getSession("24:00")).toBeNull();
+    expect(getSession("09:60")).toBeNull();
+    expect(getSession("-1:15")).toBeNull();
+    expect(getSession("09:30garbage")).toBeNull();
+    expect(getSession("9:05")).toBe("newyork");
   });
 });
 
 describe("getMacroEvents", () => {
-  it("flags NFP on the first Friday of the month", () => {
-    expect(getMacroEvents("2026-07-03")).toContain("NFP"); // Fri July 3rd 2026
-    expect(getMacroEvents("2026-07-10")).not.toContain("NFP"); // second Friday
-    expect(getMacroEvents("2026-07-01")).not.toContain("NFP"); // Wednesday
+  const nfp = {
+    startsAt: "2026-07-03T12:30:00Z",
+    title: "Non-Farm Payrolls",
+    source: "forexfactory",
+  };
+  const fomc = {
+    startsAt: "2026-07-29T18:00:00Z",
+    title: "FOMC Statement",
+    source: "forexfactory",
+  };
+
+  it("never infers a macro publication from the calendar date alone", () => {
+    expect(getMacroEvents("2026-07-03")).toEqual([]);
+    expect(getMacroEvents("2026-07-29")).toEqual([]);
   });
-  it("flags FOMC decision days", () => {
-    expect(getMacroEvents("2026-07-29")).toContain("FOMC");
-    expect(getMacroEvents("2026-07-28")).not.toContain("FOMC");
+
+  it("accepts matching verified news events but excludes the approximate fallback", () => {
+    expect(getMacroEvents("2026-07-03", [nfp])).toEqual(["NFP"]);
+    expect(getMacroEvents("2026-07-03", [{ ...nfp, source: "builtin" }])).toEqual([]);
+    expect(getMacroEvents("2026-07-29", [fomc])).toEqual(["FOMC"]);
+    expect(getMacroEvents("2026-07-28", [fomc])).toEqual([]);
+  });
+
+  it("uses New York's trading day consistently across client timezones", () => {
+    const late = {
+      startsAt: "2026-07-29T23:30:00Z",
+      title: "FOMC Press Conference",
+      source: "forexfactory",
+    };
+    expect(getMacroEvents("2026-07-29", [late])).toEqual(["FOMC"]);
+    expect(getMacroEvents("2026-07-30", [late])).toEqual([]);
   });
 });
 
@@ -76,6 +111,17 @@ describe("computeQuantStats", () => {
     ]);
     expect(q.expectancy).toBe(50); // (200-100)/2
     expect(q.expectancyR).toBeCloseTo(0.5); // (2R + -1R)/2
+  });
+
+  it("does not report zero R when initial risk is unknown", () => {
+    expect(computeQuantStats([]).expectancyR).toBeNull();
+    expect(computeQuantStats([mkTrade({ pnl: 200, riskAmount: 0 })]).expectancyR).toBeNull();
+    expect(
+      computeQuantStats([
+        mkTrade({ pnl: 200, riskAmount: 100 }),
+        mkTrade({ pnl: -200, riskAmount: 0 }),
+      ]).expectancyR,
+    ).toBe(2);
   });
 
   it("kelly = W - (1-W)/R", () => {
@@ -98,26 +144,57 @@ describe("computeQuantStats", () => {
     expect(computeQuantStats([mkTrade({ pnl: 100 })]).kelly).toBeNull();
   });
 
-  it("sharpe/sortino need >= 10 trading days", () => {
-    const nine = Array.from({ length: 9 }, (_, i) =>
-      mkTrade({ date: `2026-07-0${i + 1}`, pnl: 100 + i }),
+  it("refuses to annualize active trade-day PnL as verified account returns", () => {
+    const days = Array.from({ length: 11 }, (_, i) =>
+      mkTrade({ date: `2026-07-${String(i + 1).padStart(2, "0")}`, pnl: i % 2 ? -50 : 150 }),
     );
-    expect(computeQuantStats(nine).sharpe).toBeNull();
-
-    const eleven = Array.from({ length: 11 }, (_, i) =>
-      mkTrade({ date: `2026-07-${String(i + 1).padStart(2, "0")}`, pnl: i % 2 === 0 ? 150 : -50 }),
-    );
-    const q = computeQuantStats(eleven);
-    expect(q.sharpe).not.toBeNull();
-    expect(q.sharpe!).toBeGreaterThan(0);
-    expect(q.sortino).not.toBeNull();
+    const q = computeQuantStats(days, 25000);
+    expect(q.sharpe).toBeNull();
+    expect(q.sortino).toBeNull();
+    expect(q.sharpeStatus).toBe("unverified_returns");
+    expect(q.sortinoStatus).toBe("unverified_returns");
   });
 
-  it("sortino caps at 99 when no losing day", () => {
-    const days = Array.from({ length: 12 }, (_, i) =>
-      mkTrade({ date: `2026-07-${String(i + 1).padStart(2, "0")}`, pnl: 50 + i }),
+  it("requires at least ten sessions even with a verified daily equity series", () => {
+    const days = Array.from({ length: 3 }, (_, i) =>
+      mkTrade({ date: `2026-07-0${i + 1}`, pnl: 100 }),
     );
-    expect(computeQuantStats(days).sortino).toBe(99);
+    const q = computeQuantStats(days, 25000, {
+      basis: "verified-account-equity",
+      dailyReturns: Array(9).fill(0.01),
+    });
+    expect(q.sharpeStatus).toBe("insufficient");
+    expect(q.sortinoStatus).toBe("insufficient");
+  });
+
+  it("computes Sharpe/Sortino only when complete verified daily returns are supplied", () => {
+    const dailyReturns = [
+      0.01, -0.005, 0.012, -0.003, 0.006, 0.014, -0.002, 0.007, 0.003, -0.001, 0.008,
+    ];
+    const q = computeQuantStats([mkTrade({ pnl: 200 })], 25000, {
+      basis: "verified-account-equity",
+      dailyReturns,
+    });
+    expect(q.sharpeStatus).toBe("available");
+    expect(q.sortinoStatus).toBe("available");
+    expect(q.sharpe).not.toBeNull();
+    expect(q.sortino).not.toBeNull();
+    expect(q.sharpe!).toBeGreaterThan(0);
+    expect(q.sortino!).toBeGreaterThan(0);
+  });
+
+  it("distinguishes zero downside from missing return observations", () => {
+    const input = { basis: "verified-account-equity" as const, dailyReturns: Array(12).fill(0.01) };
+    const q = computeQuantStats([mkTrade({ pnl: 100 })], 25000, input);
+    expect(q.sortino).toBeNull();
+    expect(q.sortinoStatus).toBe("no_downside");
+    expect(q.sharpe).toBeNull();
+    expect(q.sharpeStatus).toBe("no_variance");
+    const invalid = computeQuantStats([mkTrade({ pnl: 100 })], 25000, {
+      basis: "verified-account-equity",
+      dailyReturns: [0.01, Number.NaN],
+    });
+    expect(invalid.sharpeStatus).toBe("unverified_returns");
   });
 
   it("maxDrawdownPct uses starting balance + peak", () => {
@@ -144,6 +221,56 @@ describe("computeQuantStats", () => {
       mkTrade({ date: "2026-07-05", pnl: 400 }),
     ]);
     expect(recovered.recoveryDays).toBe(3); // 07-02 → 07-05
+  });
+
+  it("recognizes a zero observed drawdown when initial capital is known", () => {
+    const trades = [
+      mkTrade({ id: "a", date: "2026-07-01", pnl: 100 }),
+      mkTrade({ id: "b", date: "2026-07-02", pnl: 200 }),
+    ];
+    expect(computeQuantStats(trades, 25000).maxDrawdownPct).toBe(0);
+    expect(computeQuantStats(trades, 0).maxDrawdownPct).toBeNull();
+  });
+
+  it("recovers during the same trading day after the actual trough", () => {
+    const date = "2026-07-01";
+    const trades = [
+      mkTrade({ id: "peak", date, entryTime: "09:30", exitTime: "09:45", pnl: 200 }),
+      mkTrade({ id: "trough", date, entryTime: "10:00", exitTime: "10:15", pnl: -150 }),
+      mkTrade({ id: "recovery", date, entryTime: "11:00", exitTime: "11:15", pnl: 180 }),
+    ];
+    expect(computeQuantStats(trades, 25000).recoveryDays).toBe(0);
+  });
+
+  it("does not mistake a pre-trough high for recovery", () => {
+    const date = "2026-07-01";
+    const trades = [
+      mkTrade({ id: "a", date, entryTime: "09:30", exitTime: "09:45", pnl: 200 }),
+      mkTrade({ id: "b", date, entryTime: "10:00", exitTime: "10:15", pnl: -150 }),
+      mkTrade({ id: "c", date, entryTime: "11:00", exitTime: "11:15", pnl: 100 }),
+    ];
+    expect(computeQuantStats(trades).recoveryDays).toBe(-1);
+  });
+
+  it("uses verified realized closing order for drawdown percentage", () => {
+    const date = "2026-07-01";
+    const trades = [
+      mkTrade({ id: "a", date, entryTime: "09:30", exitTime: "12:00", pnl: -100 }),
+      mkTrade({ id: "b", date, entryTime: "10:00", exitTime: "10:15", pnl: 200 }),
+      mkTrade({ id: "c", date, entryTime: "11:00", exitTime: "11:15", pnl: -150 }),
+    ];
+    expect(computeQuantStats(trades, 25000).maxDrawdownPct).toBeCloseTo(250 / 25200);
+    expect(computeQuantStats(trades, 25000).recoveryDays).toBe(-1);
+  });
+
+  it("refuses to report exact drawdown statistics on ambiguous closes", () => {
+    const date = "2026-07-01";
+    const ambiguous = [
+      mkTrade({ id: "a", date, entryTime: "09:30", exitTime: "10:00", pnl: 200 }),
+      mkTrade({ id: "b", date, entryTime: "09:45", exitTime: "10:00", pnl: -100 }),
+    ];
+    expect(computeQuantStats(ambiguous, 25000).maxDrawdownPct).toBeNull();
+    expect(computeQuantStats(ambiguous, 25000).recoveryDays).toBeNull();
   });
 
   it("consistency: best day share of total profit", () => {
@@ -183,6 +310,36 @@ describe("breakdowns", () => {
     expect(s.newyork.count).toBe(2);
     expect(s.newyork.pnl).toBe(25);
     expect(s.asia.count).toBe(1);
+  });
+
+  it("rejects impossible entry times from all hourly and session buckets", () => {
+    const trades = [
+      mkTrade({ id: "invalid1", entryTime: "24:45", pnl: 100 }),
+      mkTrade({ id: "invalid2", entryTime: "9:80", pnl: 50 }),
+      mkTrade({ id: "valid", entryTime: "9:30", pnl: 20 }),
+    ];
+    const byHour = statsByHour(trades);
+    expect(Object.keys(byHour)).toEqual(["9"]);
+    expect(byHour[9].count).toBe(1);
+    expect(statsBySession(trades).newyork.count).toBe(1);
+    expect(dayHourMatrix(trades)["3-9"].count).toBe(1);
+  });
+
+  it("excludes broker-local times from ET sessions, hours and weekday heatmaps", () => {
+    const manual = mkTrade({ id: "manual", entryTime: "09:30", pnl: 100 });
+    const broker = mkTrade({
+      id: "broker",
+      entryTime: "09:30",
+      pnl: 150,
+      broker: "tradovate",
+    });
+    expect(statsBySession([manual, broker]).newyork.count).toBe(1);
+    expect(statsByHour([manual, broker])[9].count).toBe(1);
+    expect(dayHourMatrix([manual, broker])["3-9"].count).toBe(1);
+    const pendingCsv = mkTrade({ id: "csv", entryTime: "09:30", reviewPending: true });
+    expect(statsBySession([manual, pendingCsv]).newyork.count).toBe(1);
+    expect(statsByHour([manual, pendingCsv])[9].count).toBe(1);
+    expect(dayHourMatrix([manual, pendingCsv])["3-9"].count).toBe(1);
   });
 
   it("statsByHour regroupe par heure d'entrée", () => {

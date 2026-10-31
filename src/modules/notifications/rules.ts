@@ -16,9 +16,17 @@ import { localDateOf, todayLocalDate } from "@/shared/calendar-date";
 import type { CalendarEvent } from "../economic-calendar/types";
 import { reglesEconomiques, type FocusDevises } from "./economic";
 import { formatMoney } from "@/shared/currency";
+import { compareRealizedChronological, hasVerifiedRealizedOrder } from "@/domain/tradeOrder";
 
 export interface RuleContext {
-  trades: Array<{ date: string; pnl: number; mistakes: string[] }>;
+  /** Heures optionnelles : sans elles, l'ordre d'une même journée est inconnu. */
+  trades: Array<{
+    date: string;
+    pnl: number;
+    mistakes: string[];
+    entryTime?: string;
+    exitTime?: string;
+  }>;
   stats: {
     totalPnl: number;
     winRate: number;
@@ -161,11 +169,30 @@ export function evaluateNotificationRules(ctx: RuleContext): CodedRule[] {
   const semaine = localDateOf(lundi);
 
   // ── RISK — série de pertes (3 consécutives) ─────────────────────────────
+  // « Consécutives » se lit dans l'ordre des CLÔTURES, pas des dates seules :
+  // deux trades d'une même journée gardaient l'ordre de chargement. La série
+  // n'est retenue que si elle est certaine — toutes les journées concernées
+  // ne contiennent que des pertes, ou leur ordre de clôture est prouvé.
+  const withClock = (t: RuleContext["trades"][number]) => ({
+    date: t.date,
+    entryTime: t.entryTime ?? "",
+    exitTime: t.exitTime ?? "",
+  });
+  const byClose = [...ctx.trades].sort((a, b) =>
+    compareRealizedChronological(withClock(b), withClock(a)),
+  );
   let streak = 0;
-  for (const t of sorted) {
+  for (const t of byClose) {
     if (t.pnl < 0) streak += 1;
     else break;
     if (streak >= 3) break;
+  }
+  if (streak >= 3) {
+    const days = new Set(byClose.slice(0, streak).map((t) => t.date));
+    const involved = ctx.trades.filter((t) => days.has(t.date));
+    const certain =
+      involved.every((t) => t.pnl < 0) || hasVerifiedRealizedOrder(involved.map(withClock));
+    if (!certain) streak = 0;
   }
   // La série n'interrompt QUE si elle est fraîche, et sa clé porte la date de
   // la dernière perte : la même série reste silencieuse, une perte de plus la
@@ -177,9 +204,11 @@ export function evaluateNotificationRules(ctx: RuleContext): CodedRule[] {
       input: jarvis({
         kind: "risk_loss_streak",
         title: fr ? "Série de pertes détectée" : "Losing streak detected",
+        // Un constat, pas un diagnostic : trois pertes ne prouvent ni « tilt »
+        // ni sur-trading — elles justifient une pause pour relire.
         body: fr
-          ? `${streak} pertes consécutives. C'est un signal de tilt ou de sur-trading — pas une fatalité.`
-          : `${streak} consecutive losses. A tilt or over-trading signal — not bad luck.`,
+          ? `${streak} pertes consécutives. Bon moment pour faire une pause et relire ces trades avant le suivant.`
+          : `${streak} consecutive losses. A good moment to pause and review them before the next trade.`,
         /* `error`, PAS `warning` — et c'est la seule règle qui l'obtienne.
            Trois pertes d'affilée est le seul moment où le produit doit
            INTERROMPRE : c'est là qu'un compte se perd, et un toast de trois
@@ -212,10 +241,13 @@ export function evaluateNotificationRules(ctx: RuleContext): CodedRule[] {
       key: `risk_leak:${worst.name}:${semaine}`,
       input: jarvis({
         kind: "risk_max_loss",
-        title: fr ? "La fuite qui te coûte le plus" : "Your most expensive leak",
+        // Le P&L des trades ÉTIQUETÉS, pas un coût causal : ces trades auraient
+        // pu perdre sans l'erreur, et un trade multi-tags apparaît sous chaque
+        // étiquette. « t'a coûté X » transformait une association en cause.
+        title: fr ? "L'erreur aux trades les plus déficitaires" : "Mistake on your weakest trades",
         body: fr
-          ? `« ${worst.name} » t'a coûté ${formatMoney(Math.abs(Math.round(worst.totalPnl)))} en ${worst.count} fois. C'est le premier truc à corriger.`
-          : `"${worst.name}" cost you ${formatMoney(Math.abs(Math.round(worst.totalPnl)))} across ${worst.count} trades. Fix this first.`,
+          ? `Trades marqués « ${worst.name} » : ${formatMoney(Math.round(worst.totalPnl), { signed: true })} de P&L sur ${worst.count} trade(s). Une association observée, pas un coût démontré.`
+          : `Trades tagged "${worst.name}": ${formatMoney(Math.round(worst.totalPnl), { signed: true })} P&L across ${worst.count} trade(s). An observed association, not a proven cost.`,
         severity: "warning",
         url: "/mistakes",
         category: "risk",
@@ -261,8 +293,8 @@ export function evaluateNotificationRules(ctx: RuleContext): CodedRule[] {
           ? `« ${repeated.name} » : tu le refais encore`
           : `"${repeated.name}": you keep doing this`,
         body: fr
-          ? `${repeated.n} fois sur tes 15 derniers trades. C'est ton erreur la plus répétée — tant qu'elle revient, elle te coûte.`
-          : `${repeated.n} times in your last 15 trades. It's your most repeated mistake — as long as it returns, it costs you.`,
+          ? `${repeated.n} fois sur tes 15 derniers trades : c'est l'erreur que tu déclares le plus souvent en ce moment.`
+          : `${repeated.n} times in your last 15 trades: the mistake you log most often right now.`,
         severity: "error",
         url: "/mistakes",
         category: "risk",
@@ -395,9 +427,11 @@ export function evaluateNotificationRules(ctx: RuleContext): CodedRule[] {
         url: "/mistakes",
         category: "discipline",
         data: {
+          // Moins d'occurrences DÉCLARÉES : un progrès possible, ou un
+          // étiquetage moins assidu. Le produit ne tranche pas à sa place.
           plan: fr
-            ? "Ce que tu fais différemment fonctionne. Identifie-le et garde-le."
-            : "Whatever you changed is working. Name it and keep it.",
+            ? "Note ce qui a changé dans ta routine, et continue d'étiqueter chaque erreur honnêtement."
+            : "Write down what changed in your routine, and keep tagging every mistake honestly.",
           ctaLabel: fr ? "Voir mes erreurs" : "View mistakes",
           ctaPage: "mistakes",
         },

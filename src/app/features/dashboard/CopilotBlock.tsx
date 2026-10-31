@@ -241,7 +241,7 @@ function CopilotBlock({
     return `${parts[1]} · ${Number.isFinite(n) ? formatPnl(n) : parts[2]}`;
   })();
 
-  const cleanPct = edge.tradedDays > 0 ? Math.round((edge.cleanDays / edge.tradedDays) * 100) : 0;
+  const cleanPct = edge.subs.cleanDays.value ?? 0;
 
   const objPct =
     objective.targetPct && objective.targetPct > 0
@@ -285,12 +285,12 @@ function CopilotBlock({
               {deltaEl}
             </div>
             {trendEl}
-            {edge.tradedDays > 0 && (
+            {edge.verifiedDays > 0 && (
               <div className="w-full max-w-[180px] md:max-w-none">
                 <div className="mb-1 flex items-center justify-between text-[10px] text-slate-500">
                   <span>{t("copilot.cleanDays")}</span>
                   <span className="tv-figure text-slate-400">
-                    {edge.cleanDays}/{edge.tradedDays}
+                    {edge.cleanDays}/{edge.verifiedDays}
                   </span>
                 </div>
                 <div className="h-1 overflow-hidden rounded-full bg-[var(--tv-plate-0)]">

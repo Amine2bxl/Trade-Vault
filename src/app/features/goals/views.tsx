@@ -25,6 +25,7 @@ import {
   type MeasureCtx,
   type PlanPersonalization,
   currentGoalValue,
+  isGoalMetricAvailable,
   currentMonthIndex,
   goalDirection,
   goalProgress,
@@ -183,6 +184,7 @@ export function GoalPicker({
           manualValue: start,
         });
       } else {
+        if (!isGoalMetricAvailable({ kind: k }, ctx)) return null;
         out.push({
           id: crypto.randomUUID(),
           kind: k,
@@ -214,7 +216,8 @@ export function GoalPicker({
           const m = KIND_META[k];
           const Icon = m.icon;
           const d = drafts[k];
-          const cur = k === "custom" ? null : measuredCurrent(k);
+          const available = isGoalMetricAvailable({ kind: k }, ctx);
+          const cur = k === "custom" || !available ? null : measuredCurrent(k);
           return (
             <div
               key={k}
@@ -231,6 +234,7 @@ export function GoalPicker({
                   passe de 36 à 28px, la hauteur de 62 à 48. */}
               <button
                 onClick={() => patch(k, { selected: !d.selected })}
+                disabled={!available && !d.selected}
                 aria-pressed={d.selected}
                 className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left"
               >
@@ -477,20 +481,20 @@ export function PlanView({
             const meta = KIND_META[g.kind];
             const Icon = meta.icon;
             const current = currentGoalValue(g, ctx);
-            const finalReached = milestoneReached(
-              g,
-              plan.horizonMonths - 1,
-              current,
-              plan.horizonMonths,
-            );
+            const available = isGoalMetricAvailable(g, ctx);
+            const finalReached =
+              available && milestoneReached(g, plan.horizonMonths - 1, current, plan.horizonMonths);
             // Overall progress start → final target.
             const span = g.targetValue - g.startValue;
-            const overall =
-              span === 0
-                ? finalReached
-                  ? 1
-                  : 0
-                : Math.max(0, Math.min(1, (current - g.startValue) / span));
+            let overall = 0;
+            if (available) {
+              overall =
+                span === 0
+                  ? finalReached
+                    ? 1
+                    : 0
+                  : Math.max(0, Math.min(1, (current - g.startValue) / span));
+            }
             return (
               <div
                 key={g.id}
@@ -509,7 +513,9 @@ export function PlanView({
                       <span className="text-cyan-300 font-bold">{fmtVal(g, g.targetValue)}</span>
                       {" · "}
                       {tr("auj.", "now")}:{" "}
-                      <span className="text-slate-300 font-semibold">{fmtVal(g, current)}</span>
+                      <span className="text-slate-300 font-semibold">
+                        {available ? fmtVal(g, current) : "—"}
+                      </span>
                     </div>
                   </div>
                   {g.kind === "custom" && (
@@ -528,7 +534,9 @@ export function PlanView({
                       finalReached ? "bg-emerald-400/80" : "bg-[var(--tv-accent)]",
                     )}
                     style={{
-                      width: `${Math.round((goalDirection(g) === "down" ? (finalReached ? 1 : overall === 0 && current <= g.startValue ? Math.max(0, Math.min(1, (g.startValue - current) / (g.startValue - g.targetValue || 1))) : overall) : overall) * 100)}%`,
+                      width: !available
+                        ? "0%"
+                        : `${Math.round((goalDirection(g) === "down" ? (finalReached ? 1 : overall === 0 && current <= g.startValue ? Math.max(0, Math.min(1, (g.startValue - current) / (g.startValue - g.targetValue || 1))) : overall) : overall) * 100)}%`,
                     }}
                   />
                 </div>
@@ -654,7 +662,8 @@ export function PlanView({
                           <span
                             className={cn(
                               "font-bold",
-                              milestoneReached(g, i, currentGoalValue(g, ctx), plan.horizonMonths)
+                              isGoalMetricAvailable(g, ctx) &&
+                                milestoneReached(g, i, currentGoalValue(g, ctx), plan.horizonMonths)
                                 ? "text-emerald-400"
                                 : "text-slate-300",
                             )}
@@ -669,10 +678,14 @@ export function PlanView({
                       <div className="grid gap-2">
                         {plan.goals.map((g) => {
                           const current = currentGoalValue(g, ctx);
-                          const reached = milestoneReached(g, i, current, plan.horizonMonths);
-                          const prog = reached
-                            ? 1
-                            : goalProgress(g, i, current, plan.horizonMonths);
+                          const available = isGoalMetricAvailable(g, ctx);
+                          const reached =
+                            available && milestoneReached(g, i, current, plan.horizonMonths);
+                          const prog = !available
+                            ? null
+                            : reached
+                              ? 1
+                              : goalProgress(g, i, current, plan.horizonMonths);
                           return (
                             <div key={g.id} className="flex items-center gap-2.5">
                               <span className="text-[10px] text-slate-500 w-28 truncate shrink-0">
@@ -688,7 +701,7 @@ export function PlanView({
                                     "h-full rounded-full transition duration-250",
                                     reached ? "bg-emerald-400/80" : "bg-[var(--tv-accent)]",
                                   )}
-                                  style={{ width: `${Math.round(prog * 100)}%` }}
+                                  style={{ width: `${Math.round((prog ?? 0) * 100)}%` }}
                                 />
                               </div>
                               <span
@@ -697,7 +710,7 @@ export function PlanView({
                                   reached ? "text-emerald-400" : "text-slate-400",
                                 )}
                               >
-                                {Math.round(prog * 100)}%
+                                {prog === null ? "—" : `${Math.round(prog * 100)}%`}
                               </span>
                             </div>
                           );

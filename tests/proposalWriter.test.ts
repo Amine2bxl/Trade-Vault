@@ -14,6 +14,7 @@ const action: CandidateAction = {
   rationaleFacts: {
     kind: "after_loss",
     clusterId: null,
+    metric: "win_rate",
     n: 42,
     comparisonN: 61,
     comparisons: 2,
@@ -42,6 +43,27 @@ describe("writerUserPrompt", () => {
     expect(prompt).toContain("(n) : 42");
     expect(prompt).toContain("Tranches examinées : 2");
     expect(prompt).toContain("metric = max_consecutive_losses, threshold = 1");
+  });
+
+  it("rend un R moyen en R, jamais en pourcentage", () => {
+    const inR: CandidateAction = {
+      ...action,
+      rationaleFacts: { ...action.rationaleFacts, metric: "avg_r", value: -0.8, baseline: 0.35 },
+    };
+    const prompt = writerUserPrompt(inR, "fr");
+    expect(prompt).toContain("Valeur observée : -0.8 R");
+    expect(prompt).toContain("Référence : 0.35 R");
+    expect(prompt).not.toContain("-80 %");
+    // « 80 % » n'est pas un chiffre des faits quand la valeur est -0,8 R.
+    const bad = parseWriterOutput(
+      JSON.stringify({
+        text: "Après une perte, un seul trade de plus.",
+        rationale:
+          "Sur 42 trades suivant une perte, le résultat moyen tombe à 80 % sous la référence.",
+      }),
+      inR,
+    );
+    expect(bad.ok).toBe(false);
   });
 
   it("dit explicitement quand aucun paramètre chiffré n'est fixé", () => {

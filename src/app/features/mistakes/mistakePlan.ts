@@ -1,6 +1,7 @@
 import { Trade } from "@/app/types";
 import { MISTAKE_SEVERITY, TREND_WINDOW_DAYS, type Severity } from "@/domain/behavioral";
 import { localDateOf } from "@/shared/calendar-date";
+import { verifiedPriorClosedTrade } from "@/domain/tradeOrder";
 
 /**
  * LE PLAN DE CORRECTION — ce que la page « Erreurs » aurait dû dire depuis le
@@ -290,7 +291,11 @@ export function computeAfterLoss(trades: Trade[]): AfterLoss | null {
   const autres = { avecErreur: 0, total: 0 };
 
   for (let i = 1; i < ordre.length; i++) {
-    const precedent = ordre[i - 1];
+    // Le trade précédent ne compte que s'il était CLÔTURÉ avant cette entrée
+    // (même règle que les filtres, Jarvis et les motifs). Sinon « juste après
+    // une perte » pouvait désigner un trade ouvert avant que la perte existe.
+    const precedent = verifiedPriorClosedTrade(ordre, i);
+    if (!precedent) continue;
     const t = ordre[i];
     const groupe = precedent.pnl < 0 ? apres : autres;
     groupe.total++;

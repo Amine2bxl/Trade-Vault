@@ -59,6 +59,13 @@ features/jarvis (page Jarvis.tsx / widget AiAssistant.tsx)
     { source: "unavailable", reason: "busy" | "outage" }
 ```
 
+**Vérité des données reçues** : le contexte client (`toInsightTradesPayload`)
+et les outils serveur (`backend/ai-tools/trades.ts`, qui lisent `account_id`,
+`broker` et `review_pending`) envoient le **R mesuré** (`domain/trade.measuredR`)
+ou `null`, jamais le 0 stocké d'un risque inconnu, et `setupQuality: null` pour
+un import pas encore relu. Le modèle reçoit donc les mêmes inconnues que les
+écrans ; un `null` est une absence de donnée, pas une valeur à commenter.
+
 **Niveaux de modèle** (`runtime/tiers.ts`) : 1 = rapide (bavardage,
 définition, lecture simple), 2 = équilibré (analyse d'un domaine), 3 = puissant
 (diagnostic croisé, comparaison, tenue du plan), 4 = profond (revue complète

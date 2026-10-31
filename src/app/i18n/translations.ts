@@ -1134,21 +1134,21 @@ const en = {
   "dashboard.recentTrades": "Recent Trades",
   "dashboard.noTradesCta": 'No trades yet. Click "Add Trade" to get started!',
   "dashboard.riskSuffix": "risk",
-  "dashboard.avgRR": "Avg R:R",
+  "dashboard.avgRR": "Avg realized R",
   "dashboard.bestWorst": "Best / Worst",
 
   // Dashboard — Copilot block (Edge Score, rule of the day, objective)
   "copilot.title": "Today's copilot",
   "copilot.intro": "Your discipline score, the rule to keep today, your monthly goal.",
   "copilot.explain":
-    "Measures your discipline (plan kept, risk, consistency) over your last 10 traded days — never your P&L.",
+    "Rule and entry-risk adherence, only when historically verified: at least 10 trades across 5 sessions and complete evidence. Self-recorded checklists are not scored.",
   "copilot.edgeLabel": "Edge score",
   "copilot.trendTitle": "Your discipline trajectory over the last sessions",
-  "copilot.scoreBuilding": "Score building - log more trades",
-  "copilot.cleanDays": "Clean days",
+  "copilot.scoreBuilding": "Insufficient evidence — no grade",
+  "copilot.cleanDays": "Verified clean days",
   "copilot.cleanDaysWord": "clean days",
   "copilot.jarvisBuilding":
-    "Not enough recent data yet — log your trades and I'll start scoring your discipline.",
+    "I cannot verify historical adherence and risk at entry yet. No discipline grade is issued without sufficient evidence.",
   "copilot.obsCleanTrades": "You are flagging mistakes on many recent trades.",
   "copilot.obsRisk": "Position sizing slipped above your limit recently.",
   "copilot.obsRoutine": "Your pre-market routine has been inconsistent.",
@@ -1454,7 +1454,10 @@ const en = {
   "quant.expectancy": "Expectancy",
   "quant.cleanTrades": "Clean trades",
   "quant.needTenDays": "needs ≥10 trading days",
-  "quant.annualized": "annualized, daily PnL",
+  "quant.noDownside": "no downside variation observed",
+  "quant.verifiedReturnsNeeded": "verified daily account returns required",
+  "quant.noVariance": "no variation in verified daily returns",
+  "quant.annualized": "annualized from verified daily account returns",
   "quant.kellyHint": "indicative - from 30 trades",
   "quant.consistency": "Consistency",
   "quant.bestDay": "best day",
@@ -1462,16 +1465,17 @@ const en = {
   "quant.inDrawdown": "in drawdown",
   "quant.daysShort": "d",
   "quant.recoverySub": "drawdown to new high",
-  "quant.avgRRSub": "avg planned reward-to-risk",
+  "quant.avgRRSub": "signed realized R per trade",
+  "quant.rSample": "{n} of {total} trades with known risk",
   // Plain-language metric explanations (info tooltips)
   "quant.infoAvgRR":
-    "On average, how much you aim to win for every unit you risk. 2R means targeting 2 for every 1 at risk.",
+    "Average signed realized R per trade. Losses count negatively; +0.2R means an observed average gain of 0.2 units of initial risk per trade.",
   "quant.infoExpectancy":
     "What you earn on an average trade, wins and losses blended together. Positive = your system makes money over time.",
   "quant.infoSharpe":
-    "Return compared to how bumpy the ride is. Higher is smoother, steadier gains. Above 1 is good, above 2 is excellent.",
+    "Annualized average daily account return divided by its observed standard deviation. Requires cashflow-adjusted, complete daily equity history; a journal of traded days alone is not sufficient.",
   "quant.infoSortino":
-    "Like Sharpe, but only counts the losing swings — it ignores upside volatility. Rewards systems that limit the downside.",
+    "Annualized average verified daily account return divided by downside deviation. No value is shown without a complete, cashflow-adjusted return series.",
   "quant.infoKelly":
     "The share of your account math suggests risking per trade to grow fastest. Most traders use a fraction of it to stay safe.",
   "quant.infoConsistency":
@@ -1496,6 +1500,8 @@ const en = {
   "analytics.newsDaysUncovered":
     "{n} trades left aside: their week isn't in the calendar yet (being fetched).",
   "analytics.byHourSub": "PnL bars and win-rate line (ET)",
+  "analytics.timeZoneUnverified":
+    "Broker and unreviewed CSV times are excluded from ET session charts until their timezone is verified.",
 
   // Trading sessions
   "session.london": "London",
@@ -1688,6 +1694,8 @@ const en = {
   "seasonality.bestDay": "Best weekday",
   "seasonality.bestHour": "Best hour",
   "seasonality.empty": "Not enough data yet",
+  "seasonality.verifiedMarketUnavailable":
+    "Only statistics measured from your own journal are shown. Market-level seasonal returns are unavailable until a verified historical price source is connected.",
   "seasonality.emptySub": "Log at least 5 trades and your seasonal patterns will appear here.",
   "seasonality.trades": "trades",
 
@@ -2170,6 +2178,14 @@ const en = {
   "reports.available": "Available from your history",
   "reports.availableSub": "{n} closed month(s) with trades but no report yet.",
   "reports.upToDate": "Every closed month has its report.",
+  "reports.tkMistakeObserved": "Trades tagged {mistake}: {n} occurrences; combined P&L {pnl}.",
+  "reports.mistakesObserved": "P&L of trades with declared mistakes",
+  "reports.mistakesNote":
+    "A trade can have multiple tags. These figures are observations, not estimated avoidable losses.",
+  "reports.legacyWarning":
+    "This archived report predates the verified calculation methods. Unverifiable metrics are hidden until recalculated.",
+  "reports.recalculate": "Recalculate safely",
+  "reports.allAccounts": "All accounts",
   "reports.currentMonth": "Current month",
   "reports.inProgress": "In progress",
   "reports.final": "Final report",
@@ -2516,6 +2532,7 @@ const en = {
     "Tradovate didn't answer in time for the first sync. TradeVault retries on its own within a minute; nothing to redo on your side.",
   "trade.rDerivedHint": "P&L ÷ risk — edit either one",
   "trade.brokerPnl": "Net P&L (broker)",
+  "trade.importedPnl": "Net P&L (imported)",
   "trade.importedFrom": "Imported from {broker}",
   "trade.reviewHint": "Structure is filled in — add your setup, mistakes, notes and screenshots.",
   "trade.reviewHintRisk":

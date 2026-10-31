@@ -263,6 +263,20 @@ describe("ce qui se passe juste après une perte", () => {
   test("un journal vide ne produit rien", () => {
     expect(computeAfterLoss([])).toBeNull();
   });
+
+  test("une perte encore OUVERTE à l'entrée suivante ne classe pas ce trade « après une perte »", () => {
+    // Chaque jour : une perte 09:00 → 11:00, puis un trade ouvert à 10:00,
+    // pendant qu'elle courait encore. Aucun de ces trades ne « suit » la perte.
+    const jours = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"];
+    const trades = jours.flatMap((j) => [
+      { ...trade(`2026-03-${j}`, [], "09:00"), exitTime: "11:00" },
+      { ...trade(`2026-03-${j}`, ["FOMO entry"], "10:00"), pnl: 50, exitTime: "10:30" },
+    ]);
+    const r = computeAfterLoss(trades);
+    // Seuls les premiers trades de chaque jour (après le gain de la veille,
+    // clôturé) ont un prédécesseur vérifiable : le groupe « après » est vide.
+    expect(r).toBeNull();
+  });
 });
 
 describe("le pont vers Monte-Carlo", () => {

@@ -76,7 +76,7 @@ import {
 } from "@/app/store/tradeIntel";
 import { EMOTIONAL_STATES, type EmotionalState } from "@/app/trading/readiness";
 import { currencySymbol, formatMoney } from "@/shared/currency";
-import { getSession } from "@/domain/quantStats";
+import { getSessionForTrade } from "@/domain/quantStats";
 import { getDuration } from "@/domain/tradeCalcs";
 import { todayLocalDate } from "@/shared/calendar-date";
 import { useTradeNews } from "../news/useTradeNews";
@@ -202,7 +202,10 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
         direction: trade.direction,
         // Un trade importé sans stop retrouvé arrive à risque 0 : le champ
         // reste VIDE (et non « 0 ») pour que le trader voie qu'il est à saisir.
-        riskAmount: trade.broker && !(trade.riskAmount > 0) ? "" : String(trade.riskAmount),
+        riskAmount:
+          (trade.broker || trade.reviewPending) && !(trade.riskAmount > 0)
+            ? ""
+            : String(trade.riskAmount),
         rMultiple: String(trade.rMultiple),
         pnl: trade.pnl,
         strategy: trade.strategy,
@@ -217,7 +220,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
         mae: trade.mae != null ? String(trade.mae) : "",
         mfe: trade.mfe != null ? String(trade.mfe) : "",
         slippage: trade.slippage != null ? String(trade.slippage) : "",
-        brokerPnl: trade.broker ? String(trade.pnl) : "",
+        brokerPnl: trade.broker || trade.reviewPending ? String(trade.pnl) : "",
         quantity: trade.quantity != null ? String(trade.quantity) : "",
         entryPrice: trade.entryPrice != null ? String(trade.entryPrice) : "",
         exitPrice: trade.exitPrice != null ? String(trade.exitPrice) : "",
@@ -307,7 +310,12 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
      nul par-dessus celui du broker.
      Les deux restent MODIFIABLES : corriger le P&L recalcule le R, saisir un
      R réécrit le P&L (risque × R). Le trader a toujours le dernier mot. */
-  const pnlLocked = !!trade?.broker;
+  // Un import CSV encore à relire porte lui aussi un P&L OBSERVÉ (la colonne
+  // du fichier). Le recalculer « risque × R » au moment de la relecture
+  // écrivait un P&L nul quand le fichier n'avait pas de risque (R à 0), et
+  // arrondissait le P&L réel au R près sinon.
+  const pnlLocked = !!trade?.broker || !!trade?.reviewPending;
+  const pnlLabelKey = trade?.broker ? "trade.brokerPnl" : "trade.importedPnl";
   const brokerPnl = pnlLocked ? parseFloat(form.brokerPnl) || 0 : null;
   const derivedR = pnlLocked && riskDollar > 0 ? (brokerPnl as number) / riskDollar : 0;
   // Saisie du R en cours : le champ montre ce qui est tapé, pas l'arrondi
@@ -619,7 +627,11 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
   const resultDone = riskOk && rOk && !rMultipleError;
   // Libellé sans l'astérisque : la pastille du champ dit déjà « obligatoire ».
   const req = (key: Parameters<typeof t>[0]) => t(key).replace(/\s*\*$/, "");
-  const session = getSession(form.entryTime);
+  const session = getSessionForTrade({
+    entryTime: form.entryTime,
+    broker: trade?.broker,
+    reviewPending: trade?.reviewPending,
+  });
   const tone =
     form.direction === "be"
       ? "flat"
@@ -869,10 +881,10 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                   </p>
                 </div>
                 <div className="col-span-2 min-w-0 sm:col-span-1">
-                  <FormLabel>{pnlLocked ? t("trade.brokerPnl") : t("trade.estPnl")}</FormLabel>
+                  <FormLabel>{pnlLocked ? t(pnlLabelKey) : t("trade.estPnl")}</FormLabel>
                   {pnlLocked ? (
                     <SignedNumberInput
-                      aria-label={t("trade.brokerPnl")}
+                      aria-label={t(pnlLabelKey)}
                       value={form.brokerPnl}
                       onValueChange={(value) => {
                         setRDraft(null);

@@ -33,6 +33,9 @@ interface DbTradeRow {
   exit_time: string | null;
   confluences: string[] | null;
   confidence: number;
+  account_id: string | null;
+  broker: string | null;
+  review_pending: boolean | null;
 }
 
 // Server-side copy of the row mapper: store.ts is a client module (it imports
@@ -56,6 +59,11 @@ function rowToTrade(r: DbTradeRow): Trade {
     exitTime: r.exit_time ?? "",
     confluences: r.confluences ?? [],
     confidence: r.confidence,
+    // Colonnes de preuve : le rapport doit appliquer les mêmes exclusions que
+    // l'Analytics client (R inconnu d'un import broker, heure non certifiée…).
+    accountId: r.account_id,
+    broker: r.broker,
+    reviewPending: !!r.review_pending,
   };
 }
 
@@ -68,7 +76,7 @@ async function loadTradesBetween(
   const { data, error } = await sb
     .from("trades")
     .select(
-      "id, trade_date, symbol, direction, pnl, risk_amount, r_multiple, strategy, mistakes, setup_quality, notes, screenshots, entry_time, exit_time, confluences, confidence",
+      "id, account_id, trade_date, symbol, direction, pnl, risk_amount, r_multiple, strategy, mistakes, setup_quality, notes, screenshots, entry_time, exit_time, confluences, confidence, broker, review_pending",
     )
     .eq("user_id", userId)
     .gte("trade_date", start)
@@ -109,7 +117,9 @@ async function generateAiSummary(
   const systemPrompt = `You are a quantitative trading performance coach. You receive one month of aggregated journal metrics (JSON). Write a SHORT monthly debrief in ${targetLanguage} using GitHub-flavored Markdown:
 - 3 to 5 bullet points max, each citing real numbers from the data (money, %, R).
 - Every amount of money is in ${currency}: write it with the ${currencySymbol(currency)} symbol, exactly like ${formatMoney(-1234.5, { currency })} — never with another currency.
-- One bullet on the biggest strength, one on the costliest leak (use the mistakes list), one concrete action for next month.
+- Describe the strongest OBSERVED result (with its sample size when available) and one concrete process action for next month. Do not claim a proven edge or statistical significance.
+- The mistakes list contains net P&L of trades TAGGED by the trader, NOT losses caused by mistakes. Trades can have multiple tags; never add these rows together, claim losses were avoidable, or call a tag's P&L a causal cost.
+- Null metrics and absent evidence are unavailable, not zero. Never fill in missing Sharpe, Sortino, R, drawdown, execution quality, or trading-rule adherence.
 - No headers, no intro, no outro — bullets only. Never invent numbers.`;
 
   try {

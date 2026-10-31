@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, type CSSProperties } from "react";
 import { ChevronLeft, ChevronRight, Target } from "@/shared/ui/icons";
-import { Trade, MissedOpportunity } from "@/app/types";
+import { isBreakEven, type Trade, type MissedOpportunity } from "@/app/types";
+import { measuredR } from "@/domain/trade";
 import { loadMissedOpportunities } from "@/app/store";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useAccounts } from "@/app/contexts/AccountContext";
@@ -95,8 +96,8 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
         pnl: number;
         count: number;
         trades: Trade[];
-        avgRR: number;
         totalRR: number;
+        knownRCount: number;
         wins: number;
         breakEven: number;
       }
@@ -107,17 +108,22 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
           pnl: 0,
           count: 0,
           trades: [],
-          avgRR: 0,
           totalRR: 0,
+          knownRCount: 0,
           wins: 0,
           breakEven: 0,
         };
       map[t.date].pnl += t.pnl;
       map[t.date].count++;
       map[t.date].trades.push(t);
-      map[t.date].avgRR += Math.abs(t.rMultiple);
-      map[t.date].totalRR += t.rMultiple;
-      if (t.direction === "be") map[t.date].breakEven++;
+      // `measuredR` : la définition unique du R exploitable (risque saisi ou
+      // relu, hors import broker non certifié), partagée avec Analytics.
+      const r = measuredR(t);
+      if (r !== null) {
+        map[t.date].totalRR += r;
+        map[t.date].knownRCount++;
+      }
+      if (isBreakEven(t)) map[t.date].breakEven++;
       else if (t.pnl > 0) map[t.date].wins++;
     }
     // Un taux de réussite PAR JOUR était calculé ici — et n'était affiché nulle
@@ -125,9 +131,7 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
     // définition du win rate, sans plancher d'échantillon, prête à être branchée
     // un jour sur un rendu par un contributeur qui n'aurait pas su qu'elle
     // n'était pas fiable sur une journée.
-    for (const k of Object.keys(map)) {
-      if (map[k].count > 0) map[k].avgRR = map[k].avgRR / map[k].count;
-    }
+
     return map;
   }, [trades]);
 
@@ -158,7 +162,8 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
       tradingDays = 0,
       winDays = 0,
       beDays = 0,
-      absRRsum = 0,
+      signedRSum = 0,
+      knownRCount = 0,
       tradeCount = 0,
       decidedTrades = 0,
       totalWins = 0,
@@ -171,9 +176,8 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
         tradingDays++;
         if (data.pnl > 0) winDays++;
         if (data.count > 0 && data.count === data.breakEven) beDays++;
-        // data.avgRR is already the per-day average; multiply back by count so the
-        // monthly figure is a true trade-weighted average, matching Dashboard's avgRR.
-        absRRsum += data.avgRR * data.count;
+        signedRSum += data.totalRR;
+        knownRCount += data.knownRCount;
         tradeCount += data.count;
         totalRR += data.totalRR;
         const dec = data.count - data.breakEven;
@@ -186,8 +190,8 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
       tradingDays,
       winDays,
       beDays,
-      avgRR: tradeCount > 0 ? absRRsum / tradeCount : 0,
-      totalRR,
+      avgRR: tradeCount > 0 && knownRCount === tradeCount ? signedRSum / knownRCount : null,
+      totalRR: tradeCount > 0 && knownRCount === tradeCount ? totalRR : null,
       // `null` et non 0 : un mois sans trade tranché n'a pas « 0 % de
       // réussite », il n'a pas de taux du tout.
       winRate: decidedTrades > 0 ? totalWins / decidedTrades : null,
@@ -400,19 +404,20 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
             },
             {
               label: t("dashboard.avgRR"),
-              value: monthlySummary.avgRR.toFixed(2),
-              tone: monthlySummary.tradingDays === 0 ? "neutral" : "accent",
+              value: monthlySummary.avgRR === null ? "—" : monthlySummary.avgRR.toFixed(2),
+              tone: monthlySummary.avgRR === null ? "neutral" : "accent",
               delay: 3,
             },
             {
               label: t("calendar.totalRR"),
-              value: `${monthlySummary.totalRR.toFixed(2)}R`,
+              value:
+                monthlySummary.totalRR === null ? "—" : `${monthlySummary.totalRR.toFixed(2)}R`,
               tone:
                 monthlySummary.tradingDays === 0
                   ? "neutral"
-                  : monthlySummary.totalRR > 0
+                  : (monthlySummary.totalRR ?? 0) > 0
                     ? "pos"
-                    : monthlySummary.totalRR < 0
+                    : (monthlySummary.totalRR ?? 0) < 0
                       ? "neg"
                       : "neutral",
               delay: 4,

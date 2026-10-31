@@ -1,4 +1,6 @@
 import { MISTAKE_CLUSTERS, clusterOf, type MistakeClusterId } from "@/app/trading/mistakeClusters";
+import { hasUnverifiedEtTime } from "@/domain/quantStats";
+import { compareChronological, verifiedPriorClosedTrade } from "@/domain/tradeOrder";
 import {
   MIN_GROUP,
   MIN_R_DELTA,
@@ -76,9 +78,21 @@ export type DetectorResult = DetectedPattern | NotEnough | null;
 export interface TradeLike {
   date: string;
   pnl: number;
-  rMultiple: number;
+  /**
+   * R MESURÉ (`domain/trade.measuredR`, calculé par `persist.toTradeLikes`) ;
+   * `null` quand le risque initial n'est pas une donnée exploitable. La colonne
+   * `r_multiple` vaut 0 par défaut en base : la lire telle quelle faisait d'un
+   * risque inconnu un trade à 0R, qui tirait toutes les moyennes vers zéro.
+   */
+  rMultiple: number | null;
   mistakes?: string[] | null;
   entryTime?: string | null;
+  // Champs de chronologie et de provenance : sans eux, « le trade qui suit une
+  // perte » et « l'heure du trade » ne sont pas vérifiables (voir `afterLoss`).
+  exitTime?: string | null;
+  accountId?: string | null;
+  broker?: string | null;
+  reviewPending?: boolean;
 }
 
 export interface SessionLike {
@@ -87,7 +101,19 @@ export interface SessionLike {
 }
 
 const mean = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
-const isLoss = (t: TradeLike) => t.pnl < 0;
+const isLoss = (t: Pick<TradeLike, "pnl">) => t.pnl < 0;
+
+/** La forme attendue par les helpers de chronologie du domaine. */
+function clockOf(t: TradeLike) {
+  return {
+    date: t.date,
+    entryTime: t.entryTime ?? "",
+    exitTime: t.exitTime ?? "",
+    accountId: t.accountId ?? null,
+    broker: t.broker ?? null,
+    reviewPending: !!t.reviewPending,
+  };
+}
 
 /**
  * 1. CONCENTRATION D'UNE FAMILLE — quelle part des pertes porte une famille
@@ -103,20 +129,28 @@ export function clusterConcentration(trades: TradeLike[]): DetectorResult {
   const losses = trades.filter(isLoss);
   if (losses.length < MIN_GROUP) return notEnough("trades", losses.length, MIN_GROUP);
 
-  const byCluster = new Map<MistakeClusterId, { count: number; r: number }>();
+  // Un trade compte UNE fois par famille : deux erreurs de la même famille sur
+  // un même trade le comptaient deux fois, et la « part des pertes » pouvait
+  // dépasser 100 %. Le R n'est sommé que si chaque trade de la famille a un R
+  // mesuré — sinon la somme mélangerait mesures et absences.
+  const byCluster = new Map<MistakeClusterId, { count: number; r: number; rKnown: boolean }>();
   for (const trade of losses) {
+    const families = new Set<MistakeClusterId>();
     for (const mistake of trade.mistakes ?? []) {
       const cluster = clusterOf(mistake);
-      if (!cluster) continue;
-      const cur = byCluster.get(cluster) ?? { count: 0, r: 0 };
+      if (cluster) families.add(cluster);
+    }
+    for (const cluster of families) {
+      const cur = byCluster.get(cluster) ?? { count: 0, r: 0, rKnown: true };
       cur.count += 1;
-      cur.r += trade.rMultiple;
+      if (trade.rMultiple === null) cur.rKnown = false;
+      else cur.r += trade.rMultiple;
       byCluster.set(cluster, cur);
     }
   }
   if (byCluster.size === 0) return null;
 
-  let top: [MistakeClusterId, { count: number; r: number }] | null = null;
+  let top: [MistakeClusterId, { count: number; r: number; rKnown: boolean }] | null = null;
   for (const entry of byCluster) {
     if (!top || entry[1].count > top[1].count) top = entry;
   }
@@ -152,7 +186,7 @@ export function clusterConcentration(trades: TradeLike[]): DetectorResult {
     // La somme des R des trades perdants portant cette famille. C'est une
     // somme observée, pas une projection de ce qui serait arrivé sans elle —
     // ce contrefactuel-là n'est pas mesurable et ne sera pas inventé.
-    impactR: Number(top[1].r.toFixed(2)),
+    impactR: top[1].rKnown ? Number(top[1].r.toFixed(2)) : null,
   };
 }
 
@@ -166,11 +200,23 @@ export function clusterConcentration(trades: TradeLike[]): DetectorResult {
 export function afterLoss(trades: TradeLike[]): DetectorResult {
   if (trades.length < MIN_TRADES) return notEnough("trades", trades.length, MIN_TRADES);
 
-  const ordered = [...trades].sort((a, b) => a.date.localeCompare(b.date));
+  // Ordre d'ENTRÉE (date puis heure), et un prédécesseur retenu seulement s'il
+  // était clôturé AVANT l'entrée suivante (`verifiedPriorClosedTrade`, la règle
+  // partagée avec les filtres et Jarvis). Trier à la seule date laissait deux
+  // trades du même jour dans l'ordre de lecture de la base : « le trade qui
+  // suit une perte » pouvait être celui qui la PRÉCÉDAIT.
+  const ordered = trades
+    .map((t) => ({ trade: t, clock: clockOf(t) }))
+    .sort((a, b) => compareChronological(a.clock, b.clock));
+  const clocks = ordered.map((o) => o.clock);
   const after: number[] = [];
   const rest: number[] = [];
   for (let i = 1; i < ordered.length; i++) {
-    (isLoss(ordered[i - 1]) ? after : rest).push(ordered[i].rMultiple);
+    const r = ordered[i].trade.rMultiple;
+    if (r === null) continue;
+    const prior = verifiedPriorClosedTrade(clocks, i);
+    if (!prior) continue;
+    (isLoss(ordered[i - 1].trade) ? after : rest).push(r);
   }
   if (after.length < MIN_GROUP) return notEnough("trades", after.length, MIN_GROUP);
   if (rest.length < MIN_GROUP) return notEnough("trades", rest.length, MIN_GROUP);
@@ -197,11 +243,11 @@ export function afterLoss(trades: TradeLike[]): DetectorResult {
   };
 }
 
-/** Tranche horaire d'un trade, ou `null` si l'heure n'a pas été saisie. */
+/** Tranche horaire d'un trade, ou `null` si l'heure manque ou est invalide. */
 function bucketOf(entryTime: string | null | undefined): string | null {
-  if (!entryTime) return null;
-  const hour = Number(entryTime.slice(0, 2));
-  if (!Number.isFinite(hour)) return null;
+  const m = /^([01]?\d|2[0-3]):([0-5]\d)$/.exec((entryTime ?? "").trim());
+  if (!m) return null;
+  const hour = Number(m[1]);
   if (hour < 10) return "early";
   if (hour < 13) return "late_morning";
   if (hour < 16) return "afternoon";
@@ -220,6 +266,9 @@ export function timeOfDay(trades: TradeLike[]): DetectorResult {
 
   const buckets = new Map<string, number[]>();
   for (const trade of trades) {
+    // Les tranches sont des heures Eastern : l'heure d'un import broker ou d'un
+    // CSV non relu n'en est pas une preuve (même règle que `quantStats`).
+    if (trade.rMultiple === null || hasUnverifiedEtTime(clockOf(trade))) continue;
     const bucket = bucketOf(trade.entryTime);
     if (!bucket) continue;
     const list = buckets.get(bucket) ?? [];
@@ -286,8 +335,11 @@ export function readinessAssociation(sessions: SessionLike[], trades: TradeLike[
     scored.filter((s) => (s.readinessScore as number) < median).map((s) => s.sessionDate),
   );
 
-  const highR = trades.filter((t) => high.has(t.date)).map((t) => t.rMultiple);
-  const lowR = trades.filter((t) => low.has(t.date)).map((t) => t.rMultiple);
+  const measured = trades.filter(
+    (t): t is TradeLike & { rMultiple: number } => t.rMultiple !== null,
+  );
+  const highR = measured.filter((t) => high.has(t.date)).map((t) => t.rMultiple);
+  const lowR = measured.filter((t) => low.has(t.date)).map((t) => t.rMultiple);
   if (highR.length < MIN_GROUP) return notEnough("trades", highR.length, MIN_GROUP);
   if (lowR.length < MIN_GROUP) return notEnough("trades", lowR.length, MIN_GROUP);
 

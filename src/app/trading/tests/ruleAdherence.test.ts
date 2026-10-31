@@ -107,7 +107,8 @@ describe("computeRuleAdherence", () => {
       rule({ id: "heure", kind: "no_trade_after", value: "16:00", text: "Pas après 16h" }),
       rule({ id: "risque", kind: "max_risk_pct", value: "1", text: "Max 1% par trade" }),
     ];
-    const out = computeRuleAdherence(trades, rules, 25000);
+    const balances = new Map(trades.map((trade) => [trade.id, 25000]));
+    const out = computeRuleAdherence(trades, rules, 25000, 30, balances);
     expect(out.length).toBe(2);
     expect(out[0].ratePct).toBeLessThanOrEqual(out[1].ratePct);
   });

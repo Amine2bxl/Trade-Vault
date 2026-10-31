@@ -31,6 +31,41 @@ test("no signals are emitted from a journal too thin to mean anything", () => {
   expect(Object.keys(signals)).toHaveLength(0);
 });
 
+test("Jarvis session signals exclude broker and unreviewed CSV clocks", () => {
+  const manual = [
+    ...Array.from({ length: 3 }, (_, i) =>
+      trade({ id: "ny" + i, date: "2026-07-01", pnl: 100, entryTime: "10:00" }),
+    ),
+    ...Array.from({ length: 3 }, (_, i) =>
+      trade({ id: "london" + i, date: "2026-07-02", pnl: -50, entryTime: "03:00" }),
+    ),
+  ];
+  const unknown = [
+    ...Array.from({ length: 3 }, (_, i) =>
+      trade({
+        id: "broker" + i,
+        date: "2026-07-03",
+        pnl: -300,
+        entryTime: "10:00",
+        broker: "tradovate",
+      }),
+    ),
+    ...Array.from({ length: 3 }, (_, i) =>
+      trade({
+        id: "csv" + i,
+        date: "2026-07-04",
+        pnl: 200,
+        entryTime: "03:00",
+        reviewPending: true,
+      }),
+    ),
+  ];
+  const signals = computeBehaviorSignals([...manual, ...unknown]);
+  expect(signals.bySession).toBeDefined();
+  expect(signals.bySession!.find((x) => x.key === "newyork")?.pnl).toBe(300);
+  expect(signals.bySession!.find((x) => x.key === "london")?.pnl).toBe(-150);
+});
+
 test("the losing weekday is surfaced with its own win rate and P&L", () => {
   // 2026-07-03, -10, -17, -24 are Fridays; the Mondays are winners.
   const trades = [
@@ -71,6 +106,40 @@ test("size drift after a loss is measured, not guessed", () => {
   expect(drift!.tradesAfterLoss).toBeGreaterThanOrEqual(5);
   expect(drift!.avgRiskNormal).toBeGreaterThan(0);
   expect(typeof drift!.driftPct).toBe("number");
+});
+
+test("overlapping losses cannot fabricate Jarvis risk-after-loss evidence", () => {
+  const trades = Array.from({ length: 12 }, (_, i) =>
+    trade({
+      id: "overlap" + i,
+      date: "2026-07-01",
+      entryTime: "09:30",
+      exitTime: "11:00",
+      pnl: i % 2 ? 100 : -100,
+      riskAmount: i % 2 ? 250 : 100,
+    }),
+  );
+  expect(computeBehaviorSignals(trades).riskAfterLoss).toBeUndefined();
+});
+
+test("unreviewed imports cannot create a false setup-quality or conviction signal", () => {
+  const imported = Array.from({ length: 10 }, (_, i) =>
+    trade({
+      date: `2026-07-${String(i + 1).padStart(2, "0")}`,
+      pnl: i % 2 ? -100 : 200,
+      setupQuality: i % 2 ? 2 : 5,
+      confidence: i % 2 ? 20 : 90,
+      reviewPending: true,
+    }),
+  );
+  const fromImports = computeBehaviorSignals(imported);
+  expect(fromImports.setupQuality).toBeUndefined();
+  expect(fromImports.conviction).toBeUndefined();
+
+  const reviewed = imported.map((t) => ({ ...t, reviewPending: false }));
+  const fromReviewed = computeBehaviorSignals(reviewed);
+  expect(fromReviewed.setupQuality).toBeDefined();
+  expect(fromReviewed.conviction).toBeDefined();
 });
 
 test("the coach prompt carries the behaviour signals as citable evidence", () => {

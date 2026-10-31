@@ -7,7 +7,7 @@ import { useT } from "@/app/i18n/LanguageContext";
 import { Button, Modal, SelectPicker } from "@/shared/ui";
 import {
   FIELDS,
-  REQUIRED,
+  JOURNAL_REQUIRED,
   detectFormat,
   guessMapping,
   mapRowsToTrades,
@@ -99,7 +99,10 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
   };
 
   const mappedTrades = useMemo(
-    () => (parsed ? mapRowsToTrades(parsed.rows, mapping) : { valid: [] as Trade[], invalid: 0 }),
+    () =>
+      parsed
+        ? mapRowsToTrades(parsed.rows, mapping, { required: JOURNAL_REQUIRED })
+        : { valid: [] as Trade[], invalid: 0 },
     [parsed, mapping],
   );
 
@@ -138,7 +141,7 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
   };
 
   const canImport =
-    REQUIRED.every((f) => mapping[f] !== undefined) && mappedTrades.valid.length > 0;
+    JOURNAL_REQUIRED.every((f) => mapping[f] !== undefined) && mappedTrades.valid.length > 0;
   const selectClass =
     "w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500/40 cursor-pointer";
 
@@ -317,7 +320,7 @@ export default function ImportCsvModal({ existing, onClose, onImport }: ImportCs
                                         : f === "slippage"
                                           ? t("trade.slippage")
                                           : t("trade.notes")}
-                      {REQUIRED.includes(f) && <span className="text-red-400"> *</span>}
+                      {JOURNAL_REQUIRED.includes(f) && <span className="text-red-400"> *</span>}
                     </label>
                     <SelectPicker
                       variant="field"

@@ -103,7 +103,7 @@ export interface SampleStatistics {
   avgLossR: number; // mean |R-multiple| of losses
   avgWinPnl: number; // mean $ P&L of wins
   avgLossPnl: number; // mean $ |P&L| of losses
-  profitFactor: number; // sum(gains) / sum(losses)
+  profitFactor: number | null; // undefined without observed gross losses
   expectancy: number; // mean R-multiple (including BE)
   expectancyPnl: number; // mean $ P&L (including BE)
   stdDevR: number; // standard deviation of R-multiples
@@ -170,7 +170,7 @@ export function computeStatistics(samples: RMultipleSample[]): SampleStatistics 
     avgLossR: losses.length > 0 ? losses.reduce((a, s) => a + Math.abs(s.r), 0) / losses.length : 0,
     avgWinPnl: wins.length > 0 ? sumGains / wins.length : 0,
     avgLossPnl: losses.length > 0 ? sumLosses / losses.length : 0,
-    profitFactor: sumLosses > 0 ? sumGains / sumLosses : sumGains > 0 ? 99 : 0,
+    profitFactor: sumLosses > 0 ? sumGains / sumLosses : null,
     expectancy: samples.length > 0 ? meanR : 0,
     expectancyPnl: samples.length > 0 ? samples.reduce((a, s) => a + s.pnl, 0) / samples.length : 0,
     stdDevR: Math.sqrt(variance),
@@ -443,10 +443,10 @@ export function computeExpectancy(wr: number, aw: number, al: number): number {
   return wr * aw - (1 - wr) * al;
 }
 
-export function computeProfitFactor(wr: number, aw: number, al: number): number {
+export function computeProfitFactor(wr: number, aw: number, al: number): number | null {
   const gp = wr * aw;
   const gl = (1 - wr) * al;
-  return gl > 0 ? gp / gl : gp > 0 ? 99 : 0;
+  return gl > 0 ? gp / gl : null;
 }
 
 /**

@@ -386,6 +386,28 @@ describe("exécution d'un trade importé", () => {
   });
 });
 
+describe("un import CSV reste « à relire » en base", () => {
+  test("`review_pending` s'écrit pour un import sans broker", async () => {
+    // Le défaut : la colonne n'était nommée que pour un trade broker. Un CSV
+    // importé repartait donc sans elle et, relu depuis la base, passait pour
+    // une saisie manuelle relue (qualité et confiance par défaut comprises).
+    upserted = [];
+    const csv = { ...rowToTrade(row(9) as never), reviewPending: true, broker: null };
+    await upsertTrade("u1", csv);
+    expect(upserted.at(-1)!.review_pending).toBe(true);
+  });
+
+  test("l'enregistrer depuis le formulaire l'efface explicitement", async () => {
+    upserted = [];
+    const reviewed = {
+      ...rowToTrade(row(10, { review_pending: true }) as never),
+      reviewPending: false,
+    };
+    await upsertTrade("u1", reviewed);
+    expect(upserted.at(-1)!.review_pending).toBe(false);
+  });
+});
+
 describe("transfert entre comptes — lecture, écriture et reprise", () => {
   const req = {
     sourceAccountId: "source",

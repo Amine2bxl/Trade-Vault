@@ -139,19 +139,36 @@ export interface MeasureCtx {
   journalRate: number;
 }
 
+/** Une métrique non calculable ne doit pas être affichée comme un zéro réel. */
+export function isGoalMetricAvailable(g: Pick<GoalDef, "kind">, ctx: MeasureCtx): boolean {
+  switch (g.kind) {
+    case "profit_factor":
+      return ctx.stats.profitFactor !== null;
+    case "avg_rr":
+      return ctx.stats.avgRR !== null;
+    case "win_rate":
+      // Aucun trade tranché : pas de taux, et non un taux de 0 %.
+      return ctx.stats.wins + ctx.stats.losses > 0;
+    case "max_drawdown":
+      return ctx.quant.maxDrawdownPct !== null;
+    default:
+      return true;
+  }
+}
+
 /** Live current value of a goal's metric (manual for custom). */
 export function currentGoalValue(g: GoalDef, ctx: MeasureCtx): number {
   switch (g.kind) {
     case "capital":
       return ctx.startingBalance + ctx.stats.totalPnl;
     case "profit_factor":
-      return Math.min(ctx.stats.profitFactor, 99);
+      return ctx.stats.profitFactor ?? 0;
     case "max_drawdown":
       return (ctx.quant.maxDrawdownPct ?? 0) * 100;
     case "win_rate":
       return ctx.stats.winRate * 100;
     case "avg_rr":
-      return ctx.stats.avgRR;
+      return ctx.stats.avgRR ?? 0;
     case "discipline":
       return ctx.journalRate * 100;
     case "custom":

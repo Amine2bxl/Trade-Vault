@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import type { MonthlyReportData } from "@/domain/monthlyReport";
+import { readArchivedMonthlyReport, type MonthlyReportData } from "@/domain/monthlyReport";
 
 // ── Monthly reports ──
 export interface MonthlyReportRow {
@@ -19,7 +19,7 @@ export async function loadMonthlyReports(userId: string): Promise<MonthlyReportR
   return (data ?? []).map((r) => ({
     id: r.id as string,
     month: r.month as string,
-    report: r.report as unknown as MonthlyReportData,
+    report: readArchivedMonthlyReport(r.report as unknown as MonthlyReportData),
     createdAt: r.created_at as string,
   }));
 }

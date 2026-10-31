@@ -97,9 +97,11 @@ function tradeToRow(t: Trade, userId: string): TradeRow {
  * Une saisie manuelle n'en a aucune : ne pas les nommer du tout garde
  * l'écriture valable sur une base où la migration `broker_sync` n'a pas
  * encore tourné (PostgREST refuse une colonne inconnue — et l'application est
- * déployée AVANT ses migrations). Pour un trade importé, `review_pending`
- * repart à chaque écriture : l'enregistrer depuis le formulaire, c'est
- * l'avoir relu.
+ * déployée AVANT ses migrations). Exception : `review_pending`, nommée dès que
+ * l'état de relecture est connu (import broker ou CSV, enregistrement depuis
+ * le formulaire) — la migration `broker_sync` est appliquée en production
+ * (colonnes relevées en lecture seule le 28/10/2026), et l'omettre faisait
+ * perdre l'état « à relire » des imports CSV.
  */
 function executionColumns(t: Trade): Partial<TradeRow> {
   const row: Partial<TradeRow> = {};
@@ -121,8 +123,13 @@ function executionColumns(t: Trade): Partial<TradeRow> {
     row.broker = t.broker;
     row.external_id = t.externalId ?? null;
     row.broker_account = t.brokerAccount ?? null;
-    row.review_pending = !!t.reviewPending;
   }
+  // L'état « à relire » s'écrit pour TOUT import, pas seulement broker : un CSV
+  // importé (`reviewPending: true`) repartait sans la colonne, donc relu à la
+  // relecture suivante de la base — sa qualité et sa confiance par défaut, son
+  // risque et ses heures non vérifiés redevenaient des observations. Un trade
+  // enregistré depuis le formulaire porte `false` explicite : c'est l'avoir relu.
+  if (t.broker || t.reviewPending !== undefined) row.review_pending = !!t.reviewPending;
   if (t.copiedFrom) row.copied_from = t.copiedFrom;
   return row;
 }

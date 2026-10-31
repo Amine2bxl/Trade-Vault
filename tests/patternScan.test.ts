@@ -5,14 +5,18 @@ import type { TradeLike } from "../src/modules/patterns/detectors";
 
 const NOW = new Date("2026-06-01T10:00:00Z");
 
+/** Jour i à partir du 1er janvier 2026 (un trade par jour : ordre prouvable). */
+const day = (i: number) => new Date(Date.UTC(2026, 0, 1 + i)).toISOString().slice(0, 10);
+
 /** Journal où le trade suivant une perte est nettement moins bon. */
 function degraded(n = 200): TradeLike[] {
   return Array.from({ length: n }, (_, i) => ({
-    date: `2026-03-${String((i % 28) + 1).padStart(2, "0")}`,
+    date: day(i),
     pnl: i % 2 === 0 ? -100 : 100,
     rMultiple: i % 2 === 0 ? 1 : -2,
     mistakes: i % 2 === 0 ? ["No stop loss"] : [],
     entryTime: "09:30",
+    exitTime: "09:45",
   }));
 }
 

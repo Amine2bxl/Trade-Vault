@@ -69,6 +69,15 @@ describe("applyFilter — dimensions simples", () => {
     expect(applyFilter(trades, { confluence: "FVG" }).length).toBe(1);
   });
 
+  it("ne classe ni CSV non relus ni broker sans fuseau confirmé comme sessions ET", () => {
+    const manual = trade({ id: "manual", entryTime: "10:00" });
+    const broker = trade({ id: "broker", entryTime: "10:00", broker: "tradovate" });
+    const csv = trade({ id: "csv", entryTime: "10:00", reviewPending: true });
+    const rows = [manual, broker, csv];
+    expect(applyFilter(rows, { session: "newyork" }).map((t) => t.id)).toEqual(["manual"]);
+    expect(applyFilter(rows, { hour: 10 }).map((t) => t.id)).toEqual(["manual"]);
+  });
+
   it("filtre par jour de semaine (0=dimanche)", () => {
     const trades = [trade({ date: "2026-08-05" }), trade({ date: "2026-08-09" })]; // mercredi + dimanche
     expect(applyFilter(trades, { weekday: 3 }).length).toBe(1);
@@ -101,6 +110,24 @@ describe("applyFilter — contexte séquentiel", () => {
     const c = trade({ id: "c", date: "2026-08-06", pnl: 20 });
     const result = applyFilter([a, b, c], { context: "after_loss" });
     expect(result.map((t) => t.id)).toEqual(["b"]);
+  });
+
+  it("ne préjuge pas le résultat d'une position encore ouverte", () => {
+    const loss = trade({
+      id: "loss",
+      date: "2026-08-05",
+      entryTime: "09:30",
+      exitTime: "11:00",
+      pnl: -100,
+    });
+    const early = trade({ id: "early", date: "2026-08-05", entryTime: "10:00", pnl: 50 });
+    expect(applyFilter([early, loss], { context: "after_loss" })).toEqual([]);
+    const after = trade({ id: "after", date: "2026-08-05", entryTime: "11:05", pnl: 50 });
+    expect(applyFilter([loss, after], { context: "after_loss" }).map((t) => t.id)).toEqual([
+      "after",
+    ]);
+    const tied = trade({ id: "tied", date: "2026-08-05", entryTime: "11:00", pnl: 20 });
+    expect(applyFilter([loss, tied], { context: "after_loss" })).toEqual([]);
   });
 
   it("un BE précédent interrompt la chaîne after_loss", () => {

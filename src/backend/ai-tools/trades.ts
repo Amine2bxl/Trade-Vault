@@ -22,9 +22,14 @@ export type AnyClient = SupabaseClient<any, any, any>;
 
 /** Les colonnes que les moteurs déterministes consomment, et rien de plus :
  *  ni notes ni captures d'écran, qui n'entrent dans aucun calcul et gonfleraient
- *  la réponse rendue au modèle. */
+ *  la réponse rendue au modèle.
+ *
+ *  `account_id`, `broker` et `review_pending` sont des colonnes de PREUVE : sans
+ *  elles, un import broker non relu passait côté serveur pour une saisie
+ *  manuelle — son heure lue comme Eastern, son risque par défaut compté comme R
+ *  mesuré — et Jarvis citait des chiffres que l'écran du trader refusait. */
 export const TRADE_COLS =
-  "id, trade_date, symbol, direction, pnl, risk_amount, r_multiple, strategy, mistakes, setup_quality, entry_time, exit_time, confluences, confidence, mae, mfe";
+  "id, account_id, trade_date, symbol, direction, pnl, risk_amount, r_multiple, strategy, mistakes, setup_quality, entry_time, exit_time, confluences, confidence, mae, mfe, broker, review_pending";
 
 interface TradeRow {
   id: string;
@@ -43,6 +48,9 @@ interface TradeRow {
   confidence: number | null;
   mae: number | null;
   mfe: number | null;
+  account_id?: string | null;
+  broker?: string | null;
+  review_pending?: boolean | null;
 }
 
 function num(v: number | null | undefined): number {
@@ -71,6 +79,9 @@ export function rowToTrade(r: TradeRow): Trade {
     confidence: num(r.confidence),
     mae: r.mae,
     mfe: r.mfe,
+    accountId: r.account_id ?? null,
+    broker: r.broker ?? null,
+    reviewPending: !!r.review_pending,
   };
 }
 

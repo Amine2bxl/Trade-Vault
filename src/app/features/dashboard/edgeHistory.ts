@@ -43,7 +43,7 @@ export interface EdgeStore {
 }
 
 export function edgeHistoryKey(userId: string): string {
-  return `tv.edge.${userId}`;
+  return `tv.edge.v2.${userId}`;
 }
 
 /**

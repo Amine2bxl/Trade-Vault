@@ -28,6 +28,14 @@ function memoryStore(
 const USER = "u1";
 
 describe("readHistory", () => {
+  it("isolates v2 scores from the previous calculation method", () => {
+    const store = memoryStore({
+      ["tv.edge." + USER]: JSON.stringify([{ date: "2026-08-01", score: 100 }]),
+    });
+    expect(edgeHistoryKey(USER)).toBe("tv.edge.v2." + USER);
+    expect(readHistory(store, USER)).toEqual([]);
+  });
+
   it("convertit le FORMAT HÉRITÉ au lieu de le jeter", () => {
     // Régression protégée : un utilisateur existant ne doit pas voir sa
     // trajectoire repartir de zéro à cause du changement de format.

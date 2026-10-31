@@ -19,7 +19,7 @@ Chemins relatifs à `src/app/` sauf mention contraire.
 | Erreurs (`mistakes`) | `features/mistakes/` | `Mistakes.tsx` | `mistakePlan`, `trading/mistakeClusters`, `domain/behavioral`, `goals/useGoalProgress` |
 | Setups manqués (`missed`) | `features/missed/` | `MissedOpportunities.tsx` | `MissedSetupDetailModal`, `store/missed` |
 | Analytics (`analytics`) | `features/analytics/` | `Analytics.tsx` | `NewsDaysCard` (jours d'annonce / jours calmes, `domain/tradeNews.newsDaySplit`), `domain/quantStats`, `domain/tradeCalcs`, `trading/EquityChart`, `trading/chartTheme` |
-| Saisonnalité (`seasonality`) | `features/seasonality/` | `Seasonality.tsx` | `SeasonalEquity`, `assetSeasonality`, `seasonalCurve` |
+| Saisonnalité (`seasonality`) | `features/seasonality/` | `Seasonality.tsx` | `JournalSeasonality` actif (trades réels, échantillons minimums) ; `assetSeasonality` et `seasonalCurve` mis en attente de données de marché historiques vérifiées |
 | Rapports (`reports`) | `features/reports/` | `Reports.tsx` | `reportMonths`, `domain/monthlyReport`, `store/reports`, `backend/reports.functions` |
 | Monte Carlo (`montecarlo`) | `features/monte-carlo/` | `MonteCarlo.tsx` | `StrategyChart`, `StrategyEditor`, `StrategyDetails`, `strategyCsv`, Workers de projection et de densité, `src/modules/probability/strategy` |
 | Jarvis (`insights`) | `features/jarvis/` | `Jarvis.tsx` (page) · `AiAssistant.tsx` (widget) | profil `jarvis_nq`, conversation vocale (`voiceConversation`, `VoiceBar`) — voir [`AI.md`](AI.md) |
@@ -77,8 +77,12 @@ TAUX ou un CLASSEMENT ne l'est pas. `MIN_BUCKET_SAMPLE` (5 trades décisifs,
 | Progression des objectifs | `features/goals/useGoalProgress` | Point d'accès unique (Goals, Mistakes, Jarvis) |
 | « Violer une règle » | `domain/ruleCheck.checkTradeAgainstRules` | Même vérificateur en temps réel et en bilan 30 j |
 | `pnlAfterLoss` | `features/jarvis/behaviorSignals` | Borne haute, pas un surcoût imputable |
-| `profitFactor` | `domain/tradeCalcs` | Plafonné à 99 sans perte |
+| `profitFactor` | `domain/tradeCalcs` | `null` si aucune perte observée ; ne jamais afficher 99 artificiellement |
+| R réalisé d'un trade | `domain/trade.measuredR` (+ `hasMeasuredRisk`, `totalMeasuredR`) | **Seule** définition, client, serveur et Jarvis : P&L net / risque, `null` sans risque, pour un import non relu ou un trade broker (provenance du risque non persistée → lot 1). `null` n'est jamais 0R ; un total R exige un R pour chaque trade |
+| `avgRR` / `expectancyR` | `domain/tradeCalcs`, `domain/quantStats` | Sur `measuredR` uniquement ; `null` sans échantillon ; afficher `rSampleSize` |
 
-Relation canonique : `pnl = riskAmount × rMultiple` (`domain/tradeCalcs`).
+Relation du formulaire **uniquement lorsque le risque initial est connu** : `pnl = riskAmount × rMultiple` (`domain/tradeCalcs`). Un import sans risque initial certifié ne prouve pas un multiple R ; son état est inconnu, même si un zéro de compatibilité est stocké. **Le P&L observé fait foi** : pour un trade broker, un import pas encore relu ou un trade au risque inconnu, éditer le risque garde le P&L et en déduit le R (`withPnlFromRiskAndR`, formulaire de relecture).
+
+« Après une perte » et « pertes consécutives » se lisent dans l'ordre des **clôtures** : `domain/tradeOrder.verifiedPriorClosedTrade` (filtres, Jarvis, page Erreurs, motifs nocturnes, observation d'après-trade) ; égalité de minute, chevauchement ou import non relu → inconnu.
 Aucune métrique ne mesure une **causalité** : le produit observe des
 associations, jamais des causes.

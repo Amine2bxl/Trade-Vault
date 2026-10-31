@@ -18,7 +18,7 @@ function trade(id: string, opts: Partial<Trade> = {}): Trade {
     notes: "",
     screenshots: [],
     entryTime: opts.entryTime ?? "09:30",
-    exitTime: "10:00",
+    exitTime: opts.exitTime ?? "10:00",
     confluences: [],
     confidence: opts.confidence ?? 70,
   };
@@ -140,6 +140,56 @@ describe("buildAfterTradeObservation (6B)", () => {
       ],
     });
     expect(obs).toBeNull();
+  });
+});
+
+describe("lot 0 — chronologie prouvée", () => {
+  const reflection = { planRespected: "no" as const, reason: "early_entry", note: null };
+
+  it("une perte encore ouverte à l'entrée ne fait pas de ce trade un trade « après perte »", () => {
+    const obs = buildAfterTradeObservation({
+      trade: trade("cur", { pnl: -70, entryTime: "10:00", exitTime: "10:20" }),
+      intent: null,
+      reflection,
+      previousTrades: [trade("open", { pnl: -40, entryTime: "09:30", exitTime: "11:00" })],
+    });
+    expect(obs!.evidence.afterLoss).toBe(false);
+  });
+
+  it("une perte clôturée avant l'entrée est bien un prédécesseur", () => {
+    const obs = buildAfterTradeObservation({
+      trade: trade("cur", { pnl: -70, entryTime: "10:00", exitTime: "10:20" }),
+      intent: null,
+      reflection,
+      previousTrades: [trade("done", { pnl: -40, entryTime: "09:00", exitTime: "09:30" })],
+    });
+    expect(obs!.evidence.afterLoss).toBe(true);
+  });
+
+  it("sans ordre de clôture prouvé dans une journée mixte, la série n'est pas affirmée", () => {
+    const obs = buildAfterTradeObservation({
+      trade: trade("cur", { pnl: -70, entryTime: "09:30", exitTime: "" }),
+      intent: null,
+      reflection,
+      previousTrades: [
+        trade("w", { pnl: 120, entryTime: "09:00", exitTime: "" }),
+        trade("l1", { pnl: -40, entryTime: "09:10", exitTime: "" }),
+        trade("l2", { pnl: -60, entryTime: "09:20", exitTime: "" }),
+      ],
+    });
+    expect(obs!.evidence.consecutiveLossesToday).toBe(1);
+    expect(obs!.priority).toBe("medium");
+  });
+
+  it("une exécution partielle ne prétend pas mesurer une tendance", () => {
+    const obs = buildAfterTradeObservation({
+      trade: trade("p", { pnl: -70 }),
+      intent: null,
+      reflection: { planRespected: "partial", reason: null, note: null },
+      previousTrades: [],
+    })!;
+    expect(afterTradeCopy(obs, true).body).not.toContain("se creuse");
+    expect(afterTradeCopy(obs, false).body).not.toContain("widening");
   });
 });
 

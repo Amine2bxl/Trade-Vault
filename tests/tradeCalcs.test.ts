@@ -42,6 +42,19 @@ describe("computeStats", () => {
     expect(s.winRate).toBeCloseTo(2 / 3);
   });
 
+  it("treats break-even as net zero rather than a direction label", () => {
+    const s = computeStats([
+      mkTrade({ direction: "be", pnl: -5 }),
+      mkTrade({ direction: "be", pnl: 10 }),
+      mkTrade({ direction: "long", pnl: 0 }),
+    ]);
+    expect(s.breakEven).toBe(1);
+    expect(s.losses).toBe(1);
+    expect(s.wins).toBe(1);
+    expect(s.winRate).toBe(0.5);
+    expect(s.profitFactor).toBe(2);
+  });
+
   it("excludes break-even trades from the win rate", () => {
     const s = computeStats([
       mkTrade({ pnl: 100 }),
@@ -63,9 +76,111 @@ describe("computeStats", () => {
     expect(s.maxDrawdown).toBe(700);
   });
 
-  it("profit factor is 99 when there are no losses", () => {
+  it("separates signed average realized R from gain R and loss R", () => {
+    const stats = computeStats([
+      mkTrade({ id: "win", pnl: 300, riskAmount: 100, rMultiple: 3 }),
+      mkTrade({ id: "loss", pnl: -200, riskAmount: 100, rMultiple: -2 }),
+      mkTrade({ id: "unknown", pnl: 250, riskAmount: 0, rMultiple: 0 }),
+    ]);
+    expect(stats.avgRR).toBe(0.5);
+    expect(stats.avgWinR).toBe(3);
+    expect(stats.avgLossR).toBe(-2);
+    expect(stats.rSampleSize).toBe(2);
+    expect(stats.rCoveragePct).toBe(67);
+  });
+
+  it("leaves conditional R averages null when their samples are absent", () => {
+    const winOnly = computeStats([mkTrade({ pnl: 100, riskAmount: 100 })]);
+    expect(winOnly.avgWinR).toBe(1);
+    expect(winOnly.avgLossR).toBeNull();
+    const lossOnly = computeStats([mkTrade({ pnl: -100, riskAmount: 100 })]);
+    expect(lossOnly.avgWinR).toBeNull();
+    expect(lossOnly.avgLossR).toBe(-1);
+    expect(computeStats([]).avgWinR).toBeNull();
+    expect(computeStats([]).avgLossR).toBeNull();
+  });
+
+  it("does not treat missing initial risk as an observed zero-R trade", () => {
+    const stats = computeStats([
+      mkTrade({ pnl: 200, rMultiple: 2, riskAmount: 100 }),
+      mkTrade({ pnl: -400, rMultiple: 0, riskAmount: 0 }),
+    ]);
+    expect(stats.avgRR).toBe(2);
+    expect(stats.rSampleSize).toBe(1);
+    expect(stats.rCoveragePct).toBe(50);
+  });
+
+  it("does not expose an unmeasured R average as verified", () => {
+    const stats = computeStats([mkTrade({ pnl: 100, riskAmount: 0, rMultiple: 0 })]);
+    expect(stats.rSampleSize).toBe(0);
+    expect(stats.rCoveragePct).toBe(0);
+  });
+
+  it("uses signed R rather than absolute trade magnitude", () => {
+    const results = [
+      mkTrade({ pnl: 200, rMultiple: 2 }),
+      mkTrade({ pnl: -100, rMultiple: -1 }),
+      mkTrade({ pnl: -100, rMultiple: -1 }),
+    ];
+    expect(computeStats(results).avgRR).toBe(0);
+  });
+
+  it("orders intraday drawdown by entry time, independent of import order", () => {
+    const day = "2026-07-01";
+    const a = mkTrade({ id: "a", date: day, entryTime: "09:30", exitTime: "09:45", pnl: 200 });
+    const b = mkTrade({ id: "b", date: day, entryTime: "10:00", exitTime: "10:15", pnl: -150 });
+    const c = mkTrade({ id: "c", date: day, entryTime: "10:30", exitTime: "10:45", pnl: -100 });
+    const result = computeStats([c, a, b]);
+    expect(result.maxDrawdown).toBe(250);
+    expect(result.maxDrawdownOrderVerified).toBe(true);
+    expect(result.currentStreakType).toBe("loss");
+    expect(result.currentStreak).toBe(2);
+  });
+
+  it("uses realized exit order when open positions overlap", () => {
+    const date = "2026-07-01";
+    const trades = [
+      mkTrade({ id: "early", date, entryTime: "09:30", exitTime: "12:00", pnl: -100 }),
+      mkTrade({ id: "middle", date, entryTime: "10:00", exitTime: "10:15", pnl: 200 }),
+      mkTrade({ id: "late", date, entryTime: "11:00", exitTime: "11:15", pnl: -150 }),
+    ];
+    const result = computeStats([trades[2], trades[0], trades[1]]);
+    expect(result.maxDrawdown).toBe(250);
+    expect(result.maxDrawdownOrderVerified).toBe(true);
+    expect(result.currentStreakType).toBe("loss");
+    expect(result.currentStreak).toBe(2);
+  });
+
+  it("marks overnight or same-minute closes as unverified", () => {
+    const date = "2026-07-01";
+    const overnight = mkTrade({ id: "a", date, entryTime: "23:00", exitTime: "00:15", pnl: 100 });
+    expect(computeStats([overnight]).maxDrawdownOrderVerified).toBe(false);
+    const sameMinute = [
+      mkTrade({ id: "b", date, entryTime: "09:00", exitTime: "10:00", pnl: 100 }),
+      mkTrade({ id: "c", date, entryTime: "09:30", exitTime: "10:00", pnl: -150 }),
+    ];
+    expect(computeStats(sameMinute).maxDrawdownOrderVerified).toBe(false);
+  });
+
+  it("marks ambiguous intraday ordering as unverified", () => {
+    const day = "2026-07-01";
+    const stats = computeStats([
+      mkTrade({ id: "a", date: day, entryTime: "09:30", pnl: 100 }),
+      mkTrade({ id: "b", date: day, entryTime: "09:30", pnl: -100 }),
+    ]);
+    expect(stats.maxDrawdownOrderVerified).toBe(false);
+    expect(computeStats([mkTrade({ pnl: 0, direction: "long" })]).breakEven).toBe(1);
+  });
+
+  it("does not invent profit factor without observed losses", () => {
     const s = computeStats([mkTrade({ pnl: 100 }), mkTrade({ pnl: 50 })]);
-    expect(s.profitFactor).toBe(99);
+    expect(s.profitFactor).toBeNull();
+  });
+
+  it("distinguishes no sample, no losses and zero gross profit", () => {
+    expect(computeStats([]).profitFactor).toBeNull();
+    expect(computeStats([mkTrade({ pnl: 0 })]).profitFactor).toBeNull();
+    expect(computeStats([mkTrade({ pnl: -100 })]).profitFactor).toBe(0);
   });
 
   it("profit factor = grossProfit / grossLoss", () => {

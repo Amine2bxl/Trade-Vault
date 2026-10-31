@@ -2,6 +2,7 @@ import { describe, it, expect } from "bun:test";
 import {
   guessMapping,
   mapRowsToTrades,
+  JOURNAL_REQUIRED,
   parseCsv,
   parseDateTime,
   parseDirection,
@@ -68,6 +69,28 @@ describe("parseMoney", () => {
     expect(parseMoney("")).toBeNull();
     expect(parseMoney("n/a")).toBeNull();
   });
+
+  it("rejects corrupted P&L instead of parsing a plausible prefix", () => {
+    for (const input of [
+      "125oops",
+      "1.2.3",
+      "Infinity",
+      "NaN",
+      "123USD",
+      "1e9999",
+      "1,2,3",
+      "12,34,567",
+      "1,23.00",
+      "1,234",
+      "1.234",
+      "-12,345",
+      "-12.345",
+    ]) {
+      expect(parseMoney(input)).toBeNull();
+    }
+    expect(parseMoney("0")).toBe(0);
+    expect(parseMoney("-25.5")).toBe(-25.5);
+  });
 });
 
 describe("parseDateTime", () => {
@@ -84,6 +107,26 @@ describe("parseDateTime", () => {
   it("rend null sur une date illisible — mieux vaut ignorer que deviner", () => {
     expect(parseDateTime("hier")).toBeNull();
     expect(parseDateTime("")).toBeNull();
+  });
+
+  it("rejects impossible dates and hours instead of repairing them in a later layer", () => {
+    for (const input of [
+      "2026-02-30",
+      "2025-02-29",
+      "2026-13-01",
+      "2026-10-00",
+      "2026-04-31",
+      "2026-03-14T24:00",
+      "2026-03-14 09:60",
+      "2026-03-14 09:10:61",
+      "3/14/2026 13:05 PM",
+      "3/14/2026 25:00",
+      "2026-03-14garbage",
+    ]) {
+      expect(parseDateTime(input)).toBeNull();
+    }
+    expect(parseDateTime("2024-02-29 09:30")).toEqual({ date: "2024-02-29", time: "09:30" });
+    expect(parseDateTime("2026.01.05 09:12:22")).toEqual({ date: "2026-01-05", time: "09:12" });
   });
 });
 
@@ -190,6 +233,39 @@ describe("mapRowsToTrades", () => {
   it("un risque absent donne un R multiple de 0, pas une division par zéro", () => {
     const { valid } = mapRowsToTrades([["2026-03-14", "ES", "250"]], mapping);
     expect(valid[0].rMultiple).toBe(0);
+  });
+});
+
+describe("journal import — provenance de la direction", () => {
+  const mapping = { date: 0, symbol: 1, pnl: 2, direction: 3 };
+
+  it("rejette un sens absent au lieu de produire silencieusement un long", () => {
+    const result = mapRowsToTrades([["2026-03-14", "ES", "250", ""]], mapping, {
+      required: JOURNAL_REQUIRED,
+    });
+    expect(result.valid).toHaveLength(0);
+    expect(result.invalid).toBe(1);
+  });
+
+  it("refuse une direction inconnue, mais conserve les longs et shorts prouvés", () => {
+    const result = mapRowsToTrades(
+      [
+        ["2026-03-14", "ES", "250", "Buy"],
+        ["2026-03-15", "ES", "-100", "Sell"],
+        ["2026-03-16", "ES", "12", "Unknown"],
+      ],
+      mapping,
+      { required: JOURNAL_REQUIRED },
+    );
+    expect(result.valid.map((trade) => trade.direction)).toEqual(["long", "short"]);
+    expect(result.valid.every((trade) => trade.reviewPending)).toBe(true);
+    expect(result.invalid).toBe(1);
+  });
+
+  it("n'exige pas le sens pour une simulation Monte Carlo non persistée", () => {
+    const result = mapRowsToTrades([["", "", "-120", ""]], mapping, { required: ["pnl"] });
+    expect(result.valid).toHaveLength(1);
+    expect(result.valid[0].pnl).toBe(-120);
   });
 });
 

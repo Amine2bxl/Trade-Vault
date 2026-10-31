@@ -10,9 +10,10 @@ import {
 } from "@/shared/ui/icons";
 import { Trade, MissedOpportunity, isBreakEven } from "@/app/types";
 import { formatPnl, directionLabel, directionBadgeClass } from "@/domain/tradeCalcs";
-import { getSession, getMacroEvents } from "@/domain/quantStats";
+import { getSessionForTrade, getMacroEvents } from "@/domain/quantStats";
+import { useEconomicHistory } from "@/app/features/news/useTradeNews";
 import { cn } from "@/shared/ui/cn";
-import { useEffect, useReducer, useRef, useState } from "react";
+import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { useT } from "@/app/i18n/LanguageContext";
 import { useAuth } from "@/app/contexts/AuthContext";
 import {
@@ -117,7 +118,9 @@ export default function TradeDetailModal({
   const dayPnl = trades.reduce((s, t) => s + t.pnl, 0);
   const d = new Date(date + "T12:00:00");
   const dateStr = `${d.toLocaleDateString(locale, { weekday: "long", month: "long", day: "numeric" })}, '${String(d.getFullYear()).slice(-2)}`;
-  const macro = getMacroEvents(date);
+  const daysForHistory = useMemo(() => [date], [date]);
+  const economicHistory = useEconomicHistory(daysForHistory);
+  const macro = getMacroEvents(date, economicHistory.events);
 
   // Arrow keys navigate when a list context is provided
   useEffect(() => {
@@ -333,9 +336,9 @@ export default function TradeDetailModal({
                       </div>
                       <div className="flex items-center gap-1.5">
                         <span className="text-xs text-slate-500">{trade.strategy}</span>
-                        {getSession(trade.entryTime) && (
+                        {getSessionForTrade(trade) && (
                           <span className="tv-label px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400">
-                            {t(`session.${getSession(trade.entryTime)}` as never)}
+                            {t(`session.${getSessionForTrade(trade)}` as never)}
                           </span>
                         )}
                       </div>

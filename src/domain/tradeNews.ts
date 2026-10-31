@@ -16,6 +16,7 @@
 import { localDateOf } from "@/shared/calendar-date";
 import { currenciesForSymbol } from "./instrumentCurrency";
 import { MIN_BUCKET_SAMPLE } from "./quantStats";
+import { measuredR } from "./trade";
 
 /** La forme minimale d'une annonce (structurellement compatible avec `CalendarEvent`). */
 export interface NewsEvent {
@@ -80,6 +81,8 @@ export interface TradeLike {
   /** `HH:MM`, heure locale — facultatif. */
   entryTime?: string;
   exitTime?: string;
+  broker?: string | null;
+  reviewPending?: boolean;
 }
 
 export interface TradeNewsItem {
@@ -113,7 +116,7 @@ const LOCAL_CLOCK: Clock = {
 };
 
 function minutes(hhmm: string | undefined): number | null {
-  const m = /^(\d{1,2}):(\d{2})/.exec(hhmm ?? "");
+  const m = /^([01]?\d|2[0-3]):([0-5]\d)$/.exec(hhmm ?? "");
   return m ? Number(m[1]) * 60 + Number(m[2]) : null;
 }
 
@@ -130,10 +133,13 @@ export function newsForTrade(
     return { currencies, items: [], approximate: false, highCount: 0 };
   }
   const ccy = new Set<string>(currencies);
-  const start = minutes(trade.entryTime);
-  const endRaw = minutes(trade.exitTime);
-  // Une sortie « avant » l'entrée est une position passée minuit.
-  const end = start !== null && endRaw !== null && endRaw < start ? endRaw + 1440 : endRaw;
+  // Without a proven source zone, imported broker/CSV times cannot establish
+  // whether an announcement overlapped an actual trade.
+  const unknownSourceTime = !!trade.broker || !!trade.reviewPending;
+  const start = unknownSourceTime ? null : minutes(trade.entryTime);
+  const end = unknownSourceTime ? null : minutes(trade.exitTime);
+  // HH:MM cannot date an overnight exit; only same-day intervals qualify.
+  const sameDayInterval = start !== null && end !== null && end >= start;
 
   const items: TradeNewsItem[] = [];
   for (const e of events) {
@@ -143,10 +149,7 @@ export function newsForTrade(
     const time = e.allDay ? null : clock.timeOf(e.startsAt);
     const at = minutes(time ?? undefined);
     const duringTrade =
-      at !== null &&
-      start !== null &&
-      at >= start - MARGIN_MIN &&
-      at <= (end ?? start) + MARGIN_MIN;
+      at !== null && sameDayInterval && at >= start! - MARGIN_MIN && at <= end! + MARGIN_MIN;
     items.push({ event: e, time, duringTrade });
   }
   items.sort(
@@ -187,14 +190,33 @@ export interface NewsDaySplit {
 }
 
 function bucket(
-  trades: { pnl: number; rMultiple?: number | null }[],
+  trades: {
+    pnl: number;
+    rMultiple?: number | null;
+    riskAmount?: number | null;
+    broker?: string | null;
+    reviewPending?: boolean;
+  }[],
   minSample: number,
 ): DayBucket {
   const n = trades.length;
   const wins = trades.filter((t) => t.pnl > 0).length;
   const losses = trades.filter((t) => t.pnl < 0).length;
   const totalPnl = trades.reduce((s, t) => s + t.pnl, 0);
-  const withR = trades.filter((t) => typeof t.rMultiple === "number" && t.rMultiple !== 0);
+  // `measuredR` : même R exploitable que le reste du produit (un break-even au
+  // risque connu compte pour 0R, il n'est pas écarté de la moyenne).
+  const rValues = trades
+    .map((t) =>
+      typeof t.riskAmount === "number"
+        ? measuredR({
+            pnl: t.pnl,
+            riskAmount: t.riskAmount,
+            broker: t.broker ?? null,
+            reviewPending: t.reviewPending,
+          })
+        : null,
+    )
+    .filter((r): r is number => r !== null);
   const enough = n >= minSample;
   const decided = wins + losses;
   return {
@@ -205,8 +227,8 @@ function bucket(
     winRate: enough && decided > 0 ? wins / decided : null,
     avgPnl: enough ? totalPnl / n : null,
     avgR:
-      enough && withR.length >= minSample
-        ? withR.reduce((s, t) => s + (t.rMultiple as number), 0) / withR.length
+      enough && rValues.length >= minSample
+        ? rValues.reduce((s, r) => s + r, 0) / rValues.length
         : null,
   };
 }
@@ -218,7 +240,7 @@ function bucket(
  * et le nombre de trades écartés est rendu pour être affiché.
  */
 export function newsDaySplit(
-  trades: (TradeLike & { pnl: number; rMultiple?: number | null })[],
+  trades: (TradeLike & { pnl: number; rMultiple?: number | null; riskAmount?: number | null })[],
   events: NewsEvent[],
   clock: Clock = LOCAL_CLOCK,
   minSample: number = MIN_BUCKET_SAMPLE,

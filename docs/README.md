@@ -25,6 +25,10 @@ Un document par sujet ; une information vit à un seul endroit.
 | [`PRODUCT.md`](PRODUCT.md) | Positionnement, cible, offres, règles d'honnêteté, persona de Jarvis |
 | [`SEO.md`](SEO.md) | Surface publique indexable, données structurées, interdits |
 | [`ROADMAP.md`](ROADMAP.md) | Ce qui reste à faire, vérifié contre le code |
+| [`CLAUDE_HANDOFF_TRADEVAULT_LOTS_0_6.md`](CLAUDE_HANDOFF_TRADEVAULT_LOTS_0_6.md) | **Document maître de passation à Claude** : audit, état GitHub vérifié, programme séquentiel lots 0–6, tests, blocages et consignes d’exécution |
+| [`DATA_INTEGRITY_LOT1_DESIGN.md`](DATA_INTEGRITY_LOT1_DESIGN.md) | Contrat préparatoire du lot 1 : provenance, fills, cashflows, idempotence, RLS et soldes historiques ; lot 1 non démarré |
+| [`QUANT_AUDIT_COVERAGE.md`](QUANT_AUDIT_COVERAGE.md) | **Traçabilité complète de l'audit du 26 octobre** : tâches, dépendances, état, tests et critères de sortie pour les lots 0–6 |
+| [`QUANT_CORRECTNESS_PROGRESS.md`](QUANT_CORRECTNESS_PROGRESS.md) | Registre opérationnel versionné du lot en cours : changements validés, tâches ouvertes et CI |
 | [`CHANGELOG.md`](CHANGELOG.md) | Journal des changements structurels |
 
 Les règles pour les agents IA sont dans [`../AGENTS.md`](../AGENTS.md). Les lois

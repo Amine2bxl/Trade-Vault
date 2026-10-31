@@ -91,8 +91,25 @@ describe("tendance par erreur", () => {
     expect(row?.trend).toEqual({ recent: 1, previous: 1, deltaPct: 0 });
   });
 
-  it("aucun trade = aucune ligne, aucune exception", () => {
-    expect(computeBehavioral([]).rows).toEqual([]);
+  it("ne compte le P&L d'un trade multi-erreurs qu'une fois dans le total", () => {
+    const trades = [
+      trade("2026-07-01", ["FOMO entry", "No stop loss"], -200),
+      trade("2026-07-02", ["Revenge trade"], -80),
+      trade("2026-07-03", [], 150),
+    ];
+    const report = computeBehavioral(trades);
+    expect(report.totalIncidents).toBe(3);
+    expect(report.tradesWithMistakes).toBe(2);
+    expect(report.totalCost).toBe(-280);
+    expect(report.rows.reduce((sum, row) => sum + row.totalPnl, 0)).toBe(-480);
+    expect(report.weeklyTrend.reduce((sum, row) => sum + row.cost, 0)).toBe(-280);
+  });
+
+  it("aucun trade = aucune note parfaite inventée", () => {
+    const report = computeBehavioral([]);
+    expect(report.rows).toEqual([]);
+    expect(report.cleanJournalScore).toBeNull();
+    expect(report.tradesWithMistakes).toBe(0);
   });
 });
 
