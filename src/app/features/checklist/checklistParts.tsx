@@ -3,7 +3,7 @@ import { cn } from "@/shared/ui/cn";
 import { useT } from "@/app/i18n/LanguageContext";
 import { intlLocale } from "@/app/i18n/locale";
 import type { TKey } from "@/app/i18n/translations";
-import { measuredR } from "@/domain/trade";
+import { measuredR, type Trade } from "@/domain/trade";
 import { BREACH_KEYS, DIRECTION_KEYS, useRFormat } from "./checklistLabels";
 import {
   tradeBreaches,
@@ -107,11 +107,14 @@ export function TradeLines({
   plan,
   scenario,
   onlyOff = false,
+  action,
 }: {
   facts: DayFacts;
   plan: SessionPlan;
   scenario: Scenario;
   onlyOff?: boolean;
+  /** Un geste par trade (ex. « Ajouter le bilan »), posé en bout de ligne. */
+  action?: (trade: Trade, index: number) => React.ReactNode;
 }) {
   const { t, lang } = useT();
   const fmt = useMemo(
@@ -124,7 +127,7 @@ export function TradeLines({
     [lang],
   );
   const rows = facts.trades
-    .map((tr, i) => ({ tr, breaches: tradeBreaches(tr, i, plan, scenario) }))
+    .map((tr, i) => ({ tr, i, breaches: tradeBreaches(tr, i, plan, scenario) }))
     .filter((r) => !onlyOff || r.breaches.length > 0);
   if (rows.length === 0) return null;
   const why: Record<string, TKey> = {
@@ -134,11 +137,11 @@ export function TradeLines({
   };
   return (
     <ul className="space-y-1">
-      {rows.map(({ tr, breaches }) => {
+      {rows.map(({ tr, i, breaches }) => {
         const r = measuredR(tr);
         const off = breaches.length > 0;
         return (
-          <li key={tr.id} className="flex items-baseline gap-2 text-xs">
+          <li key={tr.id} className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-xs">
             <span className="tv-figure tv-figure-secondary w-10 shrink-0 text-slate-400">
               {tr.entryTime || "—"}
             </span>
@@ -157,7 +160,7 @@ export function TradeLines({
               className={cn(
                 // Le motif se lit en entier, quitte à passer à la ligne : un
                 // « hors plan · contre le bi… » ne dit pas ce qui a dérapé.
-                "min-w-0 flex-1 font-semibold",
+                "min-w-[8rem] flex-1 font-semibold",
                 off ? "text-red-400" : "text-[var(--tv-highlight)]",
               )}
             >
@@ -165,6 +168,7 @@ export function TradeLines({
                 ? `${t("chk.offPlanTag")} · ${breaches.map((b) => t(why[b])).join(", ")}`
                 : t("chk.inPlanTag")}
             </span>
+            {action && <span className="ml-auto shrink-0">{action(tr, i)}</span>}
           </li>
         );
       })}

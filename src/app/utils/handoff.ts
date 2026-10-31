@@ -36,9 +36,27 @@ export interface TradePrefill {
 
 export type MissedPrefill = Partial<Omit<MissedOpportunity, "id" | "screenshots">>;
 
+/**
+ * Le bilan d'une séance, à ajouter à un trade DÉJÀ au journal (saisi ou
+ * importé du broker) : on complète ce trade au lieu d'en créer un doublon.
+ * Le formulaire ne prend que ce qui est vide — il ne réécrit jamais une
+ * réflexion déjà saisie.
+ */
+export type TradeReviewPrefill = Pick<
+  TradePrefill,
+  | "mistakes"
+  | "intentEmotion"
+  | "intentReasoning"
+  | "intentPlan"
+  | "reflectionPlan"
+  | "reflectionReason"
+  | "reflectionNote"
+> & { tradeId: string };
+
 interface Payloads {
   trade: TradePrefill;
   missed: MissedPrefill;
+  tradeReview: TradeReviewPrefill;
 }
 
 const slots = new Map<keyof Payloads, unknown>();

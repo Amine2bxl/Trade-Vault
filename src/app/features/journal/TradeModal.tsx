@@ -298,6 +298,29 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // TRADE EXISTANT OUVERT DEPUIS LE BILAN DE SÉANCE : on le complète, on ne
+  // l'écrase pas. Les erreurs s'ajoutent à celles déjà cochées ; la réflexion
+  // et l'intention ne remplissent que les champs vides. Celles déjà en base,
+  // chargées par l'effet précédent, gardent le dernier mot.
+  useEffect(() => {
+    if (!trade) return;
+    const review = takeHandoff("tradeReview");
+    if (!review || review.tradeId !== trade.id) return;
+    setForm((f) => ({
+      ...f,
+      mistakes: Array.from(new Set([...f.mistakes, ...(review.mistakes ?? [])])),
+      intentEmotion: f.intentEmotion ?? review.intentEmotion ?? null,
+      intentReasoning: f.intentReasoning || review.intentReasoning || "",
+      intentPlan: f.intentPlan || review.intentPlan || "",
+      reflectionPlan: f.reflectionPlan ?? review.reflectionPlan ?? null,
+      reflectionReason: f.reflectionReason ?? review.reflectionReason ?? null,
+      reflectionNote: f.reflectionNote || review.reflectionNote || "",
+    }));
+    setShowIntent(true);
+    setShowReflection(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const [showAllMistakes, setShowAllMistakes] = useState(false);
   const [uploading, setUploading] = useState(false);
   // Notes mises en forme : gras / italique / souligné (voir `shared/richText`).

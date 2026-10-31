@@ -1,6 +1,7 @@
 import { Check, X } from "@/shared/ui/icons";
 import { Button, Card, Chip, CHIP_ROW, ChoiceGroup, Field, Textarea } from "@/shared/ui";
 import { cn } from "@/shared/ui/cn";
+import type { Trade } from "@/domain/trade";
 import { useT } from "@/app/i18n/LanguageContext";
 import { HistoryLine, SectionLabel, TradeLines } from "./checklistParts";
 import { BREACH_KEYS, END_KEYS } from "./checklistLabels";
@@ -141,6 +142,8 @@ interface ClosedProps {
   onReopen: () => void;
   onJournal: () => void;
   onEncodeTrade: () => void;
+  /** Ajoute le bilan à un trade déjà au journal (saisi ou importé). */
+  onReviewTrade: (trade: Trade, index: number) => void;
   onEncodeMissed: () => void;
 }
 
@@ -152,6 +155,7 @@ export function ClosedCard({
   onJournal,
   onEncodeTrade,
   onEncodeMissed,
+  onReviewTrade,
 }: ClosedProps) {
   const { t } = useT();
   const { review } = day;
@@ -159,6 +163,7 @@ export function ClosedCard({
   // Le geste le plus probable passe devant : un setup parti sans soi se note
   // comme setup manqué, une séance sans trade encodé appelle son trade.
   const missedFirst = day.endReason === "missed";
+  const hasTrades = facts.count > 0;
   return (
     <Card variant="glass" pad="default" className="space-y-4">
       <div className="flex items-center gap-2.5">
@@ -190,24 +195,42 @@ export function ClosedCard({
           {t("chk.quoted").replace("{text}", review.note.trim())}
         </p>
       )}
-      <TradeLines facts={facts} plan={day.plan} scenario={day.scenario} />
-
-      {directional && (
-        <section className="space-y-2.5">
-          <SectionLabel>{t("chk.encodeTitle")}</SectionLabel>
-          <p className="tv-prose text-slate-400">{t("chk.encodeHint")}</p>
-          <div
-            className={cn("grid gap-2 sm:grid-cols-2", missedFirst && "[&>*:first-child]:order-2")}
-          >
-            <Button variant={missedFirst ? "subtle" : "accent"} onClick={onEncodeTrade}>
-              {t("chk.encodeTrade")}
+      <section className="space-y-2.5">
+        <SectionLabel>{t("chk.encodeTitle")}</SectionLabel>
+        <p className="tv-prose text-slate-400">
+          {hasTrades ? t("chk.encodeHintTrades") : t("chk.encodeHint")}
+        </p>
+        {/* Le trade est déjà au journal (saisi, ou importé du broker) : on
+            lui AJOUTE le bilan. En créer un second fausserait toutes les
+            statistiques du jour. */}
+        {hasTrades && (
+          <TradeLines
+            facts={facts}
+            plan={day.plan}
+            scenario={day.scenario}
+            action={(tr, i) => (
+              <Button variant="accent" size="sm" onClick={() => onReviewTrade(tr, i)}>
+                {t("chk.reviewTrade")}
+              </Button>
+            )}
+          />
+        )}
+        <div
+          className={cn("grid gap-2 sm:grid-cols-2", missedFirst && "[&>*:first-child]:order-2")}
+        >
+          {directional && (
+            <Button
+              variant={missedFirst || hasTrades ? "subtle" : "accent"}
+              onClick={onEncodeTrade}
+            >
+              {hasTrades ? t("chk.encodeAnother") : t("chk.encodeTrade")}
             </Button>
-            <Button variant={missedFirst ? "accent" : "subtle"} onClick={onEncodeMissed}>
-              {t("chk.encodeMissed")}
-            </Button>
-          </div>
-        </section>
-      )}
+          )}
+          <Button variant={missedFirst ? "accent" : "subtle"} onClick={onEncodeMissed}>
+            {t("chk.encodeMissed")}
+          </Button>
+        </div>
+      </section>
 
       <HistoryLine history={history} />
       <p className="tv-prose text-slate-500">{t("chk.tomorrow")}</p>

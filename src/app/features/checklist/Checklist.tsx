@@ -38,7 +38,7 @@ import LiveCard from "./LiveCard";
 import { ClosedCard, ReviewCard } from "./ReviewCard";
 import { PhaseSteps } from "./checklistParts";
 import { BREACH_KEYS, END_KEYS, useBiasWord } from "./checklistLabels";
-import { lastTrade, missedPrefill, tradePrefill } from "./sessionHandoff";
+import { lastTrade, missedPrefill, tradePrefill, tradeReviewPrefill } from "./sessionHandoff";
 import {
   activePlan,
   BREACHES,
@@ -91,6 +91,8 @@ import "./checklist.css";
 interface ChecklistProps {
   setPage: (p: Page) => void;
   onAddTrade: () => void;
+  /** Ouvre un trade existant du journal (ajout du bilan à un trade déjà encodé). */
+  onEditTrade: (trade: Trade) => void;
   /** Trades du compte actif — les faits du jour et l'historique en dérivent. */
   trades: Trade[];
 }
@@ -107,7 +109,7 @@ function parseMinRR(raw: string): number | null {
   return Number.isFinite(v) && v > 0 ? v : null;
 }
 
-export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProps) {
+export default function Checklist({ setPage, onAddTrade, onEditTrade, trades }: ChecklistProps) {
   const { user } = useAuth();
   const { t, lang } = useT();
   const biasWord = useBiasWord();
@@ -494,6 +496,11 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
     );
     onAddTrade();
   };
+  const reviewTrade = (trade: Trade, index: number) => {
+    const d = stRef.current.day;
+    handOff("tradeReview", tradeReviewPrefill({ day: d, trade, index, planLine: planLine(d) }));
+    onEditTrade(trade);
+  };
   const encodeMissed = () => {
     const d = stRef.current.day;
     const reasonText =
@@ -678,6 +685,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
           onJournal={() => setPage("journal")}
           onEncodeTrade={() => encodeTrade(true)}
           onEncodeMissed={encodeMissed}
+          onReviewTrade={reviewTrade}
         />
       )}
 

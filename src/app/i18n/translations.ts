@@ -1883,6 +1883,10 @@ const en = {
   "chk.dashLocked": "Plan locked — now execute it",
   "chk.dashStart": "Write your plan before the open",
   "chk.dashCta": "Open",
+  "chk.reviewTrade": "Add the review",
+  "chk.encodeAnother": "Log another trade",
+  "chk.encodeHintTrades":
+    "Your trade is already in the journal? Add the review to it — no duplicate.",
   "chk.todayTrades": "Today's trades",
   "chk.gateTitle": "Entry gate",
   "chk.memoryTitle": "What your sessions say",

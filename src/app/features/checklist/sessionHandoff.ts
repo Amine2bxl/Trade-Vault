@@ -7,8 +7,16 @@
 import type { Trade } from "@/domain/trade";
 import type { Mistake } from "@/app/trading/mistakeClusters";
 import type { ReflectionReason } from "@/app/store/tradeIntel";
-import type { MissedPrefill, TradePrefill } from "@/app/utils/handoff";
-import { activePlan, parseAmount, planRR, type Breach, type SessionDay } from "./sessionPlan";
+import type { MissedPrefill, TradePrefill, TradeReviewPrefill } from "@/app/utils/handoff";
+import {
+  activePlan,
+  parseAmount,
+  planRR,
+  tradeBreaches,
+  type Breach,
+  type SessionDay,
+  type TradeBreach,
+} from "./sessionPlan";
 
 /**
  * Écart déclaré au bilan → erreur du journal. `null` quand le journal n'a
@@ -109,5 +117,59 @@ export function missedPrefill(input: {
     whatHappened: input.planLine,
     lessonLearned: input.day.review.note.trim(),
     nextTimePlan: "",
+  };
+}
+
+/** Écart observé sur UN trade → erreur du journal. */
+const TRADE_BREACH_TO_MISTAKE: Record<TradeBreach, Mistake> = {
+  direction: "Ignored plan",
+  extra: "Overtrading",
+  observation: "Ignored plan",
+};
+const TRADE_BREACH_TO_REASON: Record<TradeBreach, ReflectionReason> = {
+  direction: "wrong_setup",
+  extra: "other",
+  observation: "wrong_setup",
+};
+
+/**
+ * Le bilan, ramené à UN trade déjà au journal. Ce que les données prouvent
+ * sur ce trade (contre le biais, au-delà du max) passe d'abord ; les écarts
+ * déclarés pour la séance ne s'y ajoutent que si le plan n'a pas été
+ * respecté. Un trade conforme dans une séance mal tenue est « partiellement »
+ * dans le plan : c'est vrai, et c'est au trader d'affiner.
+ */
+export function tradeReviewPrefill(input: {
+  day: SessionDay;
+  trade: Trade;
+  /** Rang du trade dans la journée (ordre d'entrée) : c'est lui qui fait le « trade en trop ». */
+  index: number;
+  planLine: string;
+}): TradeReviewPrefill {
+  const { day, trade, index } = input;
+  const observed = tradeBreaches(trade, index, day.plan, day.scenario);
+  const { respected, breaches, note } = day.review;
+  const mistakes: Mistake[] = [];
+  for (const b of observed) {
+    const m = TRADE_BREACH_TO_MISTAKE[b];
+    if (!mistakes.includes(m)) mistakes.push(m);
+  }
+  if (respected === false) {
+    for (const m of mistakesFor(breaches)) if (!mistakes.includes(m)) mistakes.push(m);
+  }
+  return {
+    tradeId: trade.id,
+    mistakes,
+    intentEmotion: day.mood,
+    intentReasoning: activePlan(day).narrative.trim(),
+    intentPlan: input.planLine,
+    reflectionPlan: observed.length > 0 ? "no" : respected === false ? "partial" : "yes",
+    reflectionReason:
+      observed.length > 0
+        ? TRADE_BREACH_TO_REASON[observed[0]]
+        : respected === false && breaches.length > 0
+          ? BREACH_TO_REASON[breaches[0]]
+          : null,
+    reflectionNote: note.trim(),
   };
 }

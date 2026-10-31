@@ -11,7 +11,13 @@ import {
   templateItems,
 } from "../checklistDefaults";
 import { hydrateConfig } from "../helpers";
-import { BREACH_TO_MISTAKE, lastTrade, missedPrefill, tradePrefill } from "../sessionHandoff";
+import {
+  BREACH_TO_MISTAKE,
+  lastTrade,
+  missedPrefill,
+  tradePrefill,
+  tradeReviewPrefill,
+} from "../sessionHandoff";
 import {
   BREACHES,
   emptyDay,
@@ -207,4 +213,62 @@ describe("les questions d'entrée", () => {
     const noItems = JSON.stringify({ startTime: "09:30" });
     expect(hydrateConfig(noItems, "en").items).toEqual(defaultConfigFor("en").items);
   });
+});
+
+describe("le bilan ajouté à un trade déjà au journal", () => {
+  test("un trade contre le biais : « non », erreurs observées puis déclarées", () => {
+    const p = tradeReviewPrefill({
+      day: closedDay(false),
+      trade: trade({ id: "t1", direction: "long" }),
+      index: 0,
+      planLine: "SHORT → 21 450",
+    });
+    expect(p.tradeId).toBe("t1");
+    expect(p.reflectionPlan).toBe("no");
+    expect(p.reflectionReason).toBe("wrong_setup");
+    expect(p.mistakes).toEqual(["Ignored plan", "Chased entry"]);
+    expect(p.reflectionNote).toBe("Garder la DoL");
+    expect(p.intentPlan).toBe("SHORT → 21 450");
+  });
+
+  test("un trade conforme dans une séance mal tenue : « partiellement »", () => {
+    const p = tradeReviewPrefill({
+      day: closedDay(false),
+      trade: trade({ direction: "short" }),
+      index: 0,
+      planLine: "x",
+    });
+    expect(p.reflectionPlan).toBe("partial");
+    expect(p.reflectionReason).toBe("late_entry");
+  });
+
+  test("un trade conforme, plan respecté : « oui », aucune erreur", () => {
+    const p = tradeReviewPrefill({
+      day: closedDay(true),
+      trade: trade({ direction: "short" }),
+      index: 0,
+      planLine: "x",
+    });
+    expect(p.reflectionPlan).toBe("yes");
+    expect(p.mistakes).toEqual([]);
+    expect(p.reflectionReason).toBeNull();
+  });
+
+  test("le trade au-delà du maximum porte le surtrading", () => {
+    const p = tradeReviewPrefill({
+      day: closedDay(true),
+      trade: trade({ direction: "short" }),
+      index: 1,
+      planLine: "x",
+    });
+    expect(p.mistakes).toEqual(["Overtrading"]);
+    expect(p.reflectionPlan).toBe("no");
+  });
+});
+
+test("chaque relais est rendu une fois, au bon formulaire", () => {
+  handOff("tradeReview", { tradeId: "t1" });
+  expect(takeHandoff("trade")).toBeNull();
+  expect(takeHandoff("tradeReview")?.tradeId).toBe("t1");
+  expect(takeHandoff("tradeReview")).toBeNull();
 });
