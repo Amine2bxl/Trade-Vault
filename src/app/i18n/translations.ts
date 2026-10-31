@@ -1883,6 +1883,8 @@ const en = {
   "chk.dashLocked": "Plan locked — now execute it",
   "chk.dashStart": "Write your plan before the open",
   "chk.dashCta": "Open",
+  "chk.offScale": "off scale",
+  "chk.ladder": "Plan map",
   "chk.fNarrative": "why",
   "chk.fAltCondition": "B condition",
   "chk.fAltBias": "B direction",

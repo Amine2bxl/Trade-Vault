@@ -13,6 +13,8 @@ import {
 import { useT } from "@/app/i18n/LanguageContext";
 import { EMOTIONAL_STATES } from "@/app/trading/readiness";
 import { HistoryLine, MemoryLines, RRBadge, SectionLabel } from "./checklistParts";
+import PlanLadder from "./PlanLadder";
+import { planLadder } from "./ladderGeometry";
 import { FIELD_KEYS, MOOD_KEYS, useBiasWord, useRFormat } from "./checklistLabels";
 import {
   altStarted,
@@ -62,6 +64,7 @@ export default function PlanCard({ day, act, tried, onLock, news, history, memor
   const missing = missingFields(plan, mood);
   const directional = plan.bias === "long" || plan.bias === "short";
   const rr = planRR(plan);
+  const ladder = planLadder(plan);
   const warnings = planWarnings(plan, minRR);
   const [altOpen, setAltOpen] = useState(() => altStarted(plan.alt));
 
@@ -164,9 +167,16 @@ export default function PlanCard({ day, act, tried, onLock, news, history, memor
                 />
               </Field>
             </div>
-            {(rr !== null || warnings.length > 0) && (
+            {/* La carte se dessine pendant la saisie : une cible du mauvais
+                côté se voit avant le verrou, pas après le stop. */}
+            {ladder && <PlanLadder ladder={ladder} />}
+            {((rr !== null && !ladder) || warnings.length > 0) && (
               <div className="flex flex-wrap items-center gap-2">
-                <RRBadge rr={rr} low={warnings.includes("rrLow")} />
+                {/* La carte porte déjà le R de la cible ; le badge ne revient
+                    que sans carte, ou pour signaler un R:R sous le minimum. */}
+                {(!ladder || warnings.includes("rrLow")) && (
+                  <RRBadge rr={rr} low={warnings.includes("rrLow")} />
+                )}
                 {warnings.map((w) => (
                   <span key={w} className="text-xs font-semibold text-amber-300">
                     {warningText(w)}

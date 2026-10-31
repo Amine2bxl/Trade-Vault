@@ -5,6 +5,8 @@ import { useT } from "@/app/i18n/LanguageContext";
 import { RRBadge, TradeLines } from "./checklistParts";
 import { biasTone, END_KEYS, useBiasWord } from "./checklistLabels";
 import EntryGate from "./EntryGate";
+import PlanLadder from "./PlanLadder";
+import { planLadder } from "./ladderGeometry";
 import {
   activePlan,
   altComplete,
@@ -57,6 +59,13 @@ export default function LiveCard({
   const plan = activePlan(day);
   const observation = plan.bias === "none";
   const rr = planRR(plan);
+  // Le B actif devient le plan : sa cible n'a plus à apparaître en pointillé.
+  // Une géométrie incohérente (cible du mauvais côté) ne se dessine pas.
+  const drawn = planLadder(
+    day.scenario === "B" ? { ...plan, alt: { ...plan.alt, bias: null } } : plan,
+  );
+  const ladder =
+    drawn && (drawn.levels.find((l) => l.kind === "target")?.r ?? 0) > 0 ? drawn : null;
   const first = blockers[0];
 
   return (
@@ -97,7 +106,21 @@ export default function LiveCard({
         </p>
       )}
 
-      {!observation && (
+      {!observation && ladder && (
+        <>
+          <PlanLadder ladder={ladder} />
+          <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
+            {minRR !== null && rr !== null && rr < minRR && <RRBadge rr={rr} low />}
+            <span>
+              {t("chk.risk")} <span className="tv-figure text-slate-200">{plan.risk.trim()}</span>
+            </span>
+          </div>
+        </>
+      )}
+
+      {/* Sans prix lisibles (ou B sans géométrie cohérente), les niveaux tels
+          qu'écrits : on n'invente pas une carte. */}
+      {!observation && !ladder && (
         <>
           <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             {(

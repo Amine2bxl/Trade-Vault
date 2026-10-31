@@ -1825,6 +1825,8 @@ const fr: Dict = {
   "chk.dashLocked": "Plan verrouillé — exécute-le",
   "chk.dashStart": "Écris ton plan avant l'open",
   "chk.dashCta": "Ouvrir",
+  "chk.offScale": "hors échelle",
+  "chk.ladder": "Carte du plan",
   "chk.fNarrative": "pourquoi",
   "chk.fAltCondition": "condition du B",
   "chk.fAltBias": "sens du B",
