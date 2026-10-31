@@ -146,8 +146,9 @@ restent distincts. Le Worker de la feature transfère les tableaux typés ; un
 second Worker rasterise le nuage pour éviter de bloquer l'affichage.
 Les comparaisons conservent la même graine ; les plans enregistrés sont locaux,
 namespacés par utilisateur et sous-compte, avec leur distribution de référence.
-Les anciens `monteCarloEngine` et `monteCarloViz` restent présents pour leurs
-consommateurs et tests historiques ; la page n'exécute plus l'ancien moteur.
+L'ancien moteur `monteCarloEngine` a été retiré au lot 6 (aucun appelant de
+production) ; `monteCarloViz` ne garde que `histogram`, lu par
+`StrategyDetails`.
 
 ## 5. Cycle de vie d'un trade
 

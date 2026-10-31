@@ -104,11 +104,11 @@ La CI et les corrections ponctuelles ne suffisent pas pour déclarer tout le cha
 | E6 | Stripe abonnement/annulation/3DS/webhooks | L5 P0 | OPEN : compte test et secrets nécessaires |
 | E7 | Broker OAuth et synchronisation réelle | L1/L5 P0 | OPEN : permissions, déduplication, migrations, vérification réelle |
 | E8 | Traductions, navigation, mauvais composants montés | L5/L6 P1 | DONE pour l'interface : libellés FR/EN en dur passés en clés ; restent bilingues par conception la grille tarifaire partagée avec la vitrine et le contenu pré-rempli |
-| E9 | Nettoyer moteurs IA jamais branchés et calculs redondants | L6 P1 | OPEN : usage vérifié avant suppression |
+| E9 | Nettoyer moteurs IA jamais branchés et calculs redondants | L6 P1 | DONE : ancien moteur Monte Carlo retiré avec preuve d'usage ; `Simulator` gardé (fonction en attente, moteur vivant) |
 | E10 | Faire concorder `public/llms.txt` et intégration broker | L5/L6 P1 | DONE pour `llms.txt` ; landing « No broker connection » = décision produit à l'activation de Tradovate |
 | E11 | `main` protégée, branches par lots, PR revue | Chaque lot P0 | PARTIAL : PR dédiée, mais protection de branche à vérifier |
-| E12 | Restructuration repo et docs finales | L6 P0 | NOT STARTED : ne pas déplacer de code avant validation des lots |
-| E13 | Revue transverse finale (moteurs, IA, UI, sécurité, abonnements) | L6 P0 | NOT STARTED : données et sorties cohérentes |
+| E12 | Restructuration repo et docs finales | L6 P0 | DONE : aucun déplacement nécessaire ; suppressions prouvées, docs à jour |
+| E13 | Revue transverse finale (moteurs, IA, UI, sécurité, abonnements) | L6 P0 | DONE (code) : portes complètes sur la pile ; E2E authentifié et Stripe/Tradovate non validés |
 
 ## Ordonnancement et boucle d'exécution
 

@@ -441,7 +441,7 @@ La connexion Supabase active a été consultée **en lecture seule** pour invent
 
 ## Lot 1 — Data Integrity (30 octobre 2026, PR #236)
 
-Branche `feat/data-integrity-lot1`, empilée sur `feat/quant-correctness-lot0`. Migration additive `20261028140000_data_integrity_provenance.sql` — **non appliquée en production ni sur une branche de preview**. Détail de la réalisation : `docs/DATA_INTEGRITY_LOT1_DESIGN.md` § Réalisation.
+Branche `feat/data-integrity-lot1`, empilée sur `feat/quant-correctness-lot0`. Migration additive `20261028140000_data_integrity_provenance.sql` — **appliquée en production le 31 octobre 2026** (décision du propriétaire : terminer les lots ; vérifiée : 1 471 trades intacts, aucune valeur rétro-écrite, RLS active, politiques présentes). Détail de la réalisation : `docs/DATA_INTEGRITY_LOT1_DESIGN.md` § Réalisation.
 
 ### Défauts corrigés (reproduits par un test qui échoue sur l'ancien code)
 
@@ -478,7 +478,7 @@ Branche `feat/data-integrity-lot1`, empilée sur `feat/quant-correctness-lot0`. 
 
 ## Lot 2 — EdgeLab, BehaviorLab, Research Notebook (30 octobre 2026)
 
-Branche `feat/research-edge-behavior-lot2`, empilée sur `feat/data-integrity-lot1`. Migration additive `20261030160000_research_notebook.sql` — **non appliquée en production**.
+Branche `feat/research-edge-behavior-lot2`, empilée sur `feat/data-integrity-lot1`. Migration additive `20261030160000_research_notebook.sql` — **appliquée en production le 31 octobre 2026** (décision du propriétaire : terminer les lots ; vérifiée : 1 471 trades intacts, aucune valeur rétro-écrite, RLS active, politiques présentes).
 
 ### Livré
 
@@ -508,7 +508,7 @@ Branche `feat/research-edge-behavior-lot2`, empilée sur `feat/data-integrity-lo
 | Cohérence analytique / rapports / exports / coach | **PARTIAL** | EdgeLab réutilise `measuredR`, les sessions et l'ordre du lot 1 ; Jarvis n'interroge pas encore EdgeLab (→ lot 4, contrat de preuve) |
 | Expériences comportementales prospectives (hypothèse, durée, conformité) | **PARTIAL** | Le Notebook couvre l'hypothèse d'espérance ; une expérience de RÈGLE (conformité mesurée) n'est pas encore modélisée |
 
-**Validations manquantes** : migration non appliquée sur une base Supabase (réseau bloqué) ; rendu vérifié sur doublure, pas en parcours authentifié réel.
+**Validations manquantes** : rendu vérifié sur doublure, pas en parcours authentifié réel (migration appliquée en production le 31 octobre 2026).
 
 ## Lot 3 — Risk Engine V2 / PropRisk / Monte Carlo (30 octobre 2026)
 
@@ -547,7 +547,7 @@ Branche `feat/prop-risk-engine-lot3`, empilée sur `feat/research-edge-behavior-
 
 ## Lot 4 — Jarvis Intelligence / progression mesurable (30 octobre 2026)
 
-Branche `feat/jarvis-evidence-lot4`, empilée sur `feat/prop-risk-engine-lot3`. Migration additive `20261030200000_progress_experiments.sql` — **non appliquée en production**.
+Branche `feat/jarvis-evidence-lot4`, empilée sur `feat/prop-risk-engine-lot3`. Migration additive `20261030200000_progress_experiments.sql` — **appliquée en production le 31 octobre 2026** (décision du propriétaire : terminer les lots ; vérifiée : 1 471 trades intacts, aucune valeur rétro-écrite, RLS active, politiques présentes).
 
 ### Défauts corrigés
 | Défaut | Correctif | Preuve |
@@ -599,3 +599,26 @@ Branche `chore/product-hardening-lot5`, empilée sur `feat/jarvis-evidence-lot4`
 | E2E authentifié, charge, reprise après panne | **BLOCKED_EXTERNAL** | hôte Supabase bloqué par le réseau de la session |
 | Protection de `main` | **BLOCKED_EXTERNAL** | réglage du dépôt, hors de portée de la session |
 | Advisor Supabase « Leaked Password Protection Disabled » | **ACTION PROPRIÉTAIRE** | réglage Auth du tableau de bord Supabase |
+
+## Lot 6 — Consolidation (30–31 octobre 2026)
+
+La porte du handoff (§10 : lots 0–5 validés avant toute suppression) est levée par la décision du propriétaire du 31 octobre 2026 : terminer les lots et fusionner la pile sur `main`. La consolidation est faite sur la pile, avant la fusion, avec la preuve d'usage exigée par `ARCHITECTURE.md` §7.
+
+### Carte d'usage (recherche statique, dynamique, `lazyPage`, `import.meta.glob`, `PAGES`, routes, scripts, config)
+| Fichier | Consommateurs de production | Décision et réalisation |
+|---|---|---|
+| `features/monte-carlo/monteCarloEngine.ts` | **Aucun appel** ; seuls ses types étaient lus par `monteCarloViz.ts` | **Retiré.** Les tests qui passaient par lui portent désormais sur la chaîne montée : `monteCarloCsv` (perte médiane comme unité estimée, R déclarés intacts, aucune échelle sans perte, simulation non plate via `projectStrategy`), `csvBrokerFormats` (`readStrategyCsv` sur les cinq exports), et les garanties du lot 0 sur le profit factor (inconnu sans perte, pas de plafond, exact au-delà de 99) sur `strategyEdge` |
+| `features/monte-carlo/monteCarloViz.ts` | Seul `histogram` (`StrategyDetails.tsx`) | `pathBands`, `samplePaths`, `chartRows`, `drawdownStats`, `streakStats`, `probabilityOfProfit` et `rHistogram` **retirés** avec leurs tests ; `histogram` et son test gardés |
+| `features/simulator/Simulator.tsx` (+ `datasetQuality.ts`) | **Non monté** (absent de `PAGES`, de `pageModules.ts`, des routes) | **Gardé** : fonction en attente citée par la ROADMAP ; son moteur `modules/probability/engine` reste vivant (Jarvis `ConversationWorkspace`, `probability/goals`, `compare`, `sensitivity`). Le monter ou le retirer est une décision produit |
+
+### Moteurs probabilistes après consolidation
+Deux moteurs, deux usages distincts, plus aucun moteur mort : `modules/probability/strategy` (+ `rules`) pour le laboratoire Monte Carlo et le risque prop ; `modules/probability/engine` pour les scénarios et objectifs (Jarvis, Goals). Les calculs de KPI des consommateurs montés sont déjà tenus concordants par le lot 0 (`rEvidenceConsistency`, goldens).
+
+### Critères de sortie L6 (handoff §10)
+| Critère | Statut | Preuve |
+|---|---|---|
+| Suppression seulement avec preuve d'absence d'usage | **DONE** | carte ci-dessus ; typecheck, build et suite complète verts après retrait |
+| Couverture du code vivant maintenue | **DONE** | tests réécrits sur la chaîne montée (mêmes intentions) ; aucun test désactivé |
+| Traçabilité, docs | **DONE** | ce registre, `ARCHITECTURE.md`, handoff ADDENDUM 8 |
+| Revue transverse finale (E13) | **DONE (code)** | portes complètes sur la tête de la pile ; E2E authentifié toujours `BLOCKED_EXTERNAL` |
+| Advisor sécurité après application | **DONE** | migration `20261031010000_trigger_functions_search_path` : trois fonctions de déclencheur créées par les lots 1, 2 et 4 reçoivent un `search_path` figé (advisor « Function Search Path Mutable » levé). `owns_account` exécutable par `authenticated` : voulu (ne répond que pour les comptes de l'appelant) |
