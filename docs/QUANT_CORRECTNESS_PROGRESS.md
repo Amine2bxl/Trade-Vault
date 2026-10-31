@@ -441,7 +441,7 @@ La connexion Supabase active a été consultée **en lecture seule** pour invent
 
 ## Lot 1 — Data Integrity (30 octobre 2026, PR #236)
 
-Branche `feat/data-integrity-lot1`, empilée sur `feat/quant-correctness-lot0`. Migration additive `20261028140000_data_integrity_provenance.sql` — **non appliquée en production ni sur une branche de preview**. Détail de la réalisation : `docs/DATA_INTEGRITY_LOT1_DESIGN.md` § Réalisation.
+Branche `feat/data-integrity-lot1`, empilée sur `feat/quant-correctness-lot0`. Migration additive `20261028140000_data_integrity_provenance.sql` — **appliquée en production le 31 octobre 2026** (décision du propriétaire : terminer les lots ; vérifiée : 1 471 trades intacts, aucune valeur rétro-écrite, RLS active, politiques présentes). Détail de la réalisation : `docs/DATA_INTEGRITY_LOT1_DESIGN.md` § Réalisation.
 
 ### Défauts corrigés (reproduits par un test qui échoue sur l'ancien code)
 
@@ -478,7 +478,7 @@ Branche `feat/data-integrity-lot1`, empilée sur `feat/quant-correctness-lot0`. 
 
 ## Lot 2 — EdgeLab, BehaviorLab, Research Notebook (30 octobre 2026)
 
-Branche `feat/research-edge-behavior-lot2`, empilée sur `feat/data-integrity-lot1`. Migration additive `20261030160000_research_notebook.sql` — **non appliquée en production**.
+Branche `feat/research-edge-behavior-lot2`, empilée sur `feat/data-integrity-lot1`. Migration additive `20261030160000_research_notebook.sql` — **appliquée en production le 31 octobre 2026** (décision du propriétaire : terminer les lots ; vérifiée : 1 471 trades intacts, aucune valeur rétro-écrite, RLS active, politiques présentes).
 
 ### Livré
 
@@ -508,7 +508,7 @@ Branche `feat/research-edge-behavior-lot2`, empilée sur `feat/data-integrity-lo
 | Cohérence analytique / rapports / exports / coach | **PARTIAL** | EdgeLab réutilise `measuredR`, les sessions et l'ordre du lot 1 ; Jarvis n'interroge pas encore EdgeLab (→ lot 4, contrat de preuve) |
 | Expériences comportementales prospectives (hypothèse, durée, conformité) | **PARTIAL** | Le Notebook couvre l'hypothèse d'espérance ; une expérience de RÈGLE (conformité mesurée) n'est pas encore modélisée |
 
-**Validations manquantes** : migration non appliquée sur une base Supabase (réseau bloqué) ; rendu vérifié sur doublure, pas en parcours authentifié réel.
+**Validations manquantes** : rendu vérifié sur doublure, pas en parcours authentifié réel (migration appliquée en production le 31 octobre 2026).
 
 ## Lot 3 — Risk Engine V2 / PropRisk / Monte Carlo (30 octobre 2026)
 
@@ -547,7 +547,7 @@ Branche `feat/prop-risk-engine-lot3`, empilée sur `feat/research-edge-behavior-
 
 ## Lot 4 — Jarvis Intelligence / progression mesurable (30 octobre 2026)
 
-Branche `feat/jarvis-evidence-lot4`, empilée sur `feat/prop-risk-engine-lot3`. Migration additive `20261030200000_progress_experiments.sql` — **non appliquée en production**.
+Branche `feat/jarvis-evidence-lot4`, empilée sur `feat/prop-risk-engine-lot3`. Migration additive `20261030200000_progress_experiments.sql` — **appliquée en production le 31 octobre 2026** (décision du propriétaire : terminer les lots ; vérifiée : 1 471 trades intacts, aucune valeur rétro-écrite, RLS active, politiques présentes).
 
 ### Défauts corrigés
 | Défaut | Correctif | Preuve |
@@ -621,3 +621,4 @@ Deux moteurs, deux usages distincts, plus aucun moteur mort : `modules/probabili
 | Couverture du code vivant maintenue | **DONE** | tests réécrits sur la chaîne montée (mêmes intentions) ; aucun test désactivé |
 | Traçabilité, docs | **DONE** | ce registre, `ARCHITECTURE.md`, handoff ADDENDUM 8 |
 | Revue transverse finale (E13) | **DONE (code)** | portes complètes sur la tête de la pile ; E2E authentifié toujours `BLOCKED_EXTERNAL` |
+| Advisor sécurité après application | **DONE** | migration `20261031010000_trigger_functions_search_path` : trois fonctions de déclencheur créées par les lots 1, 2 et 4 reçoivent un `search_path` figé (advisor « Function Search Path Mutable » levé). `owns_account` exécutable par `authenticated` : voulu (ne répond que pour les comptes de l'appelant) |

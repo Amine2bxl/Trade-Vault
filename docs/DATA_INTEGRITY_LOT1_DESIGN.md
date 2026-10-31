@@ -1,6 +1,6 @@
 # TradeVault — Lot 1 / Data Integrity
 
-**État (30 octobre 2026) : implémenté sur `feat/data-integrity-lot1` (PR #236, empilée sur #234), migration NON appliquée en production.** La conception d'origine est conservée ci-dessous ; la section « Réalisation » dit ce qui a été construit, ce qui s'en écarte et pourquoi, et ce qui reste.
+**État (30 octobre 2026) : implémenté sur `feat/data-integrity-lot1` (PR #236, empilée sur #234), migration appliquée en production le 31 octobre 2026 (vérifiée : aucune donnée existante réécrite).** La conception d'origine est conservée ci-dessous ; la section « Réalisation » dit ce qui a été construit, ce qui s'en écarte et pourquoi, et ce qui reste.
 
 ## Réalisation
 

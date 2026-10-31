@@ -79,7 +79,7 @@ Ces trois décisions prévalent sur une checklist antérieure ambiguë du regist
 | Lot 4 | **Implémenté, en revue** (PR #239, branche `feat/jarvis-evidence-lot4`) — voir ADDENDUM 6 |
 | Lot 5 | **Partiel, en revue** (PR #240) ; migration de sécurité appliquée en production ; Stripe et OAuth Tradovate écartés (non validés) ; E2E authentifié `BLOCKED_EXTERNAL` — voir ADDENDUM 7 |
 | Lot 6 | **Implémenté** (PR #241) : ancien moteur Monte Carlo retiré avec preuve d'usage, tests portés sur le moteur monté — voir ADDENDUM 8 |
-| Supabase | Projet TradeVault ; inspection de schéma en lecture seule dans la reprise ; **une seule** migration distante appliquée au titre de ces lots : `20261030220000_restrict_cross_tenant_functions` (lot 5, sécurité, sur autorisation du propriétaire). Les migrations des lots 1, 2 et 4 ne sont **pas** appliquées |
+| Supabase | Projet TradeVault ; inspection de schéma en lecture seule dans la reprise ; migrations des lots appliquées en production : `restrict_cross_tenant_functions` (lot 5, 30 octobre) puis, le 31 octobre sur décision du propriétaire, `data_integrity_provenance` (lot 1), `research_notebook` (lot 2), `progress_experiments` (lot 4) et `trigger_functions_search_path` (lot 6). Vérifiées : 1 471 trades intacts, aucune valeur rétro-écrite, RLS et politiques présentes |
 | Preview | Une preview Vercel READY a été observée sur la branche ; ne pas confondre ce constat avec un E2E authentifié |
 | Protection GitHub `main` | **À vérifier via des droits appropriés** : consultation API de protection refusée (403). Le document d'audit ancien la signalait non protégée ; ne pas annoncer que cela a été revalidé aujourd'hui |
 
@@ -697,7 +697,7 @@ Les éléments suivants sont **postérieurs** à l'état du HEAD `1c680115` ment
 
 # ADDENDUM 3 — Lot 1 (30 octobre 2026)
 
-- Branche `feat/data-integrity-lot1`, PR #236 (brouillon, base `feat/quant-correctness-lot0`). Aucune fusion sur `main`, migration non appliquée en production.
+- Branche `feat/data-integrity-lot1`, PR #236 (brouillon, base `feat/quant-correctness-lot0`). Migration appliquée en production le 31 octobre 2026.
 - Réalisé, écarts et reste : `docs/DATA_INTEGRITY_LOT1_DESIGN.md` § Réalisation ; preuves et statut des gates : `docs/QUANT_CORRECTNESS_PROGRESS.md` § Lot 1.
 - Entrées disponibles pour le lot 2 : `measuredR` tenant compte de `risk_source`, instants UTC prouvés (`entry_at`/`exit_at`) et minute Eastern déduite, ordre de clôture vérifié, frais inconnus distingués de zéro, soldes avant entrée avec niveau de preuve, rapport de qualité (`domain/dataQuality`).
 
