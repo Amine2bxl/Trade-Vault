@@ -600,18 +600,24 @@ Branche `chore/product-hardening-lot5`, empilée sur `feat/jarvis-evidence-lot4`
 | Protection de `main` | **BLOCKED_EXTERNAL** | réglage du dépôt, hors de portée de la session |
 | Advisor Supabase « Leaked Password Protection Disabled » | **ACTION PROPRIÉTAIRE** | réglage Auth du tableau de bord Supabase |
 
-## Lot 6 — Consolidation : cartographie préalable (30 octobre 2026)
+## Lot 6 — Consolidation (30–31 octobre 2026)
 
-**Consolidation non démarrée, volontairement.** Le handoff (§10) la conditionne à des lots 0–5 validés, et l'audit E12 interdit de déplacer du code avant cette validation. Or les lots 0–5 sont des PR empilées, non fusionnées, avec des contrôles `BLOCKED_EXTERNAL`. Ce lot livre seulement la carte et le plan, preuves comprises, pour que la suppression se fasse d'un bloc une fois la pile fusionnée.
+La porte du handoff (§10 : lots 0–5 validés avant toute suppression) est levée par la décision du propriétaire du 31 octobre 2026 : terminer les lots et fusionner la pile sur `main`. La consolidation est faite sur la pile, avant la fusion, avec la preuve d'usage exigée par `ARCHITECTURE.md` §7.
 
 ### Carte d'usage (recherche statique, dynamique, `lazyPage`, `import.meta.glob`, `PAGES`, routes, scripts, config)
-| Fichier | Consommateurs de production | Lu par des tests | Décision |
-|---|---|---|---|
-| `features/monte-carlo/monteCarloEngine.ts` | **Aucun appel.** Seuls ses types (`MonteCarloResult`, `RMultipleSample`, `SimulationRun`) sont lus, par `monteCarloViz.ts`. | `monteCarloCsv`, `csvBrokerFormats` (§ « ce que Monte-Carlo exige d'un fichier »), `monteCarloViz` | **À supprimer après fusion de L0–L5.** Avant cela, réécrire sur `strategyCsv` + `historicalModel` (moteur canonique) les assertions de `csvBrokerFormats` et de `monteCarloCsv` qui passent par l'ancien moteur : la couverture du code vivant ne doit pas baisser. |
-| `features/monte-carlo/monteCarloViz.ts` | Seul `histogram` est utilisé (`StrategyDetails.tsx`). `pathBands`, `samplePaths`, `chartRows`, `drawdownStats`, `streakStats`, `probabilityOfProfit` et `rHistogram` n'ont aucun consommateur ; le champ `samplePaths` de `probability/engine.ts` est homonyme, mais ce n'est pas un usage. | `monteCarloViz` | Garder `histogram`. Retirer le reste avec l'ancien moteur, et ses tests avec lui. |
-| `features/simulator/Simulator.tsx` (+ `datasetQuality.ts`) | **Non monté** : absent de `PAGES`, de `pageModules.ts` et des routes ; aucun import, ni statique ni dynamique. | `staticCards.test.ts` (lecture du fichier), `simulator/tests/datasetQuality.test.ts` | **Garder.** Fonction mise en attente, pas du code mort : la ROADMAP la cite, et son moteur `modules/probability/engine` reste vivant (Jarvis `ConversationWorkspace`, `probability/goals`, `compare`, `sensitivity`). Le monter ou le retirer est une décision produit. |
+| Fichier | Consommateurs de production | Décision et réalisation |
+|---|---|---|
+| `features/monte-carlo/monteCarloEngine.ts` | **Aucun appel** ; seuls ses types étaient lus par `monteCarloViz.ts` | **Retiré.** Les tests qui passaient par lui portent désormais sur la chaîne montée : `monteCarloCsv` (perte médiane comme unité estimée, R déclarés intacts, aucune échelle sans perte, simulation non plate via `projectStrategy`), `csvBrokerFormats` (`readStrategyCsv` sur les cinq exports), et les garanties du lot 0 sur le profit factor (inconnu sans perte, pas de plafond, exact au-delà de 99) sur `strategyEdge` |
+| `features/monte-carlo/monteCarloViz.ts` | Seul `histogram` (`StrategyDetails.tsx`) | `pathBands`, `samplePaths`, `chartRows`, `drawdownStats`, `streakStats`, `probabilityOfProfit` et `rHistogram` **retirés** avec leurs tests ; `histogram` et son test gardés |
+| `features/simulator/Simulator.tsx` (+ `datasetQuality.ts`) | **Non monté** (absent de `PAGES`, de `pageModules.ts`, des routes) | **Gardé** : fonction en attente citée par la ROADMAP ; son moteur `modules/probability/engine` reste vivant (Jarvis `ConversationWorkspace`, `probability/goals`, `compare`, `sensitivity`). Le monter ou le retirer est une décision produit |
 
-### Reste du lot 6 (après fusion de L0–L5)
-- Suppression ci-dessus ; dédoublonnage des KPI et des conventions d'adhérence.
-- Traduction des 111 ternaires `fr ? "…"` restants (E8).
-- Revue transverse finale (E13), sur une base fusionnée.
+### Moteurs probabilistes après consolidation
+Deux moteurs, deux usages distincts, plus aucun moteur mort : `modules/probability/strategy` (+ `rules`) pour le laboratoire Monte Carlo et le risque prop ; `modules/probability/engine` pour les scénarios et objectifs (Jarvis, Goals). Les calculs de KPI des consommateurs montés sont déjà tenus concordants par le lot 0 (`rEvidenceConsistency`, goldens).
+
+### Critères de sortie L6 (handoff §10)
+| Critère | Statut | Preuve |
+|---|---|---|
+| Suppression seulement avec preuve d'absence d'usage | **DONE** | carte ci-dessus ; typecheck, build et suite complète verts après retrait |
+| Couverture du code vivant maintenue | **DONE** | tests réécrits sur la chaîne montée (mêmes intentions) ; aucun test désactivé |
+| Traçabilité, docs | **DONE** | ce registre, `ARCHITECTURE.md`, handoff ADDENDUM 8 |
+| Revue transverse finale (E13) | **DONE (code)** | portes complètes sur la tête de la pile ; E2E authentifié toujours `BLOCKED_EXTERNAL` |

@@ -6,7 +6,7 @@ import {
   mapRowsToTrades,
   MC_REQUIRED,
 } from "../src/app/features/journal/csvImport";
-import { deriveRFromPnl, extractRSamples } from "../src/app/features/monte-carlo/monteCarloEngine";
+import { readStrategyCsv } from "../src/app/features/monte-carlo/strategyCsv";
 
 /**
  * « LE CSV NE MARCHE PAS. »
@@ -176,10 +176,10 @@ describe("ce que Monte-Carlo exige d'un fichier", () => {
     // Lire le fichier ne suffit pas : sans multiple R, Monte-Carlo rejoue des
     // zéros et dessine une droite. Le bout de la chaîne, donc.
     for (const [nom, csv] of Object.entries(EXPORTS)) {
-      const { valid } = lireCommeMonteCarlo(csv);
-      const samples = extractRSamples(deriveRFromPnl(valid));
-      expect(`${nom}: ${samples.length >= 5}`).toBe(`${nom}: true`);
-      expect(`${nom}: ${samples.some((s) => s.r !== 0)}`).toBe(`${nom}: true`);
+      // La chaîne réellement montée (lot 6 : l'ancien moteur est retiré).
+      const model = readStrategyCsv(csv);
+      expect(`${nom}: ${model.sampleSize >= 5}`).toBe(`${nom}: true`);
+      expect(`${nom}: ${model.values.some((r) => r !== 0)}`).toBe(`${nom}: true`);
     }
   });
 });
