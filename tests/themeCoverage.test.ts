@@ -126,7 +126,9 @@ describe("les écrans d'accueil portent le thème du trader", () => {
   const SURFACES = [
     "../src/app/features/onboarding/Onboarding.tsx",
     "../src/app/features/checklist/Checklist.tsx",
-    "../src/app/features/checklist/ChecklistWizard.tsx",
+    // L'assistant de configuration a disparu avec la refonte en plan de
+    // séance ; la porte d'entrée est la surface colorée qui l'a remplacé.
+    "../src/app/features/checklist/EntryGate.tsx",
   ];
 
   /** `bg-cyan-500/15`, `text-cyan-300`, `hover:border-cyan-400/50`, `accent-cyan-500`… */

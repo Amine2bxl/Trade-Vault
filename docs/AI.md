@@ -1,6 +1,6 @@
 # IA — Jarvis et la plateforme IA
 
-Jarvis est **l'unique identité IA** du produit (page, widget, checklist, voix).
+Jarvis est **l'unique identité IA** du produit (page, widget, voix).
 Côté code, l'agent s'appelle `coach` ; côté utilisateur, toujours « Jarvis ».
 Rôle produit et persona : [`PRODUCT.md`](PRODUCT.md#jarvis).
 
@@ -20,7 +20,7 @@ Rôle produit et persona : [`PRODUCT.md`](PRODUCT.md#jarvis).
    `modules/patterns/language.ts`, `modules/coaching/safety.ts`, testés par
    `tests/noCausalLanguage.test.ts`).
 6. Réponse **écrite** dans la langue de l'UI. **Voix** : les répliques fixes
-   (checklist, salutations) sont en anglais ; une réponse de conversation est
+   (salutations, onboarding) sont en anglais ; une réponse de conversation est
    dite dans la langue où elle est écrite (voix hébergée multilingue, même
    timbre ; en secours, voix locale de cette langue).
 

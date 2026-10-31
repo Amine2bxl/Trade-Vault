@@ -32,7 +32,6 @@ Ce qui ne se prouve pas dans le code — validation humaine requise.
 | Conversations | Persistées en `localStorage`, **par appareil** — pas de synchronisation serveur |
 | Réponses en streaming | Absent (le transport RPC ne fait pas de SSE) |
 | Notifications jamais émises | `goal_completed`, `goal_milestone`, `trade_analyzed`, `daily_brief` : déclarées, sans émetteur (Daily Brief automatique non livré) |
-| Séance de trading | `features/session/SessionPanel` complet mais monté nulle part (`tests/reachability.test.ts`) ; `trading_sessions` donc peu alimentée |
 | Simulateur de probabilités | `features/simulator/Simulator.tsx` non monté |
 | Moteur d'insights | `features/jarvis/insights/` testé mais non branché (hors `suggestions.ts`) |
 | Fondations IA | Routeur d'intentions (`modules/ai/router`), RAG (`ai_embeddings`), `ai_jobs`, catalogue `backend/ai.functions.ts` : sans consommateur — brancher ou retirer |
@@ -63,7 +62,7 @@ discipline, rappels pré-market, « Share my week ».
 
 | Sujet | Mesure |
 | --- | --- |
-| Gros fichiers (à découper dans une mission dédiée) | `Checklist.tsx` 2 244 l · `TradeModal.tsx` 1 537 · `Analytics.tsx` 1 320 · `Landing.tsx` 1 237 |
+| Gros fichiers (à découper dans une mission dédiée) | `TradeModal.tsx` 1 537 · `Analytics.tsx` 1 320 · `Landing.tsx` 1 237 · `Checklist.tsx` 1 183 |
 | Couche | `modules/patterns` → `app/trading/mistakeClusters` (libellés via les traductions de l'app) |
 | Design | 422 tailles `text-[Npx]` arbitraires, 61 couleurs hex dans le JSX, 33 keyframes pour 8 autorisées |
 | Types | 31 `as any` / `@ts-ignore` ; `no-unused-vars` et `no-explicit-any` en `warn` |

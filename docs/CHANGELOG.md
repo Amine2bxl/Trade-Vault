@@ -3,6 +3,23 @@
 Journal des changements **structurels** (pas des features ni des correctifs,
 qui vivent dans l'historique git et les PR).
 
+## 2026-10-31 — La checklist devient le plan de séance
+
+- `features/checklist/` refondu en trois écrans : **Plan** (valeurs écrites :
+  biais, cible, zone, invalidation, risque, trades max, état), **Séance** (plan
+  gelé, blocages lus dans les données, porte d'entrée oui/non reprenant les
+  chiffres écrits, trois sorties) et **Bilan** (conformité de chaque trade du
+  jour au plan, « plan respecté ? », une phrase).
+- Moteur pur `sessionPlan.ts` (réducteur, persistance, faits, conformité,
+  historique « dans le plan / hors plan » sous `MIN_BUCKET_SAMPLE`). Clé
+  `tv-chk-{uid}-{date}` conservée : `locked` et `checked` restent lus par la
+  série, l'Edge Score et le tableau de bord.
+- La checklist ouvre et clôt `trading_sessions` (photo du plan dans
+  `checklist_snapshot`) : `SessionPanel`, jamais monté, est supprimé.
+- Retirés : voix et sons de la checklist, motivations, états FOMO, compte à
+  rebours, écran « Edge Locked », assistant `ChecklistWizard` (clés
+  `chkWiz.*`). `checklist/voice.ts` reste lu par `scripts/voices/generate.ts`.
+
 ## 2026-10-20 — Laboratoire Monte Carlo et projection de stratégie
 
 - Extension pure `modules/probability/strategy.ts` (`strategy_projection_v1`) :

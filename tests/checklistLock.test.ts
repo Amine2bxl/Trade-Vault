@@ -1,90 +1,85 @@
 import { describe, expect, test } from "bun:test";
 import { readSource, stripComments } from "./helpers/source";
+import { emptyDay, reduceDay, type SessionDay } from "../src/app/features/checklist/sessionPlan";
 
 /**
- * LE VERROU DE LA CHECKLIST DOIT POUVOIR S'OUVRIR SUR PLACE.
+ * LE VERROU DU PLAN : FERME, MAIS JAMAIS UNE IMPASSE.
  *
- * ── LE DÉFAUT ───────────────────────────────────────────────────────────────
+ * ── CE QUI A CHANGÉ ─────────────────────────────────────────────────────────
  *
- * Une fois la séance verrouillée, décocher un item « ne faisait rien ». Rien
- * n'était pourtant bloqué : la case changeait bel et bien d'état — mais
- * `day.locked` restait vrai. L'écran continuait donc d'afficher le bandeau
- * « mode exécution », le bouton restait « edge verrouillé », et la seule chose
- * qui bougeait était une pastille au milieu d'une liste.
+ * L'ancienne checklist rouvrait son verrou dès qu'on décochait une case. Le
+ * plan de séance fait l'inverse, et c'est voulu : une fois verrouillé, le plan
+ * ne se modifie plus au fil de l'eau. Les journaux montrent pourquoi — la perte
+ * typique commence par un biais retourné EN SÉANCE, « pour voir ».
  *
- * Deux problèmes en un :
+ * ── LES DEUX RÈGLES QUI RESTENT ─────────────────────────────────────────────
  *
- *   1. UN CLIC SANS CONSÉQUENCE VISIBLE SE LIT COMME UN CLIC MORT. C'est le
- *      symptôme rapporté : « il faut sortir de la checklist et revenir ».
- *   2. L'ÉTAT DEVENAIT INCOHÉRENT — verrouillé alors que la préparation ne
- *      l'autorisait plus. Aucun écran ne représentait cette combinaison, et le
- *      seul moyen d'en sortir était de quitter la page.
- *
- * ── CE QUI EST VÉRIFIÉ ──────────────────────────────────────────────────────
- *
- * Deux chemins de sortie, tous deux SUR la page : toute correction rouvre le
- * verrou, et un bouton nommé le fait explicitement sans rien effacer.
- *
- * On teste par lecture de source parce que la règle vit dans un composant de
- * 2 200 lignes branché sur l'audio, la synthèse vocale et un canvas : le
- * monter coûterait plus cher que ce que le test protège. Ce qui compte ici est
- * qu'aucune des quatre entrées de porte ne puisse repasser en `setDay` direct
- * sans que la CI le voie.
+ *   1. Il existe toujours une porte de sortie SUR la page : « Changer de
+ *      plan » rouvre le plan sans rien effacer — et horodate le changement.
+ *   2. Rouvrir et recommencer restent deux gestes distincts : confondre les
+ *      deux ferait perdre toute sa préparation pour corriger un chiffre.
  */
 
 const SRC = stripComments(
   readSource(import.meta.dir, "../src/app/features/checklist/Checklist.tsx"),
 );
 
-describe("corriger sa préparation rouvre le verrou", () => {
-  test("la règle existe en UN seul endroit", () => {
-    // Quatre écritures dispersées auraient divergé : la première oubliée
-    // ramène exactement le bug.
-    expect(SRC).toContain("const rouvrirSiVerrouille");
-    expect(SRC).toMatch(/rouvrirSiVerrouille\s*=\s*\(d: DayState\)/);
+const DEF = { risk: "250", maxTrades: 1 };
+
+function liveDay(): SessionDay {
+  let d = emptyDay(DEF);
+  d = reduceDay(d, {
+    type: "setPlan",
+    patch: { bias: "short", target: "EQL", entry: "FVG", invalidation: "21 580" },
+  });
+  d = reduceDay(d, { type: "setMood", mood: "calm" });
+  return reduceDay(d, { type: "lock", at: "09:20" });
+}
+
+describe("le plan verrouillé est gelé", () => {
+  test("aucune saisie ne le modifie en séance", () => {
+    const live = liveDay();
+    expect(reduceDay(live, { type: "setPlan", patch: { bias: "long" } }).plan.bias).toBe("short");
   });
 
-  test("les quatre entrées de porte passent toutes par elle", () => {
-    // Items, mental, motivation, engagement : ce sont exactement les quatre
-    // valeurs dont `gates` dépend. Une seule qui l'ignore recrée l'état
-    // incohérent — verrouillé sans que la préparation l'autorise.
-    for (const champ of ["checked: next", "motiv: i", "fomo: i", "assume: !d.assume"]) {
-      const i = SRC.indexOf(champ);
-      expect(i, champ).toBeGreaterThan(-1);
-      // La règle enveloppe l'objet écrit : elle apparaît juste avant, sur la
-      // même expression `setDay`.
-      const debutLigne = SRC.lastIndexOf("setDay(", i);
-      expect(SRC.slice(debutLigne, i), champ).toContain("rouvrirSiVerrouille");
-    }
+  test("l'écran n'écrit la journée que par le réducteur", () => {
+    // Une écriture directe de `day` contournerait le gel du plan. Les seuls
+    // `setSt` admis : le chargement d'une journée et `act`.
+    const writes = SRC.match(/setSt\(/g) ?? [];
+    expect(SRC).toContain("const next = reduceDay(cur.day, a)");
+    expect(writes.length).toBeLessThanOrEqual(3);
+    expect(SRC).not.toMatch(/setSt\(\s*\{\s*key:[^}]*day:\s*\{\s*\.\.\./);
   });
 });
 
 describe("la porte de sortie explicite", () => {
-  test("elle rouvre sans rien effacer", () => {
-    // `resetAll` vide la journée entière ; ce n'est pas ce qu'on veut quand on
-    // souhaite seulement revenir sur une case.
-    const i = SRC.indexOf("const rouvrirChecklist");
-    expect(i).toBeGreaterThan(-1);
-    const corps = SRC.slice(i, SRC.indexOf("};", i));
-    expect(corps).toContain("locked: false");
-    expect(corps).not.toContain("emptyDay");
+  test("elle rouvre sans rien effacer, et laisse une trace", () => {
+    const live = liveDay();
+    const reopened = reduceDay(live, { type: "reopenPlan", at: "09:52" });
+    expect(reopened.locked).toBe(false);
+    expect(reopened.plan).toEqual(live.plan);
+    expect(reopened.planChanges).toEqual(["09:52"]);
   });
 
-  test("elle est atteignable depuis la page, pas seulement depuis la fenêtre de verrouillage", () => {
-    // « Retour au poste » n'existait que dans l'overlay — donc plus nulle part
-    // une fois cet overlay confirmé.
-    expect(SRC).toContain("onClick={rouvrirChecklist}");
-    // Et elle est posée sur le bandeau d'exécution, le seul endroit qui
-    // signale l'état verrouillé une fois l'overlay parti.
-    const banniere = SRC.slice(SRC.indexOf("chk.execMode"));
-    expect(banniere.slice(0, 800)).toContain("rouvrirChecklist");
+  test("elle est atteignable depuis l'écran de séance", () => {
+    expect(SRC).toContain('act({ type: "reopenPlan"');
+    const seance = SRC.slice(SRC.indexOf('day.phase === "live" && ('));
+    expect(seance.slice(0, 4000)).toContain("chk.changePlan");
+  });
+});
+
+describe("rouvrir et recommencer restent distincts", () => {
+  test("recommencer vide la journée, rouvrir non", () => {
+    const live = liveDay();
+    const reset = reduceDay(live, { type: "reset", defaults: DEF });
+    expect(reset.plan.bias).toBeNull();
+    expect(reduceDay(live, { type: "reopenPlan", at: "10:00" }).plan.bias).toBe("short");
   });
 
-  test("les deux actions restent distinctes", () => {
-    // Confondre « rouvrir » et « nouvelle session » ferait perdre au trader
-    // toute sa préparation pour corriger une case.
-    expect(SRC).toContain("const resetAll");
-    const reset = SRC.slice(SRC.indexOf("const resetAll"));
-    expect(reset.slice(0, 300)).toContain("emptyDay");
+  test("recommencer ne vit que dans les réglages", () => {
+    const hits = SRC.match(/type: "reset"/g) ?? [];
+    expect(hits.length).toBe(1);
+    const i = SRC.indexOf('type: "reset"');
+    expect(SRC.slice(Math.max(0, i - 200), i)).toContain("onResetDay");
   });
 });

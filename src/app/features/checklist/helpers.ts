@@ -1,9 +1,5 @@
 /* Helpers purs de la checklist — extrait de Checklist.tsx (Phase D). */
 import { type ChkConfig, defaultConfigFor, localTimeZone } from "./checklistDefaults";
-import { todayLocalDate } from "@/shared/calendar-date";
-
-export const FOMO_ICONS = ["◎", "◈", "◉", "⬤"];
-export const FOMO_CLASSES = ["s-calm", "s-focus", "s-imp", "s-fomo"];
 
 /* ══ Helpers ══ */
 export const pad = (n: number) => String(n).padStart(2, "0");
@@ -59,12 +55,6 @@ export function getTimeZoneOptions(): string[] {
   if (!zones.includes(local)) zones.unshift(local);
   return [...new Set(zones)].sort();
 }
-function dayOfYear() {
-  const d = new Date();
-  const s = new Date(d.getFullYear(), 0, 0);
-  return Math.floor((d.getTime() - s.getTime()) / 864e5);
-}
-export const todayKey = () => todayLocalDate();
 
 /* Merge stored config with defaults so new fields never break old saves */
 export function hydrateConfig(raw: string | null, lang: string): ChkConfig {
