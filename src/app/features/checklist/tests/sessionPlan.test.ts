@@ -331,20 +331,39 @@ describe("faits du jour", () => {
   test("les blocages se lisent dans les faits", () => {
     const facts = dayFacts([mkTrade({ pnl: -500 })], DATE);
     expect(
-      entryBlockers({ plan: SHORT_PLAN, facts, windowOpen: false, stopAfterLosses: 1 }),
+      entryBlockers({ plan: SHORT_PLAN, facts, window: "before", stopAfterLosses: 1 }),
     ).toEqual(["maxTrades", "stopAfterLosses", "window"]);
     const none = dayFacts([], DATE);
     expect(
-      entryBlockers({ plan: SHORT_PLAN, facts: none, windowOpen: true, stopAfterLosses: 0 }),
+      entryBlockers({ plan: SHORT_PLAN, facts: none, window: "open", stopAfterLosses: 0 }),
     ).toEqual([]);
     expect(
       entryBlockers({
         plan: { ...SHORT_PLAN, bias: "none" },
         facts: none,
-        windowOpen: true,
+        window: "open",
         stopAfterLosses: 0,
       }),
     ).toEqual(["observation"]);
+  });
+
+  test("fenêtre terminée : la porte se ferme, plus d'entrée tardive", () => {
+    const none = dayFacts([], DATE);
+    expect(
+      entryBlockers({ plan: SHORT_PLAN, facts: none, window: "after", stopAfterLosses: 0 }),
+    ).toEqual(["windowEnded"]);
+  });
+});
+
+describe("l'avance du verrou sur l'ouverture", () => {
+  test("elle est gardée au verrou, et survit au stockage", () => {
+    const d = reduceDay(readyDay(), { type: "lock", at: "09:20", lead: 29 });
+    expect(d.lockLead).toBe(29);
+    expect(normalizeDay(JSON.parse(JSON.stringify(d)), DEF).lockLead).toBe(29);
+  });
+
+  test("inconnue, elle reste inconnue — pas zéro", () => {
+    expect(reduceDay(readyDay(), { type: "lock", at: "09:20" }).lockLead).toBeNull();
   });
 });
 

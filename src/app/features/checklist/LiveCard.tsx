@@ -85,6 +85,21 @@ export default function LiveCard({
           </div>
           <p className="tv-row-label">
             {t("chk.lockedAt").replace("{time}", day.lockedAt ?? "—")}
+            {/* Le plan a-t-il été écrit AVANT l'open ? C'est la question du
+                jour, elle se lit ici sans avoir à la poser. */}
+            {day.lockLead !== null && (
+              <span
+                className={cn(
+                  "font-semibold",
+                  day.lockLead > 0 ? "text-[var(--tv-highlight)]" : "text-amber-300",
+                )}
+              >
+                {" · "}
+                {day.lockLead > 0
+                  ? t("chk.leadBefore").replace("{min}", String(day.lockLead))
+                  : t("chk.leadAfter")}
+              </span>
+            )}
             {day.planChanges.length > 0 &&
               ` · ${t("chk.changed").replace("{n}", String(day.planChanges.length))}`}
             {day.scenarioAt && ` · ${t("chk.altActive").replace("{time}", day.scenarioAt)}`}

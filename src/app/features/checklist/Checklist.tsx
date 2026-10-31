@@ -30,7 +30,7 @@ import {
   isItemOn,
   migrateConfig,
 } from "./checklistDefaults";
-import { getTimeInZone, hydrateConfig, isWindowOpen, pad, parseTimeToMinutes } from "./helpers";
+import { hydrateConfig, pad, windowState } from "./helpers";
 import ChecklistSettings from "./ChecklistSettings";
 import PlanCard from "./PlanCard";
 import LiveCard from "./LiveCard";
@@ -359,11 +359,8 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
 
   const facts = useMemo(() => dayFacts(trades, today), [trades, today]);
   const nowDate = new Date(now);
-  const winOpen = isWindowOpen(config, nowDate);
-  const minutesLeft = (() => {
-    const p = getTimeInZone(nowDate, config.timeZone);
-    return (parseTimeToMinutes(config.startTime) - (p.hour * 60 + p.minute) + 1440) % 1440;
-  })();
+  const win = windowState(config, nowDate);
+  const winOpen = win.phase === "open";
   const fmtLeft = (m: number) => (m >= 60 ? `${Math.floor(m / 60)} h ${pad(m % 60)}` : `${m} min`);
 
   const weekStart = useMemo(() => startOfWeek(new Date(`${today}T12:00:00`)), [today]);
@@ -434,7 +431,10 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
   const [showSettings, setShowSettings] = useState(false);
 
   const lock = () => {
-    const next = act({ type: "lock", at: nowHHMM() });
+    // L'avance du verrou sur l'ouverture : écrire son plan AVANT l'open est
+    // tout l'objet de l'écran, on garde donc la trace du « quand ».
+    const lead = -windowState(config, new Date()).sinceStart;
+    const next = act({ type: "lock", at: nowHHMM(), lead });
     if (next.phase !== "live") {
       setTried(true);
       return;
@@ -518,9 +518,11 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
         return t("chk.blockLosses").replace("{n}", String(stopAfterLosses));
       case "window":
         return t("chk.blockWindow").replace("{time}", config.startTime);
+      case "windowEnded":
+        return t("chk.blockWindowEnded").replace("{time}", config.endTime ?? "");
     }
   };
-  const blockers = entryBlockers({ plan: day.plan, facts, windowOpen: winOpen, stopAfterLosses });
+  const blockers = entryBlockers({ plan: day.plan, facts, window: win.phase, stopAfterLosses });
 
   // Les questions d'entrée, remplies avec le plan EN VIGUEUR (A ou B).
   const questions = useMemo(() => {
@@ -553,15 +555,25 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
         <span
           className={cn(
             "inline-flex items-center gap-1 text-xs font-semibold",
-            winOpen ? "text-[var(--tv-highlight)]" : "text-amber-300",
+            winOpen
+              ? "text-[var(--tv-highlight)]"
+              : win.phase === "after"
+                ? "text-slate-400"
+                : "text-amber-300",
           )}
         >
           <Clock className="h-3 w-3" />
-          {winOpen
-            ? t("chk.winOpen").replace("{time}", config.startTime)
-            : t("chk.winIn")
+          {win.phase === "before"
+            ? t("chk.winIn")
                 .replace("{time}", config.startTime)
-                .replace("{left}", fmtLeft(minutesLeft))}
+                .replace("{left}", fmtLeft(win.toStart))
+            : win.phase === "after"
+              ? t("chk.winEnded").replace("{time}", config.endTime ?? "")
+              : win.toEnd !== null
+                ? t("chk.winLeft")
+                    .replace("{left}", fmtLeft(win.toEnd))
+                    .replace("{time}", config.endTime ?? "")
+                : t("chk.winOpen").replace("{time}", config.startTime)}
         </span>
         {streak > 0 && (
           <>
@@ -589,7 +601,14 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
           </button>
         }
       >
-        <PhaseSteps phase={day.phase} />
+        <PhaseSteps
+          phase={day.phase}
+          times={{
+            plan: day.lockedAt,
+            live: config.endTime ? `${config.startTime}–${config.endTime}` : config.startTime,
+            review: day.endedAt,
+          }}
+        />
       </PageToolbar>
 
       {day.phase === "plan" && (

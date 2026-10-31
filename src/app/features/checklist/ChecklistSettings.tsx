@@ -36,6 +36,13 @@ import { GATE_TOKENS } from "./sessionPlan";
  * jour, pertes, news) n'a pas à devenir une question — le panneau le dit.
  */
 
+/** « 09:49 » + 30 → « 10:19 », plafonné à 23:59. */
+function plusMinutes(hhmm: string, add: number): string {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(hhmm);
+  const total = Math.min(23 * 60 + 59, (m ? +m[1] * 60 + +m[2] : 9 * 60 + 30) + add);
+  return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+}
+
 const TEMPLATE_KEYS: Record<GateTemplateId, TKey> = {
   essential: "chk.tplEssential",
   ict: "chk.tplIct",
@@ -121,6 +128,31 @@ export default function ChecklistSettings({
                 searchLabel={t("picker.search")}
                 options={tzOptions.map((z) => ({ value: z, label: z.replace(/_/g, " ") }))}
               />
+            </Field>
+            {/* La fin de fenêtre ferme la porte d'entrée : c'est l'heure des
+                entrées tardives. Sans fin, la fenêtre reste ouverte. */}
+            <Field label={t("chk.setEnd")} className="col-span-2">
+              <div className="flex items-center gap-2">
+                <Toggle
+                  on={!!config.endTime}
+                  label={t("chk.setEnd")}
+                  onChange={(on) =>
+                    onPatch({ endTime: on ? plusMinutes(config.startTime, 30) : "" })
+                  }
+                />
+                {config.endTime ? (
+                  <TimeField
+                    value={config.endTime}
+                    onChange={(v) => v && onPatch({ endTime: v })}
+                    locale={intlLocale(lang)}
+                    doneLabel={t("common.done")}
+                    aria-label={t("chk.setEnd")}
+                    className="min-w-0 flex-1"
+                  />
+                ) : (
+                  <span className="text-xs text-slate-500">{t("chk.setNoEnd")}</span>
+                )}
+              </div>
             </Field>
           </div>
         </section>

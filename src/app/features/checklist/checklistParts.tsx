@@ -17,8 +17,18 @@ import {
 
 /* ══ Les morceaux communs aux trois écrans de la checklist ══ */
 
-/** Où en est la journée — trois mots, l'étape courante en clair. */
-export function PhaseSteps({ phase }: { phase: SessionDay["phase"] }) {
+/**
+ * La journée en frise : trois étapes, chacune avec son heure — verrou du plan,
+ * fenêtre de séance, fin. On voit d'un coup d'œil où l'on en est ET si le plan
+ * a été écrit avant la séance.
+ */
+export function PhaseSteps({
+  phase,
+  times,
+}: {
+  phase: SessionDay["phase"];
+  times: Partial<Record<"plan" | "live" | "review", string | null>>;
+}) {
   const { t } = useT();
   const order = ["plan", "live", "review"] as const;
   const idx = phase === "closed" ? order.length : order.indexOf(phase);
@@ -31,15 +41,28 @@ export function PhaseSteps({ phase }: { phase: SessionDay["phase"] }) {
     <ol className="flex items-center gap-2 pl-1.5">
       {order.map((p, i) => (
         <li key={p} className="flex items-center gap-2">
-          {i > 0 && <span aria-hidden className="h-px w-4 bg-[var(--tv-border-strong)]" />}
+          {i > 0 && <span aria-hidden className="h-px w-3 bg-[var(--tv-border-strong)] sm:w-6" />}
           <span
             aria-current={i === idx ? "step" : undefined}
-            className={cn(
-              "tv-label",
-              i === idx ? "text-white" : i < idx ? "text-[var(--tv-highlight)]" : "text-slate-500",
-            )}
+            className="flex flex-col leading-tight"
           >
-            {t(labels[p])}
+            <span
+              className={cn(
+                "tv-label",
+                i === idx
+                  ? "text-white"
+                  : i < idx
+                    ? "text-[var(--tv-highlight)]"
+                    : "text-slate-500",
+              )}
+            >
+              {t(labels[p])}
+            </span>
+            {times[p] && (
+              <span className="tv-figure tv-figure-secondary tv-hint leading-tight">
+                {times[p]}
+              </span>
+            )}
           </span>
         </li>
       ))}

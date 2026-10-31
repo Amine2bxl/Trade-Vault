@@ -48,6 +48,11 @@ export interface ChkConfig {
   cycle: CycleStep[];
   cycleAlert: string;
   startTime: string; // "HH:MM"
+  /**
+   * Fin de la fenêtre (« HH:MM ») ; absente ou vide = pas de fin. Après elle,
+   * la porte d'entrée se ferme : c'est l'heure des entrées tardives.
+   */
+  endTime?: string;
   timeZone: string;
   countdown: number; // lock countdown seconds
   /**

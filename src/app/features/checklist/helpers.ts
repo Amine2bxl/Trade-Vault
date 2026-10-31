@@ -33,8 +33,35 @@ export function parseTimeToMinutes(v: string) {
   return m ? +m[1] * 60 + +m[2] : 0;
 }
 export function isWindowOpen(cfg: ChkConfig, date = new Date()) {
-  const parts = getTimeInZone(date, cfg.timeZone);
-  return parts.hour * 60 + parts.minute >= parseTimeToMinutes(cfg.startTime);
+  return windowState(cfg, date).phase === "open";
+}
+
+export interface WindowState {
+  phase: "before" | "open" | "after";
+  /** Minutes avant l'ouverture (phase `before`), sinon 0. */
+  toStart: number;
+  /** Minutes avant la fin (phase `open` avec une fin), sinon `null`. */
+  toEnd: number | null;
+  /** Minutes écoulées depuis l'ouverture (négatives avant) : l'avance d'un verrou. */
+  sinceStart: number;
+}
+
+/**
+ * La fenêtre de séance à un instant, dans SON fuseau. Une fin vide, ou
+ * antérieure au début, veut dire « pas de fin » : la fenêtre reste ouverte
+ * jusqu'à minuit, comme avant l'existence du réglage.
+ */
+export function windowState(cfg: ChkConfig, date = new Date()): WindowState {
+  const p = getTimeInZone(date, cfg.timeZone);
+  const now = p.hour * 60 + p.minute;
+  const start = parseTimeToMinutes(cfg.startTime);
+  const end = cfg.endTime ? parseTimeToMinutes(cfg.endTime) : null;
+  const hasEnd = end !== null && end > start;
+  if (now < start)
+    return { phase: "before", toStart: start - now, toEnd: null, sinceStart: now - start };
+  if (hasEnd && now >= end)
+    return { phase: "after", toStart: 0, toEnd: null, sinceStart: now - start };
+  return { phase: "open", toStart: 0, toEnd: hasEnd ? end - now : null, sinceStart: now - start };
 }
 export function getTimeZoneOptions(): string[] {
   let zones: string[] = [];

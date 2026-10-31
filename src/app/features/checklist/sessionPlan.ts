@@ -108,6 +108,12 @@ export interface SessionDay {
   mood: EmotionalState | null;
   /** Heure locale (`HH:MM`) du dernier verrouillage. */
   lockedAt: string | null;
+  /**
+   * Avance du verrou sur l'ouverture de la fenêtre, en minutes : positive =
+   * plan verrouillé AVANT l'open (le but), nulle ou négative = après. `null`
+   * quand l'heure n'était pas connue.
+   */
+  lockLead: number | null;
   /** Les réouvertures du plan EN SÉANCE — la trace des changements de biais. */
   planChanges: PlanChange[];
   /** Scénario actif ; B ne s'active qu'en séance, et seulement s'il était écrit. */
@@ -183,6 +189,7 @@ export function emptyDay(defaults: DayDefaults): SessionDay {
     plan,
     mood: null,
     lockedAt: null,
+    lockLead: null,
     planChanges: [],
     scenario: "A",
     scenarioAt: null,
@@ -344,7 +351,7 @@ export type DayAction =
   | { type: "setPlan"; patch: Partial<SessionPlan> }
   | { type: "setAlt"; patch: Partial<AltScenario> }
   | { type: "setMood"; mood: EmotionalState | null }
-  | { type: "lock"; at: string }
+  | { type: "lock"; at: string; lead?: number | null }
   | { type: "reopenPlan"; at: string; reason: string }
   | { type: "switchScenario"; at: string }
   | { type: "end"; reason: EndReason; at: string }
@@ -386,7 +393,13 @@ export function reduceDay(day: SessionDay, action: DayAction): SessionDay {
       return withSteps({ ...day, mood: action.mood });
     case "lock":
       if (day.phase !== "plan" || !canLock(day.plan, day.mood)) return day;
-      return { ...day, phase: "live", locked: true, lockedAt: action.at };
+      return {
+        ...day,
+        phase: "live",
+        locked: true,
+        lockedAt: action.at,
+        lockLead: typeof action.lead === "number" ? action.lead : null,
+      };
     case "reopenPlan":
       if (day.phase !== "live" || action.reason.trim().length < MIN_CHANGE_REASON) return day;
       return {
@@ -496,6 +509,7 @@ export function normalizeDay(raw: unknown, defaults: DayDefaults): SessionDay {
     plan,
     mood,
     lockedAt: typeof r.lockedAt === "string" ? r.lockedAt : null,
+    lockLead: typeof r.lockLead === "number" && Number.isFinite(r.lockLead) ? r.lockLead : null,
     planChanges: readChanges(r.planChanges),
     scenario,
     scenarioAt: scenario === "B" && typeof r.scenarioAt === "string" ? r.scenarioAt : null,
@@ -515,6 +529,7 @@ export function toSnapshot(day: SessionDay): Record<string, unknown> {
     plan: day.plan,
     mood: day.mood,
     lockedAt: day.lockedAt,
+    lockLead: day.lockLead,
     planChanges: day.planChanges,
     scenario: day.scenario,
     scenarioAt: day.scenarioAt,
@@ -576,12 +591,15 @@ export function dayFacts(trades: readonly Trade[], date: string): DayFacts {
 }
 
 /** Ce qui interdit une nouvelle entrée, du plus fort au plus faible. */
-export type Blocker = "observation" | "maxTrades" | "stopAfterLosses" | "window";
+export type Blocker = "observation" | "maxTrades" | "stopAfterLosses" | "window" | "windowEnded";
+
+/** Où en est la fenêtre de séance : pas encore ouverte, ouverte, terminée. */
+export type WindowPhase = "before" | "open" | "after";
 
 export function entryBlockers(input: {
   plan: SessionPlan;
   facts: DayFacts;
-  windowOpen: boolean;
+  window: WindowPhase;
   /** `limits.stopAfterLosses` du plan de trading ; 0 = pas de règle. */
   stopAfterLosses: number;
 }): Blocker[] {
@@ -591,7 +609,10 @@ export function entryBlockers(input: {
   if (input.stopAfterLosses > 0 && input.facts.losses >= input.stopAfterLosses) {
     out.push("stopAfterLosses");
   }
-  if (!input.windowOpen) out.push("window");
+  if (input.window === "before") out.push("window");
+  // Fenêtre terminée : le setup du plan, s'il vient maintenant, n'est plus
+  // celui du plan. C'est l'heure des entrées tardives et forcées.
+  if (input.window === "after") out.push("windowEnded");
   return out;
 }
 
