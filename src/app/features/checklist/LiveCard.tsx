@@ -68,60 +68,12 @@ export default function LiveCard({
     drawn && (drawn.levels.find((l) => l.kind === "target")?.r ?? 0) > 0 ? drawn : null;
   const first = blockers[0];
 
-  return (
-    <Card variant="glass" pad="default" className="space-y-4">
-      {/* ══ Le plan en vigueur ══ */}
-      <div className="flex items-start gap-3">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-baseline gap-2">
-            <span className={cn("text-2xl font-extrabold tracking-[-0.02em]", biasTone(plan.bias))}>
-              {biasWord(plan.bias)}
-            </span>
-            {!observation && (
-              <span className="tv-label text-slate-500">
-                {day.scenario === "B" ? t("chk.scenarioB") : t("chk.scenarioA")}
-              </span>
-            )}
-          </div>
-          <p className="tv-row-label">
-            {t("chk.lockedAt").replace("{time}", day.lockedAt ?? "—")}
-            {/* Le plan a-t-il été écrit AVANT l'open ? C'est la question du
-                jour, elle se lit ici sans avoir à la poser. */}
-            {day.lockLead !== null && (
-              <span
-                className={cn(
-                  "font-semibold",
-                  day.lockLead > 0 ? "text-[var(--tv-highlight)]" : "text-amber-300",
-                )}
-              >
-                {" · "}
-                {day.lockLead > 0
-                  ? t("chk.leadBefore").replace("{min}", String(day.lockLead))
-                  : t("chk.leadAfter")}
-              </span>
-            )}
-            {day.planChanges.length > 0 &&
-              ` · ${t("chk.changed").replace("{n}", String(day.planChanges.length))}`}
-            {day.scenarioAt && ` · ${t("chk.altActive").replace("{time}", day.scenarioAt)}`}
-          </p>
-        </div>
-        {!observation && (
-          <div className="text-right">
-            <div className="tv-figure text-xl text-white">
-              {facts.count}/{plan.maxTrades}
-            </div>
-            <span className="tv-label text-slate-500">{t("chk.trades")}</span>
-          </div>
-        )}
-      </div>
-
-      {plan.narrative.trim() && (
-        <p className="border-l-2 border-[var(--tv-border-strong)] pl-3 text-sm text-slate-300">
-          {plan.narrative.trim()}
-        </p>
-      )}
-
-      {!observation && ladder && (
+  // Les niveaux : la carte quand les prix se lisent, sinon les niveaux tels
+  // qu'écrits — on n'invente pas une carte. Rendus dans la carte sur
+  // téléphone, dans la colonne de droite sur grand écran.
+  const levels = (
+    <>
+      {ladder && (
         <>
           <PlanLadder ladder={ladder} />
           <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
@@ -135,9 +87,9 @@ export default function LiveCard({
 
       {/* Sans prix lisibles (ou B sans géométrie cohérente), les niveaux tels
           qu'écrits : on n'invente pas une carte. */}
-      {!observation && !ladder && (
+      {!ladder && (
         <>
-          <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-2">
             {(
               [
                 ["chk.target", plan.target],
@@ -158,74 +110,158 @@ export default function LiveCard({
           {rr !== null && <RRBadge rr={rr} low={minRR !== null && rr < minRR} />}
         </>
       )}
+    </>
+  );
 
-      {/* ══ Ce qui bloque — ou rien ══ */}
-      <p
-        className={cn(
-          "text-sm font-semibold",
-          !first
-            ? "text-[var(--tv-highlight)]"
-            : // Ne pas trader était le plan : un choix tenu, pas une alerte.
-              first === "observation"
-              ? "text-slate-300"
-              : first === "window"
-                ? "text-amber-300"
-                : "text-red-400",
-        )}
-      >
-        {first ? blockerText(first) : t("chk.readyLine")}
-      </p>
-
-      <TradeLines facts={facts} plan={day.plan} scenario={day.scenario} onlyOff />
-
-      {!observation && (
-        <div className="space-y-2">
-          <EntryGate
-            questions={questions}
-            blocked={first ? blockerText(first) : null}
-            onGo={onLogTrade}
-          />
-          {/* Encoder un trade ne demande jamais de repasser par la porte : le
-              trade est pris, il doit entrer au journal sans détour. */}
-          <Button variant="subtle" size="sm" className="w-full" onClick={onLogTrade}>
-            {t("chk.logTradeQuick")}
-          </Button>
-        </div>
-      )}
-
-      {/* ══ Scénario B : prévu, donc immédiat ══ */}
-      {day.scenario === "A" && altComplete(day.plan.alt) && (
-        <div className="flex flex-col gap-2.5 rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-2)] px-3 py-2.5 sm:flex-row sm:items-center sm:gap-3">
+  return (
+    // Grand écran : à gauche ce qu'on FAIT (porte, encodage, sorties), à
+    // droite ce qu'on REGARDE (carte du plan, trades du jour), collé.
+    <div className="grid gap-3 md:gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(300px,380px)] lg:items-start">
+      <Card variant="glass" pad="default" className="relative space-y-4 overflow-hidden">
+        {/* Le liseré du haut porte le sens du jour, comme celui d'un trade. */}
+        <div
+          className="tv-trade-stripe"
+          data-tone={plan.bias === "long" ? "up" : plan.bias === "short" ? "down" : undefined}
+          aria-hidden
+        />
+        {/* ══ Le plan en vigueur ══ */}
+        <div className="flex items-start gap-3">
           <div className="min-w-0 flex-1">
-            <p className="tv-label text-slate-500">{t("chk.scenarioB")}</p>
-            <p className="text-sm text-slate-200">
-              {t("chk.altReady")
-                .replace("{condition}", day.plan.alt.condition.trim())
-                .replace("{bias}", biasWord(day.plan.alt.bias))
-                .replace("{target}", day.plan.alt.target.trim())}
+            <div className="flex items-baseline gap-2">
+              <span
+                className={cn("text-2xl font-extrabold tracking-[-0.02em]", biasTone(plan.bias))}
+              >
+                {biasWord(plan.bias)}
+              </span>
+              {!observation && (
+                <span className="tv-label text-slate-500">
+                  {day.scenario === "B" ? t("chk.scenarioB") : t("chk.scenarioA")}
+                </span>
+              )}
+            </div>
+            <p className="tv-row-label">
+              {t("chk.lockedAt").replace("{time}", day.lockedAt ?? "—")}
+              {/* Le plan a-t-il été écrit AVANT l'open ? C'est la question du
+                jour, elle se lit ici sans avoir à la poser. */}
+              {day.lockLead !== null && (
+                <span
+                  className={cn(
+                    "font-semibold",
+                    day.lockLead > 0 ? "text-[var(--tv-highlight)]" : "text-amber-300",
+                  )}
+                >
+                  {" · "}
+                  {day.lockLead > 0
+                    ? t("chk.leadBefore").replace("{min}", String(day.lockLead))
+                    : t("chk.leadAfter")}
+                </span>
+              )}
+              {day.planChanges.length > 0 &&
+                ` · ${t("chk.changed").replace("{n}", String(day.planChanges.length))}`}
+              {day.scenarioAt && ` · ${t("chk.altActive").replace("{time}", day.scenarioAt)}`}
             </p>
           </div>
-          <Button variant="accent" size="sm" className="shrink-0" onClick={onSwitchB}>
-            {t("chk.altSwitch")}
-          </Button>
-        </div>
-      )}
-
-      <div className="space-y-2 border-t border-[var(--tv-border)] pt-3">
-        <span className="tv-label text-slate-500">{t("chk.end")}</span>
-        <div className="flex flex-wrap gap-2">
-          {(observation ? (["done"] as const) : (["missed", "invalidated", "done"] as const)).map(
-            (r) => (
-              <Button key={r} variant="subtle" size="sm" onClick={() => onEnd(r)}>
-                {t(END_KEYS[r])}
-              </Button>
-            ),
+          {!observation && (
+            <div className="text-right">
+              <div className="tv-figure text-xl text-white">
+                {facts.count}/{plan.maxTrades}
+              </div>
+              <span className="tv-label text-slate-500">{t("chk.trades")}</span>
+            </div>
           )}
         </div>
-      </div>
 
-      <ChangePlanPanel onConfirm={onChangePlan} />
-    </Card>
+        {plan.narrative.trim() && (
+          <p className="border-l-2 border-[var(--tv-border-strong)] pl-3 text-sm text-slate-300">
+            {plan.narrative.trim()}
+          </p>
+        )}
+
+        {!observation && <div className="space-y-2 lg:hidden">{levels}</div>}
+
+        {/* ══ Ce qui bloque — ou rien ══ */}
+        <p
+          className={cn(
+            "text-sm font-semibold",
+            !first
+              ? "text-[var(--tv-highlight)]"
+              : // Ne pas trader était le plan : un choix tenu, pas une alerte.
+                first === "observation"
+                ? "text-slate-300"
+                : first === "window"
+                  ? "text-amber-300"
+                  : "text-red-400",
+          )}
+        >
+          {first ? blockerText(first) : t("chk.readyLine")}
+        </p>
+
+        <TradeLines facts={facts} plan={day.plan} scenario={day.scenario} onlyOff />
+
+        {!observation && (
+          <div className="space-y-2">
+            <EntryGate
+              questions={questions}
+              blocked={first ? blockerText(first) : null}
+              onGo={onLogTrade}
+            />
+            {/* Encoder un trade ne demande jamais de repasser par la porte : le
+              trade est pris, il doit entrer au journal sans détour. */}
+            <Button variant="subtle" size="sm" className="w-full" onClick={onLogTrade}>
+              {t("chk.logTradeQuick")}
+            </Button>
+          </div>
+        )}
+
+        {/* ══ Scénario B : prévu, donc immédiat ══ */}
+        {day.scenario === "A" && altComplete(day.plan.alt) && (
+          <div className="flex flex-col gap-2.5 rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-2)] px-3 py-2.5 sm:flex-row sm:items-center sm:gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="tv-label text-slate-500">{t("chk.scenarioB")}</p>
+              <p className="text-sm text-slate-200">
+                {t("chk.altReady")
+                  .replace("{condition}", day.plan.alt.condition.trim())
+                  .replace("{bias}", biasWord(day.plan.alt.bias))
+                  .replace("{target}", day.plan.alt.target.trim())}
+              </p>
+            </div>
+            <Button variant="accent" size="sm" className="shrink-0" onClick={onSwitchB}>
+              {t("chk.altSwitch")}
+            </Button>
+          </div>
+        )}
+
+        <div className="space-y-2 border-t border-[var(--tv-border)] pt-3">
+          <span className="tv-label text-slate-500">{t("chk.end")}</span>
+          <div className="flex flex-wrap gap-2">
+            {(observation ? (["done"] as const) : (["missed", "invalidated", "done"] as const)).map(
+              (r) => (
+                <Button key={r} variant="subtle" size="sm" onClick={() => onEnd(r)}>
+                  {t(END_KEYS[r])}
+                </Button>
+              ),
+            )}
+          </div>
+        </div>
+
+        <ChangePlanPanel onConfirm={onChangePlan} />
+      </Card>
+
+      <aside className="hidden space-y-4 lg:sticky lg:top-24 lg:block">
+        {!observation && (
+          <Card variant="glass" pad="tight" className="space-y-2">
+            <h3 className="tv-label text-slate-500">{t("chk.ladder")}</h3>
+            {levels}
+          </Card>
+        )}
+        {facts.count > 0 && (
+          <Card variant="glass" pad="tight" className="space-y-2">
+            <h3 className="tv-label text-slate-500">{t("chk.todayTrades")}</h3>
+            <TradeLines facts={facts} plan={day.plan} scenario={day.scenario} />
+          </Card>
+        )}
+      </aside>
+    </div>
   );
 }
 

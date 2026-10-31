@@ -1825,6 +1825,8 @@ const fr: Dict = {
   "chk.dashLocked": "Plan verrouillé — exécute-le",
   "chk.dashStart": "Écris ton plan avant l'open",
   "chk.dashCta": "Ouvrir",
+  "chk.todayTrades": "Trades du jour",
+  "chk.gateTitle": "Porte d'entrée",
   "chk.memoryTitle": "Ce que tes séances disent",
   "chk.missedNext": "Prochaine fois · setup manqué du {date}",
   "chk.missedLesson": "Leçon · setup manqué du {date}",

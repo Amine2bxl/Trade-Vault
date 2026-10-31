@@ -29,6 +29,7 @@ export default function EntryGate({ questions, blocked, onGo }: Props) {
   const [open, setOpen] = useState(false);
   const [answers, setAnswers] = useState<Record<string, boolean>>({});
   const verdict = gateVerdict(questions, answers);
+  const answered = questions.filter((q) => answers[q.id] !== undefined).length;
 
   const close = () => {
     setOpen(false);
@@ -48,7 +49,30 @@ export default function EntryGate({ questions, blocked, onGo }: Props) {
   }
 
   return (
-    <div className="space-y-2" role="group" aria-label={t("chk.wantEntry")}>
+    <div className="space-y-2" role="group" aria-label={t("chk.gateTitle")}>
+      {/* L'avancement : combien de réponses restent avant le verdict. */}
+      <div className="flex items-center gap-3">
+        <span className="tv-label text-slate-400">{t("chk.gateTitle")}</span>
+        <span
+          className="h-1 flex-1 overflow-hidden rounded-full bg-[var(--tv-plate-0)]"
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={questions.length}
+          aria-valuenow={answered}
+          aria-label={t("chk.gateTitle")}
+        >
+          <span
+            className={cn(
+              "block h-full rounded-full transition-[width] duration-200",
+              verdict === "no" ? "bg-red-400" : "bg-[var(--tv-accent)]",
+            )}
+            style={{ width: `${questions.length ? (answered / questions.length) * 100 : 0}%` }}
+          />
+        </span>
+        <span className="tv-figure tv-figure-secondary shrink-0 text-xs text-slate-400">
+          {answered}/{questions.length}
+        </span>
+      </div>
       <ol className="space-y-1.5">
         {questions.map((q, i) => (
           <li
