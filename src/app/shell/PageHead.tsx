@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import type { Page } from "../types";
 import { cn } from "@/shared/ui/cn";
 import MobileActions from "./MobileActions";
@@ -42,19 +42,25 @@ export default function PageHead({
   const width = page === "calendar" ? "max-w-[1400px]" : "max-w-[1200px]";
 
   /* Le grand titre est-il encore visible dans la fenêtre de défilement ?
-     Observé, pas calculé au scroll : aucun écouteur, aucun calcul par image. */
-  const titleRef = useRef<HTMLHeadingElement | null>(null);
+     Observé, pas calculé au scroll : aucun écouteur, aucun calcul par image.
+
+     L'élément est suivi par une REF DE RAPPEL, pas par une ref lue une fois :
+     passer d'une section à onglets à une vue unique remplace le <h1> (autre
+     branche du rendu). L'ancien, détaché, était encore observé — et un
+     élément hors du document « ne croise plus » la fenêtre : la barre
+     compacte restait affichée en permanence par-dessus le haut de la page. */
+  const [titleEl, setTitleEl] = useState<HTMLHeadingElement | null>(null);
   const [compact, setCompact] = useState(false);
   useEffect(() => {
-    const el = titleRef.current;
-    if (!el || typeof IntersectionObserver === "undefined") return;
-    const io = new IntersectionObserver(([entry]) => setCompact(!entry.isIntersecting), {
-      root: el.closest("main"),
-      threshold: 0,
-    });
-    io.observe(el);
+    setCompact(false);
+    if (!titleEl || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(
+      ([entry]) => setCompact(titleEl.isConnected && !entry.isIntersecting),
+      { root: titleEl.closest("main"), threshold: 0 },
+    );
+    io.observe(titleEl);
     return () => io.disconnect();
-  }, []);
+  }, [titleEl]);
 
   return (
     <>
@@ -67,7 +73,7 @@ export default function PageHead({
         {hasTabs ? (
           <>
             <div className="flex items-center gap-2">
-              <h1 ref={titleRef} className="tv-large-title min-w-0 flex-1 truncate">
+              <h1 ref={setTitleEl} className="tv-large-title min-w-0 flex-1 truncate">
                 {title}
               </h1>
               <MobileActions page={page} setPage={setPage} />
@@ -86,7 +92,7 @@ export default function PageHead({
              gauche, les actions de la page à droite, sur la même ligne. */
           <div className="flex items-start gap-2 md:gap-3">
             <div className="min-w-0 flex-1">
-              <h1 ref={titleRef} className="tv-large-title truncate">
+              <h1 ref={setTitleEl} className="tv-large-title truncate">
                 {title}
               </h1>
               {lead && <div className="mt-1.5 min-w-0">{lead}</div>}

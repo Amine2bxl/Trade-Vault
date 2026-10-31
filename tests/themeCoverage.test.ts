@@ -174,11 +174,9 @@ describe("le tableau de bord ne connaît que les deux verts du langage", () => {
    *  en relecture de code et parfaitement visibles à l'écran. */
   const FAUX_PL = /#(?:10b981|ef4444)/gi;
 
-  const SURFACE = [
-    "features/dashboard/Dashboard.tsx",
-    "features/dashboard/CopilotBlock.tsx",
-    "trading/EquityChart.tsx",
-  ];
+  /* `CopilotBlock.tsx` en faisait partie : il a quitté le tableau de bord
+     (qui tient désormais en un écran) et le dépôt avec lui. */
+  const SURFACE = ["features/dashboard/Dashboard.tsx", "trading/EquityChart.tsx"];
 
   for (const file of SURFACE) {
     test(`${file} n'écrit aucune couleur de P&L en dur`, () => {
@@ -195,16 +193,6 @@ describe("le tableau de bord ne connaît que les deux verts du langage", () => {
       expect(code, file).toContain("CHART_GREEN");
       expect(code, file).toContain("CHART_RED");
     }
-  });
-
-  test("le cadran de l'Edge Score ne rayonne pas, et ne calcule plus de halo", () => {
-    /* `glow` était produit dans les quatre branches de `scoreTone` et lu nulle
-       part. Du code mort, mais pas anodin : il gardait vivante l'idée d'un halo
-       coloré, que `docs/DESIGN_SYSTEM.md` interdisent (« rien ne
-       rayonne »), et le commentaire du cadran en promettait encore l'effet. */
-    const code = stripComments(read(join(APP, "features/dashboard/CopilotBlock.tsx")));
-    expect(code).not.toContain("glow");
-    expect(code).not.toContain("rgba(16,185,129");
   });
 });
 

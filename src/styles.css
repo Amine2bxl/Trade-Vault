@@ -5990,6 +5990,63 @@ thead .plan-cmp-col.is-pro {
   font-size: 15px;
 }
 
+/* Le tableau de bord AJUSTÉ À L'ÉCRAN (voir Dashboard.tsx) : les hauteurs de
+   rangée sont posées en pixels par le composant ; ici, les tuiles remplissent
+   leur part et l'objectif se resserre quand la rangée est courte. */
+.dash-fit .dash-widgets {
+  grid-auto-rows: minmax(0, 1fr);
+}
+.dash-fit .dash-widgets .metric-tile {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  justify-content: center;
+}
+.dash-tight .dash-hero {
+  gap: 8px;
+  padding-bottom: 18px;
+}
+.dash-tight .dash-goal-figure {
+  font-size: 28px;
+}
+.dash-tight .dash-goal-track {
+  margin: 8px 0 10px;
+}
+.dash-tight .dash-goal-tiles {
+  gap: 8px;
+  padding-top: 8px;
+}
+.dash-tight .dash-goal-tile {
+  padding: 9px 10px;
+}
+.dash-tight .dash-goal-tile b {
+  font-size: 15px;
+}
+
+/* Rangées courtes : pastilles et lignes un cran plus serrées. */
+.dash-tight .dash-row {
+  padding: 7px 0;
+}
+.dash-tight .dash-row-avatar {
+  width: 36px;
+  height: 36px;
+}
+/* Fenêtre basse : le héros rend de la place (la pilule du compte vit déjà
+   dans le rail). */
+.dash-short .dash-hero .tv-account-pill {
+  display: none;
+}
+.dash-short .dash-hero-figure {
+  font-size: 38px;
+}
+.dash-short .dash-hero-actions {
+  margin-top: 4px;
+}
+.dash-short .tv-action-disc {
+  width: 44px;
+  height: 44px;
+}
+
 /* L'objectif du mois. */
 .dash-goal {
   display: flex;

@@ -1,5 +1,13 @@
 import { lazyPage } from "@/shared/lazy-page";
-import { useEffect, useMemo, useState, Suspense, type CSSProperties } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  Suspense,
+  type CSSProperties,
+} from "react";
 import {
   Plus,
   ArrowUpRight,
@@ -15,40 +23,21 @@ import { Trade, isBreakEven } from "@/app/types";
 import { computeStats, formatPnl, formatPct, formatShortDate } from "@/domain/tradeCalcs";
 import { CHART_GREEN, CHART_RED } from "@/app/trading/chartTheme";
 import { loadOnboarding, MONTHLY_TARGET_EVENT } from "@/app/store/profile";
-import { deriveDailyRule } from "@/domain/edgeScore";
 import { useEdgeScore } from "@/app/trading/useEdgeScore";
-import {
-  readHistory,
-  writeHistory,
-  appendToday,
-  dayOverDayDelta,
-  trend,
-  type EdgePoint,
-} from "./edgeHistory";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useAccounts } from "@/app/contexts/AccountContext";
 import { useToast } from "@/app/contexts/ToastContext";
 import { useHasTradeDraft } from "@/app/utils/persistence";
-import {
-  PageContainer,
-  Metric,
-  Button,
-  StreakCard,
-  RollingFigure,
-  ActionButton,
-  density,
-} from "@/shared/ui";
-import type { StreakPeriod } from "@/shared/ui";
+import { PageContainer, Metric, Button, RollingFigure, ActionButton, density } from "@/shared/ui";
 import { usePageActions, usePageLead } from "@/app/contexts/PageActionsContext";
-import CopilotBlock from "./CopilotBlock";
 import { DeferredFallback } from "@/app/shell/PageTransition";
 import { cn } from "@/shared/ui/cn";
 import { useT } from "@/app/i18n/LanguageContext";
 import type { TKey } from "@/app/i18n/translations";
-import { computeChecklistStreakStats, recentChecklistPeriods } from "../checklist/checklistStreak";
 import { newestFirst } from "@/app/trading/tradeOrder";
 import { formatMoney } from "@/shared/currency";
 import { useLiveTable } from "@/app/hooks/useLiveTable";
+import { useAvailableHeight } from "@/app/hooks/useAvailableHeight";
 import AccountSwitcher from "@/app/shell/AccountSwitcher";
 import { useUnreadCount } from "@/app/features/inbox/useUnreadCount";
 
@@ -110,6 +99,9 @@ function localDateStr(d: Date): string {
   const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
 }
+
+/* Mesure avant la peinture côté client ; repli silencieux côté serveur. */
+const useIsoLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 function periodCutoff(period: Period): string | null {
   const now = new Date();
@@ -224,88 +216,69 @@ export default function Dashboard({
   }, [trades, cutoff]);
 
   const stats = useMemo(() => computeStats(filtered), [filtered]);
-  const recentTrades = useMemo(() => [...filtered].sort(newestFirst).slice(0, 4), [filtered]);
+  const recentTrades = useMemo(() => [...filtered].sort(newestFirst).slice(0, 6), [filtered]);
+
+  /* ── UN ÉCRAN, PAS UNE PAGE ────────────────────────────────────────────
+     Sur ordinateur, le tableau de bord tient dans la fenêtre : le héros garde
+     sa hauteur naturelle, et les deux rangées (courbe + chiffres, derniers
+     trades + objectif) se partagent ce qui reste, en PIXELS — un graphe en
+     `height: 100%` ne se dessine que si toute la chaîne de parents a une
+     hauteur définie (voir tests/fullScreenPages.test.ts). Trop court pour
+     rester lisible (moins de 200px par rangée) : la page reprend son flux
+     normal et défile, plutôt que d'écraser son contenu. */
+  const { boxRef, height: available } = useAvailableHeight();
+  const heroRef = useRef<HTMLElement | null>(null);
+  const [heroH, setHeroH] = useState(0);
+  const [wide, setWide] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const sync = () => setWide(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+  const hasTrades = trades.length > 0 && !tradesLoading;
+  useIsoLayoutEffect(() => {
+    const el = heroRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const read = () => setHeroH((prev) => (prev === el.offsetHeight ? prev : el.offsetHeight));
+    read();
+    const ro = new ResizeObserver(read);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [hasTrades]);
+  const ROW_GAP = 16;
+  const rowH =
+    wide && available && heroH ? Math.floor((available - heroH - ROW_GAP * 2) / 2) : null;
+  const fit = rowH !== null && rowH >= 180;
+  /* Fenêtre basse (≈ 768 px) : le héros se resserre — la pilule du compte,
+     déjà dans le rail, s'efface — pour rendre la place aux deux rangées. Le
+     mode dépend de la place disponible, jamais de la hauteur du héros : pas
+     de boucle de mesure. */
+  const short = wide && available !== undefined && available < 700;
+  const tight = fit && (rowH as number) < 260;
+  // En-tête de carte (titre + marge) et rembourrage : ce que le contenu n'a pas.
+  const CARD_CHROME = 86;
+  // Hauteur d'une ligne de trade : 58 px, 50 px en rangée serrée (pastille de 36).
+  const ROW_ITEM = tight ? 50 : 58;
+  const listRows = fit
+    ? Math.max(1, Math.min(6, Math.floor(((rowH as number) - CARD_CHROME) / ROW_ITEM)))
+    : 4;
+  const fitRow = fit ? ({ height: rowH as number } as CSSProperties) : undefined;
 
   // % variation of the period relative to the equity at its start
   // (starting balance + PnL accumulated before the period).
   const baseline = startingBalance + pnlBefore;
   const periodPct = baseline > 0 ? stats.totalPnl / baseline : null;
 
-  // Pre-market checklist status (written by the Checklist page in localStorage)
-  const chkStatus = useMemo(() => {
-    if (!user) return null;
-    try {
-      const key = `tv-chk-${user.id}-${localDateStr(new Date())}`;
-      const raw = localStorage.getItem(key);
-      if (!raw) return { locked: false, n: 0, total: 0 };
-      const p = JSON.parse(raw) as { locked?: boolean; checked?: boolean[] };
-      const arr = Array.isArray(p.checked) ? p.checked : [];
-      return { locked: !!p.locked, n: arr.filter(Boolean).length, total: arr.length };
-    } catch {
-      return null;
-    }
-  }, [user?.id]);
-
-  // ── Série de checklist (la mécanique de rétention du rituel) ──
-  // Lecture seule de l'historique `tv-chk-*` déjà écrit par la page Checklist :
-  // aucune nouvelle donnée stockée, aucune migration. La série suit la routine
-  // pré-market — la seule surface du produit qui intervient avant le trade.
-  const streak = useMemo(() => {
-    if (!user?.id) return { current: 0, longest: 0, total: 0, doneToday: false, atRisk: false };
-    try {
-      return computeChecklistStreakStats(window.localStorage, user.id);
-    } catch {
-      return { current: 0, longest: 0, total: 0, doneToday: false, atRisk: false };
-    }
-  }, [user?.id]);
-
-  const streakPeriods = useMemo<StreakPeriod[]>(() => {
-    if (!user?.id) return [];
-    try {
-      return recentChecklistPeriods(window.localStorage, user.id, 7);
-    } catch {
-      return [];
-    }
-  }, [user?.id]);
-
-  // ── Copilot block: Edge Score, rule of the day, objective ──
+  /* LE TABLEAU DE BORD TIENT EN UN ÉCRAN (retour du propriétaire) : le
+     copilote Jarvis et la série de checklist ont quitté la page — Jarvis
+     reste à un appui (action ronde), la série vit sur la page Checklist, et
+     le score de discipline garde sa tuile. */
   // Edge Score via le hook PARTAGÉ avec Jarvis : une seule définition de ce
-  // score dans tout le produit. L'assemblage des entrées (checklist par jour,
-  // risque max, solde initial) vit désormais dans `useEdgeScore`.
+  // score dans tout le produit.
   const edge = useEdgeScore(trades, user?.id);
-
-  const dailyRule = useMemo(() => deriveDailyRule(computeStats(trades)), [trades]);
-
-  // ── Trajectoire de discipline ──────────────────────────────────────────────
-  // On conserve un HISTORIQUE borné du score, pas seulement l'instantané de la
-  // veille : le delta jour/jour dit « tu as monté depuis hier », il ne dit pas
-  // « tu progresses ». La logique vit dans un module pur et testé
-  // (`edgeHistory.ts`), ici on ne fait que la brancher.
   const today = localDateStr(new Date());
-  const [edgeHistory, setEdgeHistory] = useState<EdgePoint[]>([]);
-
-  useEffect(() => {
-    if (!user || typeof window === "undefined") return;
-    setEdgeHistory(readHistory(window.localStorage, user.id));
-  }, [user?.id]);
-
-  // Enregistre (ou réécrit) le score du jour : il bouge à chaque trade ajouté,
-  // c'est la valeur de fin de journée qui fait foi.
-  useEffect(() => {
-    if (!user || edge.score === null || typeof window === "undefined") return;
-    setEdgeHistory((prev) => {
-      const next = appendToday(prev, today, edge.score as number);
-      writeHistory(window.localStorage, user.id, next);
-      return next;
-    });
-  }, [user?.id, edge.score, today]);
-
-  const edgeDelta = useMemo(
-    () => (edge.score === null ? null : dayOverDayDelta(edgeHistory, today, edge.score)),
-    [edgeHistory, edge.score, today],
-  );
-
-  const edgeTrend = useMemo(() => trend(edgeHistory), [edgeHistory]);
 
   // Monthly objective: current-month PnL as a fraction of the month's opening
   // equity (starting balance + PnL accumulated before this month).
@@ -440,32 +413,36 @@ export default function Dashboard({
 
   return (
     <PageContainer>
-      {/* Le « Bonjour » horodaté a été retiré. C'était la PREMIÈRE chose que
+      <div
+        ref={boxRef}
+        className={cn(fit && "dash-fit", tight && "dash-tight", short && "dash-short")}
+      >
+        {/* Le « Bonjour » horodaté a été retiré. C'était la PREMIÈRE chose que
           l'œil rencontrait sur la page la plus consultée du produit, et il ne
           portait aucune information : ni un chiffre, ni un état, ni une action.
           Le premier objet de la page est désormais le seul qui compte à
           l'ouverture — le P&L. */}
-      {/* Frame paints instantly; data sections show a skeleton only while the
+        {/* Frame paints instantly; data sections show a skeleton only while the
           first trades load. The skeleton is deferred (>320 ms) so it never
           flashes for the 50 ms it takes the React Query cache to re-read. */}
-      {tradesLoading ? (
-        <DeferredFallback reserve="min-h-[420px]">
-          {/* Le squelette suit la MÊME hiérarchie que la page : le hero
+        {tradesLoading ? (
+          <DeferredFallback reserve="min-h-[420px]">
+            {/* Le squelette suit la MÊME hiérarchie que la page : le hero
               d'abord, les quatre tuiles ensuite. Il annonçait l'ordre inverse
               — c'est-à-dire qu'il promettait une mise en page qui n'existe
               plus, et le contenu réel sautait par-dessus en arrivant. */}
-          <div className={cn(density.sectionGap)}>
-            <div className="stat-card h-60 skeleton md:h-72" />
-          </div>
-          <div className={cn("grid grid-cols-2 md:grid-cols-4", density.gridGap)}>
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="stat-card h-28 skeleton" />
-            ))}
-          </div>
-        </DeferredFallback>
-      ) : (
-        <>
-          {/* ══════════════════════════════════════════════════════════════
+            <div className={cn(density.sectionGap)}>
+              <div className="stat-card h-60 skeleton md:h-72" />
+            </div>
+            <div className={cn("grid grid-cols-2 md:grid-cols-4", density.gridGap)}>
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="stat-card h-28 skeleton" />
+              ))}
+            </div>
+          </DeferredFallback>
+        ) : (
+          <>
+            {/* ══════════════════════════════════════════════════════════════
               LA HIÉRARCHIE DE LA PAGE — quatre niveaux, dans cet ordre.
 
               Avant, la page ouvrait sur un « Bonjour » puis quatre tuiles, et
@@ -485,462 +462,445 @@ export default function Dashboard({
                 4. LE DÉTAIL — les statistiques secondaires et les derniers
                    trades. On y descend quand on cherche, pas quand on ouvre.
               ══════════════════════════════════════════════════════════════ */}
-          {trades.length === 0 ? (
-            /* ── Empty state: first-run experience ── */
-            <div className="glass rounded-3xl p-5 md:p-10 text-center  relative overflow-hidden">
-              <svg
-                viewBox="0 0 200 80"
-                className="w-48 md:w-64 mx-auto mb-6 opacity-80"
-                aria-hidden="true"
-              >
-                <defs>
-                  <linearGradient id="emptyGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="var(--tv-highlight)" stopOpacity="0.35" />
-                    <stop offset="100%" stopColor="var(--tv-highlight)" stopOpacity="0" />
-                  </linearGradient>
-                </defs>
-                <path
-                  d="M4 68 L36 52 L62 60 L96 30 L128 40 L162 14 L196 22"
-                  fill="none"
-                  stroke="var(--tv-highlight)"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d="M4 68 L36 52 L62 60 L96 30 L128 40 L162 14 L196 22 L196 78 L4 78 Z"
-                  fill="url(#emptyGrad)"
-                  stroke="none"
-                />
-                <circle cx="162" cy="14" r="3.5" fill="var(--tv-highlight)" />
-              </svg>
-              <h2 className="tv-title mb-2">{t("empty.title")}</h2>
-              <p className="text-sm text-slate-500 max-w-md mx-auto mb-6">{t("empty.subtitle")}</p>
-              <Button variant="accent" onClick={onAddTrade}>
-                <Plus className="w-4 h-4" /> {t("empty.cta")}
-              </Button>
-              {onOpenImport && (
-                <button
-                  onClick={onOpenImport}
-                  className="mt-3 text-xs text-slate-500 hover:text-slate-300 underline underline-offset-2 transition-colors"
+            {trades.length === 0 ? (
+              /* ── Empty state: first-run experience ── */
+              <div className="glass rounded-3xl p-5 md:p-10 text-center  relative overflow-hidden">
+                <svg
+                  viewBox="0 0 200 80"
+                  className="w-48 md:w-64 mx-auto mb-6 opacity-80"
+                  aria-hidden="true"
                 >
-                  {t("settings.importCsv")}
-                </button>
-              )}
-              {/* Ghost example of what a logged trade looks like */}
-              <div
-                className="max-w-sm mx-auto mt-8 text-left opacity-50 pointer-events-none select-none"
-                aria-hidden="true"
-              >
-                <div className="tv-label text-slate-500 mb-2">{t("empty.example")}</div>
-                <div className="glass rounded-xl px-4 py-3 flex items-center gap-3 border-dashed">
-                  <div className="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0">
-                    <ArrowUpRight className="w-4 h-4 text-emerald-400" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-white">NQ</span>
-                      <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400">
-                        L
-                      </span>
-                      <span className="text-[10px] text-slate-600">Silver Bullet</span>
+                  <defs>
+                    <linearGradient id="emptyGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="var(--tv-highlight)" stopOpacity="0.35" />
+                      <stop offset="100%" stopColor="var(--tv-highlight)" stopOpacity="0" />
+                    </linearGradient>
+                  </defs>
+                  <path
+                    d="M4 68 L36 52 L62 60 L96 30 L128 40 L162 14 L196 22"
+                    fill="none"
+                    stroke="var(--tv-highlight)"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M4 68 L36 52 L62 60 L96 30 L128 40 L162 14 L196 22 L196 78 L4 78 Z"
+                    fill="url(#emptyGrad)"
+                    stroke="none"
+                  />
+                  <circle cx="162" cy="14" r="3.5" fill="var(--tv-highlight)" />
+                </svg>
+                <h2 className="tv-title mb-2">{t("empty.title")}</h2>
+                <p className="text-sm text-slate-500 max-w-md mx-auto mb-6">
+                  {t("empty.subtitle")}
+                </p>
+                <Button variant="accent" onClick={onAddTrade}>
+                  <Plus className="w-4 h-4" /> {t("empty.cta")}
+                </Button>
+                {onOpenImport && (
+                  <button
+                    onClick={onOpenImport}
+                    className="mt-3 text-xs text-slate-500 hover:text-slate-300 underline underline-offset-2 transition-colors"
+                  >
+                    {t("settings.importCsv")}
+                  </button>
+                )}
+                {/* Ghost example of what a logged trade looks like */}
+                <div
+                  className="max-w-sm mx-auto mt-8 text-left opacity-50 pointer-events-none select-none"
+                  aria-hidden="true"
+                >
+                  <div className="tv-label text-slate-500 mb-2">{t("empty.example")}</div>
+                  <div className="glass rounded-xl px-4 py-3 flex items-center gap-3 border-dashed">
+                    <div className="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0">
+                      <ArrowUpRight className="w-4 h-4 text-emerald-400" />
                     </div>
-                    <div className="tv-num text-[10px] text-slate-600">
-                      10:03 · 2R · {formatMoney(150, { whole: true })} {t("dashboard.riskSuffix")}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-white">NQ</span>
+                        <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400">
+                          L
+                        </span>
+                        <span className="text-[10px] text-slate-600">Silver Bullet</span>
+                      </div>
+                      <div className="tv-num text-[10px] text-slate-600">
+                        10:03 · 2R · {formatMoney(150, { whole: true })} {t("dashboard.riskSuffix")}
+                      </div>
                     </div>
-                  </div>
-                  <div className="tv-num text-sm font-bold text-emerald-400">
-                    {formatMoney(300, { signed: true })}
+                    <div className="tv-num text-sm font-bold text-emerald-400">
+                      {formatMoney(300, { signed: true })}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ) : (
-            <>
-              {/* ══ LA MAQUETTE LIQUID v1 ══
+            ) : (
+              <>
+                {/* ══ LA MAQUETTE LIQUID v1 ══
                   1. le compte, le P&L de la période, sa fenêtre, la période,
                      les quatre actions rondes ;
                   2. la courbe d'equity (deux tiers) et quatre widgets qui
                      portent chacun leur échantillon ;
                   3. les derniers trades (deux tiers) et l'objectif du mois ;
                   4. la discipline (copilote, série) en dessous. */}
-              <section className="dash-hero" aria-label={t("dashboard.netPnl")}>
-                <AccountSwitcher variant="pill" balance={startingBalance + stats.totalPnl} />
-                <span
-                  className={cn(
-                    "tv-figure dash-hero-figure",
-                    gain ? "text-emerald-400" : "text-red-400",
-                  )}
-                >
-                  {/* Le compteur Lucid : le P&L roule quand un trade le change. */}
-                  <RollingFigure value={formatPnl(stats.totalPnl)} />
-                </span>
-                {/* Ce que le chiffre couvre, en mots : la période et
-                    l'échantillon. Un P&L sans sa fenêtre ne se lit pas. */}
-                <p className="dash-hero-meta">
-                  <span>{t("dashboard.netPnl")}</span>
-                  <span aria-hidden>·</span>
-                  <span>{periodLabel}</span>
-                  <span aria-hidden>·</span>
-                  <span className="tv-num">
-                    {t("dashboard.periodTrades").replace("{n}", String(stats.totalTrades))}
+                <section ref={heroRef} className="dash-hero" aria-label={t("dashboard.netPnl")}>
+                  <AccountSwitcher variant="pill" balance={startingBalance + stats.totalPnl} />
+                  <span
+                    className={cn(
+                      "tv-figure dash-hero-figure",
+                      gain ? "text-emerald-400" : "text-red-400",
+                    )}
+                  >
+                    {/* Le compteur Lucid : le P&L roule quand un trade le change. */}
+                    <RollingFigure value={formatPnl(stats.totalPnl)} />
                   </span>
-                  {periodPct !== null && (
-                    <span
-                      className={cn(
-                        "tv-figure tv-figure-secondary dash-hero-pct",
-                        gain ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400",
-                      )}
-                    >
-                      {periodPct >= 0 ? "+" : ""}
-                      {(periodPct * 100).toFixed(2)}%
+                  {/* Ce que le chiffre couvre, en mots : la période et
+                    l'échantillon. Un P&L sans sa fenêtre ne se lit pas. */}
+                  <p className="dash-hero-meta">
+                    <span>{t("dashboard.netPnl")}</span>
+                    <span aria-hidden>·</span>
+                    <span>{periodLabel}</span>
+                    <span aria-hidden>·</span>
+                    <span className="tv-num">
+                      {t("dashboard.periodTrades").replace("{n}", String(stats.totalTrades))}
                     </span>
-                  )}
-                </p>
-                <div className="dash-period" role="group" aria-label={t("dashboard.periodAria")}>
-                  {PERIODS.map((p) => (
-                    <button
-                      key={p}
-                      type="button"
-                      onClick={() => changePeriod(p)}
-                      aria-pressed={period === p}
-                      className="dash-period-btn"
-                    >
-                      {t(PERIOD_SHORT[p])}
-                    </button>
-                  ))}
-                </div>
-                <div className="dash-hero-actions">
-                  <ActionButton
-                    variant="primary"
-                    icon={<Plus strokeWidth={2.4} />}
-                    label={t("dashboard.actionTrade")}
-                    onClick={onAddTrade}
-                  />
-                  {onOpenImport && (
-                    <ActionButton
-                      icon={<Upload />}
-                      label={t("dashboard.actionImport")}
-                      onClick={onOpenImport}
-                    />
-                  )}
-                  {onOpenChecklist && (
-                    <ActionButton
-                      icon={<ClipboardCheck />}
-                      label={t("dashboard.actionChecklist")}
-                      onClick={onOpenChecklist}
-                    />
-                  )}
-                  <ActionButton
-                    icon={<Bot />}
-                    label={t("nav.jarvis")}
-                    onClick={() => window.dispatchEvent(new CustomEvent("tv:open-jarvis"))}
-                  />
-                </div>
-              </section>
-
-              {/* ── 2. LA COURBE ET SES QUATRE CHIFFRES ── */}
-              <div className="dash-grid">
-                <div className="stat-card-elevated dash-span-2 overflow-hidden p-4 md:p-5">
-                  <div className="dash-card-head">
-                    <h2 className="dash-card-title">{t("dashboard.equityCurve")}</h2>
-                    <button
-                      type="button"
-                      className="dash-link"
-                      onClick={() =>
-                        window.dispatchEvent(
-                          new CustomEvent("tv:navigate", { detail: { page: "analytics" } }),
-                        )
-                      }
-                    >
-                      {t("common.viewAll")}
-                      <ChevronRight className="h-3.5 w-3.5" aria-hidden />
-                    </button>
+                    {periodPct !== null && (
+                      <span
+                        className={cn(
+                          "tv-figure tv-figure-secondary dash-hero-pct",
+                          gain
+                            ? "bg-emerald-500/10 text-emerald-400"
+                            : "bg-red-500/10 text-red-400",
+                        )}
+                      >
+                        {periodPct >= 0 ? "+" : ""}
+                        {(periodPct * 100).toFixed(2)}%
+                      </span>
+                    )}
+                  </p>
+                  <div className="dash-period" role="group" aria-label={t("dashboard.periodAria")}>
+                    {PERIODS.map((p) => (
+                      <button
+                        key={p}
+                        type="button"
+                        onClick={() => changePeriod(p)}
+                        aria-pressed={period === p}
+                        className="dash-period-btn"
+                      >
+                        {t(PERIOD_SHORT[p])}
+                      </button>
+                    ))}
                   </div>
-                  {stats.equityCurve.length > 0 ? (
-                    <div className="h-48 md:h-60 chart-draw">
-                      <Suspense
-                        fallback={
-                          <div className="h-full w-full animate-pulse rounded-lg bg-white/[0.03]" />
+                  <div className="dash-hero-actions">
+                    <ActionButton
+                      variant="primary"
+                      icon={<Plus strokeWidth={2.4} />}
+                      label={t("dashboard.actionTrade")}
+                      onClick={onAddTrade}
+                    />
+                    {onOpenImport && (
+                      <ActionButton
+                        icon={<Upload />}
+                        label={t("dashboard.actionImport")}
+                        onClick={onOpenImport}
+                      />
+                    )}
+                    {onOpenChecklist && (
+                      <ActionButton
+                        icon={<ClipboardCheck />}
+                        label={t("dashboard.actionChecklist")}
+                        onClick={onOpenChecklist}
+                      />
+                    )}
+                    <ActionButton
+                      icon={<Bot />}
+                      label={t("nav.jarvis")}
+                      onClick={() => window.dispatchEvent(new CustomEvent("tv:open-jarvis"))}
+                    />
+                  </div>
+                </section>
+
+                {/* ── 2. LA COURBE ET SES QUATRE CHIFFRES ── */}
+                <div className="dash-grid">
+                  <div
+                    className="stat-card-elevated dash-span-2 overflow-hidden p-4 md:p-5"
+                    style={fitRow}
+                  >
+                    <div className="dash-card-head">
+                      <h2 className="dash-card-title">{t("dashboard.equityCurve")}</h2>
+                      <button
+                        type="button"
+                        className="dash-link"
+                        onClick={() =>
+                          window.dispatchEvent(
+                            new CustomEvent("tv:navigate", { detail: { page: "analytics" } }),
+                          )
                         }
                       >
-                        <EquityChart data={stats.equityCurve} />
-                      </Suspense>
-                    </div>
-                  ) : (
-                    <div className="h-48 md:h-60 flex items-center justify-center text-slate-600 text-sm">
-                      {t("dashboard.noTradesInPeriod")}
-                    </div>
-                  )}
-                </div>
-
-                {/* Chaque widget affiche son échantillon : un chiffre sans
-                    son `n` ne se lit pas (AGENTS.md). */}
-                <div className="dash-widgets">
-                  <Metric
-                    title={t("stats.winRate")}
-                    value={stats.wins + stats.losses > 0 ? formatPct(stats.winRate) : "—"}
-                    valueClass={
-                      stats.wins + stats.losses === 0
-                        ? undefined
-                        : stats.winRate >= 0.5
-                          ? "text-emerald-400"
-                          : "text-red-400"
-                    }
-                    visual={{
-                      kind: "track",
-                      pct: stats.winRate,
-                      color: stats.winRate >= 0.5 ? CHART_GREEN : CHART_RED,
-                    }}
-                    subtitle={t("dashboard.sampleTrades").replace(
-                      "{n}",
-                      String(stats.wins + stats.losses),
-                    )}
-                    delay={0}
-                  />
-                  <Metric
-                    title={t("dashboard.profitFactor")}
-                    value={stats.profitFactor === null ? "—" : stats.profitFactor.toFixed(2)}
-                    valueClass={
-                      stats.profitFactor !== null && stats.profitFactor >= 1.5
-                        ? "text-emerald-400"
-                        : stats.profitFactor !== null && stats.profitFactor < 1
-                          ? "text-red-400"
-                          : undefined
-                    }
-                    visual={{
-                      kind: "track",
-                      pct: stats.profitFactor === null ? 0 : Math.min(stats.profitFactor / 3, 1),
-                      color:
-                        stats.profitFactor !== null && stats.profitFactor >= 1
-                          ? CHART_GREEN
-                          : CHART_RED,
-                    }}
-                    subtitle={t("dashboard.sampleTrades").replace("{n}", String(stats.totalTrades))}
-                    delay={40}
-                  />
-                  <Metric
-                    title={t("dashboard.avgR")}
-                    value={
-                      stats.avgRR === null
-                        ? "—"
-                        : `${stats.avgRR >= 0 ? "+" : "−"}${Math.abs(stats.avgRR).toFixed(2)} R`
-                    }
-                    valueClass={
-                      stats.avgRR === null
-                        ? undefined
-                        : stats.avgRR >= 0
-                          ? "text-emerald-400"
-                          : "text-red-400"
-                    }
-                    visual={{
-                      kind: "track",
-                      pct: stats.avgRR === null ? 0 : Math.min(Math.abs(stats.avgRR) / 2, 1),
-                      color: stats.avgRR !== null && stats.avgRR < 0 ? CHART_RED : CHART_GREEN,
-                    }}
-                    subtitle={t("dashboard.sampleTrades").replace("{n}", String(stats.rSampleSize))}
-                    delay={80}
-                  />
-                  <Metric
-                    title={t("dashboard.discipline")}
-                    value={edge.score === null ? "—" : `${Math.round(edge.score)}/100`}
-                    visual={{ kind: "track", pct: edge.score === null ? 0 : edge.score / 100 }}
-                    subtitle={t("dashboard.sampleSessions").replace("{n}", String(edge.tradedDays))}
-                    delay={120}
-                  />
-                </div>
-              </div>
-
-              {/* ── 3. LES DERNIERS TRADES ET L'OBJECTIF ── */}
-              <div className="dash-grid">
-                <div className="stat-card dash-span-2 overflow-hidden p-4 md:p-5">
-                  <div className="dash-card-head">
-                    <h2 className="dash-card-title">{t("dashboard.recentTrades")}</h2>
-                    {onOpenJournal && (
-                      <button type="button" className="dash-link" onClick={onOpenJournal}>
                         {t("common.viewAll")}
                         <ChevronRight className="h-3.5 w-3.5" aria-hidden />
                       </button>
+                    </div>
+                    {stats.equityCurve.length > 0 ? (
+                      <div
+                        className={cn("chart-draw", !fit && "h-48 md:h-60")}
+                        style={fit ? { height: (rowH as number) - CARD_CHROME } : undefined}
+                      >
+                        <Suspense
+                          fallback={
+                            <div className="h-full w-full animate-pulse rounded-lg bg-white/[0.03]" />
+                          }
+                        >
+                          <EquityChart data={stats.equityCurve} />
+                        </Suspense>
+                      </div>
+                    ) : (
+                      <div className="h-48 md:h-60 flex items-center justify-center text-slate-600 text-sm">
+                        {t("dashboard.noTradesInPeriod")}
+                      </div>
                     )}
                   </div>
-                  {recentTrades.length === 0 ? (
-                    <div className="py-10 text-center text-sm text-slate-600">
-                      {t("dashboard.noTradesInPeriod")}
-                    </div>
-                  ) : (
-                    <div className="dash-list">
-                      {recentTrades.map((trade) => {
-                        const be = isBreakEven(trade);
-                        const RowTag = onEditTrade ? "button" : "div";
-                        const side =
-                          trade.direction === "long"
-                            ? t("common.long")
-                            : trade.direction === "short"
-                              ? t("common.short")
-                              : "BE";
-                        const r = trade.rMultiple;
-                        return (
-                          <RowTag
-                            key={trade.id}
-                            {...(onEditTrade
-                              ? {
-                                  type: "button" as const,
-                                  onClick: () => onEditTrade(trade),
-                                  "aria-label": `${t("common.edit")} ${trade.symbol} ${formatShortDate(trade.date)}`,
-                                }
-                              : {})}
-                            className={cn("dash-row", onEditTrade && "dash-row-action")}
-                          >
-                            <span className="dash-row-avatar" aria-hidden>
-                              {trade.symbol.slice(0, 3)}
-                            </span>
-                            <span className="dash-row-main">
-                              <span className="dash-row-title">
-                                {trade.symbol} · {side}
-                              </span>
-                              <span className="dash-row-sub tv-num">
-                                {formatShortDate(trade.date)}
-                                {trade.entryTime ? ` · ${trade.entryTime}` : ""}
-                                {trade.quantity
-                                  ? ` · ${trade.quantity} ${t("trade.contracts")}`
-                                  : ""}
-                              </span>
-                            </span>
-                            <span className="dash-row-end">
-                              <span
-                                className={cn(
-                                  "tv-figure dash-row-pnl",
-                                  be
-                                    ? "text-slate-300"
-                                    : trade.pnl >= 0
-                                      ? "text-emerald-400"
-                                      : "text-red-400",
-                                )}
-                              >
-                                {formatPnl(trade.pnl)}
-                              </span>
-                              <span className="dash-row-sub tv-num">
-                                {r >= 0 ? "+" : "−"}
-                                {Math.abs(r).toFixed(1)} R
-                              </span>
-                            </span>
-                          </RowTag>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
 
-                <div className="stat-card dash-goal p-4 md:p-5">
-                  <div className="dash-card-head">
-                    <h2 className="dash-card-title">{t("copilot.objTitle")}</h2>
-                    <Target className="h-4 w-4 text-slate-500" aria-hidden />
-                  </div>
-                  {objective.targetPct !== null && objective.targetAmount !== null ? (
-                    <>
-                      <span className="tv-figure dash-goal-figure">
-                        {formatPct(
-                          objective.targetAmount > 0
-                            ? Math.max(0, objective.monthPnl / objective.targetAmount)
-                            : 0,
-                        )}
-                      </span>
-                      <span className="dash-row-sub tv-num">
-                        {t("dashboard.objOf")
-                          .replace("{a}", formatMoney(objective.monthPnl, { whole: true }))
-                          .replace("{b}", formatMoney(objective.targetAmount, { whole: true }))}
-                      </span>
-                      <span className="dash-goal-track" aria-hidden>
-                        <span
-                          className="metric-bar-fill"
-                          style={
-                            {
-                              "--metric-fill":
-                                objective.targetAmount > 0
-                                  ? Math.max(
-                                      0,
-                                      Math.min(1, objective.monthPnl / objective.targetAmount),
-                                    )
-                                  : 0,
-                            } as CSSProperties
-                          }
-                        />
-                      </span>
-                    </>
-                  ) : (
-                    onSetObjective && (
-                      <Button
-                        variant="accent"
-                        size="sm"
-                        onClick={onSetObjective}
-                        className="self-start"
-                      >
-                        <Target className="h-4 w-4" aria-hidden />
-                        {t("copilot.objNone")}
-                      </Button>
-                    )
-                  )}
-                  <div className="dash-goal-tiles">
-                    <span className="dash-goal-tile">
-                      <small className="tv-label">{t("dashboard.monthDrawdown")}</small>
-                      <b className="tv-figure">
-                        {objective.monthTrades > 0
-                          ? formatMoney(objective.monthDrawdown, { whole: true })
-                          : "—"}
-                      </b>
-                    </span>
-                    <span className="dash-goal-tile">
-                      <small className="tv-label">{t("dashboard.daysLeft")}</small>
-                      <b className="tv-figure">{daysLeft}</b>
-                    </span>
+                  {/* Chaque widget affiche son échantillon : un chiffre sans
+                    son `n` ne se lit pas (AGENTS.md). */}
+                  <div className="dash-widgets" style={fitRow}>
+                    <Metric
+                      compact={tight}
+                      title={t("stats.winRate")}
+                      value={stats.wins + stats.losses > 0 ? formatPct(stats.winRate) : "—"}
+                      valueClass={
+                        stats.wins + stats.losses === 0
+                          ? undefined
+                          : stats.winRate >= 0.5
+                            ? "text-emerald-400"
+                            : "text-red-400"
+                      }
+                      visual={{
+                        kind: "track",
+                        pct: stats.winRate,
+                        color: stats.winRate >= 0.5 ? CHART_GREEN : CHART_RED,
+                      }}
+                      subtitle={t("dashboard.sampleTrades").replace(
+                        "{n}",
+                        String(stats.wins + stats.losses),
+                      )}
+                      delay={0}
+                    />
+                    <Metric
+                      compact={tight}
+                      title={t("dashboard.profitFactor")}
+                      value={stats.profitFactor === null ? "—" : stats.profitFactor.toFixed(2)}
+                      valueClass={
+                        stats.profitFactor !== null && stats.profitFactor >= 1.5
+                          ? "text-emerald-400"
+                          : stats.profitFactor !== null && stats.profitFactor < 1
+                            ? "text-red-400"
+                            : undefined
+                      }
+                      visual={{
+                        kind: "track",
+                        pct: stats.profitFactor === null ? 0 : Math.min(stats.profitFactor / 3, 1),
+                        color:
+                          stats.profitFactor !== null && stats.profitFactor >= 1
+                            ? CHART_GREEN
+                            : CHART_RED,
+                      }}
+                      subtitle={t("dashboard.sampleTrades").replace(
+                        "{n}",
+                        String(stats.totalTrades),
+                      )}
+                      delay={40}
+                    />
+                    <Metric
+                      compact={tight}
+                      title={t("dashboard.avgR")}
+                      value={
+                        stats.avgRR === null
+                          ? "—"
+                          : `${stats.avgRR >= 0 ? "+" : "−"}${Math.abs(stats.avgRR).toFixed(2)} R`
+                      }
+                      valueClass={
+                        stats.avgRR === null
+                          ? undefined
+                          : stats.avgRR >= 0
+                            ? "text-emerald-400"
+                            : "text-red-400"
+                      }
+                      visual={{
+                        kind: "track",
+                        pct: stats.avgRR === null ? 0 : Math.min(Math.abs(stats.avgRR) / 2, 1),
+                        color: stats.avgRR !== null && stats.avgRR < 0 ? CHART_RED : CHART_GREEN,
+                      }}
+                      subtitle={t("dashboard.sampleTrades").replace(
+                        "{n}",
+                        String(stats.rSampleSize),
+                      )}
+                      delay={80}
+                    />
+                    <Metric
+                      compact={tight}
+                      title={t("dashboard.discipline")}
+                      value={edge.score === null ? "—" : `${Math.round(edge.score)}/100`}
+                      visual={{ kind: "track", pct: edge.score === null ? 0 : edge.score / 100 }}
+                      subtitle={t("dashboard.sampleSessions").replace(
+                        "{n}",
+                        String(edge.tradedDays),
+                      )}
+                      delay={120}
+                    />
                   </div>
                 </div>
-              </div>
 
-              {/* ── 3. LA DISCIPLINE ── */}
-              {/* Copilot block + série de checklist — le focus du jour + la discipline
-                dans la durée, côte à côte. */}
-              <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,0.65fr)] gap-3 md:gap-4 mb-3 md:mb-4">
-                <CopilotBlock
-                  edge={edge}
-                  edgeDelta={edgeDelta}
-                  edgeTrend={edgeTrend}
-                  edgeScores={edgeHistory.map((p) => p.score)}
-                  rule={dailyRule}
-                  checklist={chkStatus}
-                  objective={objective}
-                  onOpenChecklist={onOpenChecklist}
-                  onSetObjective={onSetObjective}
-                />
-                <StreakCard
-                  streak={streakPeriods}
-                  currentStreak={streak.current}
-                  longestStreak={streak.longest}
-                  total={streak.total}
-                  title={t("streak.title")}
-                  todayDone={streak.doneToday}
-                  todayDoneLabel={t("streak.todayDone")}
-                  todayTodoLabel={t("streak.todayTodo")}
-                  daysLabel={t("streak.days")}
-                  longestLabel={t("streak.longest")}
-                  totalLabel={t("streak.total")}
-                  actionLabel={t("streak.viewChecklist")}
-                  onActionClick={onOpenChecklist}
-                  howItWorksTitle={t("streak.howItWorks")}
-                  howItWorksItems={[
-                    t("streak.howItWorks.i1"),
-                    t("streak.howItWorks.i2"),
-                    t("streak.howItWorks.i3"),
-                  ]}
-                  // La série vit aussi sur la page Checklist : sur téléphone, le
-                  // tableau de bord garde le focus du jour et laisse la série.
-                  className="animate-fade-in-up stagger-1 hidden lg:flex"
-                />
-              </div>
-            </>
-          )}
-        </>
-      )}
+                {/* ── 3. LES DERNIERS TRADES ET L'OBJECTIF ── */}
+                <div className="dash-grid">
+                  <div className="stat-card dash-span-2 overflow-hidden p-4 md:p-5" style={fitRow}>
+                    <div className="dash-card-head">
+                      <h2 className="dash-card-title">{t("dashboard.recentTrades")}</h2>
+                      {onOpenJournal && (
+                        <button type="button" className="dash-link" onClick={onOpenJournal}>
+                          {t("common.viewAll")}
+                          <ChevronRight className="h-3.5 w-3.5" aria-hidden />
+                        </button>
+                      )}
+                    </div>
+                    {recentTrades.length === 0 ? (
+                      <div className="py-10 text-center text-sm text-slate-600">
+                        {t("dashboard.noTradesInPeriod")}
+                      </div>
+                    ) : (
+                      <div className="dash-list">
+                        {recentTrades.slice(0, listRows).map((trade) => {
+                          const be = isBreakEven(trade);
+                          const RowTag = onEditTrade ? "button" : "div";
+                          const side =
+                            trade.direction === "long"
+                              ? t("common.long")
+                              : trade.direction === "short"
+                                ? t("common.short")
+                                : "BE";
+                          const r = trade.rMultiple;
+                          return (
+                            <RowTag
+                              key={trade.id}
+                              {...(onEditTrade
+                                ? {
+                                    type: "button" as const,
+                                    onClick: () => onEditTrade(trade),
+                                    "aria-label": `${t("common.edit")} ${trade.symbol} ${formatShortDate(trade.date)}`,
+                                  }
+                                : {})}
+                              className={cn("dash-row", onEditTrade && "dash-row-action")}
+                            >
+                              <span className="dash-row-avatar" aria-hidden>
+                                {trade.symbol.slice(0, 3)}
+                              </span>
+                              <span className="dash-row-main">
+                                <span className="dash-row-title">
+                                  {trade.symbol} · {side}
+                                </span>
+                                <span className="dash-row-sub tv-num">
+                                  {formatShortDate(trade.date)}
+                                  {trade.entryTime ? ` · ${trade.entryTime}` : ""}
+                                  {trade.quantity
+                                    ? ` · ${trade.quantity} ${t("trade.contracts")}`
+                                    : ""}
+                                </span>
+                              </span>
+                              <span className="dash-row-end">
+                                <span
+                                  className={cn(
+                                    "tv-figure dash-row-pnl",
+                                    be
+                                      ? "text-slate-300"
+                                      : trade.pnl >= 0
+                                        ? "text-emerald-400"
+                                        : "text-red-400",
+                                  )}
+                                >
+                                  {formatPnl(trade.pnl)}
+                                </span>
+                                <span className="dash-row-sub tv-num">
+                                  {r >= 0 ? "+" : "−"}
+                                  {Math.abs(r).toFixed(1)} R
+                                </span>
+                              </span>
+                            </RowTag>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="stat-card dash-goal overflow-hidden p-4 md:p-5" style={fitRow}>
+                    <div className="dash-card-head">
+                      <h2 className="dash-card-title">{t("copilot.objTitle")}</h2>
+                      <Target className="h-4 w-4 text-slate-500" aria-hidden />
+                    </div>
+                    {objective.targetPct !== null && objective.targetAmount !== null ? (
+                      <>
+                        <span className="tv-figure dash-goal-figure">
+                          {formatPct(
+                            objective.targetAmount > 0
+                              ? Math.max(0, objective.monthPnl / objective.targetAmount)
+                              : 0,
+                          )}
+                        </span>
+                        <span className="dash-row-sub tv-num">
+                          {t("dashboard.objOf")
+                            .replace("{a}", formatMoney(objective.monthPnl, { whole: true }))
+                            .replace("{b}", formatMoney(objective.targetAmount, { whole: true }))}
+                        </span>
+                        <span className="dash-goal-track" aria-hidden>
+                          <span
+                            className="metric-bar-fill"
+                            style={
+                              {
+                                "--metric-fill":
+                                  objective.targetAmount > 0
+                                    ? Math.max(
+                                        0,
+                                        Math.min(1, objective.monthPnl / objective.targetAmount),
+                                      )
+                                    : 0,
+                              } as CSSProperties
+                            }
+                          />
+                        </span>
+                      </>
+                    ) : (
+                      onSetObjective && (
+                        <Button
+                          variant="accent"
+                          size="sm"
+                          onClick={onSetObjective}
+                          className="self-start"
+                        >
+                          <Target className="h-4 w-4" aria-hidden />
+                          {t("copilot.objNone")}
+                        </Button>
+                      )
+                    )}
+                    <div className="dash-goal-tiles">
+                      <span className="dash-goal-tile">
+                        <small className="tv-label">{t("dashboard.monthDrawdown")}</small>
+                        <b className="tv-figure">
+                          {objective.monthTrades > 0
+                            ? formatMoney(objective.monthDrawdown, { whole: true })
+                            : "—"}
+                        </b>
+                      </span>
+                      <span className="dash-goal-tile">
+                        <small className="tv-label">{t("dashboard.daysLeft")}</small>
+                        <b className="tv-figure">{daysLeft}</b>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+          </>
+        )}
+      </div>
     </PageContainer>
   );
 }
