@@ -31,7 +31,7 @@ import {
   isItemOn,
   migrateConfig,
 } from "./checklistDefaults";
-import { hydrateConfig, pad, windowState } from "./helpers";
+import { getTimeInZone, hydrateConfig, pad, windowState } from "./helpers";
 import ChecklistSettings from "./ChecklistSettings";
 import PlanCard from "./PlanCard";
 import LiveCard from "./LiveCard";
@@ -97,9 +97,15 @@ interface ChecklistProps {
   trades: Trade[];
 }
 
-const nowHHMM = () => {
-  const d = new Date();
-  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+/**
+ * L'heure EN COURS dans le fuseau de la séance — pas celle de l'appareil.
+ * Un trader à Paris sur la séance de New York lit « fenêtre 09:49 » : son
+ * verrou, sa fin de séance et l'heure de son trade doivent parler la même
+ * heure, sinon la frise mélange 15:20 et 09:49.
+ */
+const hhmmIn = (timeZone: string) => {
+  const p = getTimeInZone(new Date(), timeZone);
+  return `${pad(p.hour)}:${pad(p.minute)}`;
 };
 
 /** « 2,2 », « 2.2 » ou « 1:2.2 » → 2.2 ; `null` sans règle exploitable. */
@@ -455,7 +461,7 @@ export default function Checklist({ setPage, onAddTrade, onEditTrade, trades }: 
     // L'avance du verrou sur l'ouverture : écrire son plan AVANT l'open est
     // tout l'objet de l'écran, on garde donc la trace du « quand ».
     const lead = -windowState(config, new Date()).sinceStart;
-    const next = act({ type: "lock", at: nowHHMM(), lead });
+    const next = act({ type: "lock", at: hhmmIn(config.timeZone), lead });
     if (next.phase !== "live") {
       setTried(true);
       return;
@@ -472,9 +478,11 @@ export default function Checklist({ setPage, onAddTrade, onEditTrade, trades }: 
     void pushSession(next);
   };
   const changePlan = (reason: string) =>
-    void pushSession(act({ type: "reopenPlan", at: nowHHMM(), reason }));
-  const switchB = () => void pushSession(act({ type: "switchScenario", at: nowHHMM() }));
-  const end = (reason: EndReason) => void pushSession(act({ type: "end", reason, at: nowHHMM() }));
+    void pushSession(act({ type: "reopenPlan", at: hhmmIn(config.timeZone), reason }));
+  const switchB = () =>
+    void pushSession(act({ type: "switchScenario", at: hhmmIn(config.timeZone) }));
+  const end = (reason: EndReason) =>
+    void pushSession(act({ type: "end", reason, at: hhmmIn(config.timeZone) }));
   const closeDay = () => {
     const next = act({ type: "close" });
     if (next.phase === "closed") void pushSession(next, true);
@@ -488,7 +496,7 @@ export default function Checklist({ setPage, onAddTrade, onEditTrade, trades }: 
       tradePrefill({
         day: d,
         date: today,
-        now: nowHHMM(),
+        now: hhmmIn(config.timeZone),
         last: lastTrade(trades),
         planLine: planLine(d),
         withReview,
@@ -695,7 +703,11 @@ export default function Checklist({ setPage, onAddTrade, onEditTrade, trades }: 
         config={config}
         onPatch={patchConfig}
         onResetDay={() => {
-          act({ type: "reset", defaults: readDefaults() });
+          // La séance en base est remise à zéro AUSSI : sans elle, le
+          // rechargement suivant reprenait l'ancien plan verrouillé depuis
+          // `trading_sessions` (la journée locale vide passe pour « rien
+          // d'écrit sur cet appareil »).
+          void pushSession(act({ type: "reset", defaults: readDefaults() }));
           setShowSettings(false);
         }}
         onResetConfig={() => {

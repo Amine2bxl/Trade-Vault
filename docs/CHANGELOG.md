@@ -28,6 +28,15 @@ qui vivent dans l'historique git et les PR).
 - Questions d'entrée personnalisables à variables (`{bias}`, `{entry}`,
   `{inv}`…), quatre modèles (Essentiel, ICT/SMC, price action, order flow) ;
   migration `gateV` des listes existantes.
+- Carte du plan (`ladderGeometry` pur + `PlanLadder`) : niveaux à leur place,
+  zones de gain et de risque, R par niveau, cible B épinglée hors échelle.
+- Le temps : fin de fenêtre optionnelle (blocage `windowEnded`), avance du
+  verrou sur l'ouverture (`lockLead`), frise Plan / Séance / Bilan horodatée,
+  heures saisies dans le fuseau de séance.
+- Mémoire : « la prochaine fois » du dernier setup manqué, plan respecté et
+  plan verrouillé avant l'open sur les dix dernières séances (tus sous 3).
+- Le bilan s'ajoute aux trades déjà au journal (relais `tradeReview` consommé
+  par `TradeModal` en édition, champs vides seulement) : pas de doublon.
 - Encodage sans friction : `utils/handoff.ts` (relais en mémoire, lu une fois)
   pré-remplit `TradeModal` (sens, risque, état, plan, réflexion, erreurs) et
   le formulaire des setups manqués (R estimé par les niveaux, leçon).
