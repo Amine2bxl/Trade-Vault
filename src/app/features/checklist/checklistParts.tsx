@@ -12,6 +12,7 @@ import {
   type Scenario,
   type SessionDay,
   type SessionMemory,
+  type MissedReminder,
   type SessionPlan,
 } from "./sessionPlan";
 
@@ -207,37 +208,83 @@ export function HistoryLine({ history }: { history: PlanHistory }) {
 }
 
 /**
- * Ce que les séances passées disent à celle-ci : la dernière leçon écrite et
- * l'écart le plus souvent déclaré. C'est le contenu qui change chaque jour —
- * ce qui empêche le plan de s'écrire par réflexe.
+ * Ce que les séances passées disent à celle-ci : la dernière leçon du bilan,
+ * le « la prochaine fois » du dernier setup manqué, et trois comptes — plan
+ * respecté, plan verrouillé avant l'open, écart le plus fréquent. C'est le
+ * contenu qui change chaque jour : ce qui empêche le plan de s'écrire par
+ * réflexe. Chaque compte porte son dénominateur.
  */
-export function MemoryLines({ memory }: { memory: SessionMemory }) {
+export function MemoryLines({
+  memory,
+  reminder,
+}: {
+  memory: SessionMemory;
+  reminder: MissedReminder | null;
+}) {
   const { t, lang } = useT();
-  if (!memory.lastLesson && !memory.topBreach) return null;
-  const date = memory.lastLesson
-    ? new Date(`${memory.lastLesson.date}T12:00:00`).toLocaleDateString(intlLocale(lang), {
-        day: "numeric",
-        month: "short",
-      })
-    : "";
+  const counts = [memory.respected, memory.early, memory.topBreach].some(Boolean);
+  if (!memory.lastLesson && !reminder && !counts) return null;
+  const day = (iso: string) =>
+    new Date(`${iso}T12:00:00`).toLocaleDateString(intlLocale(lang), {
+      day: "numeric",
+      month: "short",
+    });
+  const ratio = (yes: number, total: number) => (
+    <span className="tv-figure text-slate-200">
+      {yes}/{total}
+    </span>
+  );
   return (
-    <div className="space-y-1.5 rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-2)] px-3 py-2.5">
+    <section
+      aria-label={t("chk.memoryTitle")}
+      className="space-y-2.5 rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-2)] px-3 py-3"
+    >
+      <h3 className="tv-label text-slate-500">{t("chk.memoryTitle")}</h3>
       {memory.lastLesson && (
-        <p className="text-sm text-slate-200">
-          <span className="tv-label mr-2 text-[var(--tv-highlight)]">
-            {t("chk.lastLesson").replace("{date}", date)}
-          </span>
-          {t("chk.quoted").replace("{text}", memory.lastLesson.note)}
-        </p>
+        <div className="space-y-0.5">
+          <p className="tv-label text-[var(--tv-highlight)]">
+            {t("chk.lastLesson").replace("{date}", day(memory.lastLesson.date))}
+          </p>
+          <p className="text-sm text-slate-200">
+            {t("chk.quoted").replace("{text}", memory.lastLesson.note)}
+          </p>
+        </div>
       )}
-      {memory.topBreach && (
-        <p className="text-xs text-slate-400">
-          {t("chk.topBreach")
-            .replace("{breach}", t(BREACH_KEYS[memory.topBreach.breach]))
-            .replace("{count}", String(memory.topBreach.count))
-            .replace("{n}", String(memory.topBreach.sessions))}
-        </p>
+      {reminder && (
+        <div className="space-y-0.5">
+          <p className="tv-label text-amber-300">
+            {t(reminder.kind === "next" ? "chk.missedNext" : "chk.missedLesson").replace(
+              "{date}",
+              day(reminder.date),
+            )}
+          </p>
+          {/* Les notes de setups manqués sont longues : trois lignes, le
+              reste au survol. On relit l'essentiel, on ne relit pas un roman. */}
+          <p className="line-clamp-3 text-sm text-slate-200" title={reminder.text}>
+            {t("chk.quoted").replace("{text}", reminder.text)}
+          </p>
+        </div>
       )}
-    </div>
+      {counts && (
+        <div className="flex flex-wrap gap-x-4 gap-y-1 border-t border-[var(--tv-border)] pt-2 text-xs text-slate-400">
+          {memory.respected && (
+            <span>
+              {t("chk.memRespected")} {ratio(memory.respected.yes, memory.respected.total)}
+            </span>
+          )}
+          {memory.early && (
+            <span>
+              {t("chk.memEarly")} {ratio(memory.early.yes, memory.early.total)}
+            </span>
+          )}
+          {memory.topBreach && (
+            <span>
+              {t("chk.memTopBreach").replace("{breach}", t(BREACH_KEYS[memory.topBreach.breach]))}{" "}
+              {ratio(memory.topBreach.count, memory.topBreach.sessions)}
+            </span>
+          )}
+        </div>
+      )}
+    </section>
   );
 }

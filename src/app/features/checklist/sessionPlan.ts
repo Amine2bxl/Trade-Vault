@@ -546,6 +546,8 @@ export interface PastSession {
   scenario: Scenario;
   /** Le bilan, s'il a été clos ce jour-là. */
   review: SessionReview | null;
+  /** Avance du verrou sur l'ouverture ; `null` pour les séances d'avant la mesure. */
+  lockLead: number | null;
 }
 
 /**
@@ -563,6 +565,7 @@ export function sessionFromSnapshot(date: string, snapshot: unknown): PastSessio
     plan,
     scenario: s.scenario === "B" && altComplete(plan.alt) ? "B" : "A",
     review: s.phase === "closed" ? readReview(s.review) : null,
+    lockLead: typeof s.lockLead === "number" && Number.isFinite(s.lockLead) ? s.lockLead : null,
   };
 }
 
@@ -705,6 +708,43 @@ export interface SessionMemory {
    * statistique : il n'est rendu qu'à partir de `MIN_BUCKET_SAMPLE` bilans.
    */
   topBreach: { breach: Breach; count: number; sessions: number } | null;
+  /** Plan respecté, sur les derniers bilans clos (au plus `RECENT_SESSIONS`). */
+  respected: { yes: number; total: number } | null;
+  /** Plan verrouillé avant l'ouverture, sur les dernières séances mesurées. */
+  early: { yes: number; total: number } | null;
+}
+
+/** Fenêtre des comptes récents : assez pour une tendance, assez court pour bouger. */
+export const RECENT_SESSIONS = 10;
+/** Sous ce nombre de séances, un « 1 sur 2 » ne dit rien : on se tait. */
+export const MIN_RECENT = 3;
+
+/** Un setup manqué, réduit à ce que la mémoire en relit. */
+export interface MissedNote {
+  date: string;
+  nextTimePlan: string;
+  lessonLearned: string;
+}
+
+/**
+ * Le rappel tiré du dernier setup manqué annoté : son « la prochaine fois »
+ * d'abord, sa leçon à défaut. Ce sont les mots du trader, écrits à froid —
+ * exactement ce qu'il a besoin de relire avant d'écrire le plan suivant.
+ */
+export interface MissedReminder {
+  date: string;
+  text: string;
+  kind: "next" | "lesson";
+}
+
+export function missedReminder(missed: readonly MissedNote[]): MissedReminder | null {
+  const sorted = missed.slice().sort((a, b) => b.date.localeCompare(a.date));
+  for (const m of sorted) {
+    if (m.nextTimePlan.trim()) return { date: m.date, text: m.nextTimePlan.trim(), kind: "next" };
+    if (m.lessonLearned.trim())
+      return { date: m.date, text: m.lessonLearned.trim(), kind: "lesson" };
+  }
+  return null;
 }
 
 /**
@@ -729,9 +769,25 @@ export function sessionMemory(past: readonly PastSession[]): SessionMemory {
         top = { breach: b, count: c, sessions: closed.length };
     }
   }
+  const recentClosed = closed.slice(0, RECENT_SESSIONS);
+  const measured = past
+    .filter((p) => p.lockLead !== null)
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, RECENT_SESSIONS);
   return {
     lastLesson: withNote ? { date: withNote.date, note: withNote.review.note.trim() } : null,
     topBreach: top,
+    respected:
+      recentClosed.length >= MIN_RECENT
+        ? {
+            yes: recentClosed.filter((p) => p.review.respected === true).length,
+            total: recentClosed.length,
+          }
+        : null,
+    early:
+      measured.length >= MIN_RECENT
+        ? { yes: measured.filter((p) => (p.lockLead ?? 0) > 0).length, total: measured.length }
+        : null,
   };
 }
 

@@ -9,6 +9,7 @@ import type { Page, Trade } from "@/app/types";
 import {
   closeSession,
   loadChecklistConfig,
+  loadMissedOpportunities,
   loadSessions,
   loadTodaySession,
   openSession,
@@ -46,6 +47,7 @@ import {
   entryBlockers,
   fillGate,
   gateQuestions,
+  missedReminder,
   normalizeDay,
   planHistory,
   reduceDay,
@@ -58,6 +60,7 @@ import {
   type DayAction,
   type DayDefaults,
   type EndReason,
+  type MissedReminder,
   type PastSession,
   type SessionDay,
 } from "./sessionPlan";
@@ -357,6 +360,22 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
   const history = useMemo(() => planHistory(past, trades), [past, trades]);
   const memory = useMemo(() => sessionMemory(past), [past]);
 
+  // Le dernier « la prochaine fois » écrit dans les setups manqués : relu
+  // avant d'écrire le plan, c'est la boucle qui ferme l'apprentissage.
+  const [reminder, setReminder] = useState<MissedReminder | null>(null);
+  useEffect(() => {
+    if (!userId) return;
+    let active = true;
+    void loadMissedOpportunities(userId)
+      .then((list) => {
+        if (active) setReminder(missedReminder(list));
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [userId]);
+
   const facts = useMemo(() => dayFacts(trades, today), [trades, today]);
   const nowDate = new Date(now);
   const win = windowState(config, nowDate);
@@ -620,6 +639,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
           news={news}
           history={history}
           memory={memory}
+          reminder={reminder}
           minRR={minRR}
         />
       )}

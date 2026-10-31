@@ -13,6 +13,7 @@ import {
   levelPrice,
   MIN_CHANGE_REASON,
   missingFields,
+  missedReminder,
   normalizeDay,
   parseAmount,
   planHistory,
@@ -382,8 +383,12 @@ describe("conformité au plan écrit", () => {
   });
 });
 
-const past = (date: string, plan: SessionPlan, review: PastSession["review"] = null) =>
-  ({ date, plan, scenario: "A", review }) as PastSession;
+const past = (
+  date: string,
+  plan: SessionPlan,
+  review: PastSession["review"] = null,
+  lockLead: number | null = null,
+): PastSession => ({ date, plan, scenario: "A", review, lockLead });
 
 describe("historique dans le plan / hors plan", () => {
   test("aucun chiffre sous l'échantillon minimum, mais le n est toujours rendu", () => {
@@ -439,6 +444,64 @@ describe("la mémoire des séances", () => {
     expect(sessionMemory(four).topBreach).toBeNull();
     const five = [...four, past("2026-10-15", SHORT_PLAN, review("", ["chased"]))];
     expect(sessionMemory(five).topBreach).toEqual({ breach: "direction", count: 4, sessions: 5 });
+  });
+});
+
+describe("les comptes récents de la mémoire", () => {
+  const rev = (respected: boolean) => ({ respected, breaches: [], note: "" });
+
+  test("plan respecté : sur les derniers bilans clos, avec son dénominateur", () => {
+    const sessions = [
+      past("2026-10-20", SHORT_PLAN, rev(true)),
+      past("2026-10-21", SHORT_PLAN, rev(false)),
+      past("2026-10-22", SHORT_PLAN, rev(true)),
+      past("2026-10-23", SHORT_PLAN, null),
+    ];
+    expect(sessionMemory(sessions).respected).toEqual({ yes: 2, total: 3 });
+  });
+
+  test("sous trois séances, pas de compte", () => {
+    const two = [
+      past("2026-10-20", SHORT_PLAN, rev(true)),
+      past("2026-10-21", SHORT_PLAN, rev(true)),
+    ];
+    expect(sessionMemory(two).respected).toBeNull();
+  });
+
+  test("verrouillé avant l'open : seules les séances mesurées comptent", () => {
+    const sessions = [
+      past("2026-10-20", SHORT_PLAN, null, 25),
+      past("2026-10-21", SHORT_PLAN, null, -4),
+      past("2026-10-22", SHORT_PLAN, null, 12),
+      past("2026-10-23", SHORT_PLAN, null, null),
+    ];
+    expect(sessionMemory(sessions).early).toEqual({ yes: 2, total: 3 });
+  });
+
+  test("les comptes ne regardent que les dix dernières séances", () => {
+    const many = Array.from({ length: 14 }, (_, i) =>
+      past(`2026-10-${String(10 + i).padStart(2, "0")}`, SHORT_PLAN, rev(i >= 4), 10),
+    );
+    expect(sessionMemory(many).respected).toEqual({ yes: 10, total: 10 });
+  });
+});
+
+describe("le rappel des setups manqués", () => {
+  test("le « prochaine fois » le plus récent, la leçon à défaut", () => {
+    expect(
+      missedReminder([
+        { date: "2026-10-27", nextTimePlan: "Ne pas chasser", lessonLearned: "" },
+        { date: "2026-10-30", nextTimePlan: " ", lessonLearned: "Garder la DoL" },
+        { date: "2026-10-29", nextTimePlan: "Checklist", lessonLearned: "" },
+      ]),
+    ).toEqual({ date: "2026-10-30", text: "Garder la DoL", kind: "lesson" });
+  });
+
+  test("rien d'annoté, rien à rappeler", () => {
+    expect(
+      missedReminder([{ date: "2026-10-30", nextTimePlan: "", lessonLearned: "" }]),
+    ).toBeNull();
+    expect(missedReminder([])).toBeNull();
   });
 });
 

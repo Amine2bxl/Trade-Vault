@@ -31,6 +31,7 @@ import {
   type PlanWarning,
   type SessionDay,
   type SessionMemory,
+  type MissedReminder,
   type SessionPlan,
 } from "./sessionPlan";
 
@@ -50,11 +51,22 @@ interface Props {
   news: { id: string; label: string; time: string | null }[];
   history: PlanHistory;
   memory: SessionMemory;
+  reminder: MissedReminder | null;
   /** `risk.minRR` du plan de trading ; `null` sans règle. */
   minRR: number | null;
 }
 
-export default function PlanCard({ day, act, tried, onLock, news, history, memory, minRR }: Props) {
+export default function PlanCard({
+  day,
+  act,
+  tried,
+  onLock,
+  news,
+  history,
+  memory,
+  reminder,
+  minRR,
+}: Props) {
   const { t } = useT();
   const biasWord = useBiasWord();
   const fmt = useRFormat();
@@ -89,7 +101,7 @@ export default function PlanCard({ day, act, tried, onLock, news, history, memor
         <p className="tv-row-label">{t("chk.planHint")}</p>
       </div>
 
-      <MemoryLines memory={memory} />
+      <MemoryLines memory={memory} reminder={reminder} />
 
       {/* ══ Contexte ══ */}
       <section className="space-y-3">
