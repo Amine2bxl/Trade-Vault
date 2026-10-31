@@ -67,7 +67,30 @@ export interface Trade {
   reviewPending?: boolean;
   /** Trade dont celui-ci est la COPIE (transfert entre comptes). */
   copiedFrom?: string | null;
+
+  // ── Provenance (lot 1) ───────────────────────────────────────────────────
+  // Absentes (`undefined`/`null`) = INCONNUES : l'historique antérieur au lot 1
+  // n'a jamais été rétro-rempli avec des valeurs devinées.
+
+  /** D'où vient le trade. */
+  source?: TradeSource | null;
+  /**
+   * D'où vient son risque initial. `broker_default` = risque forfaitaire
+   * déclaré à la connexion broker, faute de stop retrouvé : PAS une mesure.
+   */
+  riskSource?: RiskSource | null;
+  /** Fuseau IANA dans lequel `date`, `entryTime`, `exitTime` ont été écrits. */
+  sourceTimezone?: string | null;
+  /** Instant UTC (ISO 8601) de l'entrée, seulement quand il est PROUVÉ. */
+  entryAt?: string | null;
+  /** Instant UTC (ISO 8601) de la sortie, seulement quand il est PROUVÉ. */
+  exitAt?: string | null;
+  /** Clé d'idempotence d'un import (`domain/importKey`), unique par compte. */
+  importKey?: string | null;
 }
+
+export type TradeSource = "manual" | "csv" | "broker" | "copy";
+export type RiskSource = "user" | "csv" | "broker_stop" | "broker_default";
 
 export interface TradeStats {
   totalPnl: number;
@@ -111,7 +134,8 @@ export function isBreakEven(t: Pick<Trade, "pnl">): boolean {
 }
 
 /** Les champs dont dépend la preuve d'un risque initial. */
-export type RiskEvidence = Pick<Trade, "pnl" | "riskAmount" | "broker" | "reviewPending">;
+export type RiskEvidence = Pick<Trade, "pnl" | "riskAmount" | "broker" | "reviewPending"> &
+  Partial<Pick<Trade, "riskSource">>;
 
 /**
  * LE RISQUE INITIAL EST-IL UNE DONNÉE EXPLOITABLE ? — définition UNIQUE du
@@ -123,16 +147,20 @@ export type RiskEvidence = Pick<Trade, "pnl" | "riskAmount" | "broker" | "review
  * pour 0R. Le même trader lisait donc deux R moyens différents selon l'écran.
  *
  * Un risque est exploitable s'il est strictement positif, fini, et qu'il a été
- * saisi ou relu par le trader hors import broker :
+ * saisi, relu ou OBSERVÉ :
  * - `reviewPending` : import pas encore relu, le risque n'est pas confirmé ;
- * - `broker` : la synchro substitue un « risque par défaut » déclaré à la
- *   connexion quand aucun stop n'est retrouvé, et la base ne conserve pas
- *   laquelle des deux sources a servi. Tant que cette provenance n'est pas
- *   persistée (lot 1), le R d'un trade broker reste INCONNU plutôt que
- *   d'additionner des stops observés et des risques forfaitaires.
+ * - trade broker : seul un stop observé chez le broker (`broker_stop`) ou un
+ *   risque ressaisi par le trader à la relecture (`user`) compte. Le « risque
+ *   par défaut » de la connexion (`broker_default`) est un forfait, et un
+ *   trade broker antérieur au lot 1 (provenance non enregistrée) reste
+ *   INCONNU plutôt que d'additionner des stops observés et des forfaits.
  */
-export function hasMeasuredRisk(t: Pick<RiskEvidence, "riskAmount" | "broker" | "reviewPending">) {
-  return !t.reviewPending && !t.broker && Number.isFinite(t.riskAmount) && t.riskAmount > 0;
+export function hasMeasuredRisk(
+  t: Pick<RiskEvidence, "riskAmount" | "broker" | "reviewPending" | "riskSource">,
+) {
+  if (t.reviewPending || !Number.isFinite(t.riskAmount) || !(t.riskAmount > 0)) return false;
+  if (!t.broker) return t.riskSource !== "broker_default";
+  return t.riskSource === "broker_stop" || t.riskSource === "user";
 }
 
 /**

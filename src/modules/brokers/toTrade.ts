@@ -9,7 +9,9 @@
  * le complète (`reviewPending`).
  *
  * Aucun chiffre n'est inventé : sans stop retrouvé ni risque par défaut
- * déclaré, le risque reste à 0 et le R à 0 — le formulaire le demandera.
+ * déclaré, le risque reste à 0 et le R à 0 — le formulaire le demandera. Un
+ * risque par défaut est enregistré comme tel (`riskSource: broker_default`) :
+ * il dimensionne, il ne mesure pas de R. Des frais inconnus restent `null`.
  */
 
 import type { Trade } from "@/domain/trade";
@@ -22,12 +24,7 @@ const round2 = (n: number) => Math.round(n * 100) / 100;
  *  lendemain UTC. Un fuseau invalide retombe sur UTC plutôt que de lever. */
 export function localDateTime(iso: string, timeZone: string): { date: string; time: string } {
   const d = new Date(iso);
-  let tz = timeZone || "UTC";
-  try {
-    new Intl.DateTimeFormat("en-US", { timeZone: tz });
-  } catch {
-    tz = "UTC";
-  }
+  const tz = effectiveTimeZone(timeZone);
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: tz,
     year: "numeric",
@@ -42,6 +39,18 @@ export function localDateTime(iso: string, timeZone: string): { date: string; ti
     date: `${get("year")}-${get("month")}-${get("day")}`,
     time: `${get("hour")}:${get("minute")}`,
   };
+}
+
+/** Le fuseau réellement utilisé pour écrire date et heures : celui du trader,
+ *  ou UTC s'il est invalide — c'est CELUI-LÀ que la provenance enregistre. */
+export function effectiveTimeZone(timeZone: string): string {
+  const tz = timeZone || "UTC";
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: tz });
+    return tz;
+  } catch {
+    return "UTC";
+  }
 }
 
 /** Marge avant l'entrée : un ordre bracket est souvent horodaté quelques
@@ -91,9 +100,16 @@ export interface TradeContext {
 export function roundTripToTrade(trip: RoundTrip, ctx: TradeContext): Trade {
   const entry = localDateTime(trip.entryTime, ctx.timeZone);
   const exit = localDateTime(trip.exitTime, ctx.timeZone);
-  const risk =
-    initialRisk(trip, ctx.stops) ?? (ctx.defaultRisk && ctx.defaultRisk > 0 ? ctx.defaultRisk : 0);
-  const pnl = trip.netPnl;
+  const observed = initialRisk(trip, ctx.stops);
+  const fallback = ctx.defaultRisk && ctx.defaultRisk > 0 ? ctx.defaultRisk : null;
+  const risk = observed ?? fallback ?? 0;
+  // La PROVENANCE du risque décide s'il mesure un R (`domain/trade`) : un stop
+  // observé chez le broker oui, le forfait déclaré à la connexion non.
+  const riskSource =
+    observed !== null ? "broker_stop" : fallback !== null ? "broker_default" : null;
+  // Frais inconnus : le P&L enregistré est le BRUT et `fees` reste `null` —
+  // c'est ce couple qui dit « net inconnu », sans rien inventer.
+  const pnl = trip.netPnl ?? trip.grossPnl;
   // Le R est le RAPPORT exact P&L / risque : arrondi au centième, il ferait
   // dériver le P&L d'un cent quand le formulaire le recalcule.
   const rMultiple = risk > 0 ? Math.round((pnl / risk) * 10000) / 10000 : 0;
@@ -128,5 +144,12 @@ export function roundTripToTrade(trip: RoundTrip, ctx: TradeContext): Trade {
     externalId: trip.externalId,
     brokerAccount: ctx.brokerAccountName,
     reviewPending: true,
+    source: "broker",
+    riskSource,
+    sourceTimezone: effectiveTimeZone(ctx.timeZone),
+    // Horodatages UTC du broker : l'ordre et l'heure Eastern se DÉDUISENT
+    // (`domain/easternClock`) au lieu de lire l'heure locale du trader.
+    entryAt: trip.entryTime,
+    exitAt: trip.exitTime,
   };
 }

@@ -1,5 +1,6 @@
 import { Trade, isBreakEven, measuredR } from "./trade";
 import { compareRealizedChronological, hasVerifiedRealizedOrder } from "./tradeOrder";
+import { easternClockOf } from "./easternClock";
 
 // ── Trading sessions (ET, ICT convention) ──────────────────────────────────
 // Times entered in the journal are treated as US Eastern (the reference for
@@ -13,25 +14,47 @@ function entryMinute(entryTime: string): number | null {
   return matched ? Number(matched[1]) * 60 + Number(matched[2]) : null;
 }
 
-export function getSession(entryTime: string): TradingSession | null {
-  const mins = entryMinute(entryTime);
-  if (mins === null) return null;
+function sessionOfMinute(mins: number): TradingSession {
   if (mins >= 120 && mins < 480) return "london";
   if (mins >= 480 && mins < 990) return "newyork";
   return "asia";
 }
 
+export function getSession(entryTime: string): TradingSession | null {
+  const mins = entryMinute(entryTime);
+  return mins === null ? null : sessionOfMinute(mins);
+}
+
+/** Les champs qui prouvent (ou non) l'heure Eastern d'une entrée. */
+export type EntryClockEvidence = Pick<Trade, "entryTime" | "broker" | "reviewPending"> &
+  Partial<Pick<Trade, "entryAt">>;
+
 /** Broker and unreviewed CSV display-clock times are not evidence of
- * America/New_York timestamps. Persisted timezone provenance is a Lot 1 gate.
+ * America/New_York timestamps — unless the UTC entry instant is proven
+ * (`entryAt`, lot 1), from which the Eastern clock is derived exactly.
  * Manual journal entries follow TradeVault's existing ET/ICT convention. */
-export function hasUnverifiedEtTime(trade: Pick<Trade, "broker" | "reviewPending">): boolean {
+export function hasUnverifiedEtTime(
+  trade: Pick<Trade, "broker" | "reviewPending"> & Partial<Pick<Trade, "entryAt">>,
+): boolean {
+  if (easternClockOf(trade.entryAt)) return false;
   return Boolean(trade.broker || trade.reviewPending);
 }
 
-export function getSessionForTrade(
-  trade: Pick<Trade, "entryTime" | "broker" | "reviewPending">,
-): TradingSession | null {
-  return hasUnverifiedEtTime(trade) ? null : getSession(trade.entryTime);
+/**
+ * LA minute Eastern de l'entrée (0–1439), ou `null` si elle n'est pas
+ * établie. Seul point d'accès : un trade broker porte des heures écrites dans
+ * le fuseau du TRADER — lire `entryTime` comme une heure de New York dès que
+ * l'instant est prouvé décalerait sa session de plusieurs heures.
+ */
+export function easternEntryMinute(trade: EntryClockEvidence): number | null {
+  const fromInstant = easternClockOf(trade.entryAt);
+  if (fromInstant) return fromInstant.minute;
+  return hasUnverifiedEtTime(trade) ? null : entryMinute(trade.entryTime);
+}
+
+export function getSessionForTrade(trade: EntryClockEvidence): TradingSession | null {
+  const mins = easternEntryMinute(trade);
+  return mins === null ? null : sessionOfMinute(mins);
 }
 
 // ── Événements macro confirmés ─────────────────────────────────────────────
@@ -323,8 +346,7 @@ export function statsBySession(trades: Trade[]): Record<TradingSession, BucketSt
 export function statsByHour(trades: Trade[]): Record<number, BucketStat> {
   const map: Record<string, BucketStat> = {};
   for (const t of trades) {
-    if (hasUnverifiedEtTime(t)) continue;
-    const minute = entryMinute(t.entryTime);
+    const minute = easternEntryMinute(t);
     if (minute === null) continue;
     addToBucket(map, String(Math.floor(minute / 60)), t);
   }
@@ -337,10 +359,11 @@ export function statsByHour(trades: Trade[]): Record<number, BucketStat> {
 export function dayHourMatrix(trades: Trade[]): Record<string, BucketStat> {
   const map: Record<string, BucketStat> = {};
   for (const t of trades) {
-    if (hasUnverifiedEtTime(t)) continue;
-    const minute = entryMinute(t.entryTime);
+    const minute = easternEntryMinute(t);
     if (minute === null || !/^\d{4}-\d{2}-\d{2}$/.test(t.date)) continue;
-    const dow = new Date(t.date + "T12:00:00Z").getUTCDay();
+    // Le jour suit la même horloge que l'heure : celui de New York quand
+    // l'instant est prouvé, la date du journal sinon.
+    const dow = easternClockOf(t.entryAt)?.weekday ?? new Date(t.date + "T12:00:00Z").getUTCDay();
     if (!Number.isFinite(dow)) continue;
     addToBucket(map, `${dow}-${Math.floor(minute / 60)}`, t);
   }

@@ -16,7 +16,9 @@
  *      TradeVault par défaut de la connexion) ;
  *   3. exécutions + ordres + positions + contrats (+ frais, + stops) ;
  *   4. appariement plat → plat (`modules/brokers`, pur et déterministe) ;
- *   5. insertion `on conflict do nothing` sur `(user_id, external_id)` ;
+ *   5. insertion `on conflict do nothing` sur `(user_id, external_id)`, la
+ *      clé portant l'environnement (live/démo) ; un aller-retour déjà
+ *      journalisé sous l'ancienne clé sans environnement n'est pas réécrit ;
  *   6. curseur avancé : un trade supprimé par le trader ne revient pas.
  *
  * Tout ce qui part vers Tradovate est une LECTURE (`tvGet`, liste blanche dans
@@ -26,15 +28,22 @@
 
 import {
   buildRoundTrips,
+  legacyExternalId,
   positionKey,
   roundTripToTrade,
   tradovate as tv,
   type BrokerStopOrder,
+  type RoundTrip,
 } from "@/modules/brokers";
 import type { Trade } from "@/domain/trade";
+import {
+  isMissingProvenanceColumn,
+  provenanceColumns,
+  provenanceFromRow,
+} from "@/domain/tradeProvenance";
 import { effectiveTier, type EntitlementRow } from "@/domain/entitlement";
 import { tierAtLeast } from "@/domain/plans";
-import { decryptSecret, encryptSecret } from "./broker-crypto.server";
+import { decryptSecret, encryptSecret, sha256Hex } from "./broker-crypto.server";
 import {
   TradovateError,
   newSession,
@@ -310,8 +319,13 @@ async function resolveContracts(
 
 const cents = (n: number) => Math.round(n * 100) / 100;
 
+/** Faux dès qu'une écriture a prouvé que la base n'a pas encore les colonnes
+ *  de provenance (lot 1) : la synchro continue sans elles. */
+let provenanceSupported = true;
+
 function tradeRow(t: Trade, userId: string) {
   return {
+    ...(provenanceSupported ? provenanceColumns(t) : {}),
     id: t.id,
     user_id: userId,
     account_id: t.accountId ?? null,
@@ -368,11 +382,19 @@ async function insertTrades(
 }> {
   const processed = new Set<string>();
   if (!trades.length) return { inserted: [], processed, planLimit: false, failed: 0 };
-  const rows = trades.map((t) => tradeRow(t, userId));
-  const { data, error } = await sb
-    .from("trades")
-    .upsert(rows, { onConflict: "user_id,external_id", ignoreDuplicates: true })
-    .select("*");
+  let rows = trades.map((t) => tradeRow(t, userId));
+  const write = (batch: typeof rows) =>
+    sb
+      .from("trades")
+      .upsert(batch, { onConflict: "user_id,external_id", ignoreDuplicates: true })
+      .select("*");
+  let { data, error } = await write(rows);
+  if (error && provenanceSupported && isMissingProvenanceColumn(error)) {
+    console.warn("[broker-sync] colonnes de provenance absentes : écriture sans elles");
+    provenanceSupported = false;
+    rows = trades.map((t) => tradeRow(t, userId));
+    ({ data, error } = await write(rows));
+  }
   if (!error) {
     for (const t of trades) if (t.externalId) processed.add(t.externalId);
     return {
@@ -388,10 +410,7 @@ async function insertTrades(
   let planLimit = isPlanLimit(error);
   let failed = 0;
   for (const row of rows) {
-    const res = await sb
-      .from("trades")
-      .upsert([row], { onConflict: "user_id,external_id", ignoreDuplicates: true })
-      .select("*");
+    const res = await write([row]);
     if (!res.error) {
       inserted.push(...((res.data ?? []) as Record<string, unknown>[]));
       if (row.external_id) processed.add(row.external_id);
@@ -404,6 +423,103 @@ async function insertTrades(
     }
   }
   return { inserted, processed, planLimit, failed };
+}
+
+/** JSON à clés triées : la même exécution donne toujours la même empreinte. */
+function stableJson(v: unknown): string {
+  if (Array.isArray(v)) return `[${v.map(stableJson).join(",")}]`;
+  if (v && typeof v === "object") {
+    const o = v as Record<string, unknown>;
+    return `{${Object.keys(o)
+      .sort()
+      .filter((k) => o[k] !== undefined)
+      .map((k) => `${JSON.stringify(k)}:${stableJson(o[k])}`)
+      .join(",")}}`;
+  }
+  return JSON.stringify(v);
+}
+
+/**
+ * Les FAITS BRUTS de la synchro (lot 1) : chaque exécution et chaque relevé
+ * de frais reçus, tels que Tradovate les a rendus, sous une clé qualifiée
+ * (broker, environnement, compte broker, exécution). Rejouer la synchro
+ * n'ajoute rien (même clé, même empreinte) ; une exécution CORRIGÉE par le
+ * broker (même clé, autre contenu — un fill annulé, par exemple) est classée
+ * `conflict` par la base au lieu d'écraser l'original. Les frais ont leur
+ * propre fait : une API de frais en panne ne fait pas passer l'exécution pour
+ * corrigée au passage suivant.
+ *
+ * Best-effort, comme la preuve d'un import CSV : la consigne qui échoue (base
+ * sans la migration) est journalisée, la synchro continue.
+ */
+async function recordRawFills(
+  sb: Sb,
+  conn: ConnectionRow,
+  fills: readonly tv.TvFill[],
+  orderById: ReadonlyMap<number, tv.TvOrder>,
+  target: ReadonlyMap<string, { account_id: string | null }>,
+  fees: ReadonlyMap<number, tv.TvFillFee>,
+): Promise<void> {
+  const rows: Record<string, unknown>[] = [];
+  const push = async (accountId: string, key: string, payload: unknown) =>
+    rows.push({
+      user_id: conn.user_id,
+      account_id: accountId,
+      source_kind: "broker",
+      source_key: key.slice(0, 300),
+      payload,
+      payload_sha256: await sha256Hex(stableJson(payload)),
+      status: "accepted",
+    });
+  for (const f of fills) {
+    const order = orderById.get(f.orderId);
+    const accountId = order ? target.get(String(order.accountId))?.account_id : null;
+    if (!order || !accountId) continue;
+    const base = `tradovate:${conn.environment}:${order.accountId}`;
+    // L'ordre n'entre que par son compte : son état évolue (statut, prix
+    // modifié) sans que l'exécution, elle, change.
+    await push(accountId, `${base}:fill:${f.id}`, { fill: f, accountId: order.accountId });
+    const fee = fees.get(f.id);
+    if (fee) await push(accountId, `${base}:fee:${f.id}`, { fee });
+  }
+  if (!rows.length) return;
+  const { error } = await sb
+    .from("raw_ingest_events")
+    .upsert(rows, { onConflict: "user_id,source_key,payload_sha256", ignoreDuplicates: true });
+  if (error) console.warn("[broker-sync] faits bruts non consignés", error.message);
+}
+
+/**
+ * Les `externalId` (nouveau format) des allers-retours que le journal porte
+ * déjà sous l'ANCIENNE clé, sans environnement. Lecture par paquets : la liste
+ * passe dans l'URL de la requête.
+ */
+async function legacyJournaled(
+  sb: Sb,
+  userId: string,
+  trips: readonly RoundTrip[],
+): Promise<Set<string> | null> {
+  const byLegacy = new Map(trips.map((t) => [legacyExternalId("tradovate", t), t.externalId]));
+  const found = new Set<string>();
+  const ids = [...byLegacy.keys()];
+  for (let i = 0; i < ids.length; i += 100) {
+    const { data, error } = await sb
+      .from("trades")
+      .select("external_id")
+      .eq("user_id", userId)
+      .in("external_id", ids.slice(i, i + 100));
+    // Lecture refusée : on ne sait pas, on n'écrit pas (`null`) — le curseur
+    // ne passe pas par-dessus et le passage suivant réessaiera.
+    if (error) {
+      console.error("[broker-sync] legacy lookup failed", error.message);
+      return null;
+    }
+    for (const r of (data ?? []) as { external_id: string }[]) {
+      const current = byLegacy.get(r.external_id);
+      if (current) found.add(current);
+    }
+  }
+  return found;
 }
 
 /**
@@ -496,13 +612,18 @@ export async function syncConnection(sb: Sb, conn: ConnectionRow): Promise<SyncO
         cursor.contracts,
       );
       // Les frais sont un plus, pas un prérequis : une API de frais
-      // indisponible ne bloque pas le journal (frais à 0, P&L brut).
+      // indisponible ne bloque pas le journal. Ils restent alors INCONNUS
+      // (`fees: null`, P&L brut) — jamais 0, qui ferait passer le brut pour
+      // un net.
       const feeList = await tvItems<tv.TvFillFee>(
         session,
         "fillFee",
         relevant.map((f) => f.id),
       ).catch(() => [] as tv.TvFillFee[]);
       const fees = new Map(feeList.map((f) => [f.id, f]));
+      // BRUT D'ABORD : chaque exécution reçue est consignée telle quelle,
+      // avant tout trade (`raw_ingest_events`, insert-only).
+      await recordRawFills(sb, conn, relevant, orderById, target, fees);
       const { fills: normalized } = tv.normalizeFills(relevant, orderById, contracts, fees);
 
       // Position AVANT la fenêtre reçue = position actuelle − somme des
@@ -521,7 +642,10 @@ export async function syncConnection(sb: Sb, conn: ConnectionRow): Promise<SyncO
         if (Math.abs(before) > 1e-9) opening.set(key, before);
       }
 
-      const { trips } = buildRoundTrips("tradovate", normalized, { openingPositions: opening });
+      const { trips } = buildRoundTrips("tradovate", normalized, {
+        openingPositions: opening,
+        environment: conn.environment,
+      });
       const through: Record<string, string> = { ...(cursor.syncedThrough ?? {}) };
       const fresh = trips.filter((t) => !through[t.accountId] || t.exitTime > through[t.accountId]);
 
@@ -534,7 +658,12 @@ export async function syncConnection(sb: Sb, conn: ConnectionRow): Promise<SyncO
         } catch {
           stops = [];
         }
-        const trades = fresh.map((trip) => {
+        // Un aller-retour déjà journalisé sous l'ancienne clé (sans
+        // environnement) est TRAITÉ, pas réécrit : sinon la nouvelle clé le
+        // doublerait au premier passage après la mise à jour.
+        const legacy = await legacyJournaled(sb, conn.user_id, fresh);
+        const toWrite = legacy ? fresh.filter((t) => !legacy.has(t.externalId)) : [];
+        const trades = toWrite.map((trip) => {
           const mapping = target.get(trip.accountId)!;
           return roundTripToTrade(trip, {
             broker: "tradovate",
@@ -551,9 +680,10 @@ export async function syncConnection(sb: Sb, conn: ConnectionRow): Promise<SyncO
           conn.user_id,
           trades,
         );
+        for (const id of legacy ?? []) processed.add(id);
         outcome.inserted = inserted.map(rowToBrokerTrade);
         if (planLimit) outcome.error = "plan_limit";
-        else if (failed > 0) outcome.error = "insert_failed";
+        else if (failed > 0 || !legacy) outcome.error = "insert_failed";
         // Le curseur n'avance que sur ce qui a été réellement traité : si la
         // limite de l'offre ou une écriture refusée a coupé le lot, la suite
         // sera reprise au prochain passage.
@@ -614,6 +744,7 @@ export function rowToBrokerTrade(r: Record<string, unknown>): Trade {
     externalId: (r.external_id as string | null) ?? null,
     brokerAccount: (r.broker_account as string | null) ?? null,
     reviewPending: !!r.review_pending,
+    ...provenanceFromRow(r),
   };
 }
 

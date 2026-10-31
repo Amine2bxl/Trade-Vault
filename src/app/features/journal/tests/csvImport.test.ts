@@ -8,10 +8,7 @@ import {
   parseDirection,
   parseMoney,
   rejectFile,
-  splitDuplicates,
-  tradeSignature,
 } from "../csvImport";
-import type { Trade } from "@/app/types";
 
 describe("parseCsv", () => {
   it("détecte le séparateur — virgule, point-virgule ou tabulation", () => {
@@ -269,38 +266,13 @@ describe("journal import — provenance de la direction", () => {
   });
 });
 
-describe("splitDuplicates", () => {
-  const trade = (date: string, pnl: number): Trade =>
-    mapRowsToTrades([[date, "ES", String(pnl)]], { date: 0, symbol: 1, pnl: 2 }).valid[0];
-
-  it("ignore un trade déjà présent au journal", () => {
-    // Réimporter le même fichier est l'erreur la plus courante ; elle ne doit
-    // jamais doubler l'historique.
-    const a = trade("2026-03-14", 250);
-    const { fresh, duplicates } = splitDuplicates([a], [a]);
-    expect(fresh).toHaveLength(0);
-    expect(duplicates).toBe(1);
-  });
-
-  it("dédoublonne aussi À L'INTÉRIEUR du fichier", () => {
-    const a = trade("2026-03-14", 250);
-    const b = trade("2026-03-14", 250);
-    const { fresh, duplicates } = splitDuplicates([a, b], []);
-    expect(fresh).toHaveLength(1);
-    expect(duplicates).toBe(1);
-  });
-
-  it("garde deux trades du même jour sur le même symbole mais de P&L différents", () => {
-    const { fresh } = splitDuplicates([trade("2026-03-14", 250), trade("2026-03-14", -80)], []);
-    expect(fresh).toHaveLength(2);
-  });
-
-  it("la signature combine date, symbole, P&L et heure d'entrée", () => {
-    expect(tradeSignature({ date: "2026-03-14", symbol: "ES", pnl: 250, entryTime: "09:35" })).toBe(
-      "2026-03-14|ES|250|09:35",
-    );
-  });
-});
+// `splitDuplicates` / `tradeSignature` sont retirés (lot 1). Leur règle
+// « dédoublonner À L'INTÉRIEUR du fichier » était le défaut : deux trades
+// réels identiques (deux scalps à +50 $ sans heure) n'en faisaient qu'un.
+// Les garanties qu'ils portaient vivent dans `tests/importKey.test.ts` :
+// réimporter le même fichier n'ajoute rien, un trade déjà saisi est reconnu
+// (doublon probable, compté à part), deux P&L différents restent deux trades
+// — et deux lignes identiques restent DEUX trades.
 
 describe("rejectFile", () => {
   const file = (over: Partial<{ name: string; size: number; type: string }> = {}) => ({
@@ -323,5 +295,89 @@ describe("rejectFile", () => {
 
   it("accepte un .txt — certains brokers exportent en texte tabulé", () => {
     expect(rejectFile(file({ name: "export.txt", type: "text/plain" }))).toBeNull();
+  });
+});
+
+describe("provenance des lignes importées (lot 1)", () => {
+  it("un horodatage ISO avec décalage est un INSTANT : conservé, et l'heure du journal suit New York", () => {
+    const { valid } = mapRowsToTrades([["2026-10-21T13:30:00Z", "NQ", "long", "125.50"]], {
+      date: 0,
+      symbol: 1,
+      direction: 2,
+      pnl: 3,
+    });
+    expect(valid[0].entryAt).toBe("2026-10-21T13:30:00.000Z");
+    expect(valid[0].entryTime).toBe("09:30");
+    expect(valid[0].date).toBe("2026-10-21");
+    expect(valid[0].sourceTimezone).toBe("America/New_York");
+  });
+
+  it("le décalage décide du jour de New York, pas la date UTC", () => {
+    // 01:30 UTC le 22 = 21:30 à New York le 21.
+    const { valid } = mapRowsToTrades([["2026-10-22T01:30:00+00:00", "NQ", "short", "-40"]], {
+      date: 0,
+      symbol: 1,
+      direction: 2,
+      pnl: 3,
+    });
+    expect(valid[0].date).toBe("2026-10-21");
+    expect(valid[0].entryTime).toBe("21:30");
+  });
+
+  it("sans décalage, aucun instant n'est deviné", () => {
+    const { valid } = mapRowsToTrades([["2026-10-21 09:30", "NQ", "long", "10"]], {
+      date: 0,
+      symbol: 1,
+      direction: 2,
+      pnl: 3,
+    });
+    expect(valid[0].entryAt).toBeNull();
+    expect(valid[0].sourceTimezone).toBeNull();
+    expect(valid[0].entryTime).toBe("09:30");
+  });
+
+  it("les frais ne sont plus rangés dans le slippage", () => {
+    const headers = ["Date", "Symbol", "Side", "P&L", "Commission", "Slippage"];
+    const mapping = guessMapping(headers);
+    expect(mapping.fees).toBe(4);
+    expect(mapping.slippage).toBe(5);
+    const { valid } = mapRowsToTrades(
+      [["2026-10-21", "NQ", "long", "100", "4.20", "1.5"]],
+      mapping,
+    );
+    expect(valid[0].fees).toBe(4.2);
+    expect(valid[0].slippage).toBe(1.5);
+  });
+
+  it("la colonne d'identifiant est reconnue sans happer « Side »", () => {
+    const mapping = guessMapping(["Trade ID", "Date", "Symbol", "Side", "P&L"]);
+    expect(mapping.tradeId).toBe(0);
+    expect(mapping.direction).toBe(3);
+    const out = mapRowsToTrades([["T-77", "2026-10-21", "NQ", "long", "10"]], mapping);
+    expect(out.sourceIds).toEqual(["T-77"]);
+  });
+
+  it("chaque ligne refusée est rendue avec sa raison, pour la preuve d'import", () => {
+    const out = mapRowsToTrades(
+      [
+        ["2026-10-21", "NQ", "", "10"],
+        ["", "NQ", "long", "10"],
+      ],
+      { date: 0, symbol: 1, direction: 2, pnl: 3 },
+      { required: JOURNAL_REQUIRED },
+    );
+    expect(out.rejected.map((r) => r.reason)).toEqual(["missing_direction", "missing_required"]);
+  });
+
+  it("source et provenance du risque sont posées, jamais inventées", () => {
+    const { valid } = mapRowsToTrades(
+      [
+        ["2026-10-21", "NQ", "long", "100", "50"],
+        ["2026-10-21", "NQ", "long", "100", ""],
+      ],
+      { date: 0, symbol: 1, direction: 2, pnl: 3, risk: 4 },
+    );
+    expect(valid.map((t) => t.source)).toEqual(["csv", "csv"]);
+    expect(valid.map((t) => t.riskSource)).toEqual(["csv", null]);
   });
 });

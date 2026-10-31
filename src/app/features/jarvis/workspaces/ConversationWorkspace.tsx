@@ -46,7 +46,8 @@ import { loadMemory, remember, type MemoryEntry } from "@/modules/ai/memory";
 import { shouldAttemptExtraction } from "@/modules/ai/memory-extract";
 import { useTradingRules } from "@/app/trading/useTradingRules";
 import { useGoalProgress } from "@/app/features/goals/useGoalProgress";
-import { computeRuleAdherence } from "@/app/trading/ruleAdherence";
+import { ADHERENCE_WINDOW_DAYS, computeRuleAdherence } from "@/app/trading/ruleAdherence";
+import { useVerifiedBalances } from "@/app/trading/useBalanceLedger";
 import { loadTradingRules, saveTradingRules } from "@/app/trading/tradingRules";
 import { computeBehaviorSignals } from "../behaviorSignals";
 import { computeStats } from "@/domain/tradeCalcs";
@@ -303,10 +304,17 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
   );
   // Tenue des règles — réutilise le vérificateur du moteur de discipline, donc
   // une seule définition de « violer une règle » dans tout le produit.
+  const verifiedBalances = useVerifiedBalances(context.trades);
   const adherence = useMemo(
     () =>
-      computeRuleAdherence(context.trades, rules, goalCtx.startingBalance + goalCtx.stats.totalPnl),
-    [context.trades, rules, goalCtx.startingBalance, goalCtx.stats.totalPnl],
+      computeRuleAdherence(
+        context.trades,
+        rules,
+        goalCtx.startingBalance + goalCtx.stats.totalPnl,
+        ADHERENCE_WINDOW_DAYS,
+        verifiedBalances,
+      ),
+    [context.trades, rules, goalCtx.startingBalance, goalCtx.stats.totalPnl, verifiedBalances],
   );
   const conversationId = context.conversationId ?? null;
   // Intention / réflexion / session — chargées UNE FOIS par jeu de trades

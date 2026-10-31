@@ -1,5 +1,5 @@
 import { MISTAKE_CLUSTERS, clusterOf, type MistakeClusterId } from "@/app/trading/mistakeClusters";
-import { hasUnverifiedEtTime } from "@/domain/quantStats";
+import { easternEntryMinute } from "@/domain/quantStats";
 import { compareChronological, verifiedPriorClosedTrade } from "@/domain/tradeOrder";
 import {
   MIN_GROUP,
@@ -90,6 +90,9 @@ export interface TradeLike {
   // Champs de chronologie et de provenance : sans eux, « le trade qui suit une
   // perte » et « l'heure du trade » ne sont pas vérifiables (voir `afterLoss`).
   exitTime?: string | null;
+  /** Instants UTC prouvés (lot 1) : ordre et heure Eastern sans supposition. */
+  entryAt?: string | null;
+  exitAt?: string | null;
   accountId?: string | null;
   broker?: string | null;
   reviewPending?: boolean;
@@ -109,6 +112,8 @@ function clockOf(t: TradeLike) {
     date: t.date,
     entryTime: t.entryTime ?? "",
     exitTime: t.exitTime ?? "",
+    entryAt: t.entryAt ?? null,
+    exitAt: t.exitAt ?? null,
     accountId: t.accountId ?? null,
     broker: t.broker ?? null,
     reviewPending: !!t.reviewPending,
@@ -243,11 +248,10 @@ export function afterLoss(trades: TradeLike[]): DetectorResult {
   };
 }
 
-/** Tranche horaire d'un trade, ou `null` si l'heure manque ou est invalide. */
-function bucketOf(entryTime: string | null | undefined): string | null {
-  const m = /^([01]?\d|2[0-3]):([0-5]\d)$/.exec((entryTime ?? "").trim());
-  if (!m) return null;
-  const hour = Number(m[1]);
+/** Tranche horaire Eastern d'un trade, ou `null` si l'heure n'est pas établie. */
+function bucketOf(minute: number | null): string | null {
+  if (minute === null) return null;
+  const hour = Math.floor(minute / 60);
   if (hour < 10) return "early";
   if (hour < 13) return "late_morning";
   if (hour < 16) return "afternoon";
@@ -267,9 +271,9 @@ export function timeOfDay(trades: TradeLike[]): DetectorResult {
   const buckets = new Map<string, number[]>();
   for (const trade of trades) {
     // Les tranches sont des heures Eastern : l'heure d'un import broker ou d'un
-    // CSV non relu n'en est pas une preuve (même règle que `quantStats`).
-    if (trade.rMultiple === null || hasUnverifiedEtTime(clockOf(trade))) continue;
-    const bucket = bucketOf(trade.entryTime);
+    // CSV non relu n'en est pas une preuve, sauf instant prouvé (`quantStats`).
+    if (trade.rMultiple === null) continue;
+    const bucket = bucketOf(easternEntryMinute(clockOf(trade)));
     if (!bucket) continue;
     const list = buckets.get(bucket) ?? [];
     list.push(trade.rMultiple);

@@ -3,6 +3,7 @@ import { InfoTip } from "@/shared/ui/InfoTip";
 import { TrendingUp, TrendingDown, CalendarDays, Clock, Sparkles } from "@/shared/ui/icons";
 import { Trade, isBreakEven } from "@/app/types";
 import { measuredR } from "@/domain/trade";
+import { easternClockOf } from "@/domain/easternClock";
 import { computeStats, formatPnl, formatPct, formatShortDate } from "@/domain/tradeCalcs";
 import {
   computeQuantStats,
@@ -384,7 +385,9 @@ export default function Analytics({ trades }: AnalyticsProps) {
     for (const tr of cutoffTrades) {
       const s = getSessionForTrade(tr);
       if (!s) continue;
-      const dow = new Date(tr.date + "T12:00:00").getDay();
+      // Même horloge que la session : le jour de New York quand l'instant est
+      // prouvé (un trade de 20 h ET est déjà le lendemain à Paris).
+      const dow = easternClockOf(tr.entryAt)?.weekday ?? new Date(tr.date + "T12:00:00").getDay();
       if (dow < 1 || dow > 5) continue;
       const k = `${s}-${dow}`;
       if (!map[k]) map[k] = { pnl: 0, count: 0 };

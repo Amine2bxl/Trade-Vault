@@ -1,4 +1,9 @@
 import { supabase } from "@/integrations/supabase/client";
+import {
+  isMissingProvenanceColumn,
+  provenanceColumns,
+  provenanceFromRow,
+} from "@/domain/tradeProvenance";
 import { Trade } from "../types";
 import { getActiveAccountId } from "./accounts";
 import { storagePathsOf, removeScreenshotFiles, uploadScreenshot } from "./storage";
@@ -36,6 +41,14 @@ interface TradeRow {
   broker?: string | null;
   external_id?: string | null;
   broker_account?: string | null;
+  // Colonnes de la migration `data_integrity_provenance` (lot 1) : absentes
+  // tant qu'elle n'a pas tourné — `rowToTrade` les lit alors comme inconnues.
+  source?: string | null;
+  risk_source?: string | null;
+  source_timezone?: string | null;
+  entry_at?: string | null;
+  exit_at?: string | null;
+  import_key?: string | null;
   review_pending?: boolean | null;
   copied_from?: string | null;
 }
@@ -80,6 +93,7 @@ export function rowToTrade(r: TradeRow): Trade {
     brokerAccount: r.broker_account ?? null,
     reviewPending: !!r.review_pending,
     copiedFrom: r.copied_from ?? null,
+    ...provenanceFromRow(r),
   };
 }
 
@@ -88,7 +102,50 @@ export function rowToTrade(r: TradeRow): Trade {
 const toCents = (n: number) => Math.round(n * 100) / 100;
 
 function tradeToRow(t: Trade, userId: string): TradeRow {
-  return { ...baseRow(t, userId), ...executionColumns(t) };
+  return {
+    ...baseRow(t, userId),
+    ...executionColumns(t),
+    ...(provenanceSupported ? provenanceColumns(t) : {}),
+  };
+}
+
+/**
+ * Faux dès qu'une écriture a prouvé que la base n'a pas encore les colonnes de
+ * provenance (lot 1). Même prudence que les colonnes d'exécution : une
+ * écriture qui nomme une colonne inexistante est refusée en entier ;
+ * `writeTradeRows` retire alors ces colonnes et réessaie — le trade est
+ * enregistré, sa provenance simplement non persistée, jamais inventée plus
+ * tard (`domain/tradeProvenance`).
+ */
+let provenanceSupported = true;
+
+/**
+ * Écrit des lignes de trades ; en cas de colonne de provenance inconnue,
+ * bascule sans elles et réessaie une fois.
+ */
+async function writeTradeRows(
+  trades: readonly Trade[],
+  userId: string,
+  opts: { ignoreDuplicateImportKeys?: boolean } = {},
+) {
+  const attempt = () => {
+    const rows = trades.map((t) => tradeToRow(t, userId)) as never;
+    // La clé d'import est l'idempotence d'un import : deux onglets qui
+    // importent le même fichier ne créent pas deux fois le même trade.
+    return opts.ignoreDuplicateImportKeys && provenanceSupported
+      ? supabase
+          .from("trades")
+          .upsert(rows, { onConflict: "user_id,account_id,import_key", ignoreDuplicates: true })
+          .select("id")
+      : supabase.from("trades").upsert(rows);
+  };
+  let res: { data?: unknown; error: unknown } = await attempt();
+  if (res.error && provenanceSupported && isMissingProvenanceColumn(res.error)) {
+    console.warn("[trades] colonnes de provenance absentes : écriture sans elles", res.error);
+    provenanceSupported = false;
+    res = await attempt();
+  }
+  return res;
 }
 
 /**
@@ -250,7 +307,7 @@ export async function loadUserTrades(
 export async function upsertTrade(userId: string, trade: Trade): Promise<void> {
   // RLS ensures auth.uid() = user_id on both INSERT and UPDATE.
   // The row's user_id is always set from the authenticated userId param.
-  const { error } = await supabase.from("trades").upsert(tradeToRow(trade, userId) as never);
+  const { error } = await writeTradeRows([trade], userId);
   if (error) {
     // La limite mensuelle est aussi appliquée par un déclencheur Postgres : son
     // refus doit arriver à l'interface comme un moment de vente, pas comme une
@@ -293,19 +350,25 @@ export async function importTrades(
 
   for (let i = 0; i < trades.length; i += IMPORT_BATCH_SIZE) {
     const batch = trades.slice(i, i + IMPORT_BATCH_SIZE);
-    const { error } = await supabase
-      .from("trades")
-      // `as never` : les types générés ne connaissent pas encore les colonnes
-      // d'exécution (migration `broker_sync`) ; `tradeToRow` ne les nomme que
-      // lorsqu'un trade en porte.
-      .upsert(batch.map((t) => tradeToRow(t, userId)) as never);
+    const keyed = batch.some((t) => !!t.importKey);
+    // `as never` (dans writeTradeRows) : les types générés ne connaissent pas
+    // encore les colonnes d'exécution ni de provenance.
+    const { data, error } = await writeTradeRows(batch, userId, {
+      ignoreDuplicateImportKeys: keyed,
+    });
     if (!error) {
-      saved.push(...batch);
+      // Avec la clé d'import, une ligne déjà présente (autre onglet, import
+      // concurrent) est IGNORÉE par la base : seuls les trades réellement
+      // écrits rejoignent le journal affiché.
+      const written = new Set(((data ?? []) as { id: string }[]).map((r) => r.id));
+      saved.push(
+        ...(keyed && provenanceSupported ? batch.filter((t) => written.has(t.id)) : batch),
+      );
     } else {
       // Repli ligne à ligne pour isoler la ou les lignes réellement fautives.
       console.error("Batch import failed, retrying row by row", error);
       const results = await Promise.allSettled(
-        batch.map((t) => supabase.from("trades").upsert(tradeToRow(t, userId) as never)),
+        batch.map((t) => writeTradeRows([t], userId, { ignoreDuplicateImportKeys: !!t.importKey })),
       );
       results.forEach((r, k) => {
         if (r.status === "fulfilled" && !r.value.error) {

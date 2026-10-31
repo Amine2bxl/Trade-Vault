@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { buildRoundTrips, positionKey } from "../roundTrips";
+import { measuredR } from "@/domain/trade";
 import { initialRisk, localDateTime, roundTripToTrade } from "../toTrade";
 import {
   accountLabel,
@@ -221,6 +222,78 @@ describe("la ligne de journal", () => {
     });
     expect(t.riskAmount).toBe(52);
     expect(t.rMultiple).toBe(1.5);
+    // Le forfait dimensionne, il ne MESURE pas : sa provenance le dit, et le R
+    // du produit (`measuredR`) le refuse.
+    expect(t.riskSource).toBe("broker_default");
+    // Même relu (sans risque ressaisi), il reste un forfait.
+    expect(measuredR({ ...t, reviewPending: false })).toBeNull();
+  });
+
+  it("un stop retrouvé est un risque observé : il mesure un R", () => {
+    const t = roundTripToTrade(trip, {
+      broker: "tradovate",
+      id: "id-3",
+      accountId: null,
+      brokerAccountName: "APEX-1",
+      timeZone: "America/New_York",
+      defaultRisk: 52,
+      stops: [
+        {
+          accountId: "acc",
+          contractId: "nq",
+          side: "sell",
+          stopPrice: 90,
+          time: "2026-10-09T02:30:00Z",
+        },
+      ],
+    });
+    expect(t.riskSource).toBe("broker_stop");
+    // |100 − 90| × 1 contrat × 20 $ le point.
+    expect(t.riskAmount).toBe(200);
+    // À relire tant que le trader ne l'a pas ouvert ; relu, le R est mesuré.
+    expect(measuredR(t)).toBeNull();
+    expect(measuredR({ ...t, reviewPending: false })).toBeCloseTo(78 / 200, 10);
+  });
+
+  it("provenance : instants UTC du broker et fuseau EFFECTIF d'écriture", () => {
+    const t = roundTripToTrade(trip, {
+      broker: "tradovate",
+      id: "id-4",
+      accountId: null,
+      brokerAccountName: "APEX-1",
+      timeZone: "Pas/Un_Fuseau",
+      defaultRisk: null,
+      stops: [],
+    });
+    expect(t.source).toBe("broker");
+    expect(t.riskSource).toBeNull();
+    expect(t.entryAt).toBe("2026-10-09T02:30:00Z");
+    expect(t.exitAt).toBe("2026-10-09T02:50:00Z");
+    // Le fuseau invalide a été remplacé par UTC pour écrire les heures : c'est
+    // UTC que la provenance doit dire, pas le fuseau illisible.
+    expect(t.sourceTimezone).toBe("UTC");
+    expect(t.entryTime).toBe("02:30");
+  });
+
+  it("frais d'une exécution inconnus : ceux du trade aussi, et le P&L reste le brut", () => {
+    const unknownFee = buildRoundTrips("tradovate", [
+      fill({ id: "e", side: "buy", qty: 1, price: 100, time: "2026-10-09T02:30:00Z", fee: null }),
+      fill({ side: "sell", qty: 1, price: 104, time: "2026-10-09T02:50:00Z", fee: 1 }),
+    ]).trips[0];
+    expect(unknownFee.fees).toBeNull();
+    expect(unknownFee.netPnl).toBeNull();
+    const t = roundTripToTrade(unknownFee, {
+      broker: "tradovate",
+      id: "id-5",
+      accountId: null,
+      brokerAccountName: "APEX-1",
+      timeZone: "UTC",
+      defaultRisk: null,
+      stops: [],
+    });
+    expect(t.fees).toBeNull();
+    // 4 points × 20 $ : le brut, présenté avec des frais inconnus.
+    expect(t.pnl).toBe(80);
   });
 
   it("un fuseau invalide retombe sur UTC", () => {
@@ -296,9 +369,9 @@ describe("l'adaptateur Tradovate", () => {
     });
   });
 
-  it("frais : total positif", () => {
+  it("frais : total positif ; sans relevé, INCONNUS (null), jamais 0", () => {
     expect(totalFee({ id: 1, commission: -0.5, nfaFee: 0.02 })).toBe(0.52);
-    expect(totalFee(undefined)).toBe(0);
+    expect(totalFee(undefined)).toBeNull();
   });
 
   it("racine d'un contrat", () => {

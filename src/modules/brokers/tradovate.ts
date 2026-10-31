@@ -79,9 +79,10 @@ export function sideOf(action: string | undefined): FillSide | null {
 }
 
 /** Somme des frais d'une exécution. Tradovate les détaille par nature ; le
- *  journal n'en garde que le total, toujours positif. */
-export function totalFee(fee: TvFillFee | undefined): number {
-  if (!fee) return 0;
+ *  journal n'en garde que le total, toujours positif. Sans relevé de frais
+ *  pour l'exécution : `null` (inconnus), jamais 0. */
+export function totalFee(fee: TvFillFee | undefined): number | null {
+  if (!fee) return null;
   const parts = [
     fee.commission,
     fee.clearingFee,

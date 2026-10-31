@@ -43,6 +43,7 @@ import {
   SettingsRow,
 } from "@/shared/ui";
 import AccountsManager from "./AccountsManager";
+import AccountLedger from "./AccountLedger";
 import { useSubscription } from "@/app/hooks/useSubscription";
 import { useAccounts } from "@/app/contexts/AccountContext";
 import RecalibrateAccountModal from "./RecalibrateAccountModal";
@@ -451,10 +452,13 @@ export default function Settings({
 
           {pane === "account" && sections.account && (
             /* Le gestionnaire porte déjà sa propre liste : pas de second cadre. */
-            <section className="tv-set-group">
-              <h2 className="tv-set-title">{t("settings.paneAccount")}</h2>
-              <AccountsManager trades={trades} />
-            </section>
+            <>
+              <section className="tv-set-group">
+                <h2 className="tv-set-title">{t("settings.paneAccount")}</h2>
+                <AccountsManager trades={trades} />
+              </section>
+              <AccountLedger trades={trades} />
+            </>
           )}
 
           {pane === "notifications" && sections.notifs && <PushNotificationSettings />}

@@ -4,8 +4,19 @@
 // serveur, et son identifiant dans `BrokerId`. Rien d'autre ne bouge.
 
 export * from "./types";
-export { buildRoundTrips, positionKey, type RoundTripOptions } from "./roundTrips";
-export { roundTripToTrade, initialRisk, localDateTime, type TradeContext } from "./toTrade";
+export {
+  buildRoundTrips,
+  legacyExternalId,
+  positionKey,
+  type RoundTripOptions,
+} from "./roundTrips";
+export {
+  roundTripToTrade,
+  initialRisk,
+  localDateTime,
+  effectiveTimeZone,
+  type TradeContext,
+} from "./toTrade";
 export * as tradovate from "./tradovate";
 
 /** Les brokers proposés à la connexion, dans l'ordre d'affichage. */

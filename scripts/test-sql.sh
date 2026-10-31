@@ -160,6 +160,20 @@ for passe in 1 2; do
 done
 echo "→ assertions synchro live"
 psql_run -f tests/sql/live-sync.sql
+INTEGRITY_MIGRATION="supabase/migrations/20261028140000_data_integrity_provenance.sql"
+echo "→ migration $INTEGRITY_MIGRATION (appliquée deux fois)"
+for passe in 1 2; do
+  MIGRATION_LOG=$(mktemp)
+  if ! psql_run -f "$INTEGRITY_MIGRATION" >"$MIGRATION_LOG" 2>&1; then
+    grep -v "^NOTICE:" "$MIGRATION_LOG" >&2 || true
+    rm -f "$MIGRATION_LOG"
+    echo "ÉCHEC : la migration data_integrity ne s'applique pas (passe $passe)." >&2
+    exit 1
+  fi
+  rm -f "$MIGRATION_LOG"
+done
+echo "→ assertions intégrité des données (RLS A/B, insert-only, rejeu, conflits)"
+psql_run -f tests/sql/data-integrity.sql
 echo "→ concurrence (deux sessions simultanées)"
 if [ -n "$CONN" ]; then
   PSQL_ARGS="$CONN" bash tests/sql/concurrency.sh

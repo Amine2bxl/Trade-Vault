@@ -28,6 +28,9 @@ describe("toTradeLikes", () => {
         mistakes: ["fomo"],
         entryTime: null,
         exitTime: null,
+        // Sans colonnes de provenance (base antérieure au lot 1) : inconnus.
+        entryAt: null,
+        exitAt: null,
         accountId: null,
         broker: null,
         reviewPending: false,
@@ -54,6 +57,32 @@ describe("toTradeLikes", () => {
     expect(out.map((t) => t.rMultiple)).toEqual([null, null]);
     expect(out[0].broker).toBe("tradovate");
     expect(out[1].reviewPending).toBe(true);
+  });
+
+  it("la provenance du risque et les instants UTC arrivent aux détecteurs (lot 1)", () => {
+    const out = toTradeLikes([
+      {
+        trade_date: "2026-01-05",
+        pnl: 100,
+        risk_amount: 50,
+        broker: "tradovate",
+        risk_source: "broker_stop",
+        entry_at: "2026-01-05T14:30:00.000Z",
+        exit_at: "2026-01-05T14:45:00.000Z",
+      },
+      // Le forfait de la connexion ne mesure pas de R.
+      {
+        trade_date: "2026-01-06",
+        pnl: 100,
+        risk_amount: 50,
+        broker: "tradovate",
+        risk_source: "broker_default",
+      },
+    ]);
+    expect(out[0].rMultiple).toBe(2);
+    expect(out[0].entryAt).toBe("2026-01-05T14:30:00.000Z");
+    expect(out[0].exitAt).toBe("2026-01-05T14:45:00.000Z");
+    expect(out[1].rMultiple).toBeNull();
   });
 
   it("écarte un trade sans P&L et un trade sans date", () => {
