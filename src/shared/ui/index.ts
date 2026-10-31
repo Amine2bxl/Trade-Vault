@@ -46,6 +46,8 @@ export { Display, Heading, Text, Label } from "./Typography";
 
 export { Button } from "./Button";
 export type { ButtonProps, ButtonVariant, ButtonSize } from "./Button";
+export { ActionButton } from "./ActionButton";
+export type { ActionButtonProps } from "./ActionButton";
 
 export { Input, Textarea, Select, Field, FIELD_BASE } from "./Input";
 export type { TextareaProps } from "./Input";

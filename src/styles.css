@@ -2506,21 +2506,19 @@ svg.lucide {
   font-size: 0.875rem;
   font-weight: 600;
   letter-spacing: -0.005em;
-  /* Une pilule franche, pas un rectangle radouci. C'est la forme que porte
-     déjà chaque entrée du rail : le bouton principal parle la même langue. */
-  border-radius: 9999px;
-  /* Un à-plat vert, sur du texte quasi noir. Le dégradé cyan→teal était le
-     dernier vestige de l'ancienne identité, et il était codé EN DUR : le
-     bouton principal restait cyan même quand tout le reste changeait de
-     thème. Il suit désormais l'accent. */
+  /* LIQUID — un RECTANGLE ADOUCI PLEIN, pas une pilule : l'action se lit
+     comme un objet solide (retour du propriétaire sur maquette). Les pilules
+     restent aux sélecteurs (segmented, compte, puces). */
+  border-radius: var(--radius-md);
+  /* L'accent du thème, texte BLANC porté par une ombre de lettre courte
+     (voir plus bas). Aucune ombre colorée : l'arête haute éclairée et un
+     pied sombre d'1px suffisent à dire « on peut appuyer ». */
   background: var(--tv-cta);
   color: #ffffff;
-  /* Le relief du « Get Started » de la vitrine : arête haute éclairée et une
-     ombre portée dans l'accent, diffuse — pas de halo. */
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.2),
-    0 1px 2px rgb(0 0 0 / 0.4),
-    0 8px 24px -12px rgb(var(--tv-accent-rgb) / 0.55);
+    inset 0 1px 0 rgb(255 255 255 / 0.22),
+    inset 0 -1px 0 rgb(0 0 0 / 0.18),
+    0 1px 2px rgb(0 0 0 / 0.4);
   transition:
     background-color 0.16s ease,
     box-shadow 0.16s ease,
@@ -2529,13 +2527,10 @@ svg.lucide {
 }
 .btn-primary:hover {
   background: var(--tv-cta-hover);
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.24),
-    0 1px 2px rgb(0 0 0 / 0.4),
-    0 12px 30px -12px rgb(var(--tv-accent-rgb) / 0.7);
 }
 .btn-primary:active {
   background: var(--tv-cta-active);
+  transform: var(--tv-press);
 }
 .btn-primary:disabled {
   opacity: 0.45;
@@ -2553,11 +2548,11 @@ svg.lucide {
   gap: 0.5rem;
   padding: 0.65rem 1.35rem;
   font-size: 0.875rem;
-  font-weight: 500;
-  border-radius: 9999px;
+  font-weight: 600;
+  border-radius: var(--radius-md);
   border: 1px solid var(--tv-border-strong);
-  background: var(--tv-plate-2);
-  color: #cbd5e1;
+  background: var(--tv-plate-3);
+  color: var(--tv-text-primary);
   transition:
     border-color 0.16s ease,
     background-color 0.16s ease,
@@ -2565,8 +2560,89 @@ svg.lucide {
 }
 .btn-ghost:hover {
   border-color: var(--tv-border-strong);
-  background: var(--tv-plate-3);
+  background: var(--tv-surface-hover);
   color: var(--tv-text);
+}
+.btn-ghost:active {
+  transform: var(--tv-press);
+}
+
+/* ══ L'ACTION RONDE — `ActionButton` (shared/ui) ══
+ * La rangée d'actions de Revolut : un disque de 52px et son libellé dessous.
+ * Le disque `primary` est le seul plein (accent, icône blanche) ; les autres
+ * sont des plaques. Pression = 0,97, rien d'autre ne bouge. */
+.tv-action {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-width: 64px;
+  -webkit-tap-highlight-color: transparent;
+}
+.tv-action-disc {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 9999px;
+  background: var(--tv-plate-3);
+  border: 1px solid var(--tv-border);
+  color: var(--tv-text-primary);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06);
+  transition:
+    background-color var(--tv-dur-1) var(--tv-ease),
+    transform var(--tv-dur-1) var(--tv-ease);
+}
+.tv-action-disc > svg {
+  width: 22px;
+  height: 22px;
+}
+.tv-action-primary .tv-action-disc {
+  background: var(--tv-cta);
+  border-color: transparent;
+  color: #fff;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.22),
+    inset 0 -1px 0 rgb(0 0 0 / 0.18);
+}
+.tv-action-primary .tv-action-disc > svg {
+  filter: drop-shadow(0 1px 1px rgb(4 18 11 / 0.45));
+}
+.tv-action-label {
+  font-size: var(--tv-t-caption);
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--tv-text-secondary);
+  white-space: nowrap;
+}
+@media (hover: hover) {
+  .tv-action:hover .tv-action-disc {
+    background: var(--tv-surface-hover);
+  }
+  .tv-action-primary:hover .tv-action-disc {
+    background: var(--tv-cta-hover);
+  }
+  .tv-action:hover .tv-action-label {
+    color: var(--tv-text-primary);
+  }
+}
+.tv-action:active .tv-action-disc {
+  transform: var(--tv-press);
+}
+.tv-action:focus-visible {
+  outline: none;
+}
+.tv-action:focus-visible .tv-action-disc {
+  outline: 2px solid rgb(var(--tv-accent-rgb) / 0.7);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tv-action-disc {
+    transition: background-color var(--tv-dur-1) linear;
+  }
+  .tv-action:active .tv-action-disc {
+    transform: none;
+  }
 }
 .btn-primary,
 .btn-ghost {
@@ -5969,7 +6045,7 @@ body::after {
 @media (max-width: 639px) {
   .metric-tile {
     padding: 0.75rem 0.875rem;
-    border-radius: 14px;
+    border-radius: var(--radius-xl);
   }
   .metric-tile .tv-figure {
     font-size: 1.25rem;
