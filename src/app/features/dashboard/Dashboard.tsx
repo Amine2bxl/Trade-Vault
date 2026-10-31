@@ -43,6 +43,7 @@ import {
   Button,
   StreakCard,
   RollingFigure,
+  ActionButton,
   density,
 } from "@/shared/ui";
 import type { StreakPeriod } from "@/shared/ui";
@@ -517,71 +518,94 @@ export default function Dashboard({
             </div>
           ) : (
             <>
-              {/* ── 1. LE CHIFFRE ── */}
-              <div className={cn(density.sectionGap)}>
-                {/* Performance */}
-                <div className="relative stat-card-elevated overflow-hidden p-4 md:p-5">
-                  <div className="flex items-center justify-between gap-3 mb-3">
-                    <div>
-                      <div className="tv-label flex items-center gap-2 text-slate-500 mb-1">
-                        <LineChart className="w-3.5 h-3.5 text-slate-500" />
-                        {t("dashboard.equityCurve")}
-                      </div>
-                      <div className="flex items-baseline gap-3 flex-wrap">
-                        <span
-                          className={cn(
-                            "tv-figure text-2xl md:text-3xl",
-                            gain ? "text-emerald-400" : "text-red-400",
-                          )}
-                        >
-                          {/* Le compteur Lucid : le P&L roule quand un trade le change. */}
-                          <RollingFigure value={formatPnl(stats.totalPnl)} />
-                        </span>
-                        {periodPct !== null && (
-                          <span
-                            className={cn(
-                              "tv-figure tv-figure-secondary text-xs md:text-sm px-2 py-0.5 rounded-lg",
-                              gain
-                                ? "bg-emerald-500/10 text-emerald-400"
-                                : "bg-red-500/10 text-red-400",
-                            )}
-                          >
-                            {periodPct >= 0 ? "+" : ""}
-                            {(periodPct * 100).toFixed(2)}%
-                          </span>
-                        )}
-                      </div>
-                      {/* Ce que le chiffre couvre, en mots : la période et
-                          l'échantillon. Un P&L sans sa fenêtre ne se lit pas. */}
-                      <div className="mt-1 text-[11px] text-slate-500">
-                        {t(PERIOD_LONG[period])}
-                        <span className="text-slate-600"> · </span>
-                        {t("dashboard.periodTrades").replace("{n}", String(stats.totalTrades))}
-                      </div>
-                    </div>
-                    {/* LE SÉLECTEUR, DISCRET ET PARTOUT.
-                        Il empruntait `.section-tabs` — le contrôle des onglets de
-                        PAGE : 36px de haut, et MASQUÉ sous 1024px (la règle de
-                        ce contrôle), donc absent sur téléphone et tablette. Ici,
-                        un segmenté de 24px qui reste visible à toutes les
-                        tailles et se souvient du choix. */}
-                    <div
-                      className="dash-period shrink-0 self-start"
-                      role="group"
-                      aria-label={t("dashboard.periodAria")}
+              {/* ── 1. LE CHIFFRE — l'accueil façon Revolut ──
+                  Le P&L de la période, seul et énorme, centré : c'est le
+                  « solde » qu'on vient lire. Dessous, ce qu'il couvre (période
+                  et échantillon), le choix de la période, puis les QUATRE
+                  PORTES rondes — ajouter un trade, le journal, Jarvis,
+                  l'analyse. Ce sont exactement les destinations qui vivaient
+                  plus bas (« Agir ») : remontées, pas inventées. La courbe
+                  suit, dans sa carte. */}
+              <section className="dash-hero" aria-label={t("dashboard.equityCurve")}>
+                <span
+                  className={cn(
+                    "tv-figure dash-hero-figure",
+                    gain ? "text-emerald-400" : "text-red-400",
+                  )}
+                >
+                  {/* Le compteur Lucid : le P&L roule quand un trade le change. */}
+                  <RollingFigure value={formatPnl(stats.totalPnl)} />
+                </span>
+                {/* Ce que le chiffre couvre, en mots : la période et
+                    l'échantillon. Un P&L sans sa fenêtre ne se lit pas. */}
+                <div className="dash-hero-meta">
+                  <span>{t(PERIOD_LONG[period])}</span>
+                  <span aria-hidden>·</span>
+                  <span className="tv-num">
+                    {t("dashboard.periodTrades").replace("{n}", String(stats.totalTrades))}
+                  </span>
+                  {periodPct !== null && (
+                    <span
+                      className={cn(
+                        "tv-figure tv-figure-secondary dash-hero-pct",
+                        gain ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400",
+                      )}
                     >
-                      {PERIODS.map((p) => (
-                        <button
-                          key={p}
-                          type="button"
-                          onClick={() => changePeriod(p)}
-                          aria-pressed={period === p}
-                          className="dash-period-btn"
-                        >
-                          {t(PERIOD_SHORT[p])}
-                        </button>
-                      ))}
-                    </div>
+                      {periodPct >= 0 ? "+" : ""}
+                      {(periodPct * 100).toFixed(2)}%
+                    </span>
+                  )}
+                </div>
+                <div className="dash-period" role="group" aria-label={t("dashboard.periodAria")}>
+                  {PERIODS.map((p) => (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => changePeriod(p)}
+                      aria-pressed={period === p}
+                      className="dash-period-btn"
+                    >
+                      {t(PERIOD_SHORT[p])}
+                    </button>
+                  ))}
+                </div>
+                <div className="dash-hero-actions">
+                  <ActionButton
+                    variant="primary"
+                    icon={<Plus strokeWidth={2.4} />}
+                    label={t("common.addTrade")}
+                    onClick={onAddTrade}
+                  />
+                  <ActionButton
+                    icon={<BookOpen />}
+                    label={t("nav.journal")}
+                    onClick={() => onOpenJournal?.()}
+                  />
+                  <ActionButton
+                    icon={<Sparkles />}
+                    label={t("dashboard.askJarvis")}
+                    onClick={() => window.dispatchEvent(new CustomEvent("tv:open-jarvis"))}
+                  />
+                  <ActionButton
+                    icon={<BarChart3 />}
+                    label={t("nav.analytics")}
+                    onClick={() =>
+                      window.dispatchEvent(
+                        new CustomEvent("tv:navigate", { detail: { page: "analytics" } }),
+                      )
+                    }
+                  />
+                </div>
+              </section>
+
+              <div className={cn(density.sectionGap)}>
+                <div className="relative stat-card-elevated overflow-hidden p-4 md:p-5">
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <h2 className="tv-title flex items-center gap-2">
+                      <LineChart className="h-4 w-4 text-slate-500" aria-hidden />
+                      {t("dashboard.equityCurve")}
+                    </h2>
+                    <span className="tv-label text-slate-500">{t(PERIOD_LONG[period])}</span>
                   </div>
                   {stats.equityCurve.length > 0 ? (
                     <div className="h-44 md:h-56 chart-draw">
@@ -731,42 +755,6 @@ export default function Dashboard({
                   // tableau de bord garde le focus du jour et laisse la série.
                   className="animate-fade-in-up stagger-1 hidden lg:flex"
                 />
-              </div>
-
-              {/* ── 4. AGIR ──
-                  Trois portes, pas un tableau de plus : revoir ses trades,
-                  demander à Jarvis, creuser l'analyse. La grille « Performance »
-                  (espérance, trades propres, long/short…) redisait l'Analyse en
-                  plus petit — elle y reste. */}
-              <div className="mb-4 grid grid-cols-3 gap-2 md:mb-6 md:gap-3">
-                {[
-                  {
-                    key: "journal",
-                    label: t("nav.journal"),
-                    Icon: BookOpen,
-                    onClick: () => onOpenJournal?.(),
-                  },
-                  {
-                    key: "jarvis",
-                    label: t("dashboard.askJarvis"),
-                    Icon: Sparkles,
-                    onClick: () => window.dispatchEvent(new CustomEvent("tv:open-jarvis")),
-                  },
-                  {
-                    key: "analytics",
-                    label: t("nav.analytics"),
-                    Icon: BarChart3,
-                    onClick: () =>
-                      window.dispatchEvent(
-                        new CustomEvent("tv:navigate", { detail: { page: "analytics" } }),
-                      ),
-                  },
-                ].map(({ key, label, Icon, onClick }) => (
-                  <button key={key} type="button" onClick={onClick} className="dash-action">
-                    <Icon className="h-4 w-4 shrink-0" aria-hidden />
-                    <span className="truncate">{label}</span>
-                  </button>
-                ))}
               </div>
 
               <div>

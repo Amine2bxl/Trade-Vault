@@ -74,24 +74,10 @@ export default function PageHead({
         </div>
         {hasRow && (
           <div className="mt-3 flex items-center gap-2 md:mt-4 md:gap-3">
-            <div
-              className={cn(
-                "min-w-0 flex-1",
-                page === "dashboard" && "md:order-2 md:flex md:justify-end",
-              )}
-            >
+            <div className="min-w-0 flex-1">
               {hasTabs ? <SectionTabs section={section} page={page} setPage={setPage} /> : lead}
             </div>
-            {actions && (
-              <div
-                className={cn(
-                  "flex shrink-0 items-center gap-2",
-                  page === "dashboard" && "md:order-1",
-                )}
-              >
-                {actions}
-              </div>
-            )}
+            {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
           </div>
         )}
       </div>

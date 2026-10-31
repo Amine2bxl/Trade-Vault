@@ -5647,34 +5647,79 @@ thead .plan-cmp-col.is-pro {
   }
 }
 
-/* ── Les trois portes du tableau de bord (Journal · Jarvis · Analyse) ──
-   Des boutons de 44 px, pas des cartes : l'action se lit sans se déguiser en
-   tuile de données. */
-/* Le sélecteur de période de la courbe — un segmenté de 24px, visible à
-   toutes les tailles (l'ancien empruntait les onglets de page, masqués sous
-   1024px). Le choix actif est une plaque plus claire, pas un aplat d'accent :
-   c'est une vue, pas une action. */
+/* ══ L'ACCUEIL FAÇON REVOLUT (Dashboard) ══
+ * Le P&L de la période, seul et énorme, centré ; sa fenêtre en mots ; le
+ * choix de la période ; la rangée d'actions rondes. Rien d'autre au-dessus de
+ * la courbe. */
+.dash-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0 24px;
+  text-align: center;
+}
+.dash-hero-figure {
+  font-size: var(--tv-t-display);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+@media (max-width: 380px) {
+  .dash-hero-figure {
+    font-size: 38px;
+  }
+}
+.dash-hero-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: var(--tv-t-body-sm);
+  color: var(--tv-text-secondary);
+}
+.dash-hero-pct {
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 12px;
+}
+.dash-hero-actions {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 10px;
+}
+@media (min-width: 640px) {
+  .dash-hero-actions {
+    gap: 26px;
+  }
+}
+
+/* Le sélecteur de période — le segmented de la page (piste creuse, pastille
+   pleine), à la taille d'un contrôle secondaire. C'est une VUE, pas une
+   action : la pastille active est une plaque claire, jamais un aplat
+   d'accent. */
 .dash-period {
   display: inline-flex;
   gap: 2px;
-  padding: 2px;
-  border-radius: 9px;
+  padding: 3px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--tv-border);
   background: var(--tv-plate-0);
 }
 .dash-period-btn {
-  height: 24px;
-  min-width: 34px;
-  padding: 0 8px;
-  border-radius: 7px;
+  height: 30px;
+  min-width: 44px;
+  padding: 0 12px;
+  border-radius: 9px;
   font-family: var(--font-figure);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.02em;
   color: var(--tv-text-muted);
   transition:
-    background-color var(--duration-micro) var(--tv-ease),
-    color var(--duration-micro) var(--tv-ease);
+    background-color var(--tv-dur-1) var(--tv-ease),
+    color var(--tv-dur-1) var(--tv-ease);
 }
 .dash-period-btn:hover {
   color: var(--tv-text-primary);
@@ -5682,40 +5727,13 @@ thead .plan-cmp-col.is-pro {
 .dash-period-btn[aria-pressed="true"] {
   background: var(--tv-plate-3);
   color: var(--tv-text-primary);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.08),
+    0 1px 2px rgb(0 0 0 / 0.5);
 }
 .dash-period-btn:focus-visible {
   outline: 2px solid var(--tv-accent);
   outline-offset: 1px;
-}
-
-.dash-action {
-  display: inline-flex;
-  min-height: 2.75rem;
-  min-width: 0;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  border: 1px solid var(--tv-border);
-  border-radius: 0.875rem;
-  background: var(--tv-plate-2);
-  padding: 0 0.75rem;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--tv-text-secondary);
-  transition-property: color, border-color, background-color;
-  transition-duration: var(--tv-dur-1);
-  transition-timing-function: var(--tv-ease);
-}
-.dash-action:hover {
-  border-color: var(--tv-border-strong);
-  color: var(--tv-text-primary);
-}
-.dash-action:focus-visible {
-  outline: 2px solid rgb(var(--tv-accent-rgb) / 0.7);
-  outline-offset: 2px;
-}
-.dash-action svg {
-  color: var(--tv-highlight);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -7453,39 +7471,25 @@ body.tv-app-type svg.lucide {
 /* Une création de trade compacte, repérable par son signe d'ajout encadré.
    32px de haut (et non les 36px de `.tv-entry-button`) : dans la barre de tête,
    le bouton pesait plus lourd que le titre de la page qu'il accompagne. */
+/* LIQUID — l'ajout du Dashboard est LE bouton d'action, plein, texte blanc :
+   plus de version teintée. Seule l'icône garde son quart de tour au survol. */
 .btn-primary.tv-dashboard-add {
-  min-height: 32px;
-  height: 32px;
-  padding: 0 11px 0 5px;
-  gap: 8px;
-  border: 1px solid var(--tv-border-accent);
-  border-radius: var(--radius-lg);
-  background: color-mix(in srgb, var(--tv-accent) 14%, var(--tv-plate-2));
-  color: var(--tv-text-primary);
-  transition:
-    background-color var(--tv-dur-1),
-    border-color var(--tv-dur-1),
-    transform var(--tv-dur-1);
+  min-height: 36px;
+  height: 36px;
+  padding: 0 14px 0 10px;
+  gap: 6px;
+  border-radius: var(--radius-md);
 }
 .tv-dashboard-add-icon {
   display: grid;
   place-items: center;
-  height: 22px;
-  width: 22px;
-  border-radius: var(--radius-sm);
-  background: var(--tv-accent);
-  color: var(--tv-plate-0);
+  height: 18px;
+  width: 18px;
+  color: inherit;
   transition: transform var(--tv-dur-1);
-}
-.btn-primary.tv-dashboard-add:hover {
-  background: color-mix(in srgb, var(--tv-accent) 22%, var(--tv-plate-2));
-  border-color: var(--tv-accent);
 }
 .btn-primary.tv-dashboard-add:hover .tv-dashboard-add-icon {
   transform: rotate(90deg);
-}
-.btn-primary.tv-dashboard-add:active {
-  transform: scale(0.98);
 }
 .tv-trade-modal {
   transform-origin: 50% 15%;
