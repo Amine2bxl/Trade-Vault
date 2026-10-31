@@ -3,6 +3,21 @@
 Journal des changements **structurels** (pas des features ni des correctifs,
 qui vivent dans l'historique git et les PR).
 
+## 2026-10-31 — Langage « Liquid » (verre iOS 27 + matière Revolut)
+
+- Nouveau langage par défaut : verre (jetons `--tv-glass-*`, flou porté par
+  `::before`, replis opaques) réservé à la couche de navigation ; papier peint
+  d'ambiance fixe ; plaques Revolut ; rayons concentriques ; grand titre et
+  chiffre héros ; ressort CSS `--tv-spring`.
+- Coque : rail de verre pliable, fenêtre de contenu supprimée, grand titre
+  dérivé de la navigation + barre compacte au défilement, barre mobile solide
+  à « + » central, modales en feuille sur téléphone.
+- Primitives : boutons d'action rectangles adoucis pleins (texte blanc),
+  nouvelle `ActionButton`. Dashboard façon Revolut, courbe d'equity texturée.
+- Halos d'accent restants retirés ; `tests/liquidGlass.test.ts` verrouille le
+  verre (jamais sur une carte, toujours un repli) et l'absence de halo. Spec :
+  `docs/superpowers/specs/2026-10-31-liquid-design-language-design.md`.
+
 ## 2026-10-20 — Laboratoire Monte Carlo et projection de stratégie
 
 - Extension pure `modules/probability/strategy.ts` (`strategy_projection_v1`) :

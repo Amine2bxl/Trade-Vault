@@ -52,7 +52,12 @@ jamais.
 --tv-dur-4: 400ms;  /* landing uniquement */
 ```
 
-**Plafond dur : 300 ms dans l'app.** Au-delà, l'utilisateur attend
+**Ressort Liquid** : `--tv-spring` (`linear()` à peine amorti, repli sur
+`--tv-ease`) + `--tv-dur-spring` 340 ms pour ce qui GLISSE (pilule active du
+rail, feuille qui monte du bas sur téléphone) ; `--tv-press` = `scale(.97)` à
+l'appui. Ils s'appliquent par transition, pas par une nouvelle keyframe.
+
+**Plafond dur : 300 ms dans l'app** (360 ms pour un ressort ou une feuille). Au-delà, l'utilisateur attend
 l'animation au lieu de l'ignorer. Seule la landing dépasse (jusqu'à ~700 ms
 sur une entrée de héros) — et l'**onboarding**, surface cinématique vue une
 seule fois (entrées ~600 ms, allumage ~1,2 s, keyframes `onb-*`, son Web

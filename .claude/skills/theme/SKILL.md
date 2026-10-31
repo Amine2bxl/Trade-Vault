@@ -9,13 +9,21 @@ description: Loi de la couleur et des surfaces de TradeVault — tokens `--tv-*`
 
 > **« Rien ne rayonne. La profondeur vient de la VALEUR et du LISERÉ, jamais de
 > la lumière. »**
+>
+> **Liquid (2026-10-31)** : la COUCHE DE NAVIGATION est en verre (translucide,
+> flouté, arête spéculaire blanche d'1px, ombre noire) et repose sur un papier
+> peint d'ambiance fixe. Le CONTENU reste en plaques opaques. Voir
+> `docs/DESIGN_SYSTEM.md` §1–2.
 
 Sur fond `#07080a`, une lueur est un défaut de rendu. Une carte n'est pas « au
 dessus » parce qu'elle brille : elle est plus claire d'un cran et porte un
 liseré d'un pixel. C'est tout le vocabulaire de profondeur du produit.
 
-**Interdits absolus** : `box-shadow` coloré, `blur` décoratif, halo, `glow`,
-`animate-ping`, dégradé de marque, deuxième accent chromatique.
+**Interdits absolus** : `box-shadow` coloré (halo, `glow`), `animate-ping`,
+dégradé sur un texte / bouton / carte, verre (`backdrop-filter`) sur une carte
+de contenu, fond animé, deuxième accent chromatique. Le flou n'existe que dans
+le matériau verre (`--tv-glass-*`), avec ses replis opaques
+(`tests/liquidGlass.test.ts`).
 
 ## Les tokens (source unique : `src/styles.css`)
 
@@ -26,12 +34,23 @@ Aucune valeur ci-dessous ne se recopie dans le JSX. On écrit
 
 | Token | Valeur | Rôle |
 | --- | --- | --- |
-| `--tv-bg` | `#07080a` | Fond de page (html + body) |
-| `--tv-plate-0` | `#0d0e10` | Creux : champ, piste de barre, cellule vide |
-| `--tv-plate-1` | `#131416` | **La carte par défaut** |
-| `--tv-plate-2` | `#1a1c1e` | Élément posé DANS une carte, carte mise en avant |
-| `--tv-plate-3` | `#212426` | Troisième niveau — rare, à justifier |
-| `--tv-surface-hover` | `#24272a` | Survol d'une ligne cliquable |
+| `--tv-bg` | `#050607` | Fond de page (html + body), sous le papier peint |
+| `--tv-plate-0` | `#0c0d0f` | Creux : champ, piste de barre, cellule vide |
+| `--tv-plate-1` | `#141517` | **La carte par défaut** |
+| `--tv-plate-2` | `#1c1d20` | Élément posé DANS une carte, carte mise en avant |
+| `--tv-plate-3` | `#25272a` | Troisième niveau — rare, à justifier |
+| `--tv-surface-hover` | `#2a2c30` | Survol d'une ligne cliquable |
+
+### Verre (couche de navigation uniquement)
+
+| Token | Valeur | Rôle |
+| --- | --- | --- |
+| `--tv-glass-fill` | `rgb(28 30 34 / .52)` | Capsules, barres légères |
+| `--tv-glass-fill-solid` | `rgb(19 20 22 / .9)` | Barre mobile, barre compacte |
+| `--tv-glass-fill-strong` | `rgb(22 24 27 / .94)` | Modales, feuilles, menus, sélecteurs |
+| `--tv-glass-edge` | `rgb(255 255 255 / .09)` | Liseré du verre |
+| `--tv-glass-specular` | arête haute blanche d'1px | Épaisseur du verre — jamais colorée |
+| `--tv-glass-shadow` | ombre noire large | Ce qui flotte réellement |
 
 On ne saute pas un cran. Une plaque 2 vit dans une plaque 1, pas sur le fond.
 
@@ -39,8 +58,8 @@ On ne saute pas un cran. Une plaque 2 vit dans une plaque 1, pas sur le fond.
 
 | Token | Valeur | Rôle |
 | --- | --- | --- |
-| `--tv-border` | `rgb(255 255 255 / .05)` | Le liseré par défaut |
-| `--tv-border-strong` | `rgb(255 255 255 / .1)` | Survol, séparateur qui compte |
+| `--tv-border` | `rgb(255 255 255 / .06)` | Le liseré par défaut |
+| `--tv-border-strong` | `rgb(255 255 255 / .11)` | Survol, séparateur qui compte |
 | `--tv-border-accent` | `rgb(var(--tv-accent-rgb) / .35)` | Élément sélectionné/actif |
 
 ### Texte
@@ -85,8 +104,8 @@ Ne jamais peindre un P&L avec `--tv-cta`, ni un bouton avec `--tv-chart-green`.
 
 ### Rayon
 
-`sm 8` · `md 10` · `lg 12` · `xl 14` · `2xl 18` · `3xl 24` · `4xl 32` ·
-`--tv-shell-radius 28`
+`sm 10` · `md 12` · `lg 14` · `xl 16` · `2xl 22` · `3xl 28` · `4xl 36` ·
+`--tv-shell-radius 32` (concentriques : bouton 12, champ 14, carte 22, feuille 28)
 
 `rounded-xl` (contrôles) · `rounded-2xl` (cartes) · `rounded-3xl` (panneaux)
 dominent. Élargir ces trois crans réarrondit tout le produit sans toucher un

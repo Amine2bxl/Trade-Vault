@@ -52,12 +52,19 @@ suite ; ne jamais affaiblir une assertion pour passer.
   `useLandingT()`, `SSR_LANG`). Anglais par défaut, changement de langue
   uniquement par choix explicite. Toute clé ajoutée dans `translations.ts` et
   `fr`. Aucune chaîne visible codée en dur.
-- **Design** : thème par défaut **`lucid`** (accent menthe `#31d68a`, profit
-  `#61f8ab`, mesuré sur la référence) ; l'app connectée écrit dans la pile
-  système de Lucid (`--font-lucid`), tandis que chiffres et libellés utilisent
-  Inter via `--font-figure` ; la vitrine garde Inter ; le
-  `:root` de `src/styles.css` reste identique au thème par défaut. Rien ne
-  rayonne (ni ombre, ni halo, ni dégradé, ni `animate-ping`) ; le P&L garde ses
+- **Design** : langage **Liquid** — verre d'iOS 27 pour la COUCHE DE
+  NAVIGATION (rail, barre mobile, en-tête collant, menus, feuilles), matière
+  Revolut pour le contenu (cartes opaques à grand rayon, chiffre héros,
+  actions rondes). Thème par défaut **`lucid`** (fond `#050607`, accent menthe
+  `#31d68a`, profit `#61f8ab`) ; le `:root` de `src/styles.css` reste
+  identique au thème par défaut. L'app écrit dans la pile système
+  (`--font-lucid`), chiffres et libellés en Inter via `--font-figure` ; la
+  vitrine garde Inter. Verre = jetons `--tv-glass-*`, flou porté par
+  `::before`, replis opaques obligatoires ; **jamais** sur une carte de
+  contenu. Papier peint d'ambiance fixe permis ; rien ne rayonne (ni ombre
+  colorée, ni halo, ni `animate-ping`, ni dégradé sur un texte, un bouton ou
+  une carte) — seules les surfaces qui flottent portent une ombre, noire.
+  Boutons d'action : rectangles adoucis pleins, texte blanc. Le P&L garde ses
   couleurs fixes. Primitives `src/shared/ui`. Charger les skills de
   `.claude/skills/` avant tout travail d'interface. Voir [`docs/DESIGN_SYSTEM.md`](docs/DESIGN_SYSTEM.md).
 - **Champs et filtres** : contrat unique `src/shared/ui/selection.ts`, moteur

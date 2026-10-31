@@ -6,7 +6,31 @@ composant, une navigation ou un texte de landing) sont les skills de
 [`../.claude/skills/`](../.claude/skills) : `theme`, `typography`, `motion`,
 `ui-design`, `ux-navigation`, `landing-copy`, et l'orchestrateur `ship-ui`.
 
-## 1. Le langage Lucid — le calendrier comme référence
+## 1. Le langage Liquid — verre iOS 27 + matière Revolut
+
+Depuis le 31 octobre 2026 (spec :
+[`superpowers/specs/2026-10-31-liquid-design-language-design.md`](superpowers/specs/2026-10-31-liquid-design-language-design.md)),
+le produit parle **Liquid** :
+
+- **Le verre flotte, le contenu se pose.** La couche de navigation (rail,
+  barre mobile, barre compacte d'en-tête, menus, panneaux de sélection,
+  feuilles, palette, toasts) est en verre : translucide, flouté, arête
+  spéculaire d'1 px, ombre noire. Les cartes de contenu restent des plaques
+  opaques — un chiffre ne se lit jamais à travers un flou.
+- **Papier peint d'ambiance** : trois nappes très floues dans la teinte du
+  thème, fixes (`body::before`), sous tout le produit. Aucune animation.
+- **Matière Revolut** : cartes à grand rayon (22), un chiffre héros par écran,
+  actions rondes (`ActionButton`), listes à pastilles.
+- **Rayons concentriques** : contrôles 12–14, cartes 22, feuilles 28, coque 32.
+  Les boutons d'action sont des **rectangles adoucis pleins, texte blanc** ;
+  les pilules restent aux sélecteurs (compte, puces, entrées du rail).
+- **Grand titre** (Large Title) sur chaque page, dérivé de la navigation, et
+  barre compacte de verre au défilement.
+
+Ce qui suit (grammaire Lucid, deux verts, plaques) reste vrai pour le
+**contenu** ; la coque et les surfaces flottantes suivent Liquid.
+
+### Héritage : le langage Lucid — le calendrier comme référence
 
 Référence esthétique assumée : captures de Lucid Trading
 ([`assets/lucid/`](assets/lucid)). **On copie la grammaire** — noir profond,
@@ -43,8 +67,11 @@ sans champ de particules ni flash plein écran.
 3. Un titre n'est jamais peint en vert (le contre-temps d'une accroche est gris).
 
 **Ce qui ne change jamais** : rien ne rayonne (ni ombre colorée, ni halo, ni
-dégradé de marque, ni `animate-ping`) — la profondeur vient de la valeur des
-surfaces et d'un liseré quasi invisible ; chiffres tabulaires partout ;
+`animate-ping`, ni dégradé sur un texte, un bouton ou une carte ; la seule
+lumière permise est le papier peint fixe et l'arête spéculaire blanche d'1 px
+du verre) — la profondeur vient de la valeur des surfaces, d'un liseré quasi
+invisible et, pour ce qui flotte, d'une ombre noire ; le verre n'est jamais
+posé sur une carte de contenu (`tests/liquidGlass.test.ts`) ; chiffres tabulaires partout ;
 plancher de lisibilité 10 px (12 px pour du texte à lire) ;
 `prefers-reduced-motion` respecté ; la zone Trustpilot (`#00b67a`) est gelée.
 
@@ -60,15 +87,27 @@ plancher de lisibilité 10 px (12 px pour du texte à lire) ;
   identique au thème par défaut. Changer le défaut = changer les deux.
 - Stockage par appareil : `tv-themes-v2` (thèmes) et `tv-theme-vars-v2`
   (variables résolues), purgés à la déconnexion.
-- Palette `lucid` : fond `#07080a` · carte `--tv-plate-1` `#131416` · tuile
-  `--tv-plate-2` `#1a1c1e` · creux `--tv-plate-0` `#0d0e10` · accent `#31d68a`
+- Palette `lucid` (Liquid) : fond `#050607` · carte `--tv-plate-1` `#141517` ·
+  tuile `--tv-plate-2` `#1c1d20` · creux `--tv-plate-0` `#0c0d0f` · accent `#31d68a`
   (foncé `#1fb574`, clair `#6be3a8`) · P&L `--tv-chart-green` `#61f8ab` /
   `--tv-chart-red` `#f87171`. La vitrine garde son émeraude verrouillée
   (`#22e08a`, `.landing-root`) · texte `#f2f4f5` · liseré
   `rgb(255 255 255 / .05)`.
 
-**Grammaire de surface** : `.glass`, `.glass-strong`, `.panel`, `.stat-card*`
-rendent la **même** plaque ; seule la valeur change.
+**Grammaire de surface** : `.glass`, `.panel`, `.stat-card*` rendent la
+**même** plaque opaque de contenu (le nom historique `.glass` ne veut plus dire
+« verre »). Le verre, lui :
+
+| Classe | Matériau | Usage |
+| --- | --- | --- |
+| `.tv-glass` / `.tv-glass-solid` | `--tv-glass-fill` (52 %) / `-solid` (90 %), flou sur `::before` | Coque : capsules, barres |
+| `.rail`, `.bottom-nav-shell`, `.page-compact-bar` | idem, réglés pièce par pièce | Rail, barre mobile, barre compacte |
+| `.glass-strong`, `.tv-dialog`, `.tv-pop`, `.section-menu` | `--tv-glass-fill-strong` (94 %) | Modales, feuilles, menus, sélecteurs |
+
+Le flou d'une pièce qui contient des éléments `fixed` se pose sur `::before`
+(un `backdrop-filter` ferait de son porteur leur bloc conteneur). Tout flou a
+son repli opaque : `@supports not (backdrop-filter…)` et
+`prefers-reduced-transparency`.
 
 ## 3. Typographie
 
@@ -97,12 +136,19 @@ Ne jamais augmenter une taille pour renforcer un chiffre ; conserver sa
 couleur sémantique et `tabular-nums` pour les colonnes, montants et axes.
 `numericText` reste utile pour les nombres inclus dans le Markdown et les
 notifications ; la couverture des chiffres ne dépend plus de ce balisage.
-Échelle à rôles `--tv-t-*` : `display`, `h1`, `h2`,
-`h3`, `body`, `body-sm`, `caption`, `micro`. Chiffres : `.tv-figure`
+Échelle à rôles `--tv-t-*` : `display` (44, chiffre héros), `h1` (30, grand
+titre `.tv-large-title`), `h2` (20), `h3` (15), `body`, `body-sm`, `caption`,
+`micro` (11, plancher). Chiffres : `.tv-figure`
 (tabulaires). Libellés : `.tv-label` (petites capitales espacées). Détail :
 skill `typography`.
 
 ## 4. Motion
+
+**Ressort Liquid** : `--tv-spring` (courbe `linear()` à peine amortie, repli
+sur `--tv-ease`) et `--tv-dur-spring` (340 ms) portent les états qui glissent —
+pilule active du rail, montée d'une feuille sur téléphone. Pression :
+`--tv-press` (`scale(.97)`). Plafond : 300 ms, 360 ms pour un ressort ou une
+feuille.
 
 La loi (skill `motion`) autorise huit keyframes — `styles.css` en contient
 encore davantage (dette à résorber, sans en ajouter) —, **300 ms maximum dans l'app**, uniquement
@@ -163,7 +209,7 @@ Import unique : `import { … } from "@/shared/ui"`. `shared/ui` n'importe jamai
 | Catégorie | Exports |
 | --- | --- |
 | Typographie | `Display`, `Heading`, `Text`, `Label` |
-| Actions | `Button`, `Chip`, `RemovableChip` |
+| Actions | `Button`, `ActionButton` (disque 52 px + libellé, rangée d'actions façon Revolut), `Chip`, `RemovableChip` |
 | Saisie | `Input`, `Textarea`, `RichTextarea` / `RichTextView`, `Select`, `Field`, `DateField`, `TimeField`, `SelectPicker`, `MultiPicker`, `RangePicker`, `ColorPicker`, `ChoiceGroup`, `Disclosure`, `FormSection` / `FormLabel` (sections numérotées qui se cochent, pastille obligatoire ou de catégorie) |
 | Pages de paramètres | `SettingsGroup` (un cadre, des rangées à filets), `SettingsRow` (nom + aide à gauche, commande à droite), `SettingsAction` (rangée cliquable), `Toggle` (`role="switch"`) — jamais de carte dans une carte |
 | Surfaces | `Card` (+ `CardHeader/Title/Body`), `Modal`, `Sheet`, `PageContainer` |
@@ -181,8 +227,13 @@ Réutiliser avant de restyler. Graphes : `app/trading/chartTheme.ts` +
 - **Navigation** : source unique `PAGES` / `SECTIONS` (`src/app/types.ts`) →
   `shell/navigation.ts` → Sidebar, barre mobile, palette ⌘K. Six sections dans
   l'ordre d'une séance : Dashboard · Préparation · Journal · Analyse · Coach ·
-  Stratégie (+ Réglages). Les entrées du rail sont des **carrés** aux angles
-  adoucis (`--radius-lg`), comme chez Lucid — plus de pilules.
+  Stratégie (+ Réglages). Le rail est un panneau de verre flottant, pliable
+  (72 px) ; ses entrées sont des pilules transparentes, l'active une pilule de
+  verre clair qui glisse sur le ressort. Chaque page porte un **grand titre**
+  (`PageHead`, dérivé de `SECTION_META` / `PAGE_META`) au-dessus de la rangée
+  d'origine onglets/actions ; une barre compacte de verre le reprend au
+  défilement. Barre mobile **solide** : onglet actif sur tuile, « + » central
+  plein. Sur téléphone, une modale monte du bas (feuille).
 - **Pages à hauteur mesurée** (Calendar, Inbox, Jarvis, Journal, Monte Carlo) :
   `hooks/useAvailableHeight`. Calendrier et Monte Carlo utilisent un minimum
   de hauteur et peuvent défiler si leur contenu dépasse ; Journal, Inbox et

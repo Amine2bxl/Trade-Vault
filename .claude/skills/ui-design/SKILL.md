@@ -33,7 +33,11 @@ n'importe jamais `app/`), on ne fabrique pas une variante locale.
 ## Grammaire de surface
 
 Une seule plaque, trois usages. La profondeur = **valeur + liseré** (voir
-skill `theme`).
+skill `theme`). **Liquid** : ce qui NAVIGUE ou s'OUVRE PAR-DESSUS (rail,
+barre mobile, barre compacte, menus, modales) est en verre ; ce qui PORTE UNE
+DONNÉE est une plaque opaque. Les boutons d'action sont des rectangles
+adoucis pleins à texte blanc ; une rangée d'actions rapides utilise
+`ActionButton` (disque 52 px + libellé, un seul `primary`).
 
 ```css
 .lp-card   { border: 1px solid var(--tv-border); border-radius: 12px; background: var(--tv-plate-1); }
@@ -109,6 +113,7 @@ vraisemblable — jamais une image d'illustration générique.
 - Une modale, un bouton, un input ou une carte re-créés à la main.
 - Un padding hors de l'échelle de densité.
 - Une ombre portée sur une carte, un dégradé de marque, un halo.
+- Un `backdrop-filter` sur une carte de contenu, ou un flou sans repli opaque.
 - Une dépendance UI tierce (ni Radix, ni shadcn runtime).
 
 ## Checklist avant de livrer un écran

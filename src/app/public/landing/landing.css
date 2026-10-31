@@ -71,19 +71,21 @@
 }
 
 /* La plaque marketing — la MÊME surface qu'une carte du produit. */
+/* LIQUID — rayons de la vitrine sur l'échelle de l'app : carte 22,
+   panneau 28, encart 14. */
 .lp-card {
   border: 1px solid var(--tv-border);
-  border-radius: 12px;
+  border-radius: var(--radius-2xl);
   background: var(--tv-plate-1);
 }
 .lp-card-inset {
   border: 1px solid var(--tv-border);
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   background: var(--tv-plate-2);
 }
 .lp-panel {
   border: 1px solid var(--tv-border);
-  border-radius: 16px;
+  border-radius: var(--radius-3xl);
   background: var(--tv-plate-1);
 }
 
@@ -195,7 +197,7 @@
 /* ── Cartes ── */
 .glass-card {
   border: 1px solid var(--tv-border);
-  border-radius: 12px;
+  border-radius: var(--radius-2xl);
   background: var(--tv-plate-1);
   transition: border-color 0.3s ease;
 }
@@ -205,7 +207,7 @@
 .card-premium {
   position: relative;
   border: 1px solid var(--tv-border);
-  border-radius: 14px;
+  border-radius: var(--radius-2xl);
   background: var(--tv-plate-1);
   transition: border-color 0.3s ease;
   overflow: hidden;
@@ -216,7 +218,7 @@
 .card-featured {
   position: relative;
   border: 1px solid rgb(var(--tv-accent-rgb) / 0.4);
-  border-radius: 14px;
+  border-radius: var(--radius-2xl);
   background: var(--tv-plate-2);
   overflow: hidden;
 }
@@ -488,7 +490,7 @@
 /* ── Use-cases : chaque carte relie une audience à un besoin réel ── */
 .use-card {
   border: 1px solid var(--tv-border);
-  border-radius: 12px;
+  border-radius: var(--radius-2xl);
   background: var(--tv-plate-1);
   padding: 24px;
   transition: border-color 0.3s ease;
@@ -1176,7 +1178,7 @@
   position: relative;
   overflow: hidden;
   border: 1px solid var(--tv-border);
-  border-radius: 14px;
+  border-radius: var(--radius-2xl);
   background: var(--tv-plate-1);
   transition:
     border-color 260ms var(--lp-expo),
@@ -1627,12 +1629,17 @@
   .landing-root .lp-nav-shell {
     margin: 10px auto 0;
     max-width: 1240px;
-    border-radius: 18px;
+    /* LIQUID — la capsule de verre de l'app : rayon de feuille, flou et
+       saturation du matériau, arête spéculaire d'1px. */
+    border-radius: var(--radius-2xl);
     padding-inline: 10px;
-    border: 1px solid var(--tv-border);
-    background: rgb(10 12 11 / 0.42);
-    backdrop-filter: blur(14px) saturate(135%);
-    box-shadow: 0 10px 28px -26px rgb(0 0 0 / 0.8);
+    border: 1px solid var(--tv-glass-edge);
+    background: rgb(20 22 25 / 0.46);
+    -webkit-backdrop-filter: blur(var(--tv-glass-blur)) saturate(var(--tv-glass-saturate));
+    backdrop-filter: blur(var(--tv-glass-blur)) saturate(var(--tv-glass-saturate));
+    box-shadow:
+      var(--tv-glass-specular),
+      0 10px 28px -26px rgb(0 0 0 / 0.8);
     transition:
       background-color 320ms var(--lp-expo),
       border-color 320ms var(--lp-expo),
@@ -1640,8 +1647,10 @@
   }
   .landing-root .lp-nav-shell[data-collee="oui"] {
     border-color: var(--tv-border-strong);
-    background: rgb(10 12 11 / 0.82);
-    box-shadow: 0 18px 40px -22px rgb(0 0 0 / 0.92);
+    background: rgb(20 22 25 / 0.82);
+    box-shadow:
+      var(--tv-glass-specular),
+      0 18px 40px -22px rgb(0 0 0 / 0.92);
   }
 }
 
