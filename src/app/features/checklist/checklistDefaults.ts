@@ -50,6 +50,11 @@ export interface ChkConfig {
   startTime: string; // "HH:MM"
   timeZone: string;
   countdown: number; // lock countdown seconds
+  /**
+   * Version des questions d'entrée. Absente ou < `GATE_VERSION` : la liste
+   * date d'avant le plan de séance et passe par `migrateConfig`.
+   */
+  gateV?: number;
 }
 
 export function localTimeZone(): string {
@@ -369,10 +374,123 @@ export function defaultConfigFor(lang: string): ChkConfig {
   const base = lang === "fr" ? FR : EN;
   return {
     ...structuredClone(base),
+    items: templateItems("essential", lang),
     startTime: "09:49",
     timeZone: localTimeZone(),
     countdown: 5,
+    gateV: GATE_VERSION,
   };
+}
+
+/* ════════════════════════════════════════════════════════════════
+   Questions d'entrée — posées par la porte au moment d'entrer.
+
+   Les quatre questions « du plan » citent les valeurs écrites le matin via
+   des variables ({bias}, {target}, {entry}, {inv}, {risk}, voir
+   `sessionPlan.fillGate`). Chaque modèle les reprend, puis ajoute les
+   critères de sa méthode. Tout reste éditable : un modèle est un point de
+   départ, pas un gabarit imposé.
+   ════════════════════════════════════════════════════════════════ */
+
+export const GATE_VERSION = 2;
+
+export type GateTemplateId = "essential" | "ict" | "priceAction" | "orderFlow";
+export const GATE_TEMPLATES: readonly GateTemplateId[] = [
+  "essential",
+  "ict",
+  "priceAction",
+  "orderFlow",
+];
+
+const q = (title: string): ChkItem => ({ title, desc: "" });
+
+/** Les questions qui confrontent l'entrée au plan écrit — communes à tous les modèles. */
+export function planQuestions(lang: string): ChkItem[] {
+  return lang === "fr"
+    ? [
+        q("{bias} : dans le sens du plan ?"),
+        q("Prix dans ta zone : {entry} ?"),
+        q("Stop là où l'idée est fausse : {inv} ?"),
+        q("Taille = {risk}, pas plus ?"),
+      ]
+    : [
+        q("{bias}: in the plan's direction?"),
+        q("Price in your zone: {entry}?"),
+        q("Stop where the idea is wrong: {inv}?"),
+        q("Size = {risk}, not more?"),
+      ];
+}
+
+const METHOD: Record<GateTemplateId, { fr: string[]; en: string[] }> = {
+  essential: {
+    fr: ["Mon setup est complet, sans exception ?"],
+    en: ["Is my setup complete, no exception?"],
+  },
+  ict: {
+    fr: [
+      "Liquidité prise (sweep) avant l'entrée ?",
+      "Déplacement + MSS / CISD confirmé ?",
+      "Entrée sur FVG / IFVG dans ma zone ?",
+      "Dans la macro / l'heure prévue ?",
+    ],
+    en: [
+      "Liquidity taken (sweep) before the entry?",
+      "Displacement + MSS / CISD confirmed?",
+      "Entry on an FVG / IFVG inside my zone?",
+      "Inside the macro / planned time?",
+    ],
+  },
+  priceAction: {
+    fr: [
+      "Niveau clé testé et rejeté ?",
+      "Bougie de confirmation clôturée ?",
+      "Structure dans le sens du biais ?",
+    ],
+    en: [
+      "Key level tested and rejected?",
+      "Confirmation candle closed?",
+      "Structure in the bias direction?",
+    ],
+  },
+  orderFlow: {
+    fr: [
+      "Absorption / delta dans le sens du plan ?",
+      "Liquidité visée visible sur la heatmap ?",
+      "VWAP / profil de volume en accord ?",
+    ],
+    en: [
+      "Absorption / delta in the plan's direction?",
+      "Targeted liquidity visible on the heatmap?",
+      "VWAP / volume profile in agreement?",
+    ],
+  },
+};
+
+export function templateItems(id: GateTemplateId, lang: string): ChkItem[] {
+  return [...planQuestions(lang), ...METHOD[id][lang === "fr" ? "fr" : "en"].map(q)];
+}
+
+/**
+ * Critères de l'ancienne checklist que l'écran VÉRIFIE désormais lui-même
+ * (fenêtre, pertes du jour) ou qui sont devenus des champs du plan (DoL).
+ * Retirés à la migration — sur titre exact uniquement : un critère reformulé
+ * par le trader lui appartient et reste.
+ */
+const AUTOMATED_TITLES = new Set([
+  "Heure de début atteinte",
+  "Heure de session atteinte",
+  "J'ai une DoL claire identifiée",
+  "Pas de loss déjà prise aujourd'hui",
+  "Session start time reached",
+  "Clear draw on liquidity identified",
+  "No loss taken today",
+]);
+
+/** Amène une configuration d'avant le plan de séance au format des questions d'entrée. */
+export function migrateConfig(cfg: ChkConfig, lang: string): ChkConfig {
+  if ((cfg.gateV ?? 0) >= GATE_VERSION) return cfg;
+  const kept = cfg.items.filter((it) => !AUTOMATED_TITLES.has(it.title.trim()));
+  return { ...cfg, items: [...planQuestions(lang), ...kept], gateV: GATE_VERSION };
 }
 
 /* ════════════════════════════════════════════════════════════════

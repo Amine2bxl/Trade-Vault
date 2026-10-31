@@ -19,6 +19,18 @@ qui vivent dans l'historique git et les PR).
 - Retirés : voix et sons de la checklist, motivations, états FOMO, compte à
   rebours, écran « Edge Locked », assistant `ChecklistWizard` (clés
   `chkWiz.*`). `checklist/voice.ts` reste lu par `scripts/voices/generate.ts`.
+- Plan enrichi : « pourquoi ce biais » obligatoire, scénario B facultatif
+  (condition, sens, cible) activable en un clic en séance, R:R calculé depuis
+  les niveaux écrits avec alerte sous `risk.minRR`, mémoire des séances
+  (dernière leçon, écart le plus fréquent dès 5 bilans).
+- Changer de plan hors scénario B exige un motif (≥ 12 caractères) et
+  15 secondes ; le motif est horodaté et relu au bilan.
+- Questions d'entrée personnalisables à variables (`{bias}`, `{entry}`,
+  `{inv}`…), quatre modèles (Essentiel, ICT/SMC, price action, order flow) ;
+  migration `gateV` des listes existantes.
+- Encodage sans friction : `utils/handoff.ts` (relais en mémoire, lu une fois)
+  pré-remplit `TradeModal` (sens, risque, état, plan, réflexion, erreurs) et
+  le formulaire des setups manqués (R estimé par les niveaux, leçon).
 
 ## 2026-10-20 — Laboratoire Monte Carlo et projection de stratégie
 

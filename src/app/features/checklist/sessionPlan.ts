@@ -11,12 +11,13 @@
  *
  * Le moteur déplace donc la décision AVANT l'ouverture et la rend vérifiable :
  *
- *   1. le trader ÉCRIT des valeurs (sens, cible, zone, invalidation, risque),
- *      pas des « oui » ;
- *   2. une fois verrouillé, le plan est GELÉ : le modifier en séance reste
- *      possible, mais passe par une action nommée qui est horodatée ;
- *   3. les faits observables (trades du jour, pertes, fenêtre) sont lus, pas
- *      demandés ;
+ *   1. le trader ÉCRIT des valeurs (pourquoi, sens, cible, zone, invalidation,
+ *      risque) et, s'il le veut, un scénario B avec sa condition ;
+ *   2. une fois verrouillé, le plan est GELÉ. Passer au scénario B écrit le
+ *      matin reste immédiat ; tout autre changement exige un motif écrit, et
+ *      il est horodaté ;
+ *   3. les faits observables (trades du jour, pertes, fenêtre, R:R des
+ *      niveaux) sont lus ou calculés, jamais demandés ;
  *   4. chaque trade du jour est comparé au plan écrit, sans interprétation.
  *
  * Le module ne fait aucune IO et ne lit aucune horloge : l'heure est passée par
@@ -30,10 +31,30 @@ import { isEmotionalState, type EmotionalState } from "@/app/trading/readiness";
 /* ══ Modèle ══ */
 
 export type Bias = "long" | "short" | "none";
+export type Direction = "long" | "short";
+
+/**
+ * Le scénario B : écrit AVANT l'open, avec la condition qui le déclenche.
+ * C'est ce qui distingue une adaptation prévue d'un retournement impulsif —
+ * « si le prix clôture au-dessus de 21 600, je vise les EQH » n'est pas un
+ * changement de plan, c'est le plan.
+ */
+export interface AltScenario {
+  condition: string;
+  bias: Direction | null;
+  target: string;
+  /** Facultative : sans zone propre, le scénario B reprend celle du A. */
+  entry: string;
+}
 
 export interface SessionPlan {
   /** `none` = journée d'observation : décider de ne pas trader EST un plan. */
   bias: Bias | null;
+  /**
+   * POURQUOI ce biais — narratif HTF, contexte, PDA. Demandé parce qu'un biais
+   * sans raison écrite se retourne au premier mouvement contraire.
+   */
+  narrative: string;
   /** La liquidité visée (DoL), dans les mots du trader : « 21 450 EQH ». */
   target: string;
   /** Le niveau clé / la zone où l'entrée est autorisée. */
@@ -44,10 +65,13 @@ export interface SessionPlan {
   risk: string;
   /** Nombre maximal de trades pour la séance. */
   maxTrades: number;
+  alt: AltScenario;
 }
 
-/** Plan → Séance → Bilan → Close. Une seule direction, sauf les deux retours nommés. */
+/** Plan → Séance → Bilan → Close. Une seule direction, sauf les retours nommés. */
 export type Phase = "plan" | "live" | "review" | "closed";
+
+export type Scenario = "A" | "B";
 
 /** Pourquoi la séance s'est arrêtée — trois sorties, toutes volontaires. */
 export type EndReason = "missed" | "invalidated" | "done";
@@ -71,6 +95,12 @@ export interface SessionReview {
   note: string;
 }
 
+/** Une réouverture du plan en séance : quand, et pourquoi — le motif est obligatoire. */
+export interface PlanChange {
+  at: string;
+  reason: string;
+}
+
 export interface SessionDay {
   v: 2;
   phase: Phase;
@@ -78,8 +108,11 @@ export interface SessionDay {
   mood: EmotionalState | null;
   /** Heure locale (`HH:MM`) du dernier verrouillage. */
   lockedAt: string | null;
-  /** Heures des réouvertures du plan EN SÉANCE — la trace des changements de biais. */
-  planChanges: string[];
+  /** Les réouvertures du plan EN SÉANCE — la trace des changements de biais. */
+  planChanges: PlanChange[];
+  /** Scénario actif ; B ne s'active qu'en séance, et seulement s'il était écrit. */
+  scenario: Scenario;
+  scenarioAt: string | null;
   endReason: EndReason | null;
   endedAt: string | null;
   review: SessionReview;
@@ -93,7 +126,17 @@ export interface SessionDay {
   checked: boolean[];
 }
 
-export type PlanField = "bias" | "target" | "entry" | "invalidation" | "risk" | "mood";
+export type PlanField =
+  | "bias"
+  | "narrative"
+  | "target"
+  | "entry"
+  | "invalidation"
+  | "risk"
+  | "altCondition"
+  | "altBias"
+  | "altTarget"
+  | "mood";
 
 export interface DayDefaults {
   risk: string;
@@ -102,19 +145,33 @@ export interface DayDefaults {
 
 export const MAX_TRADES_CHOICES = [1, 2, 3] as const;
 
+/**
+ * Longueur minimale du motif d'un changement de plan en séance. Assez pour
+ * obliger une phrase (« le prix a clôturé au-dessus de l'invalidation »), trop
+ * court pour devenir un pensum — le but est la pause, pas la punition.
+ */
+export const MIN_CHANGE_REASON = 12;
+
+/** Secondes d'attente avant de pouvoir confirmer un changement de plan en séance. */
+export const CHANGE_COOLDOWN_S = 15;
+
 const clampTrades = (n: unknown): number => {
   const v = typeof n === "number" && Number.isFinite(n) ? Math.trunc(n) : 1;
   return Math.min(MAX_TRADES_CHOICES[MAX_TRADES_CHOICES.length - 1], Math.max(1, v));
 };
 
+const emptyAlt = (): AltScenario => ({ condition: "", bias: null, target: "", entry: "" });
+
 export function emptyPlan(defaults: DayDefaults): SessionPlan {
   return {
     bias: null,
+    narrative: "",
     target: "",
     entry: "",
     invalidation: "",
     risk: defaults.risk,
     maxTrades: clampTrades(defaults.maxTrades),
+    alt: emptyAlt(),
   };
 }
 
@@ -127,6 +184,8 @@ export function emptyDay(defaults: DayDefaults): SessionDay {
     mood: null,
     lockedAt: null,
     planChanges: [],
+    scenario: "A",
+    scenarioAt: null,
     endReason: null,
     endedAt: null,
     review: { respected: null, breaches: [], note: "" },
@@ -135,7 +194,7 @@ export function emptyDay(defaults: DayDefaults): SessionDay {
   };
 }
 
-/* ══ Validation du plan ══ */
+/* ══ Nombres saisis à la main ══ */
 
 /**
  * Un montant saisi à la main : « 250 », « 1 000 », « 250,5 ». `null` si ce
@@ -148,7 +207,32 @@ export function parseAmount(raw: string): number | null {
   return Number.isFinite(v) && v > 0 ? v : null;
 }
 
+/**
+ * Le premier prix d'un niveau écrit librement : « FVG 21 520 » → 21520,
+ * « 21,450 EQL » → 21450, « 1.0850 » → 1.085. La virgule suivie d'exactement
+ * trois chiffres est un séparateur de milliers (écriture anglaise), sinon une
+ * décimale (écriture française). `null` quand le niveau ne contient pas de prix.
+ */
+export function levelPrice(raw: string): number | null {
+  const m = raw.match(/\d[\d\s.,]*/);
+  if (!m) return null;
+  let s = m[0].replace(/\s/g, "").replace(/[.,]$/, "");
+  if (/^\d{1,3}(,\d{3})+(\.\d+)?$/.test(s)) s = s.replace(/,/g, "");
+  else s = s.replace(",", ".");
+  const v = Number(s);
+  return Number.isFinite(v) && v > 0 ? v : null;
+}
+
+/* ══ Validation du plan ══ */
+
 const filled = (s: string) => s.trim().length > 0;
+
+/** Le scénario B est-il engagé ? Un seul champ rempli suffit à le rendre exigeant. */
+export const altStarted = (alt: AltScenario) =>
+  alt.bias !== null || filled(alt.condition) || filled(alt.target) || filled(alt.entry);
+
+export const altComplete = (alt: AltScenario) =>
+  alt.bias !== null && filled(alt.condition) && filled(alt.target);
 
 /** Ce qui manque pour verrouiller, dans l'ordre de saisie. */
 export function missingFields(plan: SessionPlan, mood: EmotionalState | null): PlanField[] {
@@ -156,11 +240,19 @@ export function missingFields(plan: SessionPlan, mood: EmotionalState | null): P
   if (plan.bias === null) out.push("bias");
   // Journée d'observation : ni cible, ni zone, ni risque — il n'y aura pas
   // d'entrée. Seul l'état reste demandé : c'est aussi un fait de la journée.
-  if (plan.bias !== "none") {
+  if (plan.bias === "long" || plan.bias === "short") {
+    if (!filled(plan.narrative)) out.push("narrative");
     if (!filled(plan.target)) out.push("target");
     if (!filled(plan.entry)) out.push("entry");
     if (!filled(plan.invalidation)) out.push("invalidation");
     if (parseAmount(plan.risk) === null) out.push("risk");
+    // Un scénario B à moitié écrit est pire que pas de scénario : c'est un
+    // retournement déguisé. Commencé, il doit être complet.
+    if (altStarted(plan.alt)) {
+      if (!filled(plan.alt.condition)) out.push("altCondition");
+      if (plan.alt.bias === null) out.push("altBias");
+      if (!filled(plan.alt.target)) out.push("altTarget");
+    }
   }
   if (mood === null) out.push("mood");
   return out;
@@ -177,6 +269,7 @@ export function planSteps(plan: SessionPlan, mood: EmotionalState | null): boole
   if (plan.bias === "none") return [true, mood !== null];
   return [
     plan.bias !== null,
+    filled(plan.narrative),
     filled(plan.target),
     filled(plan.entry),
     filled(plan.invalidation),
@@ -193,13 +286,67 @@ export const RISKY_MOODS: readonly EmotionalState[] = [
   "overconfident",
 ];
 
+/* ══ Lecture des niveaux : R:R et cohérence ══ */
+
+/**
+ * Le R:R que les niveaux ÉCRITS promettent : distance à la cible / distance à
+ * l'invalidation. `null` dès qu'un des trois niveaux n'a pas de prix, ou que
+ * l'entrée est collée à l'invalidation.
+ */
+export function planRR(plan: Pick<SessionPlan, "entry" | "target" | "invalidation">) {
+  const e = levelPrice(plan.entry);
+  const t = levelPrice(plan.target);
+  const i = levelPrice(plan.invalidation);
+  if (e === null || t === null || i === null || e === i) return null;
+  return Math.abs(t - e) / Math.abs(e - i);
+}
+
+/**
+ * Ce qui cloche dans les niveaux — signalé, jamais bloquant :
+ * - `targetSide` / `invSide` : cible ou invalidation du mauvais côté de
+ *   l'entrée pour le sens choisi (souvent une faute de frappe, parfois un plan
+ *   qui n'en est pas un) ;
+ * - `rrLow` : R:R sous le minimum du plan de trading.
+ */
+export type PlanWarning = "targetSide" | "invSide" | "rrLow";
+
+export function planWarnings(plan: SessionPlan, minRR: number | null): PlanWarning[] {
+  if (plan.bias !== "long" && plan.bias !== "short") return [];
+  const e = levelPrice(plan.entry);
+  const t = levelPrice(plan.target);
+  const i = levelPrice(plan.invalidation);
+  const up = plan.bias === "long";
+  const out: PlanWarning[] = [];
+  if (e !== null && t !== null && (up ? t <= e : t >= e)) out.push("targetSide");
+  if (e !== null && i !== null && (up ? i >= e : i <= e)) out.push("invSide");
+  const rr = planRR(plan);
+  if (out.length === 0 && rr !== null && minRR !== null && minRR > 0 && rr < minRR) {
+    out.push("rrLow");
+  }
+  return out;
+}
+
+/** Le plan en vigueur : le scénario B remplace sens, cible et (s'il en a une) zone. */
+export function activePlan(day: Pick<SessionDay, "plan" | "scenario">): SessionPlan {
+  const { plan } = day;
+  if (day.scenario !== "B" || !altComplete(plan.alt)) return plan;
+  return {
+    ...plan,
+    bias: plan.alt.bias,
+    target: plan.alt.target,
+    entry: filled(plan.alt.entry) ? plan.alt.entry : plan.entry,
+  };
+}
+
 /* ══ Transitions ══ */
 
 export type DayAction =
   | { type: "setPlan"; patch: Partial<SessionPlan> }
+  | { type: "setAlt"; patch: Partial<AltScenario> }
   | { type: "setMood"; mood: EmotionalState | null }
   | { type: "lock"; at: string }
-  | { type: "reopenPlan"; at: string }
+  | { type: "reopenPlan"; at: string; reason: string }
+  | { type: "switchScenario"; at: string }
   | { type: "end"; reason: EndReason; at: string }
   | { type: "setReview"; patch: Partial<SessionReview> }
   | { type: "close" }
@@ -212,9 +359,13 @@ const withSteps = (d: SessionDay): SessionDay => ({ ...d, checked: planSteps(d.p
  * Le réducteur de la journée. Toute écriture de l'écran passe par lui.
  *
  * LA RÈGLE QUI COMPTE : hors de la phase « plan », le plan et l'état sont
- * GELÉS — `setPlan` et `setMood` ne font rien. Changer de biais en séance
- * exige `reopenPlan`, qui rouvre sans rien effacer et horodate le changement.
- * Le trader garde la main ; il ne peut simplement plus le faire sans le voir.
+ * GELÉS — `setPlan`, `setAlt` et `setMood` ne font rien. En séance, deux
+ * chemins seulement :
+ *
+ * - `switchScenario` : passer au B écrit le matin. Immédiat, car prévu.
+ * - `reopenPlan` : tout autre changement. Refusé sans motif d'au moins
+ *   `MIN_CHANGE_REASON` caractères ; rouvre sans rien effacer et garde le
+ *   motif horodaté pour le bilan.
  */
 export function reduceDay(day: SessionDay, action: DayAction): SessionDay {
   switch (action.type) {
@@ -224,6 +375,12 @@ export function reduceDay(day: SessionDay, action: DayAction): SessionDay {
       plan.maxTrades = clampTrades(plan.maxTrades);
       return withSteps({ ...day, plan });
     }
+    case "setAlt":
+      if (day.phase !== "plan") return day;
+      return withSteps({
+        ...day,
+        plan: { ...day.plan, alt: { ...day.plan.alt, ...action.patch } },
+      });
     case "setMood":
       if (day.phase !== "plan") return day;
       return withSteps({ ...day, mood: action.mood });
@@ -231,13 +388,19 @@ export function reduceDay(day: SessionDay, action: DayAction): SessionDay {
       if (day.phase !== "plan" || !canLock(day.plan, day.mood)) return day;
       return { ...day, phase: "live", locked: true, lockedAt: action.at };
     case "reopenPlan":
-      if (day.phase !== "live") return day;
+      if (day.phase !== "live" || action.reason.trim().length < MIN_CHANGE_REASON) return day;
       return {
         ...day,
         phase: "plan",
         locked: false,
-        planChanges: [...day.planChanges, action.at],
+        // Le plan rouvert repart du A : un nouveau verrou, un nouveau point de départ.
+        scenario: "A",
+        scenarioAt: null,
+        planChanges: [...day.planChanges, { at: action.at, reason: action.reason.trim() }],
       };
+    case "switchScenario":
+      if (day.phase !== "live" || day.scenario === "B" || !altComplete(day.plan.alt)) return day;
+      return { ...day, scenario: "B", scenarioAt: action.at };
     case "end":
       if (day.phase !== "live") return day;
       return { ...day, phase: "review", endReason: action.reason, endedAt: action.at };
@@ -262,22 +425,51 @@ export function reduceDay(day: SessionDay, action: DayAction): SessionDay {
 /* ══ Persistance ══ */
 
 const str = (v: unknown) => (typeof v === "string" ? v : "");
+const obj = (v: unknown) => (v && typeof v === "object" ? v : {}) as Record<string, unknown>;
 const isPhase = (v: unknown): v is Phase =>
   v === "plan" || v === "live" || v === "review" || v === "closed";
 const isBias = (v: unknown): v is Bias => v === "long" || v === "short" || v === "none";
+const isDirection = (v: unknown): v is Direction => v === "long" || v === "short";
 const isEndReason = (v: unknown): v is EndReason =>
   v === "missed" || v === "invalidated" || v === "done";
 const isBreach = (v: unknown): v is Breach => (BREACHES as readonly unknown[]).includes(v);
 
 function readPlan(raw: unknown, defaults: DayDefaults): SessionPlan {
-  const p = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+  const p = obj(raw);
+  const a = obj(p.alt);
   return {
     bias: isBias(p.bias) ? p.bias : null,
+    narrative: str(p.narrative),
     target: str(p.target),
     entry: str(p.entry),
     invalidation: str(p.invalidation),
     risk: typeof p.risk === "string" ? p.risk : defaults.risk,
     maxTrades: clampTrades(p.maxTrades ?? defaults.maxTrades),
+    alt: {
+      condition: str(a.condition),
+      bias: isDirection(a.bias) ? a.bias : null,
+      target: str(a.target),
+      entry: str(a.entry),
+    },
+  };
+}
+
+function readChanges(raw: unknown): PlanChange[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.flatMap((x): PlanChange[] => {
+    // Première version : l'heure seule, sans motif.
+    if (typeof x === "string") return [{ at: x, reason: "" }];
+    const o = obj(x);
+    return typeof o.at === "string" ? [{ at: o.at, reason: str(o.reason) }] : [];
+  });
+}
+
+function readReview(raw: unknown): SessionReview {
+  const rev = obj(raw);
+  return {
+    respected: typeof rev.respected === "boolean" ? rev.respected : null,
+    breaches: Array.isArray(rev.breaches) ? rev.breaches.filter(isBreach) : [],
+    note: str(rev.note),
   };
 }
 
@@ -293,26 +485,23 @@ export function normalizeDay(raw: unknown, defaults: DayDefaults): SessionDay {
   const r = raw as Record<string, unknown>;
   const plan = readPlan(r.plan, defaults);
   const mood = isEmotionalState(r.mood) ? r.mood : null;
-  const rev = (r.review && typeof r.review === "object" ? r.review : {}) as Record<string, unknown>;
   let phase: Phase = isPhase(r.phase) ? r.phase : "plan";
   // Un plan incomplet ne peut pas être en séance, quelle que soit la source.
   if (phase !== "plan" && !canLock(plan, mood)) phase = "plan";
+  const scenario: Scenario =
+    r.scenario === "B" && phase !== "plan" && altComplete(plan.alt) ? "B" : "A";
   return {
     v: 2,
     phase,
     plan,
     mood,
     lockedAt: typeof r.lockedAt === "string" ? r.lockedAt : null,
-    planChanges: Array.isArray(r.planChanges)
-      ? r.planChanges.filter((x): x is string => typeof x === "string")
-      : [],
+    planChanges: readChanges(r.planChanges),
+    scenario,
+    scenarioAt: scenario === "B" && typeof r.scenarioAt === "string" ? r.scenarioAt : null,
     endReason: isEndReason(r.endReason) ? r.endReason : null,
     endedAt: typeof r.endedAt === "string" ? r.endedAt : null,
-    review: {
-      respected: typeof rev.respected === "boolean" ? rev.respected : null,
-      breaches: Array.isArray(rev.breaches) ? rev.breaches.filter(isBreach) : [],
-      note: str(rev.note),
-    },
+    review: readReview(r.review),
     locked: phase !== "plan",
     checked: planSteps(plan, mood),
   };
@@ -327,19 +516,39 @@ export function toSnapshot(day: SessionDay): Record<string, unknown> {
     mood: day.mood,
     lockedAt: day.lockedAt,
     planChanges: day.planChanges,
+    scenario: day.scenario,
+    scenarioAt: day.scenarioAt,
     endReason: day.endReason,
     endedAt: day.endedAt,
     review: day.review,
   };
 }
 
-/** Le plan d'une séance stockée, ou `null` si elle n'a pas été préparée avec ce moteur. */
-export function planFromSnapshot(snapshot: unknown): SessionPlan | null {
+/** Ce qu'une séance passée apporte à l'historique et à la mémoire. */
+export interface PastSession {
+  date: string;
+  plan: SessionPlan;
+  scenario: Scenario;
+  /** Le bilan, s'il a été clos ce jour-là. */
+  review: SessionReview | null;
+}
+
+/**
+ * Une séance stockée, ou `null` si elle n'a pas été préparée avec ce moteur
+ * ou n'a jamais été verrouillée (un brouillon de plan n'est pas un plan).
+ */
+export function sessionFromSnapshot(date: string, snapshot: unknown): PastSession | null {
   if (!snapshot || typeof snapshot !== "object") return null;
-  const s = snapshot as { v?: unknown; plan?: unknown; phase?: unknown };
-  if (s.v !== 2 || s.phase === "plan") return null;
+  const s = snapshot as Record<string, unknown>;
+  if (s.v !== 2 || s.phase === "plan" || !isPhase(s.phase)) return null;
   const plan = readPlan(s.plan, { risk: "", maxTrades: 1 });
-  return plan.bias === null ? null : plan;
+  if (plan.bias === null) return null;
+  return {
+    date,
+    plan,
+    scenario: s.scenario === "B" && altComplete(plan.alt) ? "B" : "A",
+    review: s.phase === "closed" ? readReview(s.review) : null,
+  };
 }
 
 /* ══ Faits du jour — lus, jamais demandés ══ */
@@ -392,7 +601,8 @@ export function entryBlockers(input: {
  * Écarts OBSERVABLES entre un trade et le plan du jour. Volontairement
  * restreints à ce que les données prouvent :
  *
- * - `direction` : un long un jour de plan short, ou l'inverse ;
+ * - `direction` : un trade dans un sens qu'aucun scénario écrit ne prévoyait
+ *   (une fois le B activé, ses deux sens sont prévus) ;
  * - `extra` : un trade au-delà du maximum fixé le matin ;
  * - `observation` : un trade un jour déclaré sans trade.
  *
@@ -403,10 +613,17 @@ export function entryBlockers(input: {
  */
 export type TradeBreach = "direction" | "extra" | "observation";
 
-export function tradeBreaches(trade: Trade, index: number, plan: SessionPlan): TradeBreach[] {
+export function tradeBreaches(
+  trade: Trade,
+  index: number,
+  plan: SessionPlan,
+  scenario: Scenario = "A",
+): TradeBreach[] {
   if (plan.bias === "none") return ["observation"];
+  const allowed = new Set<string>([plan.bias ?? ""]);
+  if (scenario === "B" && plan.alt.bias) allowed.add(plan.alt.bias);
   const out: TradeBreach[] = [];
-  if ((trade.direction === "long" || trade.direction === "short") && trade.direction !== plan.bias)
+  if ((trade.direction === "long" || trade.direction === "short") && !allowed.has(trade.direction))
     out.push("direction");
   if (index >= plan.maxTrades) out.push("extra");
   return out;
@@ -434,18 +651,18 @@ export interface PlanHistory {
  * plus qu'une association.
  */
 export function planHistory(
-  days: readonly { date: string; plan: SessionPlan }[],
+  days: readonly Pick<PastSession, "date" | "plan" | "scenario">[],
   trades: readonly Trade[],
 ): PlanHistory {
   const sums = { in: { n: 0, s: 0 }, off: { n: 0, s: 0 } };
   const seen = new Set<string>();
-  for (const { date, plan } of days) {
+  for (const { date, plan, scenario } of days) {
     if (seen.has(date)) continue;
     seen.add(date);
     dayFacts(trades, date).trades.forEach((t, i) => {
       const r = measuredR(t);
       if (r === null) return;
-      const bucket = tradeBreaches(t, i, plan).length === 0 ? sums.in : sums.off;
+      const bucket = tradeBreaches(t, i, plan, scenario).length === 0 ? sums.in : sums.off;
       bucket.n += 1;
       bucket.s += r;
     });
@@ -457,35 +674,75 @@ export function planHistory(
   return { inPlan: out(sums.in), offPlan: out(sums.off), minSample: MIN_BUCKET_SAMPLE };
 }
 
+/* ══ Mémoire : ce que les séances passées ont à dire à celle-ci ══ */
+
+export interface SessionMemory {
+  /** La leçon écrite au dernier bilan clos — relue avant d'écrire le plan suivant. */
+  lastLesson: { date: string; note: string } | null;
+  /**
+   * L'écart le plus souvent déclaré, sur les bilans clos. Un COMPTE, pas une
+   * statistique : il n'est rendu qu'à partir de `MIN_BUCKET_SAMPLE` bilans.
+   */
+  topBreach: { breach: Breach; count: number; sessions: number } | null;
+}
+
+/**
+ * Le contenu qui change d'un jour à l'autre : c'est ce qui empêche le plan de
+ * devenir machinal. On n'écrit pas le même plan en relisant la leçon d'hier.
+ */
+export function sessionMemory(past: readonly PastSession[]): SessionMemory {
+  const closed = past
+    .filter((p): p is PastSession & { review: SessionReview } => p.review !== null)
+    .sort((a, b) => b.date.localeCompare(a.date));
+  const withNote = closed.find((p) => p.review.note.trim().length > 0);
+  const counts = new Map<Breach, number>();
+  for (const p of closed)
+    for (const b of new Set(p.review.breaches)) {
+      counts.set(b, (counts.get(b) ?? 0) + 1);
+    }
+  let top: SessionMemory["topBreach"] = null;
+  if (closed.length >= MIN_BUCKET_SAMPLE) {
+    for (const b of BREACHES) {
+      const c = counts.get(b) ?? 0;
+      if (c > 0 && (top === null || c > top.count))
+        top = { breach: b, count: c, sessions: closed.length };
+    }
+  }
+  return {
+    lastLesson: withNote ? { date: withNote.date, note: withNote.review.note.trim() } : null,
+    topBreach: top,
+  };
+}
+
 /* ══ La porte d'entrée ══ */
 
 /**
- * Les questions posées au moment d'entrer. Les quatre premières reprennent le
- * plan ÉCRIT — l'écran les formule avec les valeurs du trader, ce qui les
- * empêche de devenir machinales : on compare le prix à un chiffre, on ne
- * répond pas « oui » par réflexe. Les critères personnels suivent.
+ * Les variables qu'une question d'entrée peut citer. Elles sont remplacées par
+ * les valeurs du plan EN VIGUEUR : « Prix dans ta zone : {entry} ? » devient
+ * « Prix dans ta zone : FVG 21 520 ? ». C'est ce qui empêche la question de
+ * devenir machinale — on compare le prix à un chiffre, on ne répond pas « oui »
+ * par réflexe.
  */
-export type GateKind = "direction" | "entry" | "stop" | "size" | "custom";
+export const GATE_TOKENS = ["bias", "target", "entry", "inv", "risk"] as const;
+export type GateToken = (typeof GATE_TOKENS)[number];
+
+export function fillGate(text: string, values: Readonly<Record<GateToken, string>>): string {
+  return text.replace(/\{(bias|target|entry|inv|risk)\}/g, (_, k: GateToken) =>
+    values[k].trim() ? values[k].trim() : "—",
+  );
+}
 
 export interface GateQuestion {
   id: string;
-  kind: GateKind;
-  /** Pour `custom` : le critère tel que le trader l'a écrit. */
-  text?: string;
+  /** Le texte tel que le trader l'a écrit, variables comprises. */
+  text: string;
 }
 
-export function gateQuestions(customTitles: readonly string[]): GateQuestion[] {
-  const fixed: GateQuestion[] = [
-    { id: "direction", kind: "direction" },
-    { id: "entry", kind: "entry" },
-    { id: "stop", kind: "stop" },
-    { id: "size", kind: "size" },
-  ];
-  const custom = customTitles
+export function gateQuestions(titles: readonly string[]): GateQuestion[] {
+  return titles
     .map((t) => t.trim())
     .filter(Boolean)
-    .map((text, i) => ({ id: `custom-${i}`, kind: "custom" as const, text }));
-  return [...fixed, ...custom];
+    .map((text, i) => ({ id: `q-${i}`, text }));
 }
 
 export type GateVerdict = "pending" | "go" | "no";

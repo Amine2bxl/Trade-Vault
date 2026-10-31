@@ -1,5 +1,10 @@
 /* Helpers purs de la checklist — extrait de Checklist.tsx (Phase D). */
-import { type ChkConfig, defaultConfigFor, localTimeZone } from "./checklistDefaults";
+import {
+  type ChkConfig,
+  defaultConfigFor,
+  localTimeZone,
+  migrateConfig,
+} from "./checklistDefaults";
 
 /* ══ Helpers ══ */
 export const pad = (n: number) => String(n).padStart(2, "0");
@@ -62,11 +67,18 @@ export function hydrateConfig(raw: string | null, lang: string): ChkConfig {
   if (!raw) return def;
   try {
     const p = JSON.parse(raw) as Partial<ChkConfig>;
-    return {
-      ...def,
-      ...p,
-      fomo: Array.isArray(p.fomo) && p.fomo.length === 4 ? p.fomo : def.fomo,
-    };
+    return migrateConfig(
+      {
+        ...def,
+        ...p,
+        // Une liste enregistrée sans version date d'avant les questions
+        // d'entrée : la version des défauts ne doit pas la masquer. Sans liste
+        // enregistrée, ce sont les défauts — déjà à jour.
+        gateV: Array.isArray(p.items) ? p.gateV : def.gateV,
+        fomo: Array.isArray(p.fomo) && p.fomo.length === 4 ? p.fomo : def.fomo,
+      },
+      lang,
+    );
   } catch {
     return def;
   }

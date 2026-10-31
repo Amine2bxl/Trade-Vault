@@ -1,20 +1,47 @@
 import { useMemo, useState } from "react";
-import { Plus, RotateCcw, X } from "@/shared/ui/icons";
-import { Button, Field, Input, Modal, SelectPicker, TimeField, Toggle } from "@/shared/ui";
+import { ChevronDown, ChevronUp, Plus, RotateCcw, X } from "@/shared/ui/icons";
+import {
+  Button,
+  Chip,
+  CHIP_ROW,
+  Field,
+  Input,
+  Modal,
+  SelectPicker,
+  TimeField,
+  Toggle,
+} from "@/shared/ui";
 import { useT } from "@/app/i18n/LanguageContext";
 import { intlLocale } from "@/app/i18n/locale";
-import { type ChkConfig, type ChkItem, isItemOn } from "./checklistDefaults";
+import type { TKey } from "@/app/i18n/translations";
+import {
+  type ChkConfig,
+  type ChkItem,
+  GATE_TEMPLATES,
+  type GateTemplateId,
+  isItemOn,
+  templateItems,
+} from "./checklistDefaults";
 import { getTimeZoneOptions } from "./helpers";
+import { GATE_TOKENS } from "./sessionPlan";
 
 /**
  * Les réglages de la checklist — hors de l'écran de séance.
  *
- * Deux choses seulement se règlent : la fenêtre de séance et les critères
- * personnels posés à l'entrée. Tout le reste (trades du jour, pertes, news) est
- * LU par l'application : le demander serait recréer la case qu'on coche par
- * réflexe. Le panneau le dit en une ligne, pour que personne ne recrée ici un
- * critère « pas de perte aujourd'hui » que l'écran vérifie déjà.
+ * Deux choses se règlent : la fenêtre de séance et les questions d'entrée.
+ * Chaque question est éditable, activable, déplaçable ; un modèle (Essentiel,
+ * ICT, price action, order flow) sert de point de départ. Les variables
+ * ({entry}, {inv}…) sont remplacées par le plan du jour : c'est ce qui garde
+ * une question vivante. Tout ce que l'application lit elle-même (trades du
+ * jour, pertes, news) n'a pas à devenir une question — le panneau le dit.
  */
+
+const TEMPLATE_KEYS: Record<GateTemplateId, TKey> = {
+  essential: "chk.tplEssential",
+  ict: "chk.tplIct",
+  priceAction: "chk.tplPriceAction",
+  orderFlow: "chk.tplOrderFlow",
+};
 
 interface Props {
   open: boolean;
@@ -44,6 +71,14 @@ export default function ChecklistSettings({
     setItems([...config.items, { title, desc: "" }]);
     setDraft("");
   };
+  const move = (i: number, by: -1 | 1) => {
+    const j = i + by;
+    if (j < 0 || j >= config.items.length) return;
+    const items = config.items.slice();
+    [items[i], items[j]] = [items[j], items[i]];
+    setItems(items);
+  };
+  const active = config.items.filter(isItemOn).length;
 
   return (
     <Modal open={open} onClose={onClose} size="sm" labelledBy="chk-settings-title">
@@ -90,12 +125,30 @@ export default function ChecklistSettings({
           </div>
         </section>
 
-        <section className="space-y-2">
-          <h3 className="tv-label text-slate-500">{t("chk.setCriteria")}</h3>
+        <section className="space-y-2.5">
+          <div className="flex items-baseline justify-between gap-2">
+            <h3 className="tv-label text-slate-500">{t("chk.setCriteria")}</h3>
+            <span className="tv-num text-xs text-slate-500">
+              {active}/{config.items.length}
+            </span>
+          </div>
           <p className="tv-prose text-slate-500">{t("chk.setCriteriaHint")}</p>
+
+          <div className="space-y-1.5">
+            <span className="tv-label text-slate-500">{t("chk.setTemplates")}</span>
+            <div className={CHIP_ROW}>
+              {GATE_TEMPLATES.map((id) => (
+                <Chip key={id} onClick={() => setItems(templateItems(id, lang))}>
+                  {t(TEMPLATE_KEYS[id])}
+                </Chip>
+              ))}
+            </div>
+            <p className="tv-prose text-slate-500">{t("chk.setTemplateHint")}</p>
+          </div>
+
           <ul className="space-y-1.5">
             {config.items.map((it, i) => (
-              <li key={i} className="flex items-center gap-2">
+              <li key={i} className="flex items-center gap-1.5">
                 <Toggle
                   on={isItemOn(it)}
                   label={t("chk.setEnable")}
@@ -113,6 +166,26 @@ export default function ChecklistSettings({
                   }
                   className="min-w-0 flex-1"
                 />
+                <div className="flex shrink-0 flex-col">
+                  <button
+                    type="button"
+                    aria-label={t("chk.setUp")}
+                    disabled={i === 0}
+                    onClick={() => move(i, -1)}
+                    className="tv-chk-tool h-5 disabled:opacity-30"
+                  >
+                    <ChevronUp className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={t("chk.setDown")}
+                    disabled={i === config.items.length - 1}
+                    onClick={() => move(i, 1)}
+                    className="tv-chk-tool h-5 disabled:opacity-30"
+                  >
+                    <ChevronDown className="h-3.5 w-3.5" />
+                  </button>
+                </div>
                 <button
                   type="button"
                   aria-label={t("chk.setRemove")}
@@ -124,6 +197,7 @@ export default function ChecklistSettings({
               </li>
             ))}
           </ul>
+
           <form
             className="flex items-center gap-2"
             onSubmit={(e) => {
@@ -142,6 +216,22 @@ export default function ChecklistSettings({
               <Plus className="h-4 w-4" /> {t("common.add")}
             </Button>
           </form>
+
+          {/* Les variables s'insèrent d'un clic dans la question en cours d'écriture. */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="tv-label text-slate-500">{t("chk.setTokens")}</span>
+            {GATE_TOKENS.map((tok) => (
+              <button
+                key={tok}
+                type="button"
+                onClick={() => setDraft((d) => `${d}${d && !d.endsWith(" ") ? " " : ""}{${tok}}`)}
+                className="tv-figure rounded-md border border-[var(--tv-border)] bg-[var(--tv-plate-2)] px-1.5 py-0.5 text-xs text-slate-300 hover:border-[var(--tv-border-strong)]"
+              >
+                {`{${tok}}`}
+              </button>
+            ))}
+          </div>
+          <p className="tv-prose text-slate-500">{t("chk.setTokensHint")}</p>
           <p className="tv-prose text-slate-500">{t("chk.setAuto")}</p>
         </section>
 

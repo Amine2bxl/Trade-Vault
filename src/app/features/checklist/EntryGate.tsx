@@ -1,54 +1,38 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Button, ChoiceGroup } from "@/shared/ui";
 import { cn } from "@/shared/ui/cn";
 import { useT } from "@/app/i18n/LanguageContext";
-import { gateQuestions, gateVerdict, type GateQuestion, type SessionPlan } from "./sessionPlan";
+import { gateVerdict, type GateQuestion } from "./sessionPlan";
 
 /**
  * La porte d'entrée — l'interaction qui compte, au moment où elle compte.
  *
  * Les erreurs des journaux se jouent dans les secondes qui précèdent le clic :
  * entrée chassée, retournement de biais, stop serré « pour voir ». Une case
- * cochée le matin ne pèse rien à ce moment-là. Ici, chaque question reprend le
- * chiffre que le trader a écrit (« Prix dans ta zone : FVG 21 520 ? ») : on y
- * répond en regardant le graphique, pas par réflexe. Un seul « non » ferme la
- * porte, sans discussion ni texte à lire.
+ * cochée le matin ne pèse rien à ce moment-là. Ici, chaque question arrive
+ * déjà remplie avec le plan du jour (« Prix dans ta zone : FVG 21 520 ? ») :
+ * on y répond en regardant le graphique, pas par réflexe. Un seul « non »
+ * ferme la porte, sans discussion ni texte à lire.
  */
 
 interface Props {
-  plan: SessionPlan;
-  customTitles: string[];
+  /** Questions déjà remplies avec le plan en vigueur (`fillGate`). */
+  questions: GateQuestion[];
   /** Raison qui interdit toute entrée, déjà formulée ; `null` si rien ne bloque. */
   blocked: string | null;
-  onLogTrade: () => void;
+  /** « Go » : ouvre le formulaire de trade, pré-rempli. */
+  onGo: () => void;
 }
 
-export default function EntryGate({ plan, customTitles, blocked, onLogTrade }: Props) {
+export default function EntryGate({ questions, blocked, onGo }: Props) {
   const { t } = useT();
   const [open, setOpen] = useState(false);
   const [answers, setAnswers] = useState<Record<string, boolean>>({});
-  const questions = useMemo(() => gateQuestions(customTitles), [customTitles]);
   const verdict = gateVerdict(questions, answers);
 
   const close = () => {
     setOpen(false);
     setAnswers({});
-  };
-
-  const bias = plan.bias === "long" ? t("common.long") : t("common.short");
-  const label = (q: GateQuestion): string => {
-    switch (q.kind) {
-      case "direction":
-        return t("chk.gateDirection").replace("{bias}", bias.toUpperCase());
-      case "entry":
-        return t("chk.gateEntry").replace("{entry}", plan.entry.trim());
-      case "stop":
-        return t("chk.gateStop").replace("{inv}", plan.invalidation.trim());
-      case "size":
-        return t("chk.gateSize").replace("{risk}", plan.risk.trim());
-      case "custom":
-        return q.text ?? "";
-    }
   };
 
   if (!open) {
@@ -73,15 +57,17 @@ export default function EntryGate({ plan, customTitles, blocked, onLogTrade }: P
               "flex items-center gap-3 rounded-xl border px-3 py-2",
               answers[q.id] === false
                 ? "border-red-500/30 bg-red-500/10"
-                : "border-[var(--tv-border)] bg-[var(--tv-plate-2)]",
+                : answers[q.id] === true
+                  ? "border-[var(--tv-border-accent)] bg-[var(--tv-plate-2)]"
+                  : "border-[var(--tv-border)] bg-[var(--tv-plate-2)]",
             )}
           >
             <span className="tv-figure tv-figure-secondary w-4 shrink-0 text-xs text-slate-500">
               {i + 1}
             </span>
-            <span className="min-w-0 flex-1 text-sm text-slate-200">{label(q)}</span>
+            <span className="min-w-0 flex-1 text-sm text-slate-200">{q.text}</span>
             <ChoiceGroup
-              label={label(q)}
+              label={q.text}
               value={answers[q.id] === undefined ? null : answers[q.id] ? "yes" : "no"}
               options={[
                 { value: "yes", label: t("chk.yes"), tone: "positive" },
@@ -111,7 +97,7 @@ export default function EntryGate({ plan, customTitles, blocked, onLogTrade }: P
             size="sm"
             onClick={() => {
               close();
-              onLogTrade();
+              onGo();
             }}
           >
             {t("chk.logTrade")}

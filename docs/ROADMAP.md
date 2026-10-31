@@ -62,7 +62,7 @@ discipline, rappels pré-market, « Share my week ».
 
 | Sujet | Mesure |
 | --- | --- |
-| Gros fichiers (à découper dans une mission dédiée) | `TradeModal.tsx` 1 537 · `Analytics.tsx` 1 320 · `Landing.tsx` 1 237 · `Checklist.tsx` 1 183 |
+| Gros fichiers (à découper dans une mission dédiée) | `TradeModal.tsx` 1 537 · `Analytics.tsx` 1 320 · `Landing.tsx` 1 237 |
 | Couche | `modules/patterns` → `app/trading/mistakeClusters` (libellés via les traductions de l'app) |
 | Design | 422 tailles `text-[Npx]` arbitraires, 61 couleurs hex dans le JSX, 33 keyframes pour 8 autorisées |
 | Types | 31 `as any` / `@ts-ignore` ; `no-unused-vars` et `no-explicit-any` en `warn` |

@@ -80,6 +80,7 @@ import { getSessionForTrade } from "@/domain/quantStats";
 import { getDuration } from "@/domain/tradeCalcs";
 import { provenanceAfterEdit } from "@/domain/tradeProvenance";
 import { todayLocalDate } from "@/shared/calendar-date";
+import { takeHandoff } from "@/app/utils/handoff";
 import { useTradeNews } from "../news/useTradeNews";
 import { useLiveTable } from "@/app/hooks/useLiveTable";
 
@@ -281,6 +282,21 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, trade?.id]);
+
+  // NOUVEAU TRADE OUVERT DEPUIS LA CHECKLIST : le plan de séance a déposé ce
+  // qu'il sait déjà (sens, risque, état, plan, réflexion du bilan). Pris dans
+  // un effet et non dans l'état initial : le relais se consomme une seule
+  // fois, et le double rendu du mode strict l'aurait lu deux fois. Le relais
+  // l'emporte sur un brouillon : il décrit le trade qu'on est en train d'encoder.
+  useEffect(() => {
+    if (trade) return;
+    const prefill = takeHandoff("trade");
+    if (!prefill) return;
+    setForm((f) => ({ ...f, ...prefill }));
+    if (prefill.intentEmotion || prefill.intentPlan || prefill.intentReasoning) setShowIntent(true);
+    if (prefill.reflectionPlan) setShowReflection(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [showAllMistakes, setShowAllMistakes] = useState(false);
   const [uploading, setUploading] = useState(false);

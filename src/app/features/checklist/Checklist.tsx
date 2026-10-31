@@ -1,21 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Check, Clock, Flame, SlidersHorizontal, X } from "@/shared/ui/icons";
-import {
-  Button,
-  Card,
-  Chip,
-  CHIP_ROW,
-  ChoiceGroup,
-  Field,
-  Input,
-  PageContainer,
-  PageToolbar,
-} from "@/shared/ui";
+import { Clock, Flame, SlidersHorizontal } from "@/shared/ui/icons";
+import { PageContainer, PageToolbar } from "@/shared/ui";
 import { cn } from "@/shared/ui/cn";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useT } from "@/app/i18n/LanguageContext";
 import { intlLocale } from "@/app/i18n/locale";
-import type { TKey } from "@/app/i18n/translations";
 import type { Page, Trade } from "@/app/types";
 import {
   closeSession,
@@ -27,43 +16,50 @@ import {
 } from "@/app/store";
 import { loadTradingRules } from "@/app/trading/tradingRules";
 import { loadTradingPlan } from "@/app/trading/tradingPlan";
-import { EMOTIONAL_STATES, type EmotionalState } from "@/app/trading/readiness";
 import { useLiveTable } from "@/app/hooks/useLiveTable";
 import { createAutosaveGuard, stableStringify } from "@/app/utils/autosaveGuard";
+import { handOff } from "@/app/utils/handoff";
 import { useEconomicCalendar } from "@/app/features/news/useEconomicCalendar";
 import { startOfWeek } from "@/app/features/news/economicEvents";
 import { localDateOf } from "@/shared/calendar-date";
-import { measuredR } from "@/domain/trade";
 import { computeChecklistStreak } from "./checklistStreak";
-import { type ChkConfig, defaultConfigFor, isItemOn } from "./checklistDefaults";
+import {
+  type ChkConfig,
+  defaultConfigFor,
+  GATE_VERSION,
+  isItemOn,
+  migrateConfig,
+} from "./checklistDefaults";
 import { getTimeInZone, hydrateConfig, isWindowOpen, pad, parseTimeToMinutes } from "./helpers";
 import ChecklistSettings from "./ChecklistSettings";
-import EntryGate from "./EntryGate";
+import PlanCard from "./PlanCard";
+import LiveCard from "./LiveCard";
+import { ClosedCard, ReviewCard } from "./ReviewCard";
+import { PhaseSteps } from "./checklistParts";
+import { BREACH_KEYS, END_KEYS, useBiasWord } from "./checklistLabels";
+import { lastTrade, missedPrefill, tradePrefill } from "./sessionHandoff";
 import {
+  activePlan,
   BREACHES,
-  MAX_TRADES_CHOICES,
-  RISKY_MOODS,
   dayFacts,
   emptyDay,
   entryBlockers,
-  missingFields,
+  fillGate,
+  gateQuestions,
   normalizeDay,
-  planFromSnapshot,
   planHistory,
   reduceDay,
+  sessionFromSnapshot,
+  sessionMemory,
   toSnapshot,
   tradeBreaches,
-  type Bias,
   type Blocker,
   type Breach,
   type DayAction,
   type DayDefaults,
-  type DayFacts,
   type EndReason,
-  type PlanField,
-  type PlanHistory,
+  type PastSession,
   type SessionDay,
-  type SessionPlan,
 } from "./sessionPlan";
 import "./checklist.css";
 
@@ -72,20 +68,21 @@ import "./checklist.css";
 
    Trois écrans, un seul à la fois :
 
-   1. PLAN — avant l'ouverture. Le trader écrit des VALEURS (sens, cible,
-      zone, invalidation, risque) et déclare son état. L'application ajoute
-      ce qu'elle sait déjà : news rouges du jour, historique « dans le plan /
+   1. PLAN (`PlanCard`) — avant l'ouverture. Le trader relit sa dernière
+      leçon, puis ÉCRIT : pourquoi ce biais, scénario A et ses niveaux,
+      scénario B facultatif, risque, état. L'application ajoute ce qu'elle
+      sait déjà : news rouges, R:R des niveaux, historique « dans le plan /
       hors plan ». Verrouiller fige le plan.
-   2. SÉANCE — l'écran qu'on garde ouvert à côté du graphique. Le plan en
-      gros, ce qui bloque (fenêtre, trades du jour, pertes), et une porte
-      d'entrée qui reprend les chiffres écrits. Trois sorties en un clic.
-   3. BILAN — chaque trade du jour comparé au plan, une question, une phrase.
+   2. SÉANCE (`LiveCard`) — l'écran gardé ouvert à côté du graphique. Porte
+      d'entrée aux questions remplies par le plan, encodage d'un trade sans
+      détour, passage au B en un clic. Changer de plan sans l'avoir prévu
+      demande un motif écrit et quinze secondes.
+   3. BILAN (`ReviewCard`) — chaque trade comparé au plan, une question, une
+      leçon. Clos, il s'encode en trade ou en setup manqué, formulaire déjà
+      rempli.
 
-   Ce qui a disparu, et pourquoi : la voix, les sons, les motivations à
-   choisir, les quatre états FOMO, le compte à rebours et l'écran « Edge
-   Locked ». Tout cela se lisait une fois, puis se cochait par réflexe — et
-   en séance, c'était du texte à lire au moment où l'attention appartient
-   au graphique. La logique vit dans `sessionPlan.ts`, pure et testée.
+   La logique vit dans `sessionPlan.ts` (pure, testée) ; ce fichier ne fait
+   que la brancher : stockage, base, horloge, calendrier, journal.
    ════════════════════════════════════════════════════════════════════════ */
 
 interface ChecklistProps {
@@ -95,54 +92,22 @@ interface ChecklistProps {
   trades: Trade[];
 }
 
-const MOOD_KEYS: Record<EmotionalState, TKey> = {
-  calm: "session.stateCalm",
-  focused: "session.stateFocused",
-  tired: "session.stateTired",
-  anxious: "session.stateAnxious",
-  frustrated: "session.stateFrustrated",
-  overconfident: "session.stateOverconfident",
-};
-
-const FIELD_KEYS: Record<PlanField, TKey> = {
-  bias: "chk.fBias",
-  target: "chk.fTarget",
-  entry: "chk.fEntry",
-  invalidation: "chk.fInvalidation",
-  risk: "chk.fRisk",
-  mood: "chk.fMood",
-};
-
-const BREACH_KEYS: Record<Breach, TKey> = {
-  direction: "chk.brDirection",
-  chased: "chk.brChased",
-  size: "chk.brSize",
-  extra: "chk.brExtra",
-  window: "chk.brWindow",
-  stopMoved: "chk.brStopMoved",
-  planChanged: "chk.brPlanChanged",
-};
-
-const DIRECTION_KEYS: Record<Trade["direction"], TKey> = {
-  long: "common.long",
-  short: "common.short",
-  be: "common.be",
-};
-
-const END_KEYS: Record<EndReason, TKey> = {
-  missed: "chk.endMissed",
-  invalidated: "chk.endInvalidated",
-  done: "chk.endDone",
-};
-
 const nowHHMM = () => {
   const d = new Date();
   return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
 
+/** « 2,2 », « 2.2 » ou « 1:2.2 » → 2.2 ; `null` sans règle exploitable. */
+function parseMinRR(raw: string): number | null {
+  const m = raw.replace(",", ".").match(/(\d+(?:\.\d+)?)\s*$/);
+  const v = m ? Number(m[1]) : NaN;
+  return Number.isFinite(v) && v > 0 ? v : null;
+}
+
 export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProps) {
   const { user } = useAuth();
   const { t, lang } = useT();
+  const biasWord = useBiasWord();
   // L'identifiant, pas l'objet : un effet qui dépend de `user` se relancerait à
   // chaque nouvel objet de session, et rejouerait ses écritures.
   const userId = user?.id ?? null;
@@ -159,7 +124,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
   const today = localDateOf(new Date(now));
   const DAY_KEY = `tv-chk-${uid}-${today}`;
 
-  /* ══ Configuration (fenêtre + critères personnels) ══
+  /* ══ Configuration (fenêtre + questions d'entrée) ══
      Elle ne se persiste qu'une fois modifiée : des défauts jamais touchés
      suivent la langue de l'application. */
   const touchedRef = useRef<boolean | null>(null);
@@ -223,10 +188,12 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
     (saved: unknown) => {
       const cfg = saved as ChkConfig | null;
       if (!cfg || !Array.isArray(cfg.items)) return;
-      const next = { ...defaultConfigFor(lang), ...cfg };
+      // Une config d'avant les questions d'entrée est migrée à la lecture —
+      // puis réenregistrée, puisqu'elle diffère de ce que la base contient.
+      const next = migrateConfig({ ...defaultConfigFor(lang), ...cfg, gateV: cfg.gateV }, lang);
       const json = stableStringify(next);
       if (json === persistedCfgRef.current) return;
-      persistedCfgRef.current = json;
+      persistedCfgRef.current = (cfg.gateV ?? 0) < GATE_VERSION ? null : json;
       touchedRef.current = true;
       setConfig(next);
     },
@@ -310,6 +277,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
 
   /* ══ Ce que l'application sait déjà ══ */
   const [stopAfterLosses, setStopAfterLosses] = useState(0);
+  const [minRR, setMinRR] = useState<number | null>(null);
   const rulesRef = useRef<{ id: string; text: string }[]>([]);
   useEffect(() => {
     if (!userId) return;
@@ -324,6 +292,7 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
         if (!active) return;
         const n = parseInt(p.limits.stopAfterLosses, 10);
         setStopAfterLosses(Number.isFinite(n) && n > 0 ? n : 0);
+        setMinRR(parseMinRR(p.risk.minRR));
         // Premier plan jamais écrit : le maximum de trades part de la limite du
         // plan de trading plutôt que d'un 1 arbitraire.
         const max = parseInt(p.limits.maxTradesPerDay, 10);
@@ -364,17 +333,20 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
     };
   }, [userId, today, readDefaults]);
 
-  const [pastPlans, setPastPlans] = useState<{ date: string; plan: SessionPlan }[]>([]);
+  // Les séances passées : l'historique « dans le plan / hors plan » et la
+  // mémoire (dernière leçon, écart le plus fréquent).
+  const [past, setPast] = useState<PastSession[]>([]);
   const isClosed = day.phase === "closed";
   useEffect(() => {
     if (!userId) return;
     let active = true;
     void loadSessions(userId, 120).then((rows) => {
       if (!active) return;
-      setPastPlans(
+      setPast(
         rows.flatMap((r) => {
-          const plan = r.sessionDate < today ? planFromSnapshot(r.checklistSnapshot) : null;
-          return plan ? [{ date: r.sessionDate, plan }] : [];
+          const s =
+            r.sessionDate < today ? sessionFromSnapshot(r.sessionDate, r.checklistSnapshot) : null;
+          return s ? [s] : [];
         }),
       );
     });
@@ -382,7 +354,8 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
       active = false;
     };
   }, [userId, today, isClosed]);
-  const history = useMemo(() => planHistory(pastPlans, trades), [pastPlans, trades]);
+  const history = useMemo(() => planHistory(past, trades), [past, trades]);
+  const memory = useMemo(() => sessionMemory(past), [past]);
 
   const facts = useMemo(() => dayFacts(trades, today), [trades, today]);
   const nowDate = new Date(now);
@@ -419,25 +392,26 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
     [userId, day.locked],
   );
 
+  /* ══ Le plan en une ligne — pour la base, le formulaire de trade, le setup manqué ══ */
+  const planLine = useCallback(
+    (d: SessionDay) => {
+      const p = activePlan(d);
+      if (p.bias === "none") return t("chk.observation");
+      return [
+        `${biasWord(p.bias)} → ${p.target.trim()}`,
+        `${t("chk.entry")} ${p.entry.trim()}`,
+        `${t("chk.invalidation")} ${p.invalidation.trim()}`,
+      ].join(" · ");
+    },
+    [t, biasWord],
+  );
+
   /* ══ Séance en base (`trading_sessions`) ══
      Écriture optimiste : l'écran a déjà changé, la base suit. Un échec réseau
      ne bloque rien — la journée locale reste la vérité de l'écran. */
-  const biasWord = useCallback(
-    (b: Bias | null) =>
-      b === "long"
-        ? t("common.long").toUpperCase()
-        : b === "short"
-          ? t("common.short").toUpperCase()
-          : t("chk.observation"),
-    [t],
-  );
   const pushSession = useCallback(
     async (d: SessionDay, close = false) => {
       if (!userId) return;
-      const objective =
-        d.plan.bias === "none"
-          ? t("chk.observation")
-          : `${biasWord(d.plan.bias)} → ${d.plan.target.trim()}`;
       const s = await openSession(
         userId,
         {
@@ -446,18 +420,17 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
           emotionalState: d.mood,
           activeRules: rulesRef.current,
           checklistSnapshot: toSnapshot(d),
-          dailyObjective: objective,
+          dailyObjective: planLine(d),
         },
         today,
       );
       if (close && s) await closeSession(s.id, { reviewNote: d.review.note.trim() || null });
     },
-    [userId, today, t, biasWord],
+    [userId, today, planLine],
   );
 
   /* ══ Gestes ══ */
   const [tried, setTried] = useState(false);
-  const [confirmChange, setConfirmChange] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
 
   const lock = () => {
@@ -477,25 +450,63 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
     }
     void pushSession(next);
   };
-  const changePlan = () => {
-    setConfirmChange(false);
-    void pushSession(act({ type: "reopenPlan", at: nowHHMM() }));
-  };
+  const changePlan = (reason: string) =>
+    void pushSession(act({ type: "reopenPlan", at: nowHHMM(), reason }));
+  const switchB = () => void pushSession(act({ type: "switchScenario", at: nowHHMM() }));
   const end = (reason: EndReason) => void pushSession(act({ type: "end", reason, at: nowHHMM() }));
   const closeDay = () => {
     const next = act({ type: "close" });
     if (next.phase === "closed") void pushSession(next, true);
   };
 
+  /* ══ Vers le journal — le formulaire s'ouvre déjà rempli ══ */
+  const encodeTrade = (withReview: boolean) => {
+    const d = stRef.current.day;
+    handOff(
+      "trade",
+      tradePrefill({
+        day: d,
+        date: today,
+        now: nowHHMM(),
+        last: lastTrade(trades),
+        planLine: planLine(d),
+        withReview,
+      }),
+    );
+    onAddTrade();
+  };
+  const encodeMissed = () => {
+    const d = stRef.current.day;
+    const reasonText =
+      d.review.breaches.length > 0
+        ? d.review.breaches.map((b) => t(BREACH_KEYS[b])).join(", ")
+        : d.endReason
+          ? t(END_KEYS[d.endReason])
+          : "";
+    handOff(
+      "missed",
+      missedPrefill({
+        day: d,
+        date: today,
+        last: lastTrade(trades),
+        planLine: planLine(d),
+        reasonText,
+      }),
+    );
+    setPage("missed");
+  };
+
   /** Ce que les données montrent déjà, proposé quand le trader répond « non ». */
   const observedBreaches = useMemo((): Breach[] => {
     const found = new Set<Breach>();
     facts.trades.forEach((tr, i) =>
-      tradeBreaches(tr, i, day.plan).forEach((b) => found.add(b === "direction" ? b : "extra")),
+      tradeBreaches(tr, i, day.plan, day.scenario).forEach((b) =>
+        found.add(b === "direction" ? b : "extra"),
+      ),
     );
     if (day.planChanges.length > 0) found.add("planChanged");
     return BREACHES.filter((b) => found.has(b));
-  }, [facts, day.plan, day.planChanges]);
+  }, [facts, day.plan, day.scenario, day.planChanges]);
 
   const blockerText = (b: Blocker): string => {
     switch (b) {
@@ -511,10 +522,21 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
   };
   const blockers = entryBlockers({ plan: day.plan, facts, windowOpen: winOpen, stopAfterLosses });
 
-  const customTitles = useMemo(
-    () => config.items.filter(isItemOn).map((it) => it.title),
-    [config.items],
-  );
+  // Les questions d'entrée, remplies avec le plan EN VIGUEUR (A ou B).
+  const questions = useMemo(() => {
+    const p = activePlan(day);
+    const values = {
+      bias: biasWord(p.bias),
+      target: p.target,
+      entry: p.entry,
+      inv: p.invalidation,
+      risk: p.risk,
+    };
+    return gateQuestions(config.items.filter(isItemOn).map((it) => it.title)).map((q) => ({
+      ...q,
+      text: fillGate(q.text, values),
+    }));
+  }, [config.items, day, biasWord]);
 
   const dateStr = nowDate.toLocaleDateString(intlLocale(lang), {
     weekday: "short",
@@ -571,76 +593,31 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
       </PageToolbar>
 
       {day.phase === "plan" && (
-        <PlanCard day={day} act={act} tried={tried} onLock={lock} news={news} history={history} />
+        <PlanCard
+          day={day}
+          act={act}
+          tried={tried}
+          onLock={lock}
+          news={news}
+          history={history}
+          memory={memory}
+          minRR={minRR}
+        />
       )}
 
       {day.phase === "live" && (
-        <Card variant="glass" pad="default" className="space-y-4">
-          <PlanHud day={day} facts={facts} biasWord={biasWord} />
-
-          <p
-            className={cn(
-              "text-sm font-semibold",
-              blockers.length === 0
-                ? "text-[var(--tv-highlight)]"
-                : // Ne pas trader était le plan : un choix tenu, pas une alerte.
-                  blockers[0] === "observation"
-                  ? "text-slate-300"
-                  : blockers[0] === "window"
-                    ? "text-amber-300"
-                    : "text-red-400",
-            )}
-          >
-            {blockers.length === 0 ? t("chk.readyLine") : blockerText(blockers[0])}
-          </p>
-
-          <TradeLines facts={facts} plan={day.plan} onlyOff />
-
-          {day.plan.bias !== "none" && (
-            <EntryGate
-              plan={day.plan}
-              customTitles={customTitles}
-              blocked={blockers.length > 0 ? blockerText(blockers[0]) : null}
-              onLogTrade={onAddTrade}
-            />
-          )}
-
-          <div className="space-y-2 border-t border-[var(--tv-border)] pt-3">
-            <span className="tv-label text-slate-500">{t("chk.end")}</span>
-            <div className="flex flex-wrap gap-2">
-              {(day.plan.bias === "none"
-                ? (["done"] as const)
-                : (["missed", "invalidated", "done"] as const)
-              ).map((r) => (
-                <Button key={r} variant="subtle" size="sm" onClick={() => end(r)}>
-                  {t(END_KEYS[r])}
-                </Button>
-              ))}
-            </div>
-          </div>
-
-          {confirmChange ? (
-            <div className="flex flex-wrap items-center gap-2 rounded-xl border border-amber-500/25 bg-amber-500/10 px-3 py-2">
-              <span className="flex-1 text-xs font-semibold text-amber-300">
-                {t("chk.changeConfirm")}
-              </span>
-              <Button variant="subtle" size="sm" onClick={() => setConfirmChange(false)}>
-                {t("common.cancel")}
-              </Button>
-              <Button variant="danger" size="sm" onClick={changePlan}>
-                {t("common.confirm")}
-              </Button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setConfirmChange(true)}
-              className="text-xs font-semibold text-slate-500 underline decoration-dotted underline-offset-2 hover:text-slate-300"
-            >
-              {t("chk.changePlan")}
-            </button>
-          )}
-        </Card>
+        <LiveCard
+          day={day}
+          facts={facts}
+          blockers={blockers}
+          blockerText={blockerText}
+          questions={questions}
+          minRR={minRR}
+          onLogTrade={() => encodeTrade(false)}
+          onSwitchB={switchB}
+          onEnd={end}
+          onChangePlan={changePlan}
+        />
       )}
 
       {day.phase === "review" && (
@@ -650,52 +627,19 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
           act={act}
           observed={observedBreaches}
           onClose={closeDay}
-          onAddTrade={onAddTrade}
-          onMissed={() => setPage("missed")}
         />
       )}
 
       {day.phase === "closed" && (
-        <Card variant="glass" pad="default" className="space-y-3">
-          <div className="flex items-center gap-2.5">
-            <span
-              className={cn(
-                "grid h-8 w-8 shrink-0 place-items-center rounded-xl",
-                day.review.respected
-                  ? "tv-accent-fill"
-                  : "border border-red-500/30 bg-red-500/10 text-red-400",
-              )}
-            >
-              {day.review.respected ? (
-                <Check className="h-4 w-4" strokeWidth={3} />
-              ) : (
-                <X className="h-4 w-4" strokeWidth={3} />
-              )}
-            </span>
-            <div className="min-w-0 flex-1">
-              <h2 className="tv-title">{t("chk.closedTitle")}</h2>
-              <p className="tv-row-label">
-                {day.review.respected ? t("chk.closedYes") : t("chk.closedNo")}
-                {day.review.breaches.length > 0 &&
-                  ` · ${day.review.breaches.map((b) => t(BREACH_KEYS[b])).join(", ")}`}
-              </p>
-            </div>
-          </div>
-          {day.review.note.trim() && (
-            <p className="tv-prose text-slate-300">« {day.review.note.trim()} »</p>
-          )}
-          <TradeLines facts={facts} plan={day.plan} />
-          <HistoryLine history={history} />
-          <p className="tv-prose text-slate-500">{t("chk.tomorrow")}</p>
-          <div className="flex flex-wrap gap-2">
-            <Button variant="subtle" size="sm" onClick={() => setPage("journal")}>
-              {t("chk.journal")}
-            </Button>
-            <Button variant="subtle" size="sm" onClick={() => act({ type: "reopenReview" })}>
-              {t("chk.reopenReview")}
-            </Button>
-          </div>
-        </Card>
+        <ClosedCard
+          day={day}
+          facts={facts}
+          history={history}
+          onReopen={() => act({ type: "reopenReview" })}
+          onJournal={() => setPage("journal")}
+          onEncodeTrade={() => encodeTrade(true)}
+          onEncodeMissed={encodeMissed}
+        />
       )}
 
       <ChecklistSettings
@@ -718,466 +662,5 @@ export default function Checklist({ setPage, onAddTrade, trades }: ChecklistProp
         }}
       />
     </PageContainer>
-  );
-}
-
-/* ══════════════════════════════ Morceaux ══════════════════════════════ */
-
-/** Où en est la journée — trois mots, l'étape courante en clair. */
-function PhaseSteps({ phase }: { phase: SessionDay["phase"] }) {
-  const { t } = useT();
-  const order = ["plan", "live", "review"] as const;
-  const idx = phase === "closed" ? order.length : order.indexOf(phase);
-  const labels: Record<(typeof order)[number], TKey> = {
-    plan: "chk.phasePlan",
-    live: "chk.phaseLive",
-    review: "chk.phaseReview",
-  };
-  return (
-    <ol className="flex items-center gap-2 pl-1.5">
-      {order.map((p, i) => (
-        <li key={p} className="flex items-center gap-2">
-          {i > 0 && <span aria-hidden className="h-px w-4 bg-[var(--tv-border-strong)]" />}
-          <span
-            aria-current={i === idx ? "step" : undefined}
-            className={cn(
-              "tv-label",
-              i === idx ? "text-white" : i < idx ? "text-[var(--tv-highlight)]" : "text-slate-500",
-            )}
-          >
-            {t(labels[p])}
-          </span>
-        </li>
-      ))}
-    </ol>
-  );
-}
-
-function PlanCard({
-  day,
-  act,
-  tried,
-  onLock,
-  news,
-  history,
-}: {
-  day: SessionDay;
-  act: (a: DayAction) => SessionDay;
-  tried: boolean;
-  onLock: () => void;
-  news: { id: string; label: string; time: string | null }[];
-  history: PlanHistory;
-}) {
-  const { t } = useT();
-  const { plan, mood } = day;
-  const set = (patch: Partial<SessionPlan>) => act({ type: "setPlan", patch });
-  const missing = missingFields(plan, mood);
-  const directional = plan.bias === "long" || plan.bias === "short";
-
-  return (
-    <Card variant="glass" pad="default" className="space-y-4">
-      <div>
-        <h2 className="tv-title">{t("chk.planTitle")}</h2>
-        <p className="tv-row-label">{t("chk.planHint")}</p>
-      </div>
-
-      <Field label={t("chk.bias")}>
-        <ChoiceGroup<Bias>
-          label={t("chk.bias")}
-          value={plan.bias}
-          options={[
-            { value: "long", label: t("common.long"), tone: "positive" },
-            { value: "short", label: t("common.short"), tone: "negative" },
-            { value: "none", label: t("chk.biasNone") },
-          ]}
-          onChange={(bias) => set({ bias })}
-        />
-      </Field>
-
-      {plan.bias === "none" && <p className="tv-prose text-slate-400">{t("chk.observeNote")}</p>}
-
-      {directional && (
-        <>
-          <div className="grid gap-3 sm:grid-cols-3">
-            <Field label={t("chk.target")} htmlFor="chk-target">
-              <Input
-                id="chk-target"
-                value={plan.target}
-                placeholder={t("chk.targetPh")}
-                onChange={(e) => set({ target: e.target.value })}
-              />
-            </Field>
-            <Field label={t("chk.entry")} htmlFor="chk-entry">
-              <Input
-                id="chk-entry"
-                value={plan.entry}
-                placeholder={t("chk.entryPh")}
-                onChange={(e) => set({ entry: e.target.value })}
-              />
-            </Field>
-            <Field label={t("chk.invalidation")} htmlFor="chk-inv">
-              <Input
-                id="chk-inv"
-                value={plan.invalidation}
-                placeholder={t("chk.invalidationPh")}
-                onChange={(e) => set({ invalidation: e.target.value })}
-              />
-            </Field>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <Field label={t("chk.risk")} htmlFor="chk-risk">
-              <Input
-                id="chk-risk"
-                inputMode="decimal"
-                value={plan.risk}
-                placeholder="250"
-                onChange={(e) => set({ risk: e.target.value })}
-              />
-            </Field>
-            <Field label={t("chk.maxTrades")}>
-              <ChoiceGroup<number>
-                label={t("chk.maxTrades")}
-                value={plan.maxTrades}
-                options={MAX_TRADES_CHOICES.map((n) => ({ value: n, label: String(n) }))}
-                onChange={(maxTrades) => set({ maxTrades })}
-              />
-            </Field>
-          </div>
-        </>
-      )}
-
-      <Field label={t("chk.mood")}>
-        <div className={CHIP_ROW}>
-          {EMOTIONAL_STATES.map((m) => (
-            <Chip
-              key={m}
-              selected={mood === m}
-              tone={RISKY_MOODS.includes(m) ? "warning" : "accent"}
-              onClick={() => act({ type: "setMood", mood: mood === m ? null : m })}
-            >
-              {t(MOOD_KEYS[m])}
-            </Chip>
-          ))}
-        </div>
-      </Field>
-      {mood && RISKY_MOODS.includes(mood) && (
-        <p className="tv-prose font-semibold text-amber-300">{t("chk.moodRisky")}</p>
-      )}
-
-      {/* Ce que l'application sait déjà — lu, jamais demandé. */}
-      <Card variant="inset" pad="tight" className="space-y-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="tv-label text-slate-500">{t("chk.news")}</span>
-          {news.length === 0 ? (
-            <span className="text-xs text-slate-400">{t("chk.newsNone")}</span>
-          ) : (
-            news.slice(0, 3).map((n) => (
-              <span key={n.id} className="text-xs font-semibold text-red-400">
-                {n.label}
-                {n.time && <span className="tv-figure tv-figure-secondary"> {n.time}</span>}
-              </span>
-            ))
-          )}
-          {news.length > 3 && (
-            <span className="tv-num text-xs text-slate-500">+{news.length - 3}</span>
-          )}
-        </div>
-        <HistoryLine history={history} />
-      </Card>
-
-      <div className="space-y-2">
-        <Button className="h-12 w-full text-sm font-bold" onClick={onLock}>
-          {plan.bias === "none" ? t("chk.lockObserve") : t("chk.lock")}
-        </Button>
-        {tried && missing.length > 0 && (
-          <p className="tv-prose text-amber-300" role="status">
-            {t("chk.missing").replace("{list}", missing.map((f) => t(FIELD_KEYS[f])).join(", "))}
-          </p>
-        )}
-      </div>
-    </Card>
-  );
-}
-
-/** Le plan verrouillé, lisible d'un coup d'œil à côté du graphique. */
-function PlanHud({
-  day,
-  facts,
-  biasWord,
-}: {
-  day: SessionDay;
-  facts: DayFacts;
-  biasWord: (b: Bias | null) => string;
-}) {
-  const { t } = useT();
-  const { plan } = day;
-  const tone =
-    plan.bias === "long"
-      ? "text-emerald-400"
-      : plan.bias === "short"
-        ? "text-red-400"
-        : "text-slate-300";
-  return (
-    <div className="space-y-3">
-      <div className="flex items-start gap-3">
-        <div className="min-w-0 flex-1">
-          <div className={cn("text-2xl font-extrabold tracking-[-0.02em]", tone)}>
-            {biasWord(plan.bias)}
-          </div>
-          <p className="tv-row-label">
-            {t("chk.lockedAt").replace("{time}", day.lockedAt ?? "—")}
-            {day.planChanges.length > 0 &&
-              ` · ${t("chk.changed").replace("{n}", String(day.planChanges.length))}`}
-          </p>
-        </div>
-        {plan.bias !== "none" && (
-          <div className="text-right">
-            <div className="tv-figure text-xl text-white">
-              {facts.count}/{plan.maxTrades}
-            </div>
-            <span className="tv-label text-slate-500">{t("chk.trades")}</span>
-          </div>
-        )}
-      </div>
-      {plan.bias !== "none" && (
-        <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          {(
-            [
-              ["chk.target", plan.target],
-              ["chk.entry", plan.entry],
-              ["chk.invalidation", plan.invalidation],
-              ["chk.risk", plan.risk],
-            ] as const
-          ).map(([k, v]) => (
-            <div
-              key={k}
-              className="min-w-0 rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-2)] px-3 py-2"
-            >
-              <dt className="tv-label text-slate-500">{t(k)}</dt>
-              <dd className="truncate text-sm font-semibold text-white">{v.trim()}</dd>
-            </div>
-          ))}
-        </dl>
-      )}
-    </div>
-  );
-}
-
-/** Les trades du jour, chacun confronté au plan écrit. */
-function TradeLines({
-  facts,
-  plan,
-  onlyOff = false,
-}: {
-  facts: DayFacts;
-  plan: SessionPlan;
-  onlyOff?: boolean;
-}) {
-  const { t, lang } = useT();
-  const fmt = useMemo(
-    () =>
-      new Intl.NumberFormat(intlLocale(lang), {
-        minimumFractionDigits: 1,
-        maximumFractionDigits: 1,
-        signDisplay: "exceptZero",
-      }),
-    [lang],
-  );
-  const rows = facts.trades
-    .map((tr, i) => ({ tr, breaches: tradeBreaches(tr, i, plan) }))
-    .filter((r) => !onlyOff || r.breaches.length > 0);
-  if (rows.length === 0) return null;
-  const why: Record<string, TKey> = {
-    direction: "chk.tbDirection",
-    extra: "chk.tbExtra",
-    observation: "chk.tbObservation",
-  };
-  return (
-    <ul className="space-y-1">
-      {rows.map(({ tr, breaches }) => {
-        const r = measuredR(tr);
-        const off = breaches.length > 0;
-        return (
-          <li key={tr.id} className="flex items-baseline gap-2 text-xs">
-            <span className="tv-figure tv-figure-secondary w-10 shrink-0 text-slate-400">
-              {tr.entryTime || "—"}
-            </span>
-            <span className="w-12 shrink-0 font-semibold uppercase text-slate-300">
-              {t(DIRECTION_KEYS[tr.direction])}
-            </span>
-            <span
-              className={cn(
-                "tv-figure w-12 shrink-0",
-                r === null ? "text-slate-500" : r >= 0 ? "text-emerald-400" : "text-red-400",
-              )}
-            >
-              {r === null ? "—" : `${fmt.format(r)}R`}
-            </span>
-            <span
-              className={cn(
-                // Le motif se lit en entier, quitte à passer à la ligne : un
-                // « hors plan · contre le bi… » ne dit pas ce qui a dérapé.
-                "min-w-0 flex-1 font-semibold",
-                off ? "text-red-400" : "text-[var(--tv-highlight)]",
-              )}
-            >
-              {off
-                ? `${t("chk.offPlanTag")} · ${breaches.map((b) => t(why[b])).join(", ")}`
-                : t("chk.inPlanTag")}
-            </span>
-          </li>
-        );
-      })}
-    </ul>
-  );
-}
-
-/** Dans le plan / hors plan : le chiffre qui donne sa valeur au rituel. */
-function HistoryLine({ history }: { history: PlanHistory }) {
-  const { t, lang } = useT();
-  if (history.inPlan.n + history.offPlan.n === 0) return null;
-  const fmt = new Intl.NumberFormat(intlLocale(lang), {
-    minimumFractionDigits: 1,
-    maximumFractionDigits: 1,
-    signDisplay: "exceptZero",
-  });
-  const cell = (key: TKey, b: PlanHistory["inPlan"]) => (
-    <span className="inline-flex items-baseline gap-1.5">
-      <span className="text-slate-400">{t(key)}</span>
-      {b.avgR !== null ? (
-        <span
-          className={cn("tv-figure", b.avgR >= 0 ? "text-emerald-400" : "text-red-400")}
-        >{`${fmt.format(b.avgR)}R`}</span>
-      ) : null}
-      <span className="tv-num text-slate-500">
-        {b.avgR !== null
-          ? `n=${b.n}`
-          : t("chk.sampleLow")
-              .replace("{n}", String(b.n))
-              .replace("{min}", String(history.minSample))}
-      </span>
-    </span>
-  );
-  return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-      <span className="tv-label text-slate-500">{t("chk.history")}</span>
-      {cell("chk.inPlan", history.inPlan)}
-      {cell("chk.offPlan", history.offPlan)}
-    </div>
-  );
-}
-
-function ReviewCard({
-  day,
-  facts,
-  act,
-  observed,
-  onClose,
-  onAddTrade,
-  onMissed,
-}: {
-  day: SessionDay;
-  facts: DayFacts;
-  act: (a: DayAction) => SessionDay;
-  observed: Breach[];
-  onClose: () => void;
-  onAddTrade: () => void;
-  onMissed: () => void;
-}) {
-  const { t } = useT();
-  const { review } = day;
-  const setReview = (patch: Partial<SessionDay["review"]>) => act({ type: "setReview", patch });
-  return (
-    <Card variant="glass" pad="default" className="space-y-4">
-      <div>
-        <h2 className="tv-title">{t("chk.reviewTitle")}</h2>
-        {day.endReason && (
-          <p className="tv-row-label">
-            {t(END_KEYS[day.endReason])}
-            {day.endedAt ? ` · ${day.endedAt}` : ""}
-            {day.planChanges.length > 0 &&
-              ` · ${t("chk.planChangedAt").replace("{times}", day.planChanges.join(", "))}`}
-          </p>
-        )}
-      </div>
-
-      {facts.count > 0 ? (
-        <TradeLines facts={facts} plan={day.plan} />
-      ) : (
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs text-slate-400">{t("chk.reviewNoTrades")}</span>
-          {day.plan.bias !== "none" && (
-            <Button variant="subtle" size="sm" onClick={onAddTrade}>
-              {t("chk.logTrade")}
-            </Button>
-          )}
-        </div>
-      )}
-      {day.endReason === "missed" && (
-        <Button variant="subtle" size="sm" onClick={onMissed}>
-          {t("chk.logMissed")}
-        </Button>
-      )}
-
-      <Field label={t("chk.respected")}>
-        <ChoiceGroup<"yes" | "no">
-          label={t("chk.respected")}
-          value={review.respected === null ? null : review.respected ? "yes" : "no"}
-          options={[
-            { value: "yes", label: t("chk.yes"), tone: "positive" },
-            { value: "no", label: t("chk.no"), tone: "negative" },
-          ]}
-          onChange={(v) =>
-            setReview(
-              v === "yes"
-                ? { respected: true }
-                : // Les écarts que les données montrent déjà sont proposés : le
-                  // trader corrige, il ne retape pas.
-                  {
-                    respected: false,
-                    breaches: review.breaches.length > 0 ? review.breaches : observed,
-                  },
-            )
-          }
-        />
-      </Field>
-
-      {review.respected === false && (
-        <Field label={t("chk.breaches")}>
-          <div className={CHIP_ROW}>
-            {BREACHES.map((b) => {
-              const on = review.breaches.includes(b);
-              return (
-                <Chip
-                  key={b}
-                  tone="danger"
-                  selected={on}
-                  onClick={() =>
-                    setReview({
-                      breaches: on
-                        ? review.breaches.filter((x) => x !== b)
-                        : [...review.breaches, b],
-                    })
-                  }
-                >
-                  {t(BREACH_KEYS[b])}
-                </Chip>
-              );
-            })}
-          </div>
-        </Field>
-      )}
-
-      <Input
-        value={review.note}
-        placeholder={t("chk.notePh")}
-        aria-label={t("chk.notePh")}
-        onChange={(e) => setReview({ note: e.target.value })}
-      />
-
-      <Button className="w-full" disabled={review.respected === null} onClick={onClose}>
-        {t("chk.closeSession")}
-      </Button>
-    </Card>
   );
 }
