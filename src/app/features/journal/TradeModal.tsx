@@ -561,61 +561,61 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
     };
     try {
       const result = await onSave(
-      {
-        id: trade?.id || generateId(),
-        date: form.date,
-        symbol: form.symbol.toUpperCase(),
-        direction: form.direction,
-        pnl: pnlLocked
-          ? Math.round((brokerPnl as number) * 100) / 100
-          : isBE
-            ? 0
-            : Math.round(risk * rm * 100) / 100,
-        riskAmount: Math.round(risk * 100) / 100,
-        rMultiple: rm,
-        strategy: form.strategy,
-        mistakes: form.mistakes,
-        setupQuality: form.setupQuality,
-        notes: form.notes,
-        screenshots: form.screenshots,
-        entryTime: form.entryTime,
-        exitTime: form.exitTime,
-        confluences: form.confluences,
-        confidence: form.confidence,
-        mae: form.mae === "" ? null : parseFloat(form.mae) || 0,
-        mfe: form.mfe === "" ? null : parseFloat(form.mfe) || 0,
-        slippage: form.slippage === "" ? null : parseFloat(form.slippage) || 0,
-        // Any save through the form makes the trade "real" — demo badge drops.
-        isExample: false,
-        // Le compte du trade VOYAGE avec lui : le formulaire ne l'édite pas, il
-        // ne doit pas non plus le perdre (sans `accountId`, un trade modifié
-        // depuis un autre compte actif y était réaffecté — voir `tradeToRow`).
-        accountId: trade?.accountId,
-        // L'exécution d'un trade importé est éditable ; celle d'un trade saisi
-        // à la main (souvent absente) est conservée telle quelle.
-        quantity: pnlLocked ? optionalNumber(form.quantity) : trade?.quantity,
-        entryPrice: pnlLocked ? optionalNumber(form.entryPrice) : trade?.entryPrice,
-        exitPrice: pnlLocked ? optionalNumber(form.exitPrice) : trade?.exitPrice,
-        fees: pnlLocked ? optionalNumber(form.fees) : trade?.fees,
-        broker: trade?.broker,
-        externalId: trade?.externalId,
-        brokerAccount: trade?.brokerAccount,
-        copiedFrom: trade?.copiedFrom,
-        // Enregistré depuis le formulaire = relu.
-        reviewPending: false,
-        // Provenance (lot 1) : un risque modifié devient déclaré par le
-        // trader, une heure corrigée retire l'instant qui ne la prouve plus.
-        ...provenanceAfterEdit(trade ?? null, {
+        {
+          id: trade?.id || generateId(),
           date: form.date,
+          symbol: form.symbol.toUpperCase(),
+          direction: form.direction,
+          pnl: pnlLocked
+            ? Math.round((brokerPnl as number) * 100) / 100
+            : isBE
+              ? 0
+              : Math.round(risk * rm * 100) / 100,
+          riskAmount: Math.round(risk * 100) / 100,
+          rMultiple: rm,
+          strategy: form.strategy,
+          mistakes: form.mistakes,
+          setupQuality: form.setupQuality,
+          notes: form.notes,
+          screenshots: form.screenshots,
           entryTime: form.entryTime,
           exitTime: form.exitTime,
-          riskAmount: Math.round(risk * 100) / 100,
-        }),
-      },
-      {
-        intent: isIntentEmpty(intent) ? null : intent,
-        reflection: isReflectionEmpty(reflection) ? null : reflection,
-      },
+          confluences: form.confluences,
+          confidence: form.confidence,
+          mae: form.mae === "" ? null : parseFloat(form.mae) || 0,
+          mfe: form.mfe === "" ? null : parseFloat(form.mfe) || 0,
+          slippage: form.slippage === "" ? null : parseFloat(form.slippage) || 0,
+          // Any save through the form makes the trade "real" — demo badge drops.
+          isExample: false,
+          // Le compte du trade VOYAGE avec lui : le formulaire ne l'édite pas, il
+          // ne doit pas non plus le perdre (sans `accountId`, un trade modifié
+          // depuis un autre compte actif y était réaffecté — voir `tradeToRow`).
+          accountId: trade?.accountId,
+          // L'exécution d'un trade importé est éditable ; celle d'un trade saisi
+          // à la main (souvent absente) est conservée telle quelle.
+          quantity: pnlLocked ? optionalNumber(form.quantity) : trade?.quantity,
+          entryPrice: pnlLocked ? optionalNumber(form.entryPrice) : trade?.entryPrice,
+          exitPrice: pnlLocked ? optionalNumber(form.exitPrice) : trade?.exitPrice,
+          fees: pnlLocked ? optionalNumber(form.fees) : trade?.fees,
+          broker: trade?.broker,
+          externalId: trade?.externalId,
+          brokerAccount: trade?.brokerAccount,
+          copiedFrom: trade?.copiedFrom,
+          // Enregistré depuis le formulaire = relu.
+          reviewPending: false,
+          // Provenance (lot 1) : un risque modifié devient déclaré par le
+          // trader, une heure corrigée retire l'instant qui ne la prouve plus.
+          ...provenanceAfterEdit(trade ?? null, {
+            date: form.date,
+            entryTime: form.entryTime,
+            exitTime: form.exitTime,
+            riskAmount: Math.round(risk * 100) / 100,
+          }),
+        },
+        {
+          intent: isIntentEmpty(intent) ? null : intent,
+          reflection: isReflectionEmpty(reflection) ? null : reflection,
+        },
     );
       if (result !== false) {
         savedRef.current = true;
