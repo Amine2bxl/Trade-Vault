@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, type CSSProperties } from "react";
-import { ChevronLeft, ChevronRight, Target } from "@/shared/ui/icons";
+import { ChevronDown, ChevronLeft, ChevronRight, Target } from "@/shared/ui/icons";
 import { isBreakEven, type Trade, type MissedOpportunity } from "@/app/types";
 import { measuredR } from "@/domain/trade";
 import { loadMissedOpportunities } from "@/app/store";
@@ -18,6 +18,15 @@ import { useT } from "@/app/i18n/LanguageContext";
 import { PageContainer, Kpi, KpiGrid } from "@/shared/ui";
 import { useAvailableHeight } from "@/app/hooks/useAvailableHeight";
 import { formatMoney } from "@/shared/currency";
+import { readJSON, writeJSON } from "@/app/utils/persistence";
+import {
+  calendarViewKey,
+  currentCalendarView,
+  parseCalendarView,
+  serializeCalendarView,
+  shiftCalendarView,
+  type CalendarView,
+} from "./calendarView";
 
 interface CalendarPageProps {
   trades: Trade[];
@@ -40,9 +49,30 @@ const LOCALE_MAP: Record<string, string> = {
   hi: "hi-IN",
 };
 
+/**
+ * A keyed account calendar: switching sub-accounts remounts the month, day and
+ * week state, so neither navigation nor an open trade leaks into another one.
+ */
 export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
   const { user } = useAuth();
   const { activeId } = useAccounts();
+  return (
+    <AccountCalendarPage
+      key={`${user?.id ?? "anon"}:${activeId ?? "none"}`}
+      trades={trades}
+      onDelete={onDelete}
+      userId={user?.id}
+      accountId={activeId}
+    />
+  );
+}
+
+function AccountCalendarPage({
+  trades,
+  onDelete,
+  userId,
+  accountId,
+}: CalendarPageProps & { userId?: string; accountId: string | null }) {
   const { t, lang } = useT();
   const { boxRef, height } = useAvailableHeight();
   const locale = LOCALE_MAP[lang] || "en-US";
@@ -60,8 +90,26 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
       ),
     [locale],
   );
-  const [year, setYear] = useState(new Date().getFullYear());
-  const [month, setMonth] = useState(new Date().getMonth());
+  // Rehydrate the last visited month for THIS user and THIS sub-account.
+  // Only the month is stored, never trading data. The wrapper's key ensures
+  // that a switch reads the new account's saved month before its first render.
+  const viewKey = calendarViewKey(userId, accountId);
+  const [view, setView] = useState<CalendarView>(() =>
+    parseCalendarView(readJSON<unknown>(viewKey, null)),
+  );
+  const { year, month } = view;
+  useEffect(() => {
+    if (userId && accountId) writeJSON(viewKey, serializeCalendarView(view));
+  }, [viewKey, view, userId, accountId]);
+
+  const years = useMemo(
+    () =>
+      Array.from(
+        { length: Math.max(new Date().getFullYear() + 5, year) - 1900 + 1 },
+        (_, i) => 1900 + i,
+      ),
+    [year],
+  );
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   /** La semaine ouverte (index de ligne), et la semaine d'où l'on est parti
    *  vers une journée : fermer la journée y ramène. */
@@ -71,9 +119,9 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
   const [missed, setMissed] = useState<MissedOpportunity[]>([]);
 
   useEffect(() => {
-    if (!user) return;
+    if (!userId || !accountId) return;
     let active = true;
-    loadMissedOpportunities(user.id)
+    loadMissedOpportunities(userId)
       .then((d) => {
         if (active) setMissed(d);
       })
@@ -81,7 +129,7 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
     return () => {
       active = false;
     };
-  }, [user?.id, activeId]);
+  }, [userId, accountId]);
 
   const missedByDate = useMemo(() => {
     const map: Record<string, MissedOpportunity[]> = {};
@@ -138,22 +186,17 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
   // La grille complète : jours du mois voisins inclus (voir `monthGrid`).
   const calendarRows = useMemo(() => monthGrid(year, month), [year, month]);
 
-  const prevMonth = () => {
-    if (month === 0) {
-      setMonth(11);
-      setYear((y) => y - 1);
-    } else setMonth((m) => m - 1);
+  /** Every kind of navigation updates the grid, KPIs and persisted month at once. */
+  const navigateTo = (next: CalendarView) => {
+    setView(next);
+    setSelectedDate(null);
+    setOpenWeek(null);
+    setReturnWeek(null);
+    setSelectedMissed(null);
   };
-  const nextMonth = () => {
-    if (month === 11) {
-      setMonth(0);
-      setYear((y) => y + 1);
-    } else setMonth((m) => m + 1);
-  };
-  const goToday = () => {
-    setYear(new Date().getFullYear());
-    setMonth(new Date().getMonth());
-  };
+  const prevMonth = () => navigateTo(shiftCalendarView(view, -1));
+  const nextMonth = () => navigateTo(shiftCalendarView(view, 1));
+  const goToday = () => navigateTo(currentCalendarView());
   const getDateStr = (day: number) =>
     `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 
@@ -466,17 +509,51 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
           `overflow-hidden` reste — il sert les coins arrondis, plus à rogner
           un débordement. */}
       <div className="stat-card-elevated tv-flat mt-2 flex flex-1 flex-col overflow-hidden animate-fade-in-up stagger-5 md:mt-3">
-        {/* L'EN-TÊTE DE LA RÉFÉRENCE : le titre à gauche, le mois entre deux
-            boutons encadrés, « aujourd'hui » à côté. */}
+        {/* Compact month/year navigation; direct year jumps without 12 clicks. */}
         <div className="flex shrink-0 items-center justify-between gap-2 px-3 py-2.5 md:px-5 md:py-3">
           <h3 className="tv-title hidden tracking-tight sm:block">{t("calendar.title")}</h3>
           <div className="flex min-w-0 flex-1 items-center justify-center gap-2 sm:flex-none">
             <button onClick={prevMonth} aria-label={t("common.previous")} className="cal-nav-btn">
               <ChevronLeft className="h-4 w-4" />
             </button>
-            <span className="tv-num tv-title min-w-[8.5rem] text-center tracking-tight">
-              {MONTHS[month]} {year}
-            </span>
+            <div className="flex min-w-0 items-center justify-center gap-0.5">
+              <div className="relative min-w-0 max-w-[8.5rem] flex-1">
+                <select
+                  aria-label={lang === "fr" ? "Choisir le mois" : "Choose month"}
+                  value={month}
+                  onChange={(event) => navigateTo({ year, month: Number(event.target.value) })}
+                  className="w-full cursor-pointer appearance-none rounded-lg bg-transparent py-2 pl-2 pr-4 text-center text-xs font-semibold capitalize text-[var(--tv-text-primary)] transition-colors hover:bg-[var(--tv-plate-2)] focus-visible:outline-2 focus-visible:outline-[var(--tv-border-accent)] sm:text-sm"
+                >
+                  {MONTHS.map((name, index) => (
+                    <option key={index} value={index}>
+                      {name}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown
+                  aria-hidden="true"
+                  className="pointer-events-none absolute right-0 top-1/2 h-3 w-3 -translate-y-1/2 text-[var(--tv-text-muted)]"
+                />
+              </div>
+              <div className="relative w-[4.25rem] shrink-0">
+                <select
+                  aria-label={lang === "fr" ? "Choisir l'année" : "Choose year"}
+                  value={year}
+                  onChange={(event) => navigateTo({ year: Number(event.target.value), month })}
+                  className="tv-num w-full cursor-pointer appearance-none rounded-lg bg-transparent py-2 pl-1 pr-3 text-center text-xs font-semibold text-[var(--tv-text-primary)] transition-colors hover:bg-[var(--tv-plate-2)] focus-visible:outline-2 focus-visible:outline-[var(--tv-border-accent)] sm:text-sm"
+                >
+                  {years.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown
+                  aria-hidden="true"
+                  className="pointer-events-none absolute right-0 top-1/2 h-3 w-3 -translate-y-1/2 text-[var(--tv-text-muted)]"
+                />
+              </div>
+            </div>
             <button onClick={nextMonth} aria-label={t("common.next")} className="cal-nav-btn">
               <ChevronRight className="h-4 w-4" />
             </button>
