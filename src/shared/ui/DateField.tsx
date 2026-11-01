@@ -1,5 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
-import { CalendarDays, ChevronLeft, ChevronRight } from "@/shared/ui/icons";
+import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight } from "@/shared/ui/icons";
 import { cn } from "./cn";
 import { FIELD_BASE } from "./Input";
 import { SelectionPanel } from "./SelectionPanel";
@@ -111,13 +111,17 @@ export function DateField({
     return out;
   }, [ay, am, locale]);
 
-  const titreMois = useMemo(
-    () =>
-      new Intl.DateTimeFormat(locale, { month: "long", year: "numeric" }).format(
-        new Date(ay, am - 1, 1),
-      ),
-    [ay, am, locale],
-  );
+  /** Aller directement à un mois ou à une année sans parcourir chaque mois. */
+  const nomsMois = useMemo(() => {
+    const fmt = new Intl.DateTimeFormat(locale, { month: "long" });
+    return Array.from({ length: 12 }, (_, m) => fmt.format(new Date(2024, m, 1)));
+  }, [locale]);
+
+  const annees = useMemo(() => {
+    const premiere = Math.min(min ? Number(min.slice(0, 4)) : 1900, ay);
+    const derniere = Math.max(max ? Number(max.slice(0, 4)) : new Date().getFullYear() + 10, ay);
+    return Array.from({ length: derniere - premiere + 1 }, (_, i) => premiere + i);
+  }, [ay, min, max]);
 
   const affichage = useMemo(() => {
     if (!value) return "—";
@@ -132,9 +136,23 @@ export function DateField({
   const aujourdhui = todayIso();
   const horsBornes = (iso: string) => (min && iso < min) || (max && iso > max);
 
+  /** Le changement de mois ou d'année modifie la date du formulaire immédiatement.
+   * On conserve le jour, sauf s'il n'existe pas (31 mars → 28 février, par ex.).
+   * Les bornes sont appliquées à la date finale, pas au mois affiché.
+   */
+  const appliquerMoisAnnee = (annee: number, mois: number) => {
+    const [, , jour] = partsOf(value || todayIso());
+    const jourValide = Math.min(jour, new Date(annee, mois, 0).getDate());
+    const candidate = isoOf(annee, mois, jourValide);
+    const suivant = min && candidate < min ? min : max && candidate > max ? max : candidate;
+    const [y, m] = partsOf(suivant);
+    setAncre([y, m]);
+    if (suivant !== value) onChange(suivant);
+  };
+
   const decaler = (n: number) => {
     const d = new Date(ay, am - 1 + n, 1);
-    setAncre([d.getFullYear(), d.getMonth() + 1]);
+    appliquerMoisAnnee(d.getFullYear(), d.getMonth() + 1);
   };
 
   return (
@@ -175,9 +193,44 @@ export function DateField({
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
-            <span className="flex-1 text-center text-[13px] font-semibold capitalize text-white">
-              {titreMois}
-            </span>
+            <div className="flex min-w-0 flex-1 items-center justify-center gap-0.5">
+              <div className="relative min-w-0 max-w-[9rem] flex-1">
+                <select
+                  aria-label={locale.startsWith("fr") ? "Choisir le mois" : "Choose month"}
+                  value={am}
+                  onChange={(e) => appliquerMoisAnnee(ay, Number(e.target.value))}
+                  className="w-full cursor-pointer appearance-none rounded-md bg-transparent py-1.5 pl-1.5 pr-4 text-center text-[13px] font-semibold capitalize text-[var(--tv-text-primary)] transition-colors hover:bg-[var(--tv-plate-2)] focus-visible:outline-2 focus-visible:outline-[var(--tv-border-accent)]"
+                >
+                  {nomsMois.map((nom, i) => (
+                    <option key={i} value={i + 1}>
+                      {nom}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown
+                  aria-hidden="true"
+                  className="pointer-events-none absolute right-0.5 top-1/2 h-3 w-3 -translate-y-1/2 text-[var(--tv-text-muted)]"
+                />
+              </div>
+              <div className="relative w-[4.35rem] shrink-0">
+                <select
+                  aria-label={locale.startsWith("fr") ? "Choisir l'année" : "Choose year"}
+                  value={ay}
+                  onChange={(e) => appliquerMoisAnnee(Number(e.target.value), am)}
+                  className="tv-num w-full cursor-pointer appearance-none rounded-md bg-transparent py-1.5 pl-1 pr-3.5 text-center text-[13px] font-semibold text-[var(--tv-text-primary)] transition-colors hover:bg-[var(--tv-plate-2)] focus-visible:outline-2 focus-visible:outline-[var(--tv-border-accent)]"
+                >
+                  {annees.map((annee) => (
+                    <option key={annee} value={annee}>
+                      {annee}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown
+                  aria-hidden="true"
+                  className="pointer-events-none absolute right-0.5 top-1/2 h-3 w-3 -translate-y-1/2 text-[var(--tv-text-muted)]"
+                />
+              </div>
+            </div>
             <button type="button" onClick={() => decaler(1)} className="tv-pop-nav" aria-label="+1">
               <ChevronRight className="h-4 w-4" />
             </button>
