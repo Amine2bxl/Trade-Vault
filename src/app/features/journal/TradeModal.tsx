@@ -158,7 +158,12 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
   // still user edits; recover them just like the trade fields.
   const restoredUiRef = useRef(
     readJSON<{
-      __ui?: { newConfluence?: string; stopPoints?: string; pointValue?: string; rDraft?: string | null };
+      __ui?: {
+        newConfluence?: string;
+        stopPoints?: string;
+        pointValue?: string;
+        rDraft?: string | null;
+      };
     } | null>(draftKey, null)?.__ui,
   );
 
@@ -342,9 +347,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
   const derivedR = pnlLocked && riskDollar > 0 ? (brokerPnl as number) / riskDollar : 0;
   // Saisie du R en cours : le champ montre ce qui est tapé, pas l'arrondi
   // recalculé à chaque frappe (« 1. » deviendrait « 1.00 » sous le curseur).
-  const [rDraft, setRDraft] = useState<string | null>(
-    () => restoredUiRef.current?.rDraft ?? null,
-  );
+  const [rDraft, setRDraft] = useState<string | null>(() => restoredUiRef.current?.rDraft ?? null);
   const editBrokerR = (value: string) => {
     setRDraft(value);
     const r = parseFloat(value);
