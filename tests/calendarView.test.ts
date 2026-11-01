@@ -39,13 +39,16 @@ describe("calendar — month memory per sub-account", () => {
 
   test("navigation across years is exact", () => {
     expect(shiftCalendarView({ year: 2026, month: 0 }, -1)).toEqual({
-      year: 2025, month: 11,
+      year: 2025,
+      month: 11,
     });
     expect(shiftCalendarView({ year: 2026, month: 10 }, -12)).toEqual({
-      year: 2025, month: 10,
+      year: 2025,
+      month: 10,
     });
     expect(shiftCalendarView({ year: 2026, month: 11 }, 1)).toEqual({
-      year: 2027, month: 0,
+      year: 2027,
+      month: 0,
     });
   });
 
