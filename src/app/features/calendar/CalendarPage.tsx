@@ -371,7 +371,7 @@ export default function CalendarPage({ trades, onDelete }: CalendarPageProps) {
     <PageContainer
       ref={boxRef}
       style={height ? { minHeight: height } : undefined}
-      className="flex h-full max-w-[1400px] flex-col overflow-y-auto"
+      className="flex h-full flex-col overflow-y-auto"
     >
       {/* Summary Cards */}
       <KpiGrid className="tv-flat shrink-0">

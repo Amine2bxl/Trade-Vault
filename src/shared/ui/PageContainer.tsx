@@ -1,6 +1,6 @@
 import type { ComponentProps } from "react";
 import { cn } from "./cn";
-import { density } from "./tokens";
+import { PAGE_WIDTH, density } from "./tokens";
 
 /**
  * Le cadre commun reprend les marges du calendrier. Les pages de lecture
@@ -10,7 +10,7 @@ import { density } from "./tokens";
 export function PageContainer({ className, children, ...rest }: ComponentProps<"div">) {
   return (
     <div
-      className={cn("tv-page mx-auto w-full min-w-0 max-w-[1200px]", density.pagePad, className)}
+      className={cn("tv-page mx-auto w-full min-w-0", PAGE_WIDTH, density.pagePad, className)}
       {...rest}
     >
       {children}

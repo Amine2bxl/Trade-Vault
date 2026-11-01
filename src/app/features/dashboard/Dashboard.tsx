@@ -248,15 +248,22 @@ export default function Dashboard({
     return () => ro.disconnect();
   }, [hasTrades]);
   const ROW_GAP = 16;
-  const rowH =
-    wide && available && heroH ? Math.floor((available - heroH - ROW_GAP * 2) / 2) : null;
-  const fit = rowH !== null && rowH >= 180;
+  /* La courbe est la PREMIÈRE donnée de la page : sa rangée prend 58 % de la
+     place, les derniers trades et l'objectif se partagent le reste. */
+  // 1 px de marge : les hauteurs mesurées sont arrondies, la somme pouvait
+  // dépasser d'un pixel et faire apparaître une barre de défilement.
+  const rest = wide && available && heroH ? available - heroH - ROW_GAP * 2 - 1 : null;
+  // …sans jamais laisser moins de 180 px aux derniers trades et à l'objectif.
+  const row1H = rest !== null ? Math.floor(Math.min(rest * 0.58, rest - 180)) : null;
+  const rowH = rest !== null && row1H !== null ? rest - row1H : null;
+  const fit = rowH !== null && row1H !== null && rowH >= 170 && row1H >= 180;
   /* Fenêtre basse (≈ 768 px) : le héros se resserre — la pilule du compte,
      déjà dans le rail, s'efface — pour rendre la place aux deux rangées. Le
      mode dépend de la place disponible, jamais de la hauteur du héros : pas
      de boucle de mesure. */
   const short = wide && available !== undefined && available < 700;
-  const tight = fit && (rowH as number) < 260;
+  const tight = fit && (rowH as number) < 250;
+  const tightWidgets = fit && (row1H as number) < 260;
   // En-tête de carte (titre + marge) et rembourrage : ce que le contenu n'a pas.
   const CARD_CHROME = 86;
   // Hauteur d'une ligne de trade : 58 px, 50 px en rangée serrée (pastille de 36).
@@ -265,6 +272,7 @@ export default function Dashboard({
     ? Math.max(1, Math.min(6, Math.floor(((rowH as number) - CARD_CHROME) / ROW_ITEM)))
     : 4;
   const fitRow = fit ? ({ height: rowH as number } as CSSProperties) : undefined;
+  const fitRow1 = fit ? ({ height: row1H as number } as CSSProperties) : undefined;
 
   // % variation of the period relative to the equity at its start
   // (starting balance + PnL accumulated before the period).
@@ -624,10 +632,22 @@ export default function Dashboard({
                 <div className="dash-grid">
                   <div
                     className="stat-card-elevated dash-span-2 overflow-hidden p-4 md:p-5"
-                    style={fitRow}
+                    style={fitRow1}
                   >
                     <div className="dash-card-head">
-                      <h2 className="dash-card-title">{t("dashboard.equityCurve")}</h2>
+                      <div className="flex min-w-0 items-center gap-4">
+                        <h2 className="dash-card-title">{t("dashboard.equityCurve")}</h2>
+                        {/* La légende monte dans l'en-tête : la courbe garde toute
+                            la hauteur de la carte. */}
+                        <span className="dash-legend" aria-hidden>
+                          <i style={{ background: CHART_GREEN }} />
+                          {t("chart.balance")}
+                        </span>
+                        <span className="dash-legend" aria-hidden>
+                          <i style={{ background: CHART_RED }} />
+                          {t("chart.breakEven")}
+                        </span>
+                      </div>
                       <button
                         type="button"
                         className="dash-link"
@@ -644,14 +664,14 @@ export default function Dashboard({
                     {stats.equityCurve.length > 0 ? (
                       <div
                         className={cn("chart-draw", !fit && "h-48 md:h-60")}
-                        style={fit ? { height: (rowH as number) - CARD_CHROME } : undefined}
+                        style={fit ? { height: (row1H as number) - CARD_CHROME } : undefined}
                       >
                         <Suspense
                           fallback={
                             <div className="h-full w-full animate-pulse rounded-lg bg-white/[0.03]" />
                           }
                         >
-                          <EquityChart data={stats.equityCurve} />
+                          <EquityChart data={stats.equityCurve} legend={false} />
                         </Suspense>
                       </div>
                     ) : (
@@ -663,9 +683,9 @@ export default function Dashboard({
 
                   {/* Chaque widget affiche son échantillon : un chiffre sans
                     son `n` ne se lit pas (AGENTS.md). */}
-                  <div className="dash-widgets" style={fitRow}>
+                  <div className="dash-widgets" style={fitRow1}>
                     <Metric
-                      compact={tight}
+                      compact={tightWidgets}
                       title={t("stats.winRate")}
                       value={stats.wins + stats.losses > 0 ? formatPct(stats.winRate) : "—"}
                       valueClass={
@@ -687,7 +707,7 @@ export default function Dashboard({
                       delay={0}
                     />
                     <Metric
-                      compact={tight}
+                      compact={tightWidgets}
                       title={t("dashboard.profitFactor")}
                       value={stats.profitFactor === null ? "—" : stats.profitFactor.toFixed(2)}
                       valueClass={
@@ -712,7 +732,7 @@ export default function Dashboard({
                       delay={40}
                     />
                     <Metric
-                      compact={tight}
+                      compact={tightWidgets}
                       title={t("dashboard.avgR")}
                       value={
                         stats.avgRR === null
@@ -738,7 +758,7 @@ export default function Dashboard({
                       delay={80}
                     />
                     <Metric
-                      compact={tight}
+                      compact={tightWidgets}
                       title={t("dashboard.discipline")}
                       value={edge.score === null ? "—" : `${Math.round(edge.score)}/100`}
                       visual={{ kind: "track", pct: edge.score === null ? 0 : edge.score / 100 }}

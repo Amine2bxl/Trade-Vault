@@ -46,8 +46,8 @@ jetons `--tv-relief-*` restent compatibles mais ne peignent plus de relief.
 L'élévation est réservée aux modales et menus ; une carte de graphique ou de
 statistique ne change plus de fond au survol.
 
-`PageContainer` porte les marges communes (`px-3 py-2 md:px-5 md:py-3`) et le
-maximum de 1200 px (1400 px pour le calendrier), y compris pour les pages à hauteur mesurée (ref transmise
+`PageContainer` porte les marges communes (`px-3 py-2 md:px-5 md:py-3`) et la
+largeur unique `PAGE_WIDTH` (1400 px, `shared/ui/tokens.ts`), partagée par l'en-tête et les squelettes — plus d'écart entre deux pages d'une même section, y compris pour les pages à hauteur mesurée (ref transmise
 directement). Une page de lecture ou de réglages peut garder une largeur plus
 étroite. La disposition reste propre à l'usage : courbe dominante au Dashboard,
 tableau sur ordinateur et cartes à deux rangées sur mobile dans le Journal
@@ -389,8 +389,8 @@ Aucune notification de démonstration n’est ajoutée dans le produit.
 
 **Dashboard (maquette Liquid v1, référence de la DA) :** en-tête titre + date du jour à gauche, Rechercher (⌘K, événement `tv:open-palette`), cloche et « + Trade » à droite ; héros centré — pilule du compte (`AccountSwitcher variant="pill"`), P&L de la période en chiffre héros, « P&L net · période · n trades », périodes CALENDAIRES Jour · Semaine · Mois · Année · Tout, puis quatre `ActionButton` (Trade, Importer, Checklist, Jarvis). Dessous : courbe d'equity (deux tiers) et quatre widgets `Metric` à jauge `track` qui affichent leur échantillon (taux de réussite, profit factor, R moyen, discipline) ; derniers trades en liste à pastilles et objectif du mois (progression, drawdown du mois, jours ouvrés restants — jamais de « drawdown restant » sans règle de compte). Sur ordinateur la page **tient en un écran** : le héros garde sa hauteur, les deux rangées se partagent le reste en pixels (`useAvailableHeight`), resserrées sous ~260 px, héros réduit sous 700 px disponibles ; trop court pour rester lisible, elle défile. Le copilote Jarvis et la série de checklist ont quitté le Dashboard (Jarvis à un appui, série sur la page Checklist). Pages à vue unique : titre + sous-titre à gauche, actions à droite, même ligne. Les réglages Comptes présentent une liste unique, principal en premier ; nom, type et capital restent visibles. La sélection se fait par la ligne, les actions ponctuelles vivent dans son menu, l’ajout et le transfert existent une seule fois. Les modales, droits et calculs existants sont réutilisés.
 
-**Pages contenues :** cadre standard de 1200 px, graphiques moins hauts ;
+**Pages contenues :** cadre unique `PAGE_WIDTH` (1400 px), graphiques moins hauts ;
 Analytics organise tous ses blocs en Synthèse, Exécution et Timing, un groupe
-à la fois. Le calendrier conserve son cadre de référence de 1400 px.
+à la fois. Le calendrier partage le même cadre que les autres pages.
 
 **Icônes :** `src/shared/ui/icons.tsx` reste le point d’entrée commun. Il réexporte les pictogrammes Lucide familiers : livre pour le journal, calendrier, graphique pour les statistiques, cible pour les objectifs, engrenage pour les réglages. Un symbole doit être compréhensible avant d’être original. Garder le nom de page à côté dans la navigation, le trait 1,6 et `currentColor` ; pas de glyphe métier abstrait ni de variante locale.

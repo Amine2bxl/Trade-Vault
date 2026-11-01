@@ -52,7 +52,9 @@ type EquityPoint = { date: string; equity: number };
  *   • DES MONTANTS ENTIERS EN ORDONNÉE. « $58,000 », pas « $58.0k » : c'est ce
  *     qu'affiche la référence, et un solde de compte se lit en entier.
  */
-function EquityChart({ data }: { data: EquityPoint[] }) {
+/* `legend={false}` : l'appelant pose la légende ailleurs (en-tête de carte du
+   tableau de bord) pour rendre toute la hauteur au tracé. */
+function EquityChart({ data, legend = true }: { data: EquityPoint[]; legend?: boolean }) {
   const { t } = useT();
 
   // LE ZÉRO — toujours zéro, jamais la valeur du premier jour.
@@ -151,24 +153,26 @@ function EquityChart({ data }: { data: EquityPoint[] }) {
   return (
     <div className="flex h-full flex-col">
       {/* La légende suit le même axe gauche que le titre et les données. */}
-      <div className="mb-2 flex items-center justify-start gap-4">
-        <span className="flex items-center gap-1.5">
-          <span
-            className="h-2 w-2 shrink-0 rounded-full"
-            style={{ background: accent }}
-            aria-hidden="true"
-          />
-          <span className="text-[11px] text-slate-400">{t("chart.balance")}</span>
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span
-            className="h-2 w-2 shrink-0 rounded-full"
-            style={{ background: EQUITY_FLOOR.stroke }}
-            aria-hidden="true"
-          />
-          <span className="text-[11px] text-slate-400">{t("chart.breakEven")}</span>
-        </span>
-      </div>
+      {legend && (
+        <div className="mb-2 flex items-center justify-start gap-4">
+          <span className="flex items-center gap-1.5">
+            <span
+              className="h-2 w-2 shrink-0 rounded-full"
+              style={{ background: accent }}
+              aria-hidden="true"
+            />
+            <span className="text-[11px] text-slate-400">{t("chart.balance")}</span>
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span
+              className="h-2 w-2 shrink-0 rounded-full"
+              style={{ background: EQUITY_FLOOR.stroke }}
+              aria-hidden="true"
+            />
+            <span className="text-[11px] text-slate-400">{t("chart.breakEven")}</span>
+          </span>
+        </div>
+      )}
 
       <div className="min-h-0 flex-1">
         <ResponsiveContainer debounce={100} width="100%" height="100%">

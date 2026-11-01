@@ -1,4 +1,5 @@
 import { cn } from "@/shared/ui/cn";
+import { PAGE_WIDTH, density } from "@/shared/ui/tokens";
 import { useT } from "../i18n/LanguageContext";
 import type { Page } from "../types";
 
@@ -29,11 +30,15 @@ export function Skeleton({
  * skeleton occupies the exact same box — the most common reason a loader feels
  * cheap is that the content lands somewhere else.
  */
+/* La MÊME boîte que la vraie page : largeur `PAGE_WIDTH`, marges
+   `density.pagePad`, et PAS d'en-tête — `PageHead` affiche déjà le vrai titre
+   au-dessus du squelette ; un second, factice, poussait le contenu vers le bas
+   puis disparaissait (le contenu remontait à l'arrivée de la page). */
 function Shell({
   children,
-  width = "max-w-[1400px]",
-  pad = "p-4 md:p-6",
-  header = true,
+  width = PAGE_WIDTH,
+  pad = density.pagePad,
+  header = false,
 }: {
   children: React.ReactNode;
   width?: string;
@@ -71,7 +76,7 @@ function TileRow({ n, cols }: { n: number; cols: string }) {
 /** Dashboard: command bar, equity hero with a plotted-looking area, KPIs, list. */
 export function PageSkeleton() {
   return (
-    <Shell pad="p-4 md:p-8">
+    <Shell>
       {/* Command bar — three cells, exactly as the real one */}
       <div className="grid gap-2.5 md:grid-cols-3 mb-4 md:mb-5">
         {[0, 1, 2].map((i) => (
@@ -171,7 +176,7 @@ function CurveGhost({ className }: { className?: string }) {
 export function ChartSkeleton() {
   const bars = [42, 68, 35, 80, 55, 90, 48, 72, 60, 38, 84, 52];
   return (
-    <Shell pad="p-4 md:p-8">
+    <Shell>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
         {[0, 1, 2, 3, 4, 5].map((i) => (
           <div key={i} className="glass rounded-2xl p-3 space-y-2">
@@ -255,7 +260,7 @@ export function JournalSkeleton() {
 /** Missed setups: 3 tiles then the collapsed one-line rows. */
 export function MissedSkeleton() {
   return (
-    <Shell width="max-w-[1400px]">
+    <Shell>
       <TileRow n={3} cols="grid-cols-3" />
       <div className="space-y-1.5">
         {Array.from({ length: 8 }, (_, i) => (
@@ -279,7 +284,7 @@ export function MissedSkeleton() {
 /** Economic news: week navigator, impact tiles, search, then day groups. */
 export function NewsSkeleton() {
   return (
-    <Shell width="max-w-[1400px]" pad="p-4 md:p-8">
+    <Shell>
       <div className="glass rounded-2xl p-2.5 mb-3 flex items-center justify-between">
         <Skeleton className="h-9 w-9 rounded-xl" />
         <Skeleton className="h-4 w-36 rounded" />
@@ -322,7 +327,7 @@ export function NewsSkeleton() {
 /** Lot calculator: mode toggle, inputs card, result card beside it. */
 export function CalculatorSkeleton() {
   return (
-    <Shell width="max-w-[860px]" pad="p-4 md:p-8">
+    <Shell width="max-w-[860px]">
       <Skeleton className="h-11 w-56 rounded-2xl mb-5" />
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px] items-start">
         <div className="glass-strong rounded-3xl p-5 md:p-6 space-y-4">
@@ -377,7 +382,7 @@ export function CalculatorSkeleton() {
 /** Jarvis: briefing card, KPI strip, the two read cards, the conversation. */
 export function JarvisSkeleton() {
   return (
-    <Shell width="max-w-4xl" pad="p-4 md:p-8">
+    <Shell width="max-w-4xl">
       <div className="rounded-2xl border border-cyan-500/15 bg-cyan-500/[0.05] p-4 md:p-5 mb-4 flex items-start gap-3.5">
         <Skeleton className="h-11 w-11 rounded-2xl shrink-0" />
         <div className="flex-1 space-y-2">
@@ -429,7 +434,7 @@ export function JarvisSkeleton() {
 /** Subscription: status hero with its facts grid, features, then the plans. */
 export function SubscriptionSkeleton() {
   return (
-    <Shell width="max-w-3xl" pad="p-4 md:p-8">
+    <Shell width="max-w-3xl">
       <div className="rounded-3xl border border-cyan-500/15 bg-cyan-500/[0.04] p-6 md:p-7 mb-4">
         <div className="flex items-start gap-4">
           <Skeleton className="h-14 w-14 rounded-2xl shrink-0" />
@@ -502,7 +507,7 @@ export function CalendarSkeleton() {
 /** Checklist: progress ring + tickable rows. */
 export function ChecklistSkeleton() {
   return (
-    <Shell pad="p-4 md:p-8">
+    <Shell>
       <div className="flex justify-center mb-6">
         <div className="skeleton w-32 h-32 rounded-full" />
       </div>
@@ -550,7 +555,7 @@ export function ListSkeleton() {
 /** Text-and-cards pages (profile, settings, goals, trading plan, appearance). */
 export function CardsSkeleton() {
   return (
-    <Shell width="max-w-2xl" pad="p-4 md:p-8">
+    <Shell width="max-w-2xl">
       <Skeleton className="h-32 rounded-3xl mb-4" />
       <div className="grid grid-cols-3 gap-3 mb-4">
         {[0, 1, 2].map((i) => (

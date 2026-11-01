@@ -5914,6 +5914,21 @@ thead .plan-cmp-col.is-pro {
   color: var(--tv-highlight);
 }
 
+/* La légende de la courbe, posée dans l'en-tête de sa carte. */
+.dash-legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--tv-text-secondary);
+  white-space: nowrap;
+}
+.dash-legend i {
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+}
+
 /* Les derniers trades : la liste de transactions de Revolut. */
 .dash-list {
   display: flex;

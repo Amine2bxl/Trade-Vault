@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import type { Page } from "../types";
 import { cn } from "@/shared/ui/cn";
+import { PAGE_WIDTH } from "@/shared/ui/tokens";
 import MobileActions from "./MobileActions";
 import SectionTabs from "./SectionTabs";
 import { PAGE_META, SECTION_META, pagesOfSection, sectionForPage } from "./navigation";
@@ -39,7 +40,6 @@ export default function PageHead({
   const section = sectionForPage(page);
   const hasTabs = section && pagesOfSection(section).length > 1;
   const title = t(section ? SECTION_META[section].labelKey : PAGE_META[page].labelKey);
-  const width = page === "calendar" ? "max-w-[1400px]" : "max-w-[1200px]";
 
   /* Le grand titre est-il encore visible dans la fenêtre de défilement ?
      Observé, pas calculé au scroll : aucun écouteur, aucun calcul par image.
@@ -69,7 +69,7 @@ export default function PageHead({
           <span className="truncate">{title}</span>
         </div>
       </div>
-      <div className={cn("app-page-head mx-auto w-full px-4 pt-4 md:px-6 md:pt-6", width)}>
+      <div className={cn("app-page-head mx-auto w-full px-4 pt-4 md:px-6 md:pt-6", PAGE_WIDTH)}>
         {hasTabs ? (
           <>
             <div className="flex items-center gap-2">
