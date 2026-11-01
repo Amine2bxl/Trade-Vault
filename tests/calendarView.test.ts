@@ -50,7 +50,7 @@ describe("calendar — month memory per sub-account", () => {
   });
 
   test("calendar UI is keyed per account and reads/writes the chosen month", () => {
-    const source = readSource("../src/app/features/calendar/CalendarPage.tsx");
+    const source = readSource(import.meta.dir, "../src/app/features/calendar/CalendarPage.tsx");
     expect(source).toContain('key={`${user?.id ?? "anon"}:${activeId ?? "none"}`}');
     expect(source).toContain("parseCalendarView(readJSON<unknown>(viewKey, null))");
     expect(source).toContain("writeJSON(viewKey, serializeCalendarView(view))");
