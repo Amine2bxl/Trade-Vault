@@ -153,9 +153,19 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
   const { user } = useAuth();
   const userId = user?.id || "";
   const { t, lang } = useT();
+  const draftKey = trade ? nsKey(userId, `draft.trade.${trade.id}`) : tradeDraftKey(userId);
+  // Unsaved inputs outside the trade row (new confluence and calculator) are
+  // still user edits; recover them just like the trade fields.
+  const restoredUiRef = useRef(
+    readJSON<{
+      __ui?: { newConfluence?: string; stopPoints?: string; pointValue?: string; rDraft?: string | null };
+    } | null>(draftKey, null)?.__ui,
+  );
 
   const [userConfluences, setUserConfluences] = useState<string[]>([]);
-  const [newConfluence, setNewConfluence] = useState("");
+  const [newConfluence, setNewConfluence] = useState(
+    () => restoredUiRef.current?.newConfluence ?? "",
+  );
   const [accountBalance, setAccountBalance] = useState<number>(25000);
   // Confluences ou solde changés sur un autre appareil : la liste suit.
   useLiveTable("profiles", () => {
@@ -194,7 +204,6 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
   // par accident et tout reperdre était exactement le même drame que pour une
   // nouvelle saisie — la seule différence était qu'on ne protégeait que l'une
   // des deux.
-  const draftKey = trade ? nsKey(userId, `draft.trade.${trade.id}`) : tradeDraftKey(userId);
   const [draftRestored, setDraftRestored] = useState(false);
   const [form, setForm] = useState(() => {
     if (trade) {
@@ -259,8 +268,8 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showIntent, setShowIntent] = useState(false);
   const [showReflection, setShowReflection] = useState(false);
-  const [stopPoints, setStopPoints] = useState("");
-  const [pointValue, setPointValue] = useState("20");
+  const [stopPoints, setStopPoints] = useState(() => restoredUiRef.current?.stopPoints ?? "");
+  const [pointValue, setPointValue] = useState(() => restoredUiRef.current?.pointValue ?? "20");
 
   // ÉDITION : recharge l'intention et la réflexion DÉJÀ capturées pour ce trade.
   // Sans ça, les sections « Avant/après trade » s'ouvraient vides même quand le
@@ -333,7 +342,9 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
   const derivedR = pnlLocked && riskDollar > 0 ? (brokerPnl as number) / riskDollar : 0;
   // Saisie du R en cours : le champ montre ce qui est tapé, pas l'arrondi
   // recalculé à chaque frappe (« 1. » deviendrait « 1.00 » sous le curseur).
-  const [rDraft, setRDraft] = useState<string | null>(null);
+  const [rDraft, setRDraft] = useState<string | null>(
+    () => restoredUiRef.current?.rDraft ?? null,
+  );
   const editBrokerR = (value: string) => {
     setRDraft(value);
     const r = parseFloat(value);
@@ -402,7 +413,8 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
               : (readJSON<typeof form | null>(draftKey, null) ?? latestFormRef.current);
             const next = { ...current, screenshots: [...current.screenshots, path].slice(0, 3) };
             latestFormRef.current = next;
-            writeJSON(draftKey, next);
+            const pending = readJSON<TradeDraft | null>(draftKey, null);
+            writeJSON(draftKey, { ...pending, ...next, __ui: pending?.__ui });
             if (mountedRef.current) {
               setForm(next);
               setDraftRestored(true);
@@ -441,12 +453,16 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
   // user undoes a change, so storage matches the last visible state.
   const initialSnapshot = useRef<string | null>(null);
   const hasInteractedRef = useRef(false);
-  const draftBody = JSON.stringify(form);
+  const draftState = useMemo(
+    () => ({ form, __ui: { newConfluence, stopPoints, pointValue, rDraft } }),
+    [form, newConfluence, stopPoints, pointValue, rDraft],
+  );
+  const draftBody = JSON.stringify(draftState);
   if (initialSnapshot.current === null) initialSnapshot.current = draftBody;
   if (draftBody !== initialSnapshot.current) hasInteractedRef.current = true;
   const dirty = hasInteractedRef.current || draftRestored;
 
-  useDraftAutosave(draftKey, form, {
+  useDraftAutosave(draftKey, draftState, {
     dirty,
     immediate: true,
     guard: () => !savedRef.current,
@@ -476,8 +492,15 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
     setDraftRestored(false);
     const fresh = { ...defaultForm };
     latestFormRef.current = fresh;
-    initialSnapshot.current = JSON.stringify(fresh);
+    initialSnapshot.current = JSON.stringify({
+      form: fresh,
+      __ui: { newConfluence: "", stopPoints: "", pointValue: "20", rDraft: null },
+    });
     hasInteractedRef.current = false;
+    setNewConfluence("");
+    setStopPoints("");
+    setPointValue("20");
+    setRDraft(null);
     setForm(fresh);
   };
 
@@ -616,12 +639,12 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
           intent: isIntentEmpty(intent) ? null : intent,
           reflection: isReflectionEmpty(reflection) ? null : reflection,
         },
-    );
+      );
       if (result !== false) {
         savedRef.current = true;
         // Avoid deleting a newer draft created while the server was saving.
         const saved = readJSON<TradeDraft | null>(draftKey, null);
-        if (saved && JSON.stringify(saved) === JSON.stringify(form)) removeKey(draftKey);
+        if (saved && JSON.stringify(saved) === JSON.stringify(draftState)) removeKey(draftKey);
       }
     } catch (error) {
       console.error("Trade save failed; draft preserved", error);
