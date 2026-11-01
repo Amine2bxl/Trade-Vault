@@ -26,7 +26,9 @@ import { cn } from "@/shared/ui/cn";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { useT } from "@/app/i18n/LanguageContext";
 import { AXIS_TICK, BAR_RADIUS, useChartAnimation, tooltipStyle } from "@/app/trading/chartTheme";
-import { PageContainer, EmptyState, Card } from "@/shared/ui";
+import { PageContainer, EmptyState, Card, ScrollArea, SubNav } from "@/shared/ui";
+import { useAvailableHeight } from "@/app/hooks/useAvailableHeight";
+import { usePageView } from "@/app/hooks/usePageView";
 import { BehaviorScenarioCard } from "./BehaviorScenarioCard";
 import { ProgressExperimentCard } from "./ProgressExperimentCard";
 
@@ -52,7 +54,11 @@ const MISTAKE_TIP_KEYS: Record<string, string> = {
   "Low liquidity": "mistakes.tipLiquidity",
 };
 
+const MISTAKES_VIEWS = ["plan", "test", "when"] as const;
+
 export default function Mistakes({ trades, embedded = false }: MistakesProps) {
+  const { boxRef, height } = useAvailableHeight();
+  const [view, setView] = usePageView("mistakes", MISTAKES_VIEWS, "plan");
   const chartAnimation = useChartAnimation();
   const { t, lang } = useT();
   const locale =
@@ -183,9 +189,31 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
   }
 
   return (
-    <PageContainer className={embedded ? "max-w-none p-0 pt-2 md:p-0 md:pt-2" : undefined}>
-      <div className="space-y-3 md:space-y-4">
-        {/* ══ 1 · LE PLAN DE CORRECTION ═══════════════════════════════════
+    <PageContainer
+      ref={boxRef}
+      fit={!embedded}
+      height={height}
+      className={embedded ? "max-w-none p-0 pt-2 md:p-0 md:pt-2" : undefined}
+    >
+      {/* TROIS SOUS-VUES, UN ÉCRAN. Les cinq blocs s'empilaient sur près de
+          deux écrans : le plan et la progression (ce qu'on vient chercher),
+          les règles à tester, puis le « quand ». Chacun a maintenant sa vue,
+          et la page tient dans la fenêtre. */}
+      <SubNav
+        ariaLabel={t("mistakes.viewsLabel")}
+        value={view}
+        onChange={setView}
+        items={[
+          { id: "plan", label: t("mistakes.viewPlan") },
+          { id: "test", label: t("mistakes.viewTest") },
+          { id: "when", label: t("mistakes.viewWhen") },
+        ]}
+        className="mb-3 w-fit max-w-full shrink-0 self-start"
+      />
+      <ScrollArea key={view} className="tv-grow animate-fade-in space-y-3 md:space-y-4">
+        {view === "plan" && (
+          <>
+            {/* ══ 1 · LE PLAN DE CORRECTION ═══════════════════════════════════
             CE BLOC REMPLACE LE COUPLE « MONTANT PERDU + BARRES DE COÛT ».
 
             La page ouvrait sur le P&L des trades marqués, puis classait les
@@ -211,100 +239,100 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
             `tests/mistakePlan.test.ts` en fait un invariant, parce qu'une
             erreur oubliée par un filtre disparaîtrait de l'écran sans que rien
             ne l'indique. */}
-        <section className="glass animate-fade-in-up overflow-hidden rounded-3xl">
-          <header className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-white/[0.05] px-4 py-3.5 sm:px-5">
-            <h2 className="tv-title">{t("mistakes.planTitle")}</h2>
-            {/* CE QUE LA FENÊTRE PERMET DE DIRE.
+            <section className="glass animate-fade-in-up overflow-hidden rounded-3xl">
+              <header className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-white/[0.05] px-4 py-3.5 sm:px-5">
+                <h2 className="tv-title">{t("mistakes.planTitle")}</h2>
+                {/* CE QUE LA FENÊTRE PERMET DE DIRE.
                 Sans fenêtre précédente, aucune des flèches de tendance n'est
                 calculable et la colonne « arrêtées » est vide par
                 construction. Le dire évite qu'on lise ce vide comme un
                 sans-faute. */}
-            <p className="tv-row-label">
-              {plan.hasPrevious
-                ? t("mistakes.planSub").replace("{n}", String(plan.windowDays))
-                : t("mistakes.rateNoBase")}
-            </p>
-          </header>
+                <p className="tv-row-label">
+                  {plan.hasPrevious
+                    ? t("mistakes.planSub").replace("{n}", String(plan.windowDays))
+                    : t("mistakes.rateNoBase")}
+                </p>
+              </header>
 
-          {/* Le tableau de score — téléphone uniquement. */}
-          <div
-            role="tablist"
-            aria-label={t("mistakes.planTitle")}
-            className="grid grid-cols-3 gap-1.5 px-3 pt-3 md:hidden"
-          >
-            {voies.map((v) => {
-              const { Icone, texte } = TON_VOIE[v.id];
-              const actif = v.id === voie;
-              return (
-                <button
-                  key={v.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={actif}
-                  onClick={() => setVoie(v.id)}
-                  className="mst-lane-tab"
-                >
-                  <span className="flex w-full items-center justify-between gap-1">
-                    <span
-                      className={cn(
-                        "tv-figure text-[22px] leading-none",
-                        v.n > 0 ? texte : "text-slate-600",
-                      )}
+              {/* Le tableau de score — téléphone uniquement. */}
+              <div
+                role="tablist"
+                aria-label={t("mistakes.planTitle")}
+                className="grid grid-cols-3 gap-1.5 px-3 pt-3 md:hidden"
+              >
+                {voies.map((v) => {
+                  const { Icone, texte } = TON_VOIE[v.id];
+                  const actif = v.id === voie;
+                  return (
+                    <button
+                      key={v.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={actif}
+                      onClick={() => setVoie(v.id)}
+                      className="mst-lane-tab"
                     >
-                      {v.n}
-                    </span>
-                    <Icone
-                      className={cn("h-3.5 w-3.5 shrink-0", actif ? texte : "text-slate-600")}
-                    />
-                  </span>
-                  <span className="w-full truncate text-[11px] font-semibold">{v.label}</span>
-                </button>
-              );
-            })}
-          </div>
+                      <span className="flex w-full items-center justify-between gap-1">
+                        <span
+                          className={cn(
+                            "tv-figure text-[22px] leading-none",
+                            v.n > 0 ? texte : "text-slate-600",
+                          )}
+                        >
+                          {v.n}
+                        </span>
+                        <Icone
+                          className={cn("h-3.5 w-3.5 shrink-0", actif ? texte : "text-slate-600")}
+                        />
+                      </span>
+                      <span className="w-full truncate text-[11px] font-semibold">{v.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
 
-          {/* Trois colonnes séparées par un filet sur bureau ; une seule voie,
+              {/* Trois colonnes séparées par un filet sur bureau ; une seule voie,
               celle du tableau de score, sur téléphone. Chacune se lit seule :
               son titre dit ce qu'elle demande, et son vide dit qu'il n'y a
               rien — jamais un espace blanc muet. */}
-          <div className="grid md:grid-cols-3 md:divide-x md:divide-white/[0.05]">
-            <Voie
-              ton="banish"
-              masqueMobile={voie !== "banish"}
-              titre={t("mistakes.laneBanish")}
-              sous={t("mistakes.laneBanishSub")}
-              items={plan.banish}
-              vide={t("mistakes.laneEmptyBanish")}
-              tipDe={tipDe}
-              semainesDe={semainesDe}
-              /* La première consigne de la voie la plus grave est OUVERTE :
+              <div className="grid md:grid-cols-3 md:divide-x md:divide-white/[0.05]">
+                <Voie
+                  ton="banish"
+                  masqueMobile={voie !== "banish"}
+                  titre={t("mistakes.laneBanish")}
+                  sous={t("mistakes.laneBanishSub")}
+                  items={plan.banish}
+                  vide={t("mistakes.laneEmptyBanish")}
+                  tipDe={tipDe}
+                  semainesDe={semainesDe}
+                  /* La première consigne de la voie la plus grave est OUVERTE :
                  c'est la seule action qu'on demande maintenant. */
-              ouvrirPremier
-            />
-            <Voie
-              ton="work"
-              masqueMobile={voie !== "work"}
-              titre={t("mistakes.laneWork")}
-              sous={t("mistakes.laneWorkSub")}
-              items={plan.work}
-              vide={t("mistakes.laneEmptyWork")}
-              tipDe={tipDe}
-              semainesDe={semainesDe}
-              ouvrirPremier={plan.banish.length === 0}
-            />
-            <Voie
-              ton="stopped"
-              masqueMobile={voie !== "stopped"}
-              titre={t("mistakes.laneStopped")}
-              sous={t("mistakes.laneStoppedSub").replace("{n}", String(plan.windowDays))}
-              items={plan.stopped}
-              vide={t("mistakes.laneEmptyStopped")}
-              tipDe={tipDe}
-              semainesDe={semainesDe}
-            />
-          </div>
+                  ouvrirPremier
+                />
+                <Voie
+                  ton="work"
+                  masqueMobile={voie !== "work"}
+                  titre={t("mistakes.laneWork")}
+                  sous={t("mistakes.laneWorkSub")}
+                  items={plan.work}
+                  vide={t("mistakes.laneEmptyWork")}
+                  tipDe={tipDe}
+                  semainesDe={semainesDe}
+                  ouvrirPremier={plan.banish.length === 0}
+                />
+                <Voie
+                  ton="stopped"
+                  masqueMobile={voie !== "stopped"}
+                  titre={t("mistakes.laneStopped")}
+                  sous={t("mistakes.laneStoppedSub").replace("{n}", String(plan.windowDays))}
+                  items={plan.stopped}
+                  vide={t("mistakes.laneEmptyStopped")}
+                  tipDe={tipDe}
+                  semainesDe={semainesDe}
+                />
+              </div>
 
-          {/* ══ D'OÙ ÇA VIENT, ET QUAND ══════════════════════════════════
+              {/* ══ D'OÙ ÇA VIENT, ET QUAND ══════════════════════════════════
               Deux lentilles de plus, dans le PIED de la carte existante —
               pas dans deux cartes de plus. La demande était « rajouter de la
               valeur sans alourdir la page » : une bande de 2 lignes ajoute
@@ -321,25 +349,25 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
               ne disait pas QUAND. Le trade qui suit une perte est le seul
               moment qu'on puisse lire dans le journal sans rien demander de
               plus au trader. */}
-          {(familles.n > 0 || apresPerte) && (
-            <div className="grid gap-x-6 gap-y-4 border-t border-white/[0.05] px-4 py-4 sm:px-5 md:grid-cols-2">
-              {familles.n > 0 && (
-                <div className="min-w-0">
-                  <div className="tv-label mb-2 text-slate-500">{t("mistakes.families")}</div>
-                  <BandeFamilles counts={familles.counts} />
+              {(familles.n > 0 || apresPerte) && (
+                <div className="grid gap-x-6 gap-y-4 border-t border-white/[0.05] px-4 py-4 sm:px-5 md:grid-cols-2">
+                  {familles.n > 0 && (
+                    <div className="min-w-0">
+                      <div className="tv-label mb-2 text-slate-500">{t("mistakes.families")}</div>
+                      <BandeFamilles counts={familles.counts} />
+                    </div>
+                  )}
+                  {apresPerte && (
+                    <div className="min-w-0">
+                      <div className="tv-label mb-2 text-slate-500">{t("mistakes.afterLoss")}</div>
+                      <ApresPerte data={apresPerte} />
+                    </div>
+                  )}
                 </div>
               )}
-              {apresPerte && (
-                <div className="min-w-0">
-                  <div className="tv-label mb-2 text-slate-500">{t("mistakes.afterLoss")}</div>
-                  <ApresPerte data={apresPerte} />
-                </div>
-              )}
-            </div>
-          )}
-        </section>
+            </section>
 
-        {/* ══ 2 · EST-CE QUE TU PROGRESSES ? ══════════════════════════════
+            {/* ══ 2 · EST-CE QUE TU PROGRESSES ? ══════════════════════════════
             L'ancien deuxième bloc classait les fuites par coût. Celui-ci
             répond à la seule question qui fasse revenir sur cette page.
 
@@ -353,232 +381,251 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
               • LES HUIT DERNIÈRES SEMAINES. Ce graphe existait plus bas, dans
                 sa propre carte, à côté d'une courbe qui redessinait sa propre
                 barre. Il appartient ici : c'est la progression. */}
-        <section className="glass animate-fade-in-up stagger-1 rounded-3xl px-4 py-4 sm:px-5">
-          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-            <h2 className="tv-title">{t("mistakes.progressTitle")}</h2>
-            {/* CE QUE LA MESURE VAUT, écrit à côté d'elle. Ces chiffres portent
+            <section className="glass animate-fade-in-up stagger-1 rounded-3xl px-4 py-4 sm:px-5">
+              <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                <h2 className="tv-title">{t("mistakes.progressTitle")}</h2>
+                {/* CE QUE LA MESURE VAUT, écrit à côté d'elle. Ces chiffres portent
                 sur ce que le trader a bien voulu COCHER, pas sur sa discipline
                 réelle — et la page ne doit pas laisser croire l'inverse. */}
-            <p className="tv-row-label">{t("mistakes.declared")}</p>
-          </div>
-
-          {/* Deux chiffres côte à côte dès le téléphone : empilés, ils prenaient
-              chacun une rangée entière pour un nombre de deux caractères. */}
-          <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-5 lg:grid-cols-[auto_auto_minmax(0,1fr)] lg:gap-8">
-            <div className="min-w-0">
-              <div className="tv-label text-slate-500">{t("mistakes.streak")}</div>
-              <div
-                className={cn(
-                  "tv-figure mt-1.5 text-[32px] leading-none md:text-[40px]",
-                  streak.current > 0 ? "rp-pos" : "text-slate-500",
-                )}
-              >
-                {streak.current}
+                <p className="tv-row-label">{t("mistakes.declared")}</p>
               </div>
-              <p className="tv-row-label mt-1.5 max-w-[190px]">{t("mistakes.streakUnit")}</p>
-              <p className="tv-row-label mt-0.5">
-                {t("mistakes.streakBest").replace("{n}", String(streak.best))}
-              </p>
-            </div>
 
-            <div className="min-w-0">
-              <div className="tv-label text-slate-500">{t("mistakes.ratePerTrade")}</div>
-              {rate.recent ? (
-                <>
-                  <div className="tv-figure mt-1.5 text-[32px] leading-none text-white md:text-[40px]">
-                    {(rate.recent.incidents / rate.recent.trades).toFixed(2)}
+              {/* Deux chiffres côte à côte dès le téléphone : empilés, ils prenaient
+              chacun une rangée entière pour un nombre de deux caractères. */}
+              <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-5 lg:grid-cols-[auto_auto_minmax(0,1fr)] lg:gap-8">
+                <div className="min-w-0">
+                  <div className="tv-label text-slate-500">{t("mistakes.streak")}</div>
+                  <div
+                    className={cn(
+                      "tv-figure mt-1.5 text-[32px] leading-none md:text-[40px]",
+                      streak.current > 0 ? "rp-pos" : "text-slate-500",
+                    )}
+                  >
+                    {streak.current}
                   </div>
-                  {rate.deltaPct === null ? (
-                    <p className="tv-row-label mt-1.5 max-w-[190px]">{t("mistakes.rateNoBase")}</p>
-                  ) : (
-                    <p
-                      className={cn(
-                        "mt-1.5 flex max-w-[190px] items-baseline gap-1.5 text-xs font-bold",
-                        rate.deltaPct < 0
-                          ? "rp-pos"
-                          : rate.deltaPct > 0
-                            ? "rp-neg"
-                            : "text-slate-400",
-                      )}
-                    >
-                      <span className="tv-figure">
-                        {rate.deltaPct > 0 ? "+" : ""}
-                        {rate.deltaPct}%
-                      </span>
-                      <span className="font-normal text-slate-500">
-                        {rate.deltaPct < 0
-                          ? t("mistakes.rateImproving")
-                          : rate.deltaPct > 0
-                            ? t("mistakes.rateWorsening")
-                            : t("mistakes.rateStable")}
-                      </span>
-                    </p>
-                  )}
-                </>
-              ) : (
-                <p className="tv-row-label mt-1.5 max-w-[190px]">{t("mistakes.rateNoBase")}</p>
-              )}
-            </div>
+                  <p className="tv-row-label mt-1.5 max-w-[190px]">{t("mistakes.streakUnit")}</p>
+                  <p className="tv-row-label mt-0.5">
+                    {t("mistakes.streakBest").replace("{n}", String(streak.best))}
+                  </p>
+                </div>
 
-            {/* LES HUIT DERNIÈRES SEMAINES — des barres, sans axe ni légende.
+                <div className="min-w-0">
+                  <div className="tv-label text-slate-500">{t("mistakes.ratePerTrade")}</div>
+                  {rate.recent ? (
+                    <>
+                      <div className="tv-figure mt-1.5 text-[32px] leading-none text-white md:text-[40px]">
+                        {(rate.recent.incidents / rate.recent.trades).toFixed(2)}
+                      </div>
+                      {rate.deltaPct === null ? (
+                        <p className="tv-row-label mt-1.5 max-w-[190px]">
+                          {t("mistakes.rateNoBase")}
+                        </p>
+                      ) : (
+                        <p
+                          className={cn(
+                            "mt-1.5 flex max-w-[190px] items-baseline gap-1.5 text-xs font-bold",
+                            rate.deltaPct < 0
+                              ? "rp-pos"
+                              : rate.deltaPct > 0
+                                ? "rp-neg"
+                                : "text-slate-400",
+                          )}
+                        >
+                          <span className="tv-figure">
+                            {rate.deltaPct > 0 ? "+" : ""}
+                            {rate.deltaPct}%
+                          </span>
+                          <span className="font-normal text-slate-500">
+                            {rate.deltaPct < 0
+                              ? t("mistakes.rateImproving")
+                              : rate.deltaPct > 0
+                                ? t("mistakes.rateWorsening")
+                                : t("mistakes.rateStable")}
+                          </span>
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <p className="tv-row-label mt-1.5 max-w-[190px]">{t("mistakes.rateNoBase")}</p>
+                  )}
+                </div>
+
+                {/* LES HUIT DERNIÈRES SEMAINES — des barres, sans axe ni légende.
                 Une hauteur en pixels, pas une chaîne flex : un
                 `ResponsiveContainer` en hauteur 100 % ne dessine rien quand son
                 parent n'a pas de hauteur définie, et cette panne-là est
                 muette. */}
-            {b.weeklyTrend.length > 1 && (
-              <div className="col-span-full min-w-0 lg:col-span-1">
-                <div className="tv-label mb-1.5 text-slate-500">{t("mistakes.weeklyTrend")}</div>
-                <div className="h-[104px]">
-                  <ResponsiveContainer debounce={100} width="100%" height="100%">
-                    <BarChart
-                      data={b.weeklyTrend}
-                      margin={{ top: 4, right: 0, bottom: 0, left: 0 }}
-                    >
-                      <XAxis dataKey="week" tick={AXIS_TICK} axisLine={false} tickLine={false} />
-                      <YAxis hide allowDecimals={false} />
-                      <Tooltip
-                        {...tooltipStyle}
-                        cursor={{ fill: "rgba(148,163,184,.06)" }}
-                        formatter={(value: number | string) => [
-                          `${value}`,
-                          t("mistakes.incidents"),
-                        ]}
-                      />
-                      <Bar
-                        dataKey="count"
-                        radius={BAR_RADIUS}
-                        fill="#f59e0b"
-                        fillOpacity={0.55}
-                        {...chartAnimation}
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
+                {b.weeklyTrend.length > 1 && (
+                  <div className="col-span-full min-w-0 lg:col-span-1">
+                    <div className="tv-label mb-1.5 text-slate-500">
+                      {t("mistakes.weeklyTrend")}
+                    </div>
+                    <div className="h-[104px]">
+                      <ResponsiveContainer debounce={100} width="100%" height="100%">
+                        <BarChart
+                          data={b.weeklyTrend}
+                          margin={{ top: 4, right: 0, bottom: 0, left: 0 }}
+                        >
+                          <XAxis
+                            dataKey="week"
+                            tick={AXIS_TICK}
+                            axisLine={false}
+                            tickLine={false}
+                          />
+                          <YAxis hide allowDecimals={false} />
+                          <Tooltip
+                            {...tooltipStyle}
+                            cursor={{ fill: "rgba(148,163,184,.06)" }}
+                            formatter={(value: number | string) => [
+                              `${value}`,
+                              t("mistakes.incidents"),
+                            ]}
+                          />
+                          <Bar
+                            dataKey="count"
+                            radius={BAR_RADIUS}
+                            fill="#f59e0b"
+                            fillOpacity={0.55}
+                            {...chartAnimation}
+                          />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        </section>
-
-        {/* ── Tenue des règles ──
+            </section>
+          </>
+        )}
+        {view === "test" && (
+          <>
+            <BehaviorScenarioCard trades={trades} />
+            <ProgressExperimentCard trades={trades} />
+          </>
+        )}
+        {view === "when" && (
+          <>
+            {/* ── Tenue des règles ──
             Le pendant POSITIF des erreurs : « tu l'as tenue 11 fois sur 12 ».
             Affiché seulement si des règles vérifiables ont réellement été
             éprouvées — une section vide vaudrait mieux qu'un 100 % inventé. */}
-        {adherence.length > 0 && (
-          <Card className="p-4 md:p-5">
-            <h3 className="tv-title mb-1">{t("mistakes.adherence")}</h3>
-            <p className="tv-row-label mb-3">
-              {t("mistakes.adherenceSub").replace("{n}", String(ADHERENCE_WINDOW_DAYS))}
-            </p>
-            <div className="space-y-2.5">
-              {adherence.map((a) => (
-                <div key={a.ruleId} className="flex items-center gap-3">
-                  <span className="text-[11px] text-slate-400 flex-1 min-w-0 truncate">
-                    {a.text}
-                  </span>
-                  <div className="w-20 md:w-28 h-1.5 bg-white/[0.06] rounded-full overflow-hidden shrink-0">
-                    <div
-                      className={cn(
-                        "h-full rounded-full transition-[width] duration-250",
-                        a.ratePct === null
-                          ? "bg-slate-500"
-                          : a.ratePct >= 80
-                            ? "bg-emerald-400"
-                            : a.ratePct >= 50
-                              ? "bg-amber-400"
-                              : "bg-red-400",
-                      )}
-                      style={{ width: `${a.ratePct ?? 0}%` }}
-                    />
-                  </div>
-                  <div className="flex w-20 shrink-0 flex-col items-end gap-0.5">
-                    <span
-                      className={cn(
-                        "tv-figure tv-figure-secondary text-[11px] text-right",
-                        a.ratePct === null
-                          ? "text-slate-500"
-                          : a.ratePct >= 80
-                            ? "text-emerald-400"
-                            : a.ratePct >= 50
-                              ? "text-amber-400"
-                              : "text-red-400",
-                      )}
-                    >
-                      {a.ratePct === null ? "—" : `${a.kept}/${a.applicable}`}
-                    </span>
-                    {a.unknown > 0 && (
-                      <span className="text-[10px] text-slate-500">
-                        {t("mistakes.verifiedPct").replace("{pct}", String(a.coveragePct))}
+            {adherence.length > 0 && (
+              <Card className="p-4 md:p-5">
+                <h3 className="tv-title mb-1">{t("mistakes.adherence")}</h3>
+                <p className="tv-row-label mb-3">
+                  {t("mistakes.adherenceSub").replace("{n}", String(ADHERENCE_WINDOW_DAYS))}
+                </p>
+                <div className="space-y-2.5">
+                  {adherence.map((a) => (
+                    <div key={a.ruleId} className="flex items-center gap-3">
+                      <span className="text-[11px] text-slate-400 flex-1 min-w-0 truncate">
+                        {a.text}
                       </span>
-                    )}
-                  </div>
+                      <div className="w-20 md:w-28 h-1.5 bg-white/[0.06] rounded-full overflow-hidden shrink-0">
+                        <div
+                          className={cn(
+                            "h-full rounded-full transition-[width] duration-250",
+                            a.ratePct === null
+                              ? "bg-slate-500"
+                              : a.ratePct >= 80
+                                ? "bg-emerald-400"
+                                : a.ratePct >= 50
+                                  ? "bg-amber-400"
+                                  : "bg-red-400",
+                          )}
+                          style={{ width: `${a.ratePct ?? 0}%` }}
+                        />
+                      </div>
+                      <div className="flex w-20 shrink-0 flex-col items-end gap-0.5">
+                        <span
+                          className={cn(
+                            "tv-figure tv-figure-secondary text-[11px] text-right",
+                            a.ratePct === null
+                              ? "text-slate-500"
+                              : a.ratePct >= 80
+                                ? "text-emerald-400"
+                                : a.ratePct >= 50
+                                  ? "text-amber-400"
+                                  : "text-red-400",
+                          )}
+                        >
+                          {a.ratePct === null ? "—" : `${a.kept}/${a.applicable}`}
+                        </span>
+                        {a.unknown > 0 && (
+                          <span className="text-[10px] text-slate-500">
+                            {t("mistakes.verifiedPct").replace("{pct}", String(a.coveragePct))}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </Card>
-        )}
+              </Card>
+            )}
 
-        <BehaviorScenarioCard trades={trades} />
-        <ProgressExperimentCard trades={trades} />
-
-        {/* ── QUAND LES ERREURS ARRIVENT ──────────────────────────────────
+            {/* ── QUAND LES ERREURS ARRIVENT ──────────────────────────────────
             La tendance hebdomadaire a quitté cette rangée : elle appartient au
             bloc « Est-ce que tu progresses ? », qui EST la question qu'elle
             pose. Elle traçait par ailleurs la même série DEUX FOIS (une barre
             et une courbe, même ambre, superposées).
             Restent les deux répartitions qui disent OÙ se concentrent les
             erreurs — la séance et le jour. */}
-        {b.totalIncidents > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Session + day distribution */}
-            <Card className="p-4 md:p-5 animate-fade-in-up stagger-6 space-y-4">
-              <div>
-                <h3 className="tv-title mb-2">{t("mistakes.bySession")}</h3>
-                <div className="space-y-2">
-                  {sessionData.map((s) => (
-                    <div key={s.session} className="flex items-center gap-2">
-                      <span className="text-[10px] text-slate-500 w-16 shrink-0">{s.session}</span>
-                      <div className="flex-1 h-1.5 bg-white/[0.05] rounded-full overflow-hidden">
-                        <div
-                          className="h-full rounded-full bg-amber-500/50"
-                          style={{ width: `${(s.count / maxSessionCount) * 100}%` }}
-                        />
-                      </div>
-                      <span className="tv-figure tv-figure-secondary text-[10px] text-slate-400 w-6 text-right">
-                        {s.count}
-                      </span>
+            {b.totalIncidents > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Session + day distribution */}
+                <Card className="p-4 md:p-5 animate-fade-in-up stagger-6 space-y-4">
+                  <div>
+                    <h3 className="tv-title mb-2">{t("mistakes.bySession")}</h3>
+                    <div className="space-y-2">
+                      {sessionData.map((s) => (
+                        <div key={s.session} className="flex items-center gap-2">
+                          <span className="text-[10px] text-slate-500 w-16 shrink-0">
+                            {s.session}
+                          </span>
+                          <div className="flex-1 h-1.5 bg-white/[0.05] rounded-full overflow-hidden">
+                            <div
+                              className="h-full rounded-full bg-amber-500/50"
+                              style={{ width: `${(s.count / maxSessionCount) * 100}%` }}
+                            />
+                          </div>
+                          <span className="tv-figure tv-figure-secondary text-[10px] text-slate-400 w-6 text-right">
+                            {s.count}
+                          </span>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  </div>
+                  <div>
+                    <h3 className="tv-title mb-2">{t("mistakes.byDay")}</h3>
+                    <div className="h-28">
+                      <ResponsiveContainer debounce={100} width="100%" height="100%">
+                        <BarChart data={dayData}>
+                          <XAxis dataKey="day" tick={AXIS_TICK} axisLine={false} tickLine={false} />
+                          <YAxis hide allowDecimals={false} />
+                          <Tooltip
+                            {...tooltipStyle}
+                            formatter={(value: number | string) => [
+                              `${value}`,
+                              t("mistakes.incidents"),
+                            ]}
+                          />
+                          <Bar
+                            dataKey="count"
+                            radius={BAR_RADIUS}
+                            fill="#f59e0b"
+                            fillOpacity={0.5}
+                            {...chartAnimation}
+                          />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                </Card>
               </div>
-              <div>
-                <h3 className="tv-title mb-2">{t("mistakes.byDay")}</h3>
-                <div className="h-28">
-                  <ResponsiveContainer debounce={100} width="100%" height="100%">
-                    <BarChart data={dayData}>
-                      <XAxis dataKey="day" tick={AXIS_TICK} axisLine={false} tickLine={false} />
-                      <YAxis hide allowDecimals={false} />
-                      <Tooltip
-                        {...tooltipStyle}
-                        formatter={(value: number | string) => [
-                          `${value}`,
-                          t("mistakes.incidents"),
-                        ]}
-                      />
-                      <Bar
-                        dataKey="count"
-                        radius={BAR_RADIUS}
-                        fill="#f59e0b"
-                        fillOpacity={0.5}
-                        {...chartAnimation}
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            </Card>
-          </div>
+            )}
+          </>
         )}
-      </div>
+      </ScrollArea>
     </PageContainer>
   );
 }

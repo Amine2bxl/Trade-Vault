@@ -53,9 +53,11 @@ import {
   Card,
   FIELD_BASE,
   SelectPicker,
+  ScrollArea,
   SettingsGroup,
   cn,
 } from "@/shared/ui";
+import { useAvailableHeight } from "@/app/hooks/useAvailableHeight";
 import { currencySymbol } from "@/shared/currency";
 import tradovateLogo from "@/assets/brands/tradovate.png";
 import { useLiveTable } from "@/app/hooks/useLiveTable";
@@ -181,6 +183,7 @@ function browserTimeZone(): string {
 }
 
 export default function Brokers() {
+  const { boxRef, height } = useAvailableHeight();
   const { user } = useAuth();
   const { accounts, activeAccount } = useAccounts();
   const { t, lang } = useT();
@@ -614,176 +617,187 @@ export default function Brokers() {
   );
 
   return (
-    <PageContainer measure="settings" className="space-y-6">
-      {/* ── PAS ENCORE CONNECTÉ : la promesse, le geste, la confiance ── */}
-      {!hasConnections && connections !== null && (
-        <Card pad="none" className="animate-fade-in-up overflow-hidden rounded-[var(--radius-3xl)]">
-          <div className="grid lg:grid-cols-[1.35fr_1fr]">
-            <div className="space-y-5 p-5 md:p-6">
-              <div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="text-[20px] font-bold tracking-tight text-white">
-                    {t("brokers.heroTitle")}
-                  </h2>
-                  {!isPro && <Badge variant="accent">{t("credits.plan.pro")}</Badge>}
-                </div>
-                <p className="tv-prose mt-1.5 max-w-xl text-slate-400">{t("brokers.heroBody")}</p>
-              </div>
-
-              <Steps t={t} />
-
-              <div className="space-y-2.5">
-                {connectButton}
-                <p className="flex items-start gap-1.5 text-xs leading-snug text-slate-500">
-                  <ShieldCheck className="mt-px h-3.5 w-3.5 shrink-0 text-[var(--tv-accent)]" />
-                  {isPro || blocked ? t("brokers.redirectNote") : t("brokers.proBody")}
-                </p>
-                {blockedNote}
-              </div>
-
-              {isPro && !blocked && caps !== null && options}
-            </div>
-            <TrustPanel
-              t={t}
-              className="border-t border-[var(--tv-border)] lg:border-l lg:border-t-0"
-            />
-          </div>
-        </Card>
-      )}
-
-      {/* ── LA CONFIGURATION, pour l'administrateur seulement ── */}
-      {caps?.setup && <SetupChecklist setup={caps.setup} ready={caps.ready} t={t} />}
-
-      {/* ── LES CONNEXIONS ── */}
-      {connections === null ? (
-        <div className="h-48 rounded-2xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)]" />
-      ) : (
-        <>
-          {hasConnections && !isPro && (
-            <Card pad="default" className="animate-fade-in-up">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <Lock className="h-3.5 w-3.5 text-[var(--tv-accent)]" />
-                    <span className="text-sm font-bold text-white">{t("brokers.proTitle")}</span>
+    <PageContainer ref={boxRef} measure="settings" fit height={height}>
+      {/* Page de mise en place, visitée rarement : sur ordinateur elle défile
+          dans sa colonne, l'en-tête et les onglets de la section restent. */}
+      <ScrollArea className="tv-grow space-y-6">
+        {/* ── PAS ENCORE CONNECTÉ : la promesse, le geste, la confiance ── */}
+        {!hasConnections && connections !== null && (
+          <Card
+            pad="none"
+            className="animate-fade-in-up overflow-hidden rounded-[var(--radius-3xl)]"
+          >
+            <div className="grid lg:grid-cols-[1.35fr_1fr]">
+              <div className="space-y-5 p-5 md:p-6">
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2 className="text-[20px] font-bold tracking-tight text-white">
+                      {t("brokers.heroTitle")}
+                    </h2>
+                    {!isPro && <Badge variant="accent">{t("credits.plan.pro")}</Badge>}
                   </div>
-                  <p className="tv-row-label mt-0.5">{t("brokers.proPaused")}</p>
+                  <p className="tv-prose mt-1.5 max-w-xl text-slate-400">{t("brokers.heroBody")}</p>
                 </div>
-                <Button size="sm" onClick={openUpgrade}>
-                  {t("brokers.proCta")}
-                </Button>
+
+                <Steps t={t} />
+
+                <div className="space-y-2.5">
+                  {connectButton}
+                  <p className="flex items-start gap-1.5 text-xs leading-snug text-slate-500">
+                    <ShieldCheck className="mt-px h-3.5 w-3.5 shrink-0 text-[var(--tv-accent)]" />
+                    {isPro || blocked ? t("brokers.redirectNote") : t("brokers.proBody")}
+                  </p>
+                  {blockedNote}
+                </div>
+
+                {isPro && !blocked && caps !== null && options}
               </div>
-            </Card>
-          )}
-          {connections.map((c) => (
-            <ConnectionCard
-              key={c.id}
-              c={c}
-              accounts={brokerAccounts.filter((a) => a.connectionId === c.id)}
-              accountOptions={accountOptions}
-              busy={busyId === c.id}
-              isPro={isPro}
-              lastSync={t("brokers.lastSync").replace("{when}", fmtWhen(c.lastSuccessAt))}
-              onSync={() => void syncNow(c.id)}
-              onReconnect={() => void goToTradovate(c)}
-              onPause={() => void togglePause(c)}
-              onDisconnect={() => void disconnect(c)}
-              onMap={(ba, v) => void mapAccount(ba, v)}
-              onToggle={(ba) => void toggleAccount(ba)}
-              t={t}
+              <TrustPanel
+                t={t}
+                className="border-t border-[var(--tv-border)] lg:border-l lg:border-t-0"
+              />
+            </div>
+          </Card>
+        )}
+
+        {/* ── LA CONFIGURATION, pour l'administrateur seulement ── */}
+        {caps?.setup && <SetupChecklist setup={caps.setup} ready={caps.ready} t={t} />}
+
+        {/* ── LES CONNEXIONS ── */}
+        {connections === null ? (
+          <div className="h-48 rounded-2xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)]" />
+        ) : (
+          <>
+            {hasConnections && !isPro && (
+              <Card pad="default" className="animate-fade-in-up">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <Lock className="h-3.5 w-3.5 text-[var(--tv-accent)]" />
+                      <span className="text-sm font-bold text-white">{t("brokers.proTitle")}</span>
+                    </div>
+                    <p className="tv-row-label mt-0.5">{t("brokers.proPaused")}</p>
+                  </div>
+                  <Button size="sm" onClick={openUpgrade}>
+                    {t("brokers.proCta")}
+                  </Button>
+                </div>
+              </Card>
+            )}
+            {connections.map((c) => (
+              <ConnectionCard
+                key={c.id}
+                c={c}
+                accounts={brokerAccounts.filter((a) => a.connectionId === c.id)}
+                accountOptions={accountOptions}
+                busy={busyId === c.id}
+                isPro={isPro}
+                lastSync={t("brokers.lastSync").replace("{when}", fmtWhen(c.lastSuccessAt))}
+                onSync={() => void syncNow(c.id)}
+                onReconnect={() => void goToTradovate(c)}
+                onPause={() => void togglePause(c)}
+                onDisconnect={() => void disconnect(c)}
+                onMap={(ba, v) => void mapAccount(ba, v)}
+                onToggle={(ba) => void toggleAccount(ba)}
+                t={t}
+              />
+            ))}
+          </>
+        )}
+
+        {/* ── LE CATALOGUE ── */}
+        {/* Une liste groupée, comme toutes les pages de réglages : une rangée
+          par broker, son état à droite. */}
+        <SettingsGroup title={t("brokers.catalogTitle")} className="animate-fade-in-up">
+          <BrokerTile
+            name="Tradovate"
+            logo={tradovateLogo}
+            desc={t("brokers.tradovateDesc")}
+            badge={
+              hasConnections ? (
+                <Badge variant="profit">
+                  <Check className="h-3 w-3" />
+                  {t("brokers.connectedBadge")}
+                </Badge>
+              ) : blocked ? (
+                // Même vérité que le bouton : tant que la connexion n'est pas
+                // ouverte sur ce serveur, on ne la dit pas « disponible ».
+                <Badge>{t("brokers.soon")}</Badge>
+              ) : (
+                <Badge variant="accent">{t("brokers.available")}</Badge>
+              )
+            }
+            action={
+              hasConnections ? (
+                <Button
+                  variant="subtle"
+                  size="sm"
+                  onClick={() => void goToTradovate()}
+                  disabled={redirecting || blocked}
+                >
+                  {isPro ? <Plus className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
+                  {t("brokers.addLogin")}
+                </Button>
+              ) : null
+            }
+          />
+          {(
+            [
+              ["Rithmic", "brokers.rithmicDesc"],
+              ["NinjaTrader", "brokers.ninjaDesc"],
+              ["ProjectX", "brokers.projectxDesc"],
+            ] as const
+          ).map(([name, desc]) => (
+            <BrokerTile
+              key={name}
+              name={name}
+              desc={t(desc)}
+              muted
+              badge={<Badge variant="neutral">{t("brokers.planned")}</Badge>}
             />
           ))}
-        </>
-      )}
+        </SettingsGroup>
 
-      {/* ── LE CATALOGUE ── */}
-      {/* Une liste groupée, comme toutes les pages de réglages : une rangée
-          par broker, son état à droite. */}
-      <SettingsGroup title={t("brokers.catalogTitle")} className="animate-fade-in-up">
-        <BrokerTile
-          name="Tradovate"
-          logo={tradovateLogo}
-          desc={t("brokers.tradovateDesc")}
-          badge={
-            hasConnections ? (
-              <Badge variant="profit">
-                <Check className="h-3 w-3" />
-                {t("brokers.connectedBadge")}
-              </Badge>
-            ) : blocked ? (
-              // Même vérité que le bouton : tant que la connexion n'est pas
-              // ouverte sur ce serveur, on ne la dit pas « disponible ».
-              <Badge>{t("brokers.soon")}</Badge>
-            ) : (
-              <Badge variant="accent">{t("brokers.available")}</Badge>
-            )
-          }
-          action={
-            hasConnections ? (
-              <Button
-                variant="subtle"
-                size="sm"
-                onClick={() => void goToTradovate()}
-                disabled={redirecting || blocked}
-              >
-                {isPro ? <Plus className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
-                {t("brokers.addLogin")}
-              </Button>
-            ) : null
-          }
+        {/* Déjà connecté : la confiance reste écrite, plus bas, au même endroit. */}
+        {hasConnections && (
+          <Card pad="none" className="animate-fade-in-up overflow-hidden">
+            <TrustPanel t={t} wide />
+          </Card>
+        )}
+
+        {/* Ce que fait la synchro, en clair — sans promesse. */}
+        <SettingsGroup title={t("brokers.howTitle")} className="animate-fade-in-up">
+          {(["brokers.how1", "brokers.how2", "brokers.how3", "brokers.how4"] as const).map(
+            (k, i) => (
+              <div key={k} className="tv-set-row tv-set-item">
+                <span className="tv-set-action-icon tv-figure text-[13px] font-semibold">
+                  {i + 1}
+                </span>
+                <p className="min-w-0 flex-1 text-[13px] leading-relaxed text-slate-300">{t(k)}</p>
+              </div>
+            ),
+          )}
+        </SettingsGroup>
+
+        <SyncCelebration
+          state={celebration}
+          onRetry={() => {
+            setCelebration(null);
+            // La MÊME tentative : un login en reconnexion reste le même login.
+            const attempt = lastAttempt.current;
+            void (attempt ? startAttempt(attempt) : goToTradovate());
+          }}
+          onUpgrade={() => {
+            setCelebration(null);
+            openUpgrade();
+          }}
+          onClose={() => setCelebration(null)}
+          onOpenJournal={() => {
+            setCelebration(null);
+            window.dispatchEvent(new CustomEvent("tv:navigate", { detail: { page: "journal" } }));
+          }}
         />
-        {(
-          [
-            ["Rithmic", "brokers.rithmicDesc"],
-            ["NinjaTrader", "brokers.ninjaDesc"],
-            ["ProjectX", "brokers.projectxDesc"],
-          ] as const
-        ).map(([name, desc]) => (
-          <BrokerTile
-            key={name}
-            name={name}
-            desc={t(desc)}
-            muted
-            badge={<Badge variant="neutral">{t("brokers.planned")}</Badge>}
-          />
-        ))}
-      </SettingsGroup>
-
-      {/* Déjà connecté : la confiance reste écrite, plus bas, au même endroit. */}
-      {hasConnections && (
-        <Card pad="none" className="animate-fade-in-up overflow-hidden">
-          <TrustPanel t={t} wide />
-        </Card>
-      )}
-
-      {/* Ce que fait la synchro, en clair — sans promesse. */}
-      <SettingsGroup title={t("brokers.howTitle")} className="animate-fade-in-up">
-        {(["brokers.how1", "brokers.how2", "brokers.how3", "brokers.how4"] as const).map((k, i) => (
-          <div key={k} className="tv-set-row tv-set-item">
-            <span className="tv-set-action-icon tv-figure text-[13px] font-semibold">{i + 1}</span>
-            <p className="min-w-0 flex-1 text-[13px] leading-relaxed text-slate-300">{t(k)}</p>
-          </div>
-        ))}
-      </SettingsGroup>
-
-      <SyncCelebration
-        state={celebration}
-        onRetry={() => {
-          setCelebration(null);
-          // La MÊME tentative : un login en reconnexion reste le même login.
-          const attempt = lastAttempt.current;
-          void (attempt ? startAttempt(attempt) : goToTradovate());
-        }}
-        onUpgrade={() => {
-          setCelebration(null);
-          openUpgrade();
-        }}
-        onClose={() => setCelebration(null)}
-        onOpenJournal={() => {
-          setCelebration(null);
-          window.dispatchEvent(new CustomEvent("tv:navigate", { detail: { page: "journal" } }));
-        }}
-      />
+      </ScrollArea>
     </PageContainer>
   );
 }

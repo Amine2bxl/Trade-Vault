@@ -4200,6 +4200,31 @@ body.tv-app-type :is(.tv-figure, .tv-num, .tabular-nums) {
     border-top: 0;
   }
 }
+/* Les deux vues de la feuille (Synthèse · Détail). Un enveloppement
+   transparent : à l'écran, seule la vue choisie s'affiche ; sur le papier,
+   toutes. Le filet de tête de chaque vue est repris ici, puisque
+   l'enveloppe coupe la relation de fratrie avec la section précédente. */
+.rp-view {
+  display: contents;
+}
+@media screen {
+  .rp-view-off {
+    display: none;
+  }
+}
+.rp-view > .rp-section:first-child {
+  border-top: 1px solid var(--tv-border);
+}
+@media not all and (min-width: 1024px) {
+  .rp-view > .rp-duo:first-child > .rp-section:first-child {
+    border-top: 1px solid var(--tv-border);
+  }
+}
+@media screen and (min-width: 1024px) {
+  .rp-view > .rp-duo:first-child {
+    border-top: 1px solid var(--tv-border);
+  }
+}
 /* La note « chiffres provisoires » : sur le papier seulement — à l'écran,
    la pastille « en cours » du verdict la porte déjà. */
 .rp-section.rp-provisional.rp-print-only {
@@ -5953,6 +5978,13 @@ thead .plan-cmp-col.is-pro {
   border-top: 1px solid var(--tv-border);
   font-size: 13px;
   color: var(--tv-text-primary);
+}
+/* Dans le tableau qui défile, l'en-tête de colonnes reste en haut. */
+.ff-table.tv-scroll .ff-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--tv-plate-1);
 }
 .ff-head {
   min-height: 38px;
@@ -8763,6 +8795,46 @@ body.tv-app-type svg.lucide {
 @media (pointer: coarse) {
   .jarvis-generation-controls > button {
     min-height: 44px;
+  }
+}
+
+/* ── LE MODE AJUSTÉ — une app, pas des pages qui défilent ──────────────────
+   `PageContainer fit` : sur ordinateur, la page prend la hauteur mesurée
+   (`--fit-h`) et se compose en colonne ; `.tv-grow` prend le reste, ce qui est
+   long vit dans `.tv-scroll`. Téléphone et fenêtres basses : flux normal. */
+@media (min-width: 1024px) and (min-height: 640px) {
+  /* `position: relative` sur le cadre et sur la région qui défile : un
+     descendant positionné en absolu (les libellés `sr-only` des tableaux)
+     s'échappait sinon de la découpe et rallongeait `<main>` — la page
+     redevenait défilable de 200px, invisibles. */
+  .tv-fit {
+    position: relative;
+    display: flex;
+    height: var(--fit-h, auto);
+    min-height: 0;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .tv-fit-col {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 0;
+    flex-direction: column;
+  }
+  .tv-grow {
+    min-height: 0;
+    flex: 1 1 0;
+  }
+  .strategy-layout.tv-grow {
+    align-items: stretch;
+  }
+  .tv-scroll {
+    position: relative;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: rgb(255 255 255 / 0.14) transparent;
   }
 }
 

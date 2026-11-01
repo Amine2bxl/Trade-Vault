@@ -1,4 +1,5 @@
-import { PageContainer } from "@/shared/ui";
+import { PageContainer, ScrollArea } from "@/shared/ui";
+import { useAvailableHeight } from "@/app/hooks/useAvailableHeight";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import MonthCelebration from "./MonthCelebration";
 import { Loader2, Flag } from "@/shared/ui/icons";
@@ -38,6 +39,7 @@ import { useLiveTable } from "@/app/hooks/useLiveTable";
 
 export default function Goals({ trades }: { trades: Trade[] }) {
   const { user } = useAuth();
+  const { boxRef, height } = useAvailableHeight();
   const { activeId } = useAccounts();
   const { lang, t } = useT();
   const { toast } = useToast();
@@ -232,22 +234,24 @@ export default function Goals({ trades }: { trades: Trade[] }) {
   }
 
   return (
-    <PageContainer>
-      {!plan ? (
-        <GoalPicker ctx={ctx} busy={busy} onGenerate={generate} />
-      ) : (
-        <PlanView
-          plan={plan}
-          ctx={ctx}
-          fr={fr}
-          lang={lang}
-          busy={busy}
-          onDelete={removePlan}
-          onToggleTask={toggleTask}
-          onManualValue={updateManualValue}
-          forecast={capitalForecast}
-        />
-      )}
+    <PageContainer ref={boxRef} fit height={height}>
+      <ScrollArea className="tv-grow">
+        {!plan ? (
+          <GoalPicker ctx={ctx} busy={busy} onGenerate={generate} />
+        ) : (
+          <PlanView
+            plan={plan}
+            ctx={ctx}
+            fr={fr}
+            lang={lang}
+            busy={busy}
+            onDelete={removePlan}
+            onToggleTask={toggleTask}
+            onManualValue={updateManualValue}
+            forecast={capitalForecast}
+          />
+        )}
+      </ScrollArea>
 
       {fete && (
         <MonthCelebration mois={fete.mois} total={fete.total} onDone={() => setFete(null)} />

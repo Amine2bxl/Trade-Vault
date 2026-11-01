@@ -118,6 +118,7 @@ export {
 export { selection } from "./selection";
 
 export { PageControls } from "./PageControls";
+export { ScrollArea } from "./ScrollArea";
 export { FilterControls, FilterSection } from "./FilterControls";
 export { RichTextarea, RichTextView } from "./RichText";
 export type { RichTextareaProps, RichTextLabels } from "./RichText";

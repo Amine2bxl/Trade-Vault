@@ -4,12 +4,14 @@ import { useT } from "@/app/i18n/LanguageContext";
 import { useTheme } from "@/app/contexts/ThemeContext";
 import ThemeSettings from "./ThemeSettings";
 import ThemeStudioModal from "./ThemeStudioModal";
-import { PageContainer, Button, SettingsHero } from "@/shared/ui";
+import { PageContainer, Button, ScrollArea, SettingsHero } from "@/shared/ui";
+import { useAvailableHeight } from "@/app/hooks/useAvailableHeight";
 import { usePageActions, usePageLead } from "@/app/contexts/PageActionsContext";
 
 export default function Appearance() {
   const { t } = useT();
   const { createTheme, active } = useTheme();
+  const { boxRef, height } = useAvailableHeight();
 
   const [studioId, setStudioId] = useState<string | null>(null);
 
@@ -61,7 +63,7 @@ export default function Appearance() {
   usePageActions(actions);
 
   return (
-    <PageContainer measure="settings" className="space-y-6">
+    <PageContainer ref={boxRef} measure="settings" fit height={height} className="space-y-6">
       {/* La carte héros commune aux réglages : le thème actif, ses trois
           couleurs dans le disque. */}
       <SettingsHero
@@ -78,9 +80,11 @@ export default function Appearance() {
         title={active.name}
         subtitle={t("appearance.subtitle")}
       />
-      <div className="animate-fade-in-up stagger-1">
+      {/* La grille des thèmes défile dans la colonne ; le thème actif reste
+          en tête. */}
+      <ScrollArea className="tv-grow animate-fade-in-up stagger-1">
         <ThemeSettings />
-      </div>
+      </ScrollArea>
       {/* `draft` : ouvert depuis « créer un thème », donc annulable pour de
           vrai — la fenêtre supprime le thème si le trader renonce. */}
       {studioId && <ThemeStudioModal themeId={studioId} draft onClose={() => setStudioId(null)} />}

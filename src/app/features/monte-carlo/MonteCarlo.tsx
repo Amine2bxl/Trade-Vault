@@ -337,11 +337,9 @@ function StrategyLab({
   );
 
   return (
-    <PageContainer
-      ref={boxRef}
-      style={height ? { minHeight: height } : undefined}
-      className="strategy-lab flex h-full flex-col overflow-y-auto"
-    >
+    // La page tient dans l'écran : la barre d'outils reste en place, la
+    // colonne du graphe et celle de l'éditeur défilent chacune chez elle.
+    <PageContainer ref={boxRef} fit height={height} className="strategy-lab flex flex-col">
       <input
         ref={fileInput}
         type="file"
@@ -482,8 +480,8 @@ function StrategyLab({
           {journal.sampleSize < 5 && <p className="tv-prose text-slate-500">{t("lab.minimum")}</p>}
         </Card>
       ) : (
-        <div className="strategy-layout">
-          <section className="strategy-main" aria-label={t("lab.chartViews")}>
+        <div className="strategy-layout tv-grow">
+          <section className="strategy-main tv-scroll" aria-label={t("lab.chartViews")}>
             {model && model.kind === "historical" && model.sampleSize < 30 && (
               <p className="strategy-small-sample">
                 {t("lab.smallSample").replace("{n}", String(model.sampleSize))}
@@ -765,7 +763,7 @@ function StrategyLab({
               </>
             )}
           </section>
-          <aside className="strategy-desktop-editor">
+          <aside className="strategy-desktop-editor tv-scroll">
             <Card pad="tight">
               {editor}
               <Button

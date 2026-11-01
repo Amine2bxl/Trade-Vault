@@ -17,6 +17,7 @@ import {
   MultiPicker,
   SelectPicker,
 } from "@/shared/ui";
+import { useAvailableHeight } from "@/app/hooks/useAvailableHeight";
 import { usePageActions } from "@/app/contexts/PageActionsContext";
 import { useEconomicCalendar } from "./useEconomicCalendar";
 import type { CalendarEvent, EventImpact } from "@/modules/economic-calendar";
@@ -179,6 +180,7 @@ function ImpactBars({ impact, label }: { impact: EventImpact; label: string }) {
 
 export default function EconomicNews() {
   const { t, lang } = useT();
+  const { boxRef, height } = useAvailableHeight();
   const { user } = useAuth();
   const locale = LOCALE_MAP[lang] || "en-US";
   const timeZone = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone, []);
@@ -390,9 +392,9 @@ export default function EconomicNews() {
     v ? <span className="tv-figure">{v}</span> : <span className="text-slate-600">—</span>;
 
   return (
-    <PageContainer>
+    <PageContainer ref={boxRef} fit height={height}>
       {(isFallback || stale) && !loading && (
-        <div className="mb-3 flex items-start gap-2 rounded-xl border border-amber-500/25 bg-amber-500/[0.07] px-3 py-2.5 text-xs text-amber-200/90">
+        <div className="mb-3 flex shrink-0 items-start gap-2 rounded-xl border border-amber-500/25 bg-amber-500/[0.07] px-3 py-2.5 text-xs text-amber-200/90">
           <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           <span>
             {isFallback
@@ -403,7 +405,7 @@ export default function EconomicNews() {
       )}
 
       {/* ── UNE SEULE BARRE : la semaine, le prochain événement, les filtres ── */}
-      <div className="ff-toolbar">
+      <div className="ff-toolbar shrink-0">
         <div className="ff-week">
           <button
             type="button"
@@ -602,7 +604,9 @@ export default function EconomicNews() {
           {t("news.noEvents")}
         </div>
       ) : (
-        <div className="ff-table" role="table" aria-label={t("news.title")}>
+        /* Le tableau défile DANS sa carte (en-tête de colonnes collant) : la
+           barre de la semaine et des filtres reste sous les yeux. */
+        <div className="ff-table tv-grow tv-scroll" role="table" aria-label={t("news.title")}>
           <div className="ff-row ff-head" role="row">
             <span role="columnheader">{t("news.colTime")}</span>
             <span role="columnheader">{t("news.colCurrency")}</span>
@@ -701,7 +705,7 @@ export default function EconomicNews() {
         </div>
       )}
 
-      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 px-1 text-[11px] text-slate-500">
+      <div className="mt-3 flex shrink-0 flex-wrap items-center gap-x-4 gap-y-1 px-1 text-[11px] text-slate-500">
         <span>{t("news.timezone").replace("{zone}", timeZone)}</span>
         <span aria-hidden>·</span>
         <span>
