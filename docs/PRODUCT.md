@@ -41,11 +41,19 @@ trading : Journal → Analyze → Understand → Improve.
 
 Source unique : `src/domain/plans.ts` (partagée par l'app et le serveur).
 
-| Offre | Mensuel | Annuel | Esprit |
-| --- | --- | --- | --- |
-| Free | 0 € | 0 € | « Log your trades. Forever. » — 10 trades par mois |
-| Pro | 15 € | 120 € | Trades illimités, jusqu'à 3 comptes, synchro Tradovate (lecture seule), transfert et recalibrage entre comptes, tout débloqué |
-| Elite | 25 € | 200 € | Les mêmes outils, sans aucune limite (Jarvis, comptes) |
+| Offre | Prix | Esprit |
+| --- | --- | --- |
+| Gratuit | 0 € | « Log your trades. Forever. » — 10 trades par mois, 1 compte |
+| **Licence à vie** | **20 €, une fois** | Tout TradeVault, pour toujours : trades et comptes illimités, toutes les analyses, Jarvis inclus, synchro Tradovate, transfert et recalibrage |
+
+Une seule offre payante, **sans abonnement** : plan `lifetime` (Stripe Checkout en
+mode `payment`, prix `STRIPE_PRICE_LIFETIME`), qui ouvre le palier le plus haut
+(`effective_tier` → `elite`). Une licence ne se rétrograde jamais
+(`apply_subscription_event`), seul le remboursement de son paiement la retire
+(`revoke_lifetime_license`). Les anciens abonnés Pro/Elite sont convertis en
+licence à vie et leur renouvellement est coupé (webhook, ou action admin
+« Convertir les abonnés »). Coût de Jarvis : modèle non tranché — aucune
+promesse « illimité » n'est écrite.
 
 Pas d'essai gratuit. Limites appliquées **en base** (`enforce_trade_quota`,
 `enforce_account_quota`). Ancrage de prix : pas les journaux à 20–30 $/mois,
@@ -86,7 +94,7 @@ mais **le coût d'un challenge raté**.
 | Intérêt | Aimant à leads (plan anti-échec de challenge, simulateur de règles) | E-mail |
 | Essai | Offre Free + Jarvis | Activation (1er trade loggé dès la 1re séance) |
 | Rétention | Checklist, revue hebdomadaire, Edge Score, série | Habitude (rétention J7) |
-| Monétisation | Pro / Elite + preuve (avant/après) | Conversion |
+| Monétisation | Licence à vie 20 € + preuve (avant/après) | Conversion |
 
 Canaux : X, TikTok, YouTube Shorts (en anglais), communautés prop firm (sans
 spam), avis Trustpilot réels. Idées de contenu : [`../content/hooks.md`](../content/hooks.md).

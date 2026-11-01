@@ -216,6 +216,10 @@ for passe in 1 2; do
 done
 echo "→ assertions fonctions privilégiées (lecture limitée à soi, anon exclu)"
 psql_run -f tests/sql/tenant-functions.sql
+echo "→ migration supabase/migrations/20261101120000_lifetime_license.sql"
+psql_run -f supabase/migrations/20261101120000_lifetime_license.sql
+psql_run -f tests/sql/lifetime.sql
+echo "LIFETIME OK — licence à vie posée, jamais rétrogradée, conversion des abonnés"
 echo "→ concurrence (deux sessions simultanées)"
 if [ -n "$CONN" ]; then
   PSQL_ARGS="$CONN" bash tests/sql/concurrency.sh

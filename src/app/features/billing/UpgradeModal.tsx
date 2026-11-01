@@ -1,22 +1,10 @@
 import { useState } from "react";
-import { Check, Sparkles, Zap, Lock, ArrowRight, X } from "@/shared/ui/icons";
+import { X } from "@/shared/ui/icons";
 import { Modal } from "@/shared/ui";
-import { cn } from "@/shared/ui/cn";
 import { useT } from "@/app/i18n/LanguageContext";
 import { useSubscription } from "@/app/hooks/useSubscription";
-import {
-  TIER_BY_ID,
-  eur,
-  monthsFree,
-  planId,
-  yearlyPerMonth,
-  PAGE_VALUE,
-  pagesOfTier,
-  type Interval,
-  type PaidPlan,
-  type PaidTier,
-  type TierDef,
-} from "@/app/utils/pricing";
+import type { PaidPlan } from "@/app/utils/pricing";
+import LifetimeOffer from "./LifetimeOffer";
 
 /**
  * Passer Pro — la modale unique qui s'ouvre sur chaque « Go Pro ».
@@ -27,13 +15,10 @@ import {
  * les clients venus d'une URL `?promo=` ou avec leur code puissent le poser.
  */
 
-const ICONS = { pro: Sparkles, elite: Zap } as const;
-
 export default function UpgradeModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { t, lang } = useT();
   const fr = lang === "fr";
   const { checkout } = useSubscription();
-  const [interval, setInterval] = useState<Interval>("yearly");
   const [typed, setTyped] = useState("");
   const [promo, setPromo] = useState<string | undefined>(
     typeof window !== "undefined"
@@ -62,14 +47,6 @@ export default function UpgradeModal({ open, onClose }: { open: boolean; onClose
     }
   };
 
-  const planFor = (tier: PaidTier): PaidPlan => planId(tier, interval);
-  const perMonth = (tier: PaidTier) =>
-    eur(
-      Math.round((interval === "yearly" ? yearlyPerMonth(tier) : TIER_BY_ID[tier].monthly) * 100) /
-        100,
-      lang,
-    );
-
   return (
     <Modal
       open={open}
@@ -96,144 +73,14 @@ export default function UpgradeModal({ open, onClose }: { open: boolean; onClose
           </button>
         </div>
 
-        {/* Mensuel / Annuel — une seule décision avant l'offre. */}
-        <div className="mt-4 flex justify-start">
-          <div
-            role="tablist"
-            aria-label={t("upgrade.billingPeriod")}
-            className="inline-flex items-center gap-1 rounded-full border border-white/[0.08] bg-white/[0.03] p-1"
-          >
-            {(["monthly", "yearly"] as const).map((value) => (
-              <button
-                key={value}
-                role="tab"
-                aria-selected={interval === value}
-                onClick={() => setInterval(value)}
-                className={cn(
-                  "rounded-full px-4 py-1.5 text-[13px] font-semibold transition",
-                  interval === value
-                    ? "bg-white text-[#04101a] shadow-lg shadow-black/30"
-                    : "text-slate-500 hover:text-slate-200",
-                )}
-              >
-                {value === "monthly" ? t("upgrade.monthly") : t("upgrade.yearly")}
-                {value === "yearly" && (
-                  <span className="tv-num ml-1.5 text-[11px] font-bold text-emerald-500">
-                    −{monthsFree("pro")}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Deux offres, une ligne de prix chacune — Léger, pas de blabla. */}
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          {(["pro", "elite"] as const).map((tier) => {
-            const def = TIER_BY_ID[tier] as TierDef & { featured?: boolean };
-            const Icon = ICONS[tier];
-            const plan = planFor(tier);
-            return (
-              <div
-                key={tier}
-                className={cn(
-                  "relative flex flex-col rounded-2xl border p-4",
-                  tier === "pro"
-                    ? "border-cyan-400/30 bg-[linear-gradient(160deg,rgba(14,58,82,.5),rgba(7,14,24,.92)_60%)]"
-                    : "border-white/[0.08] bg-white/[0.02]",
-                )}
-              >
-                {tier === "pro" && (
-                  <span className="absolute right-3 top-3 rounded-full bg-emerald-400 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#041018]">
-                    {t("upgrade.recommended")}
-                  </span>
-                )}
-                <div className="flex items-center gap-2">
-                  <span
-                    className={cn(
-                      "grid h-7 w-7 place-items-center rounded-lg",
-                      tier === "pro"
-                        ? "bg-cyan-400/15 text-cyan-300"
-                        : "bg-white/[0.06] text-slate-400",
-                    )}
-                  >
-                    <Icon className="h-4 w-4" />
-                  </span>
-                  <span
-                    className={cn("tv-label", tier === "pro" ? "text-cyan-300" : "text-slate-400")}
-                  >
-                    {def.name[fr ? "fr" : "en"]}
-                  </span>
-                </div>
-                <div className="mt-3 flex items-baseline gap-1">
-                  <span className="tv-figure text-3xl text-white">{perMonth(tier)}</span>
-                  <span className="text-sm text-slate-400">{t("upgrade.mo")}</span>
-                </div>
-                <p className="mt-0.5 text-[11px] text-slate-500">
-                  {interval === "yearly"
-                    ? t("upgrade.billedAYrB")
-                        .replace("{a}", String(eur(def.yearly, lang)))
-                        .replace("{b}", String(monthsFree(tier)))
-                    : t("upgrade.noCommitment")}
-                </p>
-
-                <div className="mt-3 space-y-1.5">
-                  {tier === "pro"
-                    ? pagesOfTier("pro")
-                        .slice(0, 3)
-                        .map((page) => {
-                          const v = PAGE_VALUE[page];
-                          if (!v) return null;
-                          return (
-                            <p
-                              key={page}
-                              className="flex items-start gap-2 text-[12px] leading-snug text-slate-300"
-                            >
-                              <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-cyan-300" />
-                              {v.title[fr ? "fr" : "en"]}
-                            </p>
-                          );
-                        })
-                    : def.features.slice(0, 3).map((f) => (
-                        <p
-                          key={f.en}
-                          className="flex items-start gap-2 text-[12px] leading-snug text-slate-300"
-                        >
-                          <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-400/80" />
-                          {f[fr ? "fr" : "en"]}
-                        </p>
-                      ))}
-                  {tier === "pro" && (
-                    <p className="tv-num pt-0.5 text-[11px] font-semibold text-cyan-300/80">
-                      + {pagesOfTier("pro").length - 3} {t("upgrade.morePremiumPages")}
-                    </p>
-                  )}
-                </div>
-
-                <button
-                  onClick={() => pay(plan)}
-                  disabled={busy != null}
-                  className={cn(
-                    "mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition disabled:opacity-60",
-                    tier === "pro"
-                      ? "tv-accent-fill"
-                      : "border border-white/[0.12] bg-white/[0.04] text-white hover:bg-white/[0.08]",
-                  )}
-                >
-                  {busy === plan ? (
-                    t("upgrade.opening")
-                  ) : (
-                    <>
-                      <Lock className="h-4 w-4" />
-                      {t("upgrade.goTier").replace("{tier}", fr ? def.name.fr : def.name.en)}
-                      <ArrowRight className="h-4 w-4" />
-                    </>
-                  )}
-                </button>
-              </div>
-            );
-          })}
-        </div>
+        {/* L'OFFRE UNIQUE : la licence à vie. Plus de bascule mensuel/annuel ni
+            de paliers à comparer — un prix, payé une fois. */}
+        <LifetimeOffer
+          lang={fr ? "fr" : "en"}
+          busy={busy != null}
+          onChoose={(plan) => void pay(plan)}
+          className="mt-4"
+        />
 
         {/* Code promo — une ligne, pas plus. */}
         <div className="mt-4">

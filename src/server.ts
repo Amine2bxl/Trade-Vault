@@ -301,6 +301,10 @@ export default {
         const { handleGrant } = await import("./backend/admin.server");
         return await handleGrant(request);
       }
+      if (pathname === "/api/admin/convert-lifetime" && request.method === "POST") {
+        const { handleConvertLifetime } = await import("./backend/admin.server");
+        return await handleConvertLifetime(request);
+      }
       if (pathname === "/api/admin/grants/revoke" && request.method === "POST") {
         const { handleRevokeGrant } = await import("./backend/admin.server");
         return await handleRevokeGrant(request);

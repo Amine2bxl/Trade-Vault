@@ -105,9 +105,17 @@ describe("openCheckoutSession — un seul constructeur de session", () => {
     // C'est la seule chose que le webhook a pour rattacher l'abonnement à un
     // compte. Il y avait deux constructeurs de session et ils avaient déjà
     // divergé sur ce point.
+    //
+    // Deux modes depuis la licence à vie : un abonnement porte ses métadonnées
+    // dans `subscription_data`, un paiement unique sur la session ET sur son
+    // PaymentIntent (lu au remboursement). Les deux branches sont exigées.
     const fn = BILLING.slice(idx(BILLING, "async function openCheckoutSession"));
-    expect(fn).toContain('"subscription_data[metadata][user_id]": opts.userId');
-    expect(fn).toContain('"subscription_data[metadata][plan]": opts.plan');
+    expect(fn).toContain('params["subscription_data[metadata][user_id]"] = opts.userId');
+    expect(fn).toContain('params["subscription_data[metadata][plan]"] = opts.plan');
+    expect(fn).toContain('params["metadata[user_id]"] = opts.userId');
+    expect(fn).toContain('params["metadata[plan]"] = opts.plan');
+    expect(fn).toContain('params["payment_intent_data[metadata][user_id]"] = opts.userId');
+    expect(fn).toContain('params["payment_intent_data[metadata][plan]"] = opts.plan');
   });
 
   test("il n'existe plus qu'un seul constructeur", () => {

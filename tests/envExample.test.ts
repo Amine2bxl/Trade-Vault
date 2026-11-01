@@ -44,6 +44,7 @@ const DYNAMIC: Record<string, string> = {
   STRIPE_PRICE_PRO_MONTHLY:
     "`process.env[`STRIPE_PRICE_${plan.toUpperCase()}`]`, billing.server.ts",
   STRIPE_PRICE_PRO_YEARLY: "idem",
+  STRIPE_PRICE_LIFETIME: "idem",
   STRIPE_PRICE_ELITE_MONTHLY: "idem",
   STRIPE_PRICE_ELITE_YEARLY: "idem",
   OPENAI_API_KEY: "`apiKeyEnv` du provider, ai-provider/openai.ts",

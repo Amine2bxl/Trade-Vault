@@ -245,7 +245,7 @@ export async function handleCreatePromo(request: Request): Promise<Response> {
 
   const code = normalizePromoCode(String(payload.code ?? ""));
   if (!code) return json({ error: "invalid code" }, 400);
-  const plan: PaidPlan = isPaidPlan(payload.plan) ? payload.plan : "pro_yearly";
+  const plan: PaidPlan = isPaidPlan(payload.plan) ? payload.plan : "lifetime";
 
   let discountPercent: number | null = null;
   if (payload.discountPercent != null && payload.discountPercent !== "") {

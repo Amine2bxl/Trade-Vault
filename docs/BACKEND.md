@@ -92,7 +92,7 @@ Les crons acceptent `GET` (Vercel Cron) et `POST` (appel manuel) —
 
 - **Stripe** (`billing.server.ts`, REST sans SDK) : Checkout, portail, webhook
   à signature vérifiée (comparaison à temps constant, fenêtre anti-rejeu).
-  Plans et prix : `domain/plans.ts` (Free / Pro / Elite, mensuel ou annuel) ;
+  Plans et prix : `domain/plans.ts` (Gratuit + licence à vie `lifetime` à 20 €, paiement unique ; anciens Pro / Elite reconnus) ;
   identifiants de prix `STRIPE_PRICE_*`. Pas d'essai gratuit.
 - **Coinbase Commerce** (`crypto-pay.server.ts`) : même contrat.
 - **Idempotence** : `processed_webhook_events` rend tout rejeu inoffensif ;

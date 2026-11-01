@@ -1,7 +1,7 @@
 import type { Lang } from "../i18n/translations";
 import { SUPPORT_EMAIL } from "../types";
 import { SITE_DOMAIN } from "@/shared/site";
-import { TIER_BY_ID } from "@/domain/plans";
+import { LIFETIME_EUR } from "@/domain/plans";
 
 /**
  * LES DOCUMENTS LÉGAUX — écrits contre le produit, pas contre son souvenir.
@@ -148,8 +148,6 @@ export function legalLabel(path: string, lang: Lang): string {
 }
 
 /* ── Les faits tarifaires, lus dans le catalogue ─────────────────────────── */
-const PRO = TIER_BY_ID.pro;
-const ELITE = TIER_BY_ID.elite;
 const UPDATED_EN = "Last updated: September 2026";
 const UPDATED_FR = "Dernière mise à jour : septembre 2026";
 
@@ -179,10 +177,10 @@ const termsByLang: Partial<Record<Lang, LegalDoc>> = {
       },
       {
         h: "Plans and billing",
-        p: `A free plan exists with no time limit. Paid plans are Pro (${PRO.monthly} EUR a month or ${PRO.yearly} EUR a year) and Elite (${ELITE.monthly} EUR a month or ${ELITE.yearly} EUR a year). Card payments are handled by Stripe; a cryptocurrency option is handled by Coinbase Commerce. TradeVault never sees or stores your card number.`,
+        p: `A free plan exists with no time limit. Full access is sold as a single lifetime license at ${LIFETIME_EUR} EUR, paid once: no subscription, nothing renews. Card payments are handled by Stripe; a cryptocurrency option is handled by Coinbase Commerce. TradeVault never sees or stores your card number.`,
         list: [
-          "A subscription renews automatically until you cancel it.",
-          "Cancelling takes effect at the end of the period already paid for; you keep your plan until then.",
+          "The lifetime license is paid once; it does not renew and there is nothing to cancel.",
+          "Earlier subscriptions are converted to the lifetime license; their renewal is turned off, with no further charge.",
           "Refunds are considered case by case.",
           "If a price changes, the change applies to your next renewal, never retroactively.",
         ],
@@ -242,10 +240,10 @@ const termsByLang: Partial<Record<Lang, LegalDoc>> = {
       },
       {
         h: "Offres et facturation",
-        p: `Une offre gratuite existe, sans limite de durée. Les offres payantes sont Pro (${PRO.monthly} € par mois ou ${PRO.yearly} € par an) et Elite (${ELITE.monthly} € par mois ou ${ELITE.yearly} € par an). Les paiements par carte passent par Stripe ; une option en cryptomonnaie passe par Coinbase Commerce. TradeVault ne voit ni ne conserve jamais votre numéro de carte.`,
+        p: `Une offre gratuite existe, sans limite de durée. L'accès complet se vend sous la forme d'une licence à vie unique de ${LIFETIME_EUR} €, payée une fois : aucun abonnement, rien ne se renouvelle. Les paiements par carte passent par Stripe ; une option en cryptomonnaie passe par Coinbase Commerce. TradeVault ne voit ni ne conserve jamais votre numéro de carte.`,
         list: [
-          "Un abonnement se renouvelle automatiquement jusqu'à ce que vous le résiliiez.",
-          "La résiliation prend effet à la fin de la période déjà payée ; vous gardez votre offre jusque-là.",
+          "La licence à vie se paie une fois ; elle ne se renouvelle pas et il n'y a rien à résilier.",
+          "Les abonnements antérieurs sont convertis en licence à vie ; leur renouvellement est coupé, sans aucun nouveau prélèvement.",
           "Les remboursements sont examinés au cas par cas.",
           "Si un prix change, le changement s'applique à votre prochain renouvellement, jamais rétroactivement.",
         ],

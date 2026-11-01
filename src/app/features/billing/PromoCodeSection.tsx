@@ -69,7 +69,7 @@ export default function PromoCodeSection() {
   const [open, setOpen] = useState<string | null>(null);
 
   const [code, setCode] = useState("");
-  const [plan, setPlan] = useState<PaidPlan>("pro_yearly");
+  const [plan, setPlan] = useState<PaidPlan>("lifetime");
   const [ownerEmail, setOwnerEmail] = useState("");
   const [discount, setDiscount] = useState("");
   const [maxUses, setMaxUses] = useState("");
@@ -192,10 +192,15 @@ export default function PromoCodeSection() {
           onChange={(v) => setPlan(v as PaidPlan)}
           className="h-10"
           width="12rem"
-          options={PAID_TIERS.map((t) => ({
-            value: planId(t, "yearly"),
-            label: TIER_BY_ID[t].name[fr ? "fr" : "en"],
-          }))}
+          // Une seule offre aujourd'hui : la licence à vie. Les anciens paliers
+          // restent proposés pour reproduire un accès d'avant si besoin.
+          options={[
+            { value: "lifetime", label: TIER_BY_ID.elite.name[fr ? "fr" : "en"] },
+            ...PAID_TIERS.map((t) => ({
+              value: planId(t, "yearly"),
+              label: `${TIER_BY_ID[t].name[fr ? "fr" : "en"]} · ${fr ? "ancien" : "legacy"}`,
+            })),
+          ]}
         />
       </div>
 

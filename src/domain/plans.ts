@@ -13,7 +13,36 @@
 
 export type Tier = "free" | "pro" | "elite";
 export type Interval = "monthly" | "yearly";
-export type PaidPlan = "pro_monthly" | "pro_yearly" | "elite_monthly" | "elite_yearly";
+export type PaidPlan = "pro_monthly" | "pro_yearly" | "elite_monthly" | "elite_yearly" | "lifetime";
+
+/**
+ * L'OFFRE UNIQUE — une licence à vie, payée une fois.
+ *
+ * TradeVault ne se vend plus au mois ni à l'année : un seul paiement de
+ * `LIFETIME_EUR` ouvre tout, pour toujours. Le plan `lifetime` donne le palier
+ * le plus haut (`elite`). Les anciens plans `pro_*` / `elite_*` restent
+ * reconnus : ce sont ceux des abonnés d'avant, convertis en licence.
+ */
+export const LIFETIME_PLAN = "lifetime" as const;
+export const LIFETIME_EUR = 20;
+
+/** Les mots de l'offre unique, dans les deux langues — partagés par la
+ *  vitrine, la page Abonnement et la fenêtre d'achat. Aucune promesse de
+ *  gain : on décrit ce qu'on achète et comment on le paie. */
+export const LIFETIME_COPY = {
+  badge: { fr: "Paiement unique", en: "One-time payment" },
+  title: { fr: "TradeVault à vie", en: "TradeVault for life" },
+  priceNote: { fr: "une fois · à vie", en: "once · for life" },
+  cta: { fr: "Débloquer TradeVault", en: "Unlock TradeVault" },
+  trust: {
+    fr: "Aucun abonnement · Paiement sécurisé par Stripe · Accès immédiat",
+    en: "No subscription · Secure payment by Stripe · Instant access",
+  },
+  owned: { fr: "TradeVault t'appartient, à vie.", en: "TradeVault is yours, for life." },
+  crypto: { fr: "Payer en crypto", en: "Pay with crypto" },
+  free: { fr: "Commencer gratuitement", en: "Start for free" },
+  current: { fr: "Ton offre", en: "Your plan" },
+} as const;
 export type Plan = "free" | PaidPlan;
 
 /** Ordre des paliers : un palier donne accès à tout ce qu'offrent ceux d'en dessous. */
@@ -88,6 +117,39 @@ export const TIERS: TierDef[] = [
     ],
   },
   {
+    id: "elite",
+    name: { fr: "Licence à vie", en: "Lifetime license" },
+    tagline: {
+      fr: "Tout TradeVault, payé une seule fois.",
+      en: "All of TradeVault, paid once.",
+    },
+    // Paiement unique : le même montant dans les deux champs, pour que tout
+    // affichage hérité tombe sur le vrai prix.
+    monthly: LIFETIME_EUR,
+    yearly: LIFETIME_EUR,
+    featured: true,
+    features: [
+      { fr: "Trades illimités", en: "Unlimited trades", metered: true },
+      { fr: "Comptes de trading illimités", en: "Unlimited trading accounts", metered: true },
+      { fr: "Toutes les analyses de ton edge", en: "Every analysis of your edge" },
+      { fr: "Erreurs, setups manqués, saisonnalité", en: "Mistakes, missed setups, seasonality" },
+      { fr: "Monte-Carlo : ta probabilité de ruine", en: "Monte Carlo: your risk of ruin" },
+      { fr: "Rapports mensuels automatiques", en: "Automatic monthly reports" },
+      { fr: "Jarvis inclus", en: "Jarvis included", metered: true },
+      { fr: "Synchro Tradovate, en lecture seule", en: "Tradovate sync, read-only" },
+      {
+        fr: "Transfert et recalibrage entre comptes",
+        en: "Transfer and rescale trades between accounts",
+      },
+      { fr: "Alertes push et rappels de session", en: "Push alerts and session reminders" },
+    ],
+  },
+];
+
+/** Le palier Pro n'est plus vendu ; il reste décrit pour les lignes des
+ *  anciens abonnés qui le portent encore. */
+const LEGACY_TIERS: TierDef[] = [
+  {
     id: "pro",
     name: { fr: "Pro", en: "Pro" },
     // La promesse centrale du produit. TOUS les outils d'analyse sont ici :
@@ -122,33 +184,16 @@ export const TIERS: TierDef[] = [
       },
     ],
   },
-  {
-    id: "elite",
-    name: { fr: "Elite", en: "Elite" },
-    // Elite ne débloque aucune page : elle enlève les limites. C'est une offre
-    // de VOLUME, pas de fonctionnalités — sinon elle reprendrait à Pro ce qui
-    // fait la valeur du produit.
-    tagline: {
-      fr: "Les mêmes outils, sans aucune limite.",
-      en: "The same tools, with no limits at all.",
-    },
-    monthly: 25,
-    yearly: 200,
-    features: [
-      { fr: "Jarvis sans aucune limite", en: "Jarvis with no limit at all", metered: true },
-      { fr: "Comptes de trading illimités", en: "Unlimited trading accounts", metered: true },
-      { fr: "Détection automatique de patterns", en: "Automatic pattern detection" },
-      { fr: "Alertes push et rappels de session", en: "Push alerts and session reminders" },
-      { fr: "Support prioritaire", en: "Priority support" },
-    ],
-  },
 ];
 
-export const TIER_BY_ID = Object.fromEntries(TIERS.map((p) => [p.id, p])) as Record<Tier, TierDef>;
+export const TIER_BY_ID = Object.fromEntries(
+  [...TIERS, ...LEGACY_TIERS].map((p) => [p.id, p]),
+) as Record<Tier, TierDef>;
 
 /** Le palier d'un plan enregistré en base. */
 export function tierOf(plan: Plan | string | null | undefined): Tier {
   if (typeof plan !== "string") return "free";
+  if (plan === LIFETIME_PLAN) return "elite";
   const tier = plan.split("_")[0];
   return tier === "pro" || tier === "elite" ? tier : "free";
 }
@@ -162,6 +207,7 @@ export function planId(tier: PaidTier, interval: Interval): PaidPlan {
 }
 
 export function isPaidPlan(value: unknown): value is PaidPlan {
+  if (value === LIFETIME_PLAN) return true;
   return (
     typeof value === "string" &&
     (PAID_TIERS as readonly string[]).includes(value.split("_")[0]) &&
@@ -171,6 +217,7 @@ export function isPaidPlan(value: unknown): value is PaidPlan {
 
 /** Le montant facturé pour un plan, tel qu'affiché partout. */
 export function planPrice(plan: PaidPlan): number {
+  if (plan === LIFETIME_PLAN) return LIFETIME_EUR;
   const tier = TIER_BY_ID[tierOf(plan)];
   return intervalOf(plan) === "yearly" ? tier.yearly : tier.monthly;
 }

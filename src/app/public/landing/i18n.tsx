@@ -511,7 +511,10 @@ const M: Record<string, Msg> = {
   "demo.title": { en: "TradeVault in 20 seconds", fr: "TradeVault en 20 secondes" },
   "hero.t1": { en: "No credit card", fr: "Sans carte bancaire" },
   "hero.t2": { en: "Set up in 2 minutes", fr: "Prêt en 2 minutes" },
-  "hero.t3": { en: "Cancel anytime", fr: "Sans engagement" },
+  "hero.t3": {
+    en: "No subscription",
+    fr: "Sans abonnement",
+  },
   "hero.google": {
     en: "Google sign-in is only used to create your TradeVault account securely and sync your data across devices.",
     fr: "La connexion Google sert uniquement à créer ton compte TradeVault en toute sécurité et à synchroniser tes données sur tous tes appareils.",
@@ -1155,17 +1158,23 @@ const M: Record<string, Msg> = {
     en: "Paid again, every time, market price.",
     fr: "Repayé à chaque fois, prix du marché.",
   },
-  "anchor.b.l": { en: "TradeVault Pro", fr: "TradeVault Pro" },
+  "anchor.b.l": {
+    en: "TradeVault, for life",
+    fr: "TradeVault, à vie",
+  },
   /* « FACTURÉ À L'ANNÉE » N'EST PAS UNE MENTION LÉGALE DE COMPLAISANCE.
      10 € par mois est le tarif de l'engagement annuel ; au mois, c'est 15.
      Afficher le plus bas des deux sans dire lequel c'est serait vendre un
      prix qu'on ne pratique pas. La mention passe donc en TÊTE du détail,
      pas en note de bas de page. */
   "anchor.b.d": {
-    en: "Billed yearly. Everything unlocked, cancel in one click.",
-    fr: "Facturé à l'année. Tout débloqué, annulation en un clic.",
+    en: "Paid once. Everything unlocked, nothing to renew.",
+    fr: "Payé une fois. Tout débloqué, rien à renouveler.",
   },
-  "anchor.b.per": { en: "/ month", fr: "/ mois" },
+  "anchor.b.per": {
+    en: "once",
+    fr: "une fois",
+  },
   "anchor.vs": { en: "vs", fr: "contre" },
 
   /* ── L'AVIS COOKIES ──
@@ -1423,17 +1432,20 @@ const M: Record<string, Msg> = {
     fr: "Oui. Sans échéance, sans carte, rien qui expire. Dix nouveaux trades par mois, c'est la seule limite.",
   },
   "price.faq2.q": {
-    en: "What happens to my data if I stop paying?",
-    fr: "Que deviennent mes données si j'arrête de payer ?",
+    en: "What if I stay on the free plan?",
+    fr: "Et si je reste sur l'offre gratuite ?",
   },
   "price.faq2.a": {
-    en: "Nothing is deleted. You return to free, everything stays readable, and the CSV export stays open.",
-    fr: "Rien n'est supprimé. Tu reviens au gratuit, tout reste lisible, et l'export CSV reste ouvert.",
+    en: "Nothing is deleted or locked away. Your journal stays readable and the CSV export stays open.",
+    fr: "Rien n'est supprimé ni verrouillé. Ton journal reste lisible et l'export CSV reste ouvert.",
   },
-  "price.faq3.q": { en: "Can I cancel?", fr: "Puis-je annuler ?" },
+  "price.faq3.q": {
+    en: "Is it a subscription?",
+    fr: "Est-ce un abonnement ?",
+  },
   "price.faq3.a": {
-    en: "One click, from your account. You keep the plan until the period you paid for ends.",
-    fr: "Un clic, depuis ton compte. Tu gardes l'offre jusqu'à la fin de la période payée.",
+    en: "No. You pay 20 € once and keep TradeVault for life. Nothing renews, nothing to cancel.",
+    fr: "Non. Tu paies 20 € une fois et tu gardes TradeVault à vie. Rien ne se renouvelle, rien à résilier.",
   },
   "price.faq4.q": { en: "How do I pay?", fr: "Comment payer ?" },
   "price.faq4.a": {
@@ -1444,12 +1456,12 @@ const M: Record<string, Msg> = {
   /* pricing */
   "pricing.tag": { en: "Pricing", fr: "Tarifs" },
   "pricing.title": {
-    en: "One broken rule costs more than a month of Pro",
-    fr: "Une règle cassée coûte plus qu'un mois de Pro",
+    en: "One broken rule costs more than TradeVault for life",
+    fr: "Une règle cassée coûte plus que TradeVault à vie",
   },
   "pricing.sub": {
-    en: "Start free, with no time limit. Go Pro when the free plan stops being enough.",
-    fr: "Commence gratuitement, sans limite de temps. Passe Pro quand le gratuit ne suffit plus.",
+    en: "Start free, with no time limit. Unlock everything once, for good.",
+    fr: "Commence gratuitement, sans limite de temps. Débloque tout, une fois pour toutes.",
   },
   /* `pricing.cta` / `pricing.cta2` / `cta.buttonShort` ont disparu, et c'est
      le fond du sujet : ils nommaient une TROISIÈME et une QUATRIÈME façon de
@@ -1560,7 +1572,10 @@ const M: Record<string, Msg> = {
   "pricing.monthly.btn": { en: "Go monthly", fr: "Prendre au mois" },
   "pricing.trust1": { en: "Free plan forever", fr: "Offre gratuite à vie" },
   "pricing.trust2": { en: "Secure Stripe payment", fr: "Paiement Stripe sécurisé" },
-  "pricing.trust3": { en: "Cancel in 1 click", fr: "Annulation en 1 clic" },
+  "pricing.trust3": {
+    en: "Paid once, no subscription",
+    fr: "Payé une fois, sans abonnement",
+  },
   "pricing.trust4": { en: "Exportable data", fr: "Données exportables" },
 
   /* faq */

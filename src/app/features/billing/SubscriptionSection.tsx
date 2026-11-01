@@ -41,7 +41,9 @@ export default function SubscriptionSection({
     }
   };
 
-  if (loading || !sub) {
+  // Pas de ligne d'abonnement = offre gratuite. Le squelette restait affiché
+  // pour toujours chez un compte sans ligne : l'offre n'apparaissait jamais.
+  if (loading) {
     return (
       <div className="glass-strong rounded-3xl p-5">
         <div className="h-5 w-40 rounded bg-white/[0.06] animate-pulse" />
@@ -68,11 +70,12 @@ export default function SubscriptionSection({
      annulé s'y lisait en vert. L'état est calculé une seule fois, dans
      `Subscription.tsx` ; ce bloc ne fait plus que ce que son nom dit —
      encaisser. */
-  const showPlans = !isPro || sub.status === "trialing";
-  const isStripeActive = sub.status === "active" && sub.source === "stripe";
+  const showPlans = !isPro || sub?.status === "trialing";
+  const isStripeActive = sub?.status === "active" && sub.source === "stripe";
   const portal =
-    showPortal && (isStripeActive || (sub.hasStripeCustomer && sub.status !== "trialing"));
-  const cryptoRenew = sub.status === "active" && sub.source === "crypto";
+    showPortal && (isStripeActive || (!!sub?.hasStripeCustomer && sub.status !== "trialing"));
+  const cryptoRenew =
+    sub?.status === "active" && sub.source === "crypto" && sub.plan !== "lifetime";
   // Rien à encaisser ni à gérer ici : pas de carte vide avec un seul titre.
   if (!showPlans && !portal && !cryptoRenew) return null;
 
@@ -129,7 +132,7 @@ export default function SubscriptionSection({
       {showPlans && (
         <PricingPlans
           lang={lang === "fr" ? "fr" : "en"}
-          currentPlan={sub.plan}
+          currentPlan={sub?.plan ?? "free"}
           busy={busy}
           onChoose={(plan) => run(plan, () => checkout(plan, promo))}
           onCrypto={(plan) => run(`crypto-${plan}`, () => cryptoCheckout(plan))}
@@ -155,24 +158,16 @@ export default function SubscriptionSection({
         <p className="tv-row-label leading-relaxed">{t("billing.portalHint")}</p>
       )}
 
-      {/* Crypto subscribers renew manually — crypto has no auto-renewal. */}
+      {/* Ancien accès crypto à durée limitée : il se prolonge désormais par
+          la licence à vie, payée une fois en crypto aussi. */}
       {cryptoRenew && (
-        <div className="flex gap-2.5">
-          <button
-            onClick={() => run("renew-m", () => cryptoCheckout("pro_monthly"))}
-            disabled={busy !== null}
-            className="flex-1 px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm font-semibold text-slate-200 hover:bg-white/[0.06] transition disabled:opacity-60"
-          >
-            {t("billing.renewMonth")}
-          </button>
-          <button
-            onClick={() => run("renew-y", () => cryptoCheckout("pro_yearly"))}
-            disabled={busy !== null}
-            className="flex-1 px-4 py-2.5 rounded-xl bg-cyan-500/10 border border-cyan-500/25 text-sm font-semibold text-cyan-300 hover:bg-cyan-500/15 transition disabled:opacity-60"
-          >
-            {t("billing.renewYear")}
-          </button>
-        </div>
+        <button
+          onClick={() => run("crypto-lifetime", () => cryptoCheckout("lifetime"))}
+          disabled={busy !== null}
+          className="btn-ghost w-full justify-center disabled:opacity-60"
+        >
+          {t("billing.cryptoLifetime")}
+        </button>
       )}
     </div>
   );
