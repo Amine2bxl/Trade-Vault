@@ -6500,6 +6500,38 @@ thead .plan-cmp-col.is-pro {
 .dash-short .dash-hero .tv-account-pill {
   display: none;
 }
+/* SUR ORDINATEUR, UN HÉROS PLUS SOBRE. La courbe est l'objet de l'écran : le
+   bloc du compte (pilule, chiffre, actions) rend environ 50px à la rangée de
+   l'equity, dans les mêmes proportions — chiffre 38, disques 46. */
+@media (min-width: 1024px) {
+  .dash-hero {
+    gap: 6px;
+    padding-bottom: 14px;
+  }
+  .dash-hero .tv-account-pill {
+    height: 30px;
+    padding: 0 12px;
+    font-size: 12.5px;
+  }
+  .dash-hero-figure {
+    font-size: 38px;
+  }
+  .dash-hero-actions {
+    margin-top: 6px;
+    gap: 22px;
+  }
+  .dash-hero .tv-action {
+    gap: 6px;
+  }
+  .dash-hero .tv-action-disc {
+    width: 46px;
+    height: 46px;
+  }
+  .dash-hero .tv-action-disc > svg {
+    width: 20px;
+    height: 20px;
+  }
+}
 .dash-short .dash-hero-figure {
   font-size: 38px;
 }

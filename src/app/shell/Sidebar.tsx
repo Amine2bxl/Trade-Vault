@@ -2,8 +2,8 @@ import { memo, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import {
   Bell,
-  ChevronLeft,
-  ChevronRight,
+  PanelLeftClose,
+  PanelLeftOpen,
   LogOut,
   MoreHorizontal,
   Settings as SettingsIcon,
@@ -199,7 +199,10 @@ export default memo(function Sidebar({ page, setPage, totalPnl }: SidebarProps) 
               title={t("nav.collapseSidebar")}
               className="rail-toggle"
             >
-              <ChevronLeft className="h-3.5 w-3.5" />
+              {/* Le pictogramme du panneau latéral (carré, bande à gauche) :
+                  il dit ce qu'il replie, là où un chevron ne disait qu'une
+                  direction. */}
+              <PanelLeftClose className="h-4 w-4" strokeWidth={1.75} />
             </button>
           )}
         </div>
@@ -296,7 +299,7 @@ export default memo(function Sidebar({ page, setPage, totalPnl }: SidebarProps) 
                     title={t("nav.expandSidebar")}
                     className="rail-chip mx-auto h-10 w-10"
                   >
-                    <ChevronRight className="h-4 w-4" />
+                    <PanelLeftOpen className="h-4 w-4" strokeWidth={1.75} />
                   </button>
                 </>
               ) : (

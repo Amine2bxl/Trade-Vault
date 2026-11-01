@@ -254,9 +254,9 @@ export default function Dashboard({
   // dépasser d'un pixel et faire apparaître une barre de défilement.
   const rest = wide && available && heroH ? available - heroH - ROW_GAP * 2 - 1 : null;
   // …sans jamais laisser moins de 180 px aux derniers trades et à l'objectif.
-  const row1H = rest !== null ? Math.floor(Math.min(rest * 0.58, rest - 180)) : null;
+  const row1H = rest !== null ? Math.floor(Math.min(rest * 0.64, rest - 170)) : null;
   const rowH = rest !== null && row1H !== null ? rest - row1H : null;
-  const fit = rowH !== null && row1H !== null && rowH >= 170 && row1H >= 180;
+  const fit = rowH !== null && row1H !== null && rowH >= 160 && row1H >= 180;
   /* Fenêtre basse (≈ 768 px) : le héros se resserre — la pilule du compte,
      déjà dans le rail, s'efface — pour rendre la place aux deux rangées. Le
      mode dépend de la place disponible, jamais de la hauteur du héros : pas
