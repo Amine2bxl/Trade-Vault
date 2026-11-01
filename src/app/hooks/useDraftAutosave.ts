@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import { writeJSON, removeKey } from "../utils/persistence";
 
 /**
@@ -24,9 +24,12 @@ export function useDraftAutosave<T extends object>(
     dirty,
     omit = [],
     guard,
+    immediate = false,
   }: {
     dirty: boolean;
     omit?: (keyof T)[];
+    /** Persiste chaque modification après le rendu, sans attendre 400 ms. */
+    immediate?: boolean;
     /** Renvoie false pour bloquer toute écriture (ex. : après enregistrement,
      *  où réécrire le brouillon au démontage le ferait « ressusciter »). */
     guard?: () => boolean;
@@ -55,12 +58,18 @@ export function useDraftAutosave<T extends object>(
     writeJSON(k, copy);
   });
 
-  // Écriture débouncée pendant la frappe.
+  // Le formulaire TradeModal doit être protégé dès chaque frappe/sélection :
+  // useLayoutEffect s'exécute après le commit React, avant le prochain paint.
+  // Les autres formulaires peuvent garder le debounce historique.
+  useLayoutEffect(() => {
+    if (immediate && key && dirty) save.current();
+  }, [immediate, key, form, dirty]);
+
   useEffect(() => {
-    if (!key || !dirty) return;
+    if (immediate || !key || !dirty) return;
     const id = setTimeout(() => save.current(), 400);
     return () => clearTimeout(id);
-  }, [key, form, dirty]);
+  }, [immediate, key, form, dirty]);
 
   // Sauvegarde immédiate quand la page disparaît (onglet caché, navigation,
   // fermeture, app mobile en arrière-plan) + garde-fou avant déchargement.
