@@ -777,6 +777,7 @@ const fr: Dict = {
   "missed.totalMissed": "R laissés sur la table",
   "missed.logged": "Setups notés",
   "missed.avgMissed": "R moyen par setup",
+  "missed.byMonth": "Par mois",
   "missed.card.why": "Pourquoi je ne l'ai pas pris ?",
   "missed.card.what": "Ce qu'il s'est passé",
   "missed.card.lesson": "Leçon apprise",

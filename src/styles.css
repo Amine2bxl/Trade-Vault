@@ -7469,17 +7469,206 @@ body.tv-app-type svg.lucide {
   border-color: var(--tv-border-accent);
   color: var(--tv-highlight);
 }
+/* ── SETUPS MANQUÉS — LIQUID ───────────────────────────────────────────────
+   Une colonne de synthèse (le chiffre héros, ses six derniers mois, deux
+   cases) et un flux groupé par mois, à la manière d'un relevé Revolut : un
+   disque d'instrument, le symbole et la raison, le R à droite. Plaques
+   opaques, aucun verre — ce sont des cartes de contenu. */
+.tv-missed-hero {
+  border: 1px solid var(--tv-border);
+  border-radius: var(--radius-3xl);
+  background: var(--tv-plate-1);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05);
+  padding: 22px 22px 18px;
+}
+.tv-missed-hero-figure {
+  margin-top: 10px;
+  color: var(--tv-text-primary);
+  font: 700 var(--tv-t-display, 44px) / 1 var(--font-figure);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.035em;
+}
+.tv-missed-hero-figure span {
+  margin-left: 4px;
+  color: var(--tv-text-muted);
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+.tv-missed-bars {
+  display: grid;
+  height: 128px;
+  margin-top: 22px;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+}
+.tv-missed-bar-col {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.tv-missed-bar-value {
+  height: 13px;
+  color: var(--tv-text-muted);
+  font: 600 10.5px/13px var(--font-figure);
+  font-variant-numeric: tabular-nums;
+}
+.tv-missed-bar-track {
+  display: flex;
+  width: 100%;
+  flex: 1;
+  align-items: flex-end;
+  border-radius: 8px;
+  background: rgb(255 255 255 / 0.03);
+}
+.tv-missed-bar {
+  display: block;
+  width: 100%;
+  border-radius: 8px;
+  background: rgb(var(--tv-accent-rgb) / 0.32);
+  transition: height var(--tv-dur-spring) var(--tv-spring);
+}
+.tv-missed-bar[data-on="true"] {
+  background: var(--tv-accent);
+}
+.tv-missed-bar-label {
+  overflow: hidden;
+  max-width: 100%;
+  color: var(--tv-text-muted);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+.tv-missed-month {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding-inline: 18px;
+  color: var(--tv-text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+}
+.tv-missed-month > span:first-child::first-letter {
+  text-transform: uppercase;
+}
+.tv-missed-month > span:last-child {
+  color: var(--tv-text-muted);
+  font-size: 12px;
+}
 .tv-missed-list {
   overflow: hidden;
   border: 1px solid var(--tv-border);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-2xl);
   background: var(--tv-plate-1);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
 }
-.tv-missed-row + .tv-missed-row {
-  border-top: 1px solid var(--tv-border);
+.tv-missed-row {
+  position: relative;
+}
+/* Le filet rentré : il commence où commence le texte, après le disque. */
+.tv-missed-row + .tv-missed-row::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 74px;
+  height: 1px;
+  background: var(--tv-border);
+  pointer-events: none;
 }
 .tv-missed-row[data-open="true"] {
-  background: var(--tv-plate-2);
+  background: rgb(255 255 255 / 0.02);
+}
+.tv-missed-head {
+  display: flex;
+  min-height: 68px;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px 12px 18px;
+  cursor: pointer;
+  transition: background-color var(--tv-dur-1) var(--tv-ease);
+}
+.tv-missed-head:hover {
+  background: rgb(255 255 255 / 0.025);
+}
+.tv-missed-disc {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  margin-right: 4px;
+  place-items: center;
+  border-radius: 9999px;
+  background: var(--tv-plate-3);
+  color: var(--tv-text-primary);
+  font: 700 12.5px var(--font-figure);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.tv-missed-sym {
+  color: var(--tv-text-primary);
+  font-size: 14.5px;
+  font-weight: 600;
+}
+.tv-missed-sub {
+  margin-top: 2px;
+  color: var(--tv-text-muted);
+  font-size: 12.5px;
+}
+.tv-missed-r {
+  color: var(--tv-chart-green);
+  font: 600 15px var(--font-figure);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+.tv-missed-r-unit {
+  margin-left: 1px;
+  font-size: 12px;
+}
+.tv-missed-act {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 9999px;
+  color: var(--tv-text-muted);
+  transition:
+    background-color var(--tv-dur-1) var(--tv-ease),
+    color var(--tv-dur-1) var(--tv-ease);
+}
+.tv-missed-act:hover {
+  background: rgb(255 255 255 / 0.06);
+  color: var(--tv-text-primary);
+}
+.tv-missed-act[data-danger]:hover {
+  background: rgb(239 68 68 / 0.1);
+  color: #f87171;
+}
+/* Sur un écran à pointeur, les actions n'apparaissent qu'au survol (ou au
+   clavier, ou ligne ouverte) : la liste se lit comme un relevé, pas comme
+   une barre d'outils répétée six fois. */
+@media (hover: hover) {
+  .tv-missed-actions {
+    opacity: 0;
+    transition: opacity var(--tv-dur-1) var(--tv-ease);
+  }
+  .tv-missed-row:hover .tv-missed-actions,
+  .tv-missed-row:focus-within .tv-missed-actions,
+  .tv-missed-row[data-open="true"] .tv-missed-actions {
+    opacity: 1;
+  }
+}
+.tv-missed-detail {
+  padding: 2px 18px 18px;
+}
+@media (min-width: 640px) {
+  .tv-missed-detail {
+    padding-left: 74px;
+  }
 }
 .tv-missed-pill {
   border-color: rgb(245 158 11 / 0.3);

@@ -813,6 +813,7 @@ const en = {
   "missed.totalMissed": "R left on the table",
   "missed.logged": "Setups logged",
   "missed.avgMissed": "Avg R per setup",
+  "missed.byMonth": "By month",
   "missed.card.why": "Why didn't I take it?",
   "missed.card.what": "What happened",
   "missed.card.lesson": "Lesson learned",

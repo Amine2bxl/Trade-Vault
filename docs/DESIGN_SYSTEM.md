@@ -397,4 +397,6 @@ Aucune notification de démonstration n’est ajoutée dans le produit.
 Analytics organise tous ses blocs en Synthèse, Exécution et Timing, un groupe
 à la fois. Le calendrier partage le même cadre que les autres pages.
 
+**Setups manqués :** une colonne de synthèse — chiffre héros « R laissé sur la table », barres des six derniers mois calendaires (mois courant à l'accent, `n` au survol), puis deux `Kpi` (setups notés, R moyen) — et un flux groupé par mois façon relevé Revolut : disque d'instrument, symbole, date et raison en clair, R à droite dans une colonne fixe, captures dans la suivante. Les actions apparaissent au survol sur ordinateur, dans la fiche dépliée sur téléphone.
+
 **Icônes :** `src/shared/ui/icons.tsx` reste le point d’entrée commun. Il réexporte les pictogrammes Lucide familiers : livre pour le journal, calendrier, graphique pour les statistiques, cible pour les objectifs, engrenage pour les réglages. Un symbole doit être compréhensible avant d’être original. Garder le nom de page à côté dans la navigation, le trait 1,6 et `currentColor` ; pas de glyphe métier abstrait ni de variante locale.
