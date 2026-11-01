@@ -21,10 +21,7 @@ export function serializeCalendarView(view: CalendarView): string {
 }
 
 /** Corrupt/old storage must not make the calendar show an invalid year or month. */
-export function parseCalendarView(
-  stored: unknown,
-  today: Date = new Date(),
-): CalendarView {
+export function parseCalendarView(stored: unknown, today: Date = new Date()): CalendarView {
   const match = typeof stored === "string" ? /^(\d{4})-(0[1-9]|1[0-2])$/.exec(stored) : null;
   if (!match) return currentCalendarView(today);
   const year = Number(match[1]);
