@@ -454,7 +454,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
   const initialSnapshot = useRef<string | null>(null);
   const hasInteractedRef = useRef(false);
   const draftState = useMemo(
-    () => ({ form, __ui: { newConfluence, stopPoints, pointValue, rDraft } }),
+    () => ({ ...form, __ui: { newConfluence, stopPoints, pointValue, rDraft } }),
     [form, newConfluence, stopPoints, pointValue, rDraft],
   );
   const draftBody = JSON.stringify(draftState);
@@ -493,7 +493,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
     const fresh = { ...defaultForm };
     latestFormRef.current = fresh;
     initialSnapshot.current = JSON.stringify({
-      form: fresh,
+      ...fresh,
       __ui: { newConfluence: "", stopPoints: "", pointValue: "20", rDraft: null },
     });
     hasInteractedRef.current = false;
