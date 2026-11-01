@@ -207,7 +207,10 @@ export function DateField({
                     </option>
                   ))}
                 </select>
-                <ChevronDown aria-hidden="true" className="pointer-events-none absolute right-0.5 top-1/2 h-3 w-3 -translate-y-1/2 text-[var(--tv-text-muted)]" />
+                <ChevronDown
+                  aria-hidden="true"
+                  className="pointer-events-none absolute right-0.5 top-1/2 h-3 w-3 -translate-y-1/2 text-[var(--tv-text-muted)]"
+                />
               </div>
               <div className="relative w-[4.35rem] shrink-0">
                 <select
@@ -222,7 +225,10 @@ export function DateField({
                     </option>
                   ))}
                 </select>
-                <ChevronDown aria-hidden="true" className="pointer-events-none absolute right-0.5 top-1/2 h-3 w-3 -translate-y-1/2 text-[var(--tv-text-muted)]" />
+                <ChevronDown
+                  aria-hidden="true"
+                  className="pointer-events-none absolute right-0.5 top-1/2 h-3 w-3 -translate-y-1/2 text-[var(--tv-text-muted)]"
+                />
               </div>
             </div>
             <button type="button" onClick={() => decaler(1)} className="tv-pop-nav" aria-label="+1">
