@@ -5666,6 +5666,278 @@ thead .plan-cmp-col.is-pro {
   }
 }
 
+/* ══ LE CALENDRIER ÉCONOMIQUE — façon Forex Factory ══
+ * Un TABLEAU dense, pas une liste de cartes : on doit lire d'un coup d'œil
+ * l'heure, la devise, l'impact, l'événement et les trois valeurs (réel,
+ * prévu, précédent). Sur téléphone la ligne passe sur deux étages. */
+.ff-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.ff-week {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--tv-border);
+  background: var(--tv-plate-0);
+}
+.ff-week-btn {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  color: var(--tv-text-secondary);
+}
+.ff-week-btn:hover {
+  background: var(--tv-plate-2);
+  color: var(--tv-text-primary);
+}
+.ff-week-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--tv-text-primary);
+  white-space: nowrap;
+}
+.ff-today {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 38px;
+  padding: 0 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--tv-border-accent);
+  background: rgb(var(--tv-accent-rgb) / 0.1);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tv-highlight);
+}
+.ff-next {
+  display: inline-flex;
+  min-width: 0;
+  max-width: 560px;
+  flex: 1 1 260px;
+  align-items: center;
+  gap: 10px;
+  height: 38px;
+  padding: 0 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--tv-border);
+  background: var(--tv-plate-1);
+}
+.ff-source {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 9999px;
+  border: 1px solid var(--tv-border);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.ff-source-ok {
+  border-color: rgb(var(--tv-accent-rgb) / 0.3);
+  background: rgb(var(--tv-accent-rgb) / 0.08);
+  color: var(--tv-highlight);
+}
+.ff-source-warn {
+  border-color: rgb(245 158 11 / 0.3);
+  background: rgb(245 158 11 / 0.08);
+  color: #fcd34d;
+}
+.ff-source-time {
+  font-weight: 500;
+  color: var(--tv-text-secondary);
+}
+.ff-table {
+  overflow: hidden;
+  border-radius: var(--radius-2xl);
+  border: 1px solid var(--tv-border);
+  background: var(--tv-plate-1);
+}
+.ff-row {
+  display: grid;
+  grid-template-columns: 76px 72px 64px minmax(0, 1fr) 92px 92px 92px;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 6px 18px;
+  border-top: 1px solid var(--tv-border);
+  font-size: 13px;
+  color: var(--tv-text-primary);
+}
+.ff-head {
+  min-height: 38px;
+  border-top: 0;
+  background: var(--tv-plate-0);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--tv-text-muted);
+}
+.ff-day {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 18px;
+  border-top: 1px solid var(--tv-border-strong);
+  background: var(--tv-plate-2);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--tv-text-secondary);
+}
+.ff-day-today {
+  color: var(--tv-text-primary);
+  box-shadow: inset 3px 0 0 var(--tv-accent);
+}
+.ff-day-tag {
+  padding: 1px 7px;
+  border-radius: 9999px;
+  background: rgb(var(--tv-accent-rgb) / 0.14);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--tv-highlight);
+}
+.ff-time {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tv-text-secondary);
+}
+.ff-cur {
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.ff-title {
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 500;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.ff-num {
+  text-align: right;
+  white-space: nowrap;
+  color: var(--tv-text-secondary);
+}
+.ff-actual {
+  color: var(--tv-text-primary);
+}
+.ff-num-label {
+  display: none;
+}
+.ff-impact {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 14px;
+}
+.ff-impact-bar {
+  width: 4px;
+  border-radius: 1px;
+  background: rgb(255 255 255 / 0.1);
+}
+.ff-impact-bar[data-on="high"] {
+  background: #ef4444;
+}
+.ff-impact-bar[data-on="medium"] {
+  background: #f97316;
+}
+.ff-impact-bar[data-on="low"] {
+  background: #eab308;
+}
+.ff-impact-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 9999px;
+  background: var(--tv-text-muted);
+}
+.ff-past {
+  opacity: 0.55;
+}
+.ff-live {
+  background: rgb(var(--tv-accent-rgb) / 0.06);
+}
+.ff-isnext {
+  box-shadow: inset 3px 0 0 var(--tv-accent);
+}
+.ff-live-pill {
+  padding: 0 5px;
+  border-radius: 4px;
+  background: rgb(var(--tv-accent-rgb) / 0.16);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--tv-highlight);
+}
+@media (max-width: 767px) {
+  .ff-head {
+    display: none;
+  }
+  .ff-row {
+    grid-template-columns: auto auto auto minmax(0, 1fr);
+    grid-template-areas:
+      "time cur impact ."
+      "title title title title"
+      "act fc prev prev";
+    row-gap: 4px;
+    padding: 10px 14px;
+  }
+  .ff-row > :nth-child(1) {
+    grid-area: time;
+  }
+  .ff-row > :nth-child(2) {
+    grid-area: cur;
+  }
+  .ff-row > :nth-child(3) {
+    grid-area: impact;
+  }
+  .ff-row > :nth-child(4) {
+    grid-area: title;
+    white-space: normal;
+  }
+  .ff-row > :nth-child(5) {
+    grid-area: act;
+  }
+  .ff-row > :nth-child(6) {
+    grid-area: fc;
+  }
+  .ff-row > :nth-child(7) {
+    grid-area: prev;
+  }
+  .ff-num {
+    display: inline-flex;
+    gap: 4px;
+    text-align: left;
+    font-size: 12px;
+  }
+  .ff-num-label {
+    display: inline;
+    color: var(--tv-text-muted);
+  }
+  .ff-day {
+    padding: 9px 14px;
+  }
+}
+
 /* ══ L'ACCUEIL FAÇON REVOLUT (Dashboard) ══
  * Le P&L de la période, seul et énorme, centré ; sa fenêtre en mots ; le
  * choix de la période ; la rangée d'actions rondes. Rien d'autre au-dessus de
