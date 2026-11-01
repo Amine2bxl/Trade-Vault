@@ -530,7 +530,10 @@ function AccountCalendarPage({
                     </option>
                   ))}
                 </select>
-                <ChevronDown aria-hidden="true" className="pointer-events-none absolute right-0 top-1/2 h-3 w-3 -translate-y-1/2 text-[var(--tv-text-muted)]" />
+                <ChevronDown
+                  aria-hidden="true"
+                  className="pointer-events-none absolute right-0 top-1/2 h-3 w-3 -translate-y-1/2 text-[var(--tv-text-muted)]"
+                />
               </div>
               <div className="relative w-[4.25rem] shrink-0">
                 <select
@@ -545,7 +548,10 @@ function AccountCalendarPage({
                     </option>
                   ))}
                 </select>
-                <ChevronDown aria-hidden="true" className="pointer-events-none absolute right-0 top-1/2 h-3 w-3 -translate-y-1/2 text-[var(--tv-text-muted)]" />
+                <ChevronDown
+                  aria-hidden="true"
+                  className="pointer-events-none absolute right-0 top-1/2 h-3 w-3 -translate-y-1/2 text-[var(--tv-text-muted)]"
+                />
               </div>
             </div>
             <button onClick={nextMonth} aria-label={t("common.next")} className="cal-nav-btn">
