@@ -2,7 +2,9 @@
  * Validate old/corrupt drafts before passing the array to the image viewer. */
 export function restoreDraftScreenshots(saved: unknown, fallback: string[]): string[] {
   if (!Array.isArray(saved)) return fallback;
-  return saved.filter((item): item is string => typeof item === "string" && item.length > 0).slice(0, 3);
+  return saved
+    .filter((item): item is string => typeof item === "string" && item.length > 0)
+    .slice(0, 3);
 }
 
 /** Only newly uploaded draft files are owned by the draft. Existing trade
