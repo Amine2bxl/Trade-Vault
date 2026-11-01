@@ -1,0 +1,47 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "TradeVault",
+  "version": "1.0.0",
+  "identifier": "be.tradevault.desktop",
+  "build": {
+    "frontendDist": "https://tradevault.be"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "TradeVault",
+        "width": 1440,
+        "height": 900,
+        "minWidth": 1024,
+        "minHeight": 680,
+        "resizable": true,
+        "center": true,
+        "backgroundColor": "#050607"
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["msi", "nsis", "dmg", "app"],
+    "category": "Finance",
+    "shortDescription": "Journal de trading et espace de performance",
+    "longDescription": "TradeVault : journal de trading, analyses de ton edge, plan de séance et Jarvis, ton coach — dans une fenêtre dédiée.",
+    "copyright": "TradeVault",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser"
+      }
+    }
+  }
+}
