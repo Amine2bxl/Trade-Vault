@@ -861,6 +861,7 @@ const fr: Dict = {
   "jarvis.think.general.2": "Je la relie à ton trading",
   "jarvis.composerPlaceholder": "Parle à Jarvis…",
   "jarvis.composerHint": "Entrée pour envoyer · Maj+Entrée pour aller à la ligne",
+  "jarvis.reassure": "Jarvis ne fait que lire ton journal. Rien ne change sans ton accord.",
   "jarvis.copy": "Copier",
   "jarvis.copied": "Copié",
   "jarvis.copyError": "Impossible de copier cette réponse.",

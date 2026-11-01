@@ -162,13 +162,11 @@ export default function Jarvis() {
   const lead = useMemo(
     () => (
       <div className="flex min-w-0 items-center gap-2.5">
-        <JarvisOrb state={activity} size={28} />
-        <span className="font-display shrink-0 text-sm font-bold tracking-tight text-white">
-          {t("assistant.title")}
-        </span>
-        {/* La promesse ne tient pas dans la barre d'un téléphone : elle y
-            perdait « journal », le mot qui la rend vraie. */}
-        <span aria-hidden className="hidden h-3.5 w-px shrink-0 bg-white/[0.12] md:block" />
+        {/* Le nom est déjà le grand titre juste au-dessus : il ne reste que
+            l'orbe (l'état de Jarvis) et la promesse. Elle ne tient pas dans la
+            barre d'un téléphone : elle y perdait « journal », le mot qui la
+            rend vraie. */}
+        <JarvisOrb state={activity} size={22} />
         <span className="tv-row-label hidden truncate md:block">{t("jarvis.pageLead")}</span>
       </div>
     ),

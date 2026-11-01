@@ -642,6 +642,21 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
   // l'Accueil) mais n'était jamais branché ici : la conversation n'orientait
   // donc jamais le trader. Elles sont dérivées de SES données réelles (pire
   // jour, erreur la plus coûteuse, dérive de risque…), pas d'une liste figée.
+  /* La salutation de l'accueil : l'heure LOCALE du trader, son prénom. */
+  const greeting = useMemo(() => {
+    const h = new Date().getHours();
+    const hello =
+      h < 5
+        ? t("dashboard.greetingStillUp")
+        : h < 12
+          ? t("dashboard.greetingMorning")
+          : h < 18
+            ? t("dashboard.greetingAfternoon")
+            : t("dashboard.greetingEvening");
+    const first = (user?.name ?? "").trim().split(/\s+/)[0] || t("jarvisHome.trader");
+    return `${hello}, ${first}`;
+  }, [t, user?.name]);
+
   const suggestions = useMemo(
     () =>
       buildSuggestions(
@@ -1233,6 +1248,10 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
             ) : (
               <JarvisOrb state={activity} size={84} className="mx-auto mb-6" />
             )}
+            {/* À LA CLAUDE : une salutation, au nom du trader, puis une phrase.
+                Les questions descendent SOUS le compositeur — on lit, on écrit,
+                ou on choisit : dans cet ordre. */}
+            <h2 className="jarvis-accueil-greeting">{greeting}</h2>
             <p className="jarvis-accueil-invite">{t("assistant.empty")}</p>
             {knownFacts.length > 0 && (
               <div className="jarvis-known">
@@ -1242,25 +1261,6 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
                     <span key={f.id} className="jarvis-known-item" title={f.content}>
                       {f.content.length > 48 ? `${f.content.slice(0, 46)}…` : f.content}
                     </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {suggestions.length > 0 && (
-              <div className="mt-7 w-full">
-                <p className="tv-label mb-3 text-slate-500">{t("jarvisHome.suggestions")}</p>
-                <div className="grid gap-2.5 sm:grid-cols-2">
-                  {suggestions.map((s) => (
-                    <button
-                      key={s.id}
-                      type="button"
-                      onClick={() => void ask(s.prompt)}
-                      className="jarvis-suggestion"
-                    >
-                      <span className="min-w-0 flex-1">{s.label}</span>
-                      <ArrowUpRight className="jarvis-suggestion-fleche" aria-hidden />
-                    </button>
                   ))}
                 </div>
               </div>
@@ -1462,6 +1462,25 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
             micAvailable={!!SpeechRecognitionCtor}
             onVoice={talk.supported ? startVoice : undefined}
           />
+        )}
+
+        {/* Les questions tirées des motifs mesurés sur les trades
+            (`buildSuggestions`) : des puces sous le champ, comme les
+            raccourcis de Claude. Un appui pose la question. */}
+        {loaded && messages.length === 0 && voiceTurn === "off" && suggestions.length > 0 && (
+          <div className="jarvis-starters animate-fade-in" aria-label={t("jarvisHome.suggestions")}>
+            {suggestions.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => void ask(s.prompt)}
+                className="jarvis-suggestion"
+              >
+                <span className="min-w-0 truncate">{s.label}</span>
+                <ArrowUpRight className="jarvis-suggestion-fleche" aria-hidden />
+              </button>
+            ))}
+          </div>
         )}
       </div>
     </div>

@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef } from "react";
-import { ArrowUp, AudioLines, Mic, MicOff } from "@/shared/ui/icons";
+import { ArrowUp, AudioLines, Mic, MicOff, ShieldCheck } from "@/shared/ui/icons";
 import { useT } from "@/app/i18n/LanguageContext";
 import { cn } from "@/shared/ui/cn";
 
@@ -80,7 +80,7 @@ export default function Composer({
       <div
         /* Le compositeur s'allume quand on écrit : liseré d'accent et halo
            discret, pour que le champ se lise comme l'endroit où tout commence. */
-        className="jarvis-composer flex items-end gap-1.5 p-2"
+        className="jarvis-composer flex items-end gap-1.5"
       >
         {micAvailable && onMic && (
           <button
@@ -89,7 +89,7 @@ export default function Composer({
             aria-label={t("common.voiceInput")}
             aria-pressed={!!listening}
             className={cn(
-              "jarvis-composer-action grid shrink-0 place-items-center rounded-lg transition-colors",
+              "jarvis-composer-action grid shrink-0 place-items-center rounded-full transition-colors",
               listening
                 ? "bg-red-500/15 text-red-400"
                 : "text-slate-400 hover:bg-white/[0.07] hover:text-white",
@@ -116,7 +116,8 @@ export default function Composer({
           disabled={disabled}
           placeholder={t("jarvis.composerPlaceholder")}
           aria-label={t("assistant.title")}
-          className="min-h-9 min-w-0 flex-1 resize-none bg-transparent px-1.5 py-2 text-sm leading-6 text-white outline-none placeholder:text-slate-600 disabled:opacity-50"
+          title={t("jarvis.composerHint")}
+          className="jarvis-composer-input min-h-9 min-w-0 flex-1 resize-none bg-transparent px-1.5 py-2 leading-6 text-white outline-none placeholder:text-slate-500 disabled:opacity-50"
         />
 
         {/* CHAMP VIDE : LA VOIX PREND LA PLACE DE L'ENVOI. Un bouton
@@ -130,7 +131,7 @@ export default function Composer({
             disabled={disabled}
             aria-label={t("jarvis.voice.start")}
             title={t("jarvis.voice.start")}
-            className="jarvis-composer-action tv-accent-fill grid shrink-0 place-items-center rounded-lg active:scale-95 disabled:opacity-50"
+            className="jarvis-composer-action tv-accent-fill grid shrink-0 place-items-center rounded-full active:scale-95 disabled:opacity-50"
           >
             <AudioLines className="h-4 w-4" />
           </button>
@@ -141,7 +142,7 @@ export default function Composer({
             disabled={!pret}
             aria-label={t("jarvis.send")}
             className={cn(
-              "jarvis-composer-action grid shrink-0 place-items-center rounded-lg transition-colors",
+              "jarvis-composer-action grid shrink-0 place-items-center rounded-full transition-colors",
               pret
                 ? "tv-accent-fill jarvis-send-ready active:scale-95"
                 : "cursor-not-allowed bg-white/[0.05] text-slate-600",
@@ -152,7 +153,14 @@ export default function Composer({
         )}
       </div>
 
-      <p className="tv-hint jarvis-composer-hint mt-1.5 px-1">{t("jarvis.composerHint")}</p>
+      {/* RASSURER, PAS EXPLIQUER LE CLAVIER. Entrée envoie partout ; ce que le
+          trader veut savoir sous le champ, c'est ce que Jarvis peut faire de
+          son journal : le lire, jamais le modifier sans son accord. Le
+          raccourci reste dans l'infobulle du champ. */}
+      <p className="jarvis-composer-hint" title={t("jarvis.composerHint")}>
+        <ShieldCheck className="h-3.5 w-3.5 shrink-0" aria-hidden />
+        <span>{t("jarvis.reassure")}</span>
+      </p>
     </div>
   );
 }

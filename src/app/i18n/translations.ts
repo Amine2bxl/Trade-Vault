@@ -901,6 +901,7 @@ const en = {
   "jarvis.think.general.2": "Relating it to your trading",
   "jarvis.composerPlaceholder": "Talk to Jarvis…",
   "jarvis.composerHint": "Enter to send · Shift+Enter for a new line",
+  "jarvis.reassure": "Jarvis only reads your journal. Nothing changes without your OK.",
   "jarvis.copy": "Copy",
   "jarvis.copied": "Copied",
   "jarvis.copyError": "Could not copy this response.",

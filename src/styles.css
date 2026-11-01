@@ -1188,16 +1188,38 @@ body {
   max-width: 44rem;
   text-align: center;
 }
-.jarvis-accueil-invite {
-  margin-inline: auto;
-  max-width: 34rem;
-  /* L'invitation est LA phrase de l'écran — celle qui dit « parle-moi ». En
-     corps de texte, elle se lisait comme une légende sous l'orbe. */
-  font-size: 1.25rem;
-  font-weight: 600;
-  letter-spacing: -0.015em;
-  line-height: 1.5;
+.jarvis-accueil-greeting {
+  /* À LA CLAUDE — la salutation porte l'écran : grande, nette, au prénom du
+     trader. La phrase d'invitation passe dessous, en corps de lecture. */
   color: var(--tv-text-primary);
+  font-size: var(--tv-t-h1);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+}
+.jarvis-accueil-invite {
+  margin: 10px auto 0;
+  max-width: 34rem;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.55;
+  color: var(--tv-text-secondary);
+}
+/* Conversation vide : l'accueil, le champ et les questions forment UN bloc
+   centré dans la hauteur, comme l'écran d'accueil de Claude. Dès le premier
+   message, le fil reprend toute la hauteur et le champ redescend en bas. */
+.jarvis-conversation:has(> .jarvis-thread-empty) {
+  justify-content: center;
+}
+.jarvis-thread-empty {
+  flex: 0 1 auto;
+}
+.jarvis-starters {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 14px;
 }
 /* La signature d'une réponse de Jarvis : sa marque, sur une plaque sourde
    liserée d'émeraude — plus un aplat plein à chaque message, qui répétait la
@@ -1240,32 +1262,31 @@ body {
  * étaient des rangées grises indifférenciées, avec un survol CYAN resté de
  * l'identité d'avant. */
 .jarvis-suggestion {
-  display: flex;
+  /* Une puce, pas une carte : on la lit d'un coup d'œil et on l'effleure. */
+  display: inline-flex;
+  max-width: 100%;
   align-items: center;
-  gap: 0.75rem;
-  min-height: 2.875rem;
-  width: 100%;
-  border: 1px solid var(--tv-border);
-  border-radius: 0.875rem;
-  background: var(--tv-plate-2);
-  padding: 0.7rem 0.9rem 0.7rem 1rem;
+  gap: 8px;
+  min-height: 38px;
+  border: 1px solid var(--tv-glass-edge);
+  border-radius: 9999px;
+  background: rgb(255 255 255 / 0.04);
+  padding: 0 14px 0 16px;
   text-align: left;
-  font-size: 0.8125rem;
-  color: var(--tv-text-primary);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
+  font-size: 13px;
+  color: var(--tv-text-secondary);
+  box-shadow: var(--tv-glass-specular);
   transition:
-    border-color 0.18s ease,
-    background-color 0.18s ease,
-    box-shadow 0.18s ease,
-    transform 0.18s ease;
+    background-color var(--tv-dur-1) var(--tv-ease),
+    color var(--tv-dur-1) var(--tv-ease),
+    transform var(--tv-dur-1) var(--tv-ease);
 }
 .jarvis-suggestion:hover {
-  border-color: rgb(var(--tv-accent-rgb) / 0.45);
-  background: rgb(var(--tv-accent-rgb) / 0.08);
-  transform: translateY(-1px);
+  background: rgb(255 255 255 / 0.08);
+  color: var(--tv-text-primary);
 }
 .jarvis-suggestion:active {
-  transform: scale(0.99);
+  transform: var(--tv-press);
 }
 .jarvis-suggestion-fleche {
   height: 0.875rem;
@@ -5031,10 +5052,10 @@ body.tv-app-type :is(.tv-figure, .tv-num, .tabular-nums) {
 }
 .jarvis-bubble-user {
   min-width: 0;
-  border: 1px solid var(--tv-border-strong);
-  border-radius: var(--radius-xl) var(--radius-xl) var(--radius-sm) var(--radius-xl);
+  border: 1px solid var(--tv-border);
+  border-radius: 20px 20px 6px 20px;
   background: var(--tv-plate-3);
-  padding: 10px 14px;
+  padding: 10px 16px;
   font-size: var(--tv-t-body);
   line-height: 1.6;
   color: var(--tv-text-primary);
@@ -5059,17 +5080,26 @@ body.tv-app-type :is(.tv-figure, .tv-num, .tabular-nums) {
 
 /* ── LE COMPOSITEUR ── il s'allume quand on écrit. */
 .jarvis-composer {
+  /* LE CHAMP DE CLAUDE : une grande plaque douce, rayon 24, de l'air autour
+     du texte. Au focus elle s'éclaircit d'un cran — aucun anneau coloré. */
+  min-height: 60px;
+  padding: 10px 10px 10px 12px;
   border: 1px solid var(--tv-border-strong);
-  border-radius: var(--radius-xl);
+  border-radius: 24px;
   background: var(--tv-plate-2);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.05),
+    0 10px 30px -18px rgb(0 0 0 / 0.8);
   transition:
     border-color var(--tv-dur-1),
-    box-shadow var(--tv-dur-1);
+    background-color var(--tv-dur-1);
 }
 .jarvis-composer:focus-within {
-  border-color: var(--tv-border-accent);
-  box-shadow: 0 0 0 2px rgb(var(--tv-accent-rgb) / 0.06);
+  border-color: rgb(255 255 255 / 0.18);
+  background: var(--tv-plate-3);
+}
+.jarvis-composer-input {
+  font-size: 15px;
 }
 .jarvis-send-ready {
   box-shadow: none;
@@ -7824,19 +7854,19 @@ body.tv-app-type svg.lucide {
   width: 26px;
   height: 26px;
   border: 1px solid var(--tv-border-accent);
-  border-radius: var(--radius-sm);
+  border-radius: 9999px;
   background: var(--tv-plate-2);
 }
 .jarvis-thread .jarvis-turn > .space-y-4 > .panel {
   background: var(--tv-plate-2);
 }
 .jarvis-response-actions {
+  /* Sous la réponse, sans filet : copier, écouter — à portée, jamais un
+     pied de carte. */
   display: flex;
   align-items: center;
   gap: 4px;
-  margin-top: 14px;
-  padding-top: 8px;
-  border-top: 1px solid var(--tv-border);
+  margin-top: 10px;
 }
 .jarvis-response-actions .jarvis-listen {
   min-height: 32px;
@@ -7910,26 +7940,28 @@ body.tv-app-type svg.lucide {
   gap: 6px;
 }
 .jarvis-followup {
+  /* Même puce que les questions de l'accueil : une seule forme pour
+     « poser une question en un appui ». */
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  min-height: 32px;
+  min-height: 34px;
   max-width: 100%;
-  padding: 4px 12px;
-  border: 1px solid var(--tv-border);
+  padding: 4px 12px 4px 14px;
+  border: 1px solid var(--tv-glass-edge);
   border-radius: 999px;
+  background: rgb(255 255 255 / 0.04);
+  box-shadow: var(--tv-glass-specular);
   color: var(--tv-text-secondary);
   font-size: 12.5px;
   text-align: left;
   transition:
-    color 0.15s ease,
-    border-color 0.15s ease,
-    background-color 0.15s ease;
+    color var(--tv-dur-1) var(--tv-ease),
+    background-color var(--tv-dur-1) var(--tv-ease);
 }
 .jarvis-followup:hover {
-  border-color: var(--tv-border-accent);
-  background: rgb(var(--tv-accent-rgb) / 0.08);
-  color: var(--tv-highlight);
+  background: rgb(255 255 255 / 0.08);
+  color: var(--tv-text-primary);
 }
 .jarvis-composer-action {
   width: 36px;
@@ -7945,7 +7977,19 @@ body.tv-app-type svg.lucide {
   transform: scale(0.96);
 }
 .jarvis-composer-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding-inline: 4px;
+  color: var(--tv-text-muted);
+  font-size: 12px;
+  line-height: 1.4;
   text-align: center;
+}
+.jarvis-composer-hint svg {
+  color: var(--tv-accent);
 }
 /* ── LA BARRE VOCALE ── remplace le compositeur pendant une conversation à
    voix haute. Même plaque, même liseré : c'est le même endroit, qui parle
@@ -8192,11 +8236,13 @@ body.tv-app-type svg.lucide {
 }
 /* L'accueil laisse toute la place à la sphère et à son noyau lumineux. */
 .jarvis-accueil-core {
+  /* Présente, pas envahissante : la sphère signe l'accueil, la salutation
+     le porte. */
   display: grid;
   place-items: center;
-  width: min(280px, 60vw, 34dvh);
-  height: min(280px, 60vw, 34dvh);
-  margin: 0 auto 12px;
+  width: min(150px, 40vw, 20dvh);
+  height: min(150px, 40vw, 20dvh);
+  margin: 0 auto 18px;
 }
 /* Le mode vocal garde le même cœur et les mêmes bulles de préparation. */
 .jarvis-live {
@@ -8493,7 +8539,8 @@ body.tv-app-type svg.lucide {
     padding: 10px 12px;
   }
   .jarvis-composer-hint {
-    display: none;
+    margin-top: 8px;
+    font-size: 11px;
   }
   .tv-inbox-open {
     padding: 10px;
