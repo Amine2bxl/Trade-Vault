@@ -39,9 +39,7 @@ describe("TradeModal — a draft must preserve every modification", () => {
   test("photos survive closing; only explicit discard/removal deletes draft files", () => {
     const modal = readSource(import.meta.dir, "../src/app/features/journal/TradeModal.tsx");
     expect(modal).toContain("restoreDraftScreenshots(saved.screenshots, [])");
-    expect(modal).toContain(
-      "writeJSON(draftKey, { ...pending, ...next, __ui: pending?.__ui })",
-    );
+    expect(modal).toContain("writeJSON(draftKey, { ...pending, ...next, __ui: pending?.__ui })");
     expect(modal).toContain("draftOnlyScreenshots(form.screenshots, trade?.screenshots)");
     expect(modal).not.toContain("sessionUploadsRef");
   });
