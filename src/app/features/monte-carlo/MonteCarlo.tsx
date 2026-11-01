@@ -351,11 +351,59 @@ function StrategyLab({
         aria-label={t("lab.importCsv")}
       />
       <div className="strategy-toolbar">
-        <div className="strategy-toolbar-lead">
-          <FlaskConical className="h-4 w-4 text-[var(--tv-highlight)]" />
-          <h2>{t("lab.title")}</h2>
-          {source && <span className="strategy-run-count tv-figure">10 000</span>}
-        </div>
+        {/* UNE SEULE BARRE. Le titre « Labo de stratégie » et « 10 000 »
+            répétaient l'onglet et le compteur de trajectoires du graphe ; la
+            provenance, l'échantillon et le filtre de stratégie vivaient sur une
+            seconde rangée. Tout ce qui dit D'OÙ viennent les chiffres tient
+            maintenant à gauche, les commandes à droite. */}
+        {source ? (
+          <div className="strategy-source-line">
+            {model && (
+              <span className="strategy-provenance">
+                {t(isDemo ? "lab.demo" : source === "manual" ? "lab.hypothesis" : "lab.observed")}
+              </span>
+            )}
+            <span>
+              {source === "csv"
+                ? csv
+                  ? `${csv.name} · ${t("lab.sample").replace("{n}", String(model?.sampleSize ?? 0))}`
+                  : t("lab.csv")
+                : source === "manual"
+                  ? reference.length
+                    ? t("lab.calibratedSample").replace("{n}", String(reference.length))
+                    : t("lab.fixedOutcomes")
+                  : t("lab.sample").replace("{n}", String(journal.sampleSize))}
+            </span>
+            {model && model.estimated > 0 && (
+              <span className="strategy-estimate">
+                {t("lab.estimatedR").replace("{n}", String(model.estimated))}
+                <InfoTip text={t("lab.estimatedHelp")} />
+              </span>
+            )}
+            {source === "journal" && (
+              <SelectPicker
+                label={t("lab.strategyFilter")}
+                value={strategy}
+                onChange={(v) => {
+                  setStrategy(v);
+                  setBaseline(null);
+                }}
+                options={[
+                  { value: "all", label: t("lab.allStrategies") },
+                  ...Array.from(new Set(trades.map((tr) => tr.strategy).filter(Boolean))).map(
+                    (s) => ({ value: s, label: s }),
+                  ),
+                ]}
+                neutralValue="all"
+              />
+            )}
+          </div>
+        ) : (
+          <div className="strategy-toolbar-lead">
+            <FlaskConical className="h-4 w-4 text-[var(--tv-highlight)]" />
+            <h2>{t("lab.title")}</h2>
+          </div>
+        )}
         {source && (
           <div className="strategy-toolbar-actions">
             <SelectPicker
@@ -436,47 +484,6 @@ function StrategyLab({
       ) : (
         <div className="strategy-layout">
           <section className="strategy-main" aria-label={t("lab.chartViews")}>
-            <div className="strategy-source-line">
-              {model && (
-                <span className="strategy-provenance">
-                  {t(isDemo ? "lab.demo" : source === "manual" ? "lab.hypothesis" : "lab.observed")}
-                </span>
-              )}
-              <span>
-                {source === "csv"
-                  ? csv
-                    ? `${csv.name} · ${t("lab.sample").replace("{n}", String(model?.sampleSize ?? 0))}`
-                    : t("lab.csv")
-                  : source === "manual"
-                    ? reference.length
-                      ? t("lab.calibratedSample").replace("{n}", String(reference.length))
-                      : t("lab.fixedOutcomes")
-                    : t("lab.sample").replace("{n}", String(journal.sampleSize))}
-              </span>
-              {model && model.estimated > 0 && (
-                <span className="strategy-estimate">
-                  {t("lab.estimatedR").replace("{n}", String(model.estimated))}
-                  <InfoTip text={t("lab.estimatedHelp")} />
-                </span>
-              )}
-              {source === "journal" && (
-                <SelectPicker
-                  label={t("lab.strategyFilter")}
-                  value={strategy}
-                  onChange={(v) => {
-                    setStrategy(v);
-                    setBaseline(null);
-                  }}
-                  options={[
-                    { value: "all", label: t("lab.allStrategies") },
-                    ...Array.from(new Set(trades.map((tr) => tr.strategy).filter(Boolean))).map(
-                      (s) => ({ value: s, label: s }),
-                    ),
-                  ]}
-                  neutralValue="all"
-                />
-              )}
-            </div>
             {model && model.kind === "historical" && model.sampleSize < 30 && (
               <p className="strategy-small-sample">
                 {t("lab.smallSample").replace("{n}", String(model.sampleSize))}
@@ -626,18 +633,6 @@ function StrategyLab({
                     </div>
                   )}
                 </Card>
-                {edge && (
-                  <div className="strategy-edge-summary">
-                    <span className={edge.netExpectancyR > 0 ? "rp-pos" : "rp-neg"}>
-                      {t(edge.netExpectancyR > 0 ? "lab.positiveEdge" : "lab.negativeEdge")}
-                    </span>
-                    <span className="tv-figure">
-                      {edge.netExpectancyR >= 0 ? "+" : ""}
-                      {edge.netExpectancyR.toFixed(3)}R / {t("mc.tradeWord")}
-                    </span>
-                    <InfoTip text={t("lab.edgeHelp")} />
-                  </div>
-                )}
                 {baseline && result && (
                   <Card pad="tight" className="strategy-comparison">
                     <div>
@@ -683,35 +678,54 @@ function StrategyLab({
                     )}
                   </Card>
                 )}
-                {result && (
+                {/* L'AVANTAGE ET LES TESTS DE RÉSISTANCE, UNE LIGNE. Ils tenaient
+                    deux rangées séparées sous le graphe ; ils répondent à la même
+                    question — « mon edge tient-il ? ». */}
+                {(edge || result) && (
                   <Card className="strategy-stress" pad="tight">
-                    <span className="tv-label text-slate-500">{t("lab.stressTitle")}</span>
-                    <div>
-                      <Button
-                        variant="subtle"
-                        size="sm"
-                        disabled={running}
-                        onClick={() => stress("risk")}
-                      >
-                        {t("lab.halfRisk")}
-                      </Button>
-                      <Button
-                        variant="subtle"
-                        size="sm"
-                        disabled={running}
-                        onClick={() => stress("wr")}
-                      >
-                        {t("lab.lowerWR")}
-                      </Button>
-                      <Button
-                        variant="subtle"
-                        size="sm"
-                        disabled={running}
-                        onClick={() => stress("cost")}
-                      >
-                        {t("lab.higherCost")}
-                      </Button>
-                    </div>
+                    {edge && (
+                      <div className="strategy-edge-summary">
+                        <span className={edge.netExpectancyR > 0 ? "rp-pos" : "rp-neg"}>
+                          {t(edge.netExpectancyR > 0 ? "lab.positiveEdge" : "lab.negativeEdge")}
+                        </span>
+                        <span className="tv-figure">
+                          {edge.netExpectancyR >= 0 ? "+" : ""}
+                          {edge.netExpectancyR.toFixed(3)}R / {t("mc.tradeWord")}
+                        </span>
+                        <InfoTip text={t("lab.edgeHelp")} />
+                      </div>
+                    )}
+                    {result && (
+                      <div className="strategy-stress-actions">
+                        <span className="tv-label text-slate-500">{t("lab.stressTitle")}</span>
+                        <div>
+                          <Button
+                            variant="subtle"
+                            size="sm"
+                            disabled={running}
+                            onClick={() => stress("risk")}
+                          >
+                            {t("lab.halfRisk")}
+                          </Button>
+                          <Button
+                            variant="subtle"
+                            size="sm"
+                            disabled={running}
+                            onClick={() => stress("wr")}
+                          >
+                            {t("lab.lowerWR")}
+                          </Button>
+                          <Button
+                            variant="subtle"
+                            size="sm"
+                            disabled={running}
+                            onClick={() => stress("cost")}
+                          >
+                            {t("lab.higherCost")}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </Card>
                 )}
                 {result && (

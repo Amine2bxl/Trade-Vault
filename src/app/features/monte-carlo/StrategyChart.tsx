@@ -3,7 +3,7 @@ import { useT } from "@/app/i18n/LanguageContext";
 import { useTheme } from "@/app/contexts/ThemeContext";
 import { formatMoney } from "@/shared/currency";
 import type { ProjectionBand, StrategyProjection } from "@/modules/probability/strategy";
-import { numericText } from "@/shared/ui/NumericText";
+import { InfoTip } from "@/shared/ui";
 
 export type ProjectionView = "capital" | "drawdown" | "objective";
 export interface ProjectionBaseline {
@@ -337,6 +337,19 @@ export function StrategyChart({
             {t("lab.reference")}
           </span>
         )}
+        {/* La lecture du graphe, en infobulle au bout de la légende : elle
+            occupait une ligne de texte sous chaque vue. */}
+        <InfoTip
+          text={t(
+            view === "capital"
+              ? "lab.capitalCaption"
+              : dd
+                ? "lab.ddCaption"
+                : c.drawdownType === "static"
+                  ? "lab.objectiveCaption"
+                  : "lab.trailingCaption",
+          )}
+        />
       </div>
       <div className="strategy-chart-range">
         <span>
@@ -346,19 +359,6 @@ export function StrategyChart({
           {t("lab.upper5")} <strong className="tv-figure">{formatMoney(point.p95)}</strong>
         </span>
       </div>
-      <p className="strategy-chart-caption">
-        {numericText(
-          t(
-            view === "capital"
-              ? "lab.capitalCaption"
-              : dd
-                ? "lab.ddCaption"
-                : c.drawdownType === "static"
-                  ? "lab.objectiveCaption"
-                  : "lab.trailingCaption",
-          ),
-        )}
-      </p>
     </div>
   );
 }

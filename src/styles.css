@@ -4081,9 +4081,6 @@ body.tv-app-type :is(.tv-figure, .tv-num, .tabular-nums) {
 }
 .rp-weekcell {
   min-width: 0;
-  padding: 0.5rem 0.6rem;
-  border: 1px solid var(--tv-border);
-  border-radius: 0.6rem;
 }
 
 .rp-momgrid {
@@ -4142,6 +4139,153 @@ body.tv-app-type :is(.tv-figure, .tv-num, .tabular-nums) {
    feuille. À l'écran, la page porte déjà son titre et sa navigation. */
 .rp-print-only {
   display: none;
+}
+
+/* ── LE RAPPORT, CONDENSÉ (Liquid) ─────────────────────────────────────────
+   Le verdict en chiffre héros, l'essentiel juste dessous, des sections sans
+   sous-titre, les semaines en cellules à barre, le débrief replié. */
+.rp-hero-figure {
+  color: var(--tv-text-primary);
+  font: 700 34px/1 var(--font-figure);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.035em;
+}
+@media (min-width: 768px) {
+  .rp-hero-figure {
+    font-size: var(--tv-t-display);
+  }
+}
+.rp-delta {
+  font: 600 12px var(--font-figure);
+  font-variant-numeric: tabular-nums;
+}
+.rp-weekcell {
+  padding: 0.7rem 0.8rem;
+  border-radius: var(--radius-lg);
+  background: var(--tv-plate-2);
+}
+.rp-weekbar {
+  display: block;
+  height: 4px;
+  margin-top: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--tv-plate-3);
+}
+.rp-weekbar > span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+}
+@media screen and (min-width: 1024px) {
+  /* Deux sections courtes côte à côte à l'écran aussi : la feuille perd une
+     hauteur entière de section à chaque paire. */
+  .rp-duo {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .rp-duo > .rp-section:only-child {
+    grid-column: 1 / -1;
+  }
+  .rp-duo > .rp-section + .rp-section {
+    border-top: 0;
+    border-left: 1px solid var(--tv-border);
+  }
+  .rp-section + .rp-duo,
+  .rp-duo + .rp-duo {
+    border-top: 1px solid var(--tv-border);
+  }
+  .rp-section + .rp-duo > .rp-section:first-child,
+  .rp-duo + .rp-duo > .rp-section:first-child {
+    border-top: 0;
+  }
+}
+/* La note « chiffres provisoires » : sur le papier seulement — à l'écran,
+   la pastille « en cours » du verdict la porte déjà. */
+.rp-section.rp-provisional.rp-print-only {
+  display: none;
+}
+@media print {
+  .rp-section.rp-provisional.rp-print-only {
+    display: flex;
+  }
+}
+.rp-debrief-toggle {
+  display: flex;
+  width: 100%;
+  min-height: 40px;
+  align-items: center;
+  gap: 10px;
+}
+.rp-debrief-wrap[data-open="false"] .rp-debrief {
+  display: none;
+}
+.rp-debrief-wrap[data-open="true"] .rp-debrief {
+  margin-top: 10px;
+}
+@media print {
+  .rp-debrief-wrap .rp-debrief {
+    display: block !important;
+  }
+  .rp-debrief-toggle > svg:last-child {
+    display: none;
+  }
+}
+/* Les mois clos à rapporter : une bande de puces, pas une liste. */
+.rp-backlog {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px 18px;
+  border: 1px solid var(--tv-border);
+  border-radius: var(--radius-2xl);
+  background: var(--tv-plate-1);
+}
+.rp-backlog-icon {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 9999px;
+  background: rgb(251 191 36 / 0.12);
+  color: #fbbf24;
+}
+.rp-backlog-title {
+  padding-top: 7px;
+  color: var(--tv-text-primary);
+  font-size: 14px;
+  font-weight: 600;
+}
+.rp-backlog-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.rp-backlog-chip {
+  display: inline-flex;
+  height: 34px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px 0 10px;
+  border: 1px solid var(--tv-glass-edge);
+  border-radius: 9999px;
+  background: rgb(255 255 255 / 0.04);
+  box-shadow: var(--tv-glass-specular);
+  color: var(--tv-text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  transition:
+    background-color var(--tv-dur-1) var(--tv-ease),
+    color var(--tv-dur-1) var(--tv-ease);
+}
+.rp-backlog-chip:hover:not(:disabled) {
+  background: rgb(255 255 255 / 0.08);
+  color: var(--tv-text-primary);
+}
+.rp-backlog-chip:disabled {
+  opacity: 0.5;
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -8968,12 +9112,6 @@ body.tv-app-type svg.lucide {
 .strategy-toolbar-actions {
   flex-wrap: wrap;
 }
-.strategy-run-count {
-  color: var(--tv-text-muted);
-  font-size: var(--tv-t-caption);
-  padding-left: 10px;
-  border-left: 1px solid var(--tv-border-strong);
-}
 .strategy-welcome {
   display: flex;
   flex-direction: column;
@@ -9233,12 +9371,6 @@ body.tv-app-type svg.lucide {
   color: var(--tv-text-secondary);
   padding-left: 6px;
 }
-.strategy-chart-caption {
-  color: var(--tv-text-muted);
-  font-size: var(--tv-t-caption);
-  line-height: 1.5;
-  padding: 0 8px 12px;
-}
 .strategy-chart-actions {
   display: flex;
   align-items: center;
@@ -9290,8 +9422,12 @@ body.tv-app-type svg.lucide {
 .strategy-stress {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 10px 16px;
+}
+.strategy-stress-actions {
+  align-items: center;
 }
 .strategy-stress > div {
   display: flex;
