@@ -26,7 +26,9 @@ describe("TradeModal — a draft must preserve every modification", () => {
     const modal = readSource(import.meta.dir, "../src/app/features/journal/TradeModal.tsx");
     const hook = readSource(import.meta.dir, "../src/app/hooks/useDraftAutosave.ts");
     expect(modal).toContain("const draftBody = JSON.stringify(draftState)");
-    expect(modal).toContain("() => ({ ...form, __ui: { newConfluence, stopPoints, pointValue, rDraft } })");
+    expect(modal).toContain(
+      "() => ({ ...form, __ui: { newConfluence, stopPoints, pointValue, rDraft } })",
+    );
     expect(modal).toContain("const dirty = hasInteractedRef.current || draftRestored");
     expect(modal).toContain("immediate: true");
     expect(modal).not.toContain('omit: ["screenshots"]');
