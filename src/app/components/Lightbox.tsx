@@ -58,7 +58,7 @@ export default function Lightbox({ paths, index, onClose, onIndexChange }: Light
           onClose();
         }}
         aria-label={t("common.close")}
-        className="absolute top-[max(1rem,env(safe-area-inset-top))] right-4 md:top-6 md:right-6 w-12 h-12 md:w-11 md:h-11 rounded-full glass-strong border border-white/10 text-white flex items-center justify-center hover:bg-white/10 active:scale-90 transition z-20"
+        className="absolute top-[max(1rem,env(safe-area-inset-top))] right-4 md:top-6 md:right-6 w-12 h-12 md:w-11 md:h-11 rounded-full glass-strong border border-white/10 text-white flex items-center justify-center hover:bg-white/10 transition z-20"
       >
         <X className="w-5 h-5" />
       </button>

@@ -3,6 +3,20 @@
 Journal des changements **structurels** (pas des features ni des correctifs,
 qui vivent dans l'historique git et les PR).
 
+## 2026-11-01 — Le mouvement Liquid (gestes iOS 27 / Revolut)
+
+- Un seul moteur d'appui (`shared/ui/press.ts`, posé dans `__root.tsx`) :
+  amplitude selon la taille de l'objet, remontée sur le ressort, même sur un
+  tap bref. Les `:active { transform: scale(…) }` et `active:scale-*` qu'il
+  remplace sont retirés.
+- `shared/ui/useGlidingIndicator.ts` : pilule qui glisse sous l'onglet actif
+  (onglets de section, `SubNav`, périodes du tableau de bord).
+- `Modal` repart en animation à la fermeture (copie inerte,
+  `shared/ui/exitGhost.ts`), qu'elle soit fermée ou démontée par son parent.
+- Cascade d'entrée des listes, pouce d'interrupteur qui s'étire, retour
+  tactile (`shared/haptics.ts`). `tests/liquidMotion.test.ts` verrouille le
+  tout.
+
 ## 2026-10-31 — Langage « Liquid » (verre iOS 27 + matière Revolut)
 
 - Nouveau langage par défaut : verre (jetons `--tv-glass-*`, flou porté par

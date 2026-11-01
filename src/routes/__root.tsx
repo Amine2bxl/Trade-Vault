@@ -16,6 +16,7 @@ import appCss from "../styles.css?url";
 import { absoluteUrl, DEFAULT_OG_IMAGE, SITE_NAME, structuredData } from "../shared/seo";
 import { initAnalytics } from "@/app/utils/analytics";
 import { reportAppError, installGlobalErrorReporting } from "../shared/error-reporting";
+import { installPressFeedback } from "../shared/ui/press";
 
 /** Site-wide title and description — the marketing promise, in the language
  *  the landing page is written in. Public routes override both. */
@@ -343,6 +344,10 @@ function RootComponent() {
   useEffect(() => {
     installGlobalErrorReporting();
   }, []);
+
+  // L'appui Liquid : un seul écouteur pour tout ce qui se touche, vitrine et
+  // application (voir `shared/ui/press.ts`).
+  useEffect(() => installPressFeedback(), []);
 
   // Stale lazy-chunk guard. Pages are code-split; after a new deploy the old
   // build's chunk hashes 404, so anyone who had the app open across a release

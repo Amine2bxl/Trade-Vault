@@ -6,6 +6,7 @@ import { cn } from "@/shared/ui/cn";
 import { useT } from "../i18n/LanguageContext";
 import { useAuth } from "../contexts/AuthContext";
 import { useHasTradeDraft } from "../utils/persistence";
+import { tap } from "@/shared/haptics";
 
 interface MobileNavProps {
   page: Page;
@@ -83,7 +84,10 @@ export default function MobileNav({ page, setPage, onAddTrade }: MobileNavProps)
               nomme pour les lecteurs d'écran. */}
           <button
             type="button"
-            onClick={onAddTrade}
+            onClick={() => {
+              tap();
+              onAddTrade();
+            }}
             aria-label={hasDraft ? t("trade.draftBadge") : t("common.addTrade")}
             className="flex min-h-[54px] items-center justify-center rounded-2xl"
           >

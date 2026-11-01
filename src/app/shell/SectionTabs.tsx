@@ -9,6 +9,7 @@ import { preloadPage } from "./pageModules";
 import { pathForPage } from "../utils/pageUrl";
 import { cn } from "@/shared/ui/cn";
 import { useT } from "../i18n/LanguageContext";
+import { useGlidingIndicator } from "@/shared/ui/useGlidingIndicator";
 
 interface SectionTabsProps {
   section: SectionId;
@@ -111,9 +112,11 @@ export default function SectionTabs({ section, page, setPage }: SectionTabsProps
      cliquer sur un onglet depuis le milieu du Journal ramenait la fenêtre tout
      en haut : on perdait sa position à chaque changement de vue. Ici on ne
      touche qu'au défilement HORIZONTAL de la rangée, calculé à la main. */
-  const rowRef = useRef<HTMLDivElement | null>(null);
+  // La pilule qui glisse d'un onglet à l'autre. La piste est la rangée qui
+  // défile : la pilule défile avec elle.
+  const glide = useGlidingIndicator<HTMLDivElement>(page);
+  const row = glide.track;
   useEffect(() => {
-    const row = rowRef.current;
     const tab = tabRefs.current[activeIndex];
     if (!row || !tab) return;
     if (row.scrollWidth <= row.clientWidth) return; // rien à faire, tout tient
@@ -122,7 +125,7 @@ export default function SectionTabs({ section, page, setPage }: SectionTabsProps
     const droite = tab.offsetLeft + tab.offsetWidth + marge;
     if (gauche < row.scrollLeft) row.scrollLeft = gauche;
     else if (droite > row.scrollLeft + row.clientWidth) row.scrollLeft = droite - row.clientWidth;
-  }, [activeIndex]);
+  }, [activeIndex, row]);
 
   const go = useCallback(
     (target: Page, e: React.MouseEvent) => {
@@ -243,7 +246,15 @@ export default function SectionTabs({ section, page, setPage }: SectionTabsProps
         aria-orientation="horizontal"
         onKeyDown={onKeyDown}
       >
-        <div ref={rowRef} className="section-tabs-row">
+        <div ref={glide.trackRef} className={cn("section-tabs-row", glide.on && "tv-glide-on")}>
+          {glide.style && (
+            <span
+              data-glide="1"
+              aria-hidden
+              className={cn("tv-glide tv-glide-section", glide.ready && "tv-glide-ready")}
+              style={glide.style}
+            />
+          )}
           {pages.map((p, i) => {
             const { labelKey, icon: Icon } = PAGE_META[p];
             const active = p === page;

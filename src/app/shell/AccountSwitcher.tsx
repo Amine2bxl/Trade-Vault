@@ -390,7 +390,7 @@ export default function AccountSwitcher({
         <button
           onClick={() => setOpen(true)}
           aria-label={`${activeAccount.name} — ${fmtBalance} — ${t("account.switch")}`}
-          className="md:hidden fixed z-[var(--tv-z-float)] left-3 bottom-[calc(96px_+_env(safe-area-inset-bottom,0px))] h-12 max-w-[66vw] pl-1.5 pr-3 rounded-full flex items-center gap-2.5 float-shell active:scale-95 transition"
+          className="md:hidden fixed z-[var(--tv-z-float)] left-3 bottom-[calc(96px_+_env(safe-area-inset-bottom,0px))] h-12 max-w-[66vw] pl-1.5 pr-3 rounded-full flex items-center gap-2.5 float-shell transition"
         >
           <span
             className="relative grid h-9 w-9 shrink-0 place-items-center rounded-xl border"
@@ -466,7 +466,7 @@ export default function AccountSwitcher({
                             switchAccount(a.id);
                             setOpen(false);
                           }}
-                          className="flex flex-col gap-2 text-left active:scale-[0.97] transition-transform"
+                          className="flex flex-col gap-2 text-left transition-transform"
                         >
                           <span
                             className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
@@ -524,7 +524,7 @@ export default function AccountSwitcher({
                         setCreateOpen(true);
                         setOpen(false);
                       }}
-                      className="flex flex-col items-center justify-center gap-2 rounded-2xl p-3.5 border border-dashed border-cyan-500/30 bg-cyan-500/[0.06] text-cyan-300 hover:bg-cyan-500/10 transition active:scale-[0.97] min-h-[92px]"
+                      className="flex flex-col items-center justify-center gap-2 rounded-2xl p-3.5 border border-dashed border-cyan-500/30 bg-cyan-500/[0.06] text-cyan-300 hover:bg-cyan-500/10 transition min-h-[92px]"
                     >
                       <Plus className="w-5 h-5" />
                       <span className="text-xs font-semibold text-center">
@@ -537,7 +537,7 @@ export default function AccountSwitcher({
                         goPro();
                         setOpen(false);
                       }}
-                      className="flex flex-col items-center justify-center gap-2 rounded-2xl p-3.5 border border-dashed border-white/[0.1] bg-white/[0.03] text-slate-400 hover:text-cyan-300 hover:bg-cyan-500/[0.06] transition active:scale-[0.97] min-h-[92px]"
+                      className="flex flex-col items-center justify-center gap-2 rounded-2xl p-3.5 border border-dashed border-white/[0.1] bg-white/[0.03] text-slate-400 hover:text-cyan-300 hover:bg-cyan-500/[0.06] transition min-h-[92px]"
                     >
                       <Lock className="w-5 h-5" />
                       <span className="text-xs font-semibold text-center">
@@ -551,7 +551,7 @@ export default function AccountSwitcher({
                         setTransferOpen(true);
                         setOpen(false);
                       }}
-                      className="flex min-h-[92px] flex-col items-center justify-center gap-2 rounded-2xl border border-[var(--tv-border)] bg-white/[0.03] p-3.5 text-slate-300 transition active:scale-[0.97]"
+                      className="flex min-h-[92px] flex-col items-center justify-center gap-2 rounded-2xl border border-[var(--tv-border)] bg-white/[0.03] p-3.5 text-slate-300 transition"
                     >
                       {canTransfer ? <Repeat2 className="h-5 w-5" /> : <Lock className="h-5 w-5" />}
                       <span className="text-center text-xs font-semibold">

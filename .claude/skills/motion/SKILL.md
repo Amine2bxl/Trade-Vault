@@ -57,6 +57,19 @@ jamais.
 rail, feuille qui monte du bas sur téléphone) ; `--tv-press` = `scale(.97)` à
 l'appui. Ils s'appliquent par transition, pas par une nouvelle keyframe.
 
+**Le mouvement Liquid** (détail : `docs/DESIGN_SYSTEM.md` §4) — ne pas le
+recréer à la main :
+- l'APPUI vient d'un seul moteur, `shared/ui/press.ts` (amplitude selon la
+  taille, remontée sur le ressort). Jamais de nouveau
+  `:active { transform: scale(…) }` ni `active:scale-*` : double
+  enfoncement. Pour exclure un objet : `data-press="off"`.
+- un contrôle segmenté prend `useGlidingIndicator` (pilule qui glisse), pas un
+  fond par onglet ;
+- une feuille ou une modale passe par `Modal` : sa sortie (fantôme,
+  `exitGhost.ts`) est gratuite ;
+- une liste qui doit arriver en cascade réutilise `.dash-list` /
+  `.tv-missed-list` / `.tv-set-list` ou s'ajoute à leur sélecteur.
+
 **Plafond dur : 300 ms dans l'app** (360 ms pour un ressort ou une feuille). Au-delà, l'utilisateur attend
 l'animation au lieu de l'ignorer. Seule la landing dépasse (jusqu'à ~700 ms
 sur une entrée de héros) — et l'**onboarding**, surface cinématique vue une

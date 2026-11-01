@@ -274,7 +274,6 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
           className={cn(
             "tv-jarvis-dock fixed z-[var(--tv-z-float)] bottom-[calc(96px_+_env(safe-area-inset-bottom,0px))] right-4 md:bottom-6 md:right-6",
             "justify-center gap-2.5 rounded-full p-1.5 md:rounded-2xl md:pr-4",
-            "active:scale-[0.98]",
             open && "tv-jarvis-dock-active",
           )}
         >

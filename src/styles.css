@@ -1285,9 +1285,6 @@ body {
   background: rgb(255 255 255 / 0.08);
   color: var(--tv-text-primary);
 }
-.jarvis-suggestion:active {
-  transform: var(--tv-press);
-}
 .jarvis-suggestion-fleche {
   height: 0.875rem;
   width: 0.875rem;
@@ -1299,10 +1296,8 @@ body {
   color: var(--tv-accent);
 }
 @media (prefers-reduced-motion: reduce) {
-  .jarvis-suggestion,
-  .jarvis-suggestion:active {
+  .jarvis-suggestion {
     transition: none;
-    transform: none;
   }
 }
 
@@ -2264,9 +2259,6 @@ button:active > .bottom-nav-add {
 .trade-card {
   transition: transform 0.15s;
 }
-.trade-card:active {
-  transform: scale(0.98);
-}
 
 /* Squelettes de chargement — un reflet balaie la plaque pendant le chargement.
  * Le reflet est un pseudo-élément déplacé par `transform` : le compositeur
@@ -2549,7 +2541,6 @@ svg.lucide {
 }
 .btn-primary:active {
   background: var(--tv-cta-active);
-  transform: var(--tv-press);
 }
 .btn-primary:disabled {
   opacity: 0.45;
@@ -2581,9 +2572,6 @@ svg.lucide {
   border-color: var(--tv-border-strong);
   background: var(--tv-surface-hover);
   color: var(--tv-text);
-}
-.btn-ghost:active {
-  transform: var(--tv-press);
 }
 
 /* ══ L'ACTION RONDE — `ActionButton` (shared/ui) ══
@@ -2718,9 +2706,6 @@ svg.lucide {
   .tv-interactive:hover {
     background: var(--tv-surface-hover);
   }
-}
-.tv-interactive:active {
-  transform: scale(0.97);
 }
 
 /* Focus — visible, themed, and identical on every focusable surface. It is an
@@ -3733,6 +3718,105 @@ body.tv-app-type :is(.tv-figure, .tv-num, .tabular-nums) {
 .section-tab:focus-visible {
   outline: 2px solid rgb(var(--tv-accent-rgb) / 0.7);
   outline-offset: -2px;
+}
+
+/* ══ LA PILULE QUI GLISSE (`useGlidingIndicator`, shared/ui) ══
+ *
+ * Le geste de la languette du rail, étendu aux contrôles segmentés : onglets
+ * de section, `SubNav`, périodes du tableau de bord. Une seule pièce glisse
+ * sous l'onglet choisi au lieu que chaque onglet se repeigne.
+ *
+ * Sans mesure (rendu serveur, premier passage), `.tv-glide-on` est absente et
+ * l'onglet actif garde son propre fond : l'état se lit toujours.
+ *
+ * Comme la languette (`transform` + `height`), la pilule anime `transform` et
+ * sa largeur : elle est en position absolue, rien d'autre ne se remet en page.
+ */
+.section-tabs-row,
+.tv-subnav {
+  position: relative;
+}
+.tv-glide {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+.tv-glide-ready {
+  transition:
+    transform var(--tv-dur-spring) var(--tv-spring),
+    width var(--tv-dur-spring) var(--tv-spring);
+}
+@media (prefers-reduced-motion: reduce) {
+  .tv-glide-ready {
+    transition: none;
+  }
+}
+.tv-glide-on > :not(.tv-glide) {
+  position: relative;
+  z-index: 1;
+}
+.tv-glide-section {
+  border-radius: 11px;
+  background: var(--tv-plate-3);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.08),
+    0 1px 2px rgb(0 0 0 / 0.5);
+}
+.tv-glide-on > .section-tab-active {
+  background: transparent;
+  box-shadow: none;
+}
+.tv-glide-subnav {
+  border-radius: var(--radius-lg);
+  background: var(--tv-plate-3);
+}
+.tv-glide-on > .tv-subnav-item-active,
+.tv-glide-on > .tv-subnav-item-active:hover {
+  background: transparent;
+}
+.tv-glide-period {
+  border-radius: 9999px;
+  background: rgb(255 255 255 / 0.14);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16);
+}
+.tv-glide-on > .dash-period-btn[aria-pressed="true"] {
+  background: transparent;
+  box-shadow: none;
+}
+
+/* ══ LA CASCADE — une liste arrive comme un relevé Revolut ══
+ *
+ * Les rangées montent l'une après l'autre (`fade-in-up`, la seule entrée),
+ * décalées de 30 ms, plafonnées au 6ᵉ rang : au-delà l'escalier se voit et
+ * l'on attend. Une rangée ne rejoue son entrée que si elle est NOUVELLE
+ * (React la monte) : changer de période remplace les rangées et rejoue la
+ * cascade, un simple re-rendu ne fait rien bouger.
+ *
+ * `backwards` et pas `both` : une fois arrivée, la rangée rend son
+ * `transform` (l'appui, le survol) — l'animation ne le garde pas.
+ * Les squelettes (`.animate-pulse`) gardent leur propre pulsation.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  :is(.dash-list, .tv-missed-list, .tv-set-list) > :not(.animate-pulse) {
+    animation: fade-in-up var(--tv-dur-3) var(--tv-ease) backwards;
+  }
+  :is(.dash-list, .tv-missed-list, .tv-set-list) > :nth-child(2) {
+    animation-delay: 30ms;
+  }
+  :is(.dash-list, .tv-missed-list, .tv-set-list) > :nth-child(3) {
+    animation-delay: 60ms;
+  }
+  :is(.dash-list, .tv-missed-list, .tv-set-list) > :nth-child(4) {
+    animation-delay: 90ms;
+  }
+  :is(.dash-list, .tv-missed-list, .tv-set-list) > :nth-child(5) {
+    animation-delay: 120ms;
+  }
+  :is(.dash-list, .tv-missed-list, .tv-set-list) > :nth-child(n + 6) {
+    animation-delay: 150ms;
+  }
 }
 
 /* ══ LE TRACÉ D'UNE COURBE ══
@@ -6977,10 +7061,6 @@ body::after {
     border-color var(--tv-dur-2) var(--tv-ease),
     box-shadow var(--tv-dur-2) var(--tv-ease);
 }
-.float-shell:active,
-.tv-jarvis-dock:active {
-  transform: scale(0.96);
-}
 @media (hover: hover) {
   .float-shell:hover,
   .tv-jarvis-dock:hover {
@@ -7025,9 +7105,6 @@ body::after {
 .cal-nav-btn:hover {
   background: var(--tv-plate-3);
   color: var(--tv-text-primary);
-}
-.cal-nav-btn:active {
-  transform: scale(0.94);
 }
 .cal-dow {
   padding: 0.4rem 0;
@@ -8181,9 +8258,6 @@ body.tv-app-type svg.lucide {
 .jarvis-composer-action:hover:not(:disabled) {
   transform: translateY(-1px);
 }
-.jarvis-composer-action:active:not(:disabled) {
-  transform: scale(0.96);
-}
 .jarvis-composer-hint {
   display: flex;
   align-items: center;
@@ -8222,9 +8296,6 @@ body.tv-app-type svg.lucide {
   flex-shrink: 0;
   border-radius: 999px;
   transition: transform var(--tv-dur-1);
-}
-.jarvis-voicebar-orb:active:not(:disabled) {
-  transform: scale(0.96);
 }
 .jarvis-voicebar-orb:disabled {
   cursor: default;
@@ -9049,14 +9120,28 @@ body.tv-app-type svg.lucide {
   border-radius: 999px;
   background: #fff;
   box-shadow: 0 2px 6px rgb(0 0 0 / 0.35);
-  transition: transform var(--tv-dur-spring) var(--tv-spring);
+  /* L'INTERRUPTEUR D'iOS : sous le doigt, le pouce s'étire vers le côté où il
+     va partir (ancré du côté qu'il quitte), puis glisse sur le ressort. La
+     propriété `scale` se compose avec le `translateX` de l'état, sans le
+     remplacer. */
+  transform-origin: left center;
+  transition:
+    transform var(--tv-dur-spring) var(--tv-spring),
+    scale var(--tv-dur-1) var(--tv-ease);
 }
 .tv-switch[aria-checked="true"] .tv-switch-knob {
   transform: translateX(18px);
+  transform-origin: right center;
+}
+.tv-switch:not(:disabled):active .tv-switch-knob {
+  scale: 1.18 1;
 }
 @media (prefers-reduced-motion: reduce) {
   .tv-switch-knob {
     transition: none;
+  }
+  .tv-switch:not(:disabled):active .tv-switch-knob {
+    scale: none;
   }
 }
 /* Le rail des rubriques reprend la pilule du rail principal : même clair,

@@ -320,7 +320,7 @@ function AccountCalendarPage({
           out ? "cal-cell-out" : !cellStyle && "cal-cell-empty",
           !cellStyle && !out && missedCount > 0 && "border-amber-500/25",
           isToday && "ring-1 ring-inset ring-[var(--tv-border-accent)]",
-          (data || missedCount > 0) && "cursor-pointer hover:brightness-125 active:scale-[0.97]",
+          (data || missedCount > 0) && "cursor-pointer hover:brightness-125",
         )}
       >
         {missedCount > 0 && (
@@ -550,7 +550,7 @@ function AccountCalendarPage({
           </div>
           <button
             onClick={goToday}
-            className="flex h-9 shrink-0 items-center rounded-lg px-3 text-xs font-semibold text-[var(--tv-highlight)] transition hover:bg-[rgb(var(--tv-accent-rgb)/0.1)] active:scale-95"
+            className="flex h-9 shrink-0 items-center rounded-lg px-3 text-xs font-semibold text-[var(--tv-highlight)] transition hover:bg-[rgb(var(--tv-accent-rgb)/0.1)]"
           >
             {t("calendar.today")}
           </button>

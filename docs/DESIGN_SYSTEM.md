@@ -152,6 +152,41 @@ pilule active du rail, montée d'une feuille sur téléphone. Pression :
 `--tv-press` (`scale(.97)`). Plafond : 300 ms, 360 ms pour un ressort ou une
 feuille.
 
+**Le mouvement Liquid — les gestes d'iOS 27 et de Revolut**, quatre pièces,
+chacune avec une seule source :
+
+- **L'appui** (`shared/ui/press.ts`, posé une fois dans `__root.tsx`). Tout
+  ce qui est appuyable pour le navigateur (bouton, lien en bloc, onglet,
+  option…) s'enfonce en 120 ms et remonte sur le ressort en 340 ms, même sur
+  un tap bref. L'amplitude suit la taille de l'objet (le bord recule de 5 px
+  au plus) : 0,97 pour un bouton, ≈ 0,985 pour une rangée, ≈ 0,99 pour une
+  grande carte. Propriété `scale` par animation Web : elle se compose avec
+  les `transform` existants. Au doigt, 70 ms d'attente (un défilement n'est
+  pas un appui). Exclus : désactivé, interrupteur, lien dans un texte, et les
+  objets qui gardent leur propre pression CSS (disque de `.tv-action`, barre
+  mobile, rail, étoiles, onboarding) ou portent `data-press="off"`. **Ne pas
+  ajouter de `:active { transform: scale(…) }` ni de `active:scale-*`** : ce
+  serait un double enfoncement.
+- **La pilule qui glisse** (`shared/ui/useGlidingIndicator.ts`) : onglets de
+  section, `SubNav`, périodes du tableau de bord. Une seule pièce glisse sous
+  l'onglet actif (lu sur `aria-selected` / `aria-pressed`), `transform` +
+  largeur sur le ressort, comme la languette du rail. Sans mesure, l'onglet
+  actif garde son fond (`.tv-glide-on` absente).
+- **La sortie des feuilles** (`shared/ui/exitGhost.ts`) : toute `Modal` qui
+  se ferme — `open` à faux ou démontée par son parent — repart par le chemin
+  de son entrée, à ~70 % de sa durée (140 ms carte, 240 ms feuille), via une
+  copie inerte de son DOM : la vraie est retirée tout de suite, aucun rendu
+  sur une donnée vidée.
+- **La cascade** : les rangées de `.dash-list`, `.tv-missed-list` et
+  `.tv-set-list` arrivent en `fade-in-up`, 30 ms d'écart, plafonnées au
+  6ᵉ rang ; seule une rangée NOUVELLE rejoue son entrée.
+
+L'interrupteur (`.tv-switch`) étire son pouce sous le doigt (`scale: 1.18 1`)
+avant de glisser. Retour tactile (`shared/haptics.ts`, `tap()`) réservé aux
+gestes qui engagent — « + Trade », bascule d'un interrupteur —, Android
+seulement, jamais sous mouvement réduit. Tout ce qui précède s'éteint sous
+`prefers-reduced-motion` ; `tests/liquidMotion.test.ts` le verrouille.
+
 La loi (skill `motion`) autorise huit keyframes — `styles.css` en contient
 encore davantage (dette à résorber, sans en ajouter) —, **300 ms maximum dans l'app**, uniquement
 `transform` et `opacity`, jamais `transition-property: all`. Pas de Framer

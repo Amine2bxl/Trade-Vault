@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { ChevronRight } from "./icons";
 import { cn } from "./cn";
+import { tap } from "../haptics";
 
 /**
  * LES PAGES DE PARAMÈTRES — une seule anatomie.
@@ -125,7 +126,10 @@ export function Toggle({
       aria-checked={on}
       aria-label={label}
       disabled={disabled}
-      onClick={() => onChange(!on)}
+      onClick={() => {
+        tap();
+        onChange(!on);
+      }}
       className="tv-switch"
     >
       <span className="tv-switch-knob" aria-hidden />

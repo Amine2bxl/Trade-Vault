@@ -131,7 +131,7 @@ export default function Composer({
             disabled={disabled}
             aria-label={t("jarvis.voice.start")}
             title={t("jarvis.voice.start")}
-            className="jarvis-composer-action tv-accent-fill grid shrink-0 place-items-center rounded-full active:scale-95 disabled:opacity-50"
+            className="jarvis-composer-action tv-accent-fill grid shrink-0 place-items-center rounded-full disabled:opacity-50"
           >
             <AudioLines className="h-4 w-4" />
           </button>
@@ -144,7 +144,7 @@ export default function Composer({
             className={cn(
               "jarvis-composer-action grid shrink-0 place-items-center rounded-full transition-colors",
               pret
-                ? "tv-accent-fill jarvis-send-ready active:scale-95"
+                ? "tv-accent-fill jarvis-send-ready"
                 : "cursor-not-allowed bg-white/[0.05] text-slate-600",
             )}
           >

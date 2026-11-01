@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { cn } from "./cn";
+import { useGlidingIndicator } from "./useGlidingIndicator";
 
 /**
  * SubNav — LA NAVIGATION *DANS* UNE PAGE.
@@ -44,6 +45,9 @@ export function SubNav<T extends string>({
   ariaLabel: string;
   className?: string;
 }) {
+  // La pilule qui glisse sous l'onglet actif (même geste que le rail).
+  const glide = useGlidingIndicator<HTMLDivElement>(value);
+
   // Flèches gauche/droite : c'est un `tablist`, il se parcourt au clavier.
   const onKeyDown = (e: React.KeyboardEvent) => {
     const delta = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
@@ -65,12 +69,21 @@ export function SubNav<T extends string>({
 
   return (
     <div
+      ref={glide.trackRef}
       role="tablist"
       aria-label={ariaLabel}
       aria-orientation="horizontal"
       onKeyDown={onKeyDown}
-      className={cn("tv-subnav", className)}
+      className={cn("tv-subnav", glide.on && "tv-glide-on", className)}
     >
+      {glide.style && (
+        <span
+          data-glide="1"
+          aria-hidden
+          className={cn("tv-glide tv-glide-subnav", glide.ready && "tv-glide-ready")}
+          style={glide.style}
+        />
+      )}
       {items.map((it) => {
         const active = it.id === value;
         return (

@@ -32,6 +32,8 @@ import { PageContainer, Metric, Button, RollingFigure, ActionButton, density } f
 import { usePageActions, usePageLead } from "@/app/contexts/PageActionsContext";
 import { DeferredFallback } from "@/app/shell/PageTransition";
 import { cn } from "@/shared/ui/cn";
+import { useGlidingIndicator } from "@/shared/ui/useGlidingIndicator";
+import { tap } from "@/shared/haptics";
 import { useT } from "@/app/i18n/LanguageContext";
 import type { TKey } from "@/app/i18n/translations";
 import { newestFirst } from "@/app/trading/tradeOrder";
@@ -155,6 +157,9 @@ export default function Dashboard({
       return "month";
     }
   });
+  // La pilule des périodes glisse d'un choix à l'autre (même geste que les
+  // onglets de section et le rail).
+  const periodGlide = useGlidingIndicator<HTMLDivElement>(period);
   // Le solde de départ vient DU COMPTE ACTIF déjà chargé (AccountContext), pas
   // d'un `loadStartingBalance` séparé : cet aller-retour Supabase redondant se
   // résolvait APRÈS le premier rendu et re-peignait les chiffres (expectancy,
@@ -586,7 +591,23 @@ export default function Dashboard({
                       </span>
                     )}
                   </p>
-                  <div className="dash-period" role="group" aria-label={t("dashboard.periodAria")}>
+                  <div
+                    ref={periodGlide.trackRef}
+                    className={cn("dash-period", periodGlide.on && "tv-glide-on")}
+                    role="group"
+                    aria-label={t("dashboard.periodAria")}
+                  >
+                    {periodGlide.style && (
+                      <span
+                        data-glide="1"
+                        aria-hidden
+                        className={cn(
+                          "tv-glide tv-glide-period",
+                          periodGlide.ready && "tv-glide-ready",
+                        )}
+                        style={periodGlide.style}
+                      />
+                    )}
                     {PERIODS.map((p) => (
                       <button
                         key={p}
@@ -604,7 +625,10 @@ export default function Dashboard({
                       variant="primary"
                       icon={<Plus strokeWidth={2.4} />}
                       label={t("dashboard.actionTrade")}
-                      onClick={onAddTrade}
+                      onClick={() => {
+                        tap();
+                        onAddTrade();
+                      }}
                     />
                     {onOpenImport && (
                       <ActionButton
