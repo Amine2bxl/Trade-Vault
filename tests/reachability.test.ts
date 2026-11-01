@@ -14,8 +14,10 @@ import { readSource } from "./helpers/source";
  *     `trading/useTradingRules.ts`. Son `useTradingRulesContext` LEVAIT une
  *     erreur si on l'appelait, puisque son fournisseur n'était monté nulle
  *     part. Supprimé.
- *   • `features/session/SessionPanel.tsx` — celui-là n'est PAS du code mort, et
- *     c'est plus grave : voir l'exception documentée plus bas.
+ *   • `features/session/SessionPanel.tsx` — une séance complète (état, objectif,
+ *     score, clôture) montée sur AUCUNE page : `trading_sessions` restait vide.
+ *     Supprimé quand la checklist est devenue le plan de séance : c'est elle
+ *     qui ouvre et clôt désormais la séance du jour (voir le dernier test).
  */
 
 const SRC = resolve(import.meta.dir, "..", "src");
@@ -23,27 +25,10 @@ const SRC = resolve(import.meta.dir, "..", "src");
 /**
  * Fichier → pourquoi il n'est importé nulle part.
  *
- * Une seule entrée, et ce n'est pas un déchet à balayer : c'est un
- * SIGNALEMENT. La retirer d'ici veut dire « le problème est réglé », pas
- * « on a cessé d'en parler ».
+ * Chaque entrée est un SIGNALEMENT, pas un déchet à balayer. La retirer d'ici
+ * veut dire « le problème est réglé », pas « on a cessé d'en parler ».
  */
-const UNREACHED: Record<string, string> = {
-  "app/features/session/SessionPanel.tsx": `
-    La séance du jour — ouverture, état émotionnel déclaré, objectif, score de
-    préparation, clôture et bilan. Fonctionnalité complète, traduite (28 clés
-    "session.*"), adossée à la table \`trading_sessions\`, fusionnée par la PR
-    #181 — et montée sur AUCUNE page.
-
-    Ce n'est donc pas un fichier oublié, c'est une fonctionnalité livrée qui
-    n'atteint aucun trader. Les conséquences se voient ailleurs :
-    \`openSession\` et \`closeSession\` n'ont pas d'autre appelant, la table
-    reste donc vide, \`trades.session_id\` reste toujours nul, et le
-    \`loadTodaySession\` de Jarvis rend invariablement null.
-
-    Le monter est un choix de PRODUIT : son propre en-tête indique où il devait
-    aller (« au-dessus de la checklist qui l'alimente »), mais l'ajouter change
-    l'écran de préparation. Signalé plutôt que décidé unilatéralement.`,
-};
+const UNREACHED: Record<string, string> = {};
 
 function sourceFiles(dir: string): string[] {
   const out: string[] = [];
@@ -98,15 +83,23 @@ describe("aucun composant n'est écrit pour personne", () => {
     expect(existsSync(join(SRC, "app/trading/useTradingRules.ts"))).toBe(true);
   });
 
-  test("la fonctionnalité « séance » reste bien inatteignable — et on le sait", () => {
-    // Ce test ÉCHOUE le jour où quelqu'un monte enfin le panneau : il faudra
-    // alors retirer l'exception, ce qui est exactement la bonne réaction.
+  test("la séance du jour est atteinte — par la checklist, et par elle seule", () => {
+    // La séance n'était ouverte par aucun écran monté. C'est désormais le
+    // verrou du plan de séance qui l'ouvre, et le bilan qui la clôt. Un second
+    // appelant recréerait deux façons d'ouvrir la même journée.
     const store = readSource(import.meta.dir, "../src/app/store/sessions.ts");
     expect(store).toContain("export async function openSession");
-    const callers = sourceFiles(SRC).filter((f) => {
-      if (f.endsWith("store/sessions.ts") || f.endsWith("store.ts")) return false;
-      return /\bopenSession\s*\(/.test(readSource(import.meta.dir, relative(import.meta.dir, f)));
-    });
-    expect(callers.map((f) => relative(SRC, f))).toEqual(["app/features/session/SessionPanel.tsx"]);
+    expect(existsSync(join(SRC, "app/features/session/SessionPanel.tsx"))).toBe(false);
+    const callers = (name: string) =>
+      sourceFiles(SRC)
+        .filter((f) => {
+          if (f.endsWith("store/sessions.ts") || f.endsWith("store.ts")) return false;
+          return new RegExp(`\\b${name}\\s*\\(`).test(
+            readSource(import.meta.dir, relative(import.meta.dir, f)),
+          );
+        })
+        .map((f) => relative(SRC, f));
+    expect(callers("openSession")).toEqual(["app/features/checklist/Checklist.tsx"]);
+    expect(callers("closeSession")).toEqual(["app/features/checklist/Checklist.tsx"]);
   });
 });

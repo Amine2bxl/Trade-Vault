@@ -65,7 +65,7 @@ mais **le coût d'un challenge raté**.
 
 ## Jarvis
 
-- **Une seule IA, partout** : page, widget, checklist, voix. Jamais « AI Coach »,
+- **Une seule IA, partout** : page, widget, voix. Jamais « AI Coach »,
   « Assistant » ou « Insights » en parallèle.
 - Persona : intelligent, calme, professionnel, discrètement charismatique,
   **brutalement honnête et exigeant** — un mentor haute performance, jamais un

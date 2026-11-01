@@ -228,7 +228,9 @@ function DevUiBody({
               onOpenMissed={noop}
             />
           )}
-          {ecran === "checklist" && <Checklist trades={trades} setPage={noop} onAddTrade={noop} />}
+          {ecran === "checklist" && (
+            <Checklist trades={trades} setPage={noop} onAddTrade={noop} onEditTrade={noop} />
+          )}
           {ecran === "calculator" && <LotSizeCalculator onAddTrade={noop} setPage={noop} />}
           {ecran === "news" && <EconomicNews />}
           {ecran === "missed" && <MissedOpportunities />}
