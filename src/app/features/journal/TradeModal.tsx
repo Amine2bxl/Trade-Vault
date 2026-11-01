@@ -293,15 +293,17 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
       if (!intent && !reflection) return;
       // Server metadata must never overwrite a recovered draft or fields
       // already edited while this request was in flight.
-      if (!hadDraftOnOpenRef.current && !hasInteractedRef.current) setForm((f) => ({
-        ...f,
-        intentEmotion: intent?.emotion ?? f.intentEmotion,
-        intentReasoning: intent?.reasoning ?? f.intentReasoning,
-        intentPlan: intent?.plan ?? f.intentPlan,
-        reflectionPlan: reflection?.planRespected ?? f.reflectionPlan,
-        reflectionReason: reflection?.reason ?? f.reflectionReason,
-        reflectionNote: reflection?.note ?? f.reflectionNote,
-      }));
+      if (!hadDraftOnOpenRef.current && !hasInteractedRef.current) {
+        setForm((f) => ({
+          ...f,
+          intentEmotion: intent?.emotion ?? f.intentEmotion,
+          intentReasoning: intent?.reasoning ?? f.intentReasoning,
+          intentPlan: intent?.plan ?? f.intentPlan,
+          reflectionPlan: reflection?.planRespected ?? f.reflectionPlan,
+          reflectionReason: reflection?.reason ?? f.reflectionReason,
+          reflectionNote: reflection?.note ?? f.reflectionNote,
+        }));
+      }
       if (intent) setShowIntent(true);
       if (reflection) setShowReflection(true);
     });
