@@ -154,6 +154,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
   const userId = user?.id || "";
   const { t, lang } = useT();
   const draftKey = trade ? nsKey(userId, `draft.trade.${trade.id}`) : tradeDraftKey(userId);
+  const hadDraftOnOpenRef = useRef(Boolean(readJSON<TradeDraft | null>(draftKey, null)));
   // Unsaved inputs outside the trade row (new confluence and calculator) are
   // still user edits; recover them just like the trade fields.
   const restoredUiRef = useRef(
@@ -290,7 +291,9 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
     ]).then(([intent, reflection]) => {
       if (!active) return;
       if (!intent && !reflection) return;
-      setForm((f) => ({
+      // Server metadata must never overwrite a recovered draft or fields
+      // already edited while this request was in flight.
+      if (!hadDraftOnOpenRef.current && !hasInteractedRef.current) setForm((f) => ({
         ...f,
         intentEmotion: intent?.emotion ?? f.intentEmotion,
         intentReasoning: intent?.reasoning ?? f.intentReasoning,
