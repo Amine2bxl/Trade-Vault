@@ -5464,7 +5464,7 @@ thead .plan-cmp-col.is-pro {
 .plan-cmp-head {
   position: relative;
   vertical-align: bottom;
-  padding-top: 1.75rem;
+  padding-top: 2.25rem;
   padding-bottom: 1rem;
 }
 .plan-cmp-head > * {
@@ -5472,8 +5472,11 @@ thead .plan-cmp-col.is-pro {
   justify-content: center;
 }
 .plan-cmp-ribbon {
+  /* DANS la tête de colonne, pas à cheval sur son bord : le tableau vit dans
+     un conteneur `overflow-x: auto`, qui rogne aussi tout ce qui dépasse en
+     hauteur — la pastille sortait coupée en deux. */
   position: absolute;
-  top: -0.7rem;
+  top: 0.35rem;
   left: 50%;
   transform: translateX(-50%);
   align-items: center;
@@ -5484,7 +5487,7 @@ thead .plan-cmp-col.is-pro {
   padding: 0.2rem 0.65rem;
   font-size: 0.6875rem;
   font-weight: 700;
-  color: #04120b;
+  color: #ffffff;
   box-shadow: none;
 }
 .plan-cmp-name {
@@ -5636,7 +5639,7 @@ thead .plan-cmp-col.is-pro {
     padding-right: 0.25rem;
   }
   .plan-cmp-head {
-    padding-top: 1.5rem;
+    padding-top: 2.1rem;
   }
   .plan-cmp-name {
     font-size: 0.6875rem;
@@ -6859,43 +6862,26 @@ body::after {
    haut et d'une ombre courte — jamais d'un dégradé de remplissage. L'état se
    lit dans le liseré (et la pastille), la couleur reste rare. */
 .sub-hero {
+  /* LIQUID — la même plaque que la carte héros des autres pages de réglages
+     (`.tv-set-hero`) : rayon 28, plaque 1, arête claire. L'état ne se lit
+     plus dans un filet coloré en haut, mais dans la pastille et le liseré. */
   position: relative;
   overflow: hidden;
-  border-radius: 1.5rem;
+  border-radius: var(--radius-3xl);
   border: 1px solid var(--tv-border);
-  background: var(--tv-plate-2);
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.06),
-    0 18px 40px -28px rgb(0 0 0 / 0.9);
-  padding: 1.25rem;
+  background: var(--tv-plate-1);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05);
+  padding: 20px;
 }
 @media (min-width: 640px) {
   .sub-hero {
-    padding: 1.6rem 1.75rem 1.4rem;
+    padding: 24px 28px;
   }
 }
-/* Le filet d'état, en haut : une ligne, pas une nappe. */
-.sub-hero::before {
-  content: "";
-  position: absolute;
-  inset: 0 0 auto 0;
-  height: 2px;
-  background: var(--sub-hero-line, var(--tv-border-strong));
-  opacity: 0.9;
-}
-.sub-hero-active,
-.sub-hero-lifetime {
-  --sub-hero-line: rgb(var(--tv-accent-rgb) / 0.7);
-}
-.sub-hero-trialing {
-  --sub-hero-line: rgb(var(--tv-accent-rgb) / 0.5);
-}
 .sub-hero-cancelling {
-  --sub-hero-line: rgb(251 191 36 / 0.7);
   border-color: rgb(251 191 36 / 0.25);
 }
 .sub-hero-pastDue {
-  --sub-hero-line: rgb(248 113 113 / 0.75);
   border-color: rgb(248 113 113 / 0.25);
 }
 .sub-hero-top {
@@ -6906,17 +6892,12 @@ body::after {
   gap: 1.25rem 2rem;
 }
 .sub-hero-title {
-  margin-top: 0.35rem;
-  font-size: 1.6rem;
+  margin-top: 6px;
+  font-size: 1.75rem;
   font-weight: 700;
   letter-spacing: -0.025em;
   line-height: 1.1;
   color: var(--tv-text-primary);
-}
-@media (min-width: 768px) {
-  .sub-hero-title {
-    font-size: 2rem;
-  }
 }
 .sub-hero-tier {
   color: var(--tv-highlight);
@@ -6951,7 +6932,7 @@ body::after {
   display: flex;
   flex-direction: column;
   gap: 1.1rem;
-  border-radius: 1.25rem;
+  border-radius: var(--radius-2xl);
   border: 1px solid var(--tv-border);
   background: var(--tv-plate-1);
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
@@ -8373,41 +8354,64 @@ body.tv-app-type svg.lucide {
   }
 }
 
-/* ── Pages de paramètres : groupes à filets, rangées libellé / commande ──── */
+/* ── PAGES DE RÉGLAGES — LIQUID ─────────────────────────────────────────────
+   Les cinq pages de la section (Réglages, Profil, Apparence, Brokers,
+   Abonnement) parlent UNE langue : les listes groupées d'iOS dans la matière
+   Revolut. Un titre de groupe discret aligné sur le texte des rangées, une
+   plaque opaque à grand rayon, des rangées de 60px séparées par un filet
+   RENTRÉ (il commence où commence le texte, comme sur iPhone), des icônes
+   posées dans une tuile, un interrupteur aux proportions d'iOS. Aucun verre :
+   ce sont des cartes de contenu. */
 .tv-set-group {
   display: grid;
-  gap: 8px;
+  gap: 10px;
 }
 .tv-set-title {
-  padding-inline: 2px;
+  padding-inline: 18px;
   color: var(--tv-text-muted);
-  font-size: 11px;
-  font-weight: 700;
+  font-family: var(--font-figure);
+  font-size: var(--tv-t-micro);
+  font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 .tv-set-list {
   overflow: hidden;
   border: 1px solid var(--tv-border);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-2xl);
   background: var(--tv-plate-1);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
 }
 .tv-set-group[data-tone="danger"] .tv-set-list {
-  border-color: rgb(239 68 68 / 0.25);
+  border-color: rgb(239 68 68 / 0.22);
 }
 .tv-set-row {
+  position: relative;
   display: grid;
+  min-height: 60px;
   align-items: center;
   gap: 10px;
-  padding: 12px 14px;
+  padding: 14px 18px;
 }
-.tv-set-row + .tv-set-row {
-  border-top: 1px solid var(--tv-border);
+/* Le filet rentré : du début du texte au bord droit, jamais d'un bord à
+   l'autre. Derrière une tuile d'icône, il commence après elle. */
+.tv-set-row + .tv-set-row::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 18px;
+  height: 1px;
+  background: var(--tv-border);
+  pointer-events: none;
+}
+.tv-set-list:has(.tv-set-action-icon) > .tv-set-row + .tv-set-row::before {
+  left: 64px;
 }
 @media (min-width: 640px) {
   .tv-set-row {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 280px);
-    gap: 20px;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 300px);
+    gap: 24px;
   }
 }
 /* Un interrupteur reste sur la ligne de son libellé, même sur téléphone. */
@@ -8419,14 +8423,15 @@ body.tv-app-type svg.lucide {
   align-items: center;
   gap: 8px;
   color: var(--tv-text-primary);
-  font-size: 13.5px;
+  font-size: 14.5px;
   font-weight: 600;
+  letter-spacing: -0.01em;
   line-height: 1.35;
 }
 .tv-set-hint {
-  margin-top: 2px;
+  margin-top: 3px;
   color: var(--tv-text-muted);
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 400;
   line-height: 1.45;
 }
@@ -8439,45 +8444,66 @@ body.tv-app-type svg.lucide {
   width: 100%;
 }
 .tv-set-control > .tv-switch {
-  width: 36px;
+  width: 46px;
 }
 .tv-set-action {
   display: flex;
   width: 100%;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   text-align: left;
-  transition: background-color 0.15s ease;
+  transition: background-color var(--tv-dur-1) var(--tv-ease);
 }
 .tv-set-action:hover:not(:disabled) {
-  background: var(--tv-plate-2);
+  background: rgb(255 255 255 / 0.03);
+}
+/* Une rangée d'information (pas une commande) : même géométrie que
+   l'action — tuile, texte, état à droite — sans survol. */
+.tv-set-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.tv-set-action:active:not(:disabled) {
+  background: rgb(255 255 255 / 0.05);
 }
 .tv-set-action:disabled {
   cursor: not-allowed;
   opacity: 0.5;
 }
+/* La tuile d'icône : 32px, coins de 10px — la pastille des réglages d'iOS,
+   en gris, sans couleur décorative. */
 .tv-set-action-icon {
   display: grid;
-  width: 18px;
+  width: 32px;
+  height: 32px;
   flex-shrink: 0;
   place-items: center;
-  color: var(--tv-text-muted);
+  border-radius: 10px;
+  background: var(--tv-plate-3);
+  color: var(--tv-text-secondary);
 }
-.tv-set-action[data-danger="true"] .tv-set-label,
+.tv-set-action[data-danger="true"] .tv-set-label {
+  color: #f87171;
+}
 .tv-set-action[data-danger="true"] .tv-set-action-icon {
+  background: rgb(239 68 68 / 0.12);
   color: #f87171;
 }
 .tv-set-action[data-danger="true"]:hover:not(:disabled) {
-  background: rgb(239 68 68 / 0.06);
+  background: rgb(239 68 68 / 0.05);
 }
+/* L'interrupteur aux proportions d'iOS (46 × 28, bouton de 24) : le bouton
+   glisse sur le ressort du système, ombre noire courte, rien d'autre. */
 .tv-switch {
   position: relative;
-  width: 36px;
-  height: 20px;
+  width: 46px;
+  height: 28px;
   flex-shrink: 0;
   border-radius: 999px;
   background: var(--tv-plate-3);
-  transition: background-color 0.2s ease;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.04);
+  transition: background-color var(--tv-dur-2) var(--tv-ease);
 }
 .tv-switch[aria-checked="true"] {
   background: var(--tv-accent);
@@ -8489,39 +8515,51 @@ body.tv-app-type svg.lucide {
   position: absolute;
   top: 2px;
   left: 2px;
-  width: 16px;
-  height: 16px;
+  width: 24px;
+  height: 24px;
   border-radius: 999px;
   background: #fff;
-  transition: transform 0.2s ease;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.35);
+  transition: transform var(--tv-dur-spring) var(--tv-spring);
 }
 .tv-switch[aria-checked="true"] .tv-switch-knob {
-  transform: translateX(16px);
+  transform: translateX(18px);
 }
+@media (prefers-reduced-motion: reduce) {
+  .tv-switch-knob {
+    transition: none;
+  }
+}
+/* Le rail des rubriques reprend la pilule du rail principal : même clair,
+   même arête spéculaire, l'icône à l'accent — on reconnaît le geste. */
 .tv-set-rail-item {
   display: flex;
-  height: 38px;
+  height: 40px;
   align-items: center;
   gap: 10px;
-  border-radius: var(--radius-lg);
-  padding-inline: 10px;
+  border-radius: 9999px;
+  padding-inline: 14px;
   color: var(--tv-text-secondary);
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 500;
   transition:
-    background-color 0.15s ease,
-    color 0.15s ease;
+    background-color var(--tv-dur-1) var(--tv-ease),
+    color var(--tv-dur-1) var(--tv-ease);
 }
 .tv-set-rail-item:hover {
-  background: var(--tv-plate-2);
+  background: rgb(255 255 255 / 0.05);
   color: var(--tv-text-primary);
 }
 .tv-set-rail-item[aria-selected="true"] {
-  background: rgb(var(--tv-accent-rgb) / 0.1);
+  background: rgb(255 255 255 / 0.1);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.14),
+    inset 0 0 0 1px rgb(255 255 255 / 0.04);
   color: var(--tv-text-primary);
+  font-weight: 600;
 }
 .tv-set-rail-item[aria-selected="true"] svg {
-  color: var(--tv-highlight);
+  color: var(--tv-accent);
 }
 .tv-set-rail-item[data-danger="true"][aria-selected="true"] {
   background: rgb(239 68 68 / 0.1);
@@ -8529,6 +8567,144 @@ body.tv-app-type svg.lucide {
 }
 .tv-set-rail-item[data-danger="true"][aria-selected="true"] svg {
   color: #f87171;
+}
+/* La recherche des réglages : la pilule de recherche du tableau de bord. */
+.tv-set-search {
+  position: relative;
+}
+.tv-set-search input {
+  width: 100%;
+  height: 40px;
+  padding: 0 14px 0 38px;
+  border-radius: 9999px;
+  border: 1px solid var(--tv-glass-edge);
+  background: rgb(255 255 255 / 0.04);
+  box-shadow: var(--tv-glass-specular);
+  color: var(--tv-text-primary);
+  font-size: 13.5px;
+  outline: none;
+  transition: background-color var(--tv-dur-1) var(--tv-ease);
+}
+.tv-set-search input:hover,
+.tv-set-search input:focus {
+  background: rgb(255 255 255 / 0.07);
+}
+.tv-set-search input:focus-visible {
+  box-shadow:
+    var(--tv-glass-specular),
+    0 0 0 2px rgb(var(--tv-accent-rgb) / 0.45);
+}
+.tv-set-search svg {
+  position: absolute;
+  top: 50%;
+  left: 14px;
+  width: 16px;
+  height: 16px;
+  transform: translateY(-50%);
+  color: var(--tv-text-muted);
+  pointer-events: none;
+}
+
+/* LA CARTE HÉROS d'une page de réglages — Profil, Abonnement, Brokers,
+   Apparence ouvrent toutes sur elle : une plaque à grand rayon, un disque (ou
+   un visuel) à gauche, le titre à 20px, une phrase, et à droite les chiffres
+   ou l'action. C'est elle qui fait qu'on reconnaît la section d'un coup
+   d'œil, quelle que soit la page. */
+.tv-set-hero {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--tv-border);
+  border-radius: var(--radius-3xl);
+  background: var(--tv-plate-1);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05);
+  padding: 20px;
+}
+@media (min-width: 640px) {
+  .tv-set-hero {
+    padding: 24px 28px;
+  }
+}
+.tv-set-hero-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px 24px;
+}
+.tv-set-hero-main {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 260px;
+  align-items: center;
+  gap: 16px;
+}
+.tv-set-hero-media {
+  display: grid;
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 9999px;
+  background: var(--tv-plate-3);
+  color: var(--tv-text-primary);
+  font: 700 20px var(--font-figure);
+}
+.tv-set-hero-media[data-tone="accent"] {
+  background: var(--tv-accent);
+  color: #ffffff;
+}
+.tv-set-hero-eyebrow {
+  color: var(--tv-text-muted);
+  font-family: var(--font-figure);
+  font-size: var(--tv-t-micro);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.tv-set-hero-title {
+  overflow: hidden;
+  color: var(--tv-text-primary);
+  font-size: var(--tv-t-h2);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tv-set-hero-sub {
+  margin-top: 4px;
+  color: var(--tv-text-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.tv-set-hero-aside {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 20px;
+}
+/* Un chiffre de la carte héros : libellé micro au-dessus, valeur en Inter
+   tabulaire. Séparés par un filet vertical, jamais encadrés. */
+.tv-set-fact {
+  min-width: 0;
+  border-left: 1px solid var(--tv-border);
+  padding-left: 20px;
+}
+.tv-set-fact:first-child {
+  border-left: 0;
+  padding-left: 0;
+}
+.tv-set-fact-value {
+  margin-top: 6px;
+  color: var(--tv-text-primary);
+  font: 600 18px/1 var(--font-figure);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+.tv-set-fact-value[data-tone="pos"] {
+  color: var(--tv-chart-green);
+}
+.tv-set-fact-value[data-tone="neg"] {
+  color: var(--tv-chart-red);
 }
 
 /* Monte-Carlo : la courbe porte l'explication, les détails se dévoilent à la

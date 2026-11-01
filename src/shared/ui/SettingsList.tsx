@@ -132,3 +132,70 @@ export function Toggle({
     </button>
   );
 }
+
+/**
+ * LA CARTE HÉROS d'une page de réglages. Profil, Abonnement, Brokers et
+ * Apparence ouvrent sur la même anatomie : un disque (ou un visuel) à gauche,
+ * un surtitre, le titre, une phrase — et à droite les chiffres ou l'action.
+ * Le titre est un `h2` : le `h1` de la page est le grand titre de l'en-tête.
+ */
+export function SettingsHero({
+  media,
+  mediaTone,
+  eyebrow,
+  title,
+  subtitle,
+  aside,
+  children,
+  className,
+}: {
+  media?: ReactNode;
+  mediaTone?: "accent";
+  eyebrow?: ReactNode;
+  title: ReactNode;
+  subtitle?: ReactNode;
+  aside?: ReactNode;
+  children?: ReactNode;
+  className?: string;
+}) {
+  return (
+    <section className={cn("tv-set-hero animate-fade-in-up", className)}>
+      <div className="tv-set-hero-top">
+        <div className="tv-set-hero-main">
+          {media != null && (
+            <div className="tv-set-hero-media" data-tone={mediaTone}>
+              {media}
+            </div>
+          )}
+          <div className="min-w-0 flex-1">
+            {eyebrow != null && <p className="tv-set-hero-eyebrow">{eyebrow}</p>}
+            <h2 className="tv-set-hero-title">{title}</h2>
+            {subtitle != null && <div className="tv-set-hero-sub">{subtitle}</div>}
+          </div>
+        </div>
+        {aside != null && <div className="tv-set-hero-aside">{aside}</div>}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+/** Un chiffre de la carte héros : libellé micro, valeur tabulaire. */
+export function SettingsFact({
+  label,
+  value,
+  tone,
+}: {
+  label: ReactNode;
+  value: ReactNode;
+  tone?: "pos" | "neg";
+}) {
+  return (
+    <div className="tv-set-fact">
+      <div className="tv-set-hero-eyebrow truncate">{label}</div>
+      <div className="tv-set-fact-value truncate" data-tone={tone}>
+        {value}
+      </div>
+    </div>
+  );
+}

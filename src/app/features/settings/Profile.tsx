@@ -1,10 +1,15 @@
-import { PageContainer, SettingsAction, SettingsGroup } from "@/shared/ui";
+import {
+  PageContainer,
+  SettingsAction,
+  SettingsFact,
+  SettingsGroup,
+  SettingsHero,
+} from "@/shared/ui";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { Trade, SUPPORT_EMAIL } from "@/app/types";
 import { computeStats, formatPnl, formatPct } from "@/domain/tradeCalcs";
 import { LogOut, Mail, RotateCcw, MessageSquare, Handshake, Lightbulb } from "@/shared/ui/icons";
 import { useT } from "@/app/i18n/LanguageContext";
-import { cn } from "@/shared/ui/cn";
 
 interface ProfileProps {
   trades: Trade[];
@@ -27,9 +32,10 @@ interface ProfileProps {
  *     le sujet, ils sont la CARTE D'IDENTITÉ : ils tiennent sur la même ligne
  *     que le nom, séparés par un filet.
  *
- * Ce qui reste tient sur UN ÉCRAN : l'identité (avec son bilan), puis deux
- * listes à filets — contact, compte — sur l'anatomie commune des pages de
- * paramètres (`SettingsGroup`). Plus de cartes vitrées ni de pastilles.
+ * Ce qui reste tient sur UN ÉCRAN : la carte héros commune aux pages de
+ * réglages (`SettingsHero` — l'identité, et son bilan à droite), puis deux
+ * listes groupées — contact, compte — sur l'anatomie commune
+ * (`SettingsGroup`).
  */
 export default function Profile({ trades }: ProfileProps) {
   const { user, logout } = useAuth();
@@ -42,35 +48,30 @@ export default function Profile({ trades }: ProfileProps) {
     `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}`;
 
   return (
-    <PageContainer className="max-w-3xl space-y-5">
-      {/* ── L'IDENTITÉ, ET LE BILAN QUI VA AVEC — à plat, sans carte ────── */}
-      <section className="animate-fade-in-up flex flex-wrap items-center gap-x-6 gap-y-4 px-1">
-        {/* `basis-[240px]` : ce sont les chiffres qui passent à la ligne sur
-            téléphone, jamais le nom qui se comprime. */}
-        <div className="flex min-w-0 flex-1 basis-[240px] items-center gap-3.5">
-          <div className="tv-accent-fill grid h-11 w-11 shrink-0 place-items-center rounded-xl text-base font-bold">
-            {user.name.charAt(0).toUpperCase()}
-          </div>
-          <div className="min-w-0">
-            <h1 className="font-display truncate text-base font-extrabold tracking-tight text-white">
-              {user.name}
-            </h1>
-            <p className="mt-0.5 flex items-center gap-1.5 truncate text-[13px] text-slate-400">
-              <Mail className="h-3.5 w-3.5 shrink-0" />
-              <span className="truncate">{user.email}</span>
-            </p>
-          </div>
-        </div>
-        <div className="flex shrink-0 items-stretch gap-5">
-          <Fait
-            label={t("stats.totalPnl")}
-            value={formatPnl(stats.totalPnl)}
-            tone={stats.totalPnl >= 0 ? "pos" : "neg"}
-          />
-          <Fait label={t("stats.trades")} value={String(stats.totalTrades)} />
-          <Fait label={t("stats.winRate")} value={formatPct(stats.winRate)} />
-        </div>
-      </section>
+    <PageContainer measure="settings" className="space-y-6">
+      {/* ── L'IDENTITÉ, ET LE BILAN QUI VA AVEC — la carte héros commune ── */}
+      <SettingsHero
+        media={user.name.charAt(0).toUpperCase()}
+        mediaTone="accent"
+        title={user.name}
+        subtitle={
+          <span className="flex min-w-0 items-center gap-1.5">
+            <Mail className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">{user.email}</span>
+          </span>
+        }
+        aside={
+          <>
+            <SettingsFact
+              label={t("stats.totalPnl")}
+              value={formatPnl(stats.totalPnl)}
+              tone={stats.totalPnl >= 0 ? "pos" : "neg"}
+            />
+            <SettingsFact label={t("stats.trades")} value={String(stats.totalTrades)} />
+            <SettingsFact label={t("stats.winRate")} value={formatPct(stats.winRate)} />
+          </>
+        }
+      />
 
       <SettingsGroup title={t("profile.getInTouch")}>
         <SettingsAction
@@ -115,25 +116,5 @@ export default function Profile({ trades }: ProfileProps) {
         />
       </SettingsGroup>
     </PageContainer>
-  );
-}
-
-/**
- * UN FAIT DE LA CARTE D'IDENTITÉ. Filet vertical à gauche, jamais de cadre :
- * ces trois chiffres accompagnent le nom, ils ne le concurrencent pas.
- */
-function Fait({ label, value, tone }: { label: string; value: string; tone?: "pos" | "neg" }) {
-  return (
-    <div className="min-w-0 border-l border-white/[0.07] pl-5 first:border-l-0 first:pl-0">
-      <div className="tv-label truncate text-slate-500">{label}</div>
-      <div
-        className={cn(
-          "tv-figure mt-1 truncate text-base leading-none",
-          tone === "pos" ? "rp-pos" : tone === "neg" ? "rp-neg" : "text-white",
-        )}
-      >
-        {value}
-      </div>
-    </div>
   );
 }

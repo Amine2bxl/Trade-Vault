@@ -138,7 +138,7 @@ export default function Subscription({ trades = [] }: { trades?: Trade[] } = {})
   const fin = sub?.currentPeriodEnd ? dateFmt(sub.currentPeriodEnd) : null;
 
   return (
-    <PageContainer className="max-w-[1000px] space-y-3">
+    <PageContainer measure="settings" className="space-y-6">
       {/* ══ 1 · MON ADHÉSION — UNE SEULE CARTE ══════════════════════════════
           Quatre blocs disaient la même chose en quatre surfaces : une bande
           d'état, une grille de quatre cases d'un mot chacune, une carte de

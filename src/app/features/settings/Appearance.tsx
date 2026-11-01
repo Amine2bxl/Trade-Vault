@@ -4,7 +4,7 @@ import { useT } from "@/app/i18n/LanguageContext";
 import { useTheme } from "@/app/contexts/ThemeContext";
 import ThemeSettings from "./ThemeSettings";
 import ThemeStudioModal from "./ThemeStudioModal";
-import { PageContainer, Button } from "@/shared/ui";
+import { PageContainer, Button, SettingsHero } from "@/shared/ui";
 import { usePageActions, usePageLead } from "@/app/contexts/PageActionsContext";
 
 export default function Appearance() {
@@ -61,7 +61,23 @@ export default function Appearance() {
   usePageActions(actions);
 
   return (
-    <PageContainer className="max-w-[1000px] space-y-3">
+    <PageContainer measure="settings" className="space-y-6">
+      {/* La carte héros commune aux réglages : le thème actif, ses trois
+          couleurs dans le disque. */}
+      <SettingsHero
+        media={
+          <span
+            aria-hidden
+            className="block h-full w-full rounded-full"
+            style={{
+              background: `conic-gradient(${active.primary} 0 33%, ${active.secondary} 0 66%, ${active.highlight} 0)`,
+            }}
+          />
+        }
+        eyebrow={t("appearance.active")}
+        title={active.name}
+        subtitle={t("appearance.subtitle")}
+      />
       <div className="animate-fade-in-up stagger-1">
         <ThemeSettings />
       </div>

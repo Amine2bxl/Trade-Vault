@@ -46,7 +46,16 @@ import {
 } from "@/backend/brokers.functions";
 import { announceBrokerImport, announceBrokersChanged } from "./useBrokerSync";
 import { SyncCelebration, type CelebrationState } from "./SyncCelebration";
-import { PageContainer, Badge, Button, Card, FIELD_BASE, SelectPicker, cn } from "@/shared/ui";
+import {
+  PageContainer,
+  Badge,
+  Button,
+  Card,
+  FIELD_BASE,
+  SelectPicker,
+  SettingsGroup,
+  cn,
+} from "@/shared/ui";
 import { currencySymbol } from "@/shared/currency";
 import tradovateLogo from "@/assets/brands/tradovate.png";
 import { useLiveTable } from "@/app/hooks/useLiveTable";
@@ -605,15 +614,17 @@ export default function Brokers() {
   );
 
   return (
-    <PageContainer className="max-w-[1040px] space-y-3 md:space-y-4">
+    <PageContainer measure="settings" className="space-y-6">
       {/* ── PAS ENCORE CONNECTÉ : la promesse, le geste, la confiance ── */}
       {!hasConnections && connections !== null && (
-        <Card pad="none" className="animate-fade-in-up overflow-hidden">
+        <Card pad="none" className="animate-fade-in-up overflow-hidden rounded-[var(--radius-3xl)]">
           <div className="grid lg:grid-cols-[1.35fr_1fr]">
             <div className="space-y-5 p-5 md:p-6">
               <div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="tv-title text-lg">{t("brokers.heroTitle")}</h2>
+                  <h2 className="text-[20px] font-bold tracking-tight text-white">
+                    {t("brokers.heroTitle")}
+                  </h2>
                   {!isPro && <Badge variant="accent">{t("credits.plan.pro")}</Badge>}
                 </div>
                 <p className="tv-prose mt-1.5 max-w-xl text-slate-400">{t("brokers.heroBody")}</p>
@@ -686,60 +697,57 @@ export default function Brokers() {
       )}
 
       {/* ── LE CATALOGUE ── */}
-      <Card pad="default" className="animate-fade-in-up">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <span className="tv-label text-slate-500">{t("brokers.catalogTitle")}</span>
-        </div>
-        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+      {/* Une liste groupée, comme toutes les pages de réglages : une rangée
+          par broker, son état à droite. */}
+      <SettingsGroup title={t("brokers.catalogTitle")} className="animate-fade-in-up">
+        <BrokerTile
+          name="Tradovate"
+          logo={tradovateLogo}
+          desc={t("brokers.tradovateDesc")}
+          badge={
+            hasConnections ? (
+              <Badge variant="profit">
+                <Check className="h-3 w-3" />
+                {t("brokers.connectedBadge")}
+              </Badge>
+            ) : blocked ? (
+              // Même vérité que le bouton : tant que la connexion n'est pas
+              // ouverte sur ce serveur, on ne la dit pas « disponible ».
+              <Badge>{t("brokers.soon")}</Badge>
+            ) : (
+              <Badge variant="accent">{t("brokers.available")}</Badge>
+            )
+          }
+          action={
+            hasConnections ? (
+              <Button
+                variant="subtle"
+                size="sm"
+                onClick={() => void goToTradovate()}
+                disabled={redirecting || blocked}
+              >
+                {isPro ? <Plus className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
+                {t("brokers.addLogin")}
+              </Button>
+            ) : null
+          }
+        />
+        {(
+          [
+            ["Rithmic", "brokers.rithmicDesc"],
+            ["NinjaTrader", "brokers.ninjaDesc"],
+            ["ProjectX", "brokers.projectxDesc"],
+          ] as const
+        ).map(([name, desc]) => (
           <BrokerTile
-            name="Tradovate"
-            logo={tradovateLogo}
-            desc={t("brokers.tradovateDesc")}
-            badge={
-              hasConnections ? (
-                <Badge variant="profit">
-                  <Check className="h-3 w-3" />
-                  {t("brokers.connectedBadge")}
-                </Badge>
-              ) : blocked ? (
-                // Même vérité que le bouton : tant que la connexion n'est pas
-                // ouverte sur ce serveur, on ne la dit pas « disponible ».
-                <Badge>{t("brokers.soon")}</Badge>
-              ) : (
-                <Badge variant="accent">{t("brokers.available")}</Badge>
-              )
-            }
-            action={
-              hasConnections ? (
-                <Button
-                  variant="subtle"
-                  size="sm"
-                  onClick={() => void goToTradovate()}
-                  disabled={redirecting || blocked}
-                >
-                  {isPro ? <Plus className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
-                  {t("brokers.addLogin")}
-                </Button>
-              ) : null
-            }
+            key={name}
+            name={name}
+            desc={t(desc)}
+            muted
+            badge={<Badge variant="neutral">{t("brokers.planned")}</Badge>}
           />
-          {(
-            [
-              ["Rithmic", "brokers.rithmicDesc"],
-              ["NinjaTrader", "brokers.ninjaDesc"],
-              ["ProjectX", "brokers.projectxDesc"],
-            ] as const
-          ).map(([name, desc]) => (
-            <BrokerTile
-              key={name}
-              name={name}
-              desc={t(desc)}
-              muted
-              badge={<Badge variant="neutral">{t("brokers.planned")}</Badge>}
-            />
-          ))}
-        </div>
-      </Card>
+        ))}
+      </SettingsGroup>
 
       {/* Déjà connecté : la confiance reste écrite, plus bas, au même endroit. */}
       {hasConnections && (
@@ -749,15 +757,14 @@ export default function Brokers() {
       )}
 
       {/* Ce que fait la synchro, en clair — sans promesse. */}
-      <Card pad="default" className="animate-fade-in-up">
-        <span className="tv-label text-slate-500">{t("brokers.howTitle")}</span>
-        <ul className="mt-2 space-y-1.5 text-xs leading-relaxed text-slate-400">
-          <li>• {t("brokers.how1")}</li>
-          <li>• {t("brokers.how2")}</li>
-          <li>• {t("brokers.how3")}</li>
-          <li>• {t("brokers.how4")}</li>
-        </ul>
-      </Card>
+      <SettingsGroup title={t("brokers.howTitle")} className="animate-fade-in-up">
+        {(["brokers.how1", "brokers.how2", "brokers.how3", "brokers.how4"] as const).map((k, i) => (
+          <div key={k} className="tv-set-row tv-set-item">
+            <span className="tv-set-action-icon tv-figure text-[13px] font-semibold">{i + 1}</span>
+            <p className="min-w-0 flex-1 text-[13px] leading-relaxed text-slate-300">{t(k)}</p>
+          </div>
+        ))}
+      </SettingsGroup>
 
       <SyncCelebration
         state={celebration}
@@ -947,8 +954,8 @@ function TrustPanel({ t, className, wide }: { t: T; className?: string; wide?: b
   );
 }
 
-/** Une tuile du catalogue : le VRAI logo quand on l'a (fichier officiel,
- *  jamais redessiné), sinon l'initiale du nom. */
+/** Une rangée du catalogue : le VRAI logo quand on l'a (fichier officiel,
+ *  jamais redessiné), sinon l'initiale du nom, dans la tuile d'icône commune. */
 function BrokerTile({
   name,
   logo,
@@ -965,34 +972,22 @@ function BrokerTile({
   muted?: boolean;
 }) {
   return (
-    <div
-      className={cn(
-        "flex items-center gap-3 rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-2)] px-3 py-2.5",
-        muted && "opacity-70",
-      )}
-    >
-      {logo ? (
-        <img
-          src={logo}
-          alt=""
-          width={36}
-          height={36}
-          draggable={false}
-          className="h-9 w-9 shrink-0 rounded-lg"
-        />
-      ) : (
-        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-[var(--tv-border)] bg-[var(--tv-plate-1)] text-[13px] font-extrabold text-slate-200">
-          {name.charAt(0)}
-        </span>
-      )}
+    <div className={cn("tv-set-row tv-set-item", muted && "opacity-70")}>
+      <span className="tv-set-action-icon overflow-hidden">
+        {logo ? (
+          <img src={logo} alt="" width={32} height={32} draggable={false} className="h-8 w-8" />
+        ) : (
+          <span className="text-[13px] font-bold text-slate-200">{name.charAt(0)}</span>
+        )}
+      </span>
       <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-[13px] font-bold text-white">{name}</span>
-          {badge}
-        </div>
-        <div className="text-xs leading-snug text-slate-500">{desc}</div>
+        <div className="tv-set-label">{name}</div>
+        <div className="tv-set-hint">{desc}</div>
       </div>
-      {action}
+      <div className="flex shrink-0 items-center gap-2">
+        {badge}
+        {action}
+      </div>
     </div>
   );
 }

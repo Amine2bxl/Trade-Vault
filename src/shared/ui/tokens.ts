@@ -125,6 +125,11 @@ export const motion = {
    le squelette, lui aussi à 1400, faisait sauter chaque page au chargement. */
 export const PAGE_WIDTH = "max-w-[1400px]";
 
+/* LES PAGES DE RÉGLAGES (Réglages, Profil, Apparence, Brokers, Abonnement)
+   partagent UNE largeur de lecture : on passe de l'une à l'autre par les
+   onglets de la section, rien ne doit changer de place. */
+export const SETTINGS_WIDTH = "max-w-[1040px]";
+
 export const density = {
   /** Card/panel inner padding. */
   cardPad: "p-4 md:p-5",

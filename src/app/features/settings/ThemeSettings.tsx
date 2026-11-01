@@ -255,9 +255,9 @@ function Section({
         /* 36px de hauteur : l'en-tête d'accordéon n'en faisait que 16, la
            hauteur de son texte. C'est une ligne qu'on touche pour ouvrir et
            fermer une section — elle a besoin d'une zone, pas d'une ligne. */
-        className="group -mx-1 mb-1 flex h-9 w-full items-center gap-2 px-1"
+        className="group mb-1 flex h-9 w-full items-center gap-2 px-[18px]"
       >
-        <span className="tv-label text-slate-500 group-hover:text-slate-300 transition-colors">
+        <span className="tv-set-hero-eyebrow group-hover:text-slate-300 transition-colors">
           {title}
         </span>
         <span className="tv-figure tv-figure-secondary text-[10px] text-slate-600">{count}</span>

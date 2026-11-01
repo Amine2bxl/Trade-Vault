@@ -48,8 +48,10 @@ statistique ne change plus de fond au survol.
 
 `PageContainer` porte les marges communes (`px-3 py-2 md:px-5 md:py-3`) et la
 largeur unique `PAGE_WIDTH` (1400 px, `shared/ui/tokens.ts`), partagée par l'en-tête et les squelettes — plus d'écart entre deux pages d'une même section, y compris pour les pages à hauteur mesurée (ref transmise
-directement). Une page de lecture ou de réglages peut garder une largeur plus
-étroite. La disposition reste propre à l'usage : courbe dominante au Dashboard,
+directement). Les cinq pages de réglages (Réglages, Profil, Apparence, Brokers,
+Abonnement) passent `measure="settings"` : même cadre que l'en-tête, et dedans
+une colonne de lecture `SETTINGS_WIDTH` (1040 px) alignée à gauche — le bord
+gauche ne bouge pas d'un onglet à l'autre. La disposition reste propre à l'usage : courbe dominante au Dashboard,
 tableau sur ordinateur et cartes à deux rangées sur mobile dans le Journal
 (instrument et P&L au-dessus, contexte et actions dessous), colonnes de saisie
 dans le Calculateur, conversation
@@ -211,7 +213,7 @@ Import unique : `import { … } from "@/shared/ui"`. `shared/ui` n'importe jamai
 | Typographie | `Display`, `Heading`, `Text`, `Label` |
 | Actions | `Button`, `ActionButton` (disque 52 px + libellé, rangée d'actions façon Revolut), `Chip`, `RemovableChip` |
 | Saisie | `Input`, `Textarea`, `RichTextarea` / `RichTextView`, `Select`, `Field`, `DateField`, `TimeField`, `SelectPicker`, `MultiPicker`, `RangePicker`, `ColorPicker`, `ChoiceGroup`, `Disclosure`, `FormSection` / `FormLabel` (sections numérotées qui se cochent, pastille obligatoire ou de catégorie) |
-| Pages de paramètres | `SettingsGroup` (un cadre, des rangées à filets), `SettingsRow` (nom + aide à gauche, commande à droite), `SettingsAction` (rangée cliquable), `Toggle` (`role="switch"`) — jamais de carte dans une carte |
+| Pages de paramètres | Listes groupées d'iOS : `SettingsHero` (carte héros commune — disque, surtitre, titre 20 px, phrase, chiffres `SettingsFact` ou action à droite), `SettingsGroup` (titre micro aligné sur le texte, plaque rayon 22, rangées de 60 px, filet rentré), `SettingsRow` (nom + aide à gauche, commande à droite), `SettingsAction` (rangée cliquable, icône en tuile de 32 px), `.tv-set-item` (rangée d'information), `Toggle` (46 × 28, ressort) — jamais de carte dans une carte |
 | Surfaces | `Card` (+ `CardHeader/Title/Body`), `Modal`, `Sheet`, `PageContainer` |
 | Structure de page | `PageHeader`, `SectionHeader`, `SubNav`, `PageToolbar` |
 | Données | `Kpi`, `KpiGrid`, `Metric`, `Table` (+ `THead`, `TBody`, `TR`, `TH`, `TD`, `TableScroll`), `Badge`, `EmptyState` |
