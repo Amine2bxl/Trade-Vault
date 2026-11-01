@@ -111,13 +111,17 @@ export function DateField({
     return out;
   }, [ay, am, locale]);
 
-  const titreMois = useMemo(
-    () =>
-      new Intl.DateTimeFormat(locale, { month: "long", year: "numeric" }).format(
-        new Date(ay, am - 1, 1),
-      ),
-    [ay, am, locale],
-  );
+  /** Aller directement à un mois ou à une année sans parcourir chaque mois. */
+  const nomsMois = useMemo(() => {
+    const fmt = new Intl.DateTimeFormat(locale, { month: "long" });
+    return Array.from({ length: 12 }, (_, m) => fmt.format(new Date(2024, m, 1)));
+  }, [locale]);
+
+  const annees = useMemo(() => {
+    const premiere = Math.min(min ? Number(min.slice(0, 4)) : 1900, ay);
+    const derniere = Math.max(max ? Number(max.slice(0, 4)) : new Date().getFullYear() + 10, ay);
+    return Array.from({ length: derniere - premiere + 1 }, (_, i) => premiere + i);
+  }, [ay, min, max]);
 
   const affichage = useMemo(() => {
     if (!value) return "—";
@@ -175,9 +179,32 @@ export function DateField({
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
-            <span className="flex-1 text-center text-[13px] font-semibold capitalize text-white">
-              {titreMois}
-            </span>
+            <div className="flex min-w-0 flex-1 gap-1">
+              <select
+                aria-label="Month"
+                value={am}
+                onChange={(e) => setAncre([ay, Number(e.target.value)])}
+                className="min-w-0 flex-1 cursor-pointer rounded-lg border border-[var(--tv-border)] bg-[var(--tv-plate-2)] px-1.5 py-1.5 text-[13px] font-semibold capitalize text-[var(--tv-text-primary)] focus-visible:border-[var(--tv-border-accent)] focus-visible:outline-none"
+              >
+                {nomsMois.map((nom, i) => (
+                  <option key={i} value={i + 1}>
+                    {nom}
+                  </option>
+                ))}
+              </select>
+              <select
+                aria-label="Year"
+                value={ay}
+                onChange={(e) => setAncre([Number(e.target.value), am])}
+                className="tv-num w-[5.25rem] shrink-0 cursor-pointer rounded-lg border border-[var(--tv-border)] bg-[var(--tv-plate-2)] px-1.5 py-1.5 text-center text-[13px] font-semibold text-[var(--tv-text-primary)] focus-visible:border-[var(--tv-border-accent)] focus-visible:outline-none"
+              >
+                {annees.map((annee) => (
+                  <option key={annee} value={annee}>
+                    {annee}
+                  </option>
+                ))}
+              </select>
+            </div>
             <button type="button" onClick={() => decaler(1)} className="tv-pop-nav" aria-label="+1">
               <ChevronRight className="h-4 w-4" />
             </button>
