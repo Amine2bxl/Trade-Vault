@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { SelectPicker } from "@/shared/ui";
+import { SelectPicker, Button } from "@/shared/ui";
 import { User, Brain, SlidersHorizontal, Pencil, Trash2, X } from "@/shared/ui/icons";
 import { useT } from "@/app/i18n/LanguageContext";
 import { useAuth } from "@/app/contexts/AuthContext";
@@ -124,7 +124,9 @@ export default function SettingsWorkspace({ context }: JarvisWorkspaceProps) {
               <h3 className="tv-title">{t("jarvisSettings.profileTitle")}</h3>
               <p className="tv-prose text-slate-500">{t("jarvisSettings.profileSubtitle")}</p>
             </div>
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
               type="button"
               onClick={() => {
                 setEditProfile(true);
@@ -134,10 +136,10 @@ export default function SettingsWorkspace({ context }: JarvisWorkspaceProps) {
                     .catch(() => {});
                 }
               }}
-              className="btn-ghost btn-sm shrink-0"
+              className="shrink-0"
             >
               <Pencil className="h-3.5 w-3.5" /> {t("jarvisSettings.edit")}
-            </button>
+            </Button>
           </header>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {(

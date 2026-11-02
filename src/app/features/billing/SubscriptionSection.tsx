@@ -3,7 +3,7 @@ import { CreditCard, ExternalLink, X } from "@/shared/ui/icons";
 import { useT } from "@/app/i18n/LanguageContext";
 import { useSubscription } from "@/app/hooks/useSubscription";
 import PricingPlans from "./PricingPlans";
-import { Input } from "@/shared/ui";
+import { Input, Button } from "@/shared/ui";
 
 // "Gestion d'abonnement" card on the profile page.
 //
@@ -161,13 +161,14 @@ export default function SubscriptionSection({
       {/* Ancien accès crypto à durée limitée : il se prolonge désormais par
           la licence à vie, payée une fois en crypto aussi. */}
       {cryptoRenew && (
-        <button
+        <Button
+          variant="ghost"
           onClick={() => run("crypto-lifetime", () => cryptoCheckout("lifetime"))}
           disabled={busy !== null}
-          className="btn-ghost w-full justify-center disabled:opacity-60"
+          className="w-full justify-center disabled:opacity-60"
         >
           {t("billing.cryptoLifetime")}
-        </button>
+        </Button>
       )}
     </div>
   );

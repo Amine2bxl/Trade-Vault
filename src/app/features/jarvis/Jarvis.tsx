@@ -13,7 +13,7 @@ import { JARVIS_PROFILE_EVENT } from "./prefs";
 import type { JarvisContext } from "./context";
 import CreditsBar from "./components/CreditsBar";
 import ProposalsPanel from "./components/ProposalsPanel";
-import { PageContainer, JarvisOrb } from "@/shared/ui";
+import { PageContainer, JarvisOrb, Button } from "@/shared/ui";
 import { useJarvisActivity } from "./activity";
 import { usePageActions, usePageLead } from "@/app/contexts/PageActionsContext";
 import { observeLayout, stableViewportHeight, topAtRest } from "@/app/hooks/useAvailableHeight";
@@ -176,14 +176,16 @@ export default function Jarvis() {
 
   const actions = useMemo(
     () => (
-      <button
+      <Button
+        variant="ghost"
+        size="sm"
         onClick={() => void newConversation()}
-        className="btn-ghost btn-sm shrink-0"
+        className="shrink-0"
         title={t("jarvis.newConversation")}
       >
         <Eraser className="h-3.5 w-3.5" />
         <span className="hidden sm:inline">{t("jarvis.newConversation")}</span>
-      </button>
+      </Button>
     ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [t, user?.id],

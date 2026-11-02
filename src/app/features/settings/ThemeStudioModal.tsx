@@ -8,7 +8,7 @@ import {
   ArrowRight,
   Link2,
 } from "@/shared/ui/icons";
-import { Modal, FIELD_BASE, ColorPicker, type ColorPickerLabels } from "@/shared/ui";
+import { Modal, FIELD_BASE, ColorPicker, type ColorPickerLabels, Button } from "@/shared/ui";
 import { useTheme } from "@/app/contexts/ThemeContext";
 import { useT } from "@/app/i18n/LanguageContext";
 import {
@@ -413,23 +413,20 @@ export default function ThemeStudioModal({
             </button>
           )}
           {step < 2 ? (
-            <button
+            <Button
+              size="sm"
               onClick={() => setStep((s) => (s + 1) as Step)}
               disabled={!name.trim()}
-              className="btn-primary btn-sm disabled:opacity-40"
+              className="disabled:opacity-40"
             >
               {t("studio.next")}
               <ArrowRight className="h-3.5 w-3.5" />
-            </button>
+            </Button>
           ) : (
-            <button
-              onClick={() => onClose(true)}
-              disabled={!name.trim()}
-              className="btn-primary btn-sm"
-            >
+            <Button size="sm" onClick={() => onClose(true)} disabled={!name.trim()}>
               <Check className="h-3.5 w-3.5" />
               {t("studio.save")}
-            </button>
+            </Button>
           )}
         </div>
       </div>

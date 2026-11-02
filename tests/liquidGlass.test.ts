@@ -87,10 +87,15 @@ describe("le langage Liquid", () => {
     expect(halos.map((r) => r.selector)).toEqual([]);
   });
 
-  test("le bouton d'action est un rectangle adouci plein, texte blanc", () => {
+  test("le bouton d'action est la capsule pleine de Glisse, texte blanc", () => {
+    // Depuis Glisse (iOS 26) : une CAPSULE pleine à l'accent du thème, texte
+    // blanc porté par une ombre de lettre courte (contraste sur la menthe).
     const primary = all.find((r) => r.selector === ".btn-primary");
-    expect(primary?.body).toContain("border-radius: var(--radius-md)");
+    expect(primary?.body).toContain("border-radius: 9999px");
+    expect(primary?.body).toContain("background: var(--lg-fill)");
     expect(primary?.body).toContain("color: #ffffff");
+    const shadowed = all.find((r) => r.selector.includes('.lg-button[data-variant="filled"]'));
+    expect(shadowed?.body).toContain("text-shadow");
   });
 
   test("ActionButton est une primitive partagée", () => {

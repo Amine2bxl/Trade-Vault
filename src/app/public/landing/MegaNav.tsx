@@ -4,6 +4,7 @@ import logoSrc from "@/assets/tradevault-logo-128.png";
 import { useLandingT } from "./i18n";
 import { LangMenu } from "./LangMenu";
 import { LIENS_NAV as LINKS } from "./nav";
+import { Button } from "@/shared/ui";
 
 /**
  * Navbar de la landing — stable, calme, traduite.
@@ -131,12 +132,12 @@ export default function MegaNav({ activeSec, go, open, collee, jauge }: MegaNavP
               session, « Get Started » en crée une - et une barre dont les
               actions apparaissent en cours de route oblige à remonter pour
               les trouver. Une navigation ne se cache pas. */}
-            <button
+            <Button
               onClick={() => open("signup", t("nav.cta.plan"))}
-              className="btn-primary px-4 py-2 text-[13px]"
+              className="px-4 py-2 text-[13px]"
             >
               {t("nav.cta")} <ArrowRight className="w-3.5 h-3.5" />
-            </button>
+            </Button>
             <button
               onClick={() => setMobile((v) => !v)}
               /* 44 px : ce bouton n'existe QUE sous `lg`, donc toujours au
@@ -189,15 +190,15 @@ export default function MegaNav({ activeSec, go, open, collee, jauge }: MegaNavP
                 </span>
                 <LangMenu />
               </div>
-              <button
+              <Button
                 onClick={() => {
                   setMobile(false);
                   open("signup", t("nav.cta.plan"));
                 }}
-                className="btn-primary mt-4 w-full"
+                className="mt-4 w-full"
               >
                 {t("nav.cta")} <ArrowRight className="w-4 h-4" />
-              </button>
+              </Button>
               <button
                 onClick={() => {
                   setMobile(false);
