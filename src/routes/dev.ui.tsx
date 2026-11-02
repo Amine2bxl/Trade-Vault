@@ -187,7 +187,7 @@ function DevUiBody({
   const body = (
     <PageActionsProvider setActions={setHeader}>
       {/* Pas de fond ici : comme dans `App`, le contenu se pose sur le papier
-          peint (`body::before`) — c'est lui que le verre de Glisse réfracte. */}
+          peint (`body::before`), sous le verre de Glisse. */}
       <div className="min-h-screen">
         <div
           data-dev-ui-navigation

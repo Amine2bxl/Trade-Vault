@@ -83,7 +83,7 @@ export const Slider = forwardRef<HTMLInputElement, SliderProps>(function Slider(
   );
 });
 
-/** La surface de verre réfractant — réservée à la couche de navigation. */
+/** La surface de verre de Glisse (plat, liseré fin) — réservée à la couche de navigation. */
 export const Glass = forwardRef<HTMLDivElement, GlassProps>(function Glass(
   { className, ...rest },
   ref,

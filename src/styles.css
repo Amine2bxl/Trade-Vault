@@ -750,13 +750,17 @@
  * est posé sur les deux porteurs possibles des jetons de Glisse. */
 :root,
 [data-theme="dark"] {
-  /* LA BULLE (voir plus bas) : sur un fond NOIR, le verre sombre de Glisse
-     (gris à 62 %) se lisait comme une pastille grise. Un verre clair à
-     peine teinté et un liseré quatre fois plus brillant (Glisse le peint
-     lui-même et relit ce jeton) en font une bulle qui se détache. */
-  --lg-glass: rgb(255 255 255 / 0.075);
-  --lg-glass-active: rgb(255 255 255 / 0.15);
-  --lg-rim-shine: 0.55;
+  /* LA BULLE, SOBRE (voir plus bas) : un verre PLAT, à peine plus clair que
+     la carte qui le porte, et un liseré fin (Glisse le peint lui-même et
+     relit `--lg-rim-shine`). La bulle brillante d'avant était trop claire
+     et trop « verre » (retour du propriétaire, 2026-11-02). La pastille d'un
+     segmenté et la sélection d'un onglet baissent d'autant : 30 % de blanc
+     (Glisse) éclairaient chaque barre. */
+  --lg-glass: rgb(255 255 255 / 0.06);
+  --lg-glass-active: rgb(255 255 255 / 0.1);
+  --lg-rim-shine: 0.22;
+  --lg-segment-thumb: rgb(255 255 255 / 0.13);
+  --lg-selection: rgb(255 255 255 / 0.1);
   --lg-fill: var(--tv-accent);
   --lg-on: var(--tv-accent);
   --lg-destructive: var(--tv-chart-red);
@@ -2697,9 +2701,9 @@ a:focus-visible,
   z-index: -1;
   border-radius: inherit;
   pointer-events: none;
-  /* Le flou par défaut de Glisse (3 px) : le rail ne surplombe que le papier
-     peint, et un flou de 18 px sur toute sa hauteur coûtait la moitié des
-     images par seconde d'une page à graphiques pendant le défilement. */
+  /* AUCUN flou (bloc « LA BULLE, SOBRE ») : le rail ne surplombe que le
+     papier peint, immobile ; un flou sur toute sa hauteur ne montrait rien et
+     coûtait des images par seconde à chaque défilement. */
 }
 .rail::before {
   content: "";
@@ -9622,100 +9626,40 @@ body.tv-app-type svg.lucide {
   padding-right: 28px;
 }
 
-/* LA RÉFRACTION SE REPOSE PENDANT UN DÉFILEMENT (`shared/ui/glassScroll.ts`).
-   Glisse pose sa lentille en style en ligne (`--lg-filter: url(#…)`) : seul
-   `!important` la suspend. Le flou, la teinte et le liseré restent. */
-html.tv-scrolling .lg-glass {
-  --lg-filter: saturate(1.5) !important;
-}
-
-/* ══ LA BULLE — la forme d'Apple, visible sur fond noir ══
+/* ══ LA BULLE, SOBRE — la forme d'Apple, sans la brillance ══
  *
- * Le verre de Glisse prend tout son sens sur un fond coloré qu'il déforme.
- * TradeVault est noir : c'est donc la FORME qui doit parler. Chaque bouton
- * (et la pastille des segmentés et barres d'onglets) devient une bulle de
- * verre en relief, comme les commandes d'iOS 26 :
- *   • un éclat spéculaire BLANC sur la moitié haute (jamais une couleur) ;
- *   • une arête claire en haut, un liseré d'un demi-pixel tout autour ;
- *   • une ombre intérieure en bas — la bulle a une épaisseur ;
- *   • une ombre portée NOIRE courte — elle flotte au-dessus de la carte.
- * Sous le doigt, l'éclat s'intensifie pendant que Glisse la fait gonfler.
- * Le liseré peint par Glisse (`--lg-rim`) reste dessous ; aucun halo, aucune
- * ombre colorée.
+ * Retour du propriétaire (2026-11-02) : « trop de verre, trop clair, pas
+ * assez propre, et le site devient lent ». La bulle redevient le verre PLAT de
+ * Glisse : un aplat à peine plus clair que la carte (`--lg-glass`) et son
+ * liseré peint (`--lg-rim`, réglé par `--lg-rim-shine`). Aucun éclat, aucun
+ * dégradé, aucune ombre portée. C'est la FORME qui porte le langage : la
+ * capsule, son soulèvement à l'appui (Glisse), la fenêtre qui en naît.
+ *
+ * LA VITESSE. Glisse pose sur chaque contrôle un `backdrop-filter` (flou, et
+ * sous Chromium une réfraction SVG du fond vivant) : une quinzaine de calques
+ * recomposés à chaque image de défilement, pour un effet invisible sur une
+ * carte opaque. Le correctif (`patches/`) coupe la réfraction du fond ; ici,
+ * le flou quitte les contrôles et le rail. La barre d'onglets du téléphone,
+ * sous laquelle le contenu défile vraiment, prend un verre presque opaque :
+ * lisible, sans flou à recalculer.
  */
-.lg-button,
-.lg-tab-bar-glass {
-  background-image:
-    linear-gradient(
-      180deg,
-      rgb(255 255 255 / 0.16) 0%,
-      rgb(255 255 255 / 0.05) 48%,
-      rgb(255 255 255 / 0) 52%
-    ),
-    var(--lg-rim, none);
-  background-size:
-    100% 100%,
-    100% 100%;
-  box-shadow:
-    inset 0 1px 0.5px rgb(255 255 255 / 0.38),
-    inset 0 0 0 0.5px rgb(255 255 255 / 0.16),
-    inset 0 -6px 12px -8px rgb(0 0 0 / 0.55),
-    0 6px 16px -6px rgb(0 0 0 / 0.75);
+.lg-glass,
+.rail-glass::before {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
-.lg-button:is(:active, [data-pressed]) {
-  background-image:
-    linear-gradient(
-      180deg,
-      rgb(255 255 255 / 0.26) 0%,
-      rgb(255 255 255 / 0.08) 50%,
-      rgb(255 255 255 / 0.02) 54%
-    ),
-    var(--lg-rim, none);
-  box-shadow:
-    inset 0 1px 0.5px rgb(255 255 255 / 0.55),
-    inset 0 0 0 0.5px rgb(255 255 255 / 0.24),
-    inset 0 -6px 12px -8px rgb(0 0 0 / 0.5),
-    0 10px 24px -8px rgb(0 0 0 / 0.8);
+/* Sans flou, le voile gris du verre de navigation éclaircissait tout le
+   rail : il ne garde que le verre de Glisse, aussi sobre que ses boutons. */
+.rail-glass::before {
+  background: none;
 }
-/* La bulle PLEINE (action principale) : l'accent, avec le même éclat blanc
-   et la même épaisseur. */
-.lg-button[data-variant="filled"] {
-  background-image: linear-gradient(
-    180deg,
-    rgb(255 255 255 / 0.3) 0%,
-    rgb(255 255 255 / 0.08) 48%,
-    rgb(255 255 255 / 0) 52%
-  );
-  box-shadow:
-    inset 0 1px 0.5px rgb(255 255 255 / 0.55),
-    inset 0 0 0 0.5px rgb(255 255 255 / 0.2),
-    inset 0 -6px 12px -8px rgb(0 0 0 / 0.35),
-    0 6px 16px -6px rgb(0 0 0 / 0.75);
+.bottom-nav .lg-tab-bar-glass {
+  background-color: var(--tv-glass-fill-solid);
 }
 .lg-button:disabled {
-  box-shadow: inset 0 0 0 0.5px rgb(255 255 255 / 0.12);
+  background-image: none;
 }
-/* La pastille d'un segmenté et la sélection d'une barre d'onglets : une
-   petite bulle posée sur la piste. */
-.lg-segmented-thumb,
-.lg-tab-lens::before {
-  background-image: linear-gradient(
-    180deg,
-    rgb(255 255 255 / 0.2) 0%,
-    rgb(255 255 255 / 0.04) 50%,
-    rgb(255 255 255 / 0) 54%
-  );
-  box-shadow:
-    inset 0 1px 0.5px rgb(255 255 255 / 0.4),
-    inset 0 0 0 0.5px rgb(255 255 255 / 0.18),
-    0 3px 8px -3px rgb(0 0 0 / 0.7);
-}
-@media (prefers-reduced-transparency: reduce) {
-  .lg-button,
-  .lg-tab-bar-glass {
-    background-image: none;
-  }
-}
+
 /* Les accès mobiles (cloche, réglages) : deux petites bulles de 36 px ;
    celle de la page ouverte prend l'accent. */
 .lg-button.tv-mobile-action {

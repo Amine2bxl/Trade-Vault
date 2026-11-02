@@ -8,7 +8,7 @@ import { cn } from "./cn";
  * trade, importer, checklist, Jarvis…). Une rangée porte au plus UN disque
  * `primary` (plein, accent) ; les autres sont du verre clair.
  *
- * Le disque EST le bouton : c'est lui qui se soulève et réfracte sous le
+ * Le disque EST le bouton : c'est lui qui se soulève et s'éclaircit sous le
  * doigt, comme sur iOS 26. Le libellé le nomme (`aria-labelledby`) et le
  * déclenche aussi au clic, pour garder la grande cible d'avant.
  */

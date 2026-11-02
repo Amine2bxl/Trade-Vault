@@ -17,7 +17,6 @@ import { absoluteUrl, DEFAULT_OG_IMAGE, SITE_NAME, structuredData } from "../sha
 import { initAnalytics } from "@/app/utils/analytics";
 import { reportAppError, installGlobalErrorReporting } from "../shared/error-reporting";
 import { installPressFeedback } from "../shared/ui/press";
-import { installGlassScrollEconomy } from "../shared/ui/glassScroll";
 
 /** Site-wide title and description — the marketing promise, in the language
  *  the landing page is written in. Public routes override both. */
@@ -358,10 +357,6 @@ function RootComponent() {
   // L'appui Liquid : un seul écouteur pour tout ce qui se touche, vitrine et
   // application (voir `shared/ui/press.ts`).
   useEffect(() => installPressFeedback(), []);
-
-  // Le verre de Glisse suspend sa réfraction le temps d'un défilement
-  // (voir `shared/ui/glassScroll.ts`) : 60 images par seconde gardées.
-  useEffect(() => installGlassScrollEconomy(), []);
 
   // Stale lazy-chunk guard. Pages are code-split; after a new deploy the old
   // build's chunk hashes 404, so anyone who had the app open across a release

@@ -3,6 +3,16 @@
 Journal des changements **structurels** (pas des features ni des correctifs,
 qui vivent dans l'historique git et les PR).
 
+## 2026-11-02 — La bulle, sobre
+
+- « LA BULLE, SOBRE » (`styles.css`) remplace la bulle en relief : verre plat
+  (`--lg-glass` 6 %), liseré fin (`--lg-rim-shine` 0,22), pastilles et
+  sélections plus sombres ; ni éclat, ni dégradé, ni ombre, ni flou sur les
+  contrôles et le rail.
+- Patch Glisse : réfraction du fond vivant coupée (`refractsBackdrop`),
+  gonflement rendu aux valeurs de Glisse. `shared/ui/glassScroll.ts` retiré
+  (plus de réfraction à suspendre au défilement).
+
 ## 2026-11-02 — La forme d'Apple, pas le fond
 
 - Retour au papier peint d'ambiance d'avant Glisse : le fond reste noir.

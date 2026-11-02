@@ -44,22 +44,27 @@ menthe.
 - **La FORME, pas le fond** (retour du propriétaire, 2 novembre) : le fond
   reste noir (papier peint d'ambiance discret d'avant Glisse). Ce qui porte
   l'atmosphère d'Apple :
-  - **la bulle** (bloc « LA BULLE » de `styles.css`) : chaque bouton, disque
-    d'action, barre d'onglets et pastille de segmenté est une bulle de verre
-    en relief — éclat spéculaire BLANC sur la moitié haute, arête claire,
-    liseré d'un demi-pixel, ombre intérieure en bas, ombre portée noire. Le
-    liseré peint par Glisse est quatre fois plus brillant
-    (`--lg-rim-shine: 0.55`), le verre un cran plus clair. Sous le doigt,
-    l'éclat s'intensifie et la bulle gonfle (patch : 10 px à la souris,
-    18 px au doigt) ;
+  - **la bulle, sobre** (bloc « LA BULLE, SOBRE » de `styles.css`, second
+    retour du 2 novembre : « trop de verre, trop clair, pas assez propre, le
+    site devient lent ») : chaque bouton, disque d'action, barre d'onglets et
+    pastille de segmenté est une capsule de verre PLAT — un aplat à peine
+    plus clair que la carte (`--lg-glass` : 6 % de blanc), le liseré fin
+    peint par Glisse (`--lg-rim-shine: 0.22`). Ni éclat, ni dégradé, ni
+    ombre portée, ni flou. Sous le doigt, le geste de Glisse tel quel
+    (soulèvement, gonflement de 6 px à la souris, 15 px au doigt) ;
   - **la fenêtre qui naît du bouton** (`zoomTransition.ts`) : `Modal` part du
     dernier bouton touché (`lastPressSource`, `press.ts`), grandit sur le
     ressort (380 ms), son contenu arrive en fondu ; à la fermeture, la copie
     se rétracte dans ce bouton (260 ms). Sans source visible, l'entrée et la
     sortie habituelles.
-- **Réfraction** : réelle sous Chromium (Chrome, Edge, app Windows) quand il
-  y a quelque chose à courber ; Safari, app macOS et Firefox gardent le repli
-  de Glisse (flou + arête).
+- **Pas de réfraction du fond, pas de flou sur les contrôles** : la lentille
+  de Glisse courbait le fond VIVANT par un filtre SVG sous chaque bouton,
+  recalculé à chaque image de défilement (14 calques sur le tableau de bord),
+  pour un effet invisible sur une carte opaque. Le patch la coupe
+  (`refractsBackdrop = () => false`) et le flou quitte les contrôles et le
+  rail ; la barre d'onglets du téléphone prend un verre presque opaque. La
+  lentille d'une barre d'onglets pendant un geste (elle courbe ses propres
+  libellés) reste.
 - **Gestes** : ceux de Glisse (soulèvement, étirement vers le doigt,
   lentille). `press.ts` exclut les contrôles Glisse et ne garde que le
   contenu (rangées, cartes).

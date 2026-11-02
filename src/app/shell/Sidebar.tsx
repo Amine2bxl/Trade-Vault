@@ -167,8 +167,8 @@ export default memo(function Sidebar({ page, setPage, totalPnl }: SidebarProps) 
         collapsed ? "rail-collapsed w-[68px]" : "w-[212px]",
       )}
     >
-      {/* LE VERRE DE GLISSE : la surface du rail courbe le papier peint sur
-          ses bords (réfraction réelle sous Chromium, flou et arête ailleurs). */}
+      {/* LE VERRE DE GLISSE : la surface du rail, un verre plat cerné de son
+          liseré (sans flou : il ne surplombe que le papier peint immobile). */}
       <Glass aria-hidden className="rail-glass" />
       <div className="flex h-full min-h-0 flex-col">
         {/* ── MARQUE + PLI ──

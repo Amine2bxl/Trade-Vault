@@ -1,26 +1,20 @@
 diff --git a/dist/index.cjs b/dist/index.cjs
-index 28f5d34cfd831154aa8a64b3ddf135be3072475d..9f9047a945d7b8cc758695dde4839603522283ee 100644
+index 28f5d34cfd831154aa8a64b3ddf135be3072475d..1dd99292705af055a9e042f46c7f95fe6f8fa871 100644
 --- a/dist/index.cjs
 +++ b/dist/index.cjs
-@@ -106,13 +106,15 @@ function createSpring(value, stiffness, damping, paint) {
+@@ -1180,7 +1180,10 @@ function refitting(element, fit, properties) {
  	};
  }
- // src/internal/press.ts
-+// TradeVault patch: a bubble that visibly swells under the finger on a
-+// black background (Apple's controls grow by about this much).
- const POINTER = {
--	grow: 6,
-+	grow: 10,
- 	press: [417.6, 29.2],
- 	release: [230, 23.7]
- };
- const TOUCH = {
--	grow: 15,
-+	grow: 18,
- 	press: [515, 27.3],
- 	release: [250, 11.8]
- };
-@@ -2223,23 +2225,36 @@ function Segments({ kind, items, value: valueProp, defaultValue = null, onValueC
+ /** Only Chromium applies SVG filters to the live backdrop. */
+-const refractsBackdrop = () => /Chrom(?:e|ium)\//.test(navigator.userAgent);
++// TradeVault patch: no live-backdrop refraction. Bending the live backdrop
++// through an SVG filter on every button cost frames on every scroll, for an
++// effect that barely shows over opaque cards. Frost, rim and lens stay.
++const refractsBackdrop = () => false;
+ const MARK = "data-glisse-backdrop";
+ function visibleBox(element) {
+ 	let { left, top, right, bottom } = element.getBoundingClientRect();
+@@ -2223,23 +2226,36 @@ function Segments({ kind, items, value: valueProp, defaultValue = null, onValueC
  		};
  	});
  	(0, react.useEffect)(() => {
@@ -73,7 +67,7 @@ index 28f5d34cfd831154aa8a64b3ddf135be3072475d..9f9047a945d7b8cc758695dde4839603
  			controller.current = null;
  		};
  	}, [signature, segmented]);
-@@ -2247,7 +2262,6 @@ function Segments({ kind, items, value: valueProp, defaultValue = null, onValueC
+@@ -2247,7 +2263,6 @@ function Segments({ kind, items, value: valueProp, defaultValue = null, onValueC
  		controller.current?.setActive(selected);
  	}, [selected]);
  	return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
@@ -81,7 +75,7 @@ index 28f5d34cfd831154aa8a64b3ddf135be3072475d..9f9047a945d7b8cc758695dde4839603
  		role: segmented ? "radiogroup" : navigation ? "navigation" : "tablist",
  		"data-icons": icons ? "" : void 0,
  		className: cx(segmented ? "lg-segmented" : "lg-tab-bar", className),
-@@ -2257,6 +2271,10 @@ function Segments({ kind, items, value: valueProp, defaultValue = null, onValueC
+@@ -2257,6 +2272,10 @@ function Segments({ kind, items, value: valueProp, defaultValue = null, onValueC
  			"--lg-tabs": items.length
  		},
  		...props,
@@ -92,7 +86,7 @@ index 28f5d34cfd831154aa8a64b3ddf135be3072475d..9f9047a945d7b8cc758695dde4839603
  		children: [
  			/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
  				ref: glassRef,
-@@ -2359,6 +2377,17 @@ const Slider = /* @__PURE__ */ (0, react.forwardRef)(function Slider({ value: va
+@@ -2359,6 +2378,17 @@ const Slider = /* @__PURE__ */ (0, react.forwardRef)(function Slider({ value: va
  	const progress = max > min ? Math.min(1, Math.max(0, (value - min) / (max - min))) : 0;
  	(0, react.useImperativeHandle)(forwardedRef, () => inputRef.current);
  	(0, react.useEffect)(() => {
@@ -110,7 +104,7 @@ index 28f5d34cfd831154aa8a64b3ddf135be3072475d..9f9047a945d7b8cc758695dde4839603
  		const input = inputRef.current;
  		const thumb = thumbRef.current;
  		const face = faceRef.current;
-@@ -2394,6 +2423,12 @@ const Slider = /* @__PURE__ */ (0, react.forwardRef)(function Slider({ value: va
+@@ -2394,6 +2424,12 @@ const Slider = /* @__PURE__ */ (0, react.forwardRef)(function Slider({ value: va
  			ends.forEach((type) => input.removeEventListener(type, release));
  			window.removeEventListener("pointerup", release);
  		};
@@ -123,7 +117,7 @@ index 28f5d34cfd831154aa8a64b3ddf135be3072475d..9f9047a945d7b8cc758695dde4839603
  	}, []);
  	(0, react.useLayoutEffect)(() => {
  		lensRef.current?.update();
-@@ -2491,6 +2526,17 @@ const Switch = /* @__PURE__ */ (0, react.forwardRef)(function Switch({ checked:
+@@ -2491,6 +2527,17 @@ const Switch = /* @__PURE__ */ (0, react.forwardRef)(function Switch({ checked:
  		springs.current?.position.paint();
  	}, [travel]);
  	(0, react.useEffect)(() => {
@@ -141,7 +135,7 @@ index 28f5d34cfd831154aa8a64b3ddf135be3072475d..9f9047a945d7b8cc758695dde4839603
  		const el = ref.current;
  		const fills = [fillRef.current, insetFillRef.current];
  		const thumb = thumbRef.current;
-@@ -2613,6 +2659,12 @@ const Switch = /* @__PURE__ */ (0, react.forwardRef)(function Switch({ checked:
+@@ -2613,6 +2660,12 @@ const Switch = /* @__PURE__ */ (0, react.forwardRef)(function Switch({ checked:
  			el.removeEventListener("touchmove", keep);
  			el.removeEventListener("click", click);
  		};
@@ -155,28 +149,22 @@ index 28f5d34cfd831154aa8a64b3ddf135be3072475d..9f9047a945d7b8cc758695dde4839603
  	return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
  		ref,
 diff --git a/dist/index.js b/dist/index.js
-index 02d488ace3671da61835b1d629c1714cc92fb52c..360f07ba7fb4f05e7922dfab85b20ffc350ec976 100644
+index 02d488ace3671da61835b1d629c1714cc92fb52c..dfdb7af77a1c92a849cee3982628b6a791102b02 100644
 --- a/dist/index.js
 +++ b/dist/index.js
-@@ -105,13 +105,15 @@ function createSpring(value, stiffness, damping, paint) {
+@@ -1179,7 +1179,10 @@ function refitting(element, fit, properties) {
  	};
  }
- // src/internal/press.ts
-+// TradeVault patch: a bubble that visibly swells under the finger on a
-+// black background (Apple's controls grow by about this much).
- const POINTER = {
--	grow: 6,
-+	grow: 10,
- 	press: [417.6, 29.2],
- 	release: [230, 23.7]
- };
- const TOUCH = {
--	grow: 15,
-+	grow: 18,
- 	press: [515, 27.3],
- 	release: [250, 11.8]
- };
-@@ -2222,23 +2224,36 @@ function Segments({ kind, items, value: valueProp, defaultValue = null, onValueC
+ /** Only Chromium applies SVG filters to the live backdrop. */
+-const refractsBackdrop = () => /Chrom(?:e|ium)\//.test(navigator.userAgent);
++// TradeVault patch: no live-backdrop refraction. Bending the live backdrop
++// through an SVG filter on every button cost frames on every scroll, for an
++// effect that barely shows over opaque cards. Frost, rim and lens stay.
++const refractsBackdrop = () => false;
+ const MARK = "data-glisse-backdrop";
+ function visibleBox(element) {
+ 	let { left, top, right, bottom } = element.getBoundingClientRect();
+@@ -2222,23 +2225,36 @@ function Segments({ kind, items, value: valueProp, defaultValue = null, onValueC
  		};
  	});
  	useEffect(() => {
@@ -229,7 +217,7 @@ index 02d488ace3671da61835b1d629c1714cc92fb52c..360f07ba7fb4f05e7922dfab85b20ffc
  			controller.current = null;
  		};
  	}, [signature, segmented]);
-@@ -2246,7 +2261,6 @@ function Segments({ kind, items, value: valueProp, defaultValue = null, onValueC
+@@ -2246,7 +2262,6 @@ function Segments({ kind, items, value: valueProp, defaultValue = null, onValueC
  		controller.current?.setActive(selected);
  	}, [selected]);
  	return /* @__PURE__ */ jsxs("div", {
@@ -237,7 +225,7 @@ index 02d488ace3671da61835b1d629c1714cc92fb52c..360f07ba7fb4f05e7922dfab85b20ffc
  		role: segmented ? "radiogroup" : navigation ? "navigation" : "tablist",
  		"data-icons": icons ? "" : void 0,
  		className: cx(segmented ? "lg-segmented" : "lg-tab-bar", className),
-@@ -2256,6 +2270,10 @@ function Segments({ kind, items, value: valueProp, defaultValue = null, onValueC
+@@ -2256,6 +2271,10 @@ function Segments({ kind, items, value: valueProp, defaultValue = null, onValueC
  			"--lg-tabs": items.length
  		},
  		...props,
@@ -248,7 +236,7 @@ index 02d488ace3671da61835b1d629c1714cc92fb52c..360f07ba7fb4f05e7922dfab85b20ffc
  		children: [
  			/* @__PURE__ */ jsx("span", {
  				ref: glassRef,
-@@ -2358,6 +2376,17 @@ const Slider = /* @__PURE__ */ forwardRef(function Slider({ value: valueProp, de
+@@ -2358,6 +2377,17 @@ const Slider = /* @__PURE__ */ forwardRef(function Slider({ value: valueProp, de
  	const progress = max > min ? Math.min(1, Math.max(0, (value - min) / (max - min))) : 0;
  	useImperativeHandle(forwardedRef, () => inputRef.current);
  	useEffect(() => {
@@ -266,7 +254,7 @@ index 02d488ace3671da61835b1d629c1714cc92fb52c..360f07ba7fb4f05e7922dfab85b20ffc
  		const input = inputRef.current;
  		const thumb = thumbRef.current;
  		const face = faceRef.current;
-@@ -2393,6 +2422,12 @@ const Slider = /* @__PURE__ */ forwardRef(function Slider({ value: valueProp, de
+@@ -2393,6 +2423,12 @@ const Slider = /* @__PURE__ */ forwardRef(function Slider({ value: valueProp, de
  			ends.forEach((type) => input.removeEventListener(type, release));
  			window.removeEventListener("pointerup", release);
  		};
@@ -279,7 +267,7 @@ index 02d488ace3671da61835b1d629c1714cc92fb52c..360f07ba7fb4f05e7922dfab85b20ffc
  	}, []);
  	useLayoutEffect(() => {
  		lensRef.current?.update();
-@@ -2490,6 +2525,17 @@ const Switch = /* @__PURE__ */ forwardRef(function Switch({ checked: checkedProp
+@@ -2490,6 +2526,17 @@ const Switch = /* @__PURE__ */ forwardRef(function Switch({ checked: checkedProp
  		springs.current?.position.paint();
  	}, [travel]);
  	useEffect(() => {
@@ -297,7 +285,7 @@ index 02d488ace3671da61835b1d629c1714cc92fb52c..360f07ba7fb4f05e7922dfab85b20ffc
  		const el = ref.current;
  		const fills = [fillRef.current, insetFillRef.current];
  		const thumb = thumbRef.current;
-@@ -2612,6 +2658,12 @@ const Switch = /* @__PURE__ */ forwardRef(function Switch({ checked: checkedProp
+@@ -2612,6 +2659,12 @@ const Switch = /* @__PURE__ */ forwardRef(function Switch({ checked: checkedProp
  			el.removeEventListener("touchmove", keep);
  			el.removeEventListener("click", click);
  		};

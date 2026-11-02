@@ -54,11 +54,13 @@ describe("Glisse", () => {
     expect(patch).toContain("waitingSwitch = requestAnimationFrame(startSwitch)");
     // La ref de la barre passe APRÈS les props : une `ref` reçue en prop
     // (React 19, outils de développement) ne l'écrase plus.
-    // La bulle gonfle franchement sous la souris et sous le doigt.
-    expect(patch).toMatch(/\+\s*grow: 10,/);
-    expect(patch).toMatch(/\+\s*grow: 18,/);
     expect(patch).toMatch(/-\s*ref: barRef,/);
     expect(patch).toMatch(/\.\.\.props,\n(?:\+[^\n]*\n){0,4}\+\s*ref: barRef,/);
+    // Aucune réfraction du fond vivant : un filtre SVG recalculé sous chaque
+    // bouton à chaque image de défilement rendait le site lent.
+    expect(patch).toContain("+const refractsBackdrop = () => false;");
+    // Le gonflement à l'appui reste celui de Glisse (iOS), sans surenchère.
+    expect(patch).not.toMatch(/\+\s*grow:/);
   });
 
   test("ses styles sont rangés en couche, sa copie injectée neutralisée", () => {
@@ -83,14 +85,21 @@ describe("Glisse", () => {
     expect(controls).toContain("clearLabel");
   });
 
-  test("la bulle : relief blanc visible sur fond noir, aucune couleur, aucun halo", () => {
-    const bulle = css.slice(css.indexOf(".lg-button,\n.lg-tab-bar-glass {"));
-    const bloc = bulle.slice(0, bulle.indexOf("@media (prefers-reduced-transparency"));
-    expect(bloc).toContain("inset 0 1px 0.5px rgb(255 255 255");
-    expect(bloc).toContain("linear-gradient(");
-    // Seulement du blanc et du noir dans le relief : aucune teinte, aucun halo.
-    const couleurs = [...bloc.matchAll(/rgb\(([^)]*)\)/g)].map((m) => m[1].split("/")[0].trim());
-    expect(couleurs.every((c) => c === "255 255 255" || c === "0 0 0")).toBe(true);
-    expect(css).toMatch(/--lg-rim-shine:\s*0\.\d+/);
+  test("la bulle, sobre : verre plat, liseré fin, aucun flou sur les contrôles", () => {
+    // Le bloc « LA BULLE, SOBRE » de styles.css (commentaires retirés).
+    const debut = css.indexOf(".lg-glass,\n.rail-glass::before {");
+    expect(debut).toBeGreaterThan(-1);
+    const bloc = css.slice(debut, css.indexOf(".lg-button.tv-mobile-action {", debut));
+    // Ni flou ni réfraction sous les contrôles de Glisse et le rail : c'est ce
+    // qui coûtait des images à chaque défilement.
+    expect(bloc).toMatch(/\.lg-glass,\s*\.rail-glass::before\s*\{[^}]*backdrop-filter:\s*none/);
+    // Ni éclat, ni dégradé, ni ombre portée : propre, pas brillant.
+    expect(bloc).not.toContain("linear-gradient(");
+    expect(bloc).not.toContain("box-shadow");
+    // Un liseré discret et un verre à peine plus clair que la carte.
+    const shine = Number(css.match(/--lg-rim-shine:\s*(0\.\d+)/)?.[1]);
+    expect(shine).toBeLessThanOrEqual(0.3);
+    const verre = Number(css.match(/--lg-glass:\s*rgb\(255 255 255 \/ (0\.\d+)\)/)?.[1]);
+    expect(verre).toBeLessThanOrEqual(0.08);
   });
 });

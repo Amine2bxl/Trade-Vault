@@ -8,7 +8,8 @@ import { cn } from "./cn";
  * L'API ne change pas (`variant`, `size`, `className`) : les écrans qui
  * utilisaient `<Button>` passent en Glisse sans être touchés. Dessous, c'est le
  * `Button` de Glisse, avec son geste — il se SOULÈVE sous le doigt, s'étire
- * vers où l'on glisse, s'éclaircit — et sa réfraction (Chromium).
+ * vers où l'on glisse, s'éclaircit. Verre plat, sans flou ni réfraction du
+ * fond (bloc « LA BULLE, SOBRE » de `styles.css`).
  *
  * Correspondance :
  *   primary / entry → `filled` : la capsule pleine à l'accent du thème, texte
