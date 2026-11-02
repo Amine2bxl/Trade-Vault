@@ -1,5 +1,5 @@
 diff --git a/dist/index.cjs b/dist/index.cjs
-index 28f5d34cfd831154aa8a64b3ddf135be3072475d..d18a96664cb7125f6d06ab70d9c5a88adfefcbca 100644
+index 28f5d34cfd831154aa8a64b3ddf135be3072475d..6e1871c24b2cfca95a25b7b2af92f09b712c769f 100644
 --- a/dist/index.cjs
 +++ b/dist/index.cjs
 @@ -2223,23 +2223,36 @@ function Segments({ kind, items, value: valueProp, defaultValue = null, onValueC
@@ -55,7 +55,26 @@ index 28f5d34cfd831154aa8a64b3ddf135be3072475d..d18a96664cb7125f6d06ab70d9c5a88a
  			controller.current = null;
  		};
  	}, [signature, segmented]);
-@@ -2359,6 +2372,17 @@ const Slider = /* @__PURE__ */ (0, react.forwardRef)(function Slider({ value: va
+@@ -2247,7 +2260,6 @@ function Segments({ kind, items, value: valueProp, defaultValue = null, onValueC
+ 		controller.current?.setActive(selected);
+ 	}, [selected]);
+ 	return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+-		ref: barRef,
+ 		role: segmented ? "radiogroup" : navigation ? "navigation" : "tablist",
+ 		"data-icons": icons ? "" : void 0,
+ 		className: cx(segmented ? "lg-segmented" : "lg-tab-bar", className),
+@@ -2257,6 +2269,10 @@ function Segments({ kind, items, value: valueProp, defaultValue = null, onValueC
+ 			"--lg-tabs": items.length
+ 		},
+ 		...props,
++		// TradeVault patch: the bar's own ref goes last. A `ref` arriving in
++		// props (React 19 passes it as a prop; dev tools inject one on every
++		// JSX element) used to override it and the bar never attached.
++		ref: barRef,
+ 		children: [
+ 			/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+ 				ref: glassRef,
+@@ -2359,6 +2375,17 @@ const Slider = /* @__PURE__ */ (0, react.forwardRef)(function Slider({ value: va
  	const progress = max > min ? Math.min(1, Math.max(0, (value - min) / (max - min))) : 0;
  	(0, react.useImperativeHandle)(forwardedRef, () => inputRef.current);
  	(0, react.useEffect)(() => {
@@ -73,7 +92,7 @@ index 28f5d34cfd831154aa8a64b3ddf135be3072475d..d18a96664cb7125f6d06ab70d9c5a88a
  		const input = inputRef.current;
  		const thumb = thumbRef.current;
  		const face = faceRef.current;
-@@ -2394,6 +2418,12 @@ const Slider = /* @__PURE__ */ (0, react.forwardRef)(function Slider({ value: va
+@@ -2394,6 +2421,12 @@ const Slider = /* @__PURE__ */ (0, react.forwardRef)(function Slider({ value: va
  			ends.forEach((type) => input.removeEventListener(type, release));
  			window.removeEventListener("pointerup", release);
  		};
@@ -86,7 +105,7 @@ index 28f5d34cfd831154aa8a64b3ddf135be3072475d..d18a96664cb7125f6d06ab70d9c5a88a
  	}, []);
  	(0, react.useLayoutEffect)(() => {
  		lensRef.current?.update();
-@@ -2491,6 +2521,17 @@ const Switch = /* @__PURE__ */ (0, react.forwardRef)(function Switch({ checked:
+@@ -2491,6 +2524,17 @@ const Switch = /* @__PURE__ */ (0, react.forwardRef)(function Switch({ checked:
  		springs.current?.position.paint();
  	}, [travel]);
  	(0, react.useEffect)(() => {
@@ -104,7 +123,7 @@ index 28f5d34cfd831154aa8a64b3ddf135be3072475d..d18a96664cb7125f6d06ab70d9c5a88a
  		const el = ref.current;
  		const fills = [fillRef.current, insetFillRef.current];
  		const thumb = thumbRef.current;
-@@ -2613,6 +2654,12 @@ const Switch = /* @__PURE__ */ (0, react.forwardRef)(function Switch({ checked:
+@@ -2613,6 +2657,12 @@ const Switch = /* @__PURE__ */ (0, react.forwardRef)(function Switch({ checked:
  			el.removeEventListener("touchmove", keep);
  			el.removeEventListener("click", click);
  		};
@@ -118,7 +137,7 @@ index 28f5d34cfd831154aa8a64b3ddf135be3072475d..d18a96664cb7125f6d06ab70d9c5a88a
  	return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
  		ref,
 diff --git a/dist/index.js b/dist/index.js
-index 02d488ace3671da61835b1d629c1714cc92fb52c..cbcd1e6b27d688887839058013366677acef9a79 100644
+index 02d488ace3671da61835b1d629c1714cc92fb52c..e7882deaae0f043d00954b93ae2603dd313660ed 100644
 --- a/dist/index.js
 +++ b/dist/index.js
 @@ -2222,23 +2222,36 @@ function Segments({ kind, items, value: valueProp, defaultValue = null, onValueC
@@ -174,7 +193,26 @@ index 02d488ace3671da61835b1d629c1714cc92fb52c..cbcd1e6b27d688887839058013366677
  			controller.current = null;
  		};
  	}, [signature, segmented]);
-@@ -2358,6 +2371,17 @@ const Slider = /* @__PURE__ */ forwardRef(function Slider({ value: valueProp, de
+@@ -2246,7 +2259,6 @@ function Segments({ kind, items, value: valueProp, defaultValue = null, onValueC
+ 		controller.current?.setActive(selected);
+ 	}, [selected]);
+ 	return /* @__PURE__ */ jsxs("div", {
+-		ref: barRef,
+ 		role: segmented ? "radiogroup" : navigation ? "navigation" : "tablist",
+ 		"data-icons": icons ? "" : void 0,
+ 		className: cx(segmented ? "lg-segmented" : "lg-tab-bar", className),
+@@ -2256,6 +2268,10 @@ function Segments({ kind, items, value: valueProp, defaultValue = null, onValueC
+ 			"--lg-tabs": items.length
+ 		},
+ 		...props,
++		// TradeVault patch: the bar's own ref goes last. A `ref` arriving in
++		// props (React 19 passes it as a prop; dev tools inject one on every
++		// JSX element) used to override it and the bar never attached.
++		ref: barRef,
+ 		children: [
+ 			/* @__PURE__ */ jsx("span", {
+ 				ref: glassRef,
+@@ -2358,6 +2374,17 @@ const Slider = /* @__PURE__ */ forwardRef(function Slider({ value: valueProp, de
  	const progress = max > min ? Math.min(1, Math.max(0, (value - min) / (max - min))) : 0;
  	useImperativeHandle(forwardedRef, () => inputRef.current);
  	useEffect(() => {
@@ -192,7 +230,7 @@ index 02d488ace3671da61835b1d629c1714cc92fb52c..cbcd1e6b27d688887839058013366677
  		const input = inputRef.current;
  		const thumb = thumbRef.current;
  		const face = faceRef.current;
-@@ -2393,6 +2417,12 @@ const Slider = /* @__PURE__ */ forwardRef(function Slider({ value: valueProp, de
+@@ -2393,6 +2420,12 @@ const Slider = /* @__PURE__ */ forwardRef(function Slider({ value: valueProp, de
  			ends.forEach((type) => input.removeEventListener(type, release));
  			window.removeEventListener("pointerup", release);
  		};
@@ -205,7 +243,7 @@ index 02d488ace3671da61835b1d629c1714cc92fb52c..cbcd1e6b27d688887839058013366677
  	}, []);
  	useLayoutEffect(() => {
  		lensRef.current?.update();
-@@ -2490,6 +2520,17 @@ const Switch = /* @__PURE__ */ forwardRef(function Switch({ checked: checkedProp
+@@ -2490,6 +2523,17 @@ const Switch = /* @__PURE__ */ forwardRef(function Switch({ checked: checkedProp
  		springs.current?.position.paint();
  	}, [travel]);
  	useEffect(() => {
@@ -223,7 +261,7 @@ index 02d488ace3671da61835b1d629c1714cc92fb52c..cbcd1e6b27d688887839058013366677
  		const el = ref.current;
  		const fills = [fillRef.current, insetFillRef.current];
  		const thumb = thumbRef.current;
-@@ -2612,6 +2653,12 @@ const Switch = /* @__PURE__ */ forwardRef(function Switch({ checked: checkedProp
+@@ -2612,6 +2656,12 @@ const Switch = /* @__PURE__ */ forwardRef(function Switch({ checked: checkedProp
  			el.removeEventListener("touchmove", keep);
  			el.removeEventListener("click", click);
  		};

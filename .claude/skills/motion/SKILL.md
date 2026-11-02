@@ -57,14 +57,20 @@ jamais.
 rail, feuille qui monte du bas sur téléphone) ; `--tv-press` = `scale(.97)` à
 l'appui. Ils s'appliquent par transition, pas par une nouvelle keyframe.
 
+**Les gestes de Glisse** (iOS 26) appartiennent à la bibliothèque : le
+bouton se SOULÈVE et s'étire vers le doigt, la pastille d'un segmenté ou d'une
+barre d'onglets se soulève en lentille et glisse sur un ressort, le pouce d'un
+interrupteur ou d'un curseur devient une lentille. Ne rien leur ajouter
+(`press.ts` les exclut) ; ne pas recréer de pilule glissante à la main.
+
 **Le mouvement Liquid** (détail : `docs/DESIGN_SYSTEM.md` §4) — ne pas le
 recréer à la main :
 - l'APPUI vient d'un seul moteur, `shared/ui/press.ts` (amplitude selon la
   taille, remontée sur le ressort). Jamais de nouveau
   `:active { transform: scale(…) }` ni `active:scale-*` : double
   enfoncement. Pour exclure un objet : `data-press="off"`.
-- un contrôle segmenté prend `useGlidingIndicator` (pilule qui glisse), pas un
-  fond par onglet ;
+- un contrôle segmenté est `SubNav` / `ChoiceGroup` (segmenté de Glisse),
+  une barre d'onglets `GlassTabBar`, jamais un fond par onglet ;
 - une feuille ou une modale passe par `Modal` : sa sortie (fantôme,
   `exitGhost.ts`) est gratuite ;
 - une liste qui doit arriver en cascade réutilise `.dash-list` /

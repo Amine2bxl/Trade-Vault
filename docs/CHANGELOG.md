@@ -3,6 +3,19 @@
 Journal des changements **structurels** (pas des features ni des correctifs,
 qui vivent dans l'historique git et les PR).
 
+## 2026-11-02 — Glisse : le verre liquide d'iOS 26
+
+- Bibliothèque `glisse` (MIT) épinglée et patchée (`patches/`), importée
+  seulement dans `src/shared/ui` ; styles en couche `components`, copie
+  injectée neutralisée, `<body data-theme="dark">`, pont de jetons.
+- Primitives sur Glisse : `Button`, `ActionButton`, `Toggle`, `SubNav`,
+  `ChoiceGroup` ; nouvelles : `SearchField`, `Slider`, `Glass`, `GlassMenu`,
+  `GlassTabBar`, `WhenShown`, `useSegmentWidth`. `useGlidingIndicator`
+  supprimé.
+- Coque : onglets de section et barre mobile en `TabBar`, rail en `Glass`,
+  en-tête en boutons de verre. Papier peint plus lumineux.
+- `tests/glisse.test.ts` ; DESIGN_SYSTEM §0 et AGENTS.md décrivent la règle.
+
 ## 2026-11-01 — Le mouvement Liquid (gestes iOS 27 / Revolut)
 
 - Un seul moteur d'appui (`shared/ui/press.ts`, posé dans `__root.tsx`) :

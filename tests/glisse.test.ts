@@ -52,6 +52,10 @@ describe("Glisse", () => {
     expect(patch).toContain("waiting = requestAnimationFrame(start)");
     expect(patch).toContain("waitingSlider = requestAnimationFrame(startSlider)");
     expect(patch).toContain("waitingSwitch = requestAnimationFrame(startSwitch)");
+    // La ref de la barre passe APRÈS les props : une `ref` reçue en prop
+    // (React 19, outils de développement) ne l'écrase plus.
+    expect(patch).toMatch(/-\s*ref: barRef,/);
+    expect(patch).toMatch(/\.\.\.props,\n(?:\+[^\n]*\n){0,4}\+\s*ref: barRef,/);
   });
 
   test("ses styles sont rangés en couche, sa copie injectée neutralisée", () => {

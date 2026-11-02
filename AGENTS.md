@@ -52,21 +52,27 @@ suite ; ne jamais affaiblir une assertion pour passer.
   `useLandingT()`, `SSR_LANG`). Anglais par défaut, changement de langue
   uniquement par choix explicite. Toute clé ajoutée dans `translations.ts` et
   `fr`. Aucune chaîne visible codée en dur.
-- **Design** : langage **Liquid** — verre d'iOS 27 pour la COUCHE DE
-  NAVIGATION (rail, barre mobile, en-tête collant, menus, feuilles), matière
-  Revolut pour le contenu (cartes opaques à grand rayon, chiffre héros,
-  actions rondes). Thème par défaut **`lucid`** (fond `#050607`, accent menthe
-  `#31d68a`, profit `#61f8ab`) ; le `:root` de `src/styles.css` reste
-  identique au thème par défaut. L'app écrit dans la pile système
-  (`--font-lucid`), chiffres et libellés en Inter via `--font-figure` ; la
-  vitrine garde Inter. Verre = jetons `--tv-glass-*`, flou porté par
-  `::before`, replis opaques obligatoires ; **jamais** sur une carte de
-  contenu. Papier peint d'ambiance fixe permis ; rien ne rayonne (ni ombre
-  colorée, ni halo, ni `animate-ping`, ni dégradé sur un texte, un bouton ou
-  une carte) — seules les surfaces qui flottent portent une ombre, noire.
-  Boutons d'action : rectangles adoucis pleins, texte blanc. Le P&L garde ses
-  couleurs fixes. Primitives `src/shared/ui`. Charger les skills de
-  `.claude/skills/` avant tout travail d'interface. Voir [`docs/DESIGN_SYSTEM.md`](docs/DESIGN_SYSTEM.md).
+- **Design** : langage **Glisse** — le verre liquide d'iOS 26, par la
+  bibliothèque `glisse` (MIT, version épinglée + `patches/`), en version
+  sombre. Les CONTRÔLES et la COUCHE DE NAVIGATION sont de Glisse : boutons
+  (`Button` / `ActionButton`), segmentés (`SubNav`, `ChoiceGroup`), barres
+  d'onglets (`GlassTabBar` : vues de section, barre mobile), interrupteurs
+  (`Toggle`), curseurs (`Slider`), recherche (`SearchField`), menus, surface du
+  rail (`Glass`). Le CONTENU reste de la matière Revolut : cartes opaques à
+  grand rayon, chiffre héros. Thème par défaut **`lucid`** (fond `#050607`,
+  accent menthe `#31d68a`, profit `#61f8ab`) ; le `:root` de `src/styles.css`
+  reste identique au thème par défaut ; pont de jetons `--lg-*` → `--tv-*`.
+  **Glisse ne s'importe que dans `src/shared/ui`** (règle ESLint) ; un
+  contrôle à geste se monte sous `WhenShown`. Boutons : capsules (pleine à
+  l'accent pour l'action principale, texte blanc ombré ; verre sinon) ;
+  jamais de `:active { transform: scale(…) }` sur un contrôle Glisse. Papier
+  peint d'ambiance fixe (vagues + trait de lumière) permis ; rien ne rayonne
+  (ni ombre colorée, ni halo, ni `animate-ping`, ni dégradé sur un texte, un
+  bouton ou une carte) ; jamais de verre sur une carte de contenu. L'app écrit
+  dans la pile système (`--font-lucid`), chiffres en Inter via
+  `--font-figure` ; la vitrine garde Inter. Le P&L garde ses couleurs fixes.
+  Charger les skills de `.claude/skills/` avant tout travail d'interface. Voir
+  [`docs/DESIGN_SYSTEM.md`](docs/DESIGN_SYSTEM.md).
 - **Champs et filtres** : contrat unique `src/shared/ui/selection.ts`, moteur
   `SelectionPanel.tsx`, composants `Input`, `DateField`, `TimeField`,
   `SelectPicker` / `MultiPicker` / `RangePicker`, `PageControls` pour les commandes secondaires. Une seule barre légère, pas de rangées de filtres permanentes. Ne pas recréer de panneau,

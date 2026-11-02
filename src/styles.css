@@ -2690,7 +2690,9 @@ a:focus-visible,
   z-index: -1;
   border-radius: inherit;
   pointer-events: none;
-  --lg-blur: 18px;
+  /* Le flou par défaut de Glisse (3 px) : le rail ne surplombe que le papier
+     peint, et un flou de 18 px sur toute sa hauteur coûtait la moitié des
+     images par seconde d'une page à graphiques pendant le défilement. */
 }
 .rail::before {
   content: "";
@@ -9626,4 +9628,11 @@ body.tv-app-type svg.lucide {
 }
 .tv-search:has(.tv-search-clear) input {
   padding-right: 28px;
+}
+
+/* LA RÉFRACTION SE REPOSE PENDANT UN DÉFILEMENT (`shared/ui/glassScroll.ts`).
+   Glisse pose sa lentille en style en ligne (`--lg-filter: url(#…)`) : seul
+   `!important` la suspend. Le flou, la teinte et le liseré restent. */
+html.tv-scrolling .lg-glass {
+  --lg-filter: saturate(1.5) !important;
 }

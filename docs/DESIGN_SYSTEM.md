@@ -6,6 +6,54 @@ composant, une navigation ou un texte de landing) sont les skills de
 [`../.claude/skills/`](../.claude/skills) : `theme`, `typography`, `motion`,
 `ui-design`, `ux-navigation`, `landing-copy`, et l'orchestrateur `ship-ui`.
 
+## 0. Glisse — le verre liquide d'iOS 26 (depuis le 2 novembre 2026)
+
+Le propriétaire a demandé le modèle de la démonstration « Introducing
+Glisse », exactement. **Glisse est une bibliothèque** (`glisse`, MIT, Kelvin
+Zhang) : TradeVault l'utilise telle quelle, en version sombre, avec son accent
+menthe.
+
+- **Où elle entre** : uniquement par `src/shared/ui` (règle ESLint
+  `no-restricted-imports`). Les écrans utilisent nos primitives, qui rendent
+  Glisse à l'intérieur :
+
+  | Primitive | Glisse |
+  | --- | --- |
+  | `Button` (primary/entry → `filled`, ghost/subtle → `glass`, accent → teinté, danger → destructif ; `icon` seul = cercle) | `Button` |
+  | `ActionButton` (disque de 52 px + libellé) | `Button` icône seule |
+  | `SubNav`, `ChoiceGroup` (pleine largeur, pastille teintée par le ton) | `SegmentedControl` |
+  | `GlassTabBar` — vues de section (liens), barre mobile (icônes) | `TabBar` |
+  | `Toggle` | `Switch` |
+  | `Slider` | `Slider` |
+  | `SearchField` (textes traduits) | `Input` |
+  | `GlassMenu`, `Glass` (surface du rail) | `Menu`, `Glass` |
+
+- **Installation** : version épinglée (`"glisse": "0.5.0"`), patch
+  `patches/glisse@0.5.0.patch` (appliqué par `bun install`) — les moteurs à
+  geste (TabBar/Segmented, Slider, Switch) attendent que leurs nœuds soient
+  rattachés : en mode strict de React 19, une zone Suspense cachée relançait
+  leurs effets sur des refs nulles. Les contrôles à geste se montent aussi sous
+  `WhenShown` (après la première peinture visible).
+- **Styles** : `@import "glisse/styles.css" layer(components)` — un utilitaire
+  Tailwind d'un appelant l'emporte toujours. La copie que Glisse injecterait
+  hors couche est neutralisée par `<style id="glisse-styles" />` dans le head.
+- **Thème** : `<body data-theme="dark">` ; pont `--lg-fill`, `--lg-on`,
+  `--lg-destructive`, `--lg-ring` → jetons TradeVault. Nos jetons
+  `--tv-glass-*` reprennent les valeurs du verre de Glisse (menus, feuilles,
+  barre compacte). Les champs (`.tv-control`) sont des capsules de verre.
+- **Réfraction** : réelle sous Chromium (Chrome, Edge, app Windows) ; Safari,
+  app macOS et Firefox gardent le repli de Glisse (flou + arête). Le papier
+  peint porte des vagues menthe et un trait de lumière en diagonale : sans
+  couleur derrière, une lentille ne déforme rien.
+- **Gestes** : ceux de Glisse (soulèvement, étirement vers le doigt,
+  lentille). `press.ts` exclut les contrôles Glisse et ne garde que le
+  contenu (rangées, cartes).
+- **Garde-fous** : `tests/glisse.test.ts`.
+
+Les sections suivantes restent vraies pour le **contenu** (cartes, chiffres,
+grilles) ; partout où elles décrivent un bouton, un onglet, un interrupteur ou
+un menu, Glisse fait foi.
+
 ## 1. Le langage Liquid — verre iOS 27 + matière Revolut
 
 Depuis le 31 octobre 2026 (spec :
@@ -22,8 +70,8 @@ le produit parle **Liquid** :
 - **Matière Revolut** : cartes à grand rayon (22), un chiffre héros par écran,
   actions rondes (`ActionButton`), listes à pastilles.
 - **Rayons concentriques** : contrôles 12–14, cartes 22, feuilles 28, coque 32.
-  Les boutons d'action sont des **rectangles adoucis pleins, texte blanc** ;
-  les pilules restent aux sélecteurs (compte, puces, entrées du rail).
+  Les boutons d'action sont des **capsules** de Glisse (pleine à l'accent,
+  texte blanc ombré, pour l'action principale ; verre sinon).
 - **Grand titre** (Large Title) sur chaque page, dérivé de la navigation, et
   barre compacte de verre au défilement.
 
@@ -167,11 +215,11 @@ chacune avec une seule source :
   mobile, rail, étoiles, onboarding) ou portent `data-press="off"`. **Ne pas
   ajouter de `:active { transform: scale(…) }` ni de `active:scale-*`** : ce
   serait un double enfoncement.
-- **La pilule qui glisse** (`shared/ui/useGlidingIndicator.ts`) : onglets de
-  section, `SubNav`, périodes du tableau de bord. Une seule pièce glisse sous
-  l'onglet actif (lu sur `aria-selected` / `aria-pressed`), `transform` +
-  largeur sur le ressort, comme la languette du rail. Sans mesure, l'onglet
-  actif garde son fond (`.tv-glide-on` absente).
+- **La sélection qui glisse** : désormais celle de Glisse (§0) — la pastille
+  d'un `SegmentedControl` ou d'une `TabBar` glisse sur un ressort et se
+  soulève en lentille tant qu'on la tient (onglets de section, `SubNav`,
+  `ChoiceGroup`, périodes du tableau de bord, barre mobile). L'ancienne
+  pilule maison (`useGlidingIndicator`) est supprimée.
 - **La sortie des feuilles** (`shared/ui/exitGhost.ts`) : toute `Modal` qui
   se ferme — `open` à faux ou démontée par son parent — repart par le chemin
   de son entrée, à ~70 % de sa durée (140 ms carte, 240 ms feuille), via une
