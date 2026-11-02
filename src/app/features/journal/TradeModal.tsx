@@ -59,6 +59,7 @@ import {
   tradeDraftKey,
   nsKey,
   readJSON,
+  writeJSON,
   removeKey,
   type TradeDraft,
 } from "@/app/utils/persistence";
@@ -83,11 +84,12 @@ import { todayLocalDate } from "@/shared/calendar-date";
 import { takeHandoff } from "@/app/utils/handoff";
 import { useTradeNews } from "../news/useTradeNews";
 import { useLiveTable } from "@/app/hooks/useLiveTable";
+import { draftOnlyScreenshots, restoreDraftScreenshots } from "./tradeDraft";
 
 interface TradeModalProps {
   trade: Trade | null;
   onClose: () => void;
-  onSave: (trade: Trade, meta: TradeJournalMeta) => void;
+  onSave: (trade: Trade, meta: TradeJournalMeta) => Promise<boolean | void> | boolean | void;
 }
 
 const defaultForm = {
@@ -152,9 +154,25 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
   const { user } = useAuth();
   const userId = user?.id || "";
   const { t, lang } = useT();
+  const draftKey = trade ? nsKey(userId, `draft.trade.${trade.id}`) : tradeDraftKey(userId);
+  const hadDraftOnOpenRef = useRef(Boolean(readJSON<TradeDraft | null>(draftKey, null)));
+  // Unsaved inputs outside the trade row (new confluence and calculator) are
+  // still user edits; recover them just like the trade fields.
+  const restoredUiRef = useRef(
+    readJSON<{
+      __ui?: {
+        newConfluence?: string;
+        stopPoints?: string;
+        pointValue?: string;
+        rDraft?: string | null;
+      };
+    } | null>(draftKey, null)?.__ui,
+  );
 
   const [userConfluences, setUserConfluences] = useState<string[]>([]);
-  const [newConfluence, setNewConfluence] = useState("");
+  const [newConfluence, setNewConfluence] = useState(
+    () => restoredUiRef.current?.newConfluence ?? "",
+  );
   const [accountBalance, setAccountBalance] = useState<number>(25000);
   // Confluences ou solde changés sur un autre appareil : la liste suit.
   useLiveTable("profiles", () => {
@@ -185,15 +203,14 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
     };
   }, [userId]);
 
-  // Draft memory: a NEW trade restores from the auto-saved draft (text fields
-  // only — screenshots can't outlive the modal). Editing an existing trade never
-  // touches the draft. `draftRestored` drives the "brouillon" badge in the header.
+  // Draft memory: all fields, including Storage screenshot paths, survive a
+  // close, reload or account page switch. Existing edits use a separate key.
+  // Only references are stored locally, never photo bytes or signed URLs.
   // Un trade EN COURS D'ÉDITION a son propre brouillon, distinct de celui du
   // formulaire vierge : corriger la note d'un trade existant, cliquer à côté
   // par accident et tout reperdre était exactement le même drame que pour une
   // nouvelle saisie — la seule différence était qu'on ne protégeait que l'une
   // des deux.
-  const draftKey = trade ? nsKey(userId, `draft.trade.${trade.id}`) : tradeDraftKey(userId);
   const [draftRestored, setDraftRestored] = useState(false);
   const [form, setForm] = useState(() => {
     if (trade) {
@@ -228,13 +245,23 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
         exitPrice: trade.exitPrice != null ? String(trade.exitPrice) : "",
         fees: trade.fees != null ? String(trade.fees) : "",
       };
-      // Modifications non enregistrées récupérées telles quelles (hors
-      // captures : leurs fichiers ne survivent pas à la popup).
+      // Reprendre aussi les photos ajoutées, retirées ou réordonnées.
       const pending = readJSON<TradeDraft | null>(draftKey, null);
-      return pending ? { ...base, ...pending, screenshots: trade.screenshots } : base;
+      return pending
+        ? {
+            ...base,
+            ...pending,
+            screenshots: restoreDraftScreenshots(pending.screenshots, trade.screenshots),
+          }
+        : base;
     }
     const saved = readJSON<TradeDraft | null>(draftKey, null);
-    if (saved) return { ...defaultForm, ...saved, screenshots: [] as string[] };
+    if (saved)
+      return {
+        ...defaultForm,
+        ...saved,
+        screenshots: restoreDraftScreenshots(saved.screenshots, []),
+      };
     return { ...defaultForm };
   });
 
@@ -248,8 +275,8 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showIntent, setShowIntent] = useState(false);
   const [showReflection, setShowReflection] = useState(false);
-  const [stopPoints, setStopPoints] = useState("");
-  const [pointValue, setPointValue] = useState("20");
+  const [stopPoints, setStopPoints] = useState(() => restoredUiRef.current?.stopPoints ?? "");
+  const [pointValue, setPointValue] = useState(() => restoredUiRef.current?.pointValue ?? "20");
 
   // ÉDITION : recharge l'intention et la réflexion DÉJÀ capturées pour ce trade.
   // Sans ça, les sections « Avant/après trade » s'ouvraient vides même quand le
@@ -265,15 +292,19 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
     ]).then(([intent, reflection]) => {
       if (!active) return;
       if (!intent && !reflection) return;
-      setForm((f) => ({
-        ...f,
-        intentEmotion: intent?.emotion ?? f.intentEmotion,
-        intentReasoning: intent?.reasoning ?? f.intentReasoning,
-        intentPlan: intent?.plan ?? f.intentPlan,
-        reflectionPlan: reflection?.planRespected ?? f.reflectionPlan,
-        reflectionReason: reflection?.reason ?? f.reflectionReason,
-        reflectionNote: reflection?.note ?? f.reflectionNote,
-      }));
+      // Server metadata must never overwrite a recovered draft or fields
+      // already edited while this request was in flight.
+      if (!hadDraftOnOpenRef.current && !hasInteractedRef.current) {
+        setForm((f) => ({
+          ...f,
+          intentEmotion: intent?.emotion ?? f.intentEmotion,
+          intentReasoning: intent?.reasoning ?? f.intentReasoning,
+          intentPlan: intent?.plan ?? f.intentPlan,
+          reflectionPlan: reflection?.planRespected ?? f.reflectionPlan,
+          reflectionReason: reflection?.reason ?? f.reflectionReason,
+          reflectionNote: reflection?.note ?? f.reflectionNote,
+        }));
+      }
       if (intent) setShowIntent(true);
       if (reflection) setShowReflection(true);
     });
@@ -360,7 +391,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
   const derivedR = pnlLocked && riskDollar > 0 ? (brokerPnl as number) / riskDollar : 0;
   // Saisie du R en cours : le champ montre ce qui est tapé, pas l'arrondi
   // recalculé à chaque frappe (« 1. » deviendrait « 1.00 » sous le curseur).
-  const [rDraft, setRDraft] = useState<string | null>(null);
+  const [rDraft, setRDraft] = useState<string | null>(() => restoredUiRef.current?.rDraft ?? null);
   const editBrokerR = (value: string) => {
     setRDraft(value);
     const r = parseFloat(value);
@@ -387,47 +418,64 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
     [riskDollar, stopPoints, pointValue],
   );
 
-  // Screenshots upload straight to Supabase Storage (bucket path stored on the
-  // trade) instead of inlining base64 into the row. Uploads made in this modal
-  // session are tracked so they can be cleaned up if the user cancels.
-  const sessionUploadsRef = useRef<string[]>([]);
+  // Images are uploaded to private Supabase Storage. The draft keeps their
+  // paths, so closing the modal MUST NOT delete them. Only an explicit remove
+  // or discard may delete draft-owned files.
   const savedRef = useRef(false);
+  const uploadGenerationRef = useRef(0);
+  const uploadingRef = useRef(false);
+  const mountedRef = useRef(false);
+  const latestFormRef = useRef(form);
+  latestFormRef.current = form;
   const screenshotUrls = useScreenshotUrls(form.screenshots);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const handleScreenshotUpload = useCallback(
     async (files: FileList | File[] | null) => {
-      if (!files || files.length === 0 || !userId) return;
+      if (!files || files.length === 0 || !userId || uploadingRef.current) return;
+      uploadingRef.current = true;
       setUploading(true);
-      const newScreenshots: string[] = [];
-      for (
-        let i = 0;
-        i < files.length && form.screenshots.length + newScreenshots.length < 3;
-        i++
-      ) {
-        try {
-          const compressed = await compressImageToFile(files[i]);
-          const path = await uploadScreenshot(userId, compressed);
-          sessionUploadsRef.current.push(path);
-          newScreenshots.push(path);
-        } catch {
-          // skip files that fail to compress/upload; the rest still go through
+      const generation = uploadGenerationRef.current;
+      try {
+        for (const file of Array.from(files)) {
+          if (latestFormRef.current.screenshots.length >= 3) break;
+          try {
+            const compressed = await compressImageToFile(file);
+            const path = await uploadScreenshot(userId, compressed);
+            // A discarded/saved draft must never be resurrected by a late upload.
+            if (generation !== uploadGenerationRef.current || savedRef.current) {
+              void deleteScreenshot(path).catch(() => {});
+              continue;
+            }
+            // A modal may close while an upload is in flight. In that case
+            // finish writing the Storage path into the draft without setState.
+            const current = mountedRef.current
+              ? latestFormRef.current
+              : (readJSON<typeof form | null>(draftKey, null) ?? latestFormRef.current);
+            const next = { ...current, screenshots: [...current.screenshots, path].slice(0, 3) };
+            latestFormRef.current = next;
+            const pending = readJSON<TradeDraft | null>(draftKey, null);
+            writeJSON(draftKey, { ...pending, ...next, __ui: pending?.__ui });
+            if (mountedRef.current) {
+              setForm(next);
+              setDraftRestored(true);
+            }
+          } catch {
+            // An unsuccessful upload is not shown or saved as a broken image.
+          }
         }
-      }
-      setForm((f) => ({ ...f, screenshots: [...f.screenshots, ...newScreenshots] }));
-      setUploading(false);
-    },
-    [form.screenshots.length, userId],
-  );
-
-  // Cancel/close without saving → remove files uploaded during this session.
-  useEffect(
-    () => () => {
-      if (savedRef.current) return;
-      for (const path of sessionUploadsRef.current) {
-        deleteScreenshot(path).catch(() => {});
+      } finally {
+        uploadingRef.current = false;
+        if (mountedRef.current) setUploading(false);
       }
     },
-    [],
+    [draftKey, userId],
   );
 
   useEffect(() => {
@@ -446,36 +494,24 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
     return () => document.removeEventListener("paste", onPaste);
   }, [handleScreenshotUpload]);
 
-  // Sauvegarde automatique du travail en cours (nouveau trade ET édition).
-  //
-  // Ce qui est tapé est écrit en continu et, surtout, IMMÉDIATEMENT quand la
-  // popup se ferme ou que la page passe en arrière-plan : un clic à côté, un
-  // onglet fermé ou une coupure réseau ne fait plus disparaître une note
-  // écrite d'un jet. Les captures sont exclues (leur cycle de vie Storage ne
-  // survit pas à la popup) ; en édition, celles du trade sont reprises telles
-  // quelles à la réouverture.
+  // Every modification is draft-worthy: one letter, direction, time, date,
+  // notes, checkbox, and also screenshot order/selection. Never require the
+  // symbol or another field to be populated first. Keep saving even if the
+  // user undoes a change, so storage matches the last visible state.
   const initialSnapshot = useRef<string | null>(null);
-  const draftBody = useMemo(() => {
-    const { screenshots: _omit, ...rest } = form;
-    void _omit;
-    return JSON.stringify(rest);
-  }, [form]);
+  const hasInteractedRef = useRef(false);
+  const draftState = useMemo(
+    () => ({ ...form, __ui: { newConfluence, stopPoints, pointValue, rDraft } }),
+    [form, newConfluence, stopPoints, pointValue, rDraft],
+  );
+  const draftBody = JSON.stringify(draftState);
   if (initialSnapshot.current === null) initialSnapshot.current = draftBody;
+  if (draftBody !== initialSnapshot.current) hasInteractedRef.current = true;
+  const dirty = hasInteractedRef.current || draftRestored;
 
-  const hasContent =
-    form.symbol.trim() !== "" ||
-    form.riskAmount !== "" ||
-    form.rMultiple !== "" ||
-    form.notes.trim() !== "" ||
-    form.mistakes.length > 0 ||
-    form.confluences.length > 0;
-  // « Sale » = différent de l'état d'ouverture. En édition, rouvrir sans rien
-  // toucher n'écrit donc aucun brouillon fantôme.
-  const dirty = draftBody !== initialSnapshot.current && hasContent;
-
-  useDraftAutosave(draftKey, form, {
+  useDraftAutosave(draftKey, draftState, {
     dirty,
-    omit: ["screenshots"],
+    immediate: true,
     guard: () => !savedRef.current,
   });
 
@@ -494,9 +530,25 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
       confirmLabel: t("trade.discardDraft"),
     });
     if (!ok) return;
+    // Do not delete a screenshot that still belongs to the original trade.
+    uploadGenerationRef.current++;
+    for (const path of draftOnlyScreenshots(form.screenshots, trade?.screenshots)) {
+      void deleteScreenshot(path).catch(() => {});
+    }
     removeKey(draftKey);
     setDraftRestored(false);
-    setForm({ ...defaultForm });
+    const fresh = { ...defaultForm };
+    latestFormRef.current = fresh;
+    initialSnapshot.current = JSON.stringify({
+      ...fresh,
+      __ui: { newConfluence: "", stopPoints: "", pointValue: "20", rDraft: null },
+    });
+    hasInteractedRef.current = false;
+    setNewConfluence("");
+    setStopPoints("");
+    setPointValue("20");
+    setRDraft(null);
+    setForm(fresh);
   };
 
   // Ordre des captures : la première image est la vignette du trade et la
@@ -516,11 +568,10 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
 
   const removeScreenshot = (idx: number) => {
     const removed = form.screenshots[idx];
-    // Only delete the file immediately if it was uploaded in this session —
-    // pre-existing files stay until the trade is saved without them.
-    if (removed && sessionUploadsRef.current.includes(removed)) {
-      sessionUploadsRef.current = sessionUploadsRef.current.filter((p) => p !== removed);
-      deleteScreenshot(removed).catch(() => {});
+    // Also works after a reload: newly uploaded draft photos are draft-owned,
+    // but existing trade photos are only removed after a successful save.
+    if (removed && draftOnlyScreenshots([removed], trade?.screenshots).length) {
+      void deleteScreenshot(removed).catch(() => {});
     }
     setForm((f) => ({ ...f, screenshots: f.screenshots.filter((_, i) => i !== idx) }));
   };
@@ -551,7 +602,9 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
     }));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    // A trade must not be committed before its screenshots finish uploading.
+    if (uploadingRef.current) return;
     const isBE = form.direction === "be";
     const risk = riskDollar;
     // Trade importé : le R se déduit du P&L broker (exact, sans arrondi au
@@ -561,9 +614,8 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
       : isBE
         ? 0
         : parseFloat(form.rMultiple) || 0;
-    savedRef.current = true;
-    // Trade committed — the draft has served its purpose.
-    removeKey(draftKey);
+    // Keep the draft during the server write. If it fails, the user can
+    // reopen TradeModal without losing text or screenshot references.
     // Les captures retirées d'un trade existant sont supprimées par
     // `App.handleSave` APRÈS l'enregistrement réussi (`orphanedScreenshots`) :
     // si l'écriture échoue, le trade restauré garde des fichiers intacts.
@@ -577,63 +629,73 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
       reason: form.reflectionReason,
       note: form.reflectionNote.trim() ? form.reflectionNote : null,
     };
-    onSave(
-      {
-        id: trade?.id || generateId(),
-        date: form.date,
-        symbol: form.symbol.toUpperCase(),
-        direction: form.direction,
-        pnl: pnlLocked
-          ? Math.round((brokerPnl as number) * 100) / 100
-          : isBE
-            ? 0
-            : Math.round(risk * rm * 100) / 100,
-        riskAmount: Math.round(risk * 100) / 100,
-        rMultiple: rm,
-        strategy: form.strategy,
-        mistakes: form.mistakes,
-        setupQuality: form.setupQuality,
-        notes: form.notes,
-        screenshots: form.screenshots,
-        entryTime: form.entryTime,
-        exitTime: form.exitTime,
-        confluences: form.confluences,
-        confidence: form.confidence,
-        mae: form.mae === "" ? null : parseFloat(form.mae) || 0,
-        mfe: form.mfe === "" ? null : parseFloat(form.mfe) || 0,
-        slippage: form.slippage === "" ? null : parseFloat(form.slippage) || 0,
-        // Any save through the form makes the trade "real" — demo badge drops.
-        isExample: false,
-        // Le compte du trade VOYAGE avec lui : le formulaire ne l'édite pas, il
-        // ne doit pas non plus le perdre (sans `accountId`, un trade modifié
-        // depuis un autre compte actif y était réaffecté — voir `tradeToRow`).
-        accountId: trade?.accountId,
-        // L'exécution d'un trade importé est éditable ; celle d'un trade saisi
-        // à la main (souvent absente) est conservée telle quelle.
-        quantity: pnlLocked ? optionalNumber(form.quantity) : trade?.quantity,
-        entryPrice: pnlLocked ? optionalNumber(form.entryPrice) : trade?.entryPrice,
-        exitPrice: pnlLocked ? optionalNumber(form.exitPrice) : trade?.exitPrice,
-        fees: pnlLocked ? optionalNumber(form.fees) : trade?.fees,
-        broker: trade?.broker,
-        externalId: trade?.externalId,
-        brokerAccount: trade?.brokerAccount,
-        copiedFrom: trade?.copiedFrom,
-        // Enregistré depuis le formulaire = relu.
-        reviewPending: false,
-        // Provenance (lot 1) : un risque modifié devient déclaré par le
-        // trader, une heure corrigée retire l'instant qui ne la prouve plus.
-        ...provenanceAfterEdit(trade ?? null, {
+    try {
+      const result = await onSave(
+        {
+          id: trade?.id || generateId(),
           date: form.date,
+          symbol: form.symbol.toUpperCase(),
+          direction: form.direction,
+          pnl: pnlLocked
+            ? Math.round((brokerPnl as number) * 100) / 100
+            : isBE
+              ? 0
+              : Math.round(risk * rm * 100) / 100,
+          riskAmount: Math.round(risk * 100) / 100,
+          rMultiple: rm,
+          strategy: form.strategy,
+          mistakes: form.mistakes,
+          setupQuality: form.setupQuality,
+          notes: form.notes,
+          screenshots: form.screenshots,
           entryTime: form.entryTime,
           exitTime: form.exitTime,
-          riskAmount: Math.round(risk * 100) / 100,
-        }),
-      },
-      {
-        intent: isIntentEmpty(intent) ? null : intent,
-        reflection: isReflectionEmpty(reflection) ? null : reflection,
-      },
-    );
+          confluences: form.confluences,
+          confidence: form.confidence,
+          mae: form.mae === "" ? null : parseFloat(form.mae) || 0,
+          mfe: form.mfe === "" ? null : parseFloat(form.mfe) || 0,
+          slippage: form.slippage === "" ? null : parseFloat(form.slippage) || 0,
+          // Any save through the form makes the trade "real" — demo badge drops.
+          isExample: false,
+          // Le compte du trade VOYAGE avec lui : le formulaire ne l'édite pas, il
+          // ne doit pas non plus le perdre (sans `accountId`, un trade modifié
+          // depuis un autre compte actif y était réaffecté — voir `tradeToRow`).
+          accountId: trade?.accountId,
+          // L'exécution d'un trade importé est éditable ; celle d'un trade saisi
+          // à la main (souvent absente) est conservée telle quelle.
+          quantity: pnlLocked ? optionalNumber(form.quantity) : trade?.quantity,
+          entryPrice: pnlLocked ? optionalNumber(form.entryPrice) : trade?.entryPrice,
+          exitPrice: pnlLocked ? optionalNumber(form.exitPrice) : trade?.exitPrice,
+          fees: pnlLocked ? optionalNumber(form.fees) : trade?.fees,
+          broker: trade?.broker,
+          externalId: trade?.externalId,
+          brokerAccount: trade?.brokerAccount,
+          copiedFrom: trade?.copiedFrom,
+          // Enregistré depuis le formulaire = relu.
+          reviewPending: false,
+          // Provenance (lot 1) : un risque modifié devient déclaré par le
+          // trader, une heure corrigée retire l'instant qui ne la prouve plus.
+          ...provenanceAfterEdit(trade ?? null, {
+            date: form.date,
+            entryTime: form.entryTime,
+            exitTime: form.exitTime,
+            riskAmount: Math.round(risk * 100) / 100,
+          }),
+        },
+        {
+          intent: isIntentEmpty(intent) ? null : intent,
+          reflection: isReflectionEmpty(reflection) ? null : reflection,
+        },
+      );
+      if (result !== false) {
+        savedRef.current = true;
+        // Avoid deleting a newer draft created while the server was saving.
+        const saved = readJSON<TradeDraft | null>(draftKey, null);
+        if (saved && JSON.stringify(saved) === JSON.stringify(draftState)) removeKey(draftKey);
+      }
+    } catch (error) {
+      console.error("Trade save failed; draft preserved", error);
+    }
   };
 
   /* Une sortie AVANT l'entrée est une donnée impossible pour un trade du jour
@@ -749,7 +811,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
           id="trade-entry-form"
           onSubmit={(e) => {
             e.preventDefault();
-            if (isValid) handleSave();
+            if (isValid && !uploading) void handleSave();
           }}
           className="tv-trade-form min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3 sm:px-5"
         >
@@ -1513,7 +1575,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
               variant="entry"
               type="submit"
               form="trade-entry-form"
-              disabled={!isValid}
+              disabled={!isValid || uploading}
               className="shrink-0"
             >
               {trade ? t("trade.updateTrade") : t("trade.saveTrade")}

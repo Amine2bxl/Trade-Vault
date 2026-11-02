@@ -851,7 +851,7 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
 
   const handleSave = useCallback(
     async (trade: Trade, meta?: TradeJournalMeta) => {
-      if (!user) return;
+      if (!user) return false;
       // Quota mensuel d'encodage. Il porte sur les CRÉATIONS : corriger un
       // trade déjà saisi reste possible quel que soit le palier — bloquer une
       // correction serait punitif et sans rapport avec l'offre.
@@ -867,7 +867,7 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
           "info",
         );
         setPage("subscription");
-        return;
+        return false;
       }
       setModalOpen(false);
       setEditingTrade(null);
@@ -883,7 +883,7 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
         console.error("Failed to save trade", e);
         setTrades(snapshot);
         toast(t("app.saveTradeFailed"), "error");
-        return;
+        return false;
       }
       // Captures retirées pendant la modification : leurs fichiers ne sont
       // supprimés qu'une fois le trade enregistré sans elles.
@@ -924,6 +924,7 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
           extras: { intent: meta?.intent ?? null, reflection: meta?.reflection ?? null },
         });
       })();
+      return true;
     },
     [user, trades, tier, lang, toast, t, setPage],
   );
