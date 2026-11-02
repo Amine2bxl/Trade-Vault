@@ -32,6 +32,8 @@
  * disparaît comme avant.
  */
 
+import { ZOOM_MS, zoomOutTo } from "./zoomTransition";
+
 /** La sortie de la carte : l'entrée `tv-dialog-in` jouée à l'envers. */
 const DIALOG_OUT: Keyframe[] = [
   { opacity: 1, transform: "none" },
@@ -61,7 +63,7 @@ function isSheet(wrap: HTMLElement): boolean {
  * Prend la copie de `wrap` (le cadre `.tv-dialog-wrap` d'une modale qui se
  * démonte) et lui fait jouer la sortie une fois l'original retiré.
  */
-export function snapshotExit(wrap: HTMLElement | null): void {
+export function snapshotExit(wrap: HTMLElement | null, source: HTMLElement | null = null): void {
   if (!wrap || typeof window === "undefined" || !wrap.isConnected) return;
   if (typeof wrap.animate !== "function") return;
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -104,12 +106,17 @@ export function snapshotExit(wrap: HTMLElement | null): void {
       removed = true;
       ghost.remove();
     };
-    const duration = sheet ? EXIT_MS.sheet : EXIT_MS.dialog;
-    const out = (panel ?? ghost).animate(sheet ? SHEET_OUT : DIALOG_OUT, {
-      duration,
-      easing: EXIT_EASE,
-      fill: "forwards",
-    });
+    // La fenêtre est née d'un bouton encore visible : elle s'y RÉTRACTE
+    // (`zoomTransition.ts`). Sinon, le chemin inverse de son entrée.
+    const zoom = panel ? zoomOutTo(panel, source) : null;
+    const duration = zoom ? ZOOM_MS.out : sheet ? EXIT_MS.sheet : EXIT_MS.dialog;
+    const out =
+      zoom ??
+      (panel ?? ghost).animate(sheet ? SHEET_OUT : DIALOG_OUT, {
+        duration,
+        easing: EXIT_EASE,
+        fill: "forwards",
+      });
     veil?.animate([{ opacity: 1 }, { opacity: 0 }], {
       duration: Math.round(duration * 0.85),
       easing: "linear",

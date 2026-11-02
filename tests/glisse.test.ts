@@ -54,6 +54,9 @@ describe("Glisse", () => {
     expect(patch).toContain("waitingSwitch = requestAnimationFrame(startSwitch)");
     // La ref de la barre passe APRÈS les props : une `ref` reçue en prop
     // (React 19, outils de développement) ne l'écrase plus.
+    // La bulle gonfle franchement sous la souris et sous le doigt.
+    expect(patch).toMatch(/\+\s*grow: 10,/);
+    expect(patch).toMatch(/\+\s*grow: 18,/);
     expect(patch).toMatch(/-\s*ref: barRef,/);
     expect(patch).toMatch(/\.\.\.props,\n(?:\+[^\n]*\n){0,4}\+\s*ref: barRef,/);
   });
@@ -78,5 +81,16 @@ describe("Glisse", () => {
     const controls = readSource(import.meta.dir, "../src/shared/ui/GlassControls.tsx");
     expect(controls).not.toMatch(/SearchField as|SearchField,\s*\n?\s*\} from "glisse"/);
     expect(controls).toContain("clearLabel");
+  });
+
+  test("la bulle : relief blanc visible sur fond noir, aucune couleur, aucun halo", () => {
+    const bulle = css.slice(css.indexOf(".lg-button,\n.lg-tab-bar-glass {"));
+    const bloc = bulle.slice(0, bulle.indexOf("@media (prefers-reduced-transparency"));
+    expect(bloc).toContain("inset 0 1px 0.5px rgb(255 255 255");
+    expect(bloc).toContain("linear-gradient(");
+    // Seulement du blanc et du noir dans le relief : aucune teinte, aucun halo.
+    const couleurs = [...bloc.matchAll(/rgb\(([^)]*)\)/g)].map((m) => m[1].split("/")[0].trim());
+    expect(couleurs.every((c) => c === "255 255 255" || c === "0 0 0")).toBe(true);
+    expect(css).toMatch(/--lg-rim-shine:\s*0\.\d+/);
   });
 });

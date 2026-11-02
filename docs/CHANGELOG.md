@@ -3,6 +3,15 @@
 Journal des changements **structurels** (pas des features ni des correctifs,
 qui vivent dans l'historique git et les PR).
 
+## 2026-11-02 — La forme d'Apple, pas le fond
+
+- Retour au papier peint d'ambiance d'avant Glisse : le fond reste noir.
+- « LA BULLE » (`styles.css`) : boutons, disques, barres d'onglets et
+  pastilles en bulles de verre en relief (éclat blanc, liseré, ombre noire) ;
+  liseré de Glisse plus brillant ; gonflement plus franc (patch Glisse).
+- `shared/ui/zoomTransition.ts` : les fenêtres naissent du dernier bouton
+  touché (`lastPressSource`, `press.ts`) et s'y rétractent en se fermant.
+
 ## 2026-11-02 — Glisse : le verre liquide d'iOS 26
 
 - Bibliothèque `glisse` (MIT) épinglée et patchée (`patches/`), importée

@@ -41,10 +41,25 @@ menthe.
   `--lg-destructive`, `--lg-ring` → jetons TradeVault. Nos jetons
   `--tv-glass-*` reprennent les valeurs du verre de Glisse (menus, feuilles,
   barre compacte). Les champs (`.tv-control`) sont des capsules de verre.
-- **Réfraction** : réelle sous Chromium (Chrome, Edge, app Windows) ; Safari,
-  app macOS et Firefox gardent le repli de Glisse (flou + arête). Le papier
-  peint porte des vagues menthe et un trait de lumière en diagonale : sans
-  couleur derrière, une lentille ne déforme rien.
+- **La FORME, pas le fond** (retour du propriétaire, 2 novembre) : le fond
+  reste noir (papier peint d'ambiance discret d'avant Glisse). Ce qui porte
+  l'atmosphère d'Apple :
+  - **la bulle** (bloc « LA BULLE » de `styles.css`) : chaque bouton, disque
+    d'action, barre d'onglets et pastille de segmenté est une bulle de verre
+    en relief — éclat spéculaire BLANC sur la moitié haute, arête claire,
+    liseré d'un demi-pixel, ombre intérieure en bas, ombre portée noire. Le
+    liseré peint par Glisse est quatre fois plus brillant
+    (`--lg-rim-shine: 0.55`), le verre un cran plus clair. Sous le doigt,
+    l'éclat s'intensifie et la bulle gonfle (patch : 10 px à la souris,
+    18 px au doigt) ;
+  - **la fenêtre qui naît du bouton** (`zoomTransition.ts`) : `Modal` part du
+    dernier bouton touché (`lastPressSource`, `press.ts`), grandit sur le
+    ressort (380 ms), son contenu arrive en fondu ; à la fermeture, la copie
+    se rétracte dans ce bouton (260 ms). Sans source visible, l'entrée et la
+    sortie habituelles.
+- **Réfraction** : réelle sous Chromium (Chrome, Edge, app Windows) quand il
+  y a quelque chose à courber ; Safari, app macOS et Firefox gardent le repli
+  de Glisse (flou + arête).
 - **Gestes** : ceux de Glisse (soulèvement, étirement vers le doigt,
   lentille). `press.ts` exclut les contrôles Glisse et ne garde que le
   contenu (rangées, cartes).

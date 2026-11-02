@@ -2,6 +2,8 @@ import { useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "./cn";
 import { snapshotExit } from "./exitGhost";
+import { lastPressSource } from "./press";
+import { zoomInFrom } from "./zoomTransition";
 import { acquireBodyScrollLock } from "./scrollLock";
 
 /**
@@ -82,11 +84,17 @@ function ModalSurface({
   const panelRef = useRef<HTMLDivElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
 
-  // La sortie : le nettoyage d'un effet de mise en page s'exécute AVANT que
-  // React ne retire la surface du document.
+  // L'ENTRÉE : la fenêtre naît du bouton qu'on vient de toucher (transition
+  // « zoom » d'iOS, `zoomTransition.ts`) — avant la première peinture.
+  // LA SORTIE : le nettoyage d'un effet de mise en page s'exécute AVANT que
+  // React ne retire la surface du document ; la copie se rétracte dans ce
+  // même bouton s'il est encore là.
   useLayoutEffect(() => {
     const wrap = wrapRef.current;
-    return () => snapshotExit(wrap);
+    const panel = panelRef.current;
+    const source = lastPressSource();
+    if (panel) zoomInFrom(panel, source);
+    return () => snapshotExit(wrap, source);
   }, []);
 
   // Esc-to-close + optional background scroll-lock while open.

@@ -20,7 +20,8 @@ dessus » parce qu'elle brille : elle est plus claire d'un cran et porte un
 liseré d'un pixel. C'est tout le vocabulaire de profondeur du produit.
 
 **Interdits absolus** : `box-shadow` coloré (halo, `glow`), `animate-ping`,
-dégradé sur un texte / bouton / carte, verre (`backdrop-filter`) sur une carte
+dégradé de couleur sur un texte / bouton / carte (seul l'éclat BLANC d'une
+bulle de Glisse est permis, bloc « LA BULLE »), verre (`backdrop-filter`) sur une carte
 de contenu, fond animé, deuxième accent chromatique. Le flou n'existe que dans
 le matériau verre (`--tv-glass-*`), avec ses replis opaques
 (`tests/liquidGlass.test.ts`).

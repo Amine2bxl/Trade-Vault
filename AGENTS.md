@@ -64,11 +64,16 @@ suite ; ne jamais affaiblir une assertion pour passer.
   reste identique au thème par défaut ; pont de jetons `--lg-*` → `--tv-*`.
   **Glisse ne s'importe que dans `src/shared/ui`** (règle ESLint) ; un
   contrôle à geste se monte sous `WhenShown`. Boutons : capsules (pleine à
-  l'accent pour l'action principale, texte blanc ombré ; verre sinon) ;
-  jamais de `:active { transform: scale(…) }` sur un contrôle Glisse. Papier
-  peint d'ambiance fixe (vagues + trait de lumière) permis ; rien ne rayonne
-  (ni ombre colorée, ni halo, ni `animate-ping`, ni dégradé sur un texte, un
-  bouton ou une carte) ; jamais de verre sur une carte de contenu. L'app écrit
+  l'accent pour l'action principale, texte blanc ombré ; verre sinon) qui
+  sont des **bulles** en relief (éclat blanc, liseré, ombre noire — bloc
+  « LA BULLE » de `styles.css`) ; jamais de `:active { transform: scale(…) }`
+  sur un contrôle Glisse. Les fenêtres (`Modal`) **naissent du bouton**
+  touché et y retournent (`zoomTransition.ts`). C'est la FORME d'Apple qui
+  porte le langage, pas le fond : papier peint d'ambiance discret (trois
+  nappes floues), fond noir. Rien ne rayonne (ni ombre colorée, ni halo, ni
+  `animate-ping`, ni dégradé de couleur sur un texte, un bouton ou une carte —
+  seul l'éclat BLANC d'une bulle est permis) ; jamais de verre sur une carte
+  de contenu. L'app écrit
   dans la pile système (`--font-lucid`), chiffres en Inter via
   `--font-figure` ; la vitrine garde Inter. Le P&L garde ses couleurs fixes.
   Charger les skills de `.claude/skills/` avant tout travail d'interface. Voir

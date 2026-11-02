@@ -91,6 +91,28 @@ const TOUCH_DELAY_MS = 70;
 /** Au-delà de ce déplacement, ce n'est plus un appui mais un geste. */
 const SLOP_PX = 8;
 
+/**
+ * LA SOURCE DU DERNIER GESTE — le bouton qu'on vient de toucher (ou d'activer
+ * au clavier). Une fenêtre qui s'ouvre juste après s'en sert pour NAÎTRE de
+ * ce bouton, et y retourner en se fermant (`zoomTransition.ts`). Notée pour
+ * tout ce qui est appuyable, contrôles de Glisse compris.
+ */
+let lastSource: { el: HTMLElement; at: number } | null = null;
+
+/** Le dernier élément touché, s'il date de moins de `maxAgeMs` et existe encore. */
+export function lastPressSource(maxAgeMs = 1000): HTMLElement | null {
+  if (!lastSource) return null;
+  const { el, at } = lastSource;
+  if (performance.now() - at > maxAgeMs || !el.isConnected) return null;
+  return el;
+}
+
+function noteSource(from: EventTarget | null): void {
+  if (!(from instanceof Element)) return;
+  const el = from.closest<HTMLElement>(PRESSABLE);
+  if (el) lastSource = { el, at: performance.now() };
+}
+
 /** L'amplitude d'un objet de `width` × `height` pixels. */
 export function pressScale(width: number, height: number): number {
   const side = Math.max(width, height, 1);
@@ -180,6 +202,7 @@ export function installPressFeedback(doc: Document = document): () => void {
   };
 
   const onDown = (e: PointerEvent) => {
+    if (e.button === 0) noteSource(e.target);
     if (e.button !== 0 || reduce.matches) return;
     const el = pressTarget(e.target);
     if (!el) return;
@@ -222,7 +245,13 @@ export function installPressFeedback(doc: Document = document): () => void {
     }
   };
 
+  // Au clavier, la source est l'élément qui a le focus quand on valide.
+  const onKey = (e: KeyboardEvent) => {
+    if (e.key === "Enter" || e.key === " ") noteSource(doc.activeElement);
+  };
+
   const opts = { capture: true, passive: true } as const;
+  doc.addEventListener("keydown", onKey, opts);
   doc.addEventListener("pointerdown", onDown, opts);
   doc.addEventListener("pointermove", onMove, opts);
   doc.addEventListener("pointerup", onUp, opts);
@@ -230,6 +259,7 @@ export function installPressFeedback(doc: Document = document): () => void {
   win.addEventListener("blur", release);
   return () => {
     release();
+    doc.removeEventListener("keydown", onKey, opts);
     doc.removeEventListener("pointerdown", onDown, opts);
     doc.removeEventListener("pointermove", onMove, opts);
     doc.removeEventListener("pointerup", onUp, opts);

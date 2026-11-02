@@ -103,7 +103,7 @@ describe("la sortie des modales", () => {
     // le nettoyage de mise en page prend la copie.
     expect(modal).toContain('if (!props.open || typeof document === "undefined") return null;');
     expect(modal).toMatch(
-      /useLayoutEffect\(\(\) => \{\s*const wrap = wrapRef\.current;\s*return \(\) => snapshotExit\(wrap\);/,
+      /useLayoutEffect\(\(\) => \{\s*const wrap = wrapRef\.current;[\s\S]{0,200}?return \(\) => snapshotExit\(wrap, source\);/,
     );
   });
 
@@ -147,5 +147,29 @@ describe("la loi du mouvement", () => {
   test("jamais `transition: all`", () => {
     expect(css).not.toMatch(/transition:\s*all\b/);
     expect(css).not.toMatch(/transition-property:\s*all\b/);
+  });
+});
+
+describe("la fenêtre naît du bouton (zoom iOS)", () => {
+  const zoom = readSource(import.meta.dir, "../src/shared/ui/zoomTransition.ts");
+  const ghost = readSource(import.meta.dir, "../src/shared/ui/exitGhost.ts");
+
+  test("Modal part du dernier bouton touché, et la sortie y retourne", () => {
+    expect(modal).toContain("const source = lastPressSource();");
+    expect(modal).toContain("zoomInFrom(panel, source)");
+    expect(modal).toContain("snapshotExit(wrap, source)");
+    expect(ghost).toContain("zoomOutTo(panel, source)");
+    expect(press).toContain("export function lastPressSource(");
+  });
+
+  test("transform et opacité seulement, ressort, mouvement réduit respecté", () => {
+    expect(zoom).toContain("(prefers-reduced-motion: reduce)");
+    const frames = [...zoom.matchAll(/\{ transform: [^}]*\}/g)].map((m) => m[0]);
+    expect(frames.length).toBeGreaterThanOrEqual(4);
+    for (const f of frames) {
+      const keys = [...f.matchAll(/(\w+):/g)].map((m) => m[1]);
+      expect(keys.every((k) => ["transform", "transformOrigin", "opacity"].includes(k))).toBe(true);
+    }
+    expect(zoom).toContain("in: 380, out: 260");
   });
 });
