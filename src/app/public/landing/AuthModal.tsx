@@ -14,7 +14,6 @@ import { Icon } from "./Icon";
 import { useLandingT } from "./i18n";
 import type { LandingKey } from "./i18n";
 import { TRUSTPILOT_URL } from "@/shared/site";
-import { Button } from "@/shared/ui";
 
 interface AuthModalProps {
   onClose: () => void;
@@ -412,9 +411,9 @@ function AuthModalInterne({ onClose, initialMode = "signup", plan, initialError 
                     </button>
                   </div>
                 </div>
-                <Button
+                <button
                   disabled={loading}
-                  className="w-full h-11! mt-1 disabled:opacity-60 disabled:cursor-wait"
+                  className="btn-primary w-full h-11! mt-1 disabled:opacity-60 disabled:cursor-wait"
                 >
                   {loading
                     ? t("auth.submitting")
@@ -422,7 +421,7 @@ function AuthModalInterne({ onClose, initialMode = "signup", plan, initialError 
                       ? t("auth.submit.login")
                       : t("auth.submit.signup")}
                   {!loading && <Icon n="arrow" cls="h-4 w-4" />}
-                </Button>
+                </button>
               </form>
 
               <p className="mt-5 text-center text-[13px] text-slate-500">

@@ -48,9 +48,6 @@ export { Button } from "./Button";
 export type { ButtonProps, ButtonVariant, ButtonSize } from "./Button";
 export { ActionButton } from "./ActionButton";
 export type { ActionButtonProps } from "./ActionButton";
-export { SearchField, Slider, Glass, GlassMenu, GlassTabBar } from "./GlassControls";
-export type { MenuEntry, TabBarProps } from "./GlassControls";
-export { useSegmentWidth } from "./useSegmentWidth";
 
 export { Input, Textarea, Select, Field, FIELD_BASE } from "./Input";
 export type { TextareaProps } from "./Input";

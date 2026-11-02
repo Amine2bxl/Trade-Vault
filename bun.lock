@@ -12,7 +12,6 @@
         "@tanstack/react-start": "^1.168.60",
         "clsx": "^2.1.1",
         "cmdk": "^1.1.1",
-        "glisse": "0.5.0",
         "gsap": "^3.15.0",
         "lenis": "^1.3.26",
         "lucide-react": "^0.575.0",
@@ -50,9 +49,6 @@
         "vite-tsconfig-paths": "^6.0.2",
       },
     },
-  },
-  "patchedDependencies": {
-    "glisse@0.5.0": "patches/glisse@0.5.0.patch",
   },
   "packages": {
     "@alloc/quick-lru": ["@alloc/quick-lru@5.2.0", "", {}, "sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw=="],
@@ -708,8 +704,6 @@
     "gensync": ["gensync@1.0.0-beta.2", "", {}, "sha512-3hN7NaskYvMDLQY55gnW3NQ+mesEAepTqlg+VEbj7zzqEMBVNhzcGYYeqFo/TlYz6eQiFcp1HcsCZO+nGgS8zg=="],
 
     "get-nonce": ["get-nonce@1.0.1", "", {}, "sha512-FJhYRoDaiatfEkUK8HKlicmu/3SGFD51q3itKDGoSTysQJBnfOcxU5GxnhE1E6soB76MbT0MBtnKJuXyAx+96Q=="],
-
-    "glisse": ["glisse@0.5.0", "", { "peerDependencies": { "react": ">=18", "react-dom": ">=18" } }, "sha512-FVL7wBj6JS9hx7FrikqLGiJojy4RX1sIRlBSUDZW/3f9+LwILqX9hsILHPgi54PsKSfHFL+C4k6YB411f0mJhA=="],
 
     "glob-parent": ["glob-parent@6.0.2", "", { "dependencies": { "is-glob": "^4.0.3" } }, "sha512-XxwI8EOhVQgWp6iDL+3b0r86f4d6AX6zSU55HfB4ydCEuXLXc5FcYeOu+nnGftS4TEju/11rt4KJPTMgbfmv4A=="],
 

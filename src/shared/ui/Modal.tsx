@@ -1,9 +1,6 @@
-import { useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "./cn";
-import { snapshotExit } from "./exitGhost";
-import { lastPressSource } from "./press";
-import { zoomInFrom } from "./zoomTransition";
 import { acquireBodyScrollLock } from "./scrollLock";
 
 /**
@@ -16,12 +13,6 @@ import { acquireBodyScrollLock } from "./scrollLock";
  * bas —, le même rayon, la même marge d'écran (safe areas comprises), le même
  * voile, la même entrée (fondu + léger glissement, 200 ms). Les appelants ne
  * passent que ce qui les distingue (largeur, hauteur, mise en page).
- *
- * LA SORTIE (Liquid) : à la fermeture — `open` qui passe à faux, ou la
- * modale démontée par son parent —, une copie inerte repart par le chemin de
- * l'entrée pendant que la vraie est retirée (voir `exitGhost.ts`). D'où la
- * `ModalSurface` séparée : sa suppression est le seul moment où React laisse
- * lire le DOM juste avant de le retirer.
  *
  * Adds what the hand-rolled copies lacked: `Esc` to close, background
  * scroll-lock, `role="dialog"` + `aria-modal`, and a focusable panel. Renders
@@ -60,16 +51,8 @@ export interface ModalProps {
   children: ReactNode;
 }
 
-export function Modal(props: ModalProps) {
-  // Render via portal so a `fixed` overlay is never trapped inside a parent
-  // with `backdrop-filter`/`transform` (which creates a containing block for
-  // fixed descendants — the sidebar's `backdrop-blur` trapped sub-account
-  // modals on the left side of the screen). SSR returns null (client-only).
-  if (!props.open || typeof document === "undefined") return null;
-  return <ModalSurface {...props} />;
-}
-
-function ModalSurface({
+export function Modal({
+  open,
   onClose,
   size,
   className,
@@ -82,23 +65,10 @@ function ModalSurface({
   children,
 }: ModalProps) {
   const panelRef = useRef<HTMLDivElement>(null);
-  const wrapRef = useRef<HTMLDivElement>(null);
-
-  // L'ENTRÉE : la fenêtre naît du bouton qu'on vient de toucher (transition
-  // « zoom » d'iOS, `zoomTransition.ts`) — avant la première peinture.
-  // LA SORTIE : le nettoyage d'un effet de mise en page s'exécute AVANT que
-  // React ne retire la surface du document ; la copie se rétracte dans ce
-  // même bouton s'il est encore là.
-  useLayoutEffect(() => {
-    const wrap = wrapRef.current;
-    const panel = panelRef.current;
-    const source = lastPressSource();
-    if (panel) zoomInFrom(panel, source);
-    return () => snapshotExit(wrap, source);
-  }, []);
 
   // Esc-to-close + optional background scroll-lock while open.
   useEffect(() => {
+    if (!open) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
@@ -109,11 +79,18 @@ function ModalSurface({
       document.removeEventListener("keydown", onKey);
       releaseScroll();
     };
-  }, [onClose, lockScroll, focusPanel]);
+  }, [open, onClose, lockScroll, focusPanel]);
+
+  if (!open) return null;
+
+  // Render via portal so a `fixed` overlay is never trapped inside a parent
+  // with `backdrop-filter`/`transform` (which creates a containing block for
+  // fixed descendants — the sidebar's `backdrop-blur` trapped sub-account
+  // modals on the left side of the screen). SSR returns null (client-only).
+  if (typeof document === "undefined") return null;
 
   return createPortal(
     <div
-      ref={wrapRef}
       className={cn(
         "tv-dialog-wrap fixed inset-0 z-[var(--tv-z-nav)] flex items-center justify-center",
         wrapperClassName,

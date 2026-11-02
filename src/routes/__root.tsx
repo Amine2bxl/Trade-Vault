@@ -16,7 +16,6 @@ import appCss from "../styles.css?url";
 import { absoluteUrl, DEFAULT_OG_IMAGE, SITE_NAME, structuredData } from "../shared/seo";
 import { initAnalytics } from "@/app/utils/analytics";
 import { reportAppError, installGlobalErrorReporting } from "../shared/error-reporting";
-import { installPressFeedback } from "../shared/ui/press";
 
 /** Site-wide title and description — the marketing promise, in the language
  *  the landing page is written in. Public routes override both. */
@@ -282,11 +281,6 @@ function RootShell({ children }: { children: ReactNode }) {
     <html lang={lang}>
       <head>
         <HeadContent />
-        {/* GLISSE — ses styles viennent de `styles.css`, rangés dans la couche
-            `components` (les utilitaires Tailwind d'un appelant gardent le
-            dernier mot). Glisse injecte sinon sa propre copie, hors couche, en
-            tête de document ; il ne le fait pas si cet identifiant existe déjà. */}
-        <style id="glisse-styles" />
         {/* schema.org identity for the brand + application. Rendered here rather
             than through head() so the JSON body is emitted verbatim. */}
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: structuredData() }} />
@@ -316,11 +310,7 @@ function RootShell({ children }: { children: ReactNode }) {
           }}
         />
       </head>
-      {/* `data-theme="dark"` : la version sombre de Glisse (le verre liquide),
-          quel que soit le réglage clair/sombre du système — TradeVault est
-          sombre. Posé sur `body`, il couvre aussi les portails (menus,
-          feuilles). */}
-      <body data-theme="dark">
+      <body>
         {children}
         <Scripts />
       </body>
@@ -353,10 +343,6 @@ function RootComponent() {
   useEffect(() => {
     installGlobalErrorReporting();
   }, []);
-
-  // L'appui Liquid : un seul écouteur pour tout ce qui se touche, vitrine et
-  // application (voir `shared/ui/press.ts`).
-  useEffect(() => installPressFeedback(), []);
 
   // Stale lazy-chunk guard. Pages are code-split; after a new deploy the old
   // build's chunk hashes 404, so anyone who had the app open across a release

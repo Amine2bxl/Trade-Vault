@@ -44,7 +44,6 @@ import { LIFETIME_EUR, eur } from "@/app/utils/pricing";
 import { LandingLangProvider, useLandingT, type LandingKey, type LandingLang } from "./i18n";
 import { oauthErrorFromUrl } from "@/app/utils/authErrors";
 import "./landing.css";
-import { Button } from "@/shared/ui";
 
 /**
  * UN MONTANT, FACE À UN AUTRE.
@@ -738,12 +737,12 @@ function LandingPage() {
                     bordé. Deux boutons pleins côte à côte partagent le clic
                     au lieu de l'additionner. */}
                 <div className="fade-up d3 mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-                  <Button
+                  <button
                     onClick={() => open("signup", t("nav.cta.plan"))}
-                    className="w-full sm:w-auto"
+                    className="btn-primary w-full sm:w-auto"
                   >
                     {t("hero.cta")} <Icon n="arrow" cls="h-4 w-4" />
-                  </Button>
+                  </button>
                   <a
                     href="/pricing"
                     className="btn-secondaire min-h-[44px] w-full px-5 text-sm sm:w-auto"
@@ -1038,12 +1037,12 @@ function LandingPage() {
 
             <div className="reveal mx-auto max-w-[760px] text-center">
               <div className="mt-9 flex flex-col items-center justify-center gap-4 sm:flex-row sm:gap-3">
-                <Button
+                <button
                   onClick={() => open("signup", t("nav.cta.plan"))}
-                  className="w-full sm:w-auto"
+                  className="btn-primary w-full sm:w-auto"
                 >
                   {t("hero.cta")} <Icon n="arrow" cls="h-4 w-4" />
-                </Button>
+                </button>
                 <a
                   href="/pricing"
                   className="btn-secondaire min-h-[44px] w-full px-5 text-sm sm:w-auto"
@@ -1171,12 +1170,12 @@ function LandingPage() {
                   <br />
                   <span className="text-accent">{t("cta.title.b")}</span>
                 </h2>
-                <Button
+                <button
                   onClick={() => open("signup", t("nav.cta.plan"))}
-                  className="mt-9 px-8 py-3 text-lg"
+                  className="btn-primary mt-9 px-8 py-3 text-lg"
                 >
                   {t("hero.cta")} <Icon n="arrow" cls="h-5 w-5" />
-                </Button>
+                </button>
                 <p className="mt-5 text-sm text-slate-500">{t("cta.note")}</p>
               </div>
             </div>

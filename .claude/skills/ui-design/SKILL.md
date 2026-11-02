@@ -35,17 +35,9 @@ n'importe jamais `app/`), on ne fabrique pas une variante locale.
 Une seule plaque, trois usages. La profondeur = **valeur + liseré** (voir
 skill `theme`). **Liquid** : ce qui NAVIGUE ou s'OUVRE PAR-DESSUS (rail,
 barre mobile, barre compacte, menus, modales) est en verre ; ce qui PORTE UNE
-DONNÉE est une plaque opaque.
-
-**Glisse** (verre liquide d'iOS 26, `docs/DESIGN_SYSTEM.md` §0) : tout
-CONTRÔLE est une primitive branchée sur la bibliothèque `glisse` — `Button`
-(capsule pleine à l'accent pour l'action principale, verre sinon ; `icon`
-seul = cercle), `ActionButton` (disque de 52 px + libellé, un seul
-`primary`), `SubNav` / `ChoiceGroup` (segmentés), `GlassTabBar`, `Toggle`,
-`Slider`, `SearchField`, `GlassMenu`, `Glass`. **Ne jamais importer `glisse`
-hors de `shared/ui`** (règle ESLint) ; un nouveau contrôle à geste se monte
-sous `WhenShown`. Un bouton fait main (`<button className=…>`) qui imite un
-bouton est une régression : utiliser `<Button>`.
+DONNÉE est une plaque opaque. Les boutons d'action sont des rectangles
+adoucis pleins à texte blanc ; une rangée d'actions rapides utilise
+`ActionButton` (disque 52 px + libellé, un seul `primary`).
 
 ```css
 .lp-card   { border: 1px solid var(--tv-border); border-radius: 12px; background: var(--tv-plate-1); }

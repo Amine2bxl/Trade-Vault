@@ -9,7 +9,6 @@ import {
   type PaidPlan,
 } from "@/domain/plans";
 import { eur } from "@/app/utils/pricing";
-import { Button } from "@/shared/ui";
 
 /**
  * L'OFFRE UNIQUE — la carte de la licence à vie.
@@ -72,15 +71,15 @@ export default function LifetimeOffer({
       ) : (
         onChoose && (
           <>
-            <Button
+            <button
               type="button"
               onClick={() => onChoose(LIFETIME_PLAN)}
               disabled={busy}
-              className="mt-6 w-full justify-center disabled:opacity-60"
+              className="btn-primary mt-6 w-full justify-center disabled:opacity-60"
             >
               {LIFETIME_COPY.cta[lang]} — {price}
               <ArrowRight className="h-4 w-4" aria-hidden />
-            </Button>
+            </button>
             {onCrypto && (
               <button
                 type="button"

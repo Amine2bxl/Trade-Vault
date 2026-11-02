@@ -1101,7 +1101,6 @@ const fr: Dict = {
   "dashboard.tradesToday": "trades aujourd'hui",
   "chart.balance": "Solde",
   "nav.sectionViews": "Aller à",
-  "nav.mainNavigation": "Navigation principale",
   "common.viewMode": "Vue",
   "common.more": "Actions",
   "common.filters": "Filtres",

@@ -1,27 +1,8 @@
-import {
-  useId,
-  useLayoutEffect,
-  useRef,
-  useState,
-  type CSSProperties,
-  type ReactNode,
-} from "react";
-import { SegmentedControl } from "glisse";
+import { useId, type ReactNode } from "react";
 import { ChevronDown } from "@/shared/ui/icons";
 import { cn } from "./cn";
-import { WhenShown } from "./WhenShown";
 
-/**
- * Choix courts — LE CONTRÔLE SEGMENTÉ D'iOS 26 (Glisse), pleine largeur.
- *
- * Une pastille posée sur une piste de verre ; tenue ou glissée, elle se
- * soulève en lentille au-dessus des libellés. Les segments se partagent la
- * largeur du groupe à parts égales. Aucune option peut être choisie au départ
- * (`value` à `null`) : la pastille n'apparaît qu'au premier choix. Une option
- * qui porte un ton (`positive` / `negative`, ex. Long / Short) teinte la
- * pastille quand elle est choisie. Le clavier (flèches, Début, Fin) et les
- * rôles ARIA viennent de Glisse.
- */
+/** Choix courts : même hauteur, typographie et état neutre que les filtres. */
 export function ChoiceGroup<V extends string | number>({
   label,
   value,
@@ -35,43 +16,49 @@ export function ChoiceGroup<V extends string | number>({
   onChange: (value: V) => void;
   className?: string;
 }) {
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const [width, setWidth] = useState(0);
-  useLayoutEffect(() => {
-    const wrap = wrapRef.current;
-    if (!wrap || typeof ResizeObserver === "undefined") return;
-    const fit = () => {
-      const next = Math.floor(wrap.clientWidth / Math.max(1, options.length));
-      setWidth((prev) => (prev === next ? prev : next));
-    };
-    fit();
-    const ro = new ResizeObserver(fit);
-    ro.observe(wrap);
-    return () => ro.disconnect();
-  }, [options.length]);
-  const selected = options.find((o) => o.value === value);
   return (
-    <div ref={wrapRef} className={cn("tv-choice-group", className)} data-tone={selected?.tone}>
-      <WhenShown>
-        <SegmentedControl
-          aria-label={label}
-          items={options.map((o) => ({
-            value: String(o.value),
-            label: (
-              <span className="tv-seg-label" data-tone={o.tone}>
-                {o.icon}
-                <span className="tv-seg-text">{o.label}</span>
-              </span>
-            ),
-          }))}
-          value={value === null ? null : String(value)}
-          onValueChange={(next) => {
-            const o = options.find((x) => String(x.value) === next);
-            if (o) onChange(o.value);
-          }}
-          style={width ? ({ "--lg-tab-width": `${width}px` } as CSSProperties) : undefined}
-        />
-      </WhenShown>
+    <div
+      role="radiogroup"
+      aria-label={label}
+      className={cn("tv-choice-group", className)}
+      onKeyDown={(e) => {
+        const delta =
+          e.key === "ArrowRight" || e.key === "ArrowDown"
+            ? 1
+            : e.key === "ArrowLeft" || e.key === "ArrowUp"
+              ? -1
+              : 0;
+        if (!delta && e.key !== "Home" && e.key !== "End") return;
+        e.preventDefault();
+        const i = Math.max(
+          0,
+          options.findIndex((o) => o.value === value),
+        );
+        const next =
+          e.key === "Home"
+            ? 0
+            : e.key === "End"
+              ? options.length - 1
+              : (i + delta + options.length) % options.length;
+        onChange(options[next].value);
+        e.currentTarget.querySelectorAll<HTMLButtonElement>("button")[next]?.focus();
+      }}
+    >
+      {options.map((o, i) => (
+        <button
+          key={o.value}
+          type="button"
+          role="radio"
+          aria-checked={value === o.value}
+          tabIndex={value === o.value || (value === null && i === 0) ? 0 : -1}
+          data-tone={o.tone}
+          onClick={() => onChange(o.value)}
+          className={cn("tv-choice", o.value === value && "tv-choice-on")}
+        >
+          {o.icon}
+          {o.label}
+        </button>
+      ))}
     </div>
   );
 }

@@ -4,7 +4,6 @@ import PrixAnime from "./PrixAnime";
 import LifetimeOffer from "./LifetimeOffer";
 import { LIFETIME_COPY } from "@/domain/plans";
 import { TIER_BY_ID, eur, tierOf, type PaidPlan, type Plan } from "@/app/utils/pricing";
-import { Button } from "@/shared/ui";
 
 /**
  * LA GRILLE TARIFAIRE — deux colonnes, une décision.
@@ -67,15 +66,14 @@ export default function PricingPlans({
           </p>
         ) : (
           onFree && (
-            <Button
-              variant="ghost"
+            <button
               type="button"
               onClick={onFree}
               disabled={busy != null}
-              className="mt-6 w-full justify-center disabled:opacity-50"
+              className="btn-ghost mt-6 w-full justify-center disabled:opacity-50"
             >
               {LIFETIME_COPY.free[lang]}
-            </Button>
+            </button>
           )
         )}
       </article>

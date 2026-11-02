@@ -1,12 +1,11 @@
-import { Plus } from "@/shared/ui/icons";
-import { Button, GlassTabBar } from "@/shared/ui";
+import { LayoutDashboard, Plus } from "@/shared/ui/icons";
 import type { Page } from "../types";
 import { preloadPage } from "./pageModules";
 import { MOBILE_SECTIONS, SECTION_META, defaultPageOfSection, sectionForPage } from "./navigation";
+import { cn } from "@/shared/ui/cn";
 import { useT } from "../i18n/LanguageContext";
 import { useAuth } from "../contexts/AuthContext";
 import { useHasTradeDraft } from "../utils/persistence";
-import { tap } from "@/shared/haptics";
 
 interface MobileNavProps {
   page: Page;
@@ -44,45 +43,58 @@ export default function MobileNav({ page, setPage, onAddTrade }: MobileNavProps)
     };
   });
 
+  const tab = ({
+    id,
+    target,
+    label,
+    icon: Icon,
+    active,
+  }: {
+    id: string;
+    target: Page;
+    label: string;
+    icon: typeof LayoutDashboard;
+    active: boolean;
+  }) => (
+    <button
+      key={id}
+      type="button"
+      onClick={() => setPage(target)}
+      // Le doigt touche l'écran avant que le clic ne se déclenche : le chunk
+      // part dès ce premier contact.
+      onTouchStart={() => preloadPage(target)}
+      aria-current={active ? "page" : undefined}
+      className={cn("bottom-nav-item", active && "bottom-nav-item-on")}
+    >
+      <Icon className="h-[22px] w-[22px]" strokeWidth={active ? 2.1 : 1.8} aria-hidden />
+      <span className="text-[11px] font-semibold leading-none">{label}</span>
+    </button>
+  );
+
   return (
     <nav className="bottom-nav fixed bottom-0 left-0 right-0 z-[var(--tv-z-float)] md:hidden">
-      {/* LA BARRE D'ONGLETS D'iOS 26 (Glisse) : une capsule de verre qui
-          flotte, la sélection qui glisse d'une section à l'autre, suit le
-          pouce et se soulève en lentille ; à côté, l'ajout d'un trade, un
-          cercle plein à l'accent. Le code d'une section part dès le premier
-          contact du doigt. */}
-      <div
-        className="bottom-nav-row"
-        onTouchStart={() => items.forEach((it) => preloadPage(it.target))}
-      >
-        <GlassTabBar
-          aria-label={t("nav.mainNavigation")}
-          items={items.map(({ id, label, icon: Icon }) => ({
-            value: id,
-            label,
-            icon: <Icon aria-hidden />,
-          }))}
-          value={
-            activeSection && items.some((it) => it.id === activeSection) ? activeSection : null
-          }
-          onValueChange={(id) => {
-            const it = items.find((x) => x.id === id);
-            if (it) setPage(it.target);
-          }}
-          className="bottom-nav-tabs"
-        />
-        <div className="bottom-nav-add-wrap">
-          <Button
-            variant="primary"
-            icon={<Plus strokeWidth={2.4} aria-hidden />}
-            onClick={() => {
-              tap();
-              onAddTrade();
-            }}
+      <div className="bottom-nav-shell">
+        {/* 2 + bouton d'ajout + 2 = cinq colonnes. */}
+        <div className="grid grid-cols-5 items-center gap-1 px-1.5 py-1.5">
+          {items.slice(0, 2).map(tab)}
+          {/* L'AJOUT — le seul aplat d'accent de la barre, à la même hauteur
+              que les onglets (pas surélevé, pas d'anneau ni de lueur). Sans
+              libellé visible : le « + » plein se suffit, et `aria-label` le
+              nomme pour les lecteurs d'écran. */}
+          <button
+            type="button"
+            onClick={onAddTrade}
             aria-label={hasDraft ? t("trade.draftBadge") : t("common.addTrade")}
-            className="bottom-nav-add"
-          />
-          {hasDraft && <span className="bottom-nav-draft" aria-hidden />}
+            className="flex min-h-[54px] items-center justify-center rounded-2xl"
+          >
+            <span className="bottom-nav-add relative">
+              <Plus className="h-[22px] w-[22px]" strokeWidth={2.5} aria-hidden />
+              {hasDraft && (
+                <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full border-2 border-[var(--tv-plate-1)] bg-amber-400" />
+              )}
+            </span>
+          </button>
+          {items.slice(2).map(tab)}
         </div>
       </div>
     </nav>

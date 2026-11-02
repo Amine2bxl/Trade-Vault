@@ -25,12 +25,9 @@ const SELECTED: Record<ChipTone, string> = {
   success: "bg-emerald-500/15 border-emerald-500/25 text-emerald-400",
 };
 
-/* GLISSE — une puce au repos est une petite capsule de VERRE (les jetons de
-   Glisse : `--lg-glass`, arête d'un demi-pixel) ; sélectionnée, elle prend
-   la teinte de son ton. */
 const IDLE =
-  "bg-[var(--lg-glass)] border-transparent shadow-[inset_0_0_0_0.5px_var(--lg-edge)] " +
-  "text-[var(--lg-muted)] hover:bg-[var(--lg-glass-active)] hover:text-[var(--lg-foreground)]";
+  "bg-[var(--tv-plate-2)] border-[var(--tv-border)] text-slate-400 " +
+  "hover:bg-[var(--tv-plate-3)] hover:text-slate-200";
 
 /** The one chip geometry. Shared by `Chip` and by chips that wrap extra controls. */
 export const CHIP_BASE =

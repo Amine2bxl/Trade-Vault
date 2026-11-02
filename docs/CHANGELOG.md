@@ -3,51 +3,16 @@
 Journal des changements **structurels** (pas des features ni des correctifs,
 qui vivent dans l'historique git et les PR).
 
-## 2026-11-02 — La bulle, sobre
+## 2026-11-02 — Retour au langage Liquid d'avant le mouvement
 
-- « LA BULLE, SOBRE » (`styles.css`) remplace la bulle en relief : verre plat
-  (`--lg-glass` 6 %), liseré fin (`--lg-rim-shine` 0,22), pastilles et
-  sélections plus sombres ; ni éclat, ni dégradé, ni ombre, ni flou sur les
-  contrôles et le rail.
-- Patch Glisse : réfraction du fond vivant coupée (`refractsBackdrop`),
-  gonflement rendu aux valeurs de Glisse. `shared/ui/glassScroll.ts` retiré
-  (plus de réfraction à suspendre au défilement).
-
-## 2026-11-02 — La forme d'Apple, pas le fond
-
-- Retour au papier peint d'ambiance d'avant Glisse : le fond reste noir.
-- « LA BULLE » (`styles.css`) : boutons, disques, barres d'onglets et
-  pastilles en bulles de verre en relief (éclat blanc, liseré, ombre noire) ;
-  liseré de Glisse plus brillant ; gonflement plus franc (patch Glisse).
-- `shared/ui/zoomTransition.ts` : les fenêtres naissent du dernier bouton
-  touché (`lastPressSource`, `press.ts`) et s'y rétractent en se fermant.
-
-## 2026-11-02 — Glisse : le verre liquide d'iOS 26
-
-- Bibliothèque `glisse` (MIT) épinglée et patchée (`patches/`), importée
-  seulement dans `src/shared/ui` ; styles en couche `components`, copie
-  injectée neutralisée, `<body data-theme="dark">`, pont de jetons.
-- Primitives sur Glisse : `Button`, `ActionButton`, `Toggle`, `SubNav`,
-  `ChoiceGroup` ; nouvelles : `SearchField`, `Slider`, `Glass`, `GlassMenu`,
-  `GlassTabBar`, `WhenShown`, `useSegmentWidth`. `useGlidingIndicator`
-  supprimé.
-- Coque : onglets de section et barre mobile en `TabBar`, rail en `Glass`,
-  en-tête en boutons de verre. Papier peint plus lumineux.
-- `tests/glisse.test.ts` ; DESIGN_SYSTEM §0 et AGENTS.md décrivent la règle.
-
-## 2026-11-01 — Le mouvement Liquid (gestes iOS 27 / Revolut)
-
-- Un seul moteur d'appui (`shared/ui/press.ts`, posé dans `__root.tsx`) :
-  amplitude selon la taille de l'objet, remontée sur le ressort, même sur un
-  tap bref. Les `:active { transform: scale(…) }` et `active:scale-*` qu'il
-  remplace sont retirés.
-- `shared/ui/useGlidingIndicator.ts` : pilule qui glisse sous l'onglet actif
-  (onglets de section, `SubNav`, périodes du tableau de bord).
-- `Modal` repart en animation à la fermeture (copie inerte,
-  `shared/ui/exitGhost.ts`), qu'elle soit fermée ou démontée par son parent.
-- Cascade d'entrée des listes, pouce d'interrupteur qui s'étire, retour
-  tactile (`shared/haptics.ts`). `tests/liquidMotion.test.ts` verrouille le
-  tout.
+- À la demande du propriétaire, l'interface revient exactement à son état du
+  commit `e36f7d8` : sont annulés le mouvement Revolut / iOS (`673e626` :
+  moteur d'appui, pilule qui glisse, sortie des feuilles, cascade, haptique)
+  et toute la passe Glisse (`da08971`, `66f7ece`, `6717226`, `196b707`,
+  `154b2b6` : dépendance `glisse` et son patch, bulles, fenêtres qui naissent
+  du bouton, rail en verre de Glisse).
+- Le reste est conservé : pages qui tiennent à l'écran, licence à vie à
+  20 €, application Windows / macOS.
 
 ## 2026-10-31 — Langage « Liquid » (verre iOS 27 + matière Revolut)
 

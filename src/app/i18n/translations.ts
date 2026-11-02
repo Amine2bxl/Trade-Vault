@@ -1129,7 +1129,6 @@ const en = {
   "dashboard.tradesToday": "trades today",
   "chart.balance": "Balance",
   "nav.sectionViews": "Go to",
-  "nav.mainNavigation": "Main navigation",
   "common.viewMode": "View",
   "common.more": "More",
   "common.filters": "Filters",

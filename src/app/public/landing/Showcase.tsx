@@ -1,6 +1,5 @@
 import { Quote, ShieldCheck, KeyRound, Download, Check } from "lucide-react";
 import { useLandingT, type LandingKey } from "./i18n";
-import { Button } from "@/shared/ui";
 
 /**
  * Les bandes de la landing : plateformes, preuve, confiance.
@@ -76,9 +75,9 @@ export function TraderProof({ onStart }: { onStart: () => void }) {
             </li>
           ))}
         </ul>
-        <Button onClick={onStart} className="mt-6 w-full px-5 py-2.5 text-[.9rem]">
+        <button onClick={onStart} className="btn-primary mt-6 w-full px-5 py-2.5 text-[.9rem]">
           {t("proof.cta.btn")}
-        </Button>
+        </button>
       </div>
     </div>
   );

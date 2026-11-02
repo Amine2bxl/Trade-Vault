@@ -186,9 +186,7 @@ function DevUiBody({
 
   const body = (
     <PageActionsProvider setActions={setHeader}>
-      {/* Pas de fond ici : comme dans `App`, le contenu se pose sur le papier
-          peint (`body::before`), sous le verre de Glisse. */}
-      <div className="min-h-screen">
+      <div className="min-h-screen bg-[var(--tv-bg)]">
         <div
           data-dev-ui-navigation
           className="flex flex-wrap items-center gap-1.5 border-b border-[var(--tv-border)] px-3 py-2"

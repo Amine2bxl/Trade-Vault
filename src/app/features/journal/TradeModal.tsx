@@ -53,7 +53,6 @@ import {
   FormLabel,
   FORM_LABEL,
   RichTextarea,
-  Slider,
 } from "@/shared/ui";
 import { intlLocale } from "@/app/i18n/locale";
 import {
@@ -1152,14 +1151,15 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
                     </span>
                   </div>
                   <div className="tv-trade-strip" data-conf={confidenceLevel}>
-                    {/* Le curseur d'iOS 26 (Glisse) : tenu, son pouce devient
-                        une lentille qui grossit la piste. */}
-                    <Slider
+                    <input
                       aria-label={t("trade.confidence")}
-                      min={1}
-                      max={100}
+                      type="range"
+                      min="1"
+                      max="100"
                       value={form.confidence}
-                      onValueChange={(v) => setForm((f) => ({ ...f, confidence: v }))}
+                      onChange={(e) =>
+                        setForm((f) => ({ ...f, confidence: Number(e.target.value) }))
+                      }
                       className="tv-trade-range min-w-0 flex-1"
                     />
                     <span className="tv-figure w-10 shrink-0 text-right text-[13px] text-white">

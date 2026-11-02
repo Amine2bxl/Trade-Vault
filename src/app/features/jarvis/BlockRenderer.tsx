@@ -212,7 +212,7 @@ function ToolView({ block, onTool }: { block: JarvisToolBlock; onTool?: BlockToo
         "w-full h-11 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition " +
         (state === "done"
           ? "bg-emerald-500/15 border border-emerald-500/30 text-emerald-300"
-          : "tv-accent-fill disabled:opacity-60")
+          : "tv-accent-fill disabled:opacity-60 active:scale-[0.99]")
       }
     >
       {state === "running" ? (

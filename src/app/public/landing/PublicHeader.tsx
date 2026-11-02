@@ -2,7 +2,6 @@ import { ArrowRight } from "lucide-react";
 import logoSrc from "@/assets/tradevault-logo-128.png";
 import { useLandingT } from "./i18n";
 import { LangMenu } from "./LangMenu";
-import { Button } from "@/shared/ui";
 
 /**
  * L'EN-TÊTE DES PAGES PUBLIQUES SECONDAIRES (`/pricing`, et tout ce qui
@@ -43,9 +42,9 @@ export function PublicHeader({ onLogin, onSignup }: { onLogin: () => void; onSig
             <button onClick={onLogin} className="btn-secondaire px-4 py-2 text-[13px]">
               {t("nav.signin")}
             </button>
-            <Button onClick={onSignup} className="px-4 py-2 text-[13px]">
+            <button onClick={onSignup} className="btn-primary px-4 py-2 text-[13px]">
               {t("nav.cta")} <ArrowRight className="h-3.5 w-3.5" />
-            </Button>
+            </button>
           </div>
         </div>
       </div>

@@ -1,9 +1,6 @@
 import type { ReactNode } from "react";
 import { ChevronRight } from "./icons";
 import { cn } from "./cn";
-import { Switch } from "glisse";
-import { WhenShown } from "./WhenShown";
-import { tap } from "../haptics";
 
 /**
  * LES PAGES DE PARAMÈTRES — une seule anatomie.
@@ -121,21 +118,18 @@ export function Toggle({
   label: string;
   disabled?: boolean;
 }) {
-  // L'interrupteur d'iOS 26 (Glisse) : le pouce se soulève en lentille de
-  // verre sous le doigt, suit un glissé, et retombe sur le ressort.
   return (
-    <WhenShown fallback={<span className="tv-switch-pending" aria-hidden />}>
-      <Switch
-        checked={on}
-        aria-label={label}
-        disabled={disabled}
-        onCheckedChange={(next) => {
-          tap();
-          onChange(next);
-        }}
-        className="tv-switch"
-      />
-    </WhenShown>
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      aria-label={label}
+      disabled={disabled}
+      onClick={() => onChange(!on)}
+      className="tv-switch"
+    >
+      <span className="tv-switch-knob" aria-hidden />
+    </button>
   );
 }
 

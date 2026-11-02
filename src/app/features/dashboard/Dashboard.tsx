@@ -28,19 +28,10 @@ import { useAuth } from "@/app/contexts/AuthContext";
 import { useAccounts } from "@/app/contexts/AccountContext";
 import { useToast } from "@/app/contexts/ToastContext";
 import { useHasTradeDraft } from "@/app/utils/persistence";
-import {
-  PageContainer,
-  Metric,
-  Button,
-  RollingFigure,
-  ActionButton,
-  SubNav,
-  density,
-} from "@/shared/ui";
+import { PageContainer, Metric, Button, RollingFigure, ActionButton, density } from "@/shared/ui";
 import { usePageActions, usePageLead } from "@/app/contexts/PageActionsContext";
 import { DeferredFallback } from "@/app/shell/PageTransition";
 import { cn } from "@/shared/ui/cn";
-import { tap } from "@/shared/haptics";
 import { useT } from "@/app/i18n/LanguageContext";
 import type { TKey } from "@/app/i18n/translations";
 import { newestFirst } from "@/app/trading/tradeOrder";
@@ -341,40 +332,32 @@ export default function Dashboard({
          l'ajout plein. Bureau seulement : sur téléphone, la barre du bas et
          les accès mobiles portent déjà ces trois gestes. */
       <div className="hidden shrink-0 items-center gap-2.5 md:flex">
-        {/* Trois boutons de verre de Glisse : la recherche (capsule), la
-            cloche (cercle) et l'ajout (capsule pleine). */}
-        <Button
-          variant="ghost"
-          size="sm"
-          icon={<Search aria-hidden />}
+        <button
+          type="button"
           onClick={() => window.dispatchEvent(new CustomEvent("tv:open-palette"))}
           className="dash-search"
           aria-label={t("common.search")}
         >
+          <Search className="h-4 w-4 shrink-0" aria-hidden />
           <span>{t("common.search")}</span>
           <kbd>⌘K</kbd>
-        </Button>
-        <span className="dash-icon-wrap">
-          <Button
-            variant="ghost"
-            size="sm"
-            icon={<Bell aria-hidden />}
-            onClick={() =>
-              window.dispatchEvent(new CustomEvent("tv:navigate", { detail: { page: "inbox" } }))
-            }
-            className="dash-icon-btn"
-            aria-label={t("nav.inbox")}
-          />
-          {unread > 0 && <span className="dash-icon-dot" aria-hidden />}
-        </span>
-        <Button
-          variant="entry"
-          size="sm"
-          icon={<Plus strokeWidth={2.4} aria-hidden />}
-          onClick={onAddTrade}
-          className="tv-dashboard-add"
+        </button>
+        <button
+          type="button"
+          onClick={() =>
+            window.dispatchEvent(new CustomEvent("tv:navigate", { detail: { page: "inbox" } }))
+          }
+          className="dash-icon-btn"
+          aria-label={t("nav.inbox")}
         >
-          {t("dashboard.actionTrade")}
+          <Bell className="h-[17px] w-[17px]" aria-hidden />
+          {unread > 0 && <span className="dash-icon-dot" aria-hidden />}
+        </button>
+        <Button variant="entry" size="sm" onClick={onAddTrade} className="tv-dashboard-add">
+          <span className="tv-dashboard-add-icon">
+            <Plus className="h-3.5 w-3.5" />
+          </span>
+          <span>{t("dashboard.actionTrade")}</span>
         </Button>
         {hasDraft && (
           <button type="button" onClick={onAddTrade} className="tv-draft-badge">
@@ -603,24 +586,25 @@ export default function Dashboard({
                       </span>
                     )}
                   </p>
-                  {/* Le contrôle segmenté d'iOS 26 (Glisse) : la pastille se
-                      soulève en lentille et glisse d'une période à l'autre. */}
-                  <SubNav
-                    ariaLabel={t("dashboard.periodAria")}
-                    value={period}
-                    onChange={changePeriod}
-                    items={PERIODS.map((p) => ({ id: p, label: t(PERIOD_SHORT[p]) }))}
-                    className="dash-period"
-                  />
+                  <div className="dash-period" role="group" aria-label={t("dashboard.periodAria")}>
+                    {PERIODS.map((p) => (
+                      <button
+                        key={p}
+                        type="button"
+                        onClick={() => changePeriod(p)}
+                        aria-pressed={period === p}
+                        className="dash-period-btn"
+                      >
+                        {t(PERIOD_SHORT[p])}
+                      </button>
+                    ))}
+                  </div>
                   <div className="dash-hero-actions">
                     <ActionButton
                       variant="primary"
                       icon={<Plus strokeWidth={2.4} />}
                       label={t("dashboard.actionTrade")}
-                      onClick={() => {
-                        tap();
-                        onAddTrade();
-                      }}
+                      onClick={onAddTrade}
                     />
                     {onOpenImport && (
                       <ActionButton

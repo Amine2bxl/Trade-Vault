@@ -3,14 +3,12 @@
 .tv-pop {
   /* LIQUID — le panneau de sélection est du verre fort (menus d'iOS) :
      opaque à 94 %, flouté, arête spéculaire. Repli opaque sans flou. */
-  /* GLISSE — la surface des menus de Glisse : verre givré, arête d'un
-     demi-pixel (dans `--tv-glass-specular`), rayon 20. */
   border-radius: 20px;
-  border: 1px solid transparent;
+  border: 1px solid var(--tv-glass-edge);
   background: var(--tv-glass-fill-strong);
   -webkit-backdrop-filter: blur(var(--tv-glass-blur)) saturate(var(--tv-glass-saturate));
   backdrop-filter: blur(var(--tv-glass-blur)) saturate(var(--tv-glass-saturate));
-  box-shadow: var(--tv-glass-specular), var(--tv-glass-shadow);
+  box-shadow: var(--tv-glass-specular), var(--tv-elev-3);
 }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .tv-pop {
@@ -169,10 +167,8 @@
   min-height: 2.25rem;
   align-items: center;
   gap: 0.6rem;
-  /* GLISSE — la ligne d'un menu de Glisse : rayon 14, surlignage en
-     pilule claire (`--lg-highlight`). */
-  border-radius: 14px;
-  padding: 6px 12px;
+  border-radius: 0.6rem;
+  padding: 0.35rem 0.6rem;
   text-align: left;
   font-size: 0.8125rem;
   color: var(--tv-text-secondary);
@@ -182,13 +178,13 @@
 
 .tv-pick-opt:hover {
   outline: none;
-  background: var(--lg-highlight);
+  background: rgb(255 255 255 / 0.06);
   color: var(--tv-text-primary);
 }
 
 .tv-pick-opt:focus-visible {
   outline: none;
-  background: var(--lg-highlight);
+  background: rgb(255 255 255 / 0.06);
   color: var(--tv-text-primary);
 }
 
@@ -387,15 +383,13 @@
 .tv-control {
   width: 100%;
   min-width: 0;
-  height: 40px;
-  /* GLISSE — le champ d'iOS 26 : une capsule de verre (le même verre que
-     l'`Input` de Glisse, ses jetons `--lg-*`), sans bordure, l'arête d'un
-     demi-pixel. Au focus, le verre s'éclaircit et l'anneau prend l'accent. */
-  border: 0;
-  border-radius: 20px;
-  background: var(--lg-glass);
-  box-shadow: inset 0 0 0 0.5px var(--lg-edge);
-  padding-inline: 14px;
+  height: 44px;
+  border: 1px solid var(--tv-border);
+  /* LIQUID — champ plein, rayon de contrôle (14) : concentrique avec la
+     carte (22) qui le contient. */
+  border-radius: var(--radius-lg);
+  background: var(--tv-plate-2);
+  padding-inline: 12px;
   font-size: var(--tv-t-body-sm);
   font-weight: 400;
   color: var(--tv-text-primary);
@@ -414,11 +408,16 @@
   color: var(--tv-text-muted);
 }
 
-.tv-control:focus,
+.tv-control:focus {
+  outline: 2px solid rgb(var(--tv-accent-rgb) / 0.16);
+  outline-offset: 0;
+  border-color: var(--tv-border-accent);
+}
+
 .tv-control[aria-expanded="true"] {
-  outline: 2px solid var(--lg-ring);
-  outline-offset: 2px;
-  background: var(--lg-glass-active);
+  outline: 2px solid rgb(var(--tv-accent-rgb) / 0.16);
+  outline-offset: 0;
+  border-color: var(--tv-border-accent);
 }
 
 .tv-control:disabled {
@@ -429,8 +428,6 @@
 .tv-control-textarea {
   height: auto;
   min-height: 88px;
-  /* Une zone de plusieurs lignes n'est pas une capsule. */
-  border-radius: 16px;
 }
 
 /* Notes mises en forme (`RichTextarea`, `RichTextView`) : le gras reste au
@@ -481,29 +478,33 @@
 }
 
 .tv-choice-group {
-  /* GLISSE — `ChoiceGroup` est le segmenté de Glisse, pleine largeur : la
-     largeur d'un segment est calculée (ChoiceGroup.tsx), la hauteur ici. */
-  display: flex;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 6px;
+}
+
+.tv-choice {
   min-width: 0;
-}
-.tv-choice-group > .lg-segmented {
-  --lg-tab-height: 40px;
-}
-.tv-choice-group .lg-segmented :is(.lg-tab, .lg-tab-copy) {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--tv-border);
+  border-radius: var(--radius-xl);
+  background: var(--tv-plate-2);
+  padding: 6px 10px;
+  color: var(--tv-text-secondary);
   font-size: var(--tv-t-body-sm);
+  font-weight: 600;
+  transition:
+    border-color var(--tv-dur-1),
+    background-color var(--tv-dur-1);
 }
-/* Le ton d'une option choisie (Long / Short) teinte la pastille. */
-.tv-choice-group[data-tone="positive"] > .lg-segmented {
-  --lg-segment-thumb: color-mix(in srgb, var(--tv-chart-green) 34%, transparent);
-}
-.tv-choice-group[data-tone="negative"] > .lg-segmented {
-  --lg-segment-thumb: color-mix(in srgb, var(--tv-chart-red) 34%, transparent);
-}
-.tv-seg-label[data-tone="positive"] > svg {
-  color: var(--tv-chart-green);
-}
-.tv-seg-label[data-tone="negative"] > svg {
-  color: var(--tv-chart-red);
+
+.tv-choice:hover {
+  border-color: var(--tv-border-strong);
 }
 
 .tv-choice-on {
@@ -701,6 +702,24 @@
   min-height: 32px;
   padding: 4px 8px;
   font-size: var(--tv-t-caption);
+}
+.tv-direction .tv-choice[data-tone="positive"] svg {
+  color: var(--tv-chart-green);
+}
+.tv-direction .tv-choice[data-tone="negative"] svg {
+  color: var(--tv-chart-red);
+}
+.tv-direction .tv-choice[data-tone="positive"][aria-checked="true"] {
+  border-color: var(--tv-chart-green);
+  background: color-mix(in srgb, var(--tv-chart-green) 8%, var(--tv-plate-1));
+  color: var(--tv-chart-green);
+  box-shadow: none;
+}
+.tv-direction .tv-choice[data-tone="negative"][aria-checked="true"] {
+  border-color: var(--tv-chart-red);
+  background: color-mix(in srgb, var(--tv-chart-red) 8%, var(--tv-plate-1));
+  color: var(--tv-chart-red);
+  box-shadow: none;
 }
 .tv-draft-badge {
   display: inline-flex;

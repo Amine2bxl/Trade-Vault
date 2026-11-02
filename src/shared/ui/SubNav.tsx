@@ -1,8 +1,5 @@
-import { useRef, type CSSProperties, type ReactNode } from "react";
-import { SegmentedControl } from "glisse";
+import type { ReactNode } from "react";
 import { cn } from "./cn";
-import { WhenShown } from "./WhenShown";
-import { useSegmentWidth } from "./useSegmentWidth";
 
 /**
  * SubNav — LA NAVIGATION *DANS* UNE PAGE.
@@ -47,33 +44,51 @@ export function SubNav<T extends string>({
   ariaLabel: string;
   className?: string;
 }) {
-  // LE CONTRÔLE SEGMENTÉ D'iOS 26 (Glisse) : une pastille sur une piste qui,
-  // tenue ou glissée, se soulève en lentille de verre au-dessus des libellés.
-  // Le clavier (flèches, Début, Fin) et les rôles ARIA viennent de Glisse.
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const width = useSegmentWidth(wrapRef, items.length);
+  // Flèches gauche/droite : c'est un `tablist`, il se parcourt au clavier.
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    const delta = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
+    if (!delta && e.key !== "Home" && e.key !== "End") return;
+    e.preventDefault();
+    const i = Math.max(
+      0,
+      items.findIndex((it) => it.id === value),
+    );
+    const next =
+      e.key === "Home"
+        ? 0
+        : e.key === "End"
+          ? items.length - 1
+          : (i + delta + items.length) % items.length;
+    onChange(items[next].id);
+    e.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]')[next]?.focus();
+  };
+
   return (
-    <div ref={wrapRef} className={cn("tv-subnav", className)}>
-      <WhenShown>
-        <SegmentedControl
-          aria-label={ariaLabel}
-          items={items.map((it) => ({
-            value: it.id,
-            label: (
-              <span className="tv-seg-label">
-                {it.icon}
-                <span className="tv-seg-text">{it.label}</span>
-                {it.count !== undefined && (
-                  <span className="tv-num tv-subnav-count">{it.count}</span>
-                )}
-              </span>
-            ),
-          }))}
-          value={value}
-          onValueChange={(next) => onChange(next as T)}
-          style={width ? ({ "--lg-tab-width": `${width}px` } as CSSProperties) : undefined}
-        />
-      </WhenShown>
+    <div
+      role="tablist"
+      aria-label={ariaLabel}
+      aria-orientation="horizontal"
+      onKeyDown={onKeyDown}
+      className={cn("tv-subnav", className)}
+    >
+      {items.map((it) => {
+        const active = it.id === value;
+        return (
+          <button
+            key={it.id}
+            type="button"
+            role="tab"
+            aria-selected={active}
+            tabIndex={active ? 0 : -1}
+            onClick={() => onChange(it.id)}
+            className={cn("tv-subnav-item", active && "tv-subnav-item-active")}
+          >
+            {it.icon}
+            <span>{it.label}</span>
+            {it.count !== undefined && <span className="tv-num tv-subnav-count">{it.count}</span>}
+          </button>
+        );
+      })}
     </div>
   );
 }

@@ -2,7 +2,6 @@ import { Bell, Settings } from "@/shared/ui/icons";
 import type { Page } from "../types";
 import { preloadPage } from "./pageModules";
 import { cn } from "@/shared/ui/cn";
-import { Button } from "@/shared/ui";
 import { useT } from "../i18n/LanguageContext";
 import { useAuth } from "../contexts/AuthContext";
 import { useUnreadCount } from "../features/inbox/useUnreadCount";
@@ -44,33 +43,35 @@ export default function MobileActions({ page, setPage }: MobileActionsProps) {
     active: boolean,
     badge?: number,
   ) => (
-    // Une BULLE de verre (le `Button` de Glisse, icône seule) : elle gonfle
-    // sous le doigt comme les commandes d'iOS 26.
-    <span key={target} className="relative inline-flex">
-      <Button
-        variant="ghost"
-        size="sm"
-        icon={icon}
-        onClick={go(target)}
-        onTouchStart={() => preloadPage(target)}
-        aria-label={label}
-        aria-current={active ? "page" : undefined}
-        className={cn("tv-mobile-action", active && "tv-mobile-action-on")}
-      />
+    <button
+      key={target}
+      onClick={go(target)}
+      onTouchStart={() => preloadPage(target)}
+      aria-label={label}
+      aria-current={active ? "page" : undefined}
+      className={cn(
+        "relative grid h-9 w-9 place-items-center rounded-xl",
+        "transition-colors duration-200",
+        active
+          ? "bg-white/[0.06] text-[var(--tv-highlight)]"
+          : "text-slate-400 hover:bg-white/[0.04]",
+      )}
+    >
+      {icon}
       {badge !== undefined && badge > 0 && (
         <span
-          className="pointer-events-none absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--tv-accent)] px-1 text-[10px] font-bold leading-none text-white"
+          className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--tv-accent)] px-1 text-[10px] font-bold leading-none text-white"
           role="status"
           aria-label={`${badge} ${badge > 1 ? t("inbox.unreadPlural") : t("inbox.unread")}`}
         >
           {badgeLabel(badge)}
         </span>
       )}
-    </span>
+    </button>
   );
 
   return (
-    <div className="flex items-center gap-2 md:hidden">
+    <div className="flex items-center gap-1 md:hidden">
       {action(
         "inbox",
         t("nav.inbox"),
