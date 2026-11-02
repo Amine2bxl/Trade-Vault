@@ -24,8 +24,9 @@ import { CAUSAL_PHRASES, checkCausalLanguage } from "../src/modules/patterns/lan
 const LOCALES = resolve(import.meta.dir, "../src/app/i18n/locales");
 const SOURCE = resolve(import.meta.dir, "../src/app/i18n/translations.ts");
 
-/** Préfixes des clés qui portent des affirmations comportementales. */
-const WATCHED = ["session.", "cluster.", "pattern."];
+/** Préfixes des clés qui portent des affirmations comportementales. `chk.` :
+ *  le plan de séance affiche « dans le plan / hors plan », une association. */
+const WATCHED = ["session.", "cluster.", "pattern.", "chk."];
 
 /**
  * Formulations qui promettent une cause — IMPORTÉES, jamais recopiées.

@@ -6,7 +6,31 @@ composant, une navigation ou un texte de landing) sont les skills de
 [`../.claude/skills/`](../.claude/skills) : `theme`, `typography`, `motion`,
 `ui-design`, `ux-navigation`, `landing-copy`, et l'orchestrateur `ship-ui`.
 
-## 1. Le langage Lucid — le calendrier comme référence
+## 1. Le langage Liquid — verre iOS 27 + matière Revolut
+
+Depuis le 31 octobre 2026 (spec :
+[`superpowers/specs/2026-10-31-liquid-design-language-design.md`](superpowers/specs/2026-10-31-liquid-design-language-design.md)),
+le produit parle **Liquid** :
+
+- **Le verre flotte, le contenu se pose.** La couche de navigation (rail,
+  barre mobile, barre compacte d'en-tête, menus, panneaux de sélection,
+  feuilles, palette, toasts) est en verre : translucide, flouté, arête
+  spéculaire d'1 px, ombre noire. Les cartes de contenu restent des plaques
+  opaques — un chiffre ne se lit jamais à travers un flou.
+- **Papier peint d'ambiance** : trois nappes très floues dans la teinte du
+  thème, fixes (`body::before`), sous tout le produit. Aucune animation.
+- **Matière Revolut** : cartes à grand rayon (22), un chiffre héros par écran,
+  actions rondes (`ActionButton`), listes à pastilles.
+- **Rayons concentriques** : contrôles 12–14, cartes 22, feuilles 28, coque 32.
+  Les boutons d'action sont des **rectangles adoucis pleins, texte blanc** ;
+  les pilules restent aux sélecteurs (compte, puces, entrées du rail).
+- **Grand titre** (Large Title) sur chaque page, dérivé de la navigation, et
+  barre compacte de verre au défilement.
+
+Ce qui suit (grammaire Lucid, deux verts, plaques) reste vrai pour le
+**contenu** ; la coque et les surfaces flottantes suivent Liquid.
+
+### Héritage : le langage Lucid — le calendrier comme référence
 
 Référence esthétique assumée : captures de Lucid Trading
 ([`assets/lucid/`](assets/lucid)). **On copie la grammaire** — noir profond,
@@ -22,10 +46,12 @@ jetons `--tv-relief-*` restent compatibles mais ne peignent plus de relief.
 L'élévation est réservée aux modales et menus ; une carte de graphique ou de
 statistique ne change plus de fond au survol.
 
-`PageContainer` porte les marges communes (`px-3 py-2 md:px-5 md:py-3`) et le
-maximum de 1200 px (1400 px pour le calendrier), y compris pour les pages à hauteur mesurée (ref transmise
-directement). Une page de lecture ou de réglages peut garder une largeur plus
-étroite. La disposition reste propre à l'usage : courbe dominante au Dashboard,
+`PageContainer` porte les marges communes (`px-3 py-2 md:px-5 md:py-3`) et la
+largeur unique `PAGE_WIDTH` (1400 px, `shared/ui/tokens.ts`), partagée par l'en-tête et les squelettes — plus d'écart entre deux pages d'une même section, y compris pour les pages à hauteur mesurée (ref transmise
+directement). Les cinq pages de réglages (Réglages, Profil, Apparence, Brokers,
+Abonnement) passent `measure="settings"` : même cadre que l'en-tête, et dedans
+une colonne de lecture `SETTINGS_WIDTH` (1040 px) alignée à gauche — le bord
+gauche ne bouge pas d'un onglet à l'autre. La disposition reste propre à l'usage : courbe dominante au Dashboard,
 tableau sur ordinateur et cartes à deux rangées sur mobile dans le Journal
 (instrument et P&L au-dessus, contexte et actions dessous), colonnes de saisie
 dans le Calculateur, conversation
@@ -43,8 +69,11 @@ sans champ de particules ni flash plein écran.
 3. Un titre n'est jamais peint en vert (le contre-temps d'une accroche est gris).
 
 **Ce qui ne change jamais** : rien ne rayonne (ni ombre colorée, ni halo, ni
-dégradé de marque, ni `animate-ping`) — la profondeur vient de la valeur des
-surfaces et d'un liseré quasi invisible ; chiffres tabulaires partout ;
+`animate-ping`, ni dégradé sur un texte, un bouton ou une carte ; la seule
+lumière permise est le papier peint fixe et l'arête spéculaire blanche d'1 px
+du verre) — la profondeur vient de la valeur des surfaces, d'un liseré quasi
+invisible et, pour ce qui flotte, d'une ombre noire ; le verre n'est jamais
+posé sur une carte de contenu (`tests/liquidGlass.test.ts`) ; chiffres tabulaires partout ;
 plancher de lisibilité 10 px (12 px pour du texte à lire) ;
 `prefers-reduced-motion` respecté ; la zone Trustpilot (`#00b67a`) est gelée.
 
@@ -60,15 +89,27 @@ plancher de lisibilité 10 px (12 px pour du texte à lire) ;
   identique au thème par défaut. Changer le défaut = changer les deux.
 - Stockage par appareil : `tv-themes-v2` (thèmes) et `tv-theme-vars-v2`
   (variables résolues), purgés à la déconnexion.
-- Palette `lucid` : fond `#07080a` · carte `--tv-plate-1` `#131416` · tuile
-  `--tv-plate-2` `#1a1c1e` · creux `--tv-plate-0` `#0d0e10` · accent `#31d68a`
+- Palette `lucid` (Liquid) : fond `#050607` · carte `--tv-plate-1` `#141517` ·
+  tuile `--tv-plate-2` `#1c1d20` · creux `--tv-plate-0` `#0c0d0f` · accent `#31d68a`
   (foncé `#1fb574`, clair `#6be3a8`) · P&L `--tv-chart-green` `#61f8ab` /
   `--tv-chart-red` `#f87171`. La vitrine garde son émeraude verrouillée
   (`#22e08a`, `.landing-root`) · texte `#f2f4f5` · liseré
   `rgb(255 255 255 / .05)`.
 
-**Grammaire de surface** : `.glass`, `.glass-strong`, `.panel`, `.stat-card*`
-rendent la **même** plaque ; seule la valeur change.
+**Grammaire de surface** : `.glass`, `.panel`, `.stat-card*` rendent la
+**même** plaque opaque de contenu (le nom historique `.glass` ne veut plus dire
+« verre »). Le verre, lui :
+
+| Classe | Matériau | Usage |
+| --- | --- | --- |
+| `.tv-glass` / `.tv-glass-solid` | `--tv-glass-fill` (52 %) / `-solid` (90 %), flou sur `::before` | Coque : capsules, barres |
+| `.rail`, `.bottom-nav-shell`, `.page-compact-bar` | idem, réglés pièce par pièce | Rail, barre mobile, barre compacte |
+| `.glass-strong`, `.tv-dialog`, `.tv-pop`, `.section-menu` | `--tv-glass-fill-strong` (94 %) | Modales, feuilles, menus, sélecteurs |
+
+Le flou d'une pièce qui contient des éléments `fixed` se pose sur `::before`
+(un `backdrop-filter` ferait de son porteur leur bloc conteneur). Tout flou a
+son repli opaque : `@supports not (backdrop-filter…)` et
+`prefers-reduced-transparency`.
 
 ## 3. Typographie
 
@@ -97,12 +138,19 @@ Ne jamais augmenter une taille pour renforcer un chiffre ; conserver sa
 couleur sémantique et `tabular-nums` pour les colonnes, montants et axes.
 `numericText` reste utile pour les nombres inclus dans le Markdown et les
 notifications ; la couverture des chiffres ne dépend plus de ce balisage.
-Échelle à rôles `--tv-t-*` : `display`, `h1`, `h2`,
-`h3`, `body`, `body-sm`, `caption`, `micro`. Chiffres : `.tv-figure`
+Échelle à rôles `--tv-t-*` : `display` (44, chiffre héros), `h1` (30, grand
+titre `.tv-large-title`), `h2` (20), `h3` (15), `body`, `body-sm`, `caption`,
+`micro` (11, plancher). Chiffres : `.tv-figure`
 (tabulaires). Libellés : `.tv-label` (petites capitales espacées). Détail :
 skill `typography`.
 
 ## 4. Motion
+
+**Ressort Liquid** : `--tv-spring` (courbe `linear()` à peine amortie, repli
+sur `--tv-ease`) et `--tv-dur-spring` (340 ms) portent les états qui glissent —
+pilule active du rail, montée d'une feuille sur téléphone. Pression :
+`--tv-press` (`scale(.97)`). Plafond : 300 ms, 360 ms pour un ressort ou une
+feuille.
 
 La loi (skill `motion`) autorise huit keyframes — `styles.css` en contient
 encore davantage (dette à résorber, sans en ajouter) —, **300 ms maximum dans l'app**, uniquement
@@ -163,9 +211,9 @@ Import unique : `import { … } from "@/shared/ui"`. `shared/ui` n'importe jamai
 | Catégorie | Exports |
 | --- | --- |
 | Typographie | `Display`, `Heading`, `Text`, `Label` |
-| Actions | `Button`, `Chip`, `RemovableChip` |
+| Actions | `Button`, `ActionButton` (disque 52 px + libellé, rangée d'actions façon Revolut), `Chip`, `RemovableChip` |
 | Saisie | `Input`, `Textarea`, `RichTextarea` / `RichTextView`, `Select`, `Field`, `DateField`, `TimeField`, `SelectPicker`, `MultiPicker`, `RangePicker`, `ColorPicker`, `ChoiceGroup`, `Disclosure`, `FormSection` / `FormLabel` (sections numérotées qui se cochent, pastille obligatoire ou de catégorie) |
-| Pages de paramètres | `SettingsGroup` (un cadre, des rangées à filets), `SettingsRow` (nom + aide à gauche, commande à droite), `SettingsAction` (rangée cliquable), `Toggle` (`role="switch"`) — jamais de carte dans une carte |
+| Pages de paramètres | Listes groupées d'iOS : `SettingsHero` (carte héros commune — disque, surtitre, titre 20 px, phrase, chiffres `SettingsFact` ou action à droite), `SettingsGroup` (titre micro aligné sur le texte, plaque rayon 22, rangées de 60 px, filet rentré), `SettingsRow` (nom + aide à gauche, commande à droite), `SettingsAction` (rangée cliquable, icône en tuile de 32 px), `.tv-set-item` (rangée d'information), `Toggle` (46 × 28, ressort) — jamais de carte dans une carte |
 | Surfaces | `Card` (+ `CardHeader/Title/Body`), `Modal`, `Sheet`, `PageContainer` |
 | Structure de page | `PageHeader`, `SectionHeader`, `SubNav`, `PageToolbar` |
 | Données | `Kpi`, `KpiGrid`, `Metric`, `Table` (+ `THead`, `TBody`, `TR`, `TH`, `TD`, `TableScroll`), `Badge`, `EmptyState` |
@@ -181,8 +229,13 @@ Réutiliser avant de restyler. Graphes : `app/trading/chartTheme.ts` +
 - **Navigation** : source unique `PAGES` / `SECTIONS` (`src/app/types.ts`) →
   `shell/navigation.ts` → Sidebar, barre mobile, palette ⌘K. Six sections dans
   l'ordre d'une séance : Dashboard · Préparation · Journal · Analyse · Coach ·
-  Stratégie (+ Réglages). Les entrées du rail sont des **carrés** aux angles
-  adoucis (`--radius-lg`), comme chez Lucid — plus de pilules.
+  Stratégie (+ Réglages). Le rail est un panneau de verre flottant, pliable
+  (72 px) ; ses entrées sont des pilules transparentes, l'active une pilule de
+  verre clair qui glisse sur le ressort. Chaque page porte un **grand titre**
+  (`PageHead`, dérivé de `SECTION_META` / `PAGE_META`) au-dessus de la rangée
+  d'origine onglets/actions ; une barre compacte de verre le reprend au
+  défilement. Barre mobile **solide** : onglet actif sur tuile, « + » central
+  plein. Sur téléphone, une modale monte du bas (feuille).
 - **Pages à hauteur mesurée** (Calendar, Inbox, Jarvis, Journal, Monte Carlo) :
   `hooks/useAvailableHeight`. Calendrier et Monte Carlo utilisent un minimum
   de hauteur et peuvent défiler si leur contenu dépasse ; Journal, Inbox et
@@ -336,10 +389,22 @@ Aucune notification de démonstration n’est ajoutée dans le produit.
 
 **Saisie d’un trade :** panneau de 576 px maximum, hauteur ajustée au contenu (plafond 680 px / 86dvh). La première vue présente instrument, date, direction et risque/R ; le résultat calculé porte l’accent visuel dans le pied, avec une seule action d’enregistrement. Entrée soumet le formulaire valide. Les horaires restent résumés sur une ligne dépliable. Stratégie, notes et analyse restent facultatives, à la demande, sans onglets. Le détail broker et les métriques avancées restent accessibles sans concurrencer la saisie essentielle. Les nombres importants gagnent un cran typographique, Long/Short/BE gardent leurs signes et états sémantiques. Le bouton de saisie utilise `Button variant="entry"` (cadre court, angles `lg`, hauteur 36 px / 44 px tactile). Les setups manqués gardent le même langage de champs et une palette neutre.
 
-**Dashboard et comptes :** les quatre métriques utilisent `Metric compact` (marge verticale 10 px, chiffres de 18 px, jauge de 32 px). Les réglages Comptes présentent une liste unique, principal en premier ; nom, type et capital restent visibles. La sélection se fait par la ligne, les actions ponctuelles vivent dans son menu, l’ajout et le transfert existent une seule fois. Les modales, droits et calculs existants sont réutilisés.
+**Dashboard (maquette Liquid v1, référence de la DA) :** en-tête titre + date du jour à gauche, Rechercher (⌘K, événement `tv:open-palette`), cloche et « + Trade » à droite ; héros centré — pilule du compte (`AccountSwitcher variant="pill"`), P&L de la période en chiffre héros, « P&L net · période · n trades », périodes CALENDAIRES Jour · Semaine · Mois · Année · Tout, puis quatre `ActionButton` (Trade, Importer, Checklist, Jarvis). Dessous : courbe d'equity (deux tiers) et quatre widgets `Metric` à jauge `track` qui affichent leur échantillon (taux de réussite, profit factor, R moyen, discipline) ; derniers trades en liste à pastilles et objectif du mois (progression, drawdown du mois, jours ouvrés restants — jamais de « drawdown restant » sans règle de compte). Sur ordinateur la page **tient en un écran** : le héros garde sa hauteur, les deux rangées se partagent le reste en pixels (`useAvailableHeight`), resserrées sous ~260 px, héros réduit sous 700 px disponibles ; trop court pour rester lisible, elle défile. Le copilote Jarvis et la série de checklist ont quitté le Dashboard (Jarvis à un appui, série sur la page Checklist). Pages à vue unique : titre + sous-titre à gauche, actions à droite, même ligne. Les réglages Comptes présentent une liste unique, principal en premier ; nom, type et capital restent visibles. La sélection se fait par la ligne, les actions ponctuelles vivent dans son menu, l’ajout et le transfert existent une seule fois. Les modales, droits et calculs existants sont réutilisés.
 
-**Pages contenues :** cadre standard de 1200 px, graphiques moins hauts ;
+**Calendrier économique (façon Forex Factory) :** un TABLEAU, une ligne par publication — heure (écrite une fois pour les publications simultanées), devise, impact en barres (3 rouge, 2 orange, 1 jaune), événement, réel, prévu, précédent — groupé par jour, trié par heure. La provenance est dans l'en-tête (« Vérifié · Forex Factory » + fraîcheur, ou « Horaires indicatifs » en repli). Les filtres (impact, devises, période) vivent dans les préférences du compte (`news.filters.v1`, `userPrefs`) : ils survivent à la fermeture du site et suivent le trader d'un appareil à l'autre.
+
+**Pages contenues :** cadre unique `PAGE_WIDTH` (1400 px), graphiques moins hauts ;
 Analytics organise tous ses blocs en Synthèse, Exécution et Timing, un groupe
-à la fois. Le calendrier conserve son cadre de référence de 1400 px.
+à la fois. Le calendrier partage le même cadre que les autres pages.
+
+**Setups manqués :** une colonne de synthèse — chiffre héros « R laissé sur la table », barres des six derniers mois calendaires (mois courant à l'accent, `n` au survol), puis deux `Kpi` (setups notés, R moyen) — et un flux groupé par mois façon relevé Revolut : disque d'instrument, symbole, date et raison en clair, R à droite dans une colonne fixe, captures dans la suivante. Les actions apparaissent au survol sur ordinateur, dans la fiche dépliée sur téléphone.
+
+**Jarvis (à la Claude) :** conversation vide = un bloc centré dans la hauteur — sphère réduite, salutation au prénom selon l'heure locale, une phrase d'invitation, le champ (plaque rayon 24, s'éclaircit au focus, aucun anneau coloré), la ligne de confiance « Jarvis ne fait que lire ton journal » (bouclier à l'accent) et les questions mesurées en puces sous le champ. Dès le premier message, le fil prend la hauteur et le champ redescend. Réponses à plat sous la marque ronde, actions sans filet, relances dans la même puce que l'accueil.
+
+**Rapport mensuel :** pleine largeur ; les mois clos à rapporter sont une bande de puces (un appui = un rapport). La feuille ouvre sur le verdict — P&L en chiffre héros, écart SIGNÉ au mois précédent — puis « L'essentiel » (constats tirés des chiffres), les quatre cases, la courbe et les semaines en cellules à barre (plus de graphe en barres doublé d'une table), les paires de sections côte à côte à l'écran, le débrief de Jarvis replié (toujours déplié sur le papier). La note « chiffres provisoires » n'existe que sur le PDF ; à l'écran la pastille « en cours » la porte.
+
+**Monte-Carlo :** une seule barre d'outils — provenance, échantillon et filtre de stratégie à gauche, source et tirage à droite ; la lecture du graphe est une infobulle au bout de la légende ; l'avantage et les tests de résistance partagent une ligne. Le graphe et ses actions tiennent dans l'écran.
+
+**Une app, pas des pages qui défilent :** sur ordinateur (≥ 1024 px de large, ≥ 640 px de haut), chaque page tient dans la fenêtre. Le cadre reçoit la hauteur mesurée par `useAvailableHeight()` via `PageContainer fit height={height}` (`ref={boxRef}`), se compose en colonne (`.tv-fit`, `.tv-fit-col`, `.tv-grow`) ; ce qui est long par nature défile dans sa région (`ScrollArea` / `.tv-scroll`, positionnée pour garder les `sr-only` dans la découpe). Une page à plusieurs blocs lourds les range en sous-vues `SubNav` mémorisées (`usePageView`) : Erreurs (Plan · Tester une règle · Quand), Saisonnalité (Année · Semaine), Analytics (vues sorties du menu Filtres), Rapport (Synthèse · Détail — le PDF imprime tout). Téléphone et fenêtres basses : flux normal. Vérifié par `tests/fullScreenPages.test.ts`.
 
 **Icônes :** `src/shared/ui/icons.tsx` reste le point d’entrée commun. Il réexporte les pictogrammes Lucide familiers : livre pour le journal, calendrier, graphique pour les statistiques, cible pour les objectifs, engrenage pour les réglages. Un symbole doit être compréhensible avant d’être original. Garder le nom de page à côté dans la navigation, le trait 1,6 et `currentColor` ; pas de glyphe métier abstrait ni de variante locale.

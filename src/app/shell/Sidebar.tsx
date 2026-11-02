@@ -2,11 +2,11 @@ import { memo, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import {
   Bell,
-  ChevronLeft,
-  ChevronRight,
+  PanelLeftClose,
+  PanelLeftOpen,
   LogOut,
+  MoreHorizontal,
   Settings as SettingsIcon,
-  User,
 } from "@/shared/ui/icons";
 import { Page, SECTIONS } from "../types";
 import { SECTION_META, defaultPageOfSection, sectionForPage } from "./navigation";
@@ -199,13 +199,19 @@ export default memo(function Sidebar({ page, setPage, totalPnl }: SidebarProps) 
               title={t("nav.collapseSidebar")}
               className="rail-toggle"
             >
-              <ChevronLeft className="h-3.5 w-3.5" />
+              {/* Le pictogramme du panneau latéral (carré, bande à gauche) :
+                  il dit ce qu'il replie, là où un chevron ne disait qu'une
+                  direction. */}
+              <PanelLeftClose className="h-4 w-4" strokeWidth={1.75} />
             </button>
           )}
         </div>
 
         {/* ── NAVIGATION ── */}
-        <nav ref={navRef} className="relative min-h-0 flex-1 px-2.5 py-3">
+        {/* La nav occupe toute la hauteur : les sections en haut, la boîte de
+            réception et les réglages en bas (maquette Liquid v1). Tout reste
+            DANS la nav, pour que la pilule active glisse aussi jusqu'à eux. */}
+        <nav ref={navRef} className="relative flex min-h-0 flex-1 flex-col px-2.5 py-3">
           {/* La languette, DERRIÈRE les entrées (z-index 1 contre 2) : c'est
               une surface, pas un cadre autour du texte. */}
           {tab && (
@@ -233,10 +239,7 @@ export default memo(function Sidebar({ page, setPage, totalPnl }: SidebarProps) 
             })}
           </div>
 
-          {/* Séparateur discret entre les sections et le compte — visible plié et déplié. */}
-          <div className="rail-divider my-2.5" />
-
-          <div className="space-y-1">
+          <div className="mt-auto space-y-1 pt-3">
             {row({
               key: "inbox",
               label: t("nav.inbox"),
@@ -273,7 +276,6 @@ export default memo(function Sidebar({ page, setPage, totalPnl }: SidebarProps) 
             même feuille. */}
         {user && (
           <div className="shrink-0 px-2.5 pb-3">
-            <div className="rail-divider mb-3" />
             <div className={cn(collapsed ? "space-y-1.5" : "space-y-2")}>
               <AccountSwitcher
                 variant="card"
@@ -286,9 +288,9 @@ export default memo(function Sidebar({ page, setPage, totalPnl }: SidebarProps) 
                     onClick={() => setMenuOpen(true)}
                     aria-label={t("nav.myAccount")}
                     title={t("nav.myAccount")}
-                    className="rail-chip mx-auto h-10 w-10"
+                    className="rail-me-disc mx-auto"
                   >
-                    <User className="h-4 w-4" />
+                    {user.name.charAt(0).toUpperCase()}
                   </button>
                   <button
                     onClick={toggleCollapsed}
@@ -297,24 +299,30 @@ export default memo(function Sidebar({ page, setPage, totalPnl }: SidebarProps) 
                     title={t("nav.expandSidebar")}
                     className="rail-chip mx-auto h-10 w-10"
                   >
-                    <ChevronRight className="h-4 w-4" />
+                    <PanelLeftOpen className="h-4 w-4" strokeWidth={1.75} />
                   </button>
                 </>
               ) : (
-                <div className="flex items-center gap-1.5">
-                  <button onClick={() => setPage(settingsTarget)} className="rail-chip flex-1">
-                    <SettingsIcon className="h-3.5 w-3.5" />
-                    {t("nav.settings")}
-                  </button>
-                  <button
-                    onClick={() => setMenuOpen(true)}
-                    aria-label={t("common.signOut")}
-                    title={t("common.signOut")}
-                    className="rail-chip rail-chip-danger w-8 shrink-0"
-                  >
-                    <LogOut className="h-3.5 w-3.5" />
-                  </button>
-                </div>
+                /* LA CARTE UTILISATEUR (maquette v1) : l'initiale, le nom,
+                   l'adresse ; elle ouvre le menu du compte (réglages,
+                   déconnexion). Les réglages vivent aussi dans la nav. */
+                <button
+                  type="button"
+                  onClick={() => setMenuOpen(true)}
+                  aria-label={t("nav.myAccount")}
+                  className="rail-me"
+                >
+                  <span className="rail-me-disc" aria-hidden>
+                    {user.name.charAt(0).toUpperCase()}
+                  </span>
+                  <span className="min-w-0 flex-1 text-left">
+                    <span className="block truncate text-[13px] font-semibold text-white">
+                      {user.name}
+                    </span>
+                    <span className="block truncate text-[11px] text-slate-500">{user.email}</span>
+                  </span>
+                  <MoreHorizontal className="h-4 w-4 shrink-0 text-slate-500" aria-hidden />
+                </button>
               )}
             </div>
           </div>

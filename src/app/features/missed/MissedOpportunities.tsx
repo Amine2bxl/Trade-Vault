@@ -57,6 +57,7 @@ import { useDraftAutosave } from "@/app/hooks/useDraftAutosave";
 import { nsKey, readJSON, removeKey } from "@/app/utils/persistence";
 import { usePageActions } from "@/app/contexts/PageActionsContext";
 import { todayLocalDate } from "@/shared/calendar-date";
+import { takeHandoff } from "@/app/utils/handoff";
 
 function emptyMissed(): MissedOpportunity {
   return {
@@ -172,6 +173,14 @@ export default function MissedOpportunities() {
   // ici sans rafraîchir.
   useRealtimeTable("missed_opportunities", user?.id, reload);
 
+  // Arrivée depuis le bilan de séance : le formulaire s'ouvre déjà rempli
+  // (date, symbole, R estimé par le plan, raison, leçon). Consommé une fois.
+  useEffect(() => {
+    if (preview) return;
+    const prefill = takeHandoff("missed");
+    if (prefill) setEditing({ ...emptyMissed(), ...prefill });
+  }, [preview]);
+
   const handleSave = useCallback(
     async (m: MissedOpportunity) => {
       if (!user) return;
@@ -238,26 +247,60 @@ export default function MissedOpportunities() {
   );
   usePageActions(headerActions);
 
+  /* LE FLUX, GROUPÉ PAR MOIS — comme les opérations d'un relevé Revolut. Les
+     lignes arrivent triées de la base, mais une date modifiée à l'édition
+     casserait l'ordre : on retrie une copie, sans toucher à l'état. */
+  const groups = useMemo(() => {
+    const fmt = new Intl.DateTimeFormat(intlLocale(lang), { month: "long", year: "numeric" });
+    const out: { key: string; label: string; totalR: number; items: MissedOpportunity[] }[] = [];
+    for (const m of [...items].sort((a, b) => b.date.localeCompare(a.date))) {
+      const key = (m.date || "").slice(0, 7);
+      let g = out[out.length - 1];
+      if (!g || g.key !== key) {
+        const [y, mo] = key.split("-").map(Number);
+        g = {
+          key,
+          label: y && mo ? fmt.format(new Date(y, mo - 1, 1)) : "—",
+          totalR: 0,
+          items: [],
+        };
+        out.push(g);
+      }
+      g.items.push(m);
+      g.totalR += m.estimatedR || 0;
+    }
+    return out;
+  }, [items, lang]);
+
+  /* Les six derniers mois calendaires, mois courant compris : le R laissé sur
+     la table, mois par mois. Calculé ici, depuis les lignes chargées — aucune
+     requête. La date métier vient de `todayLocalDate()`, jamais de l'UTC. */
+  const months = useMemo(() => {
+    const [ty, tm] = todayLocalDate().split("-").map(Number);
+    const fmt = new Intl.DateTimeFormat(intlLocale(lang), { month: "short" });
+    const out: { key: string; label: string; r: number; n: number }[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(ty, tm - 1 - i, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      out.push({ key, label: fmt.format(d), r: 0, n: 0 });
+    }
+    for (const m of items) {
+      const slot = out.find((x) => x.key === (m.date || "").slice(0, 7));
+      if (slot) {
+        slot.r += m.estimatedR || 0;
+        slot.n += 1;
+      }
+    }
+    return out;
+  }, [items, lang]);
+  const maxMonthR = Math.max(0, ...months.map((x) => x.r));
+
   return (
     <PageContainer>
-      {/* Cost of hesitation, up front. Seeing "+18.4 R left on the table" is
-          what turns this page from a notebook into an argument. */}
-      {!loading && items.length > 0 && (
-        <KpiGrid className="animate-fade-in-up stagger-1 mb-2.5">
-          <MissedTile
-            label={t("missed.totalMissed")}
-            value={`+${summary.totalR.toFixed(1)}R`}
-            accent
-          />
-          <MissedTile label={t("missed.logged")} value={String(summary.count)} />
-          <MissedTile label={t("missed.avgMissed")} value={`${summary.avgR.toFixed(1)}R`} />
-        </KpiGrid>
-      )}
-
       {loading ? (
         <div className="tv-missed-list">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="tv-missed-row h-11 animate-pulse" />
+            <div key={i} className="tv-missed-row h-16 animate-pulse" />
           ))}
         </div>
       ) : items.length === 0 ? (
@@ -272,161 +315,219 @@ export default function MissedOpportunities() {
           }
         />
       ) : (
-        /* UNE liste à séparateurs, pas une pile de cartes : même anatomie que
-           la boîte de réception, rien d'imbriqué. */
-        <div className="tv-missed-list animate-fade-in-up stagger-2">
-          {items.map((m) => {
-            const open = openIds.has(m.id);
-            return (
-              <div key={m.id} className="tv-missed-row" data-open={open}>
-                <div
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => toggleOpen(m.id)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      toggleOpen(m.id);
-                    }
-                  }}
-                  className="w-full flex items-center justify-between gap-3 px-3 py-2 md:px-3.5 text-left hover:bg-white/[0.02] transition-colors cursor-pointer"
-                  aria-expanded={open}
-                >
-                  <div className="flex items-center gap-2 min-w-0 flex-1">
-                    <ChevronDown
-                      className={cn(
-                        "w-4 h-4 text-slate-500 transition-transform shrink-0",
-                        open && "rotate-180",
-                      )}
-                    />
-                    {/* ══ LE SYMBOLE ET LA DATE POUSSAIENT LES PASTILLES ═══════
-                        Les quatre éléments se suivaient dans un même flux : la
-                        pastille verte commençait donc APRÈS le symbole et la
-                        date, dont la largeur change à chaque ligne (« US30 »
-                        contre « GBPJPY », « 3 mars » contre « 12 mars »). Les
-                        pastilles zigzaguaient d'une ligne à l'autre — une fois
-                        à gauche, une fois à droite — alors qu'elles portent la
-                        même information sur toutes les lignes. L'œil ne peut
-                        pas comparer une colonne qui n'en est pas une.
-
-                        Le couple symbole + date devient la zone ÉLASTIQUE
-                        (`min-w-0 flex-1`) : c'est lui qui absorbe la variation,
-                        en tronquant si besoin.
-
-                        ══ ET SUR TÉLÉPHONE, ILS S'EMPILENT ══════════════════
-                        Côte à côte sur 390px, la place manquait : le symbole
-                        portait `flex-1`, sa base tombait donc à zéro et
-                        `truncate` n'affichait plus RIEN, pendant que la date,
-                        en `shrink-0`, débordait sous la pastille verte. La
-                        ligne montrait « 15/09/26 » à moitié recouvert et plus
-                        aucun instrument — c'est-à-dire qu'elle avait perdu ce
-                        qui l'identifie.
-
-                        Empilés, les deux tiennent : le symbole garde sa
-                        largeur, la date passe dessous. À partir de `sm` on
-                        revient sur une ligne, où la place existe. */}
-                    <div className="flex min-w-0 flex-1 flex-col sm:flex-row sm:items-baseline sm:gap-2">
-                      <span className="tv-figure truncate text-[13px] text-white">
-                        {m.symbol || "—"}
-                      </span>
-                      <span className="tv-figure shrink-0 text-[11px] text-slate-500">
-                        {formatShortDate(m.date)}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* ══ LES DEUX PASTILLES, CHACUNE SUR SON AXE ═══════════════
-                      Chaque pastille occupe une case de largeur FIXE et s'y
-                      aligne à droite : son bord droit tombe donc au même pixel
-                      sur toutes les lignes, quelle que soit la longueur du
-                      symbole ou de la date — et la case reste réservée même
-                      quand la pastille est absente, sinon la ligne suivante
-                      viendrait combler le trou.
-                      C'est la file indienne demandée : deux colonnes, pas deux
-                      éléments qui flottent. */}
-                  <div className="flex shrink-0 items-center gap-2">
-                    {/* 56px sous `sm`, pas 76 : la pastille y tient désormais en
-                        « +2.4R », et les vingt pixels rendus vont au symbole,
-                        qui sortait « E… » pour EURUSD. Entre une réserve
-                        confortable pour un chiffre court et l'instrument qui
-                        identifie la ligne, c'est l'instrument qui gagne. */}
-                    <span className="flex w-[56px] justify-end sm:w-[92px]">
-                      {m.estimatedR > 0 && (
-                        /* « R missed » en toutes lettres ne tient pas dans
-                           76px : la pastille sortait « +2.4 R mi… », une
-                           troncature au milieu d'un mot de deux syllabes. Sous
-                           `sm` on garde le chiffre et l'unité, qui suffisent
-                           dans une colonne dont l'en-tête dit déjà « R left on
-                           the table ». */
-                        <span className="tv-figure truncate rounded-md border border-emerald-500/25 bg-emerald-500/10 px-1.5 py-0.5 text-[11px] text-emerald-400">
-                          +{m.estimatedR.toFixed(1)}
-                          <span className="sm:hidden">R</span>
-                          <span className="hidden sm:inline"> {t("missed.rMissed")}</span>
-                        </span>
-                      )}
-                    </span>
-                    <span className="flex w-[44px] justify-end">
-                      {m.screenshots && m.screenshots.length > 0 && (
-                        /* L'ÉMOJI 📷 EST DEVENU UNE ICÔNE. Un émoji est rendu
-                           par la police du système : il changeait de dessin, de
-                           taille et de couleur d'une machine à l'autre, au
-                           milieu d'une interface qui n'en utilise nulle part
-                           ailleurs. */
-                        <span className="tv-figure inline-flex items-center gap-1 px-1 py-0.5 text-[11px] text-slate-500">
-                          {m.screenshots.length}
-                          <Camera className="h-3 w-3" />
-                        </span>
-                      )}
-                    </span>
-                  </div>
-                  <div
-                    className="flex items-center gap-1 shrink-0"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <button
-                      onClick={() => setViewing(m)}
-                      aria-label={t("missed.preview")}
-                      title={t("missed.preview")}
-                      className="w-10 h-10 -my-2 md:w-8 md:h-8 md:my-0 rounded-lg flex items-center justify-center text-slate-500 hover:text-amber-400 hover:bg-amber-500/10"
-                    >
-                      <Eye className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={() => setEditing(m)}
-                      aria-label={t("common.edit")}
-                      title={t("common.edit")}
-                      className="w-10 h-10 -my-2 md:w-8 md:h-8 md:my-0 rounded-lg flex items-center justify-center text-slate-500 hover:text-cyan-400 hover:bg-cyan-500/10"
-                    >
-                      <Pencil className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(m.id)}
-                      aria-label={t("common.delete")}
-                      title={t("common.delete")}
-                      className="w-10 h-10 -my-2 md:w-8 md:h-8 md:my-0 rounded-lg flex items-center justify-center text-slate-500 hover:text-red-400 hover:bg-red-500/10"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-                {open && (
-                  <div className="px-3 md:px-3.5 pb-3 pt-1 animate-fade-in">
-                    <div className="grid grid-cols-1 gap-x-6 gap-y-2.5 md:grid-cols-2">
-                      <Field label={t("missed.card.why")} value={m.reasonNotTaken} tone="red" />
-                      <Field label={t("missed.card.what")} value={m.whatHappened} tone="amber" />
-                      <Field label={t("missed.card.lesson")} value={m.lessonLearned} tone="blue" />
-                      <Field label={t("missed.card.next")} value={m.nextTimePlan} tone="emerald" />
-                    </div>
-                    {m.screenshots && m.screenshots.length > 0 && (
-                      <div className="mt-3">
-                        <ScreenshotsView paths={m.screenshots} />
-                      </div>
-                    )}
-                  </div>
-                )}
+        <div className="grid items-start gap-5 lg:grid-cols-[320px_minmax(0,1fr)] lg:gap-6">
+          {/* ── LA SYNTHÈSE : le coût de l'hésitation, en chiffre héros ──────
+              « +13.7 R laissés sur la table » est ce qui fait de cette page un
+              argument et non un carnet. Dessous, le même chiffre mois par mois,
+              puis les deux cases qui le contextualisent (n et moyenne). */}
+          <aside className="animate-fade-in-up space-y-3">
+            <section className="tv-missed-hero">
+              <p className="tv-set-hero-eyebrow">{t("missed.totalMissed")}</p>
+              <div className="tv-missed-hero-figure">
+                +{summary.totalR.toFixed(1)}
+                <span>R</span>
               </div>
-            );
-          })}
+              <div className="tv-missed-bars" role="list" aria-label={t("missed.byMonth")}>
+                {months.map((mo, i) => (
+                  <div
+                    key={mo.key}
+                    role="listitem"
+                    className="tv-missed-bar-col"
+                    title={`${mo.label} · +${mo.r.toFixed(1)}R · ${mo.n}`}
+                  >
+                    <span className="tv-missed-bar-value">
+                      {mo.r > 0 ? `+${mo.r.toFixed(1)}` : ""}
+                    </span>
+                    <span className="tv-missed-bar-track">
+                      <span
+                        className="tv-missed-bar"
+                        data-on={i === months.length - 1}
+                        style={{
+                          height:
+                            maxMonthR > 0 && mo.r > 0
+                              ? `${Math.max(6, (mo.r / maxMonthR) * 100)}%`
+                              : "0%",
+                        }}
+                      />
+                    </span>
+                    <span className="tv-missed-bar-label">{mo.label}</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+            <KpiGrid cols={2}>
+              <MissedTile label={t("missed.logged")} value={String(summary.count)} />
+              <MissedTile label={t("missed.avgMissed")} value={`${summary.avgR.toFixed(1)}R`} />
+            </KpiGrid>
+          </aside>
+
+          {/* ── LE FLUX : un mois, une liste groupée ─────────────────────────
+              Même anatomie que les réglages : plaque à grand rayon, rangées
+              séparées par un filet rentré, rien d'imbriqué. */}
+          <div className="animate-fade-in-up stagger-2 min-w-0 space-y-6">
+            {groups.map((g) => (
+              <section key={g.key} className="space-y-2.5">
+                <div className="tv-missed-month">
+                  <span className="truncate">{g.label}</span>
+                  <span className="tv-figure shrink-0">
+                    {g.items.length} · +{g.totalR.toFixed(1)}R
+                  </span>
+                </div>
+                <div className="tv-missed-list">
+                  {g.items.map((m) => {
+                    const open = openIds.has(m.id);
+                    return (
+                      <div key={m.id} className="tv-missed-row" data-open={open}>
+                        <div
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => toggleOpen(m.id)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              toggleOpen(m.id);
+                            }
+                          }}
+                          className="tv-missed-head"
+                          aria-expanded={open}
+                        >
+                          {/* Le disque de l'instrument, à la place du logo
+                              d'un marchand dans un relevé. */}
+                          <span className="tv-missed-disc" aria-hidden>
+                            {(m.symbol || "?").slice(0, 2)}
+                          </span>
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            {/* Le couple symbole + date (+ la raison, en clair)
+                                est la zone ÉLASTIQUE : c'est elle qui absorbe
+                                la variation de longueur et tronque — jamais les
+                                colonnes de droite. */}
+                            <div className="flex min-w-0 flex-1 flex-col">
+                              <span className="tv-figure tv-missed-sym truncate">
+                                {m.symbol || "—"}
+                              </span>
+                              <span className="tv-missed-sub truncate">
+                                {formatShortDate(m.date)}
+                                {m.reasonNotTaken ? ` · ${m.reasonNotTaken}` : ""}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* ══ DEUX COLONNES, CHACUNE SUR SON AXE ═══════════
+                              Chaque valeur occupe une case de largeur FIXE et
+                              s'y aligne à droite : son bord droit tombe au même
+                              pixel sur toutes les lignes, et la case reste
+                              réservée même quand la valeur est absente. */}
+                          <div className="flex shrink-0 items-center gap-2">
+                            <span className="flex w-[64px] justify-end sm:w-[80px]">
+                              {m.estimatedR > 0 && (
+                                <span className="tv-missed-r">
+                                  +{m.estimatedR.toFixed(1)}
+                                  <span className="tv-missed-r-unit">R</span>
+                                </span>
+                              )}
+                            </span>
+                            <span className="flex w-[36px] justify-end">
+                              {m.screenshots && m.screenshots.length > 0 && (
+                                <span className="tv-figure inline-flex items-center gap-1 text-[11px] text-slate-500">
+                                  {m.screenshots.length}
+                                  <Camera className="h-3 w-3" />
+                                </span>
+                              )}
+                            </span>
+                          </div>
+                          <div
+                            className="tv-missed-actions hidden shrink-0 items-center gap-0.5 sm:flex"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <button
+                              onClick={() => setViewing(m)}
+                              aria-label={t("missed.preview")}
+                              title={t("missed.preview")}
+                              className="tv-missed-act"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => setEditing(m)}
+                              aria-label={t("common.edit")}
+                              title={t("common.edit")}
+                              className="tv-missed-act"
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(m.id)}
+                              aria-label={t("common.delete")}
+                              title={t("common.delete")}
+                              className="tv-missed-act"
+                              data-danger
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                          <ChevronDown
+                            className={cn(
+                              "h-4 w-4 shrink-0 text-slate-500 transition-transform",
+                              open && "rotate-180",
+                            )}
+                            aria-hidden
+                          />
+                        </div>
+                        {open && (
+                          <div className="tv-missed-detail animate-fade-in">
+                            <div className="grid grid-cols-1 gap-x-6 gap-y-3.5 md:grid-cols-2">
+                              <Field
+                                label={t("missed.card.why")}
+                                value={m.reasonNotTaken}
+                                tone="red"
+                              />
+                              <Field
+                                label={t("missed.card.what")}
+                                value={m.whatHappened}
+                                tone="amber"
+                              />
+                              <Field
+                                label={t("missed.card.lesson")}
+                                value={m.lessonLearned}
+                                tone="blue"
+                              />
+                              <Field
+                                label={t("missed.card.next")}
+                                value={m.nextTimePlan}
+                                tone="emerald"
+                              />
+                            </div>
+                            {m.screenshots && m.screenshots.length > 0 && (
+                              <div className="mt-4">
+                                <ScreenshotsView paths={m.screenshots} />
+                              </div>
+                            )}
+                            {/* Sur téléphone, les actions vivent ici, à pleine
+                                taille tactile : la ligne garde sa place pour
+                                l'instrument et le R. */}
+                            <div className="mt-4 flex flex-wrap gap-2 sm:hidden">
+                              <Button variant="subtle" size="sm" onClick={() => setViewing(m)}>
+                                <Eye className="h-3.5 w-3.5" />
+                                {t("missed.preview")}
+                              </Button>
+                              <Button variant="subtle" size="sm" onClick={() => setEditing(m)}>
+                                <Pencil className="h-3.5 w-3.5" />
+                                {t("common.edit")}
+                              </Button>
+                              <Button variant="danger" size="sm" onClick={() => handleDelete(m.id)}>
+                                <Trash2 className="h-3.5 w-3.5" />
+                                {t("common.delete")}
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            ))}
+          </div>
         </div>
       )}
 
@@ -446,8 +547,8 @@ export default function MissedOpportunities() {
  *  rembourrage que `.tv-kpi`, écrits une deuxième fois. C'est `Kpi` — donc les
  *  deux pages de liste ne se ressemblent plus par coïncidence, elles portent
  *  la même primitive. */
-function MissedTile({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
-  return <Kpi label={label} value={value} tone={accent ? "warn" : "neutral"} />;
+function MissedTile({ label, value }: { label: string; value: string }) {
+  return <Kpi label={label} value={value} />;
 }
 
 function Field({

@@ -19,7 +19,7 @@ type AnyClient = SupabaseClient<any, any, any>;
 const STRIPE_API = "https://api.stripe.com/v1";
 
 export type { PaidPlan } from "../domain/plans";
-import { isPaidPlan, tierOf, type PaidPlan } from "../domain/plans";
+import { LIFETIME_PLAN, isPaidPlan, tierOf, type PaidPlan } from "../domain/plans";
 import { normalizePromoCode } from "../domain/promo";
 
 /**
@@ -176,6 +176,10 @@ export async function handleCheckout(request: Request): Promise<Response> {
   }
   const plan = payload.plan;
   if (!isPaidPlan(plan)) return json({ error: "invalid plan" }, 400);
+  // UNE SEULE OFFRE À LA VENTE : la licence à vie. Un client resté sur une
+  // ancienne grille (onglet ouvert, cache) qui demande encore un plan mensuel
+  // ou annuel est conduit vers la licence, jamais vers un abonnement retiré.
+  const salePlan: PaidPlan = LIFETIME_PLAN;
 
   const appCode = normalizePromoCode(payload.promoCode);
   if (appCode) {
@@ -219,10 +223,10 @@ export async function handleCheckout(request: Request): Promise<Response> {
 
     if (app.status === "discount") {
       // Réduction communauté : on encaisse réellement, à prix réduit.
-      const price = stripePriceId(plan);
+      const price = stripePriceId(salePlan);
       if (!price) return json({ error: "price not configured" }, 500);
 
-      const outcome = await reservePromoRedemption(sb, appCode, user, plan, "discount");
+      const outcome = await reservePromoRedemption(sb, appCode, user, salePlan, "discount");
       if (outcome === "error") return json({ error: "promo unavailable" }, 503);
       if (!redemptionGrantsAccess(outcome)) return json({ error: "invalid promo code" }, 400);
 
@@ -231,7 +235,7 @@ export async function handleCheckout(request: Request): Promise<Response> {
         const customer = await ensureCustomer(sb, user.id, user.email);
         const url = await openCheckoutSession(request, {
           userId: user.id,
-          plan,
+          plan: salePlan,
           price,
           customer,
           couponId,
@@ -249,7 +253,7 @@ export async function handleCheckout(request: Request): Promise<Response> {
     // dashboard tenter le sien plus bas.
   }
 
-  const price = stripePriceId(plan);
+  const price = stripePriceId(salePlan);
   if (!price) return json({ error: "price not configured" }, 500);
 
   const customer = await ensureCustomer(sb, user.id, user.email);
@@ -278,7 +282,7 @@ export async function handleCheckout(request: Request): Promise<Response> {
   try {
     const url = await openCheckoutSession(request, {
       userId: user.id,
-      plan,
+      plan: salePlan,
       price,
       customer,
       promotionCodeId,
@@ -313,19 +317,30 @@ async function openCheckoutSession(
     promotionCodeId?: string;
   },
 ): Promise<string> {
+  const lifetime = opts.plan === LIFETIME_PLAN;
   const params: Record<string, string> = {
-    mode: "subscription",
+    // La licence à vie est un PAIEMENT UNIQUE, pas un abonnement.
+    mode: lifetime ? "payment" : "subscription",
     customer: opts.customer,
     "line_items[0][price]": opts.price,
     "line_items[0][quantity]": "1",
     success_url: `${siteUrl(request)}/?billing=success`,
     // Annulation → racine propre, jamais de `?billing=canceled` dans l'URL.
     cancel_url: `${siteUrl(request)}/`,
-    // Les DEUX métadonnées, toujours : le webhook n'a rien d'autre pour
-    // rattacher l'abonnement à un compte et à un palier.
-    "subscription_data[metadata][user_id]": opts.userId,
-    "subscription_data[metadata][plan]": opts.plan,
   };
+  // Les DEUX métadonnées, toujours : le webhook n'a rien d'autre pour
+  // rattacher le paiement à un compte et à une offre.
+  if (lifetime) {
+    params["metadata[user_id]"] = opts.userId;
+    params["metadata[plan]"] = opts.plan;
+    params["payment_intent_data[metadata][user_id]"] = opts.userId;
+    params["payment_intent_data[metadata][plan]"] = opts.plan;
+    // Une facture pour un achat unique (reçu exploitable en comptabilité).
+    params["invoice_creation[enabled]"] = "true";
+  } else {
+    params["subscription_data[metadata][user_id]"] = opts.userId;
+    params["subscription_data[metadata][plan]"] = opts.plan;
+  }
 
   // Un coupon applicatif et un promotion code du dashboard sont exclusifs :
   // Stripe refuse les deux ensemble. Le coupon applicatif prime, parce qu'il
@@ -448,11 +463,91 @@ export interface StripeSubscriptionObject {
   };
 }
 
+/** Session Checkout et charge — les champs lus par le webhook. */
+interface StripeCheckoutObject {
+  mode?: string;
+  payment_status?: string;
+  customer?: string;
+  payment_intent?: string;
+  refunded?: boolean;
+  metadata?: { user_id?: string; plan?: string };
+}
+
 interface StripeEvent {
   id?: string;
   type?: string;
   created?: number;
-  data?: { object?: StripeSubscriptionObject };
+  data?: { object?: StripeSubscriptionObject & StripeCheckoutObject };
+}
+
+/**
+ * CONVERTIT UN ANCIEN ABONNÉ EN LICENCE À VIE.
+ *
+ * Décision produit : personne ne repaie, personne ne perd l'accès. La ligne
+ * passe en `lifetime` (sans échéance) et le renouvellement Stripe est coupé
+ * (`cancel_at_period_end`) : la période déjà payée court jusqu'au bout, puis
+ * l'abonnement s'éteint — son dernier événement ne peut plus rétrograder la
+ * licence (garde SQL de `apply_subscription_event`).
+ */
+async function convertToLifetime(
+  sb: AnyClient,
+  input: {
+    userId: string;
+    stripeSubscriptionId: string | null;
+    stripeCustomerId: string | null;
+    alreadyCancelling: boolean;
+    eventAt: string;
+  },
+): Promise<void> {
+  if (input.stripeSubscriptionId && !input.alreadyCancelling) {
+    await stripe(`/subscriptions/${input.stripeSubscriptionId}`, {
+      cancel_at_period_end: "true",
+    });
+  }
+  await applySubscriptionEvent(sb, {
+    userId: input.userId,
+    plan: LIFETIME_PLAN,
+    status: "active",
+    source: "stripe",
+    stripeSubscriptionId: input.stripeSubscriptionId,
+    stripeCustomerId: input.stripeCustomerId,
+    currentPeriodEnd: null,
+    cancelAtPeriodEnd: true,
+    eventAt: input.eventAt,
+  });
+}
+
+/**
+ * Convertit en une fois tous les abonnés Stripe actifs (action admin). Les
+ * conversions suivantes se font d'elles-mêmes au prochain événement Stripe.
+ */
+export async function convertAllSubscribersToLifetime(sb: AnyClient): Promise<number> {
+  const { data, error } = await sb
+    .from("subscriptions")
+    .select(
+      "user_id, plan, status, stripe_subscription_id, stripe_customer_id, cancel_at_period_end",
+    )
+    .eq("source", "stripe")
+    .in("status", ["active", "trialing"])
+    .neq("plan", LIFETIME_PLAN);
+  if (error) throw new Error(`list subscribers failed: ${error.message}`);
+  let converted = 0;
+  for (const row of (data ?? []) as {
+    user_id: string;
+    stripe_subscription_id: string | null;
+    stripe_customer_id: string | null;
+    cancel_at_period_end: boolean | null;
+  }[]) {
+    await convertToLifetime(sb, {
+      userId: row.user_id,
+      stripeSubscriptionId: row.stripe_subscription_id,
+      stripeCustomerId: row.stripe_customer_id,
+      alreadyCancelling: !!row.cancel_at_period_end,
+      eventAt: new Date().toISOString(),
+    });
+    converted++;
+  }
+  return converted;
 }
 
 function planFromStripeSub(sub: StripeSubscriptionObject): PaidPlan {
@@ -538,7 +633,7 @@ export async function handleStripeWebhook(request: Request): Promise<Response> {
     return json({ error: "invalid payload" }, 400);
   }
   const type: string = event.type ?? "";
-  const obj: StripeSubscriptionObject = event.data?.object ?? {};
+  const obj: StripeSubscriptionObject & StripeCheckoutObject = event.data?.object ?? {};
 
   // Drop duplicate deliveries before touching subscription state.
   if (await markWebhookProcessed(sb, "stripe", event.id)) {
@@ -546,6 +641,66 @@ export async function handleStripeWebhook(request: Request): Promise<Response> {
   }
 
   try {
+    // ── LA LICENCE À VIE : paiement unique confirmé ──
+    if (
+      (type === "checkout.session.completed" ||
+        type === "checkout.session.async_payment_succeeded") &&
+      obj.mode === "payment"
+    ) {
+      const userId = obj.metadata?.user_id;
+      if (!userId || obj.metadata?.plan !== LIFETIME_PLAN) {
+        return json({ received: true, skipped: "not a lifetime purchase" });
+      }
+      if (obj.payment_status !== "paid") {
+        return json({ received: true, skipped: "payment not settled yet" });
+      }
+      // Un ancien abonnement encore actif chez ce client : on coupe son
+      // renouvellement — il ne doit pas payer deux fois.
+      const { data: prev } = await sb
+        .from("subscriptions")
+        .select("stripe_subscription_id, plan, cancel_at_period_end")
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (
+        prev?.stripe_subscription_id &&
+        prev.plan !== LIFETIME_PLAN &&
+        !prev.cancel_at_period_end
+      ) {
+        await stripe(`/subscriptions/${prev.stripe_subscription_id}`, {
+          cancel_at_period_end: "true",
+        });
+      }
+      await applySubscriptionEvent(sb, {
+        userId,
+        plan: LIFETIME_PLAN,
+        status: "active",
+        source: "stripe",
+        stripeSubscriptionId: null,
+        stripeCustomerId: obj.customer ?? null,
+        currentPeriodEnd: null,
+        cancelAtPeriodEnd: false,
+        eventAt: eventTimestamp(event.created),
+      });
+      return json({ received: true });
+    }
+
+    // ── Remboursement d'une licence : l'accès est retiré ──
+    if (type === "charge.refunded" && obj.refunded && obj.customer && obj.payment_intent) {
+      // Seul le remboursement du PAIEMENT DE LA LICENCE retire l'accès — pas
+      // celui d'une ancienne mensualité d'un abonné converti.
+      const intent = await stripe(`/payment_intents/${obj.payment_intent}`, {}, "GET");
+      if (intent?.metadata?.plan !== LIFETIME_PLAN) {
+        return json({ received: true, skipped: "not a lifetime charge" });
+      }
+      // Fonction SQL dédiée : c'est le SEUL chemin qui peut retirer une
+      // licence (la garde de `apply_subscription_event` l'interdit ailleurs).
+      const { error } = await sb.rpc("revoke_lifetime_license", {
+        p_stripe_customer_id: obj.customer,
+      });
+      if (error) throw new Error(`lifetime refund failed: ${error.message}`);
+      return json({ received: true });
+    }
+
     if (
       type === "customer.subscription.created" ||
       type === "customer.subscription.updated" ||
@@ -553,6 +708,21 @@ export async function handleStripeWebhook(request: Request): Promise<Response> {
     ) {
       const userId = obj.metadata?.user_id;
       if (!userId) return json({ received: true, skipped: "no user_id metadata" });
+
+      // Un abonnement d'avant, encore actif : converti en licence à vie.
+      if (
+        type !== "customer.subscription.deleted" &&
+        (obj.status === "active" || obj.status === "trialing")
+      ) {
+        await convertToLifetime(sb, {
+          userId,
+          stripeSubscriptionId: obj.id ?? null,
+          stripeCustomerId: obj.customer ?? null,
+          alreadyCancelling: !!obj.cancel_at_period_end,
+          eventAt: eventTimestamp(event.created),
+        });
+        return json({ received: true, converted: "lifetime" });
+      }
 
       const status: string =
         type === "customer.subscription.deleted"

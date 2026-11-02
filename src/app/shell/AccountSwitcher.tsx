@@ -66,7 +66,7 @@ export default function AccountSwitcher({
    *  variante `card` (le rail), elle réduit le sélecteur au seul disque de
    *  couleur du compte — l'état du rail plié. */
   compact?: boolean;
-  variant?: "bar" | "fab" | "card";
+  variant?: "bar" | "fab" | "card" | "pill";
   balance?: number;
 }) {
   const { accounts, activeAccount, mainAccount, switchAccount, removeAccount, setMain } =
@@ -308,6 +308,63 @@ export default function AccountSwitcher({
     );
   };
 
+  /* Les fenêtres secondaires (création, transfert, édition, suppression),
+     communes à toutes les variantes : une seule copie. */
+  const sideModals = (
+    <>
+      {createOpen && <CreateAccountModal onClose={() => setCreateOpen(false)} />}
+      {transferOpen && (
+        <Suspense fallback={null}>
+          <TransferTradesModal onClose={() => setTransferOpen(false)} />
+        </Suspense>
+      )}
+      {editingModalAccount && (
+        <CreateAccountModal
+          edit={editingModalAccount}
+          onClose={() => setEditingModalAccount(null)}
+        />
+      )}
+      {deleting && (
+        <DeleteAccountModal
+          account={deleting}
+          onConfirm={async () => {
+            try {
+              await removeAccount(deleting.id);
+            } catch (e) {
+              console.error("Failed to delete account", e);
+            }
+            setDeleting(null);
+          }}
+          onClose={() => setDeleting(null)}
+        />
+      )}
+    </>
+  );
+
+  /* LA PILULE DU TABLEAU DE BORD (Liquid) — le compte au-dessus du chiffre
+     héros, façon Revolut : son nom et un chevron, rien d'autre. Elle ouvre la
+     MÊME feuille que le rail. */
+  if (variant === "pill") {
+    if (!activeAccount) return null;
+    return (
+      <>
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          aria-label={`${activeAccount.name} — ${fmtBalance} — ${t("account.switch")}`}
+          aria-haspopup="dialog"
+          aria-expanded={open}
+          className="tv-account-pill"
+        >
+          <span className="truncate">{activeAccount.name}</span>
+          <ChevronDown className={cn("h-3.5 w-3.5 shrink-0", open && "rotate-180")} aria-hidden />
+        </button>
+        <AccountSheet open={open} onClose={() => setOpen(false)} />
+        {sideModals}
+      </>
+    );
+  }
+
   // Mobile FAB: a floating circular button (bottom-left, mirroring the AI Coach)
   // that opens a premium bottom sheet of tappable account cards — one tap to
   // switch sub-accounts. Original layout, no dropdown crowding the top bar.
@@ -508,32 +565,7 @@ export default function AccountSwitcher({
             document.body,
           )}
 
-        {createOpen && <CreateAccountModal onClose={() => setCreateOpen(false)} />}
-        {transferOpen && (
-          <Suspense fallback={null}>
-            <TransferTradesModal onClose={() => setTransferOpen(false)} />
-          </Suspense>
-        )}
-        {editingModalAccount && (
-          <CreateAccountModal
-            edit={editingModalAccount}
-            onClose={() => setEditingModalAccount(null)}
-          />
-        )}
-        {deleting && (
-          <DeleteAccountModal
-            account={deleting}
-            onConfirm={async () => {
-              try {
-                await removeAccount(deleting.id);
-              } catch (e) {
-                console.error("Failed to delete account", e);
-              }
-              setDeleting(null);
-            }}
-            onClose={() => setDeleting(null)}
-          />
-        )}
+        {sideModals}
       </>
     );
   }
@@ -626,32 +658,7 @@ export default function AccountSwitcher({
           )}
         </button>
         <AccountSheet open={open} onClose={() => setOpen(false)} />
-        {createOpen && <CreateAccountModal onClose={() => setCreateOpen(false)} />}
-        {transferOpen && (
-          <Suspense fallback={null}>
-            <TransferTradesModal onClose={() => setTransferOpen(false)} />
-          </Suspense>
-        )}
-        {editingModalAccount && (
-          <CreateAccountModal
-            edit={editingModalAccount}
-            onClose={() => setEditingModalAccount(null)}
-          />
-        )}
-        {deleting && (
-          <DeleteAccountModal
-            account={deleting}
-            onConfirm={async () => {
-              try {
-                await removeAccount(deleting.id);
-              } catch (e) {
-                console.error("Failed to delete account", e);
-              }
-              setDeleting(null);
-            }}
-            onClose={() => setDeleting(null)}
-          />
-        )}
+        {sideModals}
       </div>
     );
   }
@@ -737,32 +744,7 @@ export default function AccountSwitcher({
 
       <AccountSheet open={open} onClose={() => setOpen(false)} />
 
-      {createOpen && <CreateAccountModal onClose={() => setCreateOpen(false)} />}
-      {transferOpen && (
-        <Suspense fallback={null}>
-          <TransferTradesModal onClose={() => setTransferOpen(false)} />
-        </Suspense>
-      )}
-      {editingModalAccount && (
-        <CreateAccountModal
-          edit={editingModalAccount}
-          onClose={() => setEditingModalAccount(null)}
-        />
-      )}
-      {deleting && (
-        <DeleteAccountModal
-          account={deleting}
-          onConfirm={async () => {
-            try {
-              await removeAccount(deleting.id);
-            } catch (e) {
-              console.error("Failed to delete account", e);
-            }
-            setDeleting(null);
-          }}
-          onClose={() => setDeleting(null)}
-        />
-      )}
+      {sideModals}
     </div>
   );
 }

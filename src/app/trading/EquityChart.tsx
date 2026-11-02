@@ -52,7 +52,9 @@ type EquityPoint = { date: string; equity: number };
  *   • DES MONTANTS ENTIERS EN ORDONNÉE. « $58,000 », pas « $58.0k » : c'est ce
  *     qu'affiche la référence, et un solde de compte se lit en entier.
  */
-function EquityChart({ data }: { data: EquityPoint[] }) {
+/* `legend={false}` : l'appelant pose la légende ailleurs (en-tête de carte du
+   tableau de bord) pour rendre toute la hauteur au tracé. */
+function EquityChart({ data, legend = true }: { data: EquityPoint[]; legend?: boolean }) {
   const { t } = useT();
 
   // LE ZÉRO — toujours zéro, jamais la valeur du premier jour.
@@ -108,6 +110,9 @@ function EquityChart({ data }: { data: EquityPoint[] }) {
   const uid = useId().replace(/:/g, "");
   const gradId = `eqGrad-${uid}`;
   const clipId = `eqDraw-${uid}`;
+  const dotsId = `eqDots-${uid}`;
+  const fadeId = `eqFade-${uid}`;
+  const fadeMaskId = `eqFadeMask-${uid}`;
 
   // Points d'intérêt : premier, dernier et CHAQUE sommet/creux local. Le trader
   // lit les retournements — des points plus nombreux, donc petits et fins.
@@ -148,24 +153,26 @@ function EquityChart({ data }: { data: EquityPoint[] }) {
   return (
     <div className="flex h-full flex-col">
       {/* La légende suit le même axe gauche que le titre et les données. */}
-      <div className="mb-2 flex items-center justify-start gap-4">
-        <span className="flex items-center gap-1.5">
-          <span
-            className="h-2 w-2 shrink-0 rounded-full"
-            style={{ background: accent }}
-            aria-hidden="true"
-          />
-          <span className="text-[11px] text-slate-400">{t("chart.balance")}</span>
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span
-            className="h-2 w-2 shrink-0 rounded-full"
-            style={{ background: EQUITY_FLOOR.stroke }}
-            aria-hidden="true"
-          />
-          <span className="text-[11px] text-slate-400">{t("chart.breakEven")}</span>
-        </span>
-      </div>
+      {legend && (
+        <div className="mb-2 flex items-center justify-start gap-4">
+          <span className="flex items-center gap-1.5">
+            <span
+              className="h-2 w-2 shrink-0 rounded-full"
+              style={{ background: accent }}
+              aria-hidden="true"
+            />
+            <span className="text-[11px] text-slate-400">{t("chart.balance")}</span>
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span
+              className="h-2 w-2 shrink-0 rounded-full"
+              style={{ background: EQUITY_FLOOR.stroke }}
+              aria-hidden="true"
+            />
+            <span className="text-[11px] text-slate-400">{t("chart.breakEven")}</span>
+          </span>
+        </div>
+      )}
 
       <div className="min-h-0 flex-1">
         <ResponsiveContainer debounce={100} width="100%" height="100%">
@@ -184,6 +191,20 @@ function EquityChart({ data }: { data: EquityPoint[] }) {
                   réellement son tracé — un stylo qui avance, pas une forme qui
                   se transforme. C'est un `scaleX` : le compositeur le prend en
                   charge, rien n'est recalculé à chaque frame. */}
+              {/* LA TEXTURE (Liquid) — une trame de points fins dans l'aire, qui
+                  s'éteint vers le bas comme le dégradé. Elle donne de la
+                  matière à la surface sans ajouter d'information : la courbe et
+                  ses valeurs restent la seule donnée. */}
+              <pattern id={dotsId} width="6" height="6" patternUnits="userSpaceOnUse">
+                <circle cx="1.5" cy="1.5" r="0.85" fill={accent} fillOpacity={0.55} />
+              </pattern>
+              <linearGradient id={fadeId} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#fff" stopOpacity={0.9} />
+                <stop offset="100%" stopColor="#fff" stopOpacity={0.05} />
+              </linearGradient>
+              <mask id={fadeMaskId} maskContentUnits="objectBoundingBox">
+                <rect x="0" y="0" width="1" height="1" fill={`url(#${fadeId})`} />
+              </mask>
               <clipPath id={clipId}>
                 <rect key={drawKey} className="eq-draw" x="0" y="0" width="100%" height="100%" />
               </clipPath>
@@ -255,6 +276,17 @@ function EquityChart({ data }: { data: EquityPoint[] }) {
                 stroke: "var(--tv-plate-1)",
                 fill: accent,
               }}
+            />
+            <Area
+              type={EQUITY_CURVE_TYPE}
+              dataKey="equity"
+              stroke="none"
+              fill={`url(#${dotsId})`}
+              mask={`url(#${fadeMaskId})`}
+              clipPath={`url(#${clipId})`}
+              isAnimationActive={false}
+              activeDot={false}
+              tooltipType="none"
             />
             {/* Points de retournement — REDONDANTS AVEC LES VALEURS, jamais
                 porteurs d'information à eux seuls. Petits et fins : les creux

@@ -46,6 +46,8 @@ export { Display, Heading, Text, Label } from "./Typography";
 
 export { Button } from "./Button";
 export type { ButtonProps, ButtonVariant, ButtonSize } from "./Button";
+export { ActionButton } from "./ActionButton";
+export type { ActionButtonProps } from "./ActionButton";
 
 export { Input, Textarea, Select, Field, FIELD_BASE } from "./Input";
 export type { TextareaProps } from "./Input";
@@ -105,10 +107,18 @@ export type {
 export { SelectionPanel } from "./SelectionPanel";
 export { ChoiceGroup, Disclosure } from "./FormControls";
 export { FormSection, FormLabel, FORM_LABEL } from "./FormSection";
-export { SettingsGroup, SettingsRow, SettingsAction, Toggle } from "./SettingsList";
+export {
+  SettingsGroup,
+  SettingsRow,
+  SettingsAction,
+  SettingsHero,
+  SettingsFact,
+  Toggle,
+} from "./SettingsList";
 export { selection } from "./selection";
 
 export { PageControls } from "./PageControls";
+export { ScrollArea } from "./ScrollArea";
 export { FilterControls, FilterSection } from "./FilterControls";
 export { RichTextarea, RichTextView } from "./RichText";
 export type { RichTextareaProps, RichTextLabels } from "./RichText";

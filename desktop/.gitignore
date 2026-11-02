@@ -1,0 +1,5 @@
+# Produits de compilation Tauri — jamais versionnés.
+src-tauri/target/
+src-tauri/gen/
+# Icônes générées en CI depuis public/icon-512.png (`tauri icon`).
+src-tauri/icons/

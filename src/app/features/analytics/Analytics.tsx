@@ -50,7 +50,11 @@ import {
   MultiPicker,
   rangeBounds,
   type RangeValue,
+  ScrollArea,
+  SubNav,
 } from "@/shared/ui";
+import { useAvailableHeight } from "@/app/hooks/useAvailableHeight";
+import { usePageView } from "@/app/hooks/usePageView";
 import {
   CHART_GREEN,
   CHART_RED,
@@ -105,9 +109,12 @@ const PERIOD_DAYS: Record<AnalyticsPeriod, number | null> = {
  *  donc LA VEILLE à New York. Le lundi d'un trader de Chicago tombait dimanche. */
 const weekdayOf = (date: string) => new Date(`${date}T12:00:00`).getDay();
 
+const ANALYTICS_VIEWS = ["overview", "execution", "timing"] as const;
+
 export default function Analytics({ trades }: AnalyticsProps) {
   const chartAnimation = useChartAnimation();
-  const [view, setView] = useState<"overview" | "execution" | "timing">("overview");
+  const [view, setView] = usePageView("analytics", ANALYTICS_VIEWS, "overview");
+  const { boxRef, height } = useAvailableHeight();
   const { t, lang } = useT();
   const { user } = useAuth();
   const { activeId, accounts } = useAccounts();
@@ -535,11 +542,24 @@ export default function Analytics({ trades }: AnalyticsProps) {
     );
 
   return (
-    <PageContainer>
-      <div className="space-y-3 md:space-y-4">
+    <PageContainer ref={boxRef} fit height={height}>
+      {/* LES TROIS VUES, VISIBLES. Le choix de la vue vivait au fond du menu
+          « Filtres » : la moitié de la page n'était jamais trouvée. */}
+      <SubNav
+        ariaLabel={t("common.viewMode")}
+        value={view}
+        onChange={setView}
+        items={[
+          { id: "overview", label: t("analytics.viewOverview") },
+          { id: "execution", label: t("analytics.viewExecution") },
+          { id: "timing", label: t("analytics.viewTiming") },
+        ]}
+        className="mb-3 w-fit max-w-full shrink-0 self-start"
+      />
+      <div className="tv-fit-col space-y-3 md:space-y-4">
         <div
           className={cn(
-            "glass animate-fade-in-up stagger-1 rounded-2xl border px-3.5 py-3 md:px-4",
+            "glass animate-fade-in-up stagger-1 shrink-0 rounded-2xl border px-3.5 py-3 md:px-4",
             profitFactorData.isProfitable ? "border-emerald-500/15" : "border-red-500/15",
           )}
         >
@@ -595,577 +615,179 @@ export default function Analytics({ trades }: AnalyticsProps) {
             </div>
           </div>
         </div>
-        {view === "overview" && (
-          <div
-            className="space-y-3 md:space-y-4"
-            role="region"
-            aria-label={t("analytics.viewOverview")}
-          >
-            <KpiGrid className="animate-fade-in-up stagger-1">
-              {[
-                {
-                  label: t("dashboard.avgRR"),
-                  value: stats.avgRR === null ? "—" : `${stats.avgRR.toFixed(2)}R`,
-                  // Le n du R moyen n'est pas celui de la période : seuls les
-                  // trades au risque initial connu le portent.
-                  sub: t("quant.rSample")
-                    .replace("{n}", String(stats.rSampleSize))
-                    .replace("{total}", String(stats.totalTrades)),
-                  good: stats.avgRR !== null && stats.avgRR > 0,
-                  info: t("quant.infoAvgRR"),
-                },
-                {
-                  label: t("quant.expectancy"),
-                  value: formatPnl(quant.expectancy),
-                  sub:
-                    quant.expectancyR === null
-                      ? "—"
-                      : `${quant.expectancyR >= 0 ? "+" : ""}${quant.expectancyR.toFixed(2)}R`,
-                  good: quant.expectancy >= 0,
-                  info: t("quant.infoExpectancy"),
-                },
-                {
-                  label: "Sharpe",
-                  value: quant.sharpe !== null ? quant.sharpe.toFixed(2) : "—",
-                  sub:
-                    quant.sharpeStatus === "unverified_returns"
-                      ? t("quant.verifiedReturnsNeeded")
-                      : quant.sharpeStatus === "insufficient"
-                        ? t("quant.needTenDays")
-                        : quant.sharpeStatus === "no_variance"
-                          ? t("quant.noVariance")
-                          : t("quant.annualized"),
-                  good: (quant.sharpe ?? 0) >= 1,
-                  info: t("quant.infoSharpe"),
-                },
-                {
-                  label: "Sortino",
-                  value: quant.sortino !== null ? quant.sortino.toFixed(2) : "—",
-                  sub:
-                    quant.sortinoStatus === "unverified_returns"
-                      ? t("quant.verifiedReturnsNeeded")
-                      : quant.sortinoStatus === "insufficient"
-                        ? t("quant.needTenDays")
-                        : quant.sortinoStatus === "no_downside"
-                          ? t("quant.noDownside")
-                          : t("quant.annualized"),
-                  good: (quant.sortino ?? 0) >= 1.5,
-                  info: t("quant.infoSortino"),
-                },
-                {
-                  label: "Kelly",
-                  value: quant.kelly !== null ? `${(quant.kelly * 100).toFixed(1)}%` : "—",
-                  sub: t("quant.kellyHint"),
-                  good: (quant.kelly ?? 0) > 0,
-                  info: t("quant.infoKelly"),
-                },
-                {
-                  label: t("quant.consistency"),
-                  value:
-                    quant.consistencyScore !== null
-                      ? `${quant.consistencyScore.toFixed(0)}/100`
-                      : "—",
-                  sub:
-                    quant.bestDayShare !== null
-                      ? `${t("quant.bestDay")} ${(quant.bestDayShare * 100).toFixed(0)}%`
-                      : "—",
-                  good: (quant.consistencyScore ?? 0) >= 60,
-                  info: t("quant.infoConsistency"),
-                },
-                {
-                  label: t("quant.recovery"),
-                  value:
-                    quant.recoveryDays === null
-                      ? "—"
-                      : quant.recoveryDays === -1
-                        ? t("quant.inDrawdown")
-                        : `${quant.recoveryDays}${t("quant.daysShort")}`,
-                  sub: t("quant.recoverySub"),
-                  good: quant.recoveryDays !== -1,
-                },
-              ].map((m, i) => (
-                <Kpi
-                  key={i}
-                  label={m.label}
-                  value={m.value}
-                  /* La légende PASSE À LA LIGNE au lieu d'être coupée. « avg planned
+        <ScrollArea key={view} className="tv-grow animate-fade-in">
+          {view === "overview" && (
+            <div
+              className="space-y-3 md:space-y-4"
+              role="region"
+              aria-label={t("analytics.viewOverview")}
+            >
+              <KpiGrid className="animate-fade-in-up stagger-1">
+                {[
+                  {
+                    label: t("dashboard.avgRR"),
+                    value: stats.avgRR === null ? "—" : `${stats.avgRR.toFixed(2)}R`,
+                    // Le n du R moyen n'est pas celui de la période : seuls les
+                    // trades au risque initial connu le portent.
+                    sub: t("quant.rSample")
+                      .replace("{n}", String(stats.rSampleSize))
+                      .replace("{total}", String(stats.totalTrades)),
+                    good: stats.avgRR !== null && stats.avgRR > 0,
+                    info: t("quant.infoAvgRR"),
+                  },
+                  {
+                    label: t("quant.expectancy"),
+                    value: formatPnl(quant.expectancy),
+                    sub:
+                      quant.expectancyR === null
+                        ? "—"
+                        : `${quant.expectancyR >= 0 ? "+" : ""}${quant.expectancyR.toFixed(2)}R`,
+                    good: quant.expectancy >= 0,
+                    info: t("quant.infoExpectancy"),
+                  },
+                  {
+                    label: "Sharpe",
+                    value: quant.sharpe !== null ? quant.sharpe.toFixed(2) : "—",
+                    sub:
+                      quant.sharpeStatus === "unverified_returns"
+                        ? t("quant.verifiedReturnsNeeded")
+                        : quant.sharpeStatus === "insufficient"
+                          ? t("quant.needTenDays")
+                          : quant.sharpeStatus === "no_variance"
+                            ? t("quant.noVariance")
+                            : t("quant.annualized"),
+                    good: (quant.sharpe ?? 0) >= 1,
+                    info: t("quant.infoSharpe"),
+                  },
+                  {
+                    label: "Sortino",
+                    value: quant.sortino !== null ? quant.sortino.toFixed(2) : "—",
+                    sub:
+                      quant.sortinoStatus === "unverified_returns"
+                        ? t("quant.verifiedReturnsNeeded")
+                        : quant.sortinoStatus === "insufficient"
+                          ? t("quant.needTenDays")
+                          : quant.sortinoStatus === "no_downside"
+                            ? t("quant.noDownside")
+                            : t("quant.annualized"),
+                    good: (quant.sortino ?? 0) >= 1.5,
+                    info: t("quant.infoSortino"),
+                  },
+                  {
+                    label: "Kelly",
+                    value: quant.kelly !== null ? `${(quant.kelly * 100).toFixed(1)}%` : "—",
+                    sub: t("quant.kellyHint"),
+                    good: (quant.kelly ?? 0) > 0,
+                    info: t("quant.infoKelly"),
+                  },
+                  {
+                    label: t("quant.consistency"),
+                    value:
+                      quant.consistencyScore !== null
+                        ? `${quant.consistencyScore.toFixed(0)}/100`
+                        : "—",
+                    sub:
+                      quant.bestDayShare !== null
+                        ? `${t("quant.bestDay")} ${(quant.bestDayShare * 100).toFixed(0)}%`
+                        : "—",
+                    good: (quant.consistencyScore ?? 0) >= 60,
+                    info: t("quant.infoConsistency"),
+                  },
+                  {
+                    label: t("quant.recovery"),
+                    value:
+                      quant.recoveryDays === null
+                        ? "—"
+                        : quant.recoveryDays === -1
+                          ? t("quant.inDrawdown")
+                          : `${quant.recoveryDays}${t("quant.daysShort")}`,
+                    sub: t("quant.recoverySub"),
+                    good: quant.recoveryDays !== -1,
+                  },
+                ].map((m, i) => (
+                  <Kpi
+                    key={i}
+                    label={m.label}
+                    value={m.value}
+                    /* La légende PASSE À LA LIGNE au lieu d'être coupée. « avg planned
                  reward-to-… » ne dit rien ; deux lignes de onze pixels, si. */
-                  hint={m.sub}
-                  wrapHint
-                  tone={m.good ? "pos" : "warn"}
-                  adornment={"info" in m && m.info ? <InfoTip text={m.info} /> : undefined}
-                />
-              ))}
-            </KpiGrid>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <div className="relative md:col-span-2 glass rounded-2xl p-4 md:p-5 animate-fade-in-up stagger-2 overflow-hidden">
-                <h3 className="tv-title mb-4">{t("analytics.equityCurve")}</h3>
-                <div className="h-44 md:h-56 chart-draw">
-                  <EquityChart data={stats.equityCurve} />
-                </div>
-              </div>
-              <Card className="p-4 md:p-5 animate-fade-in-up stagger-3">
-                <h3 className="tv-title mb-3">{t("analytics.winLoss")}</h3>
-                <div className="h-36 md:h-48">
-                  <ResponsiveContainer debounce={100} width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={winLossData}
-                        cx="50%"
-                        cy="45%"
-                        innerRadius={45}
-                        outerRadius={65}
-                        paddingAngle={4}
-                        cornerRadius={6}
-                        dataKey="value"
-                        stroke="none"
-                        onMouseEnter={(_, i) => setActivePieIndex(i)}
-                        onMouseLeave={() => setActivePieIndex(null)}
-                        {...chartAnimation}
-                        animationEasing="ease-out"
-                      >
-                        {winLossData.map((e, i) => (
-                          <Cell
-                            key={i}
-                            // Le secteur est un `role="img"` : sans nom, un lecteur d'écran
-                            // n'annonce rien (axe `svg-img-alt`, constat du lot 0).
-                            aria-label={`${e.name} : ${e.value}`}
-                            fill={e.color}
-                            style={{
-                              opacity: activePieIndex === null || activePieIndex === i ? 1 : 0.45,
-                              transform: activePieIndex === i ? "scale(1.04)" : "scale(1)",
-                              transformOrigin: "center",
-                              transformBox: "fill-box",
-                              transition: "transform 200ms ease-out, filter 200ms ease-out",
-                            }}
-                          />
-                        ))}
-                      </Pie>
-                      <Tooltip {...tooltipStyle} />
-                      <Legend
-                        verticalAlign="bottom"
-                        formatter={(v) => <span className="text-[10px] text-slate-400">{v}</span>}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="text-center mt-1">
-                  <div className="tv-figure text-xl md:text-2xl text-white">
-                    {stats.wins + stats.losses > 0 ? formatPct(stats.winRate) : "—"}
-                  </div>
-                  <div className="text-[10px] text-slate-500">{t("analytics.winRateLabel")}</div>
-                </div>
-              </Card>
-            </div>
-            <Card className="p-4 md:p-5 animate-fade-in-up stagger-4">
-              <h3 className="tv-title mb-1">{t("analytics.monthlyPerformance")}</h3>
-              <p className="tv-hint mb-3">{t("analytics.monthlyPerformanceSub")}</p>
-              {monthlyData.length > 0 ? (
-                <div className="h-44 md:h-52">
-                  <ResponsiveContainer debounce={100} width="100%" height="100%">
-                    <ComposedChart data={monthlyData}>
-                      <CartesianGrid {...EQUITY_GRID} />
-                      <XAxis dataKey="month" tick={AXIS_TICK} axisLine={false} tickLine={false} />
-                      <YAxis yAxisId="left" {...moneyAxisProps(monthlyData.map((d) => d.pnl))} />
-                      <YAxis
-                        yAxisId="right"
-                        orientation="right"
-                        tick={AXIS_TICK}
-                        tickFormatter={(v) => `${v}%`}
-                        axisLine={false}
-                        tickLine={false}
-                        domain={[0, 100]}
-                        width={35}
-                      />
-                      {/* Le R a SON axe (masqué) : tracé sur l'axe des % (0–100),
-                          un R négatif était coupé et +1,2R collé au zéro. */}
-                      <YAxis yAxisId="r" hide domain={["auto", "auto"]} />
-                      <Tooltip
-                        {...tooltipStyle}
-                        formatter={(value: any, name: any) => {
-                          if (name === "winRate") return [`${value}%`, t("analytics.winRateLabel")];
-                          if (name === "avgRR") return [`${value}R`, t("dashboard.avgRR")];
-                          return [formatMoney(Number(value)), t("journal.colPnl")];
-                        }}
-                      />
-                      <Bar yAxisId="left" dataKey="pnl" radius={BAR_RADIUS} {...chartAnimation}>
-                        {monthlyData.map((e, i) => (
-                          <Cell key={i} fill={e.pnl >= 0 ? BAR_FILL_GREEN : BAR_FILL_RED} />
-                        ))}
-                      </Bar>
-                      <Line
-                        yAxisId="right"
-                        type={EQUITY_CURVE_TYPE}
-                        dataKey="winRate"
-                        stroke={TREND_STROKE}
-                        {...TREND_LINE}
-                        dot={false}
-                        activeDot={glowActiveDot(TREND_STROKE)}
-                        name="winRate"
-                        {...chartAnimation}
-                      />
-                      <Line
-                        yAxisId="r"
-                        type={EQUITY_CURVE_TYPE}
-                        dataKey="avgRR"
-                        stroke="#f59e0b"
-                        {...TREND_LINE}
-                        strokeWidth={1.5}
-                        strokeDasharray="4 4"
-                        dot={false}
-                        activeDot={glowActiveDot("#f59e0b")}
-                        name="avgRR"
-                        {...chartAnimation}
-                      />
-                    </ComposedChart>
-                  </ResponsiveContainer>
-                  <div className="flex items-center justify-center gap-4 mt-1">
-                    <span className="flex items-center gap-1">
-                      <span className="w-2 h-2 rounded bg-emerald-400/70" />
-                      <span className="text-[11px] text-slate-500">{t("journal.colPnl")}</span>
-                    </span>
-                    <span className="flex items-center gap-1">
-                      {/* Le témoin suit le TRAIT : la courbe de taux de réussite
-                      est passée au gris (elle ne porte pas de P&L), la pastille
-                      annonçait encore du vert. */}
-                      <span className="w-4 h-0.5 bg-[var(--tv-text-secondary)]" />
-                      <span className="text-[11px] text-slate-500">WR%</span>
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <span className="w-4 h-0 border-t border-dashed border-amber-500" />
-                      <span className="text-[11px] text-slate-500">RR</span>
-                    </span>
+                    hint={m.sub}
+                    wrapHint
+                    tone={m.good ? "pos" : "warn"}
+                    adornment={"info" in m && m.info ? <InfoTip text={m.info} /> : undefined}
+                  />
+                ))}
+              </KpiGrid>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                <div className="relative md:col-span-2 glass rounded-2xl p-4 md:p-5 animate-fade-in-up stagger-2 overflow-hidden">
+                  <h3 className="tv-title mb-4">{t("analytics.equityCurve")}</h3>
+                  <div className="h-44 md:h-56 chart-draw">
+                    <EquityChart data={stats.equityCurve} />
                   </div>
                 </div>
-              ) : (
-                <div className="h-40 flex items-center justify-center text-slate-600 text-sm">
-                  {t("analytics.noData")}
-                </div>
-              )}
-            </Card>
-          </div>
-        )}
-        {view === "execution" && (
-          <div
-            className="space-y-3 md:space-y-4"
-            role="region"
-            aria-label={t("analytics.viewExecution")}
-          >
-            <Card className="overflow-hidden animate-fade-in-up stagger-2">
-              <div className="px-4 md:px-5 py-3 border-b border-white/[0.06]">
-                <h3 className="tv-title">{t("analytics.setupTable")}</h3>
-              </div>
-              {/* Sur téléphone, le tableau garde ses quatre colonnes essentielles
-              (setup, trades, win rate, P&L) au lieu d'imposer 640px de large
-              et de faire défiler la carte de côté. */}
-              <div>
-                <table className="w-full sm:min-w-[640px]">
-                  <thead>
-                    <tr className="border-b border-white/[0.06]">
-                      {[
-                        t("analytics.setupCol"),
-                        t("common.trades"),
-                        t("analytics.wrCol"),
-                        t("quant.expectancy"),
-                        "PF",
-                        `${t("dashboard.avgRR")}`,
-                        t("journal.colPnl"),
-                      ].map((h, i) => (
-                        <th
-                          key={i}
-                          className={cn(
-                            "tv-label px-3 sm:px-4 py-2.5 text-slate-500",
-                            i === 0 ? "text-left" : "text-right",
-                            i >= 3 && i <= 5 && "hidden sm:table-cell",
-                          )}
-                        >
-                          {h}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-white/[0.04]">
-                    {setupTable.map((row) => (
-                      <tr key={row.strategy} className="hover:bg-white/[0.02] transition-colors">
-                        {/* Un nom de setup long élargissait le tableau au-delà de
-                        l'écran : il se tronque, le nom complet reste au survol. */}
-                        <td
-                          title={row.strategy}
-                          className="px-3 py-2.5 text-xs font-bold text-white sm:px-4"
-                        >
-                          {/* `max-width` n'est pas tenu sur une cellule de tableau :
-                          la borne vit sur un bloc intérieur. */}
-                          <span className="block max-w-[9.5rem] truncate sm:max-w-none">
-                            {row.strategy}
-                          </span>
-                        </td>
-                        <td className="tv-figure tv-figure-secondary px-4 py-2.5 text-xs text-slate-400 text-right">
-                          {row.count}
-                        </td>
-                        <td className="tv-figure tv-figure-secondary px-4 py-2.5 text-xs text-right">
-                          <span
-                            className={cn(
-                              "font-semibold",
-                              row.winRate === null
-                                ? "text-slate-500"
-                                : row.winRate >= 0.5
-                                  ? "text-emerald-400"
-                                  : "text-red-400",
-                            )}
-                          >
-                            {row.winRate === null ? "—" : formatPct(row.winRate)}
-                          </span>
-                        </td>
-                        <td className="tv-figure tv-figure-secondary hidden px-4 py-2.5 text-xs text-right sm:table-cell">
-                          <span
-                            className={cn(
-                              "font-semibold",
-                              row.expectancy >= 0 ? "text-emerald-400" : "text-red-400",
-                            )}
-                          >
-                            {formatPnl(row.expectancy)}
-                          </span>
-                        </td>
-                        <td className="tv-figure tv-figure-secondary hidden px-4 py-2.5 text-xs text-right text-slate-300 sm:table-cell">
-                          {/* « — » sous l'échantillon minimum : ne rien affirmer vaut
-                          mieux qu'affirmer sur trois trades. */}
-                          {row.profitFactor === null ? "—" : row.profitFactor.toFixed(2)}
-                        </td>
-                        <td className="tv-figure tv-figure-secondary hidden px-4 py-2.5 text-xs text-right sm:table-cell">
-                          {row.avgR === null ? (
-                            <span className="text-slate-600">—</span>
-                          ) : (
-                            <span
-                              className={cn(
-                                "font-semibold",
-                                row.avgR >= 0 ? "text-emerald-400" : "text-red-400",
-                              )}
-                            >
-                              {row.avgR >= 0 ? "+" : ""}
-                              {row.avgR.toFixed(2)}R
-                            </span>
-                          )}
-                        </td>
-                        <td className="tv-figure tv-figure-secondary px-4 py-2.5 text-xs text-right">
-                          <span
-                            className={cn(
-                              "font-bold",
-                              row.pnl >= 0 ? "text-emerald-400" : "text-red-400",
-                            )}
-                          >
-                            {formatPnl(row.pnl)}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </Card>
-            <EdgeLabCard
-              trades={cutoffTrades}
-              allTrades={trades}
-              accountId={activeId ?? null}
-              accountName={(id) => accounts.find((a) => a.id === id)?.name ?? id}
-            />
-            <div className="grid gap-3 md:grid-cols-2 md:gap-4">
-              <Card className="p-4 md:p-5 animate-fade-in-up stagger-6">
-                <h3 className="tv-title mb-3">{t("analytics.pnlByStrategy")}</h3>
-                <div className="h-40 md:h-48">
-                  <ResponsiveContainer debounce={100} width="100%" height="100%">
-                    <BarChart data={strategyData} layout="vertical">
-                      <XAxis
-                        type="number"
-                        tick={AXIS_TICK}
-                        tickFormatter={(v) => formatAxisMoney(Number(v))}
-                        axisLine={false}
-                        tickLine={false}
-                      />
-                      <YAxis
-                        dataKey="strategy"
-                        type="category"
-                        tick={AXIS_TICK}
-                        axisLine={false}
-                        tickLine={false}
-                        width={85}
-                      />
-                      <Tooltip
-                        {...tooltipStyle}
-                        formatter={(value: any) => [
-                          formatMoney(Number(value)),
-                          t("journal.colPnl"),
-                        ]}
-                      />
-                      <Bar dataKey="pnl" radius={BAR_RADIUS_H} {...chartAnimation}>
-                        {strategyData.map((e, i) => (
-                          <Cell key={i} fill={e.pnl >= 0 ? BAR_FILL_GREEN : BAR_FILL_RED} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </Card>
-              <Card className="p-4 md:p-5 animate-fade-in-up stagger-8">
-                <h3 className="tv-title mb-3">{t("analytics.symbolPerformance")}</h3>
-                <div className="space-y-1.5 max-h-48 md:max-h-64 overflow-y-auto">
-                  {symbolData.map((s) => (
-                    <div
-                      key={s.symbol}
-                      className="flex items-center gap-2 py-1.5 px-1.5 rounded-lg"
-                    >
-                      <span className="text-xs font-bold text-white w-12">{s.symbol}</span>
-                      <div className="flex-1 h-1.5 bg-white/[0.05] rounded-full overflow-hidden">
-                        <div
-                          className={cn(
-                            "h-full rounded-full",
-                            s.pnl >= 0 ? "bg-emerald-400/70" : "bg-red-400/70",
-                          )}
-                          style={{
-                            width: `${Math.min((Math.abs(s.pnl) / Math.max(...symbolData.map((x) => Math.abs(x.pnl)), 1)) * 100, 100)}%`,
-                          }}
-                        />
-                      </div>
-                      <span
-                        className={cn(
-                          "tv-num",
-                          "text-xs font-bold w-20 text-right",
-                          s.pnl >= 0 ? "text-emerald-400" : "text-red-400",
-                        )}
-                      >
-                        {formatPnl(s.pnl)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </Card>
-            </div>
-            <Card className="p-4 md:p-5 animate-fade-in-up stagger-7">
-              <h3 className="tv-title mb-3">{t("analytics.pnlDistribution")}</h3>
-              <div className="h-40 md:h-48">
-                <ResponsiveContainer debounce={100} width="100%" height="100%">
-                  <BarChart data={pnlDistribution}>
-                    <CartesianGrid {...EQUITY_GRID} />
-                    <XAxis
-                      dataKey="range"
-                      tick={AXIS_TICK}
-                      axisLine={false}
-                      tickLine={false}
-                      angle={-20}
-                      textAnchor="end"
-                      height={35}
-                    />
-                    <YAxis
-                      tick={AXIS_TICK}
-                      axisLine={false}
-                      tickLine={false}
-                      allowDecimals={false}
-                    />
-                    <Tooltip {...tooltipStyle} />
-                    <Bar dataKey="count" radius={BAR_RADIUS} {...chartAnimation}>
-                      {pnlDistribution.map((e, i) => (
-                        <Cell key={i} fill={e.fill} fillOpacity={0.7} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </Card>
-          </div>
-        )}
-        {view === "timing" && (
-          <div
-            className="space-y-3 md:space-y-4"
-            role="region"
-            aria-label={t("analytics.viewTiming")}
-          >
-            {trades.length >= 3 && <SeasonalitySection trades={cutoffTrades} />}
-            {unverifiedTimeCount > 0 && (
-              <p className="tv-hint" role="status">
-                {t("analytics.timeZoneUnverified")} ({unverifiedTimeCount})
-              </p>
-            )}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card className="p-4 md:p-5 animate-fade-in-up stagger-2">
-                <h3 className="tv-title mb-1">{t("analytics.heatmap")}</h3>
-                <p className="tv-hint mb-3">{t("analytics.heatmapSub")}</p>
-                <div className="grid gap-1" style={{ gridTemplateColumns: "auto repeat(5, 1fr)" }}>
-                  <div />
-                  {[1, 2, 3, 4, 5].map((d) => (
-                    <div
-                      key={d}
-                      className="text-center text-[11px] text-slate-500 font-semibold pb-1"
-                    >
-                      {DAY_NAMES[d]}
-                    </div>
-                  ))}
-                  {SESSIONS.map((s) => (
-                    <Fragment key={s}>
-                      <div className="text-[11px] text-slate-500 font-semibold pr-2 flex items-center">
-                        {t(`session.${s}` as never)}
-                      </div>
-                      {[1, 2, 3, 4, 5].map((d) => {
-                        const cell = heatmap.map[`${s}-${d}`];
-                        const intensity =
-                          cell && heatmap.maxAbs > 0 ? Math.abs(cell.pnl) / heatmap.maxAbs : 0;
-                        return (
-                          <div
-                            key={`${s}-${d}`}
-                            title={cell ? `${formatPnl(cell.pnl)} · ${cell.count} trades` : ""}
-                            className={cn(
-                              "rounded-lg h-11 flex flex-col items-center justify-center text-[11px] font-bold transition-transform hover:scale-105",
-                              !cell && "bg-white/[0.02]",
-                            )}
-                            style={
-                              cell
-                                ? {
-                                    background:
-                                      cell.pnl >= 0
-                                        ? `rgb(var(--tv-chart-green-rgb) / ${0.08 + intensity * 0.45})`
-                                        : `rgba(239,68,68,${0.08 + intensity * 0.45})`,
-                                  }
-                                : undefined
-                            }
-                          >
-                            {cell && (
-                              <>
-                                {/* Une case fait ~50px sur téléphone : « +$1,234 » en
-                                gras y débordait. Le montant compact (« +$1.2k »)
-                                tient, le détail exact reste dans l'infobulle. */}
-                                <span
-                                  className={cn(
-                                    "max-w-full truncate px-0.5",
-                                    cell.pnl >= 0 ? "text-emerald-300" : "text-red-300",
-                                  )}
-                                >
-                                  <span className="tv-num md:hidden">
-                                    {formatMoney(cell.pnl, { signed: true, compact: true })}
-                                  </span>
-                                  <span className="tv-num hidden md:inline">
-                                    {formatMoney(cell.pnl, { signed: true, whole: true })}
-                                  </span>
-                                </span>
-                                <span className="tv-num text-slate-400 font-medium">
-                                  {cell.count}
-                                </span>
-                              </>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </Fragment>
-                  ))}
-                </div>
-              </Card>
-              <Card className="p-4 md:p-5 animate-fade-in-up stagger-3">
-                <h3 className="tv-title mb-1">{t("analytics.byHour")}</h3>
-                <p className="tv-hint mb-3">{t("analytics.byHourSub")}</p>
-                {hourData.length > 0 ? (
-                  <div className="h-40 md:h-48">
+                <Card className="p-4 md:p-5 animate-fade-in-up stagger-3">
+                  <h3 className="tv-title mb-3">{t("analytics.winLoss")}</h3>
+                  <div className="h-36 md:h-48">
                     <ResponsiveContainer debounce={100} width="100%" height="100%">
-                      <ComposedChart data={hourData}>
+                      <PieChart>
+                        <Pie
+                          data={winLossData}
+                          cx="50%"
+                          cy="45%"
+                          innerRadius={45}
+                          outerRadius={65}
+                          paddingAngle={4}
+                          cornerRadius={6}
+                          dataKey="value"
+                          stroke="none"
+                          onMouseEnter={(_, i) => setActivePieIndex(i)}
+                          onMouseLeave={() => setActivePieIndex(null)}
+                          {...chartAnimation}
+                          animationEasing="ease-out"
+                        >
+                          {winLossData.map((e, i) => (
+                            <Cell
+                              key={i}
+                              // Le secteur est un `role="img"` : sans nom, un lecteur d'écran
+                              // n'annonce rien (axe `svg-img-alt`, constat du lot 0).
+                              aria-label={`${e.name} : ${e.value}`}
+                              fill={e.color}
+                              style={{
+                                opacity: activePieIndex === null || activePieIndex === i ? 1 : 0.45,
+                                transform: activePieIndex === i ? "scale(1.04)" : "scale(1)",
+                                transformOrigin: "center",
+                                transformBox: "fill-box",
+                                transition: "transform 200ms ease-out, filter 200ms ease-out",
+                              }}
+                            />
+                          ))}
+                        </Pie>
+                        <Tooltip {...tooltipStyle} />
+                        <Legend
+                          verticalAlign="bottom"
+                          formatter={(v) => <span className="text-[10px] text-slate-400">{v}</span>}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="text-center mt-1">
+                    <div className="tv-figure text-xl md:text-2xl text-white">
+                      {stats.wins + stats.losses > 0 ? formatPct(stats.winRate) : "—"}
+                    </div>
+                    <div className="text-[10px] text-slate-500">{t("analytics.winRateLabel")}</div>
+                  </div>
+                </Card>
+              </div>
+              <Card className="p-4 md:p-5 animate-fade-in-up stagger-4">
+                <h3 className="tv-title mb-1">{t("analytics.monthlyPerformance")}</h3>
+                <p className="tv-hint mb-3">{t("analytics.monthlyPerformanceSub")}</p>
+                {monthlyData.length > 0 ? (
+                  <div className="h-44 md:h-52">
+                    <ResponsiveContainer debounce={100} width="100%" height="100%">
+                      <ComposedChart data={monthlyData}>
                         <CartesianGrid {...EQUITY_GRID} />
-                        <XAxis dataKey="hour" tick={AXIS_TICK} axisLine={false} tickLine={false} />
-                        <YAxis yAxisId="left" {...moneyAxisProps(hourData.map((d) => d.pnl))} />
+                        <XAxis dataKey="month" tick={AXIS_TICK} axisLine={false} tickLine={false} />
+                        <YAxis yAxisId="left" {...moneyAxisProps(monthlyData.map((d) => d.pnl))} />
                         <YAxis
                           yAxisId="right"
                           orientation="right"
@@ -1174,17 +796,22 @@ export default function Analytics({ trades }: AnalyticsProps) {
                           axisLine={false}
                           tickLine={false}
                           domain={[0, 100]}
-                          width={32}
+                          width={35}
                         />
+                        {/* Le R a SON axe (masqué) : tracé sur l'axe des % (0–100),
+                          un R négatif était coupé et +1,2R collé au zéro. */}
+                        <YAxis yAxisId="r" hide domain={["auto", "auto"]} />
                         <Tooltip
                           {...tooltipStyle}
-                          formatter={(value: any, name: any) => [
-                            name === "winRate" ? `${value}%` : formatMoney(Number(value)),
-                            name === "winRate" ? t("analytics.winRateLabel") : t("journal.colPnl"),
-                          ]}
+                          formatter={(value: any, name: any) => {
+                            if (name === "winRate")
+                              return [`${value}%`, t("analytics.winRateLabel")];
+                            if (name === "avgRR") return [`${value}R`, t("dashboard.avgRR")];
+                            return [formatMoney(Number(value)), t("journal.colPnl")];
+                          }}
                         />
                         <Bar yAxisId="left" dataKey="pnl" radius={BAR_RADIUS} {...chartAnimation}>
-                          {hourData.map((e, i) => (
+                          {monthlyData.map((e, i) => (
                             <Cell key={i} fill={e.pnl >= 0 ? BAR_FILL_GREEN : BAR_FILL_RED} />
                           ))}
                         </Bar>
@@ -1196,10 +823,41 @@ export default function Analytics({ trades }: AnalyticsProps) {
                           {...TREND_LINE}
                           dot={false}
                           activeDot={glowActiveDot(TREND_STROKE)}
+                          name="winRate"
+                          {...chartAnimation}
+                        />
+                        <Line
+                          yAxisId="r"
+                          type={EQUITY_CURVE_TYPE}
+                          dataKey="avgRR"
+                          stroke="#f59e0b"
+                          {...TREND_LINE}
+                          strokeWidth={1.5}
+                          strokeDasharray="4 4"
+                          dot={false}
+                          activeDot={glowActiveDot("#f59e0b")}
+                          name="avgRR"
                           {...chartAnimation}
                         />
                       </ComposedChart>
                     </ResponsiveContainer>
+                    <div className="flex items-center justify-center gap-4 mt-1">
+                      <span className="flex items-center gap-1">
+                        <span className="w-2 h-2 rounded bg-emerald-400/70" />
+                        <span className="text-[11px] text-slate-500">{t("journal.colPnl")}</span>
+                      </span>
+                      <span className="flex items-center gap-1">
+                        {/* Le témoin suit le TRAIT : la courbe de taux de réussite
+                      est passée au gris (elle ne porte pas de P&L), la pastille
+                      annonçait encore du vert. */}
+                        <span className="w-4 h-0.5 bg-[var(--tv-text-secondary)]" />
+                        <span className="text-[11px] text-slate-500">WR%</span>
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <span className="w-4 h-0 border-t border-dashed border-amber-500" />
+                        <span className="text-[11px] text-slate-500">RR</span>
+                      </span>
+                    </div>
                   </div>
                 ) : (
                   <div className="h-40 flex items-center justify-center text-slate-600 text-sm">
@@ -1208,53 +866,428 @@ export default function Analytics({ trades }: AnalyticsProps) {
                 )}
               </Card>
             </div>
-            <Card className="p-4 md:p-5 animate-fade-in-up stagger-5">
-              <h3 className="tv-title mb-3">{t("analytics.pnlWinRateByDay")}</h3>
-              <div className="h-40 md:h-48">
-                <ResponsiveContainer debounce={100} width="100%" height="100%">
-                  <ComposedChart data={dayOfWeekData}>
-                    <CartesianGrid {...EQUITY_GRID} />
-                    <XAxis dataKey="day" tick={AXIS_TICK} axisLine={false} tickLine={false} />
-                    <YAxis yAxisId="left" {...moneyAxisProps(dayOfWeekData.map((d) => d.pnl))} />
-                    <YAxis
-                      yAxisId="right"
-                      orientation="right"
-                      tick={AXIS_TICK}
-                      tickFormatter={(v) => `${v}%`}
-                      axisLine={false}
-                      tickLine={false}
-                      domain={[0, 100]}
-                      width={35}
-                    />
-                    <Tooltip
-                      {...tooltipStyle}
-                      formatter={(value: any, name: any) => [
-                        name === "winRate" ? `${value}%` : formatMoney(Number(value)),
-                        name === "winRate" ? t("analytics.winRateLabel") : t("journal.colPnl"),
-                      ]}
-                    />
-                    <Bar yAxisId="left" dataKey="pnl" radius={BAR_RADIUS} {...chartAnimation}>
-                      {dayOfWeekData.map((e, i) => (
-                        <Cell key={i} fill={e.pnl >= 0 ? BAR_FILL_GREEN : BAR_FILL_RED} />
+          )}
+          {view === "execution" && (
+            <div
+              className="space-y-3 md:space-y-4"
+              role="region"
+              aria-label={t("analytics.viewExecution")}
+            >
+              <Card className="overflow-hidden animate-fade-in-up stagger-2">
+                <div className="px-4 md:px-5 py-3 border-b border-white/[0.06]">
+                  <h3 className="tv-title">{t("analytics.setupTable")}</h3>
+                </div>
+                {/* Sur téléphone, le tableau garde ses quatre colonnes essentielles
+              (setup, trades, win rate, P&L) au lieu d'imposer 640px de large
+              et de faire défiler la carte de côté. */}
+                <div>
+                  <table className="w-full sm:min-w-[640px]">
+                    <thead>
+                      <tr className="border-b border-white/[0.06]">
+                        {[
+                          t("analytics.setupCol"),
+                          t("common.trades"),
+                          t("analytics.wrCol"),
+                          t("quant.expectancy"),
+                          "PF",
+                          `${t("dashboard.avgRR")}`,
+                          t("journal.colPnl"),
+                        ].map((h, i) => (
+                          <th
+                            key={i}
+                            className={cn(
+                              "tv-label px-3 sm:px-4 py-2.5 text-slate-500",
+                              i === 0 ? "text-left" : "text-right",
+                              i >= 3 && i <= 5 && "hidden sm:table-cell",
+                            )}
+                          >
+                            {h}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/[0.04]">
+                      {setupTable.map((row) => (
+                        <tr key={row.strategy} className="hover:bg-white/[0.02] transition-colors">
+                          {/* Un nom de setup long élargissait le tableau au-delà de
+                        l'écran : il se tronque, le nom complet reste au survol. */}
+                          <td
+                            title={row.strategy}
+                            className="px-3 py-2.5 text-xs font-bold text-white sm:px-4"
+                          >
+                            {/* `max-width` n'est pas tenu sur une cellule de tableau :
+                          la borne vit sur un bloc intérieur. */}
+                            <span className="block max-w-[9.5rem] truncate sm:max-w-none">
+                              {row.strategy}
+                            </span>
+                          </td>
+                          <td className="tv-figure tv-figure-secondary px-4 py-2.5 text-xs text-slate-400 text-right">
+                            {row.count}
+                          </td>
+                          <td className="tv-figure tv-figure-secondary px-4 py-2.5 text-xs text-right">
+                            <span
+                              className={cn(
+                                "font-semibold",
+                                row.winRate === null
+                                  ? "text-slate-500"
+                                  : row.winRate >= 0.5
+                                    ? "text-emerald-400"
+                                    : "text-red-400",
+                              )}
+                            >
+                              {row.winRate === null ? "—" : formatPct(row.winRate)}
+                            </span>
+                          </td>
+                          <td className="tv-figure tv-figure-secondary hidden px-4 py-2.5 text-xs text-right sm:table-cell">
+                            <span
+                              className={cn(
+                                "font-semibold",
+                                row.expectancy >= 0 ? "text-emerald-400" : "text-red-400",
+                              )}
+                            >
+                              {formatPnl(row.expectancy)}
+                            </span>
+                          </td>
+                          <td className="tv-figure tv-figure-secondary hidden px-4 py-2.5 text-xs text-right text-slate-300 sm:table-cell">
+                            {/* « — » sous l'échantillon minimum : ne rien affirmer vaut
+                          mieux qu'affirmer sur trois trades. */}
+                            {row.profitFactor === null ? "—" : row.profitFactor.toFixed(2)}
+                          </td>
+                          <td className="tv-figure tv-figure-secondary hidden px-4 py-2.5 text-xs text-right sm:table-cell">
+                            {row.avgR === null ? (
+                              <span className="text-slate-600">—</span>
+                            ) : (
+                              <span
+                                className={cn(
+                                  "font-semibold",
+                                  row.avgR >= 0 ? "text-emerald-400" : "text-red-400",
+                                )}
+                              >
+                                {row.avgR >= 0 ? "+" : ""}
+                                {row.avgR.toFixed(2)}R
+                              </span>
+                            )}
+                          </td>
+                          <td className="tv-figure tv-figure-secondary px-4 py-2.5 text-xs text-right">
+                            <span
+                              className={cn(
+                                "font-bold",
+                                row.pnl >= 0 ? "text-emerald-400" : "text-red-400",
+                              )}
+                            >
+                              {formatPnl(row.pnl)}
+                            </span>
+                          </td>
+                        </tr>
                       ))}
-                    </Bar>
-                    <Line
-                      yAxisId="right"
-                      type={EQUITY_CURVE_TYPE}
-                      dataKey="winRate"
-                      stroke={TREND_STROKE}
-                      {...TREND_LINE}
-                      dot={false}
-                      activeDot={glowActiveDot(TREND_STROKE)}
-                      {...chartAnimation}
-                    />
-                  </ComposedChart>
-                </ResponsiveContainer>
+                    </tbody>
+                  </table>
+                </div>
+              </Card>
+              <EdgeLabCard
+                trades={cutoffTrades}
+                allTrades={trades}
+                accountId={activeId ?? null}
+                accountName={(id) => accounts.find((a) => a.id === id)?.name ?? id}
+              />
+              <div className="grid gap-3 md:grid-cols-2 md:gap-4">
+                <Card className="p-4 md:p-5 animate-fade-in-up stagger-6">
+                  <h3 className="tv-title mb-3">{t("analytics.pnlByStrategy")}</h3>
+                  <div className="h-40 md:h-48">
+                    <ResponsiveContainer debounce={100} width="100%" height="100%">
+                      <BarChart data={strategyData} layout="vertical">
+                        <XAxis
+                          type="number"
+                          tick={AXIS_TICK}
+                          tickFormatter={(v) => formatAxisMoney(Number(v))}
+                          axisLine={false}
+                          tickLine={false}
+                        />
+                        <YAxis
+                          dataKey="strategy"
+                          type="category"
+                          tick={AXIS_TICK}
+                          axisLine={false}
+                          tickLine={false}
+                          width={85}
+                        />
+                        <Tooltip
+                          {...tooltipStyle}
+                          formatter={(value: any) => [
+                            formatMoney(Number(value)),
+                            t("journal.colPnl"),
+                          ]}
+                        />
+                        <Bar dataKey="pnl" radius={BAR_RADIUS_H} {...chartAnimation}>
+                          {strategyData.map((e, i) => (
+                            <Cell key={i} fill={e.pnl >= 0 ? BAR_FILL_GREEN : BAR_FILL_RED} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </Card>
+                <Card className="p-4 md:p-5 animate-fade-in-up stagger-8">
+                  <h3 className="tv-title mb-3">{t("analytics.symbolPerformance")}</h3>
+                  <div className="space-y-1.5 max-h-48 md:max-h-64 overflow-y-auto">
+                    {symbolData.map((s) => (
+                      <div
+                        key={s.symbol}
+                        className="flex items-center gap-2 py-1.5 px-1.5 rounded-lg"
+                      >
+                        <span className="text-xs font-bold text-white w-12">{s.symbol}</span>
+                        <div className="flex-1 h-1.5 bg-white/[0.05] rounded-full overflow-hidden">
+                          <div
+                            className={cn(
+                              "h-full rounded-full",
+                              s.pnl >= 0 ? "bg-emerald-400/70" : "bg-red-400/70",
+                            )}
+                            style={{
+                              width: `${Math.min((Math.abs(s.pnl) / Math.max(...symbolData.map((x) => Math.abs(x.pnl)), 1)) * 100, 100)}%`,
+                            }}
+                          />
+                        </div>
+                        <span
+                          className={cn(
+                            "tv-num",
+                            "text-xs font-bold w-20 text-right",
+                            s.pnl >= 0 ? "text-emerald-400" : "text-red-400",
+                          )}
+                        >
+                          {formatPnl(s.pnl)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
               </div>
-            </Card>
-            <NewsDaysCard trades={cutoffTrades} />
-          </div>
-        )}
+              <Card className="p-4 md:p-5 animate-fade-in-up stagger-7">
+                <h3 className="tv-title mb-3">{t("analytics.pnlDistribution")}</h3>
+                <div className="h-40 md:h-48">
+                  <ResponsiveContainer debounce={100} width="100%" height="100%">
+                    <BarChart data={pnlDistribution}>
+                      <CartesianGrid {...EQUITY_GRID} />
+                      <XAxis
+                        dataKey="range"
+                        tick={AXIS_TICK}
+                        axisLine={false}
+                        tickLine={false}
+                        angle={-20}
+                        textAnchor="end"
+                        height={35}
+                      />
+                      <YAxis
+                        tick={AXIS_TICK}
+                        axisLine={false}
+                        tickLine={false}
+                        allowDecimals={false}
+                      />
+                      <Tooltip {...tooltipStyle} />
+                      <Bar dataKey="count" radius={BAR_RADIUS} {...chartAnimation}>
+                        {pnlDistribution.map((e, i) => (
+                          <Cell key={i} fill={e.fill} fillOpacity={0.7} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </Card>
+            </div>
+          )}
+          {view === "timing" && (
+            <div
+              className="space-y-3 md:space-y-4"
+              role="region"
+              aria-label={t("analytics.viewTiming")}
+            >
+              {trades.length >= 3 && <SeasonalitySection trades={cutoffTrades} />}
+              {unverifiedTimeCount > 0 && (
+                <p className="tv-hint" role="status">
+                  {t("analytics.timeZoneUnverified")} ({unverifiedTimeCount})
+                </p>
+              )}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Card className="p-4 md:p-5 animate-fade-in-up stagger-2">
+                  <h3 className="tv-title mb-1">{t("analytics.heatmap")}</h3>
+                  <p className="tv-hint mb-3">{t("analytics.heatmapSub")}</p>
+                  <div
+                    className="grid gap-1"
+                    style={{ gridTemplateColumns: "auto repeat(5, 1fr)" }}
+                  >
+                    <div />
+                    {[1, 2, 3, 4, 5].map((d) => (
+                      <div
+                        key={d}
+                        className="text-center text-[11px] text-slate-500 font-semibold pb-1"
+                      >
+                        {DAY_NAMES[d]}
+                      </div>
+                    ))}
+                    {SESSIONS.map((s) => (
+                      <Fragment key={s}>
+                        <div className="text-[11px] text-slate-500 font-semibold pr-2 flex items-center">
+                          {t(`session.${s}` as never)}
+                        </div>
+                        {[1, 2, 3, 4, 5].map((d) => {
+                          const cell = heatmap.map[`${s}-${d}`];
+                          const intensity =
+                            cell && heatmap.maxAbs > 0 ? Math.abs(cell.pnl) / heatmap.maxAbs : 0;
+                          return (
+                            <div
+                              key={`${s}-${d}`}
+                              title={cell ? `${formatPnl(cell.pnl)} · ${cell.count} trades` : ""}
+                              className={cn(
+                                "rounded-lg h-11 flex flex-col items-center justify-center text-[11px] font-bold transition-transform hover:scale-105",
+                                !cell && "bg-white/[0.02]",
+                              )}
+                              style={
+                                cell
+                                  ? {
+                                      background:
+                                        cell.pnl >= 0
+                                          ? `rgb(var(--tv-chart-green-rgb) / ${0.08 + intensity * 0.45})`
+                                          : `rgba(239,68,68,${0.08 + intensity * 0.45})`,
+                                    }
+                                  : undefined
+                              }
+                            >
+                              {cell && (
+                                <>
+                                  {/* Une case fait ~50px sur téléphone : « +$1,234 » en
+                                gras y débordait. Le montant compact (« +$1.2k »)
+                                tient, le détail exact reste dans l'infobulle. */}
+                                  <span
+                                    className={cn(
+                                      "max-w-full truncate px-0.5",
+                                      cell.pnl >= 0 ? "text-emerald-300" : "text-red-300",
+                                    )}
+                                  >
+                                    <span className="tv-num md:hidden">
+                                      {formatMoney(cell.pnl, { signed: true, compact: true })}
+                                    </span>
+                                    <span className="tv-num hidden md:inline">
+                                      {formatMoney(cell.pnl, { signed: true, whole: true })}
+                                    </span>
+                                  </span>
+                                  <span className="tv-num text-slate-400 font-medium">
+                                    {cell.count}
+                                  </span>
+                                </>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </Fragment>
+                    ))}
+                  </div>
+                </Card>
+                <Card className="p-4 md:p-5 animate-fade-in-up stagger-3">
+                  <h3 className="tv-title mb-1">{t("analytics.byHour")}</h3>
+                  <p className="tv-hint mb-3">{t("analytics.byHourSub")}</p>
+                  {hourData.length > 0 ? (
+                    <div className="h-40 md:h-48">
+                      <ResponsiveContainer debounce={100} width="100%" height="100%">
+                        <ComposedChart data={hourData}>
+                          <CartesianGrid {...EQUITY_GRID} />
+                          <XAxis
+                            dataKey="hour"
+                            tick={AXIS_TICK}
+                            axisLine={false}
+                            tickLine={false}
+                          />
+                          <YAxis yAxisId="left" {...moneyAxisProps(hourData.map((d) => d.pnl))} />
+                          <YAxis
+                            yAxisId="right"
+                            orientation="right"
+                            tick={AXIS_TICK}
+                            tickFormatter={(v) => `${v}%`}
+                            axisLine={false}
+                            tickLine={false}
+                            domain={[0, 100]}
+                            width={32}
+                          />
+                          <Tooltip
+                            {...tooltipStyle}
+                            formatter={(value: any, name: any) => [
+                              name === "winRate" ? `${value}%` : formatMoney(Number(value)),
+                              name === "winRate"
+                                ? t("analytics.winRateLabel")
+                                : t("journal.colPnl"),
+                            ]}
+                          />
+                          <Bar yAxisId="left" dataKey="pnl" radius={BAR_RADIUS} {...chartAnimation}>
+                            {hourData.map((e, i) => (
+                              <Cell key={i} fill={e.pnl >= 0 ? BAR_FILL_GREEN : BAR_FILL_RED} />
+                            ))}
+                          </Bar>
+                          <Line
+                            yAxisId="right"
+                            type={EQUITY_CURVE_TYPE}
+                            dataKey="winRate"
+                            stroke={TREND_STROKE}
+                            {...TREND_LINE}
+                            dot={false}
+                            activeDot={glowActiveDot(TREND_STROKE)}
+                            {...chartAnimation}
+                          />
+                        </ComposedChart>
+                      </ResponsiveContainer>
+                    </div>
+                  ) : (
+                    <div className="h-40 flex items-center justify-center text-slate-600 text-sm">
+                      {t("analytics.noData")}
+                    </div>
+                  )}
+                </Card>
+              </div>
+              <Card className="p-4 md:p-5 animate-fade-in-up stagger-5">
+                <h3 className="tv-title mb-3">{t("analytics.pnlWinRateByDay")}</h3>
+                <div className="h-40 md:h-48">
+                  <ResponsiveContainer debounce={100} width="100%" height="100%">
+                    <ComposedChart data={dayOfWeekData}>
+                      <CartesianGrid {...EQUITY_GRID} />
+                      <XAxis dataKey="day" tick={AXIS_TICK} axisLine={false} tickLine={false} />
+                      <YAxis yAxisId="left" {...moneyAxisProps(dayOfWeekData.map((d) => d.pnl))} />
+                      <YAxis
+                        yAxisId="right"
+                        orientation="right"
+                        tick={AXIS_TICK}
+                        tickFormatter={(v) => `${v}%`}
+                        axisLine={false}
+                        tickLine={false}
+                        domain={[0, 100]}
+                        width={35}
+                      />
+                      <Tooltip
+                        {...tooltipStyle}
+                        formatter={(value: any, name: any) => [
+                          name === "winRate" ? `${value}%` : formatMoney(Number(value)),
+                          name === "winRate" ? t("analytics.winRateLabel") : t("journal.colPnl"),
+                        ]}
+                      />
+                      <Bar yAxisId="left" dataKey="pnl" radius={BAR_RADIUS} {...chartAnimation}>
+                        {dayOfWeekData.map((e, i) => (
+                          <Cell key={i} fill={e.pnl >= 0 ? BAR_FILL_GREEN : BAR_FILL_RED} />
+                        ))}
+                      </Bar>
+                      <Line
+                        yAxisId="right"
+                        type={EQUITY_CURVE_TYPE}
+                        dataKey="winRate"
+                        stroke={TREND_STROKE}
+                        {...TREND_LINE}
+                        dot={false}
+                        activeDot={glowActiveDot(TREND_STROKE)}
+                        {...chartAnimation}
+                      />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                </div>
+              </Card>
+              <NewsDaysCard trades={cutoffTrades} />
+            </div>
+          )}
+        </ScrollArea>
       </div>
     </PageContainer>
   );

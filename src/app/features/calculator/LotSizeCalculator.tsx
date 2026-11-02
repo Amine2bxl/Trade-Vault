@@ -20,7 +20,8 @@ import {
 import { useAccounts } from "@/app/contexts/AccountContext";
 import { useT } from "@/app/i18n/LanguageContext";
 import { cn } from "@/shared/ui/cn";
-import { PageContainer, FIELD_BASE, Button } from "@/shared/ui";
+import { PageContainer, FIELD_BASE, Button, ScrollArea } from "@/shared/ui";
+import { useAvailableHeight } from "@/app/hooks/useAvailableHeight";
 import type { Page } from "@/app/types";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { loadUserPref, saveUserPref } from "@/app/utils/userPrefs";
@@ -61,6 +62,7 @@ function readPersisted(): Partial<PersistedState> {
 }
 
 export default function LotSizeCalculator({ onAddTrade }: LotSizeCalculatorProps) {
+  const { boxRef, height } = useAvailableHeight();
   const { t } = useT();
   const { user } = useAuth();
   const { activeAccount } = useAccounts();
@@ -206,14 +208,16 @@ export default function LotSizeCalculator({ onAddTrade }: LotSizeCalculatorProps
   const gaugePct = Math.max(0, Math.min(100, (riskPctNum / RECOMMENDED_RISK_PCT) * 100));
 
   return (
-    <PageContainer>
+    <PageContainer ref={boxRef} fit height={height}>
       {/* Deux colonnes à partir de `lg`, et une piste `minmax(0, 1fr)`. Un `1fr`
           nu ne descend jamais sous la largeur minimale de son contenu : sur
           tablette (768px, dont ~230 pour le rail), `1fr + 320px` débordait de
           la fenêtre de 85px. */}
-      <div className="grid gap-4 md:gap-5 lg:grid-cols-[minmax(0,1fr)_320px] items-start">
-        {/* ══ Colonne gauche : marché → capital → risque → instrument ══ */}
-        <div className="space-y-4">
+      <div className="tv-grow grid gap-4 md:gap-5 lg:grid-cols-[minmax(0,1fr)_320px] items-start">
+        {/* ══ Colonne gauche : marché → capital → risque → instrument ══
+            Elle défile dans sa colonne sur un écran court ; le résultat, à
+            droite, reste sous les yeux. */}
+        <ScrollArea className="max-h-full space-y-4">
           {/* LE MARCHÉ — le premier choix, dans la page, pas un interrupteur
               perdu dans l'en-tête. Deux options décrites (ce qu'on dimensionne,
               dans quelle unité), un indicateur qui GLISSE de l'une à l'autre,
@@ -442,7 +446,7 @@ export default function LotSizeCalculator({ onAddTrade }: LotSizeCalculatorProps
               </div>
             )}
           </div>
-        </div>
+        </ScrollArea>
 
         {/* ══ Colonne droite : la taille, en direct ══ */}
         <div

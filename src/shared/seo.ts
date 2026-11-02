@@ -17,7 +17,7 @@
 import { SITE_URL, TRUSTPILOT_URL } from "./site";
 import { URLS_RESEAUX } from "./socials";
 import { SSR_LANG, FR_PREFIX, type SiteLang } from "./lang";
-import { TIERS } from "@/domain/plans";
+import { LIFETIME_EUR, TIERS } from "@/domain/plans";
 
 export const SITE_NAME = "TradeVault";
 
@@ -137,7 +137,6 @@ export function structuredData(): string {
   // les TROIS paliers du catalogue (Free, Pro, Elite). L'agrégat est la seule
   // forme qui décrive honnêtement une grille — un `Offer` isolé à 0 € aurait
   // laissé croire que le produit est intégralement gratuit.
-  const monthly = TIERS.map((t) => t.monthly);
 
   return JSON.stringify({
     "@context": "https://schema.org",
@@ -182,11 +181,13 @@ export function structuredData(): string {
         image: DEFAULT_OG_IMAGE,
         inLanguage: ["en", "fr"],
         author: { "@id": `${SITE_URL}/#organization` },
+        // Deux offres réelles : l'offre gratuite et la licence à vie (paiement
+        // unique). Rien d'autre n'est vendu.
         offers: {
           "@type": "AggregateOffer",
           priceCurrency: "EUR",
-          lowPrice: String(Math.min(...monthly)),
-          highPrice: String(Math.max(...monthly)),
+          lowPrice: "0",
+          highPrice: String(LIFETIME_EUR),
           offerCount: String(TIERS.length),
         },
       },

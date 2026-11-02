@@ -93,3 +93,25 @@ Pousser `main` déploie sur Vercel (aperçu par PR). Variables : dashboard
 Vercel, contrat dans `.env.example` ([`BACKEND.md`](BACKEND.md) §7). Les
 en-têtes de sécurité (CSP, HSTS, `X-Frame-Options`…) et les crons sont dans
 `vercel.json`.
+
+## 8. Application Windows / macOS (Tauri)
+
+`desktop/src-tauri` est un shell natif Tauri 2 qui ouvre le site hébergé
+(`build.frontendDist` = `https://tradevault.be`) : même compte, mêmes données,
+toujours la dernière version. Le site ne peut pas être empaqueté en statique
+(fonctions serveur, routes `/api/*`).
+
+- Installateurs : workflow **Desktop** (`.github/workflows/desktop.yml`) —
+  lancé à la main, sur un tag `desktop-v*`, ou sur une PR qui touche
+  `desktop/**`. Il génère les icônes depuis `public/icon-512.png`
+  (`tauri icon`) puis produit `.msi` / `.exe` (Windows) et `.dmg` universel
+  (macOS), en artefacts.
+- Local : Rust stable + `npx @tauri-apps/cli@2.1.0 icon ../public/icon-512.png`
+  puis `npx @tauri-apps/cli@2.1.0 dev` depuis `desktop/` (sous Linux, il faut
+  `webkit2gtk-4.1`).
+- Non signés pour l'instant : Windows SmartScreen et macOS Gatekeeper
+  avertissent à l'installation. Signer demande un certificat Windows et un
+  compte Apple Developer (secrets du workflow).
+- Connexion Google : Google peut refuser son écran dans une vue web
+  embarquée ; e-mail et mot de passe fonctionnent toujours.
+- iPhone / App Store : plus tard (la PWA est installable dès aujourd'hui).

@@ -2,10 +2,6 @@ import type { Dict } from "../translations";
 
 const nl: Dict = {
   "nav.dashboard": "Dashboard",
-  "chk.cfgItemOn": "Actief - telt vandaag",
-  "chk.deepShow": "Ga dieper",
-  "chk.deepHide": "Extra's verbergen",
-  "chk.cfgItemOff": "Uit - vandaag verborgen",
   "error.pageTitle": "Dit onderdeel liep vast",
   "error.pageBody": "Deze pagina kon niet worden geladen. Je gegevens zijn veilig.",
   "error.retry": "Opnieuw proberen",

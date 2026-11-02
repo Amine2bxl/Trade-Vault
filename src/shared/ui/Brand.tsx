@@ -7,15 +7,14 @@ import { cn } from "./cn";
  * c'est l'identité de la marque, elle ne se redessine pas à la faveur d'une
  * refonte. Seule la manière de composer le nom est ici.
  *
- * « Trade » en graisse moyenne et sourd, « Vault » en 800 et plein : le nom se
- * lit en deux temps au lieu d'un bloc uniforme, et c'est la moitié qui compte
- * — le coffre — qui reste dans l'œil.
+ * UN SEUL MOT, UNE SEULE GRAISSE. « Trade » en medium à 65 % et « Vault » en
+ * 800 donnaient deux tailles apparentes au même nom, à côté d'un sigle qui,
+ * lui, est d'un bloc. Le nom s'écrit maintenant d'un trait, en gras plein.
  */
 export function BrandWord({ className }: { className?: string }) {
   return (
     <span className={cn("leading-none tracking-[-0.035em] whitespace-nowrap", className)}>
-      <span className="font-medium opacity-65">Trade</span>
-      <span className="font-extrabold">Vault</span>
+      <span className="font-bold">TradeVault</span>
     </span>
   );
 }

@@ -36,14 +36,14 @@ affiche des chiffres : sa personnalité vient de la densité et de l'alignement.
 
 | Token | Taille | Rôle |
 | --- | --- | --- |
-| `--tv-t-display` | 34px | Le chiffre héros, le titre de page marketing |
-| `--tv-t-h1` | 26px | Titre de page |
-| `--tv-t-h2` | 18px | Titre de section |
-| `--tv-t-h3` | 14px | Titre de carte |
+| `--tv-t-display` | 44px | Le chiffre héros (Dashboard façon Revolut) |
+| `--tv-t-h1` | 30px | Grand titre de page (`.tv-large-title`, posé par `PageHead`) |
+| `--tv-t-h2` | 20px | Titre de section |
+| `--tv-t-h3` | 15px | Titre de carte |
 | `--tv-t-body` | 14px | Texte courant |
 | `--tv-t-body-sm` | 13px | Texte dense (ligne de tableau) |
 | `--tv-t-caption` | 12px | Légende — `.tv-prose` |
-| `--tv-t-micro` | 10px | Mention, libellé — `.tv-hint`, `.tv-label` |
+| `--tv-t-micro` | 11px | Mention, libellé — `.tv-hint`, `.tv-label` |
 
 **Plancher assumé : 10px**, et uniquement pour un libellé en capitales ou une
 mention. Rien sous 10px. Du texte réel à lire : 12px minimum.

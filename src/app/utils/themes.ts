@@ -264,7 +264,8 @@ export const BUILTIN_THEMES: ThemeDef[] = [
     primary: "#31d68a",
     secondary: "#1fb574",
     highlight: "#6be3a8",
-    background: "#07080a",
+    /* LIQUID — le noir profond qui porte le papier peint (même valeur que `:root`). */
+    background: "#050607",
   },
   {
     /* Gris pur, aucune teinte — l'ancienne identité par défaut. Pour qui ne veut

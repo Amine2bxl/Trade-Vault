@@ -320,22 +320,20 @@ export default function Settings({
     ) : null;
 
   return (
-    <PageContainer className="max-w-5xl">
+    <PageContainer measure="settings">
       {/* DEUX COLONNES, AUCUN CADRE AUTOUR. Le rail des rubriques à gauche,
           les réglages de la rubrique à droite, en rangées « nom · commande ».
           Plus de carte vitrée qui en contient d'autres. */}
       <div className="animate-fade-in-up grid gap-5 lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-8">
         <nav className="space-y-3" aria-label={t("nav.settings")}>
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+          <div className="tv-set-search">
+            <Search aria-hidden />
             <input
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={t("settings.search")}
               aria-label={t("settings.search")}
-              className={cn(FIELD_BASE, "h-9 text-[13px]")}
-              style={{ paddingLeft: "2.25rem" }}
             />
           </div>
           {anyVisible && (
@@ -355,7 +353,7 @@ export default function Settings({
                     onClick={() => setPane(id)}
                     className="tv-set-rail-item"
                   >
-                    <Ico className="h-4 w-4 shrink-0 text-slate-500" strokeWidth={1.9} />
+                    <Ico className="h-4 w-4 shrink-0" strokeWidth={1.9} />
                     <span className="truncate">{t(labelKey)}</span>
                   </button>
                 ),

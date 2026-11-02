@@ -1,10 +1,26 @@
 /* Contrat visuel commun à tous les champs et sélecteurs.
    Comportement : SelectionPanel.tsx. API : selection.ts. */
 .tv-pop {
-  border-radius: 1rem;
-  border: 1px solid var(--tv-border-strong);
-  background: var(--tv-plate-3);
-  box-shadow: var(--tv-elev-3);
+  /* LIQUID — le panneau de sélection est du verre fort (menus d'iOS) :
+     opaque à 94 %, flouté, arête spéculaire. Repli opaque sans flou. */
+  border-radius: 20px;
+  border: 1px solid var(--tv-glass-edge);
+  background: var(--tv-glass-fill-strong);
+  -webkit-backdrop-filter: blur(var(--tv-glass-blur)) saturate(var(--tv-glass-saturate));
+  backdrop-filter: blur(var(--tv-glass-blur)) saturate(var(--tv-glass-saturate));
+  box-shadow: var(--tv-glass-specular), var(--tv-elev-3);
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .tv-pop {
+    background: var(--tv-plate-3);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .tv-pop {
+    background: var(--tv-plate-3);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
 }
 
 /* ══ LES SÉLECTEURS (`shared/ui/Picker.tsx`) ══════════════════════════════
@@ -369,7 +385,9 @@
   min-width: 0;
   height: 44px;
   border: 1px solid var(--tv-border);
-  border-radius: var(--radius-xl);
+  /* LIQUID — champ plein, rayon de contrôle (14) : concentrique avec la
+     carte (22) qui le contient. */
+  border-radius: var(--radius-lg);
   background: var(--tv-plate-2);
   padding-inline: 12px;
   font-size: var(--tv-t-body-sm);

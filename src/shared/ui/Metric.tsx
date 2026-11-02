@@ -17,7 +17,10 @@ import { RollingFigure } from "./RollingFigure";
 export type MetricVisual =
   | { kind: "radial"; pct: number; color: string; center?: string }
   | { kind: "spark"; data: number[]; color: string }
-  | { kind: "bar"; pct: number; color?: string };
+  | { kind: "bar"; pct: number; color?: string }
+  /** Liquid : la jauge PLEINE LARGEUR sous le chiffre (widget façon Revolut),
+   *  suivie du sous-titre — l'échantillon `n` y trouve sa place. */
+  | { kind: "track"; pct: number; color?: string };
 
 export interface MetricProps {
   title: string;
@@ -98,6 +101,19 @@ function ProgressBar({ pct, color }: { pct: number; color?: string }) {
   );
 }
 
+/** Jauge pleine largeur (0..1), posée sous le chiffre. */
+function Track({ pct, color }: { pct: number; color?: string }) {
+  const p = Math.max(0, Math.min(1, pct));
+  return (
+    <div className="metric-track" aria-hidden>
+      <div
+        className="metric-bar-fill"
+        style={{ "--metric-fill": p, background: color } as CSSProperties}
+      />
+    </div>
+  );
+}
+
 /** Trend sparkline. Pure SVG — no chart lib. */
 function Sparkline({ data, color }: { data: number[]; color: string }) {
   if (data.length < 2) return <div className="w-16 shrink-0" />;
@@ -167,6 +183,7 @@ export function Metric({
             {/* Le chiffre roule quand il change (l'effet compteur de Lucid). */}
             <RollingFigure value={value} />
           </div>
+          {visual?.kind === "track" && <Track pct={visual.pct} color={visual.color} />}
           {subtitle && (
             <p className={cn(type.caption, "text-slate-500 mt-1 truncate")}>{subtitle}</p>
           )}

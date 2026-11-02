@@ -56,8 +56,12 @@ import {
   Card,
   Kpi,
   KpiGrid,
+  ScrollArea,
   SelectPicker,
+  SubNav,
 } from "@/shared/ui";
+import { useAvailableHeight } from "@/app/hooks/useAvailableHeight";
+import { usePageView } from "@/app/hooks/usePageView";
 import { useIsNarrow } from "@/app/hooks/useIsNarrow";
 import { formatMoney } from "@/shared/currency";
 import { SeasonalEquity } from "./SeasonalEquity";
@@ -74,15 +78,21 @@ const VERIFIED_ASSET_HISTORY_AVAILABLE = false;
 
 export default function Seasonality({ trades, tradesLoading }: SeasonalityProps) {
   const { t } = useT();
+  const { boxRef, height } = useAvailableHeight();
   return (
-    <PageContainer>
+    <PageContainer ref={boxRef} fit height={height}>
       {VERIFIED_ASSET_HISTORY_AVAILABLE ? (
-        <AssetSeasonality trades={trades} />
+        <ScrollArea className="tv-grow">
+          <AssetSeasonality trades={trades} />
+        </ScrollArea>
       ) : (
         <>
-          <Card className="mb-4 px-4 py-3">
-            <p className="text-xs text-slate-400">{t("seasonality.verifiedMarketUnavailable")}</p>
-          </Card>
+          {/* Une ligne, plus une carte : c'est une précision sur la source, pas
+              un contenu. */}
+          <p className="mb-3 flex shrink-0 items-center gap-2 px-1 text-xs text-slate-500">
+            <Info className="h-3.5 w-3.5 shrink-0" aria-hidden />
+            {t("seasonality.verifiedMarketUnavailable")}
+          </p>
           <JournalSeasonality trades={trades} tradesLoading={tradesLoading} />
         </>
       )}
@@ -439,9 +449,12 @@ const MONTH_KEYS = [
   "Dec",
 ];
 
+const SEASONALITY_VIEWS = ["year", "week"] as const;
+
 function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
   const chartAnimation = useChartAnimation();
   const { t, lang } = useT();
+  const [view, setView] = usePageView("seasonality", SEASONALITY_VIEWS, "year");
   const monthRows = useMonthRows();
 
   const monthLabel = (m: number) =>
@@ -567,8 +580,8 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
   const { monthly, years, heatMax, weekdays, hours, best, worst, bestDay, bestHour } = data;
 
   return (
-    <div className="animate-fade-in">
-      <KpiGrid cols={4} className="mb-5">
+    <div className="tv-fit-col animate-fade-in">
+      <KpiGrid cols={4} className="mb-4 shrink-0">
         <HighlightCard
           icon={<TrendingUp className="w-4 h-4" />}
           label={t("seasonality.bestMonth")}
@@ -599,135 +612,166 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
         />
       </KpiGrid>
 
-      <div className="glass rounded-3xl p-4 md:p-5 mb-5">
-        <h3 className="tv-title mb-0.5">{t("seasonality.monthly")}</h3>
-        <p className="tv-hint mb-4">{t("seasonality.monthlySub")}</p>
-        <div className="h-56 md:h-64">
-          <ResponsiveContainer debounce={100} width="100%" height="100%">
-            <BarChart data={monthly} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
-              <CartesianGrid {...EQUITY_GRID} />
-              <XAxis
-                dataKey="month"
-                tick={AXIS_TICK}
-                axisLine={false}
-                tickLine={false}
-                interval={0}
-              />
-              <YAxis {...moneyAxisProps(monthly.map((d) => d.pnl))} />
-              <Tooltip
-                {...tooltipStyle}
-                formatter={
-                  ((value: unknown) => [
-                    formatMoney(Number(value)),
-                    t("journal.colPnl" as never),
-                  ]) as never
-                }
-              />
-              <ReferenceLine y={0} stroke="rgba(148,163,184,0.25)" />
-              <Bar dataKey="pnl" radius={BAR_RADIUS} {...chartAnimation}>
-                {monthly.map((m, i) => (
-                  <Cell
-                    key={i}
-                    /* Le vert de la DONNÉE, pas l'accent du thème : un mois
+      {/* DEUX VUES, UN ÉCRAN : l'année (mois + carte de chaleur) et la
+          semaine (jours + heures). Les quatre graphes s'empilaient sur plus
+          d'un écran. */}
+      <SubNav
+        ariaLabel={t("seasonality.viewsLabel")}
+        value={view}
+        onChange={setView}
+        items={[
+          { id: "year", label: t("seasonality.viewYear") },
+          { id: "week", label: t("seasonality.viewWeek") },
+        ]}
+        className="mb-3 w-fit max-w-full shrink-0 self-start"
+      />
+      <ScrollArea key={view} className="tv-grow animate-fade-in">
+        {view === "year" && (
+          <>
+            <div className="glass rounded-3xl p-4 md:p-5 mb-4">
+              <h3 className="tv-title mb-0.5">{t("seasonality.monthly")}</h3>
+              <p className="tv-hint mb-4">{t("seasonality.monthlySub")}</p>
+              <div className="h-56 md:h-64">
+                <ResponsiveContainer debounce={100} width="100%" height="100%">
+                  <BarChart data={monthly} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
+                    <CartesianGrid {...EQUITY_GRID} />
+                    <XAxis
+                      dataKey="month"
+                      tick={AXIS_TICK}
+                      axisLine={false}
+                      tickLine={false}
+                      interval={0}
+                    />
+                    <YAxis {...moneyAxisProps(monthly.map((d) => d.pnl))} />
+                    <Tooltip
+                      {...tooltipStyle}
+                      formatter={
+                        ((value: unknown) => [
+                          formatMoney(Number(value)),
+                          t("journal.colPnl" as never),
+                        ]) as never
+                      }
+                    />
+                    <ReferenceLine y={0} stroke="rgba(148,163,184,0.25)" />
+                    <Bar dataKey="pnl" radius={BAR_RADIUS} {...chartAnimation}>
+                      {monthly.map((m, i) => (
+                        <Cell
+                          key={i}
+                          /* Le vert de la DONNÉE, pas l'accent du thème : un mois
                        gagnant est vert sur Amber comme sur Steel. */
-                    fill={
-                      m.count === 0
-                        ? "rgba(100,116,139,0.15)"
-                        : m.pnl >= 0
-                          ? BAR_FILL_GREEN
-                          : BAR_FILL_RED
-                    }
-                  />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      <div className="glass rounded-3xl p-4 md:p-5 mb-5">
-        <h3 className="tv-title mb-0.5">{t("seasonality.heatmap")}</h3>
-        <p className="tv-hint mb-4">{t("seasonality.heatmapSub")}</p>
-        <div className="space-y-3">
-          {monthRows.map((months) => (
-            <div
-              key={months[0]}
-              className="grid gap-1"
-              style={{ gridTemplateColumns: `3.2rem repeat(${months.length}, minmax(0,1fr))` }}
-            >
-              <div />
-              {months.map((i) => (
-                <div key={monthly[i].key} className="tv-label text-center text-slate-500 pb-1">
-                  {monthly[i].month}
-                </div>
-              ))}
-              {years.map(([year, arr]) => (
-                <YearRow key={year} year={year} values={arr} heatMax={heatMax} months={months} />
-              ))}
+                          fill={
+                            m.count === 0
+                              ? "rgba(100,116,139,0.15)"
+                              : m.pnl >= 0
+                                ? BAR_FILL_GREEN
+                                : BAR_FILL_RED
+                          }
+                        />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </div>
-          ))}
-        </div>
-      </div>
 
-      <div className="grid md:grid-cols-2 gap-5">
-        <div className="glass rounded-3xl p-4 md:p-5">
-          <h3 className="tv-title mb-0.5">{t("seasonality.weekday")}</h3>
-          <p className="tv-hint mb-4">{t("seasonality.weekdaySub")}</p>
-          <div className="h-48">
-            <ResponsiveContainer debounce={100} width="100%" height="100%">
-              <BarChart data={weekdays} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
-                <CartesianGrid {...EQUITY_GRID} />
-                <XAxis dataKey="day" tick={AXIS_TICK} axisLine={false} tickLine={false} />
-                <YAxis {...moneyAxisProps(weekdays.map((d) => d.pnl))} />
-                <Tooltip
-                  {...tooltipStyle}
-                  formatter={
-                    ((value: unknown) => [
-                      formatMoney(Number(value)),
-                      t("journal.colPnl" as never),
-                    ]) as never
-                  }
-                />
-                <ReferenceLine y={0} stroke="rgba(148,163,184,0.25)" />
-                <Bar dataKey="pnl" radius={BAR_RADIUS} {...chartAnimation}>
-                  {weekdays.map((d, i) => (
-                    <Cell key={i} fill={d.pnl >= 0 ? BAR_FILL_GREEN : BAR_FILL_RED} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+            <div className="glass rounded-3xl p-4 md:p-5">
+              <h3 className="tv-title mb-0.5">{t("seasonality.heatmap")}</h3>
+              <p className="tv-hint mb-4">{t("seasonality.heatmapSub")}</p>
+              <div className="space-y-3">
+                {monthRows.map((months) => (
+                  <div
+                    key={months[0]}
+                    className="grid gap-1"
+                    style={{
+                      gridTemplateColumns: `3.2rem repeat(${months.length}, minmax(0,1fr))`,
+                    }}
+                  >
+                    <div />
+                    {months.map((i) => (
+                      <div
+                        key={monthly[i].key}
+                        className="tv-label text-center text-slate-500 pb-1"
+                      >
+                        {monthly[i].month}
+                      </div>
+                    ))}
+                    {years.map(([year, arr]) => (
+                      <YearRow
+                        key={year}
+                        year={year}
+                        values={arr}
+                        heatMax={heatMax}
+                        months={months}
+                      />
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+        {view === "week" && (
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="glass rounded-3xl p-4 md:p-5">
+              <h3 className="tv-title mb-0.5">{t("seasonality.weekday")}</h3>
+              <p className="tv-hint mb-4">{t("seasonality.weekdaySub")}</p>
+              <div className="h-48">
+                <ResponsiveContainer debounce={100} width="100%" height="100%">
+                  <BarChart data={weekdays} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
+                    <CartesianGrid {...EQUITY_GRID} />
+                    <XAxis dataKey="day" tick={AXIS_TICK} axisLine={false} tickLine={false} />
+                    <YAxis {...moneyAxisProps(weekdays.map((d) => d.pnl))} />
+                    <Tooltip
+                      {...tooltipStyle}
+                      formatter={
+                        ((value: unknown) => [
+                          formatMoney(Number(value)),
+                          t("journal.colPnl" as never),
+                        ]) as never
+                      }
+                    />
+                    <ReferenceLine y={0} stroke="rgba(148,163,184,0.25)" />
+                    <Bar dataKey="pnl" radius={BAR_RADIUS} {...chartAnimation}>
+                      {weekdays.map((d, i) => (
+                        <Cell key={i} fill={d.pnl >= 0 ? BAR_FILL_GREEN : BAR_FILL_RED} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
 
-        <div className="glass rounded-3xl p-4 md:p-5">
-          <h3 className="tv-title mb-0.5">{t("seasonality.hourly")}</h3>
-          <p className="tv-hint mb-4">{t("seasonality.hourlySub")}</p>
-          <div className="h-48">
-            <ResponsiveContainer debounce={100} width="100%" height="100%">
-              <BarChart data={hours} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
-                <CartesianGrid {...EQUITY_GRID} />
-                <XAxis dataKey="hour" tick={AXIS_TICK} axisLine={false} tickLine={false} />
-                <YAxis {...moneyAxisProps(hours.map((d) => d.pnl))} />
-                <Tooltip
-                  {...tooltipStyle}
-                  formatter={
-                    ((value: unknown) => [
-                      formatMoney(Number(value)),
-                      t("journal.colPnl" as never),
-                    ]) as never
-                  }
-                />
-                <ReferenceLine y={0} stroke="rgba(148,163,184,0.25)" />
-                <Bar dataKey="pnl" radius={BAR_RADIUS} {...chartAnimation}>
-                  {hours.map((h, i) => (
-                    <Cell key={i} fill={h.pnl >= 0 ? BAR_FILL_GREEN : BAR_FILL_RED} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+            <div className="glass rounded-3xl p-4 md:p-5">
+              <h3 className="tv-title mb-0.5">{t("seasonality.hourly")}</h3>
+              <p className="tv-hint mb-4">{t("seasonality.hourlySub")}</p>
+              <div className="h-48">
+                <ResponsiveContainer debounce={100} width="100%" height="100%">
+                  <BarChart data={hours} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
+                    <CartesianGrid {...EQUITY_GRID} />
+                    <XAxis dataKey="hour" tick={AXIS_TICK} axisLine={false} tickLine={false} />
+                    <YAxis {...moneyAxisProps(hours.map((d) => d.pnl))} />
+                    <Tooltip
+                      {...tooltipStyle}
+                      formatter={
+                        ((value: unknown) => [
+                          formatMoney(Number(value)),
+                          t("journal.colPnl" as never),
+                        ]) as never
+                      }
+                    />
+                    <ReferenceLine y={0} stroke="rgba(148,163,184,0.25)" />
+                    <Bar dataKey="pnl" radius={BAR_RADIUS} {...chartAnimation}>
+                      {hours.map((h, i) => (
+                        <Cell key={i} fill={h.pnl >= 0 ? BAR_FILL_GREEN : BAR_FILL_RED} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
+        )}
+      </ScrollArea>
     </div>
   );
 }

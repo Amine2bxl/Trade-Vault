@@ -11,6 +11,7 @@ import {
   TIER_BY_ID,
   intervalOf,
   isPaidPlan,
+  LIFETIME_PLAN,
   planId,
   planPrice,
   tierOf,
@@ -35,6 +36,14 @@ const COMMERCE_API = "https://api.commerce.coinbase.com";
  */
 function cryptoPricing(plan: PaidPlan): { amount: string; label: string; days: number } | null {
   if (!isPaidPlan(plan)) return null;
+  // La licence à vie : 20 € une fois, aucune échéance (`days: 0`).
+  if (plan === LIFETIME_PLAN) {
+    return {
+      amount: planPrice(plan).toFixed(2),
+      label: "TradeVault — Licence à vie",
+      days: 0,
+    };
+  }
   const yearly = intervalOf(plan) === "yearly";
   const tier = TIER_BY_ID[tierOf(plan)];
   return {
@@ -45,10 +54,10 @@ function cryptoPricing(plan: PaidPlan): { amount: string; label: string; days: n
 }
 
 /** Tous les plans payants, pour les vérifications exhaustives. */
-export const CRYPTO_PLANS: PaidPlan[] = PAID_TIERS.flatMap((t) => [
-  planId(t, "monthly"),
-  planId(t, "yearly"),
-]);
+export const CRYPTO_PLANS: PaidPlan[] = [
+  LIFETIME_PLAN,
+  ...PAID_TIERS.flatMap((t) => [planId(t, "monthly"), planId(t, "yearly")]),
+];
 
 // ── POST /api/crypto/checkout  { plan } ──────────────────────────────────────
 // Creates a Commerce charge and returns { url } to its hosted payment page.
@@ -64,7 +73,8 @@ export async function handleCryptoCheckout(request: Request): Promise<Response> 
   } catch {
     return json({ error: "invalid body" }, 400);
   }
-  const plan = payload.plan as PaidPlan;
+  // Une seule offre à la vente : la licence à vie (voir le checkout Stripe).
+  const plan: PaidPlan = isPaidPlan(payload.plan) ? LIFETIME_PLAN : (payload.plan as PaidPlan);
   const pricing = cryptoPricing(plan);
   if (!pricing) return json({ error: "invalid plan" }, 400);
 
@@ -176,7 +186,9 @@ export async function handleCryptoWebhook(request: Request): Promise<Response> {
     sub?.current_period_end && new Date(sub.current_period_end) > new Date()
       ? new Date(sub.current_period_end)
       : new Date();
-  const periodEnd = new Date(base.getTime() + pricing.days * 24 * 3600 * 1000);
+  // Licence à vie : pas d'échéance du tout.
+  const periodEnd =
+    pricing.days > 0 ? new Date(base.getTime() + pricing.days * 24 * 3600 * 1000) : null;
 
   try {
     // Passe par `apply_subscription_event` : la ligne est CRÉÉE si elle manque
@@ -187,7 +199,7 @@ export async function handleCryptoWebhook(request: Request): Promise<Response> {
       status: "active",
       source: "crypto",
       cryptoChargeId: charge.id ?? null,
-      currentPeriodEnd: periodEnd.toISOString(),
+      currentPeriodEnd: periodEnd ? periodEnd.toISOString() : null,
       cancelAtPeriodEnd: false,
       eventAt: new Date().toISOString(),
     });

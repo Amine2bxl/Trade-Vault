@@ -56,6 +56,26 @@ export async function handleListGrants(request: Request): Promise<Response> {
 // Ajoute (ou met à jour) un accès offert, et l'applique immédiatement si la
 // personne a déjà un compte. Sinon il s'appliquera à son inscription, via le
 // déclencheur `handle_new_user_billing`.
+/**
+ * Convertit en une fois les abonnés Stripe actifs en licence à vie (et coupe
+ * leur renouvellement). Réservé aux adresses `ADMIN_EMAILS`. Idempotent : une
+ * ligne déjà `lifetime` n'est pas retouchée.
+ */
+export async function handleConvertLifetime(request: Request): Promise<Response> {
+  const admin = await adminFromRequest(request);
+  if (!admin) return json({ error: "forbidden" }, 403);
+  const sb = serviceClient();
+  if (!sb) return json({ error: "server misconfigured" }, 500);
+  try {
+    const { convertAllSubscribersToLifetime } = await import("./billing.server");
+    const converted = await convertAllSubscribersToLifetime(sb);
+    return json({ converted });
+  } catch (e) {
+    console.error("convert lifetime failed", e);
+    return json({ error: "conversion failed" }, 500);
+  }
+}
+
 export async function handleGrant(request: Request): Promise<Response> {
   const admin = await adminFromRequest(request);
   if (!admin) return json({ error: "forbidden" }, 403);
@@ -71,7 +91,7 @@ export async function handleGrant(request: Request): Promise<Response> {
 
   const email = (payload.email ?? "").trim().toLowerCase();
   if (!email || !email.includes("@")) return json({ error: "invalid email" }, 400);
-  const plan: PaidPlan = isPaidPlan(payload.plan) ? payload.plan : "elite_yearly";
+  const plan: PaidPlan = isPaidPlan(payload.plan) ? payload.plan : "lifetime";
 
   // La date de fin partait telle quelle dans une colonne `timestamptz` : une
   // chaîne invalide faisait échouer l'écriture, et l'échec était renvoyé comme

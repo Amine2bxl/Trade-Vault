@@ -70,18 +70,22 @@
    * et les petits contrôles (sm/md) restent nets — une pastille de 24px avec
    * 18px de rayon n'est plus une pastille, c'est un cercle raté.
    * ──────────────────────────────────────────────────────────────── */
-  --radius-sm: 8px;
-  --radius-md: 10px;
-  --radius-lg: 12px;
-  --radius-xl: 14px;
-  --radius-2xl: 18px;
-  --radius-3xl: 24px;
-  --radius-4xl: 32px;
+  /* LIQUID — rayons concentriques (iOS 27 / Revolut) : contrôles 14–16,
+     cartes 22, feuilles et panneaux 28, coque 32. Un rayon intérieur vaut le
+     rayon extérieur moins la marge : c'est ce qui fait qu'un bouton posé dans
+     une carte « épouse » la carte au lieu de flotter dedans. */
+  --radius-sm: 10px;
+  --radius-md: 12px;
+  --radius-lg: 14px;
+  --radius-xl: 16px;
+  --radius-2xl: 22px;
+  --radius-3xl: 28px;
+  --radius-4xl: 36px;
   /* Le rayon de COQUE : celui du rail et celui de la fenêtre de contenu, une
      seule valeur pour les deux. Deux plaques posées côte à côte sur la même
      hauteur avec des courbures différentes se lisent comme deux objets
      étrangers ; avec la même, comme deux panneaux d'une même pièce. */
-  --tv-shell-radius: 28px;
+  --tv-shell-radius: 32px;
 }
 
 @layer base {
@@ -427,12 +431,14 @@
    * L'accent n'a plus de « halo » : `--tv-glow-accent` reste défini pour
    * compatibilité, mais vaut `none` (voir le bloc élévation plus bas).
    * ──────────────────────────────────────────────────────────────── */
-  --tv-bg: #07080a;
+  /* LIQUID — un noir plus profond : c'est lui qui fait ressortir le papier
+     peint d'ambiance et le verre de la couche de navigation. */
+  --tv-bg: #050607;
   /* Le même noir, en triplet : un dégradé qui doit s'ÉTEINDRE dans le fond a
      besoin de la couleur avec alpha 0, et `transparent` vaut du noir
      transparent — ce qui donne un voile gris sur toute couleur de fond qui
      n'est pas noire. */
-  --tv-bg-rgb: 7 8 10;
+  --tv-bg-rgb: 5 6 7;
   --tv-text: #e6e8ea;
   /* Graphite — gris neutre. L'accent du thème par défaut est une encre, pas une
      diode : il ne porte le sens que par la valeur.
@@ -509,11 +515,13 @@
    * Les valeurs sont écrites en dur, jamais en voiles blancs : un voile
    * translucide sur un fond presque noir vire au gris sale dès la deuxième
    * superposition, et deux cartes côte à côte ne se ressemblent plus. */
-  --tv-plate-0: #0d0e10;
-  --tv-plate-1: #131416;
-  --tv-plate-1-rgb: 19 20 22;
-  --tv-plate-2: #1a1c1e;
-  --tv-plate-3: #212426;
+  /* LIQUID — matière Revolut : des cartes opaques un cran plus détachées du
+     fond, pour que la carte se lise comme un objet posé sur le papier peint. */
+  --tv-plate-0: #0c0d0f;
+  --tv-plate-1: #141517;
+  --tv-plate-1-rgb: 20 21 23;
+  --tv-plate-2: #1c1d20;
+  --tv-plate-3: #25272a;
 
   /* ══════════════════════════════════════════════════════════════════
    * SEMANTIC LAYER — the TradeVault visual language.
@@ -534,7 +542,7 @@
   --tv-surface-1: var(--tv-plate-1);
   --tv-surface-2: var(--tv-plate-2);
   --tv-surface-3: var(--tv-plate-3);
-  --tv-surface-hover: #24272a;
+  --tv-surface-hover: #2a2c30;
   /* ── LE RAIL ──
    *
    * C'est la seule surface de l'application qui n'est PAS neutre, et c'est
@@ -575,8 +583,8 @@
   /* Borders — a hairline is structure, not decoration. Three weights only.
      Elles remontent (0.06 → 0.08) : sur un fond neutre quasi noir, c'est le
      liseré qui dessine la grille, puisque plus aucune ombre ne le fait. */
-  --tv-border: rgb(255 255 255 / 0.05);
-  --tv-border-strong: rgb(255 255 255 / 0.1);
+  --tv-border: rgb(255 255 255 / 0.06);
+  --tv-border-strong: rgb(255 255 255 / 0.11);
   --tv-border-accent: rgb(var(--tv-accent-rgb) / 0.35);
 
   /* Text — three steps. Anything below `muted` is not readable content.
@@ -662,14 +670,63 @@
 
   /* Type scale — the ladder the `type` tokens in shared/ui/tokens.ts express
      as classes. 10px is the floor; there is no step below it. */
-  --tv-t-display: 34px;
-  --tv-t-h1: 26px;
-  --tv-t-h2: 18px;
-  --tv-t-h3: 14px;
+  /* LIQUID — grand titre façon iOS (Large Title) et chiffre héros façon
+     Revolut. Le plancher passe à 11px : c'est le minimum d'iOS. */
+  --tv-t-display: 44px;
+  --tv-t-h1: 30px;
+  --tv-t-h2: 20px;
+  --tv-t-h3: 15px;
   --tv-t-body: 14px;
   --tv-t-body-sm: 13px;
   --tv-t-caption: 12px;
-  --tv-t-micro: 10px;
+  --tv-t-micro: 11px;
+
+  /* ══ LE MATÉRIAU VERRE (LIQUID) ══
+   *
+   * Réservé à la COUCHE DE NAVIGATION : rail, barre mobile, en-tête collant,
+   * segmented, capsules d'actions, menus, modales, palette, toasts. Une carte
+   * de contenu ne porte JAMAIS de verre : un chiffre se lit sur une plaque
+   * opaque, pas à travers un flou.
+   *
+   *   fill         le verre de navigation (on devine le papier peint)
+   *   fill-solid   le verre « solide » (barre mobile, rail) : presque opaque
+   *   fill-strong  menus, modales, feuilles : du texte dense se lit dessus
+   *   specular     l'arête haute éclairée d'1px — blanche, jamais colorée
+   *   shadow       l'ombre NOIRE d'un objet qui flotte réellement */
+  --tv-glass-fill: rgb(28 30 34 / 0.52);
+  --tv-glass-fill-solid: rgb(19 20 22 / 0.9);
+  --tv-glass-fill-strong: rgb(22 24 27 / 0.94);
+  --tv-glass-blur: 28px;
+  --tv-glass-saturate: 170%;
+  --tv-glass-edge: rgb(255 255 255 / 0.09);
+  --tv-glass-specular: inset 0 1px 0 rgb(255 255 255 / 0.1), inset 0 -1px 0 rgb(255 255 255 / 0.02);
+  --tv-glass-shadow: 0 16px 40px -18px rgb(0 0 0 / 0.9);
+
+  /* ══ LE RESSORT ══
+   * Les états actifs (pilule du rail, pouce du segmented, feuille) glissent
+   * sur un ressort à peine amorti, comme sur iOS. Repli : l'easing signature
+   * (redéfini plus bas quand `linear()` est compris). */
+  --tv-spring: var(--tv-ease);
+  --tv-dur-spring: 340ms;
+  --tv-press: scale(0.97);
+}
+@supports (transition-timing-function: linear(0, 1)) {
+  :root {
+    --tv-spring: linear(
+      0,
+      0.06 2.4%,
+      0.23 5.2%,
+      0.5 9.4%,
+      0.75 14%,
+      0.9 18.8%,
+      0.98 24%,
+      1.02 30%,
+      1.025 36%,
+      1.012 46%,
+      1.002 60%,
+      1
+    );
+  }
 }
 
 html {
@@ -1131,16 +1188,38 @@ body {
   max-width: 44rem;
   text-align: center;
 }
-.jarvis-accueil-invite {
-  margin-inline: auto;
-  max-width: 34rem;
-  /* L'invitation est LA phrase de l'écran — celle qui dit « parle-moi ». En
-     corps de texte, elle se lisait comme une légende sous l'orbe. */
-  font-size: 1.25rem;
-  font-weight: 600;
-  letter-spacing: -0.015em;
-  line-height: 1.5;
+.jarvis-accueil-greeting {
+  /* À LA CLAUDE — la salutation porte l'écran : grande, nette, au prénom du
+     trader. La phrase d'invitation passe dessous, en corps de lecture. */
   color: var(--tv-text-primary);
+  font-size: var(--tv-t-h1);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+}
+.jarvis-accueil-invite {
+  margin: 10px auto 0;
+  max-width: 34rem;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.55;
+  color: var(--tv-text-secondary);
+}
+/* Conversation vide : l'accueil, le champ et les questions forment UN bloc
+   centré dans la hauteur, comme l'écran d'accueil de Claude. Dès le premier
+   message, le fil reprend toute la hauteur et le champ redescend en bas. */
+.jarvis-conversation:has(> .jarvis-thread-empty) {
+  justify-content: center;
+}
+.jarvis-thread-empty {
+  flex: 0 1 auto;
+}
+.jarvis-starters {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 14px;
 }
 /* La signature d'une réponse de Jarvis : sa marque, sur une plaque sourde
    liserée d'émeraude — plus un aplat plein à chaque message, qui répétait la
@@ -1183,32 +1262,31 @@ body {
  * étaient des rangées grises indifférenciées, avec un survol CYAN resté de
  * l'identité d'avant. */
 .jarvis-suggestion {
-  display: flex;
+  /* Une puce, pas une carte : on la lit d'un coup d'œil et on l'effleure. */
+  display: inline-flex;
+  max-width: 100%;
   align-items: center;
-  gap: 0.75rem;
-  min-height: 2.875rem;
-  width: 100%;
-  border: 1px solid var(--tv-border);
-  border-radius: 0.875rem;
-  background: var(--tv-plate-2);
-  padding: 0.7rem 0.9rem 0.7rem 1rem;
+  gap: 8px;
+  min-height: 38px;
+  border: 1px solid var(--tv-glass-edge);
+  border-radius: 9999px;
+  background: rgb(255 255 255 / 0.04);
+  padding: 0 14px 0 16px;
   text-align: left;
-  font-size: 0.8125rem;
-  color: var(--tv-text-primary);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
+  font-size: 13px;
+  color: var(--tv-text-secondary);
+  box-shadow: var(--tv-glass-specular);
   transition:
-    border-color 0.18s ease,
-    background-color 0.18s ease,
-    box-shadow 0.18s ease,
-    transform 0.18s ease;
+    background-color var(--tv-dur-1) var(--tv-ease),
+    color var(--tv-dur-1) var(--tv-ease),
+    transform var(--tv-dur-1) var(--tv-ease);
 }
 .jarvis-suggestion:hover {
-  border-color: rgb(var(--tv-accent-rgb) / 0.45);
-  background: rgb(var(--tv-accent-rgb) / 0.08);
-  transform: translateY(-1px);
+  background: rgb(255 255 255 / 0.08);
+  color: var(--tv-text-primary);
 }
 .jarvis-suggestion:active {
-  transform: scale(0.99);
+  transform: var(--tv-press);
 }
 .jarvis-suggestion-fleche {
   height: 0.875rem;
@@ -1374,9 +1452,7 @@ body {
   background: var(--tv-cta);
   color: #fff;
   text-shadow: 0 1px 2px rgb(4 18 11 / 0.55);
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.18),
-    0 8px 26px -12px rgb(var(--tv-accent-rgb) / 0.55);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.18);
 }
 .err-cta:hover {
   background: var(--tv-cta-hover);
@@ -1684,13 +1760,14 @@ input[type="number"] {
   border: 1px solid var(--tv-border);
 }
 .glass-strong {
-  /* Modales et menus : la seule famille de surfaces qui flotte réellement
-     au-dessus du contenu. Elle est donc OPAQUE (pas translucide : on ne
-     veut pas lire à travers une modale) et plus claire d'un cran que les
-     cartes, pour dire « ceci est devant ». Le flou disparaît — il n'y a
-     plus rien de coloré derrière à adoucir. */
-  background: var(--tv-plate-2);
-  border: 1px solid var(--tv-border-strong);
+  /* LIQUID — modales, menus, feuilles, palette : le VERRE FORT. Presque
+     opaque (94 %) pour que du texte dense s'y lise, flouté pour que le
+     papier peint et la page se devinent derrière, avec l'arête spéculaire
+     d'1px. Repli opaque plus bas (`@supports not` et transparence réduite). */
+  background: var(--tv-glass-fill-strong);
+  -webkit-backdrop-filter: blur(var(--tv-glass-blur)) saturate(var(--tv-glass-saturate));
+  backdrop-filter: blur(var(--tv-glass-blur)) saturate(var(--tv-glass-saturate));
+  border: 1px solid var(--tv-glass-edge);
 }
 /* Même réponse que les cellules du calendrier : le liseré répond,
  * la surface reste stable. Réservé aux cartes réellement interactives. */
@@ -1717,7 +1794,57 @@ input[type="number"] {
   box-shadow: none;
 }
 .glass-strong {
-  box-shadow: var(--tv-elev-3);
+  box-shadow: var(--tv-glass-specular), var(--tv-glass-shadow);
+}
+
+/* ══ LE VERRE DE NAVIGATION — `.tv-glass` / `.tv-glass-solid` ══
+ *
+ * Le flou vit sur un PSEUDO-ÉLÉMENT et non sur l'élément : un
+ * `backdrop-filter` fait de son porteur le bloc conteneur de tous ses
+ * descendants `position: fixed` (les infobulles et menus du rail se
+ * retrouvaient coincés dedans). Posé sur `::before`, il floute sans rien
+ * changer à la mise en page. L'élément devient un contexte d'empilement
+ * (`isolation`) pour que le pseudo-élément reste SOUS son contenu. */
+.tv-glass,
+.tv-glass-solid {
+  position: relative;
+  isolation: isolate;
+  border: 1px solid var(--tv-glass-edge);
+  box-shadow: var(--tv-glass-specular), var(--tv-glass-shadow);
+}
+.tv-glass::before,
+.tv-glass-solid::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--tv-glass-fill);
+  -webkit-backdrop-filter: blur(var(--tv-glass-blur)) saturate(var(--tv-glass-saturate));
+  backdrop-filter: blur(var(--tv-glass-blur)) saturate(var(--tv-glass-saturate));
+  pointer-events: none;
+}
+.tv-glass-solid::before {
+  background: var(--tv-glass-fill-solid);
+}
+
+/* Replis : sans flou (navigateur ancien) ou transparence réduite demandée par
+   le système, le verre devient une plaque opaque — jamais un voile illisible. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass-strong,
+  .tv-glass::before,
+  .tv-glass-solid::before {
+    background: var(--tv-plate-2);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .glass-strong,
+  .tv-glass::before,
+  .tv-glass-solid::before {
+    background: var(--tv-plate-2);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
 }
 
 /* ── Cartes de chiffres (KPI du dashboard, résumé mensuel du calendrier) ──
@@ -2005,48 +2132,52 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
   }
 }
 
-/* Floating premium dock — detached rounded pill (Lucid-style) instead of a
- * full-width edge bar. Horizontal margin + big radius + layered shadow. */
+/* ══ LA BARRE MOBILE — LIQUID, version SOLIDE ══
+ *
+ * Une barre détachée, presque opaque (90 % + flou) : le contenu qui défile
+ * dessous ne la traverse plus, il s'y estompe. Le voile en dégradé sous la
+ * barre dissout la dernière ligne avant qu'elle n'atteigne le bord. */
 .bottom-nav {
   padding: 0 12px calc(env(safe-area-inset-bottom, 0px) + 10px);
-  /* Le fond n'est plus transparent. La capsule flotte à 10px du bord bas, et
-     ces 10px laissaient voir le contenu DÉFILER SOUS ELLE, en une bande hachée
-     tout en bas de l'écran. Le contenu se dissout maintenant dans la couleur
-     de la page avant de l'atteindre : la capsule flotte toujours, mais sur du
-     vide et non sur du texte tronqué. */
   background: linear-gradient(
     to top,
     var(--tv-bg) 0%,
-    var(--tv-bg) 62%,
+    var(--tv-bg) 55%,
     rgb(var(--tv-bg-rgb) / 0) 100%
   );
   pointer-events: none;
 }
 .bottom-nav-shell {
   pointer-events: auto;
-}
-.bottom-nav-shell {
-  /* Le rayon de coque, partagé avec le rail et la fenêtre : les trois pièces
-     de navigation du produit ont la même courbure, sur téléphone comme sur
-     bureau. */
-  border-radius: var(--tv-shell-radius);
-  /* C'est LE RAIL, couché. Même dégradé vert, même grammaire de pastille :
-     sur téléphone la navigation doit être reconnaissable comme la même pièce
-     que sur desktop, pas comme un autre composant. Elle flotte réellement
-     au-dessus du contenu qui défile dessous — l'un des trois seuls endroits
-     du produit où une ombre a un sens. */
-  background: linear-gradient(180deg, var(--tv-rail-mid) 0%, var(--tv-rail-bot) 100%);
-  /* LA SÉPARATION. Sur un contenu sombre, la capsule se fondait dans la page :
-     un dégradé presque noir sur un fond presque noir. Elle reçoit un liseré
-     (la même valeur que les plaques fortes) et une arête haute éclairée à la
-     couleur du thème — une lueur d'un pixel, pas un halo. Aucun flou, aucune
-     barre opaque pleine largeur : elle reste une pièce qui flotte. */
-  border: 1px solid var(--tv-border-strong);
-  box-shadow:
-    inset 0 1px 0 rgb(var(--tv-accent-rgb) / 0.22),
-    0 -1px 0 rgb(var(--tv-accent-rgb) / 0.06),
-    var(--tv-elev-3);
+  position: relative;
+  isolation: isolate;
+  border-radius: 24px;
+  border: 1px solid var(--tv-glass-edge);
+  box-shadow: var(--tv-glass-specular), var(--tv-glass-shadow);
   overflow: visible;
+}
+.bottom-nav-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--tv-glass-fill-solid);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  backdrop-filter: blur(24px) saturate(160%);
+  pointer-events: none;
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .bottom-nav-shell::before {
+    background: var(--tv-plate-1);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .bottom-nav-shell::before {
+    background: var(--tv-plate-1);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
 }
 /* Bulles flottantes (dock Jarvis + pilule sous-comptes) : la MÊME surface que
    la barre de navigation — même dégradé (opacité renforcée), même liseré
@@ -2061,56 +2192,62 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
 .bottom-nav-item {
   position: relative;
   min-width: 44px;
-  min-height: 52px;
+  min-height: 54px;
   width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 4px;
-  border-radius: 14px;
+  border-radius: 16px;
+  color: rgb(255 255 255 / 0.5);
   transition:
     color var(--tv-dur-2) var(--tv-ease),
+    background-color var(--tv-dur-2) var(--tv-ease),
     transform var(--tv-dur-1) var(--tv-ease);
   -webkit-tap-highlight-color: transparent;
 }
 .bottom-nav-item:active {
-  transform: scale(0.94);
+  transform: var(--tv-press);
 }
 .bottom-nav-item:focus-visible {
   outline: 2px solid rgb(var(--tv-accent-rgb) / 0.7);
   outline-offset: -2px;
 }
-/* L'ONGLET ACTIF — un trait d'accent sous le libellé, rien d'autre. La
-   pastille pleine découpée dans la barre était un aplat lourd, difficile à
-   lire comme « tu es ici ». */
-.bottom-nav-dot {
-  height: 3px;
-  width: 14px;
-  border-radius: 9999px;
-  background: transparent;
-  transform: scaleX(0.4);
-  transition:
-    background-color var(--tv-dur-2) var(--tv-ease),
-    transform var(--tv-dur-2) var(--tv-ease);
+/* L'ONGLET ACTIF — une tuile sombre posée dans la barre, l'icône à l'accent,
+   le libellé en blanc. Un état qui se lit d'un coup d'œil, sans trait ni
+   point à chercher. */
+.bottom-nav-item-on {
+  color: #fff;
+  background: rgb(255 255 255 / 0.07);
 }
-.bottom-nav-dot-on {
-  background: var(--tv-accent);
-  transform: scaleX(1);
+.bottom-nav-item-on > svg {
+  color: var(--tv-accent);
 }
 
-/* LA TUILE D'AJOUT — l'accent de la barre, à l'échelle d'une icône. Elle
-   remplace le « + » de 52px surélevé : même hauteur que les autres onglets,
-   un aplat d'accent teinté et un liseré, jamais d'ombre ni d'anneau. */
+/* L'AJOUT — LE bouton d'action de la barre : un carré adouci plein, à
+   l'accent, icône blanche. Même hauteur que les onglets, au centre exact :
+   le pouce le trouve sans regarder. Aucune ombre colorée, aucun anneau. */
 .bottom-nav-add {
   display: grid;
-  height: 26px;
-  width: 38px;
+  height: 48px;
+  width: 48px;
   place-items: center;
-  border-radius: 9px;
-  border: 1px solid rgb(var(--tv-accent-rgb) / 0.45);
-  background: rgb(var(--tv-accent-rgb) / 0.16);
-  color: var(--tv-highlight);
+  border-radius: 16px;
+  background: var(--tv-cta);
+  color: #fff;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.22),
+    inset 0 -1px 0 rgb(0 0 0 / 0.18);
+  transition:
+    background-color var(--tv-dur-1) var(--tv-ease),
+    transform var(--tv-dur-1) var(--tv-ease);
+}
+.bottom-nav-add > svg {
+  filter: drop-shadow(0 1px 1px rgb(4 18 11 / 0.45));
+}
+button:active > .bottom-nav-add {
+  transform: var(--tv-press);
 }
 
 /* Setup-quality stars — soft amber glow + spring pop on select */
@@ -2388,21 +2525,19 @@ svg.lucide {
   font-size: 0.875rem;
   font-weight: 600;
   letter-spacing: -0.005em;
-  /* Une pilule franche, pas un rectangle radouci. C'est la forme que porte
-     déjà chaque entrée du rail : le bouton principal parle la même langue. */
-  border-radius: 9999px;
-  /* Un à-plat vert, sur du texte quasi noir. Le dégradé cyan→teal était le
-     dernier vestige de l'ancienne identité, et il était codé EN DUR : le
-     bouton principal restait cyan même quand tout le reste changeait de
-     thème. Il suit désormais l'accent. */
+  /* LIQUID — un RECTANGLE ADOUCI PLEIN, pas une pilule : l'action se lit
+     comme un objet solide (retour du propriétaire sur maquette). Les pilules
+     restent aux sélecteurs (segmented, compte, puces). */
+  border-radius: var(--radius-md);
+  /* L'accent du thème, texte BLANC porté par une ombre de lettre courte
+     (voir plus bas). Aucune ombre colorée : l'arête haute éclairée et un
+     pied sombre d'1px suffisent à dire « on peut appuyer ». */
   background: var(--tv-cta);
   color: #ffffff;
-  /* Le relief du « Get Started » de la vitrine : arête haute éclairée et une
-     ombre portée dans l'accent, diffuse — pas de halo. */
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.2),
-    0 1px 2px rgb(0 0 0 / 0.4),
-    0 8px 24px -12px rgb(var(--tv-accent-rgb) / 0.55);
+    inset 0 1px 0 rgb(255 255 255 / 0.22),
+    inset 0 -1px 0 rgb(0 0 0 / 0.18),
+    0 1px 2px rgb(0 0 0 / 0.4);
   transition:
     background-color 0.16s ease,
     box-shadow 0.16s ease,
@@ -2411,13 +2546,10 @@ svg.lucide {
 }
 .btn-primary:hover {
   background: var(--tv-cta-hover);
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.24),
-    0 1px 2px rgb(0 0 0 / 0.4),
-    0 12px 30px -12px rgb(var(--tv-accent-rgb) / 0.7);
 }
 .btn-primary:active {
   background: var(--tv-cta-active);
+  transform: var(--tv-press);
 }
 .btn-primary:disabled {
   opacity: 0.45;
@@ -2435,11 +2567,11 @@ svg.lucide {
   gap: 0.5rem;
   padding: 0.65rem 1.35rem;
   font-size: 0.875rem;
-  font-weight: 500;
-  border-radius: 9999px;
+  font-weight: 600;
+  border-radius: var(--radius-md);
   border: 1px solid var(--tv-border-strong);
-  background: var(--tv-plate-2);
-  color: #cbd5e1;
+  background: var(--tv-plate-3);
+  color: var(--tv-text-primary);
   transition:
     border-color 0.16s ease,
     background-color 0.16s ease,
@@ -2447,8 +2579,89 @@ svg.lucide {
 }
 .btn-ghost:hover {
   border-color: var(--tv-border-strong);
-  background: var(--tv-plate-3);
+  background: var(--tv-surface-hover);
   color: var(--tv-text);
+}
+.btn-ghost:active {
+  transform: var(--tv-press);
+}
+
+/* ══ L'ACTION RONDE — `ActionButton` (shared/ui) ══
+ * La rangée d'actions de Revolut : un disque de 52px et son libellé dessous.
+ * Le disque `primary` est le seul plein (accent, icône blanche) ; les autres
+ * sont des plaques. Pression = 0,97, rien d'autre ne bouge. */
+.tv-action {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-width: 64px;
+  -webkit-tap-highlight-color: transparent;
+}
+.tv-action-disc {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 9999px;
+  background: var(--tv-plate-3);
+  border: 1px solid var(--tv-border);
+  color: var(--tv-text-primary);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06);
+  transition:
+    background-color var(--tv-dur-1) var(--tv-ease),
+    transform var(--tv-dur-1) var(--tv-ease);
+}
+.tv-action-disc > svg {
+  width: 22px;
+  height: 22px;
+}
+.tv-action-primary .tv-action-disc {
+  background: var(--tv-cta);
+  border-color: transparent;
+  color: #fff;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.22),
+    inset 0 -1px 0 rgb(0 0 0 / 0.18);
+}
+.tv-action-primary .tv-action-disc > svg {
+  filter: drop-shadow(0 1px 1px rgb(4 18 11 / 0.45));
+}
+.tv-action-label {
+  font-size: var(--tv-t-caption);
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--tv-text-secondary);
+  white-space: nowrap;
+}
+@media (hover: hover) {
+  .tv-action:hover .tv-action-disc {
+    background: var(--tv-surface-hover);
+  }
+  .tv-action-primary:hover .tv-action-disc {
+    background: var(--tv-cta-hover);
+  }
+  .tv-action:hover .tv-action-label {
+    color: var(--tv-text-primary);
+  }
+}
+.tv-action:active .tv-action-disc {
+  transform: var(--tv-press);
+}
+.tv-action:focus-visible {
+  outline: none;
+}
+.tv-action:focus-visible .tv-action-disc {
+  outline: 2px solid rgb(var(--tv-accent-rgb) / 0.7);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tv-action-disc {
+    transition: background-color var(--tv-dur-1) linear;
+  }
+  .tv-action:active .tv-action-disc {
+    transform: none;
+  }
 }
 .btn-primary,
 .btn-ghost {
@@ -2530,62 +2743,52 @@ a:focus-visible,
 }
 
 /* ══════════════════════════════════════════════════════════════════════
- * LE RAIL DE NAVIGATION
+ * LE RAIL DE NAVIGATION — LIQUID
  *
- * Une capsule verte qui FLOTTE sur la page, pas une colonne collée au bord.
- * C'est la pièce qui donne son caractère au produit, et elle obéit à quatre
- * règles :
+ * Un panneau de VERRE qui flotte sur le papier peint (la barre latérale
+ * d'iPadOS 27), et non plus une colonne verte éclairée. Quatre règles :
  *
- *   1. Elle est DÉTACHÉE — une marge tout autour, un très grand rayon. On
- *      doit voir le fond de la page passer derrière elle.
- *   2. Elle est VERTE, alors que tout le reste est neutre. C'est la seule
- *      surface colorée de l'application : elle dit « ceci est la navigation,
- *      ce n'est pas le contenu ».
- *   3. Chaque entrée est une PILULE. Au repos, un voile blanc à peine posé ;
- *      active, une pilule BLANCHE PLEINE avec du texte vert foncé. L'état
- *      actif se lit d'un bout à l'autre de la pièce, sans halo, sans liseré,
- *      sans barre latérale — par le seul contraste.
- *   4. Pliée, elle garde EXACTEMENT la même grammaire : la pilule blanche
- *      devient un disque blanc. Rien d'autre ne change.
+ *   1. Il est DÉTACHÉ — marge tout autour, rayon de coque. On voit le papier
+ *      peint passer derrière lui, et à travers lui.
+ *   2. Il est NEUTRE : la seule couleur y est celle de l'icône active.
+ *   3. Chaque entrée est une PILULE transparente ; l'active est désignée par
+ *      une pilule de verre clair qui GLISSE d'une entrée à l'autre (ressort).
+ *   4. Plié, il garde la même grammaire : la pilule devient un disque.
+ *
+ * Le flou vit sur `::before` (voir `.tv-glass`) : le rail porte des
+ * infobulles et des menus, qu'un `backdrop-filter` posé sur lui piégerait.
  * ══════════════════════════════════════════════════════════════════════ */
 .rail {
+  isolation: isolate;
   border-radius: var(--tv-shell-radius);
-  /* La lumière tombe DU HAUT et s'éteint vite : vert franc sur le premier
-     quart, presque noir aux deux tiers. Un dégradé qui descend lentement sur
-     toute la hauteur donne une colonne verte uniforme — exactement ce qu'on
-     ne veut pas. Ici la couleur est un éclairage, pas un aplat. */
-  background:
-    /* La colonne verte ne doit PAS devenir l'identité : on l'assourdit au
-       sommet et à la base pour ne garder qu'une lueur discrète, et la page
-       noire reprend le dessus. Le rail s'INTÈGRE au site au lieu de flotter
-       comme une lampe. */
-    linear-gradient(
-      180deg,
-      rgb(0 0 0 / 0.5) 0%,
-      rgb(0 0 0 / 0.12) 32%,
-      rgb(0 0 0 / 0) 55%,
-      rgb(0 0 0 / 0.4) 100%
-    ),
-    /* … et la lumière tombe aussi DE BIAIS. Cette seconde couche assombrit le
-       tiers droit du rail : la capsule « tourne » vers la fenêtre au lieu de
-       finir sur un bord franc. */
-    linear-gradient(90deg, rgb(0 0 0 / 0.18) 0%, rgb(0 0 0 / 0) 60%, rgb(0 0 0 / 0.34) 100%),
-    linear-gradient(180deg, var(--tv-rail-top) 0%, var(--tv-rail-mid) 40%, var(--tv-rail-bot) 100%);
-  /* Un liseré interne complet (l'épaisseur de la capsule) + un reflet plus
-     marqué sur l'arête haute, là où la lumière frappe. Adouci pour rester un
-     outil, pas un néon. */
-  box-shadow:
-    inset 0 0 0 1px rgb(255 255 255 / 0.06),
-    inset 0 1px 0 rgb(255 255 255 / 0.08),
-    /* L'arête qui FAIT FACE à la fenêtre s'éclaire comme celle du haut. */ inset -1px 0 0
-      rgb(255 255 255 / 0.08),
-    0 18px 50px -24px rgb(0 0 0 / 0.8);
-  /* La largeur est la SEULE chose qui s'anime au pli/dépli — en 260 ms et
-     non plus 400 : la loi de mouvement plafonne l'app à 300 ms, et un pli
-     qu'on attend est un pli qui rame. Rien d'autre ne change de géométrie
-     pendant ce temps : les icônes ne bougent pas d'un pixel (voir
-     `.rail-item`), les libellés s'effacent en fondu. */
+  border: 1px solid var(--tv-glass-edge);
+  box-shadow: var(--tv-glass-specular), var(--tv-glass-shadow);
+  /* La largeur est la SEULE chose qui s'anime au pli/dépli (260 ms) : les
+     icônes ne bougent pas d'un pixel, les libellés s'effacent en fondu. */
   transition: width var(--tv-dur-3) var(--tv-ease);
+}
+.rail::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: rgb(24 26 29 / 0.62);
+  -webkit-backdrop-filter: blur(var(--tv-glass-blur)) saturate(var(--tv-glass-saturate));
+  backdrop-filter: blur(var(--tv-glass-blur)) saturate(var(--tv-glass-saturate));
+  pointer-events: none;
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .rail::before {
+    background: var(--tv-plate-1);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .rail::before {
+    background: var(--tv-plate-1);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
 }
 
 /* Une entrée de navigation. La forme est la même pliée ou dépliée : une
@@ -2610,13 +2813,13 @@ a:focus-visible,
   padding-left: 15px;
   padding-right: 0.75rem;
   overflow: hidden;
-  border-radius: var(--radius-lg);
-  font-size: 0.8125rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
   font-weight: 600;
   letter-spacing: -0.01em;
   white-space: nowrap;
-  color: rgb(255 255 255 / 0.72);
-  background: rgb(255 255 255 / 0.06);
+  color: rgb(255 255 255 / 0.7);
+  background: transparent;
   transition:
     background-color var(--tv-dur-2) var(--tv-ease),
     color var(--tv-dur-2) var(--tv-ease),
@@ -2665,11 +2868,11 @@ a:focus-visible,
  */
 @media (hover: hover) {
   .rail-item:hover {
-    background: rgb(255 255 255 / 0.13);
+    background: rgb(255 255 255 / 0.06);
     color: #fff;
   }
   .rail-collapsed .rail-item:hover:not(.rail-item-active) {
-    background: rgb(255 255 255 / 0.18);
+    background: rgb(255 255 255 / 0.08);
   }
   .rail-item:hover .rail-icon {
     transform: scale(1.12);
@@ -2715,18 +2918,18 @@ a:focus-visible,
  * CSS ne donne l'ordonnée de la n-ième entrée à travers un séparateur.
  */
 .rail-tab {
+  /* LIQUID — une pilule de verre clair, DANS le rail : elle ne rejoint plus la
+     fenêtre de contenu (il n'y a plus de fenêtre, le contenu flotte sur le
+     papier peint). Arête spéculaire d'1px, aucune ombre, aucune couleur. */
   position: absolute;
   left: 0.625rem;
   top: 0;
-  width: calc(100% - 1.25rem + var(--rail-bridge));
-  border-radius: var(--radius-lg);
-  border-top-right-radius: 0;
-  border-bottom-right-radius: 0;
-  background: var(--tv-plate-0);
-  border: 1px solid var(--tv-border);
-  border-right: 0;
-  /* Elle passe DEVANT le liseré gauche de la fenêtre, qu'elle enterre sur sa
-     hauteur : sans ça une paroi d'un pixel resterait en travers du couloir. */
+  width: calc(100% - 1.25rem);
+  border-radius: 9999px;
+  background: rgb(255 255 255 / 0.1);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.14),
+    inset 0 0 0 1px rgb(255 255 255 / 0.04);
   z-index: 1;
   pointer-events: none;
 }
@@ -2737,8 +2940,8 @@ a:focus-visible,
    mise en page. La largeur, elle, suit le pli du rail sur sa propre durée. */
 .rail-tab-ready {
   transition:
-    transform var(--tv-dur-3) var(--tv-ease),
-    height var(--tv-dur-3) var(--tv-ease);
+    transform var(--tv-dur-spring) var(--tv-spring),
+    height var(--tv-dur-spring) var(--tv-spring);
 }
 @media (prefers-reduced-motion: reduce) {
   .rail-tab-ready {
@@ -2746,60 +2949,8 @@ a:focus-visible,
   }
 }
 
-/* ══ LES CONGÉS ══
- *
- * Un CONGÉ (en anglais *fillet*, ou *inverted corner radius*) est le raccord
- * CONCAVE entre deux surfaces perpendiculaires. C'est lui qui fait la
- * différence entre « une planche posée en travers d'un vide » et « une
- * languette moulée dans la fenêtre ».
- *
- * Sans congé, l'arête haute de la languette rencontre l'arête gauche de la
- * fenêtre à angle droit : deux droites qui se croisent, donc deux objets qui
- * se touchent. Avec, la surface passe de l'une à l'autre par un arc, sans
- * jamais casser — la construction d'un onglet de navigateur qui rejoint sa
- * barre d'outils.
- *
- * Chaque congé est un carré posé juste au-dessus (et au-dessous) de
- * l'extrémité droite, peint d'un dégradé radial centré sur son coin
- * INTÉRIEUR : transparent jusqu'au rayon, liseré sur 1px, surface au-delà. Le
- * trait de la languette se prolonge donc dans l'arc au lieu de s'arrêter net.
- *
- * Le rayon vaut 14px et non 10 : mesuré, à 10 la masse du congé tombait à
- * droite du bord de la fenêtre — donc sur une surface de la même couleur,
- * donc invisible ; seul l'arc du liseré se voyait. Le décalage d'1px sur
- * `top`/`bottom` compense le liseré, les offsets d'un absolu se comptant
- * depuis la boîte de padding.
- */
-.rail-tab::before,
-.rail-tab::after {
-  content: "";
-  position: absolute;
-  right: 0;
-  width: var(--rail-fillet);
-  height: var(--rail-fillet);
-  pointer-events: none;
-}
-.rail-tab::before {
-  top: calc(-1 * var(--rail-fillet) - 1px);
-  background: radial-gradient(
-    circle at 0 0,
-    transparent calc(var(--rail-fillet) - 1px),
-    var(--tv-border) calc(var(--rail-fillet) - 1px),
-    var(--tv-border) var(--rail-fillet),
-    var(--tv-plate-0) var(--rail-fillet)
-  );
-}
-.rail-tab::after {
-  bottom: calc(-1 * var(--rail-fillet) - 1px);
-  background: radial-gradient(
-    circle at 0 100%,
-    transparent calc(var(--rail-fillet) - 1px),
-    var(--tv-border) calc(var(--rail-fillet) - 1px),
-    var(--tv-border) var(--rail-fillet),
-    var(--tv-plate-0) var(--rail-fillet)
-  );
-}
-
+/* LES CONGÉS ont disparu avec la fenêtre : la languette ne raccorde plus
+   rien, elle ne fait que désigner. */
 /* L'ENTRÉE ACTIVE ne porte plus aucune surface : la languette est derrière
    elle. Il ne lui reste que ce qui est à elle — la couleur de son texte et
    l'accent de son icône. Elle passe au-dessus de la languette pour rester
@@ -2824,7 +2975,7 @@ a:focus-visible,
            la page, elle doit la REJOINDRE.
    Déclarée ici, une seule fois ; l'état plié la reprend telle quelle. */
 .rail {
-  --rail-bridge: 20px;
+  --rail-bridge: 0px;
   /* LA TAILLE DU DISQUE — la zone tactile d'une entrée pliée, et la hauteur
      d'une entrée dépliée. 44px et non 40 : c'est le minimum tactile d'Apple et
      d'Android, et surtout la languette cessait d'exister par rapport à son
@@ -2861,12 +3012,6 @@ a:focus-visible,
      redevient une pilule ordinaire, qui glisse toujours. */
   .rail-tab {
     width: calc(100% - 1.25rem);
-    border: 0;
-    border-radius: var(--radius-lg);
-  }
-  .rail-tab::before,
-  .rail-tab::after {
-    display: none;
   }
 }
 
@@ -2920,6 +3065,35 @@ a:focus-visible,
   }
 }
 
+/* LA CARTE UTILISATEUR du pied de rail (maquette v1) : un disque d'initiale,
+   le nom, l'adresse, le menu. Une plaque à peine posée sur le verre. */
+.rail-me {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border-radius: 16px;
+  border: 1px solid var(--tv-border);
+  background: rgb(255 255 255 / 0.04);
+  transition: background-color var(--tv-dur-1) var(--tv-ease);
+}
+.rail-me:hover {
+  background: rgb(255 255 255 / 0.07);
+}
+.rail-me-disc {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 9999px;
+  background: var(--tv-plate-3);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--tv-text-primary);
+}
+
 /* Séparateur interne : un trait blanc à peine visible, pas une bordure. */
 .rail-divider {
   height: 1px;
@@ -2968,7 +3142,7 @@ a:focus-visible,
   border-radius: 9999px;
   color: rgb(255 255 255 / 0.75);
   background: var(--tv-plate-3);
-  box-shadow: 0 0 0 2px var(--tv-rail-bot);
+  box-shadow: 0 0 0 2px var(--tv-plate-1);
   transition: color var(--tv-dur-2) var(--tv-ease);
 }
 @media (hover: hover) {
@@ -2986,37 +3160,13 @@ a:focus-visible,
  * marge, le contenu va d'un bord à l'autre. */
 @media (min-width: 768px) {
   .app-frame {
-    /* La fenêtre n'est plus un à-plat. Elle reçoit la MÊME lumière que le
-       rail — tombant du haut et éteinte vite — parce que deux surfaces
-       éclairées différemment se lisent toujours comme deux objets posés l'un
-       à côté de l'autre.
-
-       Deux précautions :
-         • la nuance est un VOILE BLANC de 3 %, pas une teinte : le contenu
-           ne doit être coloré par rien.
-         • la chute se mesure en PIXELS (150) et non en pourcentage. En
-           pourcentage, la lumière s'étirerait sur toute la hauteur de la
-           fenêtre — sur une page longue, un bandeau clair de 300px en haut,
-           qu'on lit comme un en-tête et non comme un éclairage. */
-    /* La plaque laisse passer le fond du site (grille + lumières) : légèrement
-       translucide, pour que la fenêtre et la page soient une seule scène. */
-    background:
-      linear-gradient(180deg, rgb(255 255 255 / 0.03) 0px, rgb(255 255 255 / 0) 150px),
-      color-mix(in srgb, var(--tv-plate-0) 82%, transparent);
+    /* LIQUID — plus de fenêtre. Le contenu se pose directement sur le papier
+       peint : ce sont les cartes qui font les plans, pas un cadre autour
+       d'elles. Le rayon reste pour rogner proprement le défilement. */
+    background: transparent;
     border: 0;
     border-radius: var(--tv-shell-radius);
-    /* Le liseré devient un liseré INTERNE, comme celui du rail, avec le même
-       reflet sur l'arête haute et la même ombre portée. Trois raisons :
-         • une `border` déplace la boîte, un `inset` non — la fenêtre et le
-           rail gardent exactement la même hauteur utile ;
-         • l'arête haute éclairée est ce qui fait qu'une plaque a une
-           épaisseur plutôt qu'un contour ;
-         • l'entrée active du rail enterre ce liseré sur sa hauteur (elle
-           passe devant), et un inset se laisse recouvrir proprement. */
-    box-shadow:
-      inset 0 0 0 1px var(--tv-border),
-      inset 0 1px 0 rgb(255 255 255 / 0.05),
-      0 18px 50px -24px rgb(0 0 0 / 0.8);
+    box-shadow: none;
   }
 }
 
@@ -3411,6 +3561,79 @@ body.tv-app-type :is(.tv-figure, .tv-num, .tabular-nums) {
  * Animer `left`/`width` aurait fait recalculer la disposition à chaque frame ;
  * `transform` compose sur le GPU et ne touche à rien d'autre.
  */
+/* ══ LE GRAND TITRE — LIQUID ══
+ * Le Large Title d'iOS : 30px, 700, approche serrée. Un seul par page, posé
+ * par `PageHead` à partir de la navigation. */
+.tv-large-title {
+  font-size: var(--tv-t-h1);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.025em;
+  color: var(--tv-text-primary);
+}
+/* La barre compacte : un conteneur collant de hauteur NULLE (il ne prend
+   aucune place) qui porte une barre de verre absolue. Elle n'apparaît qu'une
+   fois le grand titre sorti de la fenêtre — fondu + 6px, rien d'autre. */
+.page-compact {
+  position: sticky;
+  top: 0;
+  z-index: var(--tv-z-nav);
+  height: 0;
+}
+.page-compact-bar {
+  position: absolute;
+  inset: 0 0 auto;
+  isolation: isolate;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 52px;
+  padding: env(safe-area-inset-top, 0px) 64px 0;
+  box-sizing: content-box;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--tv-text-primary);
+  border-bottom: 1px solid var(--tv-glass-edge);
+  opacity: 0;
+  transform: translateY(-6px);
+  pointer-events: none;
+  transition:
+    opacity var(--tv-dur-2) var(--tv-ease),
+    transform var(--tv-dur-2) var(--tv-ease);
+}
+.page-compact-bar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--tv-glass-fill-solid);
+  -webkit-backdrop-filter: blur(var(--tv-glass-blur)) saturate(var(--tv-glass-saturate));
+  backdrop-filter: blur(var(--tv-glass-blur)) saturate(var(--tv-glass-saturate));
+}
+.page-compact-bar-on {
+  opacity: 1;
+  transform: none;
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .page-compact-bar::before {
+    background: var(--tv-plate-1);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .page-compact-bar::before {
+    background: var(--tv-plate-1);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-compact-bar {
+    transform: none;
+    transition: opacity var(--tv-dur-1) linear;
+  }
+}
+
 /* ── Onglets de section — CONTRÔLE SEGMENTÉ ──
  * Un cadre unique, des pastilles dedans, celle qui est active posée sur une
  * surface pleine. L'ancienne version était une rangée soulignée : à côté de la
@@ -3427,12 +3650,15 @@ body.tv-app-type :is(.tv-figure, .tv-num, .tabular-nums) {
    de plus que la fenêtre. En dessous, c'est le sélecteur compact (le même
    menu que sur téléphone) qui porte la navigation. */
 .section-tabs {
+  /* LIQUID — le segmented d'iOS en version « solide » : une piste creuse
+     (plate-0) et une pastille pleine posée dedans, rayons concentriques
+     (14 dehors, 11 dedans). */
   display: none;
   max-width: 100%;
   padding: 3px;
-  border-radius: var(--radius-xl);
-  background: var(--tv-plate-1);
-  border: 1px solid var(--tv-border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--tv-plate-0);
+  border: 1px solid var(--tv-border);
   box-shadow: none;
 }
 @media (min-width: 1024px) {
@@ -3464,9 +3690,9 @@ body.tv-app-type :is(.tv-figure, .tv-num, .tabular-nums) {
   align-items: center;
   gap: 0.5rem;
   height: 2.25rem;
-  padding: 0 0.9rem;
-  border-radius: var(--radius-lg);
-  font-size: 0.82rem;
+  padding: 0 0.95rem;
+  border-radius: 11px;
+  font-size: 0.8125rem;
   font-weight: 600;
   line-height: 1;
   white-space: nowrap;
@@ -3495,7 +3721,14 @@ body.tv-app-type :is(.tv-figure, .tv-num, .tabular-nums) {
 .section-tab-active {
   color: var(--tv-text-primary);
   background: var(--tv-plate-3);
-  box-shadow: none;
+  /* L'arête claire et une ombre NOIRE d'un pixel : la pastille est posée sur
+     la piste, elle n'y est pas peinte. */
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.08),
+    0 1px 2px rgb(0 0 0 / 0.5);
+}
+.section-tab-active svg {
+  color: var(--tv-accent);
 }
 .section-tab:focus-visible {
   outline: 2px solid rgb(var(--tv-accent-rgb) / 0.7);
@@ -3848,9 +4081,6 @@ body.tv-app-type :is(.tv-figure, .tv-num, .tabular-nums) {
 }
 .rp-weekcell {
   min-width: 0;
-  padding: 0.5rem 0.6rem;
-  border: 1px solid var(--tv-border);
-  border-radius: 0.6rem;
 }
 
 .rp-momgrid {
@@ -3909,6 +4139,178 @@ body.tv-app-type :is(.tv-figure, .tv-num, .tabular-nums) {
    feuille. À l'écran, la page porte déjà son titre et sa navigation. */
 .rp-print-only {
   display: none;
+}
+
+/* ── LE RAPPORT, CONDENSÉ (Liquid) ─────────────────────────────────────────
+   Le verdict en chiffre héros, l'essentiel juste dessous, des sections sans
+   sous-titre, les semaines en cellules à barre, le débrief replié. */
+.rp-hero-figure {
+  color: var(--tv-text-primary);
+  font: 700 34px/1 var(--font-figure);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.035em;
+}
+@media (min-width: 768px) {
+  .rp-hero-figure {
+    font-size: var(--tv-t-display);
+  }
+}
+.rp-delta {
+  font: 600 12px var(--font-figure);
+  font-variant-numeric: tabular-nums;
+}
+.rp-weekcell {
+  padding: 0.7rem 0.8rem;
+  border-radius: var(--radius-lg);
+  background: var(--tv-plate-2);
+}
+.rp-weekbar {
+  display: block;
+  height: 4px;
+  margin-top: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--tv-plate-3);
+}
+.rp-weekbar > span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+}
+@media screen and (min-width: 1024px) {
+  /* Deux sections courtes côte à côte à l'écran aussi : la feuille perd une
+     hauteur entière de section à chaque paire. */
+  .rp-duo {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .rp-duo > .rp-section:only-child {
+    grid-column: 1 / -1;
+  }
+  .rp-duo > .rp-section + .rp-section {
+    border-top: 0;
+    border-left: 1px solid var(--tv-border);
+  }
+  .rp-section + .rp-duo,
+  .rp-duo + .rp-duo {
+    border-top: 1px solid var(--tv-border);
+  }
+  .rp-section + .rp-duo > .rp-section:first-child,
+  .rp-duo + .rp-duo > .rp-section:first-child {
+    border-top: 0;
+  }
+}
+/* Les deux vues de la feuille (Synthèse · Détail). Un enveloppement
+   transparent : à l'écran, seule la vue choisie s'affiche ; sur le papier,
+   toutes. Le filet de tête de chaque vue est repris ici, puisque
+   l'enveloppe coupe la relation de fratrie avec la section précédente. */
+.rp-view {
+  display: contents;
+}
+@media screen {
+  .rp-view-off {
+    display: none;
+  }
+}
+.rp-view > .rp-section:first-child {
+  border-top: 1px solid var(--tv-border);
+}
+@media not all and (min-width: 1024px) {
+  .rp-view > .rp-duo:first-child > .rp-section:first-child {
+    border-top: 1px solid var(--tv-border);
+  }
+}
+@media screen and (min-width: 1024px) {
+  .rp-view > .rp-duo:first-child {
+    border-top: 1px solid var(--tv-border);
+  }
+}
+/* La note « chiffres provisoires » : sur le papier seulement — à l'écran,
+   la pastille « en cours » du verdict la porte déjà. */
+.rp-section.rp-provisional.rp-print-only {
+  display: none;
+}
+@media print {
+  .rp-section.rp-provisional.rp-print-only {
+    display: flex;
+  }
+}
+.rp-debrief-toggle {
+  display: flex;
+  width: 100%;
+  min-height: 40px;
+  align-items: center;
+  gap: 10px;
+}
+.rp-debrief-wrap[data-open="false"] .rp-debrief {
+  display: none;
+}
+.rp-debrief-wrap[data-open="true"] .rp-debrief {
+  margin-top: 10px;
+}
+@media print {
+  .rp-debrief-wrap .rp-debrief {
+    display: block !important;
+  }
+  .rp-debrief-toggle > svg:last-child {
+    display: none;
+  }
+}
+/* Les mois clos à rapporter : une bande de puces, pas une liste. */
+.rp-backlog {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px 18px;
+  border: 1px solid var(--tv-border);
+  border-radius: var(--radius-2xl);
+  background: var(--tv-plate-1);
+}
+.rp-backlog-icon {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 9999px;
+  background: rgb(251 191 36 / 0.12);
+  color: #fbbf24;
+}
+.rp-backlog-title {
+  padding-top: 7px;
+  color: var(--tv-text-primary);
+  font-size: 14px;
+  font-weight: 600;
+}
+.rp-backlog-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.rp-backlog-chip {
+  display: inline-flex;
+  height: 34px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px 0 10px;
+  border: 1px solid var(--tv-glass-edge);
+  border-radius: 9999px;
+  background: rgb(255 255 255 / 0.04);
+  box-shadow: var(--tv-glass-specular);
+  color: var(--tv-text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  transition:
+    background-color var(--tv-dur-1) var(--tv-ease),
+    color var(--tv-dur-1) var(--tv-ease);
+}
+.rp-backlog-chip:hover:not(:disabled) {
+  background: rgb(255 255 255 / 0.08);
+  color: var(--tv-text-primary);
+}
+.rp-backlog-chip:disabled {
+  opacity: 0.5;
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -4819,10 +5221,10 @@ body.tv-app-type :is(.tv-figure, .tv-num, .tabular-nums) {
 }
 .jarvis-bubble-user {
   min-width: 0;
-  border: 1px solid var(--tv-border-strong);
-  border-radius: var(--radius-xl) var(--radius-xl) var(--radius-sm) var(--radius-xl);
+  border: 1px solid var(--tv-border);
+  border-radius: 20px 20px 6px 20px;
   background: var(--tv-plate-3);
-  padding: 10px 14px;
+  padding: 10px 16px;
   font-size: var(--tv-t-body);
   line-height: 1.6;
   color: var(--tv-text-primary);
@@ -4847,17 +5249,26 @@ body.tv-app-type :is(.tv-figure, .tv-num, .tabular-nums) {
 
 /* ── LE COMPOSITEUR ── il s'allume quand on écrit. */
 .jarvis-composer {
+  /* LE CHAMP DE CLAUDE : une grande plaque douce, rayon 24, de l'air autour
+     du texte. Au focus elle s'éclaircit d'un cran — aucun anneau coloré. */
+  min-height: 60px;
+  padding: 10px 10px 10px 12px;
   border: 1px solid var(--tv-border-strong);
-  border-radius: var(--radius-xl);
+  border-radius: 24px;
   background: var(--tv-plate-2);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.05),
+    0 10px 30px -18px rgb(0 0 0 / 0.8);
   transition:
     border-color var(--tv-dur-1),
-    box-shadow var(--tv-dur-1);
+    background-color var(--tv-dur-1);
 }
 .jarvis-composer:focus-within {
-  border-color: var(--tv-border-accent);
-  box-shadow: 0 0 0 2px rgb(var(--tv-accent-rgb) / 0.06);
+  border-color: rgb(255 255 255 / 0.18);
+  background: var(--tv-plate-3);
+}
+.jarvis-composer-input {
+  font-size: 15px;
 }
 .jarvis-send-ready {
   box-shadow: none;
@@ -4893,7 +5304,7 @@ body.tv-app-type :is(.tv-figure, .tv-num, .tabular-nums) {
   border-radius: 0.625rem;
   background: rgb(var(--tv-accent-rgb) / 0.1);
   color: var(--tv-highlight);
-  box-shadow: 0 0 18px -6px rgb(var(--tv-accent-rgb) / 0.6);
+  box-shadow: none;
 }
 .jarvis-field,
 .jarvis-memory {
@@ -4950,7 +5361,7 @@ body.tv-app-type :is(.tv-figure, .tv-num, .tabular-nums) {
 }
 .jarvis-switch[aria-checked="true"] {
   background: var(--tv-accent);
-  box-shadow: 0 0 16px -2px rgb(var(--tv-accent-rgb) / 0.7);
+  box-shadow: none;
 }
 .jarvis-switch-knob {
   position: absolute;
@@ -4996,7 +5407,7 @@ body.tv-app-type :is(.tv-figure, .tv-num, .tabular-nums) {
   font-weight: 700;
   letter-spacing: 0.02em;
   color: var(--tv-highlight);
-  box-shadow: 0 0 16px -6px rgb(var(--tv-accent-rgb) / 0.7);
+  box-shadow: none;
 }
 .jarvis-plan-badge[data-tier="elite"] {
   border-color: rgb(245 200 110 / 0.45);
@@ -5015,7 +5426,7 @@ body.tv-app-type :is(.tv-figure, .tv-num, .tabular-nums) {
 }
 .jarvis-pip[data-on="true"] {
   background: var(--tv-accent);
-  box-shadow: 0 0 8px rgb(var(--tv-accent-rgb) / 0.8);
+  box-shadow: none;
 }
 .jarvis-upgrade {
   display: inline-flex;
@@ -5043,15 +5454,11 @@ body.tv-app-type :is(.tv-figure, .tv-num, .tabular-nums) {
   border-color: transparent;
   background: linear-gradient(135deg, var(--tv-accent), rgb(var(--tv-accent-rgb) / 0.75));
   color: #04120b;
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.35),
-    0 0 22px -4px rgb(var(--tv-accent-rgb) / 0.75);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.35);
 }
 .jarvis-upgrade-hot:hover {
   background: linear-gradient(135deg, var(--tv-accent), var(--tv-accent));
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.4),
-    0 0 30px -2px rgb(var(--tv-accent-rgb) / 0.9);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.4);
   transform: translateY(-1px);
 }
 .jarvis-error {
@@ -5241,7 +5648,7 @@ thead .plan-cmp-col.is-pro {
     rgb(var(--tv-accent-rgb) / 0.16),
     rgb(var(--tv-accent-rgb) / 0.07)
   );
-  box-shadow: 0 -18px 50px -30px rgb(var(--tv-accent-rgb) / 0.9);
+  box-shadow: none;
 }
 .plan-cmp-end > .plan-cmp-col.is-pro {
   border-bottom: 1px solid rgb(var(--tv-accent-rgb) / 0.3);
@@ -5256,7 +5663,7 @@ thead .plan-cmp-col.is-pro {
 .plan-cmp-head {
   position: relative;
   vertical-align: bottom;
-  padding-top: 1.75rem;
+  padding-top: 2.25rem;
   padding-bottom: 1rem;
 }
 .plan-cmp-head > * {
@@ -5264,8 +5671,11 @@ thead .plan-cmp-col.is-pro {
   justify-content: center;
 }
 .plan-cmp-ribbon {
+  /* DANS la tête de colonne, pas à cheval sur son bord : le tableau vit dans
+     un conteneur `overflow-x: auto`, qui rogne aussi tout ce qui dépasse en
+     hauteur — la pastille sortait coupée en deux. */
   position: absolute;
-  top: -0.7rem;
+  top: 0.35rem;
   left: 50%;
   transform: translateX(-50%);
   align-items: center;
@@ -5276,8 +5686,8 @@ thead .plan-cmp-col.is-pro {
   padding: 0.2rem 0.65rem;
   font-size: 0.6875rem;
   font-weight: 700;
-  color: #04120b;
-  box-shadow: 0 0 20px -4px rgb(var(--tv-accent-rgb) / 0.8);
+  color: #ffffff;
+  box-shadow: none;
 }
 .plan-cmp-name {
   align-items: center;
@@ -5345,15 +5755,11 @@ thead .plan-cmp-col.is-pro {
   border-color: transparent;
   background: var(--tv-accent);
   color: #04120b;
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.35),
-    0 0 24px -4px rgb(var(--tv-accent-rgb) / 0.75);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.35);
 }
 .plan-cmp-cta-hot:hover {
   background: var(--tv-accent);
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.4),
-    0 0 32px -2px rgb(var(--tv-accent-rgb) / 0.9);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.4);
   transform: translateY(-1px);
 }
 .plan-cmp-current {
@@ -5403,7 +5809,7 @@ thead .plan-cmp-col.is-pro {
 .is-pro .plan-cmp-check {
   background: var(--tv-accent);
   color: #04120b;
-  box-shadow: 0 0 12px -2px rgb(var(--tv-accent-rgb) / 0.7);
+  box-shadow: none;
 }
 .plan-cmp-check.is-muted {
   background: rgb(255 255 255 / 0.06);
@@ -5432,7 +5838,7 @@ thead .plan-cmp-col.is-pro {
     padding-right: 0.25rem;
   }
   .plan-cmp-head {
-    padding-top: 1.5rem;
+    padding-top: 2.1rem;
   }
   .plan-cmp-name {
     font-size: 0.6875rem;
@@ -5462,75 +5868,756 @@ thead .plan-cmp-col.is-pro {
   }
 }
 
-/* ── Les trois portes du tableau de bord (Journal · Jarvis · Analyse) ──
-   Des boutons de 44 px, pas des cartes : l'action se lit sans se déguiser en
-   tuile de données. */
-/* Le sélecteur de période de la courbe — un segmenté de 24px, visible à
-   toutes les tailles (l'ancien empruntait les onglets de page, masqués sous
-   1024px). Le choix actif est une plaque plus claire, pas un aplat d'accent :
-   c'est une vue, pas une action. */
-.dash-period {
+/* ══ LE CALENDRIER ÉCONOMIQUE — façon Forex Factory ══
+ * Un TABLEAU dense, pas une liste de cartes : on doit lire d'un coup d'œil
+ * l'heure, la devise, l'impact, l'événement et les trois valeurs (réel,
+ * prévu, précédent). Sur téléphone la ligne passe sur deux étages. */
+.ff-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.ff-week {
   display: inline-flex;
+  align-items: center;
   gap: 2px;
-  padding: 2px;
-  border-radius: 9px;
+  padding: 3px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--tv-border);
   background: var(--tv-plate-0);
 }
-.dash-period-btn {
-  height: 24px;
-  min-width: 34px;
+.ff-week-btn {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  color: var(--tv-text-secondary);
+}
+.ff-week-btn:hover {
+  background: var(--tv-plate-2);
+  color: var(--tv-text-primary);
+}
+.ff-week-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 0 8px;
-  border-radius: 7px;
-  font-family: var(--font-figure);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--tv-text-primary);
+  white-space: nowrap;
+}
+.ff-today {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 38px;
+  padding: 0 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--tv-border-accent);
+  background: rgb(var(--tv-accent-rgb) / 0.1);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tv-highlight);
+}
+.ff-next {
+  display: inline-flex;
+  min-width: 0;
+  max-width: 560px;
+  flex: 1 1 260px;
+  align-items: center;
+  gap: 10px;
+  height: 38px;
+  padding: 0 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--tv-border);
+  background: var(--tv-plate-1);
+}
+.ff-source {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 9999px;
+  border: 1px solid var(--tv-border);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.ff-source-ok {
+  border-color: rgb(var(--tv-accent-rgb) / 0.3);
+  background: rgb(var(--tv-accent-rgb) / 0.08);
+  color: var(--tv-highlight);
+}
+.ff-source-warn {
+  border-color: rgb(245 158 11 / 0.3);
+  background: rgb(245 158 11 / 0.08);
+  color: #fcd34d;
+}
+.ff-source-time {
+  font-weight: 500;
+  color: var(--tv-text-secondary);
+}
+.ff-table {
+  overflow: hidden;
+  border-radius: var(--radius-2xl);
+  border: 1px solid var(--tv-border);
+  background: var(--tv-plate-1);
+}
+.ff-row {
+  display: grid;
+  grid-template-columns: 76px 72px 64px minmax(0, 1fr) 92px 92px 92px;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 6px 18px;
+  border-top: 1px solid var(--tv-border);
+  font-size: 13px;
+  color: var(--tv-text-primary);
+}
+/* Dans le tableau qui défile, l'en-tête de colonnes reste en haut. */
+.ff-table.tv-scroll .ff-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--tv-plate-1);
+}
+.ff-head {
+  min-height: 38px;
+  border-top: 0;
+  background: var(--tv-plate-0);
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--tv-text-muted);
+}
+.ff-day {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 18px;
+  border-top: 1px solid var(--tv-border-strong);
+  background: var(--tv-plate-2);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--tv-text-secondary);
+}
+.ff-day-today {
+  color: var(--tv-text-primary);
+  box-shadow: inset 3px 0 0 var(--tv-accent);
+}
+.ff-day-tag {
+  padding: 1px 7px;
+  border-radius: 9999px;
+  background: rgb(var(--tv-accent-rgb) / 0.14);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--tv-highlight);
+}
+.ff-time {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tv-text-secondary);
+}
+.ff-cur {
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.ff-title {
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 500;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.ff-num {
+  text-align: right;
+  white-space: nowrap;
+  color: var(--tv-text-secondary);
+}
+.ff-actual {
+  color: var(--tv-text-primary);
+}
+.ff-num-label {
+  display: none;
+}
+.ff-impact {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 14px;
+}
+.ff-impact-bar {
+  width: 4px;
+  border-radius: 1px;
+  background: rgb(255 255 255 / 0.1);
+}
+.ff-impact-bar[data-on="high"] {
+  background: #ef4444;
+}
+.ff-impact-bar[data-on="medium"] {
+  background: #f97316;
+}
+.ff-impact-bar[data-on="low"] {
+  background: #eab308;
+}
+.ff-impact-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 9999px;
+  background: var(--tv-text-muted);
+}
+.ff-past {
+  opacity: 0.55;
+}
+.ff-live {
+  background: rgb(var(--tv-accent-rgb) / 0.06);
+}
+.ff-isnext {
+  box-shadow: inset 3px 0 0 var(--tv-accent);
+}
+.ff-live-pill {
+  padding: 0 5px;
+  border-radius: 4px;
+  background: rgb(var(--tv-accent-rgb) / 0.16);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--tv-highlight);
+}
+@media (max-width: 767px) {
+  .ff-head {
+    display: none;
+  }
+  .ff-row {
+    grid-template-columns: auto auto auto minmax(0, 1fr);
+    grid-template-areas:
+      "time cur impact ."
+      "title title title title"
+      "act fc prev prev";
+    row-gap: 4px;
+    padding: 10px 14px;
+  }
+  .ff-row > :nth-child(1) {
+    grid-area: time;
+  }
+  .ff-row > :nth-child(2) {
+    grid-area: cur;
+  }
+  .ff-row > :nth-child(3) {
+    grid-area: impact;
+  }
+  .ff-row > :nth-child(4) {
+    grid-area: title;
+    white-space: normal;
+  }
+  .ff-row > :nth-child(5) {
+    grid-area: act;
+  }
+  .ff-row > :nth-child(6) {
+    grid-area: fc;
+  }
+  .ff-row > :nth-child(7) {
+    grid-area: prev;
+  }
+  .ff-num {
+    display: inline-flex;
+    gap: 4px;
+    text-align: left;
+    font-size: 12px;
+  }
+  .ff-num-label {
+    display: inline;
+    color: var(--tv-text-muted);
+  }
+  .ff-day {
+    padding: 9px 14px;
+  }
+}
+
+/* ══ L'ACCUEIL FAÇON REVOLUT (Dashboard) ══
+ * Le P&L de la période, seul et énorme, centré ; sa fenêtre en mots ; le
+ * choix de la période ; la rangée d'actions rondes. Rien d'autre au-dessus de
+ * la courbe. */
+.dash-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0 24px;
+  text-align: center;
+}
+.dash-hero-figure {
+  font-size: var(--tv-t-display);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+@media (max-width: 380px) {
+  .dash-hero-figure {
+    font-size: 38px;
+  }
+}
+.dash-hero-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: var(--tv-t-body-sm);
+  color: var(--tv-text-secondary);
+}
+.dash-hero-pct {
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 12px;
+}
+.dash-hero-actions {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 10px;
+}
+@media (min-width: 640px) {
+  .dash-hero-actions {
+    gap: 26px;
+  }
+}
+
+/* Le sélecteur de période — Jour · Semaine · Mois · Année · Tout. Une
+   capsule de verre, la pastille active en verre clair (maquette v1). C'est une
+   VUE, pas une action : jamais d'aplat d'accent. */
+.dash-period {
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 9999px;
+  border: 1px solid var(--tv-glass-edge);
+  box-shadow: var(--tv-glass-specular);
+}
+.dash-period::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--tv-glass-fill);
+  -webkit-backdrop-filter: blur(var(--tv-glass-blur)) saturate(var(--tv-glass-saturate));
+  backdrop-filter: blur(var(--tv-glass-blur)) saturate(var(--tv-glass-saturate));
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .dash-period::before {
+    background: var(--tv-plate-1);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .dash-period::before {
+    background: var(--tv-plate-1);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+.dash-period-btn {
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 9999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tv-text-secondary);
   transition:
-    background-color var(--duration-micro) var(--tv-ease),
-    color var(--duration-micro) var(--tv-ease);
+    background-color var(--tv-dur-1) var(--tv-ease),
+    color var(--tv-dur-1) var(--tv-ease);
+}
+@media (min-width: 640px) {
+  .dash-period-btn {
+    padding: 0 16px;
+  }
 }
 .dash-period-btn:hover {
   color: var(--tv-text-primary);
 }
 .dash-period-btn[aria-pressed="true"] {
-  background: var(--tv-plate-3);
-  color: var(--tv-text-primary);
+  background: rgb(255 255 255 / 0.14);
+  color: #fff;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16);
 }
 .dash-period-btn:focus-visible {
   outline: 2px solid var(--tv-accent);
   outline-offset: 1px;
 }
 
-.dash-action {
+/* La pilule du compte, au-dessus du chiffre héros. */
+.tv-account-pill {
   display: inline-flex;
-  min-height: 2.75rem;
-  min-width: 0;
+  max-width: min(100%, 320px);
   align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  border: 1px solid var(--tv-border);
-  border-radius: 0.875rem;
-  background: var(--tv-plate-2);
-  padding: 0 0.75rem;
-  font-size: 0.8125rem;
+  gap: 6px;
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 9999px;
+  border: 1px solid var(--tv-glass-edge);
+  background: rgb(255 255 255 / 0.05);
+  box-shadow: var(--tv-glass-specular);
+  font-size: 13px;
   font-weight: 600;
-  color: var(--tv-text-secondary);
-  transition-property: color, border-color, background-color;
-  transition-duration: var(--tv-dur-1);
-  transition-timing-function: var(--tv-ease);
+  color: var(--tv-text-primary);
+  transition: background-color var(--tv-dur-1) var(--tv-ease);
 }
-.dash-action:hover {
-  border-color: var(--tv-border-strong);
+.tv-account-pill:hover {
+  background: rgb(255 255 255 / 0.09);
+}
+
+/* L'en-tête du Dashboard : la recherche en capsule, la cloche en disque. */
+.dash-search {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 8px 0 14px;
+  border-radius: 9999px;
+  border: 1px solid var(--tv-glass-edge);
+  background: rgb(255 255 255 / 0.04);
+  box-shadow: var(--tv-glass-specular);
+  font-size: 13px;
+  color: var(--tv-text-secondary);
+  transition:
+    background-color var(--tv-dur-1) var(--tv-ease),
+    color var(--tv-dur-1) var(--tv-ease);
+}
+.dash-search:hover {
+  background: rgb(255 255 255 / 0.08);
   color: var(--tv-text-primary);
 }
-.dash-action:focus-visible {
+.dash-search kbd {
+  padding: 3px 7px;
+  border-radius: 9999px;
+  background: rgb(255 255 255 / 0.08);
+  font: 600 11px var(--font-figure);
+  color: var(--tv-text-secondary);
+}
+.dash-icon-btn {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 9999px;
+  border: 1px solid var(--tv-glass-edge);
+  background: rgb(255 255 255 / 0.04);
+  box-shadow: var(--tv-glass-specular);
+  color: var(--tv-text-primary);
+  transition: background-color var(--tv-dur-1) var(--tv-ease);
+}
+.dash-icon-btn:hover {
+  background: rgb(255 255 255 / 0.08);
+}
+.dash-icon-dot {
+  position: absolute;
+  top: 9px;
+  right: 10px;
+  width: 7px;
+  height: 7px;
+  border-radius: 9999px;
+  background: var(--tv-accent);
+}
+.dash-lead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: var(--tv-t-body-sm);
+  color: var(--tv-text-muted);
+}
+.dash-lead-date::first-letter {
+  text-transform: uppercase;
+}
+
+/* Les deux rangées de la maquette : deux tiers / un tiers. */
+.dash-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  margin-bottom: 16px;
+}
+@media (min-width: 1024px) {
+  .dash-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .dash-span-2 {
+    grid-column: span 2;
+  }
+}
+.dash-widgets {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.dash-widgets .metric-tile {
+  border-radius: var(--radius-2xl);
+}
+.dash-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.dash-card-title {
+  font-size: var(--tv-t-h3);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--tv-text-primary);
+}
+.dash-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 32px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tv-accent);
+}
+.dash-link:hover {
+  color: var(--tv-highlight);
+}
+
+/* La légende de la courbe, posée dans l'en-tête de sa carte. */
+.dash-legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--tv-text-secondary);
+  white-space: nowrap;
+}
+.dash-legend i {
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+}
+
+/* Les derniers trades : la liste de transactions de Revolut. */
+.dash-list {
+  display: flex;
+  flex-direction: column;
+}
+.dash-row {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--tv-border);
+  text-align: left;
+}
+.dash-row:first-child {
+  border-top: 0;
+  padding-top: 2px;
+}
+.dash-row-action {
+  cursor: pointer;
+  border-radius: 12px;
+  transition: background-color var(--tv-dur-1) var(--tv-ease);
+}
+.dash-row-action:hover {
+  background: rgb(255 255 255 / 0.03);
+}
+.dash-row-action:focus-visible {
   outline: 2px solid rgb(var(--tv-accent-rgb) / 0.7);
   outline-offset: 2px;
 }
-.dash-action svg {
-  color: var(--tv-highlight);
+.dash-row-avatar {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 9999px;
+  background: var(--tv-plate-3);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: var(--tv-text-primary);
+}
+.dash-row-main {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+}
+.dash-row-title {
+  overflow: hidden;
+  font-size: var(--tv-t-body);
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--tv-text-primary);
+}
+.dash-row-sub {
+  overflow: hidden;
+  font-size: var(--tv-t-caption);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--tv-text-muted);
+}
+.dash-row-end {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+.dash-row-pnl {
+  font-size: 15px;
+}
+
+/* Le tableau de bord AJUSTÉ À L'ÉCRAN (voir Dashboard.tsx) : les hauteurs de
+   rangée sont posées en pixels par le composant ; ici, les tuiles remplissent
+   leur part et l'objectif se resserre quand la rangée est courte. */
+.dash-fit .dash-widgets {
+  grid-auto-rows: minmax(0, 1fr);
+}
+.dash-fit .dash-widgets .metric-tile {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  justify-content: center;
+}
+.dash-tight .dash-hero {
+  gap: 8px;
+  padding-bottom: 18px;
+}
+.dash-tight .dash-goal-figure {
+  font-size: 28px;
+}
+.dash-tight .dash-goal-track {
+  margin: 8px 0 10px;
+}
+.dash-tight .dash-goal-tiles {
+  gap: 8px;
+  padding-top: 8px;
+}
+.dash-tight .dash-goal-tile {
+  padding: 9px 10px;
+}
+.dash-tight .dash-goal-tile b {
+  font-size: 15px;
+}
+
+/* Rangées courtes : pastilles et lignes un cran plus serrées. */
+.dash-tight .dash-row {
+  padding: 7px 0;
+}
+.dash-tight .dash-row-avatar {
+  width: 36px;
+  height: 36px;
+}
+/* Fenêtre basse : le héros rend de la place (la pilule du compte vit déjà
+   dans le rail). */
+.dash-short .dash-hero .tv-account-pill {
+  display: none;
+}
+/* SUR ORDINATEUR, UN HÉROS PLUS SOBRE. La courbe est l'objet de l'écran : le
+   bloc du compte (pilule, chiffre, actions) rend environ 50px à la rangée de
+   l'equity, dans les mêmes proportions — chiffre 38, disques 46. */
+@media (min-width: 1024px) {
+  .dash-hero {
+    gap: 6px;
+    padding-bottom: 14px;
+  }
+  .dash-hero .tv-account-pill {
+    height: 30px;
+    padding: 0 12px;
+    font-size: 12.5px;
+  }
+  .dash-hero-figure {
+    font-size: 38px;
+  }
+  .dash-hero-actions {
+    margin-top: 6px;
+    gap: 22px;
+  }
+  .dash-hero .tv-action {
+    gap: 6px;
+  }
+  .dash-hero .tv-action-disc {
+    width: 46px;
+    height: 46px;
+  }
+  .dash-hero .tv-action-disc > svg {
+    width: 20px;
+    height: 20px;
+  }
+}
+.dash-short .dash-hero-figure {
+  font-size: 38px;
+}
+.dash-short .dash-hero-actions {
+  margin-top: 4px;
+}
+.dash-short .tv-action-disc {
+  width: 44px;
+  height: 44px;
+}
+
+/* L'objectif du mois. */
+.dash-goal {
+  display: flex;
+  flex-direction: column;
+}
+.dash-goal-figure {
+  font-size: 34px;
+  line-height: 1;
+  color: var(--tv-text-primary);
+}
+.dash-goal-track,
+.metric-track {
+  display: block;
+  overflow: hidden;
+  border-radius: 9999px;
+  background: rgb(255 255 255 / 0.07);
+}
+.dash-goal-track {
+  height: 8px;
+  margin: 12px 0 16px;
+}
+.metric-track {
+  height: 5px;
+  margin-top: 8px;
+}
+.dash-goal-tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 12px;
+}
+.dash-goal-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  border-radius: 16px;
+  background: var(--tv-plate-2);
+}
+.dash-goal-tile b {
+  font-size: 17px;
+  color: var(--tv-text-primary);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -5549,24 +6636,22 @@ body::after {
   z-index: -1;
   pointer-events: none;
 }
-/* La lumière vient d'EN HAUT À DROITE, comme sur la vitrine ; celle du bas à
-   gauche n'est plus qu'un reflet, pour que la scène ait une direction. */
+/* LIQUID — LE PAPIER PEINT. Trois nappes très floues, fixes, dans la teinte
+   du thème : c'est ce que le verre de la navigation laisse deviner. La grille
+   a disparu (un fond d'écran n'est pas une feuille quadrillée). Aucune
+   animation, aucun repeint au défilement. */
 body::before {
   background:
-    radial-gradient(52rem 34rem at 100% 0%, rgb(var(--tv-accent-rgb) / 0.13), transparent 65%),
+    radial-gradient(60rem 40rem at 88% -8%, rgb(var(--tv-accent-rgb) / 0.16), transparent 62%),
     radial-gradient(
-      44rem 28rem at 0% 100%,
-      rgb(var(--tv-accent-2-rgb, var(--tv-accent-rgb)) / 0.04),
-      transparent 65%
-    );
+      48rem 36rem at -6% 104%,
+      rgb(var(--tv-accent-2-rgb, var(--tv-accent-rgb)) / 0.08),
+      transparent 60%
+    ),
+    radial-gradient(40rem 30rem at 50% 45%, rgb(255 255 255 / 0.025), transparent 70%);
 }
 body::after {
-  background-image:
-    linear-gradient(rgb(255 255 255 / 0.028) 1px, transparent 1px),
-    linear-gradient(90deg, rgb(255 255 255 / 0.028) 1px, transparent 1px);
-  background-size: 48px 48px;
-  -webkit-mask-image: radial-gradient(ellipse 90% 80% at 50% 40%, #000 25%, transparent 85%);
-  mask-image: radial-gradient(ellipse 90% 80% at 50% 40%, #000 25%, transparent 85%);
+  content: none;
 }
 @media print {
   body::before,
@@ -5654,20 +6739,67 @@ body::after {
   max-height: calc(
     100dvh - 24px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)
   );
-  border-radius: 20px;
-  border-color: rgb(255 255 255 / 0.08);
-  background:
-    linear-gradient(180deg, rgb(var(--tv-accent-rgb) / 0.035), transparent 140px), var(--tv-plate-2);
+  /* LIQUID — une FEUILLE de verre fort : rayon de feuille (28), papier peint
+     et page devinés derrière, arête spéculaire, ombre noire large. */
+  border-radius: var(--radius-3xl);
+  border-color: var(--tv-glass-edge);
+  background: var(--tv-glass-fill-strong);
+  -webkit-backdrop-filter: blur(var(--tv-glass-blur)) saturate(var(--tv-glass-saturate));
+  backdrop-filter: blur(var(--tv-glass-blur)) saturate(var(--tv-glass-saturate));
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.06),
+    var(--tv-glass-specular),
     0 30px 80px -24px rgb(0 0 0 / 0.85);
+}
+/* TÉLÉPHONE : la feuille MONTE DU BAS, pleine largeur, coins hauts arrondis —
+   la feuille d'iOS. Le pouce atteint ses boutons sans changer de prise.
+   Exceptions : les fenêtres ancrées en haut (palette de commandes) et
+   l'aperçu plein écran d'un trade, qui ont leur propre géométrie. */
+@media (max-width: 639px) {
+  .tv-dialog-wrap:not(.items-start):not(.tv-trade-sheet-wrap) {
+    align-items: flex-end;
+    padding: max(12px, env(safe-area-inset-top, 0px)) 0 0;
+  }
+  .tv-dialog-wrap:not(.items-start):not(.tv-trade-sheet-wrap) > .tv-dialog {
+    max-width: none;
+    max-height: calc(100dvh - max(12px, env(safe-area-inset-top, 0px)));
+    border-radius: var(--radius-3xl) var(--radius-3xl) 0 0;
+    border-bottom: 0;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .tv-dialog {
+    background: var(--tv-plate-2);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .tv-dialog {
+    background: var(--tv-plate-2);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
 }
 @media (prefers-reduced-motion: no-preference) {
   .tv-dialog {
     animation: tv-dialog-in 200ms var(--tv-ease) both;
   }
+  @media (max-width: 639px) {
+    .tv-dialog-wrap:not(.items-start):not(.tv-trade-sheet-wrap) > .tv-dialog {
+      animation: tv-sheet-up var(--tv-dur-spring) var(--tv-spring) both;
+    }
+  }
   .tv-dialog-backdrop {
     animation: fade-in 160ms ease-out both;
+  }
+}
+@keyframes tv-sheet-up {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
   }
 }
 @keyframes tv-dialog-in {
@@ -5771,14 +6903,28 @@ body::after {
   display: grid;
   gap: 2px;
   padding: 6px;
-  border: 1px solid rgb(255 255 255 / 0.08);
-  border-radius: 16px;
-  background:
-    linear-gradient(180deg, rgb(var(--tv-accent-rgb) / 0.03), transparent 120px), var(--tv-plate-2);
+  /* LIQUID — verre fort, comme les menus d'iOS. */
+  border: 1px solid var(--tv-glass-edge);
+  border-radius: 20px;
+  background: var(--tv-glass-fill-strong);
+  -webkit-backdrop-filter: blur(var(--tv-glass-blur)) saturate(var(--tv-glass-saturate));
+  backdrop-filter: blur(var(--tv-glass-blur)) saturate(var(--tv-glass-saturate));
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.05),
+    var(--tv-glass-specular),
     0 24px 60px -20px rgb(0 0 0 / 0.85);
   transform-origin: top center;
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .section-menu {
+    background: var(--tv-plate-2);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .section-menu {
+    background: var(--tv-plate-2);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
 }
 @media (prefers-reduced-motion: no-preference) {
   .section-menu {
@@ -5801,7 +6947,7 @@ body::after {
 @media (max-width: 639px) {
   .metric-tile {
     padding: 0.75rem 0.875rem;
-    border-radius: 14px;
+    border-radius: var(--radius-xl);
   }
   .metric-tile .tv-figure {
     font-size: 1.25rem;
@@ -5819,13 +6965,13 @@ body::after {
    Safari), pour un verre que personne ne voit sur un fond presque noir. */
 .float-shell,
 .tv-jarvis-dock {
-  background:
-    linear-gradient(180deg, rgb(255 255 255 / 0.05), rgb(255 255 255 / 0) 60%), var(--tv-plate-2);
-  border: 1px solid rgb(255 255 255 / 0.1);
+  /* LIQUID — la même matière SOLIDE que la barre du bas : plaque pleine,
+     arête spéculaire, ombre noire. Aucune lueur d'accent. */
+  background: var(--tv-plate-2);
+  border: 1px solid var(--tv-glass-edge);
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.08),
-    0 10px 30px -12px rgb(0 0 0 / 0.8),
-    0 0 0 1px rgb(var(--tv-accent-rgb) / 0.06);
+    var(--tv-glass-specular),
+    0 10px 30px -12px rgb(0 0 0 / 0.8);
   transition:
     transform var(--tv-dur-2) var(--tv-ease),
     border-color var(--tv-dur-2) var(--tv-ease),
@@ -5838,11 +6984,10 @@ body::after {
 @media (hover: hover) {
   .float-shell:hover,
   .tv-jarvis-dock:hover {
-    border-color: rgb(var(--tv-accent-rgb) / 0.3);
+    border-color: var(--tv-border-strong);
     box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.1),
-      0 12px 34px -12px rgb(0 0 0 / 0.85),
-      0 0 24px -8px rgb(var(--tv-accent-rgb) / 0.35);
+      var(--tv-glass-specular),
+      0 12px 34px -12px rgb(0 0 0 / 0.85);
   }
 }
 .tv-jarvis-dock-active,
@@ -5955,43 +7100,26 @@ body::after {
    haut et d'une ombre courte — jamais d'un dégradé de remplissage. L'état se
    lit dans le liseré (et la pastille), la couleur reste rare. */
 .sub-hero {
+  /* LIQUID — la même plaque que la carte héros des autres pages de réglages
+     (`.tv-set-hero`) : rayon 28, plaque 1, arête claire. L'état ne se lit
+     plus dans un filet coloré en haut, mais dans la pastille et le liseré. */
   position: relative;
   overflow: hidden;
-  border-radius: 1.5rem;
+  border-radius: var(--radius-3xl);
   border: 1px solid var(--tv-border);
-  background: var(--tv-plate-2);
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.06),
-    0 18px 40px -28px rgb(0 0 0 / 0.9);
-  padding: 1.25rem;
+  background: var(--tv-plate-1);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05);
+  padding: 20px;
 }
 @media (min-width: 640px) {
   .sub-hero {
-    padding: 1.6rem 1.75rem 1.4rem;
+    padding: 24px 28px;
   }
 }
-/* Le filet d'état, en haut : une ligne, pas une nappe. */
-.sub-hero::before {
-  content: "";
-  position: absolute;
-  inset: 0 0 auto 0;
-  height: 2px;
-  background: var(--sub-hero-line, var(--tv-border-strong));
-  opacity: 0.9;
-}
-.sub-hero-active,
-.sub-hero-lifetime {
-  --sub-hero-line: rgb(var(--tv-accent-rgb) / 0.7);
-}
-.sub-hero-trialing {
-  --sub-hero-line: rgb(var(--tv-accent-rgb) / 0.5);
-}
 .sub-hero-cancelling {
-  --sub-hero-line: rgb(251 191 36 / 0.7);
   border-color: rgb(251 191 36 / 0.25);
 }
 .sub-hero-pastDue {
-  --sub-hero-line: rgb(248 113 113 / 0.75);
   border-color: rgb(248 113 113 / 0.25);
 }
 .sub-hero-top {
@@ -6002,17 +7130,12 @@ body::after {
   gap: 1.25rem 2rem;
 }
 .sub-hero-title {
-  margin-top: 0.35rem;
-  font-size: 1.6rem;
+  margin-top: 6px;
+  font-size: 1.75rem;
   font-weight: 700;
   letter-spacing: -0.025em;
   line-height: 1.1;
   color: var(--tv-text-primary);
-}
-@media (min-width: 768px) {
-  .sub-hero-title {
-    font-size: 2rem;
-  }
 }
 .sub-hero-tier {
   color: var(--tv-highlight);
@@ -6047,7 +7170,7 @@ body::after {
   display: flex;
   flex-direction: column;
   gap: 1.1rem;
-  border-radius: 1.25rem;
+  border-radius: var(--radius-2xl);
   border: 1px solid var(--tv-border);
   background: var(--tv-plate-1);
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
@@ -6087,9 +7210,7 @@ body::after {
   border-radius: 14px;
   border: 1px solid var(--tv-border-accent);
   background: var(--tv-plate-3);
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.06),
-    0 8px 20px -12px rgb(var(--tv-accent-rgb) / 0.55);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06);
   transition: transform var(--tv-dur-3) var(--tv-ease);
 }
 .calc-market[data-mode="futures"] .calc-market-thumb {
@@ -6586,17 +7707,206 @@ body.tv-app-type svg.lucide {
   border-color: var(--tv-border-accent);
   color: var(--tv-highlight);
 }
+/* ── SETUPS MANQUÉS — LIQUID ───────────────────────────────────────────────
+   Une colonne de synthèse (le chiffre héros, ses six derniers mois, deux
+   cases) et un flux groupé par mois, à la manière d'un relevé Revolut : un
+   disque d'instrument, le symbole et la raison, le R à droite. Plaques
+   opaques, aucun verre — ce sont des cartes de contenu. */
+.tv-missed-hero {
+  border: 1px solid var(--tv-border);
+  border-radius: var(--radius-3xl);
+  background: var(--tv-plate-1);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05);
+  padding: 22px 22px 18px;
+}
+.tv-missed-hero-figure {
+  margin-top: 10px;
+  color: var(--tv-text-primary);
+  font: 700 var(--tv-t-display, 44px) / 1 var(--font-figure);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.035em;
+}
+.tv-missed-hero-figure span {
+  margin-left: 4px;
+  color: var(--tv-text-muted);
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+.tv-missed-bars {
+  display: grid;
+  height: 128px;
+  margin-top: 22px;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+}
+.tv-missed-bar-col {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.tv-missed-bar-value {
+  height: 13px;
+  color: var(--tv-text-muted);
+  font: 600 10.5px/13px var(--font-figure);
+  font-variant-numeric: tabular-nums;
+}
+.tv-missed-bar-track {
+  display: flex;
+  width: 100%;
+  flex: 1;
+  align-items: flex-end;
+  border-radius: 8px;
+  background: rgb(255 255 255 / 0.03);
+}
+.tv-missed-bar {
+  display: block;
+  width: 100%;
+  border-radius: 8px;
+  background: rgb(var(--tv-accent-rgb) / 0.32);
+  transition: height var(--tv-dur-spring) var(--tv-spring);
+}
+.tv-missed-bar[data-on="true"] {
+  background: var(--tv-accent);
+}
+.tv-missed-bar-label {
+  overflow: hidden;
+  max-width: 100%;
+  color: var(--tv-text-muted);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+.tv-missed-month {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding-inline: 18px;
+  color: var(--tv-text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+}
+.tv-missed-month > span:first-child::first-letter {
+  text-transform: uppercase;
+}
+.tv-missed-month > span:last-child {
+  color: var(--tv-text-muted);
+  font-size: 12px;
+}
 .tv-missed-list {
   overflow: hidden;
   border: 1px solid var(--tv-border);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-2xl);
   background: var(--tv-plate-1);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
 }
-.tv-missed-row + .tv-missed-row {
-  border-top: 1px solid var(--tv-border);
+.tv-missed-row {
+  position: relative;
+}
+/* Le filet rentré : il commence où commence le texte, après le disque. */
+.tv-missed-row + .tv-missed-row::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 74px;
+  height: 1px;
+  background: var(--tv-border);
+  pointer-events: none;
 }
 .tv-missed-row[data-open="true"] {
-  background: var(--tv-plate-2);
+  background: rgb(255 255 255 / 0.02);
+}
+.tv-missed-head {
+  display: flex;
+  min-height: 68px;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px 12px 18px;
+  cursor: pointer;
+  transition: background-color var(--tv-dur-1) var(--tv-ease);
+}
+.tv-missed-head:hover {
+  background: rgb(255 255 255 / 0.025);
+}
+.tv-missed-disc {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  margin-right: 4px;
+  place-items: center;
+  border-radius: 9999px;
+  background: var(--tv-plate-3);
+  color: var(--tv-text-primary);
+  font: 700 12.5px var(--font-figure);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.tv-missed-sym {
+  color: var(--tv-text-primary);
+  font-size: 14.5px;
+  font-weight: 600;
+}
+.tv-missed-sub {
+  margin-top: 2px;
+  color: var(--tv-text-muted);
+  font-size: 12.5px;
+}
+.tv-missed-r {
+  color: var(--tv-chart-green);
+  font: 600 15px var(--font-figure);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+.tv-missed-r-unit {
+  margin-left: 1px;
+  font-size: 12px;
+}
+.tv-missed-act {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 9999px;
+  color: var(--tv-text-muted);
+  transition:
+    background-color var(--tv-dur-1) var(--tv-ease),
+    color var(--tv-dur-1) var(--tv-ease);
+}
+.tv-missed-act:hover {
+  background: rgb(255 255 255 / 0.06);
+  color: var(--tv-text-primary);
+}
+.tv-missed-act[data-danger]:hover {
+  background: rgb(239 68 68 / 0.1);
+  color: #f87171;
+}
+/* Sur un écran à pointeur, les actions n'apparaissent qu'au survol (ou au
+   clavier, ou ligne ouverte) : la liste se lit comme un relevé, pas comme
+   une barre d'outils répétée six fois. */
+@media (hover: hover) {
+  .tv-missed-actions {
+    opacity: 0;
+    transition: opacity var(--tv-dur-1) var(--tv-ease);
+  }
+  .tv-missed-row:hover .tv-missed-actions,
+  .tv-missed-row:focus-within .tv-missed-actions,
+  .tv-missed-row[data-open="true"] .tv-missed-actions {
+    opacity: 1;
+  }
+}
+.tv-missed-detail {
+  padding: 2px 18px 18px;
+}
+@media (min-width: 640px) {
+  .tv-missed-detail {
+    padding-left: 74px;
+  }
 }
 .tv-missed-pill {
   border-color: rgb(245 158 11 / 0.3);
@@ -6752,19 +8062,19 @@ body.tv-app-type svg.lucide {
   width: 26px;
   height: 26px;
   border: 1px solid var(--tv-border-accent);
-  border-radius: var(--radius-sm);
+  border-radius: 9999px;
   background: var(--tv-plate-2);
 }
 .jarvis-thread .jarvis-turn > .space-y-4 > .panel {
   background: var(--tv-plate-2);
 }
 .jarvis-response-actions {
+  /* Sous la réponse, sans filet : copier, écouter — à portée, jamais un
+     pied de carte. */
   display: flex;
   align-items: center;
   gap: 4px;
-  margin-top: 14px;
-  padding-top: 8px;
-  border-top: 1px solid var(--tv-border);
+  margin-top: 10px;
 }
 .jarvis-response-actions .jarvis-listen {
   min-height: 32px;
@@ -6838,26 +8148,28 @@ body.tv-app-type svg.lucide {
   gap: 6px;
 }
 .jarvis-followup {
+  /* Même puce que les questions de l'accueil : une seule forme pour
+     « poser une question en un appui ». */
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  min-height: 32px;
+  min-height: 34px;
   max-width: 100%;
-  padding: 4px 12px;
-  border: 1px solid var(--tv-border);
+  padding: 4px 12px 4px 14px;
+  border: 1px solid var(--tv-glass-edge);
   border-radius: 999px;
+  background: rgb(255 255 255 / 0.04);
+  box-shadow: var(--tv-glass-specular);
   color: var(--tv-text-secondary);
   font-size: 12.5px;
   text-align: left;
   transition:
-    color 0.15s ease,
-    border-color 0.15s ease,
-    background-color 0.15s ease;
+    color var(--tv-dur-1) var(--tv-ease),
+    background-color var(--tv-dur-1) var(--tv-ease);
 }
 .jarvis-followup:hover {
-  border-color: var(--tv-border-accent);
-  background: rgb(var(--tv-accent-rgb) / 0.08);
-  color: var(--tv-highlight);
+  background: rgb(255 255 255 / 0.08);
+  color: var(--tv-text-primary);
 }
 .jarvis-composer-action {
   width: 36px;
@@ -6873,7 +8185,19 @@ body.tv-app-type svg.lucide {
   transform: scale(0.96);
 }
 .jarvis-composer-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding-inline: 4px;
+  color: var(--tv-text-muted);
+  font-size: 12px;
+  line-height: 1.4;
   text-align: center;
+}
+.jarvis-composer-hint svg {
+  color: var(--tv-accent);
 }
 /* ── LA BARRE VOCALE ── remplace le compositeur pendant une conversation à
    voix haute. Même plaque, même liseré : c'est le même endroit, qui parle
@@ -7120,11 +8444,13 @@ body.tv-app-type svg.lucide {
 }
 /* L'accueil laisse toute la place à la sphère et à son noyau lumineux. */
 .jarvis-accueil-core {
+  /* Présente, pas envahissante : la sphère signe l'accueil, la salutation
+     le porte. */
   display: grid;
   place-items: center;
-  width: min(280px, 60vw, 34dvh);
-  height: min(280px, 60vw, 34dvh);
-  margin: 0 auto 12px;
+  width: min(150px, 40vw, 20dvh);
+  height: min(150px, 40vw, 20dvh);
+  margin: 0 auto 18px;
 }
 /* Le mode vocal garde le même cœur et les mêmes bulles de préparation. */
 .jarvis-live {
@@ -7210,39 +8536,25 @@ body.tv-app-type svg.lucide {
 /* Une création de trade compacte, repérable par son signe d'ajout encadré.
    32px de haut (et non les 36px de `.tv-entry-button`) : dans la barre de tête,
    le bouton pesait plus lourd que le titre de la page qu'il accompagne. */
+/* LIQUID — l'ajout du Dashboard est LE bouton d'action, plein, texte blanc :
+   plus de version teintée. Seule l'icône garde son quart de tour au survol. */
 .btn-primary.tv-dashboard-add {
-  min-height: 32px;
-  height: 32px;
-  padding: 0 11px 0 5px;
-  gap: 8px;
-  border: 1px solid var(--tv-border-accent);
-  border-radius: var(--radius-lg);
-  background: color-mix(in srgb, var(--tv-accent) 14%, var(--tv-plate-2));
-  color: var(--tv-text-primary);
-  transition:
-    background-color var(--tv-dur-1),
-    border-color var(--tv-dur-1),
-    transform var(--tv-dur-1);
+  min-height: 36px;
+  height: 36px;
+  padding: 0 14px 0 10px;
+  gap: 6px;
+  border-radius: var(--radius-md);
 }
 .tv-dashboard-add-icon {
   display: grid;
   place-items: center;
-  height: 22px;
-  width: 22px;
-  border-radius: var(--radius-sm);
-  background: var(--tv-accent);
-  color: var(--tv-plate-0);
+  height: 18px;
+  width: 18px;
+  color: inherit;
   transition: transform var(--tv-dur-1);
-}
-.btn-primary.tv-dashboard-add:hover {
-  background: color-mix(in srgb, var(--tv-accent) 22%, var(--tv-plate-2));
-  border-color: var(--tv-accent);
 }
 .btn-primary.tv-dashboard-add:hover .tv-dashboard-add-icon {
   transform: rotate(90deg);
-}
-.btn-primary.tv-dashboard-add:active {
-  transform: scale(0.98);
 }
 .tv-trade-modal {
   transform-origin: 50% 15%;
@@ -7435,7 +8747,8 @@ body.tv-app-type svg.lucide {
     padding: 10px 12px;
   }
   .jarvis-composer-hint {
-    display: none;
+    margin-top: 8px;
+    font-size: 11px;
   }
   .tv-inbox-open {
     padding: 10px;
@@ -7485,41 +8798,149 @@ body.tv-app-type svg.lucide {
   }
 }
 
-/* ── Pages de paramètres : groupes à filets, rangées libellé / commande ──── */
-.tv-set-group {
-  display: grid;
-  gap: 8px;
+/* ── L'OFFRE UNIQUE — licence à vie (matière Revolut) ─────────────────────── */
+.lifetime-offer,
+.pricing-free {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--tv-border);
+  border-radius: var(--radius-3xl);
+  background: var(--tv-plate-1);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05);
+  padding: 24px;
 }
-.tv-set-title {
-  padding-inline: 2px;
-  color: var(--tv-text-muted);
+.lifetime-offer {
+  border-color: rgb(var(--tv-accent-rgb) / 0.35);
+}
+.lifetime-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 9999px;
+  background: var(--tv-accent);
+  color: #ffffff;
   font-size: 11px;
   font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.lifetime-price {
+  color: var(--tv-text-primary);
+  font: 700 var(--tv-t-display) / 1 var(--font-figure);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.035em;
+}
+.lifetime-owned {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 22px;
+  padding: 12px 14px;
+  border-radius: var(--radius-lg);
+  background: rgb(var(--tv-chart-green-rgb) / 0.1);
+  color: var(--tv-chart-green);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ── LE MODE AJUSTÉ — une app, pas des pages qui défilent ──────────────────
+   `PageContainer fit` : sur ordinateur, la page prend la hauteur mesurée
+   (`--fit-h`) et se compose en colonne ; `.tv-grow` prend le reste, ce qui est
+   long vit dans `.tv-scroll`. Téléphone et fenêtres basses : flux normal. */
+@media (min-width: 1024px) and (min-height: 640px) {
+  /* `position: relative` sur le cadre et sur la région qui défile : un
+     descendant positionné en absolu (les libellés `sr-only` des tableaux)
+     s'échappait sinon de la découpe et rallongeait `<main>` — la page
+     redevenait défilable de 200px, invisibles. */
+  .tv-fit {
+    position: relative;
+    display: flex;
+    height: var(--fit-h, auto);
+    min-height: 0;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .tv-fit-col {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 0;
+    flex-direction: column;
+  }
+  .tv-grow {
+    min-height: 0;
+    flex: 1 1 0;
+  }
+  .strategy-layout.tv-grow {
+    align-items: stretch;
+  }
+  .tv-scroll {
+    position: relative;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: rgb(255 255 255 / 0.14) transparent;
+  }
+}
+
+/* ── PAGES DE RÉGLAGES — LIQUID ─────────────────────────────────────────────
+   Les cinq pages de la section (Réglages, Profil, Apparence, Brokers,
+   Abonnement) parlent UNE langue : les listes groupées d'iOS dans la matière
+   Revolut. Un titre de groupe discret aligné sur le texte des rangées, une
+   plaque opaque à grand rayon, des rangées de 60px séparées par un filet
+   RENTRÉ (il commence où commence le texte, comme sur iPhone), des icônes
+   posées dans une tuile, un interrupteur aux proportions d'iOS. Aucun verre :
+   ce sont des cartes de contenu. */
+.tv-set-group {
+  display: grid;
+  gap: 10px;
+}
+.tv-set-title {
+  padding-inline: 18px;
+  color: var(--tv-text-muted);
+  font-family: var(--font-figure);
+  font-size: var(--tv-t-micro);
+  font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 .tv-set-list {
   overflow: hidden;
   border: 1px solid var(--tv-border);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-2xl);
   background: var(--tv-plate-1);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
 }
 .tv-set-group[data-tone="danger"] .tv-set-list {
-  border-color: rgb(239 68 68 / 0.25);
+  border-color: rgb(239 68 68 / 0.22);
 }
 .tv-set-row {
+  position: relative;
   display: grid;
+  min-height: 60px;
   align-items: center;
   gap: 10px;
-  padding: 12px 14px;
+  padding: 14px 18px;
 }
-.tv-set-row + .tv-set-row {
-  border-top: 1px solid var(--tv-border);
+/* Le filet rentré : du début du texte au bord droit, jamais d'un bord à
+   l'autre. Derrière une tuile d'icône, il commence après elle. */
+.tv-set-row + .tv-set-row::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 18px;
+  height: 1px;
+  background: var(--tv-border);
+  pointer-events: none;
+}
+.tv-set-list:has(.tv-set-action-icon) > .tv-set-row + .tv-set-row::before {
+  left: 64px;
 }
 @media (min-width: 640px) {
   .tv-set-row {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 280px);
-    gap: 20px;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 300px);
+    gap: 24px;
   }
 }
 /* Un interrupteur reste sur la ligne de son libellé, même sur téléphone. */
@@ -7531,14 +8952,15 @@ body.tv-app-type svg.lucide {
   align-items: center;
   gap: 8px;
   color: var(--tv-text-primary);
-  font-size: 13.5px;
+  font-size: 14.5px;
   font-weight: 600;
+  letter-spacing: -0.01em;
   line-height: 1.35;
 }
 .tv-set-hint {
-  margin-top: 2px;
+  margin-top: 3px;
   color: var(--tv-text-muted);
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 400;
   line-height: 1.45;
 }
@@ -7551,45 +8973,66 @@ body.tv-app-type svg.lucide {
   width: 100%;
 }
 .tv-set-control > .tv-switch {
-  width: 36px;
+  width: 46px;
 }
 .tv-set-action {
   display: flex;
   width: 100%;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   text-align: left;
-  transition: background-color 0.15s ease;
+  transition: background-color var(--tv-dur-1) var(--tv-ease);
 }
 .tv-set-action:hover:not(:disabled) {
-  background: var(--tv-plate-2);
+  background: rgb(255 255 255 / 0.03);
+}
+/* Une rangée d'information (pas une commande) : même géométrie que
+   l'action — tuile, texte, état à droite — sans survol. */
+.tv-set-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.tv-set-action:active:not(:disabled) {
+  background: rgb(255 255 255 / 0.05);
 }
 .tv-set-action:disabled {
   cursor: not-allowed;
   opacity: 0.5;
 }
+/* La tuile d'icône : 32px, coins de 10px — la pastille des réglages d'iOS,
+   en gris, sans couleur décorative. */
 .tv-set-action-icon {
   display: grid;
-  width: 18px;
+  width: 32px;
+  height: 32px;
   flex-shrink: 0;
   place-items: center;
-  color: var(--tv-text-muted);
+  border-radius: 10px;
+  background: var(--tv-plate-3);
+  color: var(--tv-text-secondary);
 }
-.tv-set-action[data-danger="true"] .tv-set-label,
+.tv-set-action[data-danger="true"] .tv-set-label {
+  color: #f87171;
+}
 .tv-set-action[data-danger="true"] .tv-set-action-icon {
+  background: rgb(239 68 68 / 0.12);
   color: #f87171;
 }
 .tv-set-action[data-danger="true"]:hover:not(:disabled) {
-  background: rgb(239 68 68 / 0.06);
+  background: rgb(239 68 68 / 0.05);
 }
+/* L'interrupteur aux proportions d'iOS (46 × 28, bouton de 24) : le bouton
+   glisse sur le ressort du système, ombre noire courte, rien d'autre. */
 .tv-switch {
   position: relative;
-  width: 36px;
-  height: 20px;
+  width: 46px;
+  height: 28px;
   flex-shrink: 0;
   border-radius: 999px;
   background: var(--tv-plate-3);
-  transition: background-color 0.2s ease;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.04);
+  transition: background-color var(--tv-dur-2) var(--tv-ease);
 }
 .tv-switch[aria-checked="true"] {
   background: var(--tv-accent);
@@ -7601,39 +9044,51 @@ body.tv-app-type svg.lucide {
   position: absolute;
   top: 2px;
   left: 2px;
-  width: 16px;
-  height: 16px;
+  width: 24px;
+  height: 24px;
   border-radius: 999px;
   background: #fff;
-  transition: transform 0.2s ease;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.35);
+  transition: transform var(--tv-dur-spring) var(--tv-spring);
 }
 .tv-switch[aria-checked="true"] .tv-switch-knob {
-  transform: translateX(16px);
+  transform: translateX(18px);
 }
+@media (prefers-reduced-motion: reduce) {
+  .tv-switch-knob {
+    transition: none;
+  }
+}
+/* Le rail des rubriques reprend la pilule du rail principal : même clair,
+   même arête spéculaire, l'icône à l'accent — on reconnaît le geste. */
 .tv-set-rail-item {
   display: flex;
-  height: 38px;
+  height: 40px;
   align-items: center;
   gap: 10px;
-  border-radius: var(--radius-lg);
-  padding-inline: 10px;
+  border-radius: 9999px;
+  padding-inline: 14px;
   color: var(--tv-text-secondary);
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 500;
   transition:
-    background-color 0.15s ease,
-    color 0.15s ease;
+    background-color var(--tv-dur-1) var(--tv-ease),
+    color var(--tv-dur-1) var(--tv-ease);
 }
 .tv-set-rail-item:hover {
-  background: var(--tv-plate-2);
+  background: rgb(255 255 255 / 0.05);
   color: var(--tv-text-primary);
 }
 .tv-set-rail-item[aria-selected="true"] {
-  background: rgb(var(--tv-accent-rgb) / 0.1);
+  background: rgb(255 255 255 / 0.1);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.14),
+    inset 0 0 0 1px rgb(255 255 255 / 0.04);
   color: var(--tv-text-primary);
+  font-weight: 600;
 }
 .tv-set-rail-item[aria-selected="true"] svg {
-  color: var(--tv-highlight);
+  color: var(--tv-accent);
 }
 .tv-set-rail-item[data-danger="true"][aria-selected="true"] {
   background: rgb(239 68 68 / 0.1);
@@ -7641,6 +9096,144 @@ body.tv-app-type svg.lucide {
 }
 .tv-set-rail-item[data-danger="true"][aria-selected="true"] svg {
   color: #f87171;
+}
+/* La recherche des réglages : la pilule de recherche du tableau de bord. */
+.tv-set-search {
+  position: relative;
+}
+.tv-set-search input {
+  width: 100%;
+  height: 40px;
+  padding: 0 14px 0 38px;
+  border-radius: 9999px;
+  border: 1px solid var(--tv-glass-edge);
+  background: rgb(255 255 255 / 0.04);
+  box-shadow: var(--tv-glass-specular);
+  color: var(--tv-text-primary);
+  font-size: 13.5px;
+  outline: none;
+  transition: background-color var(--tv-dur-1) var(--tv-ease);
+}
+.tv-set-search input:hover,
+.tv-set-search input:focus {
+  background: rgb(255 255 255 / 0.07);
+}
+.tv-set-search input:focus-visible {
+  box-shadow:
+    var(--tv-glass-specular),
+    0 0 0 2px rgb(var(--tv-accent-rgb) / 0.45);
+}
+.tv-set-search svg {
+  position: absolute;
+  top: 50%;
+  left: 14px;
+  width: 16px;
+  height: 16px;
+  transform: translateY(-50%);
+  color: var(--tv-text-muted);
+  pointer-events: none;
+}
+
+/* LA CARTE HÉROS d'une page de réglages — Profil, Abonnement, Brokers,
+   Apparence ouvrent toutes sur elle : une plaque à grand rayon, un disque (ou
+   un visuel) à gauche, le titre à 20px, une phrase, et à droite les chiffres
+   ou l'action. C'est elle qui fait qu'on reconnaît la section d'un coup
+   d'œil, quelle que soit la page. */
+.tv-set-hero {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--tv-border);
+  border-radius: var(--radius-3xl);
+  background: var(--tv-plate-1);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05);
+  padding: 20px;
+}
+@media (min-width: 640px) {
+  .tv-set-hero {
+    padding: 24px 28px;
+  }
+}
+.tv-set-hero-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px 24px;
+}
+.tv-set-hero-main {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 260px;
+  align-items: center;
+  gap: 16px;
+}
+.tv-set-hero-media {
+  display: grid;
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 9999px;
+  background: var(--tv-plate-3);
+  color: var(--tv-text-primary);
+  font: 700 20px var(--font-figure);
+}
+.tv-set-hero-media[data-tone="accent"] {
+  background: var(--tv-accent);
+  color: #ffffff;
+}
+.tv-set-hero-eyebrow {
+  color: var(--tv-text-muted);
+  font-family: var(--font-figure);
+  font-size: var(--tv-t-micro);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.tv-set-hero-title {
+  overflow: hidden;
+  color: var(--tv-text-primary);
+  font-size: var(--tv-t-h2);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tv-set-hero-sub {
+  margin-top: 4px;
+  color: var(--tv-text-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.tv-set-hero-aside {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 20px;
+}
+/* Un chiffre de la carte héros : libellé micro au-dessus, valeur en Inter
+   tabulaire. Séparés par un filet vertical, jamais encadrés. */
+.tv-set-fact {
+  min-width: 0;
+  border-left: 1px solid var(--tv-border);
+  padding-left: 20px;
+}
+.tv-set-fact:first-child {
+  border-left: 0;
+  padding-left: 0;
+}
+.tv-set-fact-value {
+  margin-top: 6px;
+  color: var(--tv-text-primary);
+  font: 600 18px/1 var(--font-figure);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+.tv-set-fact-value[data-tone="pos"] {
+  color: var(--tv-chart-green);
+}
+.tv-set-fact-value[data-tone="neg"] {
+  color: var(--tv-chart-red);
 }
 
 /* Monte-Carlo : la courbe porte l'explication, les détails se dévoilent à la
@@ -7667,12 +9260,6 @@ body.tv-app-type svg.lucide {
 }
 .strategy-toolbar-actions {
   flex-wrap: wrap;
-}
-.strategy-run-count {
-  color: var(--tv-text-muted);
-  font-size: var(--tv-t-caption);
-  padding-left: 10px;
-  border-left: 1px solid var(--tv-border-strong);
 }
 .strategy-welcome {
   display: flex;
@@ -7933,12 +9520,6 @@ body.tv-app-type svg.lucide {
   color: var(--tv-text-secondary);
   padding-left: 6px;
 }
-.strategy-chart-caption {
-  color: var(--tv-text-muted);
-  font-size: var(--tv-t-caption);
-  line-height: 1.5;
-  padding: 0 8px 12px;
-}
 .strategy-chart-actions {
   display: flex;
   align-items: center;
@@ -7990,8 +9571,12 @@ body.tv-app-type svg.lucide {
 .strategy-stress {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 10px 16px;
+}
+.strategy-stress-actions {
+  align-items: center;
 }
 .strategy-stress > div {
   display: flex;

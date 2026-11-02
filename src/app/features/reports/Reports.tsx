@@ -1,16 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  ReferenceLine,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
-import {
   FileText,
   Loader2,
   TrendingUp,
@@ -19,6 +8,7 @@ import {
   RefreshCw,
   Bot,
   History,
+  Plus,
   CheckCircle2,
   Printer,
   ChevronLeft,
@@ -41,26 +31,18 @@ import {
 import { useAccounts } from "@/app/contexts/AccountContext";
 import { localMonthOf, todayLocalDate } from "@/shared/calendar-date";
 import { statsBySession, MIN_BUCKET_SAMPLE } from "@/domain/quantStats";
-import { currencySymbol, useCurrency } from "@/shared/currency";
+import { currencySymbol, formatMoney, useCurrency } from "@/shared/currency";
 import { missingReportMonths } from "./reportMonths";
 import { generateMyMonthlyReport } from "@/backend/reports.functions";
 import { formatPnl, formatPct } from "@/domain/tradeCalcs";
-import {
-  AXIS_TICK,
-  BAR_FILL_GREEN,
-  BAR_FILL_RED,
-  BAR_RADIUS,
-  CHART_ANIMATION,
-  EQUITY_GRID,
-  moneyAxisProps,
-  tooltipStyle,
-} from "@/app/trading/chartTheme";
 import { Skeleton } from "@/app/components/Skeleton";
 import EquityChart from "@/app/trading/EquityChart";
 import MarkdownAnswer from "@/app/components/MarkdownAnswer";
 import { cn } from "@/shared/ui/cn";
 import type { Trade } from "@/app/types";
-import { PageContainer, Button, Kpi, SelectPicker } from "@/shared/ui";
+import { PageContainer, Button, Kpi, ScrollArea, SelectPicker, SubNav } from "@/shared/ui";
+import { useAvailableHeight } from "@/app/hooks/useAvailableHeight";
+import { usePageView } from "@/app/hooks/usePageView";
 import { usePageActions } from "@/app/contexts/PageActionsContext";
 import { useLiveTable } from "@/app/hooks/useLiveTable";
 
@@ -135,12 +117,17 @@ function useLiveMonthRow(trades: Trade[], startingBalance: number): MonthlyRepor
   }, [trades, startingBalance]);
 }
 
+const REPORT_VIEWS = ["summary", "detail"] as const;
+type ReportView = (typeof REPORT_VIEWS)[number];
+
 export default function Reports({ trades }: { trades: Trade[] }) {
   const { user } = useAuth();
   const { activeAccount, accounts } = useAccounts();
   const { t, lang } = useT();
   const { toast } = useToast();
   const locale = LOCALE_MAP[lang] || "en-US";
+  const { boxRef, height } = useAvailableHeight();
+  const [view, setView] = usePageView("reports", REPORT_VIEWS, "summary");
 
   const [rows, setRows] = useState<MonthlyReportRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -293,54 +280,46 @@ export default function Reports({ trades }: { trades: Trade[] }) {
   usePageActions(headerActions);
 
   return (
-    <PageContainer className="max-w-[1000px]">
+    <PageContainer ref={boxRef} fit height={height}>
       {loading ? (
         <div className="space-y-3" aria-busy="true">
           <Skeleton className="h-11 rounded-2xl" />
           <Skeleton className="h-[420px] rounded-3xl" />
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="tv-fit-col space-y-4">
           {/* Historique générable — tous les mois clos qui ont des trades mais
               pas encore de rapport. Hors de la feuille : ce n'est pas du
               rapport, c'est de l'administration. */}
           {missing.length > 0 && (
-            <section className="glass animate-fade-in-up stagger-1 overflow-hidden rounded-2xl">
-              <header className="flex items-center gap-2.5 border-b border-white/[0.05] px-4 py-3.5 md:px-5">
-                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg border border-amber-500/20 bg-amber-500/10">
-                  <History className="h-3.5 w-3.5 text-amber-400" />
-                </span>
-                <div className="min-w-0">
-                  <h2 className="font-display tv-title leading-tight">{t("reports.available")}</h2>
-                  <p className="tv-row-label mt-0.5">
-                    {t("reports.availableSub").replace("{n}", String(missing.length))}
-                  </p>
-                </div>
-              </header>
-              <ul className="divide-y divide-white/[0.04]">
-                {missing.map((month) => (
-                  <li
-                    key={month}
-                    className="flex items-center gap-3 px-4 py-2.5 transition hover:bg-white/[0.02] md:px-5"
-                  >
-                    <span className="tv-num font-display min-w-0 flex-1 truncate text-[13px] font-semibold capitalize text-slate-200">
-                      {monthLabel(month, locale)}
-                    </span>
-                    <span className="tv-figure tv-figure-secondary shrink-0 text-[11px] text-slate-500">
-                      {tradesByMonth.get(month) ?? 0} {t("common.trades")}
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
+            /* UNE BANDE, PLUS UNE LISTE. Chaque mois clos à rapporter est une
+               puce : un appui le génère. « Tout générer » vit dans la barre de
+               tête — la bande ne fait plus 300px avant le rapport lui-même. */
+            <section className="rp-backlog rp-screen-only animate-fade-in-up stagger-1 shrink-0">
+              <span className="rp-backlog-icon" aria-hidden>
+                <History className="h-4 w-4" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <h2 className="rp-backlog-title">{t("reports.available")}</h2>
+                <div className="rp-backlog-chips">
+                  {missing.map((month) => (
+                    <button
+                      key={month}
+                      type="button"
                       onClick={() => generateMonths([month])}
                       disabled={generating}
-                      className="shrink-0 disabled:opacity-50"
+                      className="rp-backlog-chip"
+                      title={t("reports.generateOne")}
                     >
-                      {t("reports.generateOne")}
-                    </Button>
-                  </li>
-                ))}
-              </ul>
+                      <Plus className="h-3.5 w-3.5" aria-hidden />
+                      <span className="capitalize">{monthLabel(month, locale)}</span>
+                      <span className="tv-figure text-slate-500">
+                        {tradesByMonth.get(month) ?? 0} {t("common.trades")}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
             </section>
           )}
 
@@ -358,21 +337,39 @@ export default function Reports({ trades }: { trades: Trade[] }) {
                   C'était une rangée de pastilles qui défilait à l'horizontale :
                   sur téléphone, douze mois faisaient glisser toute la page de
                   côté. Un seul contrôle compact, de la même largeur partout. */}
-              {allRows.length > 1 && (
-                <MonthSwitcher
-                  months={allRows.map((r) => ({
-                    month: r.month,
-                    live: r.id.startsWith("live-"),
-                    pnl: r.report.totalPnl,
-                  }))}
-                  value={current.month}
-                  onChange={setSelected}
-                  locale={locale}
+              {/* Le mois et la vue, sur une seule rangée. Deux vues : la
+                  SYNTHÈSE (verdict, essentiel, chiffres, courbe, semaines) et
+                  le DÉTAIL (composition, sessions, comparaison, setups,
+                  erreurs, débrief). Le PDF, lui, imprime tout. */}
+              <div className="flex shrink-0 flex-wrap items-center justify-between gap-3">
+                {allRows.length > 1 ? (
+                  <MonthSwitcher
+                    months={allRows.map((r) => ({
+                      month: r.month,
+                      live: r.id.startsWith("live-"),
+                      pnl: r.report.totalPnl,
+                    }))}
+                    value={current.month}
+                    onChange={setSelected}
+                    locale={locale}
+                  />
+                ) : (
+                  <span />
+                )}
+                <SubNav
+                  ariaLabel={t("reports.viewsLabel")}
+                  value={view}
+                  onChange={setView}
+                  items={[
+                    { id: "summary", label: t("reports.viewSummary") },
+                    { id: "detail", label: t("reports.viewDetail") },
+                  ]}
+                  className="rp-screen-only w-fit max-w-full"
                 />
-              )}
+              </div>
 
               {!currentIsLive && isLegacyMonthlyReport(current.report) && (
-                <div className="rp-screen-only flex flex-wrap items-center gap-3 rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3 text-xs text-amber-200">
+                <div className="rp-screen-only flex shrink-0 flex-wrap items-center gap-3 rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3 text-xs text-amber-200">
                   <AlertTriangle className="h-4 w-4 shrink-0" />
                   <span className="min-w-0 flex-1">{t("reports.legacyWarning")}</span>
                   <Button
@@ -391,26 +388,29 @@ export default function Reports({ trades }: { trades: Trade[] }) {
                 </div>
               )}
 
-              <ReportSheet
-                key={current.id}
-                row={current}
-                locale={locale}
-                trades={trades}
-                generatedAt={current.createdAt}
-                inProgress={currentIsLive}
-                // Un rapport ARCHIVÉ est construit côté serveur sur tous les comptes
-                // du trader (la table n'a pas de compte) ; seul le mois en cours
-                // suit le compte actif. L'étiqueter du compte actif mentait sur
-                // son périmètre dès qu'il existe plusieurs comptes.
-                accountName={
-                  !currentIsLive && accounts.length > 1
-                    ? t("reports.allAccounts")
-                    : (activeAccount?.name ?? null)
-                }
-              />
+              <ScrollArea className="tv-grow">
+                <ReportSheet
+                  key={current.id}
+                  view={view}
+                  row={current}
+                  locale={locale}
+                  trades={trades}
+                  generatedAt={current.createdAt}
+                  inProgress={currentIsLive}
+                  // Un rapport ARCHIVÉ est construit côté serveur sur tous les comptes
+                  // du trader (la table n'a pas de compte) ; seul le mois en cours
+                  // suit le compte actif. L'étiqueter du compte actif mentait sur
+                  // son périmètre dès qu'il existe plusieurs comptes.
+                  accountName={
+                    !currentIsLive && accounts.length > 1
+                      ? t("reports.allAccounts")
+                      : (activeAccount?.name ?? null)
+                  }
+                />
+              </ScrollArea>
 
               {missing.length === 0 && !rows.some((r) => isLegacyMonthlyReport(r.report)) && (
-                <p className="tv-row-label flex items-center justify-center gap-1.5 pt-1">
+                <p className="tv-row-label flex shrink-0 items-center justify-center gap-1.5">
                   <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500/70" />
                   {t("reports.upToDate")}
                 </p>
@@ -429,6 +429,7 @@ export default function Reports({ trades }: { trades: Trade[] }) {
 
 function ReportSheet({
   row,
+  view,
   locale,
   trades,
   generatedAt,
@@ -436,6 +437,7 @@ function ReportSheet({
   accountName,
 }: {
   row: MonthlyReportRow;
+  view: ReportView;
   locale: string;
   trades: Trade[];
   generatedAt: string;
@@ -509,7 +511,9 @@ function ReportSheet({
       out.push(
         t(r.totalPnl >= r.prev.totalPnl ? "reports.tkMomUp" : "reports.tkMomDown").replace(
           "{pnl}",
-          formatPnl(Math.abs(r.totalPnl - r.prev.totalPnl)),
+          // « En baisse de 1 357 $ », jamais « en baisse de +1 357 $ » : le
+          // sens est dans le verbe, le montant reste non signé.
+          formatMoney(Math.abs(r.totalPnl - r.prev.totalPnl)),
         ),
       );
     return out;
@@ -548,6 +552,10 @@ function ReportSheet({
   );
 
   const momDelta = r.prev ? r.totalPnl - r.prev.totalPnl : null;
+  const maxWeek = Math.max(0, ...weekly.map((w) => Math.abs(w.pnl)));
+  /* Le débrief de Jarvis est replié à l'écran (le rapport se lit en
+     chiffres d'abord) et toujours déplié sur le papier. */
+  const [debriefOpen, setDebriefOpen] = useState(false);
 
   return (
     <article className="tv-print-sheet glass animate-fade-in-up overflow-hidden rounded-3xl">
@@ -641,12 +649,7 @@ function ReportSheet({
         </div>
 
         <div className="rp-verdict">
-          <div
-            className={cn(
-              "tv-figure text-3xl leading-none md:text-4xl",
-              gain ? "rp-pos" : "rp-neg",
-            )}
-          >
+          <div className={cn("rp-hero-figure", gain ? "rp-pos" : "rp-neg")}>
             {formatPnl(r.totalPnl)}
           </div>
           <div className="mt-2 flex items-center justify-end gap-2">
@@ -659,13 +662,13 @@ function ReportSheet({
               </span>
             )}
             {momDelta !== null && (
+              /* L'écart au mois précédent, SIGNÉ : « ▼ +1 357 $ » se lisait
+                 comme une hausse. La flèche et le signe disent la même chose. */
               <span
-                className={cn(
-                  "tv-figure tv-figure-secondary text-[11px]",
-                  momDelta >= 0 ? "rp-pos" : "rp-neg",
-                )}
+                className={cn("rp-delta", momDelta >= 0 ? "rp-pos" : "rp-neg")}
+                title={r.prev ? monthLabel(r.prev.month, locale) : undefined}
               >
-                {momDelta >= 0 ? "▲" : "▼"} {formatPnl(Math.abs(momDelta))}
+                {momDelta >= 0 ? "▲" : "▼"} {formatPnl(momDelta)}
               </span>
             )}
           </div>
@@ -673,172 +676,18 @@ function ReportSheet({
       </header>
 
       {inProgress && (
-        <div className="rp-section rp-provisional">
+        <div className="rp-section rp-provisional rp-print-only">
           <Clock3 className="h-3.5 w-3.5 shrink-0" />
           <span>{t("reports.provisionalNote")}</span>
         </div>
       )}
 
-      {/* ── LES CHIFFRES DE TÊTE ───────────────────────────────────────── */}
-      <div className="rp-section rp-kpis">
-        <ReportKpi
-          label={t("stats.winRate")}
-          value={formatPct(r.winRate)}
-          sub={`${r.wins}W / ${r.losses}L${r.breakEven ? ` / ${r.breakEven}BE` : ""}`}
-          good={r.winRate >= 0.5}
-        />
-        <ReportKpi
-          label={t("quant.expectancy")}
-          value={formatPnl(r.expectancy)}
-          sub={
-            r.expectancyR === null
-              ? "—"
-              : `${r.expectancyR >= 0 ? "+" : ""}${r.expectancyR.toFixed(2)}R ${t("reports.perTrade")}`
-          }
-          good={r.expectancy >= 0}
-        />
-        <ReportKpi
-          label={t("reports.profitFactor")}
-          value={r.profitFactor === null ? "—" : r.profitFactor.toFixed(2)}
-          sub={`Sharpe ${r.sharpe ?? "—"} · Sortino ${r.sortino ?? "—"}`}
-          good={r.profitFactor !== null && r.profitFactor >= 1}
-          neutral={r.profitFactor === null}
-        />
-        <ReportKpi
-          label={t("reports.maxDrawdown")}
-          value={r.maxDrawdown === null ? "—" : formatPnl(-r.maxDrawdown)}
-          sub={t("dashboard.peakToTrough")}
-          good={false}
-          neutral
-        />
-      </div>
-
-      {/* ── LA COURBE DU MOIS ──────────────────────────────────────────── */}
-      {curve.length > 1 && (
-        <section className="rp-section">
-          <SectionTitle sub={t("reports.curveSub")}>{t("reports.curve")}</SectionTitle>
-          <div className="rp-curve h-[240px] md:h-[280px]">
-            <EquityChart data={curve} />
-          </div>
-        </section>
-      )}
-
-      {/* ── LES SEMAINES ───────────────────────────────────────────────── */}
-      {weekly.length > 0 && (
-        <section className="rp-section">
-          <SectionTitle sub={t("reports.weeklySub")}>{t("reports.weekly")}</SectionTitle>
-          {/* Sur le papier, le graphe s'efface devant la table qui le suit :
-              mêmes montants, cinq fois moins de hauteur. */}
-          <div className="rp-screen-only h-[190px]">
-            <ResponsiveContainer debounce={100} width="100%" height="100%">
-              <BarChart data={weekly} margin={{ top: 8, right: 4, bottom: 0, left: 0 }}>
-                <CartesianGrid {...EQUITY_GRID} />
-                <XAxis
-                  dataKey="label"
-                  tick={AXIS_TICK}
-                  axisLine={false}
-                  tickLine={false}
-                  interval={0}
-                />
-                <YAxis {...moneyAxisProps(weekly.map((w) => w.pnl))} />
-                <ReferenceLine y={0} stroke="var(--tv-border-strong)" />
-                <Tooltip
-                  {...tooltipStyle}
-                  formatter={(v: number | string) => [formatPnl(Number(v)), t("stats.totalPnl")]}
-                />
-                {/* `maxBarSize` : quatre semaines sur toute la largeur d'une
-                    feuille A4 donnent des barres de 300px — des dalles, pas un
-                    histogramme. La barre garde une largeur d'objet lisible et
-                    l'espace passe entre elles. */}
-                <Bar dataKey="pnl" radius={BAR_RADIUS} maxBarSize={72} {...CHART_ANIMATION}>
-                  {weekly.map((w) => (
-                    <Cell key={w.week} fill={w.pnl >= 0 ? BAR_FILL_GREEN : BAR_FILL_RED} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-          {/* La table qui va avec le graphe : le graphe donne la forme, la
-              table donne les montants — et c'est elle qui survit au PDF. */}
-          <div className="rp-weekgrid">
-            {weekly.map((w) => (
-              <div key={w.week} className="rp-weekcell">
-                <div className="tv-label text-slate-500">{w.label}</div>
-                <div className={cn("tv-figure mt-0.5 text-sm", w.pnl >= 0 ? "rp-pos" : "rp-neg")}>
-                  {formatPnl(w.pnl)}
-                </div>
-                <div className="tv-num tv-row-label mt-0.5">
-                  {w.trades} {t("common.trades")}
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Composition et sessions : l'une sous l'autre à l'écran, côte à côte
-          sur le papier (`.rp-duo`) — deux blocs courts qui prenaient chacun
-          toute la largeur d'une A4. */}
-      <div className="rp-duo">
-        {/* ── LA COMPOSITION ─────────────────────────────────────────────── */}
-        {r.trades > 0 && (
-          <section className="rp-section">
-            <SectionTitle sub={t("reports.mixSub")}>{t("reports.mix")}</SectionTitle>
-            <MixBar wins={r.wins} losses={r.losses} breakEven={r.breakEven} total={r.trades} />
-          </section>
-        )}
-
-        {/* ── LES SESSIONS ───────────────────────────────────────────────── */}
-        {sessions.length > 0 && (
-          <section className="rp-section">
-            <SectionTitle sub={t("reports.sessionsSub")}>{t("reports.sessions")}</SectionTitle>
-            <BarList
-              rows={sessions.map((b) => ({
-                key: b.key,
-                label: t(`session.${b.key}` as never),
-                meta: `×${b.count}`,
-                value: Math.round(b.pnl * 100) / 100,
-              }))}
-            />
-          </section>
-        )}
-      </div>
-
-      <div className="rp-duo">
-        {/* ── LA COMPARAISON ─────────────────────────────────────────────── */}
-        {r.prev && (
-          <section className="rp-section">
-            <SectionTitle>{t("reports.mom")}</SectionTitle>
-            <div className="rp-momgrid">
-              <MomCell
-                label={t("stats.totalPnl")}
-                prev={formatPnl(r.prev.totalPnl)}
-                now={formatPnl(r.totalPnl)}
-                up={r.totalPnl >= r.prev.totalPnl}
-              />
-              <MomCell
-                label={t("stats.winRate")}
-                prev={formatPct(r.prev.winRate)}
-                now={formatPct(r.winRate)}
-                up={r.winRate >= r.prev.winRate}
-              />
-              <MomCell
-                label={t("stats.trades")}
-                prev={String(r.prev.trades)}
-                now={String(r.trades)}
-                up={r.trades >= r.prev.trades}
-                neutral
-              />
-            </div>
-            <p className="tv-num tv-row-label mt-2 capitalize">
-              {monthLabel(r.prev.month, locale)}
-            </p>
-          </section>
-        )}
-
-        {/* ── LES CONSTATS ───────────────────────────────────────────────── */}
+      <div className={cn("rp-view", view !== "summary" && "rp-view-off")}>
+        {/* ── L'ESSENTIEL — les constats, juste sous le verdict ──────────────
+          Ils fermaient la feuille, après huit sections : la valeur du rapport
+          arrivait en dernier. Tirés des chiffres, jamais inventés. */}
         {takeaways.length > 0 && (
-          <section className="rp-section">
+          <section className="rp-section rp-essentials">
             <SectionTitle>{t("reports.takeaways")}</SectionTitle>
             <ul className="rp-takeaways">
               {takeaways.map((line) => (
@@ -847,51 +696,208 @@ function ReportSheet({
             </ul>
           </section>
         )}
-      </div>
 
-      {/* ── LE DÉBRIEF DE JARVIS ───────────────────────────────────────── */}
-      {r.aiSummary && (
-        <section className="rp-section">
-          <SectionTitle icon={<Bot className="h-3.5 w-3.5 text-cyan-400" />}>
-            {t("reports.aiSummary")}
-          </SectionTitle>
-          <div className="rp-debrief">
-            <MarkdownAnswer content={r.aiSummary} />
-          </div>
-        </section>
-      )}
-
-      {/* ── LES SETUPS ─────────────────────────────────────────────────── */}
-      {(r.bestSetups.length > 0 || r.worstSetups.length > 0) && (
-        <section className="rp-section">
-          <div className="rp-setups grid gap-4 md:grid-cols-2">
-            {r.bestSetups.length > 0 && (
-              <SetupList title={t("reports.bestSetups")} setups={r.bestSetups} positive />
-            )}
-            {r.worstSetups.length > 0 && (
-              <SetupList title={t("reports.worstSetups")} setups={r.worstSetups} positive={false} />
-            )}
-          </div>
-        </section>
-      )}
-
-      {/* ── LES ERREURS ────────────────────────────────────────────────── */}
-      {r.mistakes.length > 0 && (
-        <section className="rp-section">
-          <SectionTitle icon={<AlertTriangle className="h-3.5 w-3.5 text-amber-400" />}>
-            {t("reports.mistakesObserved")}
-          </SectionTitle>
-          <p className="mb-3 text-xs leading-relaxed text-slate-500">{t("reports.mistakesNote")}</p>
-          <BarList
-            rows={r.mistakes.map((m) => ({
-              key: m.name,
-              label: m.name,
-              meta: `×${m.count}`,
-              value: m.cost,
-            }))}
+        {/* ── LES CHIFFRES DE TÊTE ───────────────────────────────────────── */}
+        <div className="rp-section rp-kpis">
+          <ReportKpi
+            label={t("stats.winRate")}
+            value={formatPct(r.winRate)}
+            sub={`${r.wins}W / ${r.losses}L${r.breakEven ? ` / ${r.breakEven}BE` : ""}`}
+            good={r.winRate >= 0.5}
           />
-        </section>
-      )}
+          <ReportKpi
+            label={t("quant.expectancy")}
+            value={formatPnl(r.expectancy)}
+            sub={
+              r.expectancyR === null
+                ? "—"
+                : `${r.expectancyR >= 0 ? "+" : ""}${r.expectancyR.toFixed(2)}R ${t("reports.perTrade")}`
+            }
+            good={r.expectancy >= 0}
+          />
+          <ReportKpi
+            label={t("reports.profitFactor")}
+            value={r.profitFactor === null ? "—" : r.profitFactor.toFixed(2)}
+            sub={`Sharpe ${r.sharpe ?? "—"} · Sortino ${r.sortino ?? "—"}`}
+            good={r.profitFactor !== null && r.profitFactor >= 1}
+            neutral={r.profitFactor === null}
+          />
+          <ReportKpi
+            label={t("reports.maxDrawdown")}
+            value={r.maxDrawdown === null ? "—" : formatPnl(-r.maxDrawdown)}
+            sub={t("dashboard.peakToTrough")}
+            good={false}
+            neutral
+          />
+        </div>
+
+        {/* ── LA COURBE DU MOIS ──────────────────────────────────────────── */}
+        {curve.length > 1 && (
+          <section className="rp-section">
+            <SectionTitle>{t("reports.curve")}</SectionTitle>
+            <div className="rp-curve h-[240px] md:h-[280px]">
+              <EquityChart data={curve} />
+            </div>
+          </section>
+        )}
+
+        {/* ── LES SEMAINES ───────────────────────────────────────────────── */}
+        {weekly.length > 0 && (
+          <section className="rp-section">
+            <SectionTitle>{t("reports.weekly")}</SectionTitle>
+            {/* UNE RANGÉE, PLUS UN GRAPHE ET UNE TABLE. Le graphe en barres et
+              la table disaient les mêmes quatre montants l'un sous l'autre :
+              chaque semaine porte maintenant sa barre (à l'échelle de la plus
+              grosse semaine), son montant et son nombre de trades. */}
+            <div className="rp-weekgrid">
+              {weekly.map((w) => (
+                <div key={w.week} className="rp-weekcell">
+                  <div className="tv-label text-slate-500">{w.label}</div>
+                  <div className={cn("tv-figure mt-0.5 text-sm", w.pnl >= 0 ? "rp-pos" : "rp-neg")}>
+                    {formatPnl(w.pnl)}
+                  </div>
+                  <div className="tv-num tv-row-label mt-0.5">
+                    {w.trades} {t("common.trades")}
+                  </div>
+                  <span className="rp-weekbar" aria-hidden>
+                    <span
+                      className={w.pnl >= 0 ? "rp-fill-pos" : "rp-fill-neg"}
+                      style={{ width: `${maxWeek > 0 ? (Math.abs(w.pnl) / maxWeek) * 100 : 0}%` }}
+                    />
+                  </span>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+      </div>
+      <div className={cn("rp-view", view !== "detail" && "rp-view-off")}>
+        {/* Composition et sessions : l'une sous l'autre à l'écran, côte à côte
+          sur le papier (`.rp-duo`) — deux blocs courts qui prenaient chacun
+          toute la largeur d'une A4. */}
+        <div className="rp-duo">
+          {/* ── LA COMPOSITION ─────────────────────────────────────────────── */}
+          {r.trades > 0 && (
+            <section className="rp-section">
+              <SectionTitle>{t("reports.mix")}</SectionTitle>
+              <MixBar wins={r.wins} losses={r.losses} breakEven={r.breakEven} total={r.trades} />
+            </section>
+          )}
+
+          {/* ── LES SESSIONS ───────────────────────────────────────────────── */}
+          {sessions.length > 0 && (
+            <section className="rp-section">
+              <SectionTitle>{t("reports.sessions")}</SectionTitle>
+              <BarList
+                rows={sessions.map((b) => ({
+                  key: b.key,
+                  label: t(`session.${b.key}` as never),
+                  meta: `×${b.count}`,
+                  value: Math.round(b.pnl * 100) / 100,
+                }))}
+              />
+            </section>
+          )}
+        </div>
+
+        <div className="rp-duo">
+          {/* ── LA COMPARAISON ─────────────────────────────────────────────── */}
+          {r.prev && (
+            <section className="rp-section">
+              <SectionTitle>{t("reports.mom")}</SectionTitle>
+              <div className="rp-momgrid">
+                <MomCell
+                  label={t("stats.totalPnl")}
+                  prev={formatPnl(r.prev.totalPnl)}
+                  now={formatPnl(r.totalPnl)}
+                  up={r.totalPnl >= r.prev.totalPnl}
+                />
+                <MomCell
+                  label={t("stats.winRate")}
+                  prev={formatPct(r.prev.winRate)}
+                  now={formatPct(r.winRate)}
+                  up={r.winRate >= r.prev.winRate}
+                />
+                <MomCell
+                  label={t("stats.trades")}
+                  prev={String(r.prev.trades)}
+                  now={String(r.trades)}
+                  up={r.trades >= r.prev.trades}
+                  neutral
+                />
+              </div>
+              <p className="tv-num tv-row-label mt-2 capitalize">
+                {monthLabel(r.prev.month, locale)}
+              </p>
+            </section>
+          )}
+        </div>
+
+        {/* ── LE DÉBRIEF DE JARVIS ───────────────────────────────────────── */}
+        {r.aiSummary && (
+          <section className="rp-section rp-debrief-wrap" data-open={debriefOpen}>
+            <button
+              type="button"
+              className="rp-debrief-toggle"
+              onClick={() => setDebriefOpen((v) => !v)}
+              aria-expanded={debriefOpen}
+            >
+              <Bot className="h-4 w-4 text-[var(--tv-accent)]" aria-hidden />
+              <span className="tv-label min-w-0 flex-1 text-left text-slate-300">
+                {t("reports.aiSummary")}
+              </span>
+              <ChevronDown
+                className={cn(
+                  "h-4 w-4 text-slate-500 transition-transform",
+                  debriefOpen && "rotate-180",
+                )}
+                aria-hidden
+              />
+            </button>
+            <div className="rp-debrief">
+              <MarkdownAnswer content={r.aiSummary} />
+            </div>
+          </section>
+        )}
+
+        {/* ── LES SETUPS ─────────────────────────────────────────────────── */}
+        {(r.bestSetups.length > 0 || r.worstSetups.length > 0) && (
+          <section className="rp-section">
+            <div className="rp-setups grid gap-4 md:grid-cols-2">
+              {r.bestSetups.length > 0 && (
+                <SetupList title={t("reports.bestSetups")} setups={r.bestSetups} positive />
+              )}
+              {r.worstSetups.length > 0 && (
+                <SetupList
+                  title={t("reports.worstSetups")}
+                  setups={r.worstSetups}
+                  positive={false}
+                />
+              )}
+            </div>
+          </section>
+        )}
+
+        {/* ── LES ERREURS ────────────────────────────────────────────────── */}
+        {r.mistakes.length > 0 && (
+          <section className="rp-section">
+            <SectionTitle icon={<AlertTriangle className="h-3.5 w-3.5 text-amber-400" />}>
+              {t("reports.mistakesObserved")}
+            </SectionTitle>
+            <p className="mb-3 text-xs leading-relaxed text-slate-500">
+              {t("reports.mistakesNote")}
+            </p>
+            <BarList
+              rows={r.mistakes.map((m) => ({
+                key: m.name,
+                label: m.name,
+                meta: `×${m.count}`,
+                value: m.cost,
+              }))}
+            />
+          </section>
+        )}
+      </div>
 
       {/* LE PIED — le domaine d'abord : c'est l'adresse où l'on retrouve le
           produit quand le PDF circule hors de l'application. */}

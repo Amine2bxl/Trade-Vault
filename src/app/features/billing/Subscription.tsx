@@ -28,10 +28,9 @@ import {
   type PaidPlan,
 } from "@/app/utils/pricing";
 import { usePageLead } from "@/app/contexts/PageActionsContext";
-import { PageContainer, Kpi, KpiGrid } from "@/shared/ui";
+import { PageContainer, Kpi, KpiGrid, ScrollArea } from "@/shared/ui";
+import { useAvailableHeight } from "@/app/hooks/useAvailableHeight";
 import SubscriptionSection from "./SubscriptionSection";
-import PlanMatrix from "./PlanMatrix";
-import PlanScaleBlock from "./PlanScaleBlock";
 import type { Trade } from "@/app/types";
 
 type TFn = (k: TKey) => string;
@@ -72,6 +71,7 @@ export default function Subscription({ trades = [] }: { trades?: Trade[] } = {})
   const { t, lang } = useT();
   const fr = lang === "fr";
   const { sub, loading, openPortal, cryptoCheckout } = useSubscription();
+  const { boxRef, height } = useAvailableHeight();
   const [busy, setBusy] = useState(false);
 
   const currentTier = tierOf(sub?.plan);
@@ -138,8 +138,9 @@ export default function Subscription({ trades = [] }: { trades?: Trade[] } = {})
   const fin = sub?.currentPeriodEnd ? dateFmt(sub.currentPeriodEnd) : null;
 
   return (
-    <PageContainer className="max-w-[1000px] space-y-3">
-      {/* ══ 1 · MON ADHÉSION — UNE SEULE CARTE ══════════════════════════════
+    <PageContainer ref={boxRef} measure="settings" fit height={height}>
+      <ScrollArea className="tv-grow space-y-6">
+        {/* ══ 1 · MON ADHÉSION — UNE SEULE CARTE ══════════════════════════════
           Quatre blocs disaient la même chose en quatre surfaces : une bande
           d'état, une grille de quatre cases d'un mot chacune, une carte de
           facturation qui répétait le bouton « Gérer », et un bloc d'échelle
@@ -147,178 +148,165 @@ export default function Subscription({ trades = [] }: { trades?: Trade[] } = {})
           carte de membre : l'offre et son état, le prix, les faits sur une
           ligne, l'action. La couleur de l'état reste celle qui ne se rate pas
           — une annulation se voit toujours au premier regard. */}
-      <section
-        className={cn("sub-hero animate-fade-in-up", `sub-hero-${etat}`)}
-        aria-busy={loading || undefined}
-      >
-        <div className="sub-hero-top">
-          <div className="min-w-0 flex-1">
-            <p className="tv-label text-slate-500">{t("sub.yourPlan")}</p>
-            <h1 className="sub-hero-title">
-              {loading ? (
-                <span className="inline-block h-7 w-48 animate-pulse rounded-lg bg-white/[0.06]" />
-              ) : paid ? (
-                <>
-                  TradeVault{" "}
-                  <span className="sub-hero-tier">
-                    {TIER_BY_ID[currentTier].name[fr ? "fr" : "en"]}
-                  </span>
-                </>
-              ) : (
-                t("billing.planFree")
-              )}
-            </h1>
-            {!loading && (
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                {sub && <Pastille etat={etat} t={t} />}
-                {paid && (
-                  <span className="tv-row-label">
-                    {intervalOf(sub?.plan ?? "free") === "yearly"
-                      ? t("sub.billedYearly")
-                      : t("sub.billedMonthly")}
-                  </span>
+        <section
+          className={cn("sub-hero animate-fade-in-up", `sub-hero-${etat}`)}
+          aria-busy={loading || undefined}
+        >
+          <div className="sub-hero-top">
+            <div className="min-w-0 flex-1">
+              <p className="tv-label text-slate-500">{t("sub.yourPlan")}</p>
+              <h1 className="sub-hero-title">
+                {loading ? (
+                  <span className="inline-block h-7 w-48 animate-pulse rounded-lg bg-white/[0.06]" />
+                ) : paid ? (
+                  <>
+                    TradeVault{" "}
+                    <span className="sub-hero-tier">
+                      {TIER_BY_ID[currentTier].name[fr ? "fr" : "en"]}
+                    </span>
+                  </>
+                ) : (
+                  t("billing.planFree")
                 )}
+              </h1>
+              {!loading && (
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  {sub && <Pastille etat={etat} t={t} />}
+                  {paid && (
+                    <span className="tv-row-label">
+                      {intervalOf(sub?.plan ?? "free") === "yearly"
+                        ? t("sub.billedYearly")
+                        : t("sub.billedMonthly")}
+                    </span>
+                  )}
+                </div>
+              )}
+              <p className="tv-prose mt-3 max-w-xl text-slate-400">
+                {loading ? t("sub.loading") : meta.body(t, fin)}
+              </p>
+            </div>
+
+            {!loading && (
+              <div className="sub-hero-price">
+                <div className="tv-figure text-3xl leading-none text-white md:text-4xl">
+                  {paid && sub ? eur(planPrice(sub.plan as PaidPlan), lang) : eur(0, lang)}
+                </div>
+                <div className="tv-row-label mt-1.5">
+                  {paid
+                    ? intervalOf(sub?.plan ?? "free") === "yearly"
+                      ? `${t("billing.perYear")} · ${eur(
+                          Math.round(yearlyPerMonth(currentTier) * 100) / 100,
+                          lang,
+                        )}${t("billing.perMonth")}`
+                      : t("billing.perMonth")
+                    : t("sub.forever")}
+                </div>
               </div>
             )}
-            <p className="tv-prose mt-3 max-w-xl text-slate-400">
-              {loading ? t("sub.loading") : meta.body(t, fin)}
-            </p>
           </div>
 
-          {!loading && (
-            <div className="sub-hero-price">
-              <div className="tv-figure text-3xl leading-none text-white md:text-4xl">
-                {paid && sub ? eur(planPrice(sub.plan as PaidPlan), lang) : eur(0, lang)}
-              </div>
-              <div className="tv-row-label mt-1.5">
-                {paid
-                  ? intervalOf(sub?.plan ?? "free") === "yearly"
-                    ? `${t("billing.perYear")} · ${eur(
-                        Math.round(yearlyPerMonth(currentTier) * 100) / 100,
-                        lang,
-                      )}${t("billing.perMonth")}`
-                    : t("billing.perMonth")
-                  : t("sub.forever")}
-              </div>
+          {/* LES FAITS — sur une ligne, séparés par des filets : ils se lisent
+            comme les mentions d'une carte, pas comme quatre tableaux de bord. */}
+          {!loading && sub && paid && (
+            <KpiGrid className="sub-hero-facts">
+              <Kpi
+                inset
+                label={sub.cancelAtPeriodEnd ? t("billing.accessUntil") : t("sub.nextBilling")}
+                value={fin ?? "—"}
+                tone={sub.cancelAtPeriodEnd ? "warn" : "neutral"}
+                adornment={<CalendarClock className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
+              />
+              <Kpi
+                inset
+                label={t("sub.payment")}
+                value={
+                  sub.source === "crypto"
+                    ? t("sub.payCrypto")
+                    : sub.source === "stripe"
+                      ? t("sub.payCard")
+                      : t("sub.payComp")
+                }
+                adornment={
+                  sub.source === "crypto" ? (
+                    <Bitcoin className="h-3.5 w-3.5 shrink-0 text-slate-500" />
+                  ) : (
+                    <CreditCard className="h-3.5 w-3.5 shrink-0 text-slate-500" />
+                  )
+                }
+              />
+              <Kpi
+                inset
+                label={t("sub.renewal")}
+                value={
+                  sub.cancelAtPeriodEnd
+                    ? t("sub.renewStopped")
+                    : sub.source === "crypto"
+                      ? t("sub.renewManual")
+                      : sub.source === "stripe"
+                        ? t("sub.renewAuto")
+                        : "—"
+                }
+                tone={sub.cancelAtPeriodEnd ? "warn" : "neutral"}
+                adornment={<RefreshCw className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
+              />
+            </KpiGrid>
+          )}
+
+          {/* L'ACTION DE L'ÉTAT — reprendre, mettre à jour, gérer. Un seul
+            bouton, celui qui correspond à la situation, et ce qu'il ouvre. */}
+          {!loading && actionDisponible && (
+            <div className="sub-hero-foot">
+              <button
+                onClick={() => void agir()}
+                disabled={busy}
+                className={cn(
+                  "flex h-10 w-full items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold transition disabled:opacity-60 sm:w-auto",
+                  meta.actionStrong
+                    ? "tv-accent-fill"
+                    : "border border-[var(--tv-border-strong)] bg-[var(--tv-plate-3)] text-slate-100 hover:border-[var(--tv-border-accent)]",
+                )}
+              >
+                {busy ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <meta.actionIcon className="h-4 w-4" />
+                )}
+                {meta.action!(t)}
+                {!busy && <ExternalLink className="h-3.5 w-3.5 opacity-60" />}
+              </button>
+              {sub?.hasStripeCustomer && (
+                <p className="tv-row-label max-w-md">{t("billing.portalHint")}</p>
+              )}
             </div>
           )}
-        </div>
+        </section>
 
-        {/* LES FAITS — sur une ligne, séparés par des filets : ils se lisent
-            comme les mentions d'une carte, pas comme quatre tableaux de bord. */}
-        {!loading && sub && paid && (
-          <KpiGrid className="sub-hero-facts">
-            <Kpi
-              inset
-              label={sub.cancelAtPeriodEnd ? t("billing.accessUntil") : t("sub.nextBilling")}
-              value={fin ?? "—"}
-              tone={sub.cancelAtPeriodEnd ? "warn" : "neutral"}
-              adornment={<CalendarClock className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
-            />
-            <Kpi
-              inset
-              label={t("sub.payment")}
-              value={
-                sub.source === "crypto"
-                  ? t("sub.payCrypto")
-                  : sub.source === "stripe"
-                    ? t("sub.payCard")
-                    : t("sub.payComp")
-              }
-              adornment={
-                sub.source === "crypto" ? (
-                  <Bitcoin className="h-3.5 w-3.5 shrink-0 text-slate-500" />
-                ) : (
-                  <CreditCard className="h-3.5 w-3.5 shrink-0 text-slate-500" />
-                )
-              }
-            />
-            <Kpi
-              inset
-              label={t("sub.renewal")}
-              value={
-                sub.cancelAtPeriodEnd
-                  ? t("sub.renewStopped")
-                  : sub.source === "crypto"
-                    ? t("sub.renewManual")
-                    : sub.source === "stripe"
-                      ? t("sub.renewAuto")
-                      : "—"
-              }
-              tone={sub.cancelAtPeriodEnd ? "warn" : "neutral"}
-              adornment={<RefreshCw className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
-            />
-          </KpiGrid>
-        )}
-
-        {/* L'ACTION DE L'ÉTAT — reprendre, mettre à jour, gérer. Un seul
-            bouton, celui qui correspond à la situation, et ce qu'il ouvre. */}
-        {!loading && actionDisponible && (
-          <div className="sub-hero-foot">
-            <button
-              onClick={() => void agir()}
-              disabled={busy}
-              className={cn(
-                "flex h-10 w-full items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold transition disabled:opacity-60 sm:w-auto",
-                meta.actionStrong
-                  ? "tv-accent-fill"
-                  : "border border-[var(--tv-border-strong)] bg-[var(--tv-plate-3)] text-slate-100 hover:border-[var(--tv-border-accent)]",
-              )}
-            >
-              {busy ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <meta.actionIcon className="h-4 w-4" />
-              )}
-              {meta.action!(t)}
-              {!busy && <ExternalLink className="h-3.5 w-3.5 opacity-60" />}
-            </button>
-            {sub?.hasStripeCustomer && (
-              <p className="tv-row-label max-w-md">{t("billing.portalHint")}</p>
-            )}
-          </div>
-        )}
-      </section>
-
-      {/* ══ 2 · CHOISIR / RENOUVELER ══════════════════════════════════════
+        {/* ══ 2 · CHOISIR / RENOUVELER ══════════════════════════════════════
           La grille tarifaire (offre gratuite, essai) ou le renouvellement
           crypto. Le bouton « Gérer » n'y est plus répété quand la carte
           d'adhésion le porte déjà. */}
-      <SubscriptionSection showPortal={!actionDisponible} />
+        <SubscriptionSection showPortal={!actionDisponible} />
 
-      {/* ══ 3 · LE PRIX, À L'ÉCHELLE DE SON JOURNAL ═══════════════════════
-          Seulement pour qui décide encore : à un abonné, l'argument ne sert
-          plus à rien. Il ne s'affiche pas tant que le journal ne porte pas
-          assez de pertes pour que la moyenne en soit une. */}
-      {!loading && !paid && <PlanScaleBlock trades={trades} />}
-
-      {/* ══ 4 · CE QUE ÇA CONTIENT ═════════════════════════════════════════
-          Une matrice, pas une liste : chaque fonctionnalité n'apparaît qu'une
-          fois, dans le palier qui l'ajoute, et sa coche se propage aux offres
-          supérieures. */}
-      <section className="glass animate-fade-in-up stagger-3 overflow-hidden rounded-3xl">
-        <PlanMatrix />
-      </section>
-
-      {/* ══ 5 · CE QUI RASSURE ═════════════════════════════════════════════ */}
-      <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 pt-1 pb-2">
-        {[
-          [Lock, t("subscription.secureStripePayment")],
-          [CheckCircle2, t("subscription.cancelInOneClick")],
-          [Download, t("subscription.yourDataStaysExportable")],
-        ].map(([Ico, label]) => {
-          const I = Ico as typeof Lock;
-          return (
-            <span
-              key={label as string}
-              className="flex items-center gap-2 text-[11px] text-slate-500"
-            >
-              <I className="h-3.5 w-3.5 text-emerald-400/80" />
-              {label as string}
-            </span>
-          );
-        })}
-      </div>
+        {/* ══ 5 · CE QUI RASSURE ═════════════════════════════════════════════ */}
+        <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 pt-1 pb-2">
+          {[
+            [Lock, t("subscription.secureStripePayment")],
+            [CheckCircle2, t("subscription.cancelInOneClick")],
+            [Download, t("subscription.yourDataStaysExportable")],
+          ].map(([Ico, label]) => {
+            const I = Ico as typeof Lock;
+            return (
+              <span
+                key={label as string}
+                className="flex items-center gap-2 text-[11px] text-slate-500"
+              >
+                <I className="h-3.5 w-3.5 text-emerald-400/80" />
+                {label as string}
+              </span>
+            );
+          })}
+        </div>
+      </ScrollArea>
     </PageContainer>
   );
 }

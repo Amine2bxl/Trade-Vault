@@ -2,49 +2,46 @@ import { describe, expect, test } from "bun:test";
 import { readSource, stripComments } from "./helpers/source";
 
 /**
- * LES PAGES « PLEIN ÉCRAN » NE DOIVENT PAS ÉCRASER LEUR CONTENU.
+ * UNE APP, PAS DES PAGES QUI DÉFILENT — SANS RIEN ÉCRASER.
  *
- * ── LE BUG QUE CE FICHIER EMPÊCHE DE REVENIR ────────────────────────────────
+ * ── LA DÉCISION ─────────────────────────────────────────────────────────────
  *
- * Le calendrier et Monte-Carlo remplissent la fenêtre : leur cadre reçoit une
- * hauteur MESURÉE par `useAvailableHeight()`. Cette hauteur doit être une
- * CIBLE (« remplis l'écran »), jamais un PLAFOND (« tiens dans l'écran, quoi
- * qu'il en coûte »).
+ * Sur ordinateur, une page de TradeVault tient dans la fenêtre : son cadre
+ * reçoit la hauteur MESURÉE par `useAvailableHeight()` (`PageContainer fit`),
+ * l'en-tête et les commandes restent en place, et ce qui est long par nature
+ * défile DANS sa région (`ScrollArea` / `tv-scroll`, ou une carte en
+ * `overflow-y-auto`). Téléphone et fenêtres basses : flux normal.
  *
- * Elle est devenue un plafond, et le calendrier s'est écrasé sur lui-même.
- * Trois ingrédients, chacun anodin isolément :
+ * ── LE BUG QUI NE DOIT PAS REVENIR ──────────────────────────────────────────
  *
- *   1. `style={{ height }}` au lieu de `minHeight` ;
- *   2. `overflow-hidden` sur le cadre — donc rien ne peut défiler pour
- *      compenser ;
- *   3. `min-h-0` le long de la chaîne flex. C'est le plus vicieux :
- *      `min-height: 0` autorise EXPLICITEMENT un élément flex à rétrécir sous
- *      la taille de son contenu. Les lignes de semaine tombaient à quelques
- *      pixels pendant que leurs cellules gardaient leur hauteur — elles
- *      débordaient de leur propre ligne et se chevauchaient.
- *
- * Rien de tout cela ne lève, n'échoue au typage ni ne casse un test de rendu :
- * la page s'affiche, simplement illisible, et seulement sur les écrans assez
- * courts pour que le contenu ne rentre pas. C'est exactement le genre de
- * régression qui passe une revue.
- *
- * ── CE QUI EST VÉRIFIÉ, ET CE QUI NE L'EST PAS ──────────────────────────────
- *
- * On ne teste pas une apparence — on teste les trois décisions structurelles
- * qui la garantissent. Les `min-h-0` INTERNES aux sections de graphe ne sont
- * pas concernés : eux sont nécessaires pour qu'un `ResponsiveContainer` puisse
- * mesurer sa place au lieu de gonfler indéfiniment.
+ * La première tentative d'ajuster le calendrier avait écrasé son contenu :
+ * `style={{ height }}` + `overflow-hidden` + `min-h-0` le long de la chaîne
+ * flex — les lignes de semaine tombaient à quelques pixels pendant que leurs
+ * cellules gardaient leur hauteur, et rien ne pouvait défiler pour compenser.
+ * La règle d'alors (« la hauteur est un minimum, le cadre défile ») est
+ * remplacée par celle-ci, qui garde la même garantie : la hauteur est celle de
+ * la PAGE, et une région INTERNE défile — le contenu n'est jamais comprimé
+ * sous son plancher.
  */
 
 const read = (p: string) => stripComments(readSource(import.meta.dir, p));
 
-/** Les pages qui montent `useAvailableHeight`. */
+/** Les pages ajustées à l'écran par `PageContainer fit`. */
 const PAGES = [
   { nom: "Calendrier", chemin: "../src/app/features/calendar/CalendarPage.tsx" },
   { nom: "Monte-Carlo", chemin: "../src/app/features/monte-carlo/MonteCarlo.tsx" },
+  { nom: "Erreurs", chemin: "../src/app/features/mistakes/Mistakes.tsx" },
+  { nom: "Saisonnalité", chemin: "../src/app/features/seasonality/Seasonality.tsx" },
+  { nom: "Analytics", chemin: "../src/app/features/analytics/Analytics.tsx" },
+  { nom: "Rapport mensuel", chemin: "../src/app/features/reports/Reports.tsx" },
+  { nom: "Calendrier économique", chemin: "../src/app/features/news/EconomicNews.tsx" },
+  { nom: "Calculateur", chemin: "../src/app/features/calculator/LotSizeCalculator.tsx" },
+  { nom: "Objectifs", chemin: "../src/app/features/goals/Goals.tsx" },
+  { nom: "Apparence", chemin: "../src/app/features/settings/Appearance.tsx" },
+  { nom: "Brokers", chemin: "../src/app/features/brokers/Brokers.tsx" },
 ] as const;
 
-describe("les pages plein écran", () => {
+describe("les pages ajustées à l'écran", () => {
   for (const { nom, chemin } of PAGES) {
     describe(nom, () => {
       const src = read(chemin);
@@ -53,20 +50,19 @@ describe("les pages plein écran", () => {
         expect(src).toContain("useAvailableHeight()");
       });
 
-      test("traite la hauteur mesurée comme un MINIMUM, pas comme une hauteur fixe", () => {
-        // `{ height }` enferme le contenu ; `{ minHeight: height }` lui donne un
-        // objectif tout en le laissant grandir.
-        expect(src).toContain("{ minHeight: height }");
-        expect(src).not.toContain("{ height }");
-      });
-
-      test("laisse le cadre défiler quand le contenu ne rentre plus", () => {
+      test("le cadre mesuré est la page ajustée", () => {
         // Le cadre est le premier élément à porter `ref={boxRef}` : c'est lui
-        // qui reçoit la hauteur, donc lui qui doit pouvoir défiler.
+        // qui reçoit la hauteur, en mode `fit`.
         const cadre = src.slice(src.indexOf("ref={boxRef}"));
         const finDuCadre = cadre.slice(0, cadre.indexOf(">"));
-        expect(finDuCadre).toContain("overflow-y-auto");
+        expect(finDuCadre).toContain("fit");
+        expect(finDuCadre).toContain("height={height}");
         expect(finDuCadre).not.toContain("overflow-hidden");
+      });
+
+      test("ce qui dépasse défile dans une région interne, jamais écrasé", () => {
+        const region = /ScrollArea|tv-scroll|overflow-y-auto/.test(src);
+        expect(region).toBe(true);
       });
     });
   }

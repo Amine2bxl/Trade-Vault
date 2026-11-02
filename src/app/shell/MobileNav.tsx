@@ -20,9 +20,9 @@ interface MobileNavProps {
  * parcourent par les onglets en haut de la page. Les sous-comptes et Jarvis
  * restent en bulles flottantes au-dessus de la barre.
  *
- * L'onglet actif est l'icône et le libellé en blanc, plus un trait d'accent
- * de 3 px sous le libellé — plus de pastille pleine découpée dans la barre.
- * L'ajout est un onglet comme les autres, marqué par une tuile d'accent.
+ * LIQUID — une barre SOLIDE (verre presque opaque) : l'onglet actif est une
+ * tuile sombre, icône à l'accent ; l'ajout est un carré adouci plein, au
+ * centre exact, icône blanche. Styles : `.bottom-nav*` dans styles.css.
  */
 export default function MobileNav({ page, setPage, onAddTrade }: MobileNavProps) {
   const { t } = useT();
@@ -64,13 +64,10 @@ export default function MobileNav({ page, setPage, onAddTrade }: MobileNavProps)
       // part dès ce premier contact.
       onTouchStart={() => preloadPage(target)}
       aria-current={active ? "page" : undefined}
-      className={cn("bottom-nav-item", active ? "text-white" : "text-white/50")}
+      className={cn("bottom-nav-item", active && "bottom-nav-item-on")}
     >
-      <Icon className="h-[22px] w-[22px]" strokeWidth={active ? 2.2 : 1.9} aria-hidden />
-      <span className={cn("text-[10px] leading-none", active ? "font-semibold" : "font-medium")}>
-        {label}
-      </span>
-      <span className={cn("bottom-nav-dot", active && "bottom-nav-dot-on")} aria-hidden />
+      <Icon className="h-[22px] w-[22px]" strokeWidth={active ? 2.1 : 1.8} aria-hidden />
+      <span className="text-[11px] font-semibold leading-none">{label}</span>
     </button>
   );
 
@@ -78,28 +75,24 @@ export default function MobileNav({ page, setPage, onAddTrade }: MobileNavProps)
     <nav className="bottom-nav fixed bottom-0 left-0 right-0 z-[var(--tv-z-float)] md:hidden">
       <div className="bottom-nav-shell">
         {/* 2 + bouton d'ajout + 2 = cinq colonnes. */}
-        <div className="grid grid-cols-5 items-center gap-1 px-2 py-1.5">
+        <div className="grid grid-cols-5 items-center gap-1 px-1.5 py-1.5">
           {items.slice(0, 2).map(tab)}
-          {/* L'AJOUT — un onglet parmi les autres, pas un bloc posé dessus.
-              C'était un carré plein de 52px, surélevé de 18px, cerclé d'un
-              anneau et d'une lueur : la pièce la plus lourde de l'écran, qui
-              mordait sur le contenu. Il garde sa place au centre et la seule
-              touche d'accent de la barre, mais à la même hauteur et avec la
-              même anatomie (icône + libellé) que ses voisins. */}
+          {/* L'AJOUT — le seul aplat d'accent de la barre, à la même hauteur
+              que les onglets (pas surélevé, pas d'anneau ni de lueur). Sans
+              libellé visible : le « + » plein se suffit, et `aria-label` le
+              nomme pour les lecteurs d'écran. */}
           <button
             type="button"
             onClick={onAddTrade}
             aria-label={hasDraft ? t("trade.draftBadge") : t("common.addTrade")}
-            className="bottom-nav-item text-[var(--tv-highlight)]"
+            className="flex min-h-[54px] items-center justify-center rounded-2xl"
           >
             <span className="bottom-nav-add relative">
-              <Plus className="h-[18px] w-[18px]" strokeWidth={2.4} aria-hidden />
+              <Plus className="h-[22px] w-[22px]" strokeWidth={2.5} aria-hidden />
               {hasDraft && (
-                <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full border-2 border-[var(--tv-rail-bot)] bg-amber-400" />
+                <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full border-2 border-[var(--tv-plate-1)] bg-amber-400" />
               )}
             </span>
-            <span className="text-[10px] font-semibold leading-none">{t("common.add")}</span>
-            <span className="bottom-nav-dot" aria-hidden />
           </button>
           {items.slice(2).map(tab)}
         </div>

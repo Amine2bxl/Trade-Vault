@@ -35,13 +35,15 @@ export function useChartAnimation(equity = false) {
 // bouts ronds, aucun halo. Il passe de 2 à 3px — sur une courbe très lissée,
 // un trait fin se lit comme un fil de fer ; c'est l'épaisseur qui donne la
 // sensation de fluide.
-// 2.25px, pas 3. Un trait de 3px sur une courbe d'equity donne un tracé de
+// 2.6px (2.25 auparavant), pas 3. Un trait de 3px sur une courbe d'equity donne un tracé de
 // feutre : il épaissit les creux, arrondit les cassures et fait perdre les
 // petites oscillations qui disent justement si la progression est régulière ou
 // nerveuse. Les terminaux de référence tracent fin — la lisibilité vient du
 // CONTRASTE avec le fond et du dégradé sous la courbe, pas de l'épaisseur.
 export const EQUITY_LINE = {
-  strokeWidth: 2.25,
+  // Un cran plus marqué qu'avant : sur le Dashboard la courbe est l'objet
+  // principal, elle doit se lire de loin — toujours sans halo.
+  strokeWidth: 2.6,
   strokeLinecap: "round" as const,
   strokeLinejoin: "round" as const,
 };

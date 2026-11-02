@@ -40,7 +40,7 @@ import { useLenis } from "lenis/react";
 import { faqPageJsonLd } from "@/shared/seo";
 import { RESEAUX_ACTIFS } from "@/shared/socials";
 import { lireLePassage, positionDeReprise } from "./langSwap";
-import { YEARLY_PER_MONTH, eur } from "@/app/utils/pricing";
+import { LIFETIME_EUR, eur } from "@/app/utils/pricing";
 import { LandingLangProvider, useLandingT, type LandingKey, type LandingLang } from "./i18n";
 import { oauthErrorFromUrl } from "@/app/utils/authErrors";
 import "./landing.css";
@@ -1026,7 +1026,7 @@ function LandingPage() {
               <PanneauAncrage
                 variante="offre"
                 label={t("anchor.b.l")}
-                valeur={eur(Math.round(YEARLY_PER_MONTH * 100) / 100, lang)}
+                valeur={eur(LIFETIME_EUR, lang)}
                 suffixe={t("anchor.b.per")}
                 detail={t("anchor.b.d")}
               />

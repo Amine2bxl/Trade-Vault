@@ -21,6 +21,9 @@ import {
 } from "@/domain/plans";
 
 export {
+  LIFETIME_EUR,
+  LIFETIME_PLAN,
+  LIFETIME_COPY,
   TIERS,
   TIER_BY_ID,
   TIER_RANK,
@@ -50,7 +53,7 @@ export type {
 } from "@/domain/plans";
 
 /** L'offre de référence — celle mise en avant partout (Pro). */
-export const HEADLINE_TIER: Tier = "pro";
+export const HEADLINE_TIER: Tier = "elite";
 
 // Anciens noms, conservés parce qu'ils décrivent bien l'offre de référence et
 // que la landing les lit directement.

@@ -1,61 +1,45 @@
 import { lazyPage } from "@/shared/lazy-page";
-import { useEffect, useMemo, useState, Suspense } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  Suspense,
+  type CSSProperties,
+} from "react";
 import {
   Plus,
-  BarChart3,
   ArrowUpRight,
-  ArrowDownRight,
-  Minus,
-  LineChart,
-  BookOpen,
-  Sparkles,
+  Bell,
+  Bot,
+  ChevronRight,
+  ClipboardCheck,
+  Search,
+  Target,
+  Upload,
 } from "@/shared/ui/icons";
 import { Trade, isBreakEven } from "@/app/types";
-import { totalMeasuredR } from "@/domain/trade";
-import {
-  computeStats,
-  formatPnl,
-  formatPct,
-  formatShortDate,
-  directionLabel,
-  directionBadgeClass,
-} from "@/domain/tradeCalcs";
+import { computeStats, formatPnl, formatPct, formatShortDate } from "@/domain/tradeCalcs";
 import { CHART_GREEN, CHART_RED } from "@/app/trading/chartTheme";
 import { loadOnboarding, MONTHLY_TARGET_EVENT } from "@/app/store/profile";
-import { deriveDailyRule } from "@/domain/edgeScore";
 import { useEdgeScore } from "@/app/trading/useEdgeScore";
-import {
-  readHistory,
-  writeHistory,
-  appendToday,
-  dayOverDayDelta,
-  trend,
-  type EdgePoint,
-} from "./edgeHistory";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useAccounts } from "@/app/contexts/AccountContext";
 import { useToast } from "@/app/contexts/ToastContext";
 import { useHasTradeDraft } from "@/app/utils/persistence";
-import {
-  PageContainer,
-  Metric,
-  Card,
-  Button,
-  StreakCard,
-  RollingFigure,
-  density,
-} from "@/shared/ui";
-import type { StreakPeriod } from "@/shared/ui";
+import { PageContainer, Metric, Button, RollingFigure, ActionButton, density } from "@/shared/ui";
 import { usePageActions, usePageLead } from "@/app/contexts/PageActionsContext";
-import CopilotBlock from "./CopilotBlock";
 import { DeferredFallback } from "@/app/shell/PageTransition";
 import { cn } from "@/shared/ui/cn";
 import { useT } from "@/app/i18n/LanguageContext";
 import type { TKey } from "@/app/i18n/translations";
-import { computeChecklistStreakStats, recentChecklistPeriods } from "../checklist/checklistStreak";
 import { newestFirst } from "@/app/trading/tradeOrder";
 import { formatMoney } from "@/shared/currency";
 import { useLiveTable } from "@/app/hooks/useLiveTable";
+import { useAvailableHeight } from "@/app/hooks/useAvailableHeight";
+import AccountSwitcher from "@/app/shell/AccountSwitcher";
+import { useUnreadCount } from "@/app/features/inbox/useUnreadCount";
 
 // recharts (~150-200 KB) is loaded on demand: the Dashboard shell is eager
 // (landing page), but the equity chart — below the fold — is code-split so it
@@ -80,19 +64,30 @@ interface DashboardProps {
 /* 7J · 30J · 1A · TOUT. « YTD » (depuis le 1er janvier) laissait en janvier
    une courbe de quelques jours sous un bouton qui promettait l'année : 1A est
    une fenêtre glissante, toujours pleine. Un « ytd » mémorisé devient « 1y ». */
-type Period = "7d" | "30d" | "1y" | "all";
-const PERIODS: Period[] = ["7d", "30d", "1y", "all"];
+/* LES PÉRIODES DU TABLEAU DE BORD SONT CALENDAIRES (maquette Liquid v1) :
+   « Mois » veut dire le mois en cours — « P&L net · octobre » —, pas les
+   trente derniers jours. Les anciens choix enregistrés (fenêtres glissantes)
+   sont convertis vers leur équivalent calendaire à la lecture. */
+type Period = "day" | "week" | "month" | "year" | "all";
+const PERIODS: Period[] = ["day", "week", "month", "year", "all"];
 const PERIOD_STORAGE_KEY = "tv.dashboard.period";
+const LEGACY_PERIOD: Record<string, Period> = {
+  "7d": "week",
+  "30d": "month",
+  "1y": "year",
+  ytd: "year",
+};
 const PERIOD_SHORT: Record<Period, TKey> = {
-  "7d": "dashboard.p7d",
-  "30d": "dashboard.p30d",
-  "1y": "dashboard.p1y",
+  day: "dashboard.pDay",
+  week: "dashboard.pWeek",
+  month: "dashboard.pMonth",
+  year: "dashboard.pYear",
   all: "common.all",
 };
-const PERIOD_LONG: Record<Period, TKey> = {
-  "7d": "dashboard.pLong7d",
-  "30d": "dashboard.pLong30d",
-  "1y": "dashboard.pLong1y",
+const PERIOD_LONG: Record<Exclude<Period, "month">, TKey> = {
+  day: "dashboard.pLongDay",
+  week: "dashboard.pLongWeek",
+  year: "dashboard.pLongYear",
   all: "dashboard.pLongAll",
 };
 
@@ -105,24 +100,32 @@ function localDateStr(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
+/* Mesure avant la peinture côté client ; repli silencieux côté serveur. */
+const useIsoLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
+
 function periodCutoff(period: Period): string | null {
   const now = new Date();
-  if (period === "7d") {
+  if (period === "day") return localDateStr(now);
+  if (period === "week") {
+    // La semaine de trading commence le lundi.
     const d = new Date(now);
-    d.setDate(d.getDate() - 7);
+    d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
     return localDateStr(d);
   }
-  if (period === "30d") {
-    const d = new Date(now);
-    d.setDate(d.getDate() - 30);
-    return localDateStr(d);
-  }
-  if (period === "1y") {
-    const d = new Date(now);
-    d.setFullYear(d.getFullYear() - 1);
-    return localDateStr(d);
-  }
+  if (period === "month") return localDateStr(new Date(now.getFullYear(), now.getMonth(), 1));
+  if (period === "year") return localDateStr(new Date(now.getFullYear(), 0, 1));
   return null;
+}
+
+/** Jours ouvrés (lun.–ven.) qui restent dans le mois APRÈS aujourd'hui. */
+function tradingDaysLeftInMonth(now = new Date()): number {
+  const last = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  let n = 0;
+  for (let day = now.getDate() + 1; day <= last; day++) {
+    const wd = new Date(now.getFullYear(), now.getMonth(), day).getDay();
+    if (wd !== 0 && wd !== 6) n++;
+  }
+  return n;
 }
 
 export default function Dashboard({
@@ -139,17 +142,17 @@ export default function Dashboard({
   onEditTrade,
   onOpenJournal,
 }: DashboardProps) {
-  const { t } = useT();
+  const { t, lang } = useT();
   const { toast } = useToast();
   const { user } = useAuth();
   const { activeAccount } = useAccounts();
   const [period, setPeriod] = useState<Period>(() => {
     try {
-      const raw = localStorage.getItem(PERIOD_STORAGE_KEY);
-      const saved = raw === "ytd" ? "1y" : raw;
-      return PERIODS.includes(saved as Period) ? (saved as Period) : "all";
+      const raw = localStorage.getItem(PERIOD_STORAGE_KEY) ?? "";
+      const saved = LEGACY_PERIOD[raw] ?? raw;
+      return PERIODS.includes(saved as Period) ? (saved as Period) : "month";
     } catch {
-      return "all";
+      return "month";
     }
   });
   // Le solde de départ vient DU COMPTE ACTIF déjà chargé (AccountContext), pas
@@ -213,93 +216,77 @@ export default function Dashboard({
   }, [trades, cutoff]);
 
   const stats = useMemo(() => computeStats(filtered), [filtered]);
-  const recentTrades = useMemo(() => [...filtered].sort(newestFirst).slice(0, 4), [filtered]);
+  const recentTrades = useMemo(() => [...filtered].sort(newestFirst).slice(0, 6), [filtered]);
 
-  // Le résultat de la période en R — la mesure qui ne dépend pas de la taille.
-  // `null` dès qu'un trade n'a pas de R mesuré : additionner le 0 stocké d'un
-  // risque inconnu affichait un « R net » faux, souvent proche de zéro.
-  const netR = useMemo(() => totalMeasuredR(filtered), [filtered]);
+  /* ── UN ÉCRAN, PAS UNE PAGE ────────────────────────────────────────────
+     Sur ordinateur, le tableau de bord tient dans la fenêtre : le héros garde
+     sa hauteur naturelle, et les deux rangées (courbe + chiffres, derniers
+     trades + objectif) se partagent ce qui reste, en PIXELS — un graphe en
+     `height: 100%` ne se dessine que si toute la chaîne de parents a une
+     hauteur définie (voir tests/fullScreenPages.test.ts). Trop court pour
+     rester lisible (moins de 200px par rangée) : la page reprend son flux
+     normal et défile, plutôt que d'écraser son contenu. */
+  const { boxRef, height: available } = useAvailableHeight();
+  const heroRef = useRef<HTMLElement | null>(null);
+  const [heroH, setHeroH] = useState(0);
+  const [wide, setWide] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const sync = () => setWide(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+  const hasTrades = trades.length > 0 && !tradesLoading;
+  useIsoLayoutEffect(() => {
+    const el = heroRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const read = () => setHeroH((prev) => (prev === el.offsetHeight ? prev : el.offsetHeight));
+    read();
+    const ro = new ResizeObserver(read);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [hasTrades]);
+  const ROW_GAP = 16;
+  /* La courbe est la PREMIÈRE donnée de la page : sa rangée prend 58 % de la
+     place, les derniers trades et l'objectif se partagent le reste. */
+  // 1 px de marge : les hauteurs mesurées sont arrondies, la somme pouvait
+  // dépasser d'un pixel et faire apparaître une barre de défilement.
+  const rest = wide && available && heroH ? available - heroH - ROW_GAP * 2 - 1 : null;
+  // …sans jamais laisser moins de 180 px aux derniers trades et à l'objectif.
+  const row1H = rest !== null ? Math.floor(Math.min(rest * 0.64, rest - 170)) : null;
+  const rowH = rest !== null && row1H !== null ? rest - row1H : null;
+  const fit = rowH !== null && row1H !== null && rowH >= 160 && row1H >= 180;
+  /* Fenêtre basse (≈ 768 px) : le héros se resserre — la pilule du compte,
+     déjà dans le rail, s'efface — pour rendre la place aux deux rangées. Le
+     mode dépend de la place disponible, jamais de la hauteur du héros : pas
+     de boucle de mesure. */
+  const short = wide && available !== undefined && available < 700;
+  const tight = fit && (rowH as number) < 250;
+  const tightWidgets = fit && (row1H as number) < 260;
+  // En-tête de carte (titre + marge) et rembourrage : ce que le contenu n'a pas.
+  const CARD_CHROME = 86;
+  // Hauteur d'une ligne de trade : 58 px, 50 px en rangée serrée (pastille de 36).
+  const ROW_ITEM = tight ? 50 : 58;
+  const listRows = fit
+    ? Math.max(1, Math.min(6, Math.floor(((rowH as number) - CARD_CHROME) / ROW_ITEM)))
+    : 4;
+  const fitRow = fit ? ({ height: rowH as number } as CSSProperties) : undefined;
+  const fitRow1 = fit ? ({ height: row1H as number } as CSSProperties) : undefined;
 
   // % variation of the period relative to the equity at its start
   // (starting balance + PnL accumulated before the period).
   const baseline = startingBalance + pnlBefore;
   const periodPct = baseline > 0 ? stats.totalPnl / baseline : null;
 
-  // Pre-market checklist status (written by the Checklist page in localStorage)
-  const chkStatus = useMemo(() => {
-    if (!user) return null;
-    try {
-      const key = `tv-chk-${user.id}-${localDateStr(new Date())}`;
-      const raw = localStorage.getItem(key);
-      if (!raw) return { locked: false, n: 0, total: 0 };
-      const p = JSON.parse(raw) as { locked?: boolean; checked?: boolean[] };
-      const arr = Array.isArray(p.checked) ? p.checked : [];
-      return { locked: !!p.locked, n: arr.filter(Boolean).length, total: arr.length };
-    } catch {
-      return null;
-    }
-  }, [user?.id]);
-
-  // ── Série de checklist (la mécanique de rétention du rituel) ──
-  // Lecture seule de l'historique `tv-chk-*` déjà écrit par la page Checklist :
-  // aucune nouvelle donnée stockée, aucune migration. La série suit la routine
-  // pré-market — la seule surface du produit qui intervient avant le trade.
-  const streak = useMemo(() => {
-    if (!user?.id) return { current: 0, longest: 0, total: 0, doneToday: false, atRisk: false };
-    try {
-      return computeChecklistStreakStats(window.localStorage, user.id);
-    } catch {
-      return { current: 0, longest: 0, total: 0, doneToday: false, atRisk: false };
-    }
-  }, [user?.id]);
-
-  const streakPeriods = useMemo<StreakPeriod[]>(() => {
-    if (!user?.id) return [];
-    try {
-      return recentChecklistPeriods(window.localStorage, user.id, 7);
-    } catch {
-      return [];
-    }
-  }, [user?.id]);
-
-  // ── Copilot block: Edge Score, rule of the day, objective ──
+  /* LE TABLEAU DE BORD TIENT EN UN ÉCRAN (retour du propriétaire) : le
+     copilote Jarvis et la série de checklist ont quitté la page — Jarvis
+     reste à un appui (action ronde), la série vit sur la page Checklist, et
+     le score de discipline garde sa tuile. */
   // Edge Score via le hook PARTAGÉ avec Jarvis : une seule définition de ce
-  // score dans tout le produit. L'assemblage des entrées (checklist par jour,
-  // risque max, solde initial) vit désormais dans `useEdgeScore`.
+  // score dans tout le produit.
   const edge = useEdgeScore(trades, user?.id);
-
-  const dailyRule = useMemo(() => deriveDailyRule(computeStats(trades)), [trades]);
-
-  // ── Trajectoire de discipline ──────────────────────────────────────────────
-  // On conserve un HISTORIQUE borné du score, pas seulement l'instantané de la
-  // veille : le delta jour/jour dit « tu as monté depuis hier », il ne dit pas
-  // « tu progresses ». La logique vit dans un module pur et testé
-  // (`edgeHistory.ts`), ici on ne fait que la brancher.
   const today = localDateStr(new Date());
-  const [edgeHistory, setEdgeHistory] = useState<EdgePoint[]>([]);
-
-  useEffect(() => {
-    if (!user || typeof window === "undefined") return;
-    setEdgeHistory(readHistory(window.localStorage, user.id));
-  }, [user?.id]);
-
-  // Enregistre (ou réécrit) le score du jour : il bouge à chaque trade ajouté,
-  // c'est la valeur de fin de journée qui fait foi.
-  useEffect(() => {
-    if (!user || edge.score === null || typeof window === "undefined") return;
-    setEdgeHistory((prev) => {
-      const next = appendToday(prev, today, edge.score as number);
-      writeHistory(window.localStorage, user.id, next);
-      return next;
-    });
-  }, [user?.id, edge.score, today]);
-
-  const edgeDelta = useMemo(
-    () => (edge.score === null ? null : dayOverDayDelta(edgeHistory, today, edge.score)),
-    [edgeHistory, edge.score, today],
-  );
-
-  const edgeTrend = useMemo(() => trend(edgeHistory), [edgeHistory]);
 
   // Monthly objective: current-month PnL as a fraction of the month's opening
   // equity (starting balance + PnL accumulated before this month).
@@ -313,8 +300,24 @@ export default function Dashboard({
       else before += tr.pnl;
     }
     const base = startingBalance + before;
-    return { currentPct: base > 0 ? monthPnl / base : 0, targetPct: monthlyTarget };
+    const monthTrades = trades.filter((tr) => tr.date >= monthStart);
+    return {
+      currentPct: base > 0 ? monthPnl / base : 0,
+      targetPct: monthlyTarget,
+      monthPnl,
+      targetAmount: monthlyTarget !== null && base > 0 ? monthlyTarget * base : null,
+      monthDrawdown: computeStats(monthTrades).maxDrawdown,
+      monthTrades: monthTrades.length,
+    };
   }, [trades, startingBalance, monthlyTarget]);
+  const daysLeft = tradingDaysLeftInMonth();
+  const unread = useUnreadCount(user?.id);
+  /* Le libellé de la période : « octobre » pour le mois en cours (le nom du
+     mois dans la langue de l'app), sinon la période en toutes lettres. */
+  const periodLabel =
+    period === "month"
+      ? new Date().toLocaleDateString(lang, { month: "long" })
+      : t(PERIOD_LONG[period]);
 
   const gain = stats.totalPnl >= 0;
   /* `streakLabel` / `streakColor` ont été supprimés : la série s'affichait en
@@ -324,12 +327,37 @@ export default function Dashboard({
 
   const headerActions = useMemo(
     () => (
-      <div className="hidden shrink-0 items-center gap-2 md:flex">
+      /* L'EN-TÊTE DE LA MAQUETTE LIQUID v1 : la recherche (palette ⌘K), la
+         cloche (boîte de réception, point d'accent s'il y a du non-lu) et
+         l'ajout plein. Bureau seulement : sur téléphone, la barre du bas et
+         les accès mobiles portent déjà ces trois gestes. */
+      <div className="hidden shrink-0 items-center gap-2.5 md:flex">
+        <button
+          type="button"
+          onClick={() => window.dispatchEvent(new CustomEvent("tv:open-palette"))}
+          className="dash-search"
+          aria-label={t("common.search")}
+        >
+          <Search className="h-4 w-4 shrink-0" aria-hidden />
+          <span>{t("common.search")}</span>
+          <kbd>⌘K</kbd>
+        </button>
+        <button
+          type="button"
+          onClick={() =>
+            window.dispatchEvent(new CustomEvent("tv:navigate", { detail: { page: "inbox" } }))
+          }
+          className="dash-icon-btn"
+          aria-label={t("nav.inbox")}
+        >
+          <Bell className="h-[17px] w-[17px]" aria-hidden />
+          {unread > 0 && <span className="dash-icon-dot" aria-hidden />}
+        </button>
         <Button variant="entry" size="sm" onClick={onAddTrade} className="tv-dashboard-add">
           <span className="tv-dashboard-add-icon">
             <Plus className="h-3.5 w-3.5" />
           </span>
-          <span>{t("common.addTrade")}</span>
+          <span>{t("dashboard.actionTrade")}</span>
         </Button>
         {hasDraft && (
           <button type="button" onClick={onAddTrade} className="tv-draft-badge">
@@ -339,7 +367,7 @@ export default function Dashboard({
         )}
       </div>
     ),
-    [onAddTrade, hasDraft, t],
+    [onAddTrade, hasDraft, t, unread],
   );
   usePageActions(headerActions);
 
@@ -357,42 +385,35 @@ export default function Dashboard({
 
   const dateLongue = useMemo(
     () =>
-      new Date().toLocaleDateString(undefined, {
-        weekday: "short",
+      new Date().toLocaleDateString(lang, {
+        weekday: "long",
         day: "numeric",
-        month: "short",
+        month: "long",
       }),
-    [],
+    [lang],
   );
 
   const lead = useMemo(
     () => (
-      /* `hidden md:flex` — sur téléphone, la barre de tête garde 78px pour cet
-         emplacement une fois les actions mobiles posées : la date, le P&L du
-         jour et le nombre de trades y débordaient (mesuré : 212px dans 78).
-         Le bandeau est une COMMODITÉ de bureau ; sur mobile, le hero de la
-         page donne le même chiffre trente pixels plus bas. */
-      <div className="hidden min-w-0 items-center gap-2.5 md:flex">
-        <span className="tv-label shrink-0 text-slate-500">{dateLongue}</span>
-        <span className="h-3.5 w-px shrink-0 bg-white/[0.12]" />
+      /* Le SOUS-TITRE du grand titre : la date, puis où en est la journée —
+         le P&L du jour et le nombre de trades, ou l'absence de trade. Rien
+         qui ne soit déjà une donnée : ce n'est pas un message d'accueil. */
+      <p className="dash-lead">
+        <span className="dash-lead-date">{dateLongue}</span>
+        <span aria-hidden>·</span>
         {jour.n === 0 ? (
-          <span className="tv-row-label truncate">{t("dashboard.noTradeToday")}</span>
+          <span>{t("dashboard.noTradeToday")}</span>
         ) : (
           <>
-            <span
-              className={cn(
-                "tv-figure shrink-0 text-sm leading-none",
-                jour.pnl >= 0 ? "text-emerald-400" : "text-red-400",
-              )}
-            >
+            <span className={cn("tv-figure", jour.pnl >= 0 ? "text-emerald-400" : "text-red-400")}>
               {formatPnl(jour.pnl)}
             </span>
-            <span className="tv-num tv-row-label shrink-0">
+            <span className="tv-num">
               {jour.n} {jour.n > 1 ? t("dashboard.tradesToday") : t("dashboard.tradeToday")}
             </span>
           </>
         )}
-      </div>
+      </p>
     ),
     [dateLongue, jour.n, jour.pnl, t],
   );
@@ -400,32 +421,36 @@ export default function Dashboard({
 
   return (
     <PageContainer>
-      {/* Le « Bonjour » horodaté a été retiré. C'était la PREMIÈRE chose que
+      <div
+        ref={boxRef}
+        className={cn(fit && "dash-fit", tight && "dash-tight", short && "dash-short")}
+      >
+        {/* Le « Bonjour » horodaté a été retiré. C'était la PREMIÈRE chose que
           l'œil rencontrait sur la page la plus consultée du produit, et il ne
           portait aucune information : ni un chiffre, ni un état, ni une action.
           Le premier objet de la page est désormais le seul qui compte à
           l'ouverture — le P&L. */}
-      {/* Frame paints instantly; data sections show a skeleton only while the
+        {/* Frame paints instantly; data sections show a skeleton only while the
           first trades load. The skeleton is deferred (>320 ms) so it never
           flashes for the 50 ms it takes the React Query cache to re-read. */}
-      {tradesLoading ? (
-        <DeferredFallback reserve="min-h-[420px]">
-          {/* Le squelette suit la MÊME hiérarchie que la page : le hero
+        {tradesLoading ? (
+          <DeferredFallback reserve="min-h-[420px]">
+            {/* Le squelette suit la MÊME hiérarchie que la page : le hero
               d'abord, les quatre tuiles ensuite. Il annonçait l'ordre inverse
               — c'est-à-dire qu'il promettait une mise en page qui n'existe
               plus, et le contenu réel sautait par-dessus en arrivant. */}
-          <div className={cn(density.sectionGap)}>
-            <div className="stat-card h-60 skeleton md:h-72" />
-          </div>
-          <div className={cn("grid grid-cols-2 md:grid-cols-4", density.gridGap)}>
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="stat-card h-28 skeleton" />
-            ))}
-          </div>
-        </DeferredFallback>
-      ) : (
-        <>
-          {/* ══════════════════════════════════════════════════════════════
+            <div className={cn(density.sectionGap)}>
+              <div className="stat-card h-60 skeleton md:h-72" />
+            </div>
+            <div className={cn("grid grid-cols-2 md:grid-cols-4", density.gridGap)}>
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="stat-card h-28 skeleton" />
+              ))}
+            </div>
+          </DeferredFallback>
+        ) : (
+          <>
+            {/* ══════════════════════════════════════════════════════════════
               LA HIÉRARCHIE DE LA PAGE — quatre niveaux, dans cet ordre.
 
               Avant, la page ouvrait sur un « Bonjour » puis quatre tuiles, et
@@ -445,438 +470,457 @@ export default function Dashboard({
                 4. LE DÉTAIL — les statistiques secondaires et les derniers
                    trades. On y descend quand on cherche, pas quand on ouvre.
               ══════════════════════════════════════════════════════════════ */}
-          {trades.length === 0 ? (
-            /* ── Empty state: first-run experience ── */
-            <div className="glass rounded-3xl p-5 md:p-10 text-center  relative overflow-hidden">
-              <svg
-                viewBox="0 0 200 80"
-                className="w-48 md:w-64 mx-auto mb-6 opacity-80"
-                aria-hidden="true"
-              >
-                <defs>
-                  <linearGradient id="emptyGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="var(--tv-highlight)" stopOpacity="0.35" />
-                    <stop offset="100%" stopColor="var(--tv-highlight)" stopOpacity="0" />
-                  </linearGradient>
-                </defs>
-                <path
-                  d="M4 68 L36 52 L62 60 L96 30 L128 40 L162 14 L196 22"
-                  fill="none"
-                  stroke="var(--tv-highlight)"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d="M4 68 L36 52 L62 60 L96 30 L128 40 L162 14 L196 22 L196 78 L4 78 Z"
-                  fill="url(#emptyGrad)"
-                  stroke="none"
-                />
-                <circle cx="162" cy="14" r="3.5" fill="var(--tv-highlight)" />
-              </svg>
-              <h2 className="tv-title mb-2">{t("empty.title")}</h2>
-              <p className="text-sm text-slate-500 max-w-md mx-auto mb-6">{t("empty.subtitle")}</p>
-              <Button variant="accent" onClick={onAddTrade}>
-                <Plus className="w-4 h-4" /> {t("empty.cta")}
-              </Button>
-              {onOpenImport && (
-                <button
-                  onClick={onOpenImport}
-                  className="mt-3 text-xs text-slate-500 hover:text-slate-300 underline underline-offset-2 transition-colors"
+            {trades.length === 0 ? (
+              /* ── Empty state: first-run experience ── */
+              <div className="glass rounded-3xl p-5 md:p-10 text-center  relative overflow-hidden">
+                <svg
+                  viewBox="0 0 200 80"
+                  className="w-48 md:w-64 mx-auto mb-6 opacity-80"
+                  aria-hidden="true"
                 >
-                  {t("settings.importCsv")}
-                </button>
-              )}
-              {/* Ghost example of what a logged trade looks like */}
-              <div
-                className="max-w-sm mx-auto mt-8 text-left opacity-50 pointer-events-none select-none"
-                aria-hidden="true"
-              >
-                <div className="tv-label text-slate-500 mb-2">{t("empty.example")}</div>
-                <div className="glass rounded-xl px-4 py-3 flex items-center gap-3 border-dashed">
-                  <div className="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0">
-                    <ArrowUpRight className="w-4 h-4 text-emerald-400" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-white">NQ</span>
-                      <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400">
-                        L
-                      </span>
-                      <span className="text-[10px] text-slate-600">Silver Bullet</span>
+                  <defs>
+                    <linearGradient id="emptyGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="var(--tv-highlight)" stopOpacity="0.35" />
+                      <stop offset="100%" stopColor="var(--tv-highlight)" stopOpacity="0" />
+                    </linearGradient>
+                  </defs>
+                  <path
+                    d="M4 68 L36 52 L62 60 L96 30 L128 40 L162 14 L196 22"
+                    fill="none"
+                    stroke="var(--tv-highlight)"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M4 68 L36 52 L62 60 L96 30 L128 40 L162 14 L196 22 L196 78 L4 78 Z"
+                    fill="url(#emptyGrad)"
+                    stroke="none"
+                  />
+                  <circle cx="162" cy="14" r="3.5" fill="var(--tv-highlight)" />
+                </svg>
+                <h2 className="tv-title mb-2">{t("empty.title")}</h2>
+                <p className="text-sm text-slate-500 max-w-md mx-auto mb-6">
+                  {t("empty.subtitle")}
+                </p>
+                <Button variant="accent" onClick={onAddTrade}>
+                  <Plus className="w-4 h-4" /> {t("empty.cta")}
+                </Button>
+                {onOpenImport && (
+                  <button
+                    onClick={onOpenImport}
+                    className="mt-3 text-xs text-slate-500 hover:text-slate-300 underline underline-offset-2 transition-colors"
+                  >
+                    {t("settings.importCsv")}
+                  </button>
+                )}
+                {/* Ghost example of what a logged trade looks like */}
+                <div
+                  className="max-w-sm mx-auto mt-8 text-left opacity-50 pointer-events-none select-none"
+                  aria-hidden="true"
+                >
+                  <div className="tv-label text-slate-500 mb-2">{t("empty.example")}</div>
+                  <div className="glass rounded-xl px-4 py-3 flex items-center gap-3 border-dashed">
+                    <div className="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0">
+                      <ArrowUpRight className="w-4 h-4 text-emerald-400" />
                     </div>
-                    <div className="tv-num text-[10px] text-slate-600">
-                      10:03 · 2R · {formatMoney(150, { whole: true })} {t("dashboard.riskSuffix")}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-white">NQ</span>
+                        <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400">
+                          L
+                        </span>
+                        <span className="text-[10px] text-slate-600">Silver Bullet</span>
+                      </div>
+                      <div className="tv-num text-[10px] text-slate-600">
+                        10:03 · 2R · {formatMoney(150, { whole: true })} {t("dashboard.riskSuffix")}
+                      </div>
                     </div>
-                  </div>
-                  <div className="tv-num text-sm font-bold text-emerald-400">
-                    {formatMoney(300, { signed: true })}
+                    <div className="tv-num text-sm font-bold text-emerald-400">
+                      {formatMoney(300, { signed: true })}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ) : (
-            <>
-              {/* ── 1. LE CHIFFRE ── */}
-              <div className={cn(density.sectionGap)}>
-                {/* Performance */}
-                <div className="relative stat-card-elevated overflow-hidden p-4 md:p-5">
-                  <div className="flex items-center justify-between gap-3 mb-3">
-                    <div>
-                      <div className="tv-label flex items-center gap-2 text-slate-500 mb-1">
-                        <LineChart className="w-3.5 h-3.5 text-slate-500" />
-                        {t("dashboard.equityCurve")}
-                      </div>
-                      <div className="flex items-baseline gap-3 flex-wrap">
-                        <span
-                          className={cn(
-                            "tv-figure text-2xl md:text-3xl",
-                            gain ? "text-emerald-400" : "text-red-400",
-                          )}
-                        >
-                          {/* Le compteur Lucid : le P&L roule quand un trade le change. */}
-                          <RollingFigure value={formatPnl(stats.totalPnl)} />
-                        </span>
-                        {periodPct !== null && (
-                          <span
-                            className={cn(
-                              "tv-figure tv-figure-secondary text-xs md:text-sm px-2 py-0.5 rounded-lg",
-                              gain
-                                ? "bg-emerald-500/10 text-emerald-400"
-                                : "bg-red-500/10 text-red-400",
-                            )}
-                          >
-                            {periodPct >= 0 ? "+" : ""}
-                            {(periodPct * 100).toFixed(2)}%
-                          </span>
+            ) : (
+              <>
+                {/* ══ LA MAQUETTE LIQUID v1 ══
+                  1. le compte, le P&L de la période, sa fenêtre, la période,
+                     les quatre actions rondes ;
+                  2. la courbe d'equity (deux tiers) et quatre widgets qui
+                     portent chacun leur échantillon ;
+                  3. les derniers trades (deux tiers) et l'objectif du mois ;
+                  4. la discipline (copilote, série) en dessous. */}
+                <section ref={heroRef} className="dash-hero" aria-label={t("dashboard.netPnl")}>
+                  <AccountSwitcher variant="pill" balance={startingBalance + stats.totalPnl} />
+                  <span
+                    className={cn(
+                      "tv-figure dash-hero-figure",
+                      gain ? "text-emerald-400" : "text-red-400",
+                    )}
+                  >
+                    {/* Le compteur Lucid : le P&L roule quand un trade le change. */}
+                    <RollingFigure value={formatPnl(stats.totalPnl)} />
+                  </span>
+                  {/* Ce que le chiffre couvre, en mots : la période et
+                    l'échantillon. Un P&L sans sa fenêtre ne se lit pas. */}
+                  <p className="dash-hero-meta">
+                    <span>{t("dashboard.netPnl")}</span>
+                    <span aria-hidden>·</span>
+                    <span>{periodLabel}</span>
+                    <span aria-hidden>·</span>
+                    <span className="tv-num">
+                      {t("dashboard.periodTrades").replace("{n}", String(stats.totalTrades))}
+                    </span>
+                    {periodPct !== null && (
+                      <span
+                        className={cn(
+                          "tv-figure tv-figure-secondary dash-hero-pct",
+                          gain
+                            ? "bg-emerald-500/10 text-emerald-400"
+                            : "bg-red-500/10 text-red-400",
                         )}
-                      </div>
-                      {/* Ce que le chiffre couvre, en mots : la période et
-                          l'échantillon. Un P&L sans sa fenêtre ne se lit pas. */}
-                      <div className="mt-1 text-[11px] text-slate-500">
-                        {t(PERIOD_LONG[period])}
-                        <span className="text-slate-600"> · </span>
-                        {t("dashboard.periodTrades").replace("{n}", String(stats.totalTrades))}
-                      </div>
-                    </div>
-                    {/* LE SÉLECTEUR, DISCRET ET PARTOUT.
-                        Il empruntait `.section-tabs` — le contrôle des onglets de
-                        PAGE : 36px de haut, et MASQUÉ sous 1024px (la règle de
-                        ce contrôle), donc absent sur téléphone et tablette. Ici,
-                        un segmenté de 24px qui reste visible à toutes les
-                        tailles et se souvient du choix. */}
-                    <div
-                      className="dash-period shrink-0 self-start"
-                      role="group"
-                      aria-label={t("dashboard.periodAria")}
-                    >
-                      {PERIODS.map((p) => (
-                        <button
-                          key={p}
-                          type="button"
-                          onClick={() => changePeriod(p)}
-                          aria-pressed={period === p}
-                          className="dash-period-btn"
-                        >
-                          {t(PERIOD_SHORT[p])}
-                        </button>
-                      ))}
-                    </div>
+                      >
+                        {periodPct >= 0 ? "+" : ""}
+                        {(periodPct * 100).toFixed(2)}%
+                      </span>
+                    )}
+                  </p>
+                  <div className="dash-period" role="group" aria-label={t("dashboard.periodAria")}>
+                    {PERIODS.map((p) => (
+                      <button
+                        key={p}
+                        type="button"
+                        onClick={() => changePeriod(p)}
+                        aria-pressed={period === p}
+                        className="dash-period-btn"
+                      >
+                        {t(PERIOD_SHORT[p])}
+                      </button>
+                    ))}
                   </div>
-                  {stats.equityCurve.length > 0 ? (
-                    <div className="h-44 md:h-56 chart-draw">
-                      <Suspense
-                        fallback={
-                          <div className="h-full w-full animate-pulse rounded-lg bg-white/[0.03]" />
+                  <div className="dash-hero-actions">
+                    <ActionButton
+                      variant="primary"
+                      icon={<Plus strokeWidth={2.4} />}
+                      label={t("dashboard.actionTrade")}
+                      onClick={onAddTrade}
+                    />
+                    {onOpenImport && (
+                      <ActionButton
+                        icon={<Upload />}
+                        label={t("dashboard.actionImport")}
+                        onClick={onOpenImport}
+                      />
+                    )}
+                    {onOpenChecklist && (
+                      <ActionButton
+                        icon={<ClipboardCheck />}
+                        label={t("dashboard.actionChecklist")}
+                        onClick={onOpenChecklist}
+                      />
+                    )}
+                    <ActionButton
+                      icon={<Bot />}
+                      label={t("nav.jarvis")}
+                      onClick={() => window.dispatchEvent(new CustomEvent("tv:open-jarvis"))}
+                    />
+                  </div>
+                </section>
+
+                {/* ── 2. LA COURBE ET SES QUATRE CHIFFRES ── */}
+                <div className="dash-grid">
+                  <div
+                    className="stat-card-elevated dash-span-2 overflow-hidden p-4 md:p-5"
+                    style={fitRow1}
+                  >
+                    <div className="dash-card-head">
+                      <div className="flex min-w-0 items-center gap-4">
+                        <h2 className="dash-card-title">{t("dashboard.equityCurve")}</h2>
+                        {/* La légende monte dans l'en-tête : la courbe garde toute
+                            la hauteur de la carte. */}
+                        <span className="dash-legend" aria-hidden>
+                          <i style={{ background: CHART_GREEN }} />
+                          {t("chart.balance")}
+                        </span>
+                        <span className="dash-legend" aria-hidden>
+                          <i style={{ background: CHART_RED }} />
+                          {t("chart.breakEven")}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        className="dash-link"
+                        onClick={() =>
+                          window.dispatchEvent(
+                            new CustomEvent("tv:navigate", { detail: { page: "analytics" } }),
+                          )
                         }
                       >
-                        <EquityChart data={stats.equityCurve} />
-                      </Suspense>
-                    </div>
-                  ) : (
-                    <div className="h-44 md:h-56 flex items-center justify-center text-slate-600 text-sm">
-                      {t("dashboard.noTradesInPeriod")}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* ── 2. LES QUATRE AUTRES ──
-                  Chacune de ces tuiles porte UN chiffre qui n'existe nulle part
-                  ailleurs sur la page. Ce qui a sauté :
-                    • « P&L total » — le hero l'affiche déjà, en quatre fois
-                      plus gros, juste au-dessus.
-                    • « Trades » — la grille de détail le donne, et le nombre
-                      brut de trades ne se lit pas au réveil.
-                  Ce qui les remplace : profit factor et drawdown max, les deux
-                  chiffres qu'une prop firm regarde et que la page cachait au
-                  fond d'une grille de huit lignes.
-
-                  Les sous-titres ont sauté aussi. « Today $0.00 » était codé en
-                  dur — il affichait un zéro quoi qu'il arrive, donc un faux
-                  chiffre. « Avg Win / Loss » et « N trading days » étaient de
-                  l'anglais en dur dans une application traduite en douze
-                  langues, et ne décrivaient même pas la valeur au-dessus. */}
-              {/* QUATRE COLONNES À PARTIR DE `lg`, PAS DE `md`.
-                  Sur tablette, le rail prend 230px : quatre tuiles dans les
-                  600px restants font 130px chacune, et « Max Drawdown » y est
-                  coupé. La bascule suit la largeur de la COLONNE DE CONTENU,
-                  pas celle de l'écran — la même correction que sur la grille
-                  de KPI du rapport mensuel. */}
-              <div
-                className={cn(
-                  "grid grid-cols-2 lg:grid-cols-4",
-                  density.gridGap,
-                  density.sectionGap,
-                )}
-              >
-                {/* Une ligne par tuile : le libellé, le chiffre (et sa jauge).
-                    Les sous-lignes de contexte ont été retirées — demandé : la
-                    tuile se lit d'un regard, le détail vit dans l'Analyse. */}
-                <Metric
-                  compact
-                  title={t("dashboard.netR")}
-                  value={
-                    netR === null ? "—" : `${netR >= 0 ? "+" : "−"}${Math.abs(netR).toFixed(1)}R`
-                  }
-                  valueClass={
-                    netR === null ? undefined : netR >= 0 ? "text-emerald-400" : "text-red-400"
-                  }
-                  delay={0}
-                />
-                <Metric
-                  compact
-                  title={t("stats.trades")}
-                  value={String(stats.totalTrades)}
-                  delay={40}
-                />
-                <Metric
-                  compact
-                  title={t("stats.winRate")}
-                  value={stats.wins + stats.losses > 0 ? formatPct(stats.winRate) : "—"}
-                  valueClass={
-                    stats.wins + stats.losses === 0
-                      ? undefined
-                      : stats.winRate >= 0.5
-                        ? "text-emerald-400"
-                        : "text-red-400"
-                  }
-                  visual={{
-                    kind: "radial",
-                    pct: stats.winRate,
-                    color: stats.winRate >= 0.5 ? CHART_GREEN : CHART_RED,
-                    center: `${stats.wins}/${stats.losses}`,
-                  }}
-                  delay={80}
-                />
-                <Metric
-                  compact
-                  title={t("dashboard.profitFactor")}
-                  value={stats.profitFactor === null ? "—" : stats.profitFactor.toFixed(2)}
-                  valueClass={
-                    stats.profitFactor !== null && stats.profitFactor >= 1.5
-                      ? "text-emerald-400"
-                      : stats.profitFactor !== null && stats.profitFactor < 1
-                        ? "text-red-400"
-                        : undefined
-                  }
-                  visual={{
-                    kind: "bar",
-                    pct: stats.profitFactor === null ? 0 : Math.min(stats.profitFactor / 3, 1),
-                    color:
-                      stats.profitFactor !== null && stats.profitFactor >= 1
-                        ? CHART_GREEN
-                        : CHART_RED,
-                  }}
-                  delay={120}
-                />
-              </div>
-
-              {/* ── 3. LA DISCIPLINE ── */}
-              {/* Copilot block + série de checklist — le focus du jour + la discipline
-                dans la durée, côte à côte. */}
-              <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,0.65fr)] gap-3 md:gap-4 mb-3 md:mb-4">
-                <CopilotBlock
-                  edge={edge}
-                  edgeDelta={edgeDelta}
-                  edgeTrend={edgeTrend}
-                  edgeScores={edgeHistory.map((p) => p.score)}
-                  rule={dailyRule}
-                  checklist={chkStatus}
-                  objective={objective}
-                  onOpenChecklist={onOpenChecklist}
-                  onSetObjective={onSetObjective}
-                />
-                <StreakCard
-                  streak={streakPeriods}
-                  currentStreak={streak.current}
-                  longestStreak={streak.longest}
-                  total={streak.total}
-                  title={t("streak.title")}
-                  todayDone={streak.doneToday}
-                  todayDoneLabel={t("streak.todayDone")}
-                  todayTodoLabel={t("streak.todayTodo")}
-                  daysLabel={t("streak.days")}
-                  longestLabel={t("streak.longest")}
-                  totalLabel={t("streak.total")}
-                  actionLabel={t("streak.viewChecklist")}
-                  onActionClick={onOpenChecklist}
-                  howItWorksTitle={t("streak.howItWorks")}
-                  howItWorksItems={[
-                    t("streak.howItWorks.i1"),
-                    t("streak.howItWorks.i2"),
-                    t("streak.howItWorks.i3"),
-                  ]}
-                  // La série vit aussi sur la page Checklist : sur téléphone, le
-                  // tableau de bord garde le focus du jour et laisse la série.
-                  className="animate-fade-in-up stagger-1 hidden lg:flex"
-                />
-              </div>
-
-              {/* ── 4. AGIR ──
-                  Trois portes, pas un tableau de plus : revoir ses trades,
-                  demander à Jarvis, creuser l'analyse. La grille « Performance »
-                  (espérance, trades propres, long/short…) redisait l'Analyse en
-                  plus petit — elle y reste. */}
-              <div className="mb-4 grid grid-cols-3 gap-2 md:mb-6 md:gap-3">
-                {[
-                  {
-                    key: "journal",
-                    label: t("nav.journal"),
-                    Icon: BookOpen,
-                    onClick: () => onOpenJournal?.(),
-                  },
-                  {
-                    key: "jarvis",
-                    label: t("dashboard.askJarvis"),
-                    Icon: Sparkles,
-                    onClick: () => window.dispatchEvent(new CustomEvent("tv:open-jarvis")),
-                  },
-                  {
-                    key: "analytics",
-                    label: t("nav.analytics"),
-                    Icon: BarChart3,
-                    onClick: () =>
-                      window.dispatchEvent(
-                        new CustomEvent("tv:navigate", { detail: { page: "analytics" } }),
-                      ),
-                  },
-                ].map(({ key, label, Icon, onClick }) => (
-                  <button key={key} type="button" onClick={onClick} className="dash-action">
-                    <Icon className="h-4 w-4 shrink-0" aria-hidden />
-                    <span className="truncate">{label}</span>
-                  </button>
-                ))}
-              </div>
-
-              <div>
-                {/* Recent Trades */}
-                <Card variant="solid" hover className="overflow-hidden">
-                  <div className="px-4 md:px-5 py-3 md:py-4 border-b border-[var(--tv-border)] flex items-center justify-between gap-3">
-                    <h3 className="tv-title">{t("dashboard.recentTrades")}</h3>
-                    {onOpenJournal && trades.length > recentTrades.length && (
-                      <button
-                        onClick={onOpenJournal}
-                        /* Une cible de 32px de haut : un libellé de 16px n'en
-                           est pas une, au doigt. */
-                        className="inline-flex h-8 shrink-0 items-center rounded-lg px-2 text-xs font-semibold text-[var(--tv-highlight)] transition-colors hover:bg-white/[0.04] hover:text-white"
-                      >
                         {t("common.viewAll")}
+                        <ChevronRight className="h-3.5 w-3.5" aria-hidden />
                       </button>
+                    </div>
+                    {stats.equityCurve.length > 0 ? (
+                      <div
+                        className={cn("chart-draw", !fit && "h-48 md:h-60")}
+                        style={fit ? { height: (row1H as number) - CARD_CHROME } : undefined}
+                      >
+                        <Suspense
+                          fallback={
+                            <div className="h-full w-full animate-pulse rounded-lg bg-white/[0.03]" />
+                          }
+                        >
+                          <EquityChart data={stats.equityCurve} legend={false} />
+                        </Suspense>
+                      </div>
+                    ) : (
+                      <div className="h-48 md:h-60 flex items-center justify-center text-slate-600 text-sm">
+                        {t("dashboard.noTradesInPeriod")}
+                      </div>
                     )}
                   </div>
-                  <div className="divide-y divide-[var(--tv-border)]">
+
+                  {/* Chaque widget affiche son échantillon : un chiffre sans
+                    son `n` ne se lit pas (AGENTS.md). */}
+                  <div className="dash-widgets" style={fitRow1}>
+                    <Metric
+                      compact={tightWidgets}
+                      title={t("stats.winRate")}
+                      value={stats.wins + stats.losses > 0 ? formatPct(stats.winRate) : "—"}
+                      valueClass={
+                        stats.wins + stats.losses === 0
+                          ? undefined
+                          : stats.winRate >= 0.5
+                            ? "text-emerald-400"
+                            : "text-red-400"
+                      }
+                      visual={{
+                        kind: "track",
+                        pct: stats.winRate,
+                        color: stats.winRate >= 0.5 ? CHART_GREEN : CHART_RED,
+                      }}
+                      subtitle={t("dashboard.sampleTrades").replace(
+                        "{n}",
+                        String(stats.wins + stats.losses),
+                      )}
+                      delay={0}
+                    />
+                    <Metric
+                      compact={tightWidgets}
+                      title={t("dashboard.profitFactor")}
+                      value={stats.profitFactor === null ? "—" : stats.profitFactor.toFixed(2)}
+                      valueClass={
+                        stats.profitFactor !== null && stats.profitFactor >= 1.5
+                          ? "text-emerald-400"
+                          : stats.profitFactor !== null && stats.profitFactor < 1
+                            ? "text-red-400"
+                            : undefined
+                      }
+                      visual={{
+                        kind: "track",
+                        pct: stats.profitFactor === null ? 0 : Math.min(stats.profitFactor / 3, 1),
+                        color:
+                          stats.profitFactor !== null && stats.profitFactor >= 1
+                            ? CHART_GREEN
+                            : CHART_RED,
+                      }}
+                      subtitle={t("dashboard.sampleTrades").replace(
+                        "{n}",
+                        String(stats.totalTrades),
+                      )}
+                      delay={40}
+                    />
+                    <Metric
+                      compact={tightWidgets}
+                      title={t("dashboard.avgR")}
+                      value={
+                        stats.avgRR === null
+                          ? "—"
+                          : `${stats.avgRR >= 0 ? "+" : "−"}${Math.abs(stats.avgRR).toFixed(2)} R`
+                      }
+                      valueClass={
+                        stats.avgRR === null
+                          ? undefined
+                          : stats.avgRR >= 0
+                            ? "text-emerald-400"
+                            : "text-red-400"
+                      }
+                      visual={{
+                        kind: "track",
+                        pct: stats.avgRR === null ? 0 : Math.min(Math.abs(stats.avgRR) / 2, 1),
+                        color: stats.avgRR !== null && stats.avgRR < 0 ? CHART_RED : CHART_GREEN,
+                      }}
+                      subtitle={t("dashboard.sampleTrades").replace(
+                        "{n}",
+                        String(stats.rSampleSize),
+                      )}
+                      delay={80}
+                    />
+                    <Metric
+                      compact={tightWidgets}
+                      title={t("dashboard.discipline")}
+                      value={edge.score === null ? "—" : `${Math.round(edge.score)}/100`}
+                      visual={{ kind: "track", pct: edge.score === null ? 0 : edge.score / 100 }}
+                      subtitle={t("dashboard.sampleSessions").replace(
+                        "{n}",
+                        String(edge.tradedDays),
+                      )}
+                      delay={120}
+                    />
+                  </div>
+                </div>
+
+                {/* ── 3. LES DERNIERS TRADES ET L'OBJECTIF ── */}
+                <div className="dash-grid">
+                  <div className="stat-card dash-span-2 overflow-hidden p-4 md:p-5" style={fitRow}>
+                    <div className="dash-card-head">
+                      <h2 className="dash-card-title">{t("dashboard.recentTrades")}</h2>
+                      {onOpenJournal && (
+                        <button type="button" className="dash-link" onClick={onOpenJournal}>
+                          {t("common.viewAll")}
+                          <ChevronRight className="h-3.5 w-3.5" aria-hidden />
+                        </button>
+                      )}
+                    </div>
                     {recentTrades.length === 0 ? (
-                      <div className="px-4 py-10 text-center text-slate-600 text-sm">
+                      <div className="py-10 text-center text-sm text-slate-600">
                         {t("dashboard.noTradesInPeriod")}
                       </div>
                     ) : (
-                      recentTrades.map((trade) => {
-                        const be = isBreakEven(trade);
-                        const RowTag = onEditTrade ? "button" : "div";
-                        return (
-                          <RowTag
-                            key={trade.id}
-                            {...(onEditTrade
-                              ? {
-                                  type: "button" as const,
-                                  onClick: () => onEditTrade(trade),
-                                  "aria-label": `${t("common.edit")} ${trade.symbol} ${formatShortDate(trade.date)}`,
-                                }
-                              : {})}
-                            className={cn(
-                              "px-4 md:px-5 py-3 trade-card flex items-center gap-3 transition-colors",
-                              onEditTrade
-                                ? "w-full text-left hover:bg-white/[0.04] focus-visible:bg-white/[0.06] focus-visible:outline-none cursor-pointer"
-                                : "hover:bg-white/[0.02]",
-                            )}
-                          >
-                            <div
-                              className={cn(
-                                "w-9 h-9 rounded-xl flex items-center justify-center shrink-0",
-                                be
-                                  ? "bg-slate-500/10"
-                                  : trade.pnl >= 0
-                                    ? "bg-emerald-500/10"
-                                    : "bg-red-500/10",
-                              )}
+                      <div className="dash-list">
+                        {recentTrades.slice(0, listRows).map((trade) => {
+                          const be = isBreakEven(trade);
+                          const RowTag = onEditTrade ? "button" : "div";
+                          const side =
+                            trade.direction === "long"
+                              ? t("common.long")
+                              : trade.direction === "short"
+                                ? t("common.short")
+                                : "BE";
+                          const r = trade.rMultiple;
+                          return (
+                            <RowTag
+                              key={trade.id}
+                              {...(onEditTrade
+                                ? {
+                                    type: "button" as const,
+                                    onClick: () => onEditTrade(trade),
+                                    "aria-label": `${t("common.edit")} ${trade.symbol} ${formatShortDate(trade.date)}`,
+                                  }
+                                : {})}
+                              className={cn("dash-row", onEditTrade && "dash-row-action")}
                             >
-                              {be ? (
-                                <Minus className="w-4 h-4 text-slate-300" />
-                              ) : trade.pnl >= 0 ? (
-                                <ArrowUpRight className="w-4 h-4 text-emerald-400" />
-                              ) : (
-                                <ArrowDownRight className="w-4 h-4 text-red-400" />
-                              )}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm font-bold text-white">{trade.symbol}</span>
+                              <span className="dash-row-avatar" aria-hidden>
+                                {trade.symbol.slice(0, 3)}
+                              </span>
+                              <span className="dash-row-main">
+                                <span className="dash-row-title">
+                                  {trade.symbol} · {side}
+                                </span>
+                                <span className="dash-row-sub tv-num">
+                                  {formatShortDate(trade.date)}
+                                  {trade.entryTime ? ` · ${trade.entryTime}` : ""}
+                                  {trade.quantity
+                                    ? ` · ${trade.quantity} ${t("trade.contracts")}`
+                                    : ""}
+                                </span>
+                              </span>
+                              <span className="dash-row-end">
                                 <span
                                   className={cn(
-                                    "text-[11px] font-bold px-1.5 py-0.5 rounded",
-                                    directionBadgeClass(trade.direction),
+                                    "tv-figure dash-row-pnl",
+                                    be
+                                      ? "text-slate-300"
+                                      : trade.pnl >= 0
+                                        ? "text-emerald-400"
+                                        : "text-red-400",
                                   )}
                                 >
-                                  {directionLabel(trade.direction)}
+                                  {formatPnl(trade.pnl)}
                                 </span>
-                                <span className="hidden md:inline text-[11px] text-slate-500">
-                                  {trade.strategy}
+                                <span className="dash-row-sub tv-num">
+                                  {r >= 0 ? "+" : "−"}
+                                  {Math.abs(r).toFixed(1)} R
                                 </span>
-                              </div>
-                              <div className="tv-num text-[11px] text-slate-500">
-                                {formatShortDate(trade.date)} · {trade.rMultiple.toFixed(1)}R
-                              </div>
-                            </div>
-                            <div className="text-right shrink-0">
-                              <div
-                                className={cn(
-                                  "tv-figure text-sm md:text-base",
-                                  be
-                                    ? "text-slate-300"
-                                    : trade.pnl >= 0
-                                      ? "text-emerald-400"
-                                      : "text-red-400",
-                                )}
-                              >
-                                {formatPnl(trade.pnl)}
-                              </div>
-                              <div className="tv-num text-[10px] text-slate-500">
-                                {formatMoney(trade.riskAmount, { whole: true })}{" "}
-                                {t("dashboard.riskSuffix")}
-                              </div>
-                            </div>
-                          </RowTag>
-                        );
-                      })
+                              </span>
+                            </RowTag>
+                          );
+                        })}
+                      </div>
                     )}
                   </div>
-                </Card>
-              </div>
-            </>
-          )}
-        </>
-      )}
+
+                  <div className="stat-card dash-goal overflow-hidden p-4 md:p-5" style={fitRow}>
+                    <div className="dash-card-head">
+                      <h2 className="dash-card-title">{t("copilot.objTitle")}</h2>
+                      <Target className="h-4 w-4 text-slate-500" aria-hidden />
+                    </div>
+                    {objective.targetPct !== null && objective.targetAmount !== null ? (
+                      <>
+                        <span className="tv-figure dash-goal-figure">
+                          {formatPct(
+                            objective.targetAmount > 0
+                              ? Math.max(0, objective.monthPnl / objective.targetAmount)
+                              : 0,
+                          )}
+                        </span>
+                        <span className="dash-row-sub tv-num">
+                          {t("dashboard.objOf")
+                            .replace("{a}", formatMoney(objective.monthPnl, { whole: true }))
+                            .replace("{b}", formatMoney(objective.targetAmount, { whole: true }))}
+                        </span>
+                        <span className="dash-goal-track" aria-hidden>
+                          <span
+                            className="metric-bar-fill"
+                            style={
+                              {
+                                "--metric-fill":
+                                  objective.targetAmount > 0
+                                    ? Math.max(
+                                        0,
+                                        Math.min(1, objective.monthPnl / objective.targetAmount),
+                                      )
+                                    : 0,
+                              } as CSSProperties
+                            }
+                          />
+                        </span>
+                      </>
+                    ) : (
+                      onSetObjective && (
+                        <Button
+                          variant="accent"
+                          size="sm"
+                          onClick={onSetObjective}
+                          className="self-start"
+                        >
+                          <Target className="h-4 w-4" aria-hidden />
+                          {t("copilot.objNone")}
+                        </Button>
+                      )
+                    )}
+                    <div className="dash-goal-tiles">
+                      <span className="dash-goal-tile">
+                        <small className="tv-label">{t("dashboard.monthDrawdown")}</small>
+                        <b className="tv-figure">
+                          {objective.monthTrades > 0
+                            ? formatMoney(objective.monthDrawdown, { whole: true })
+                            : "—"}
+                        </b>
+                      </span>
+                      <span className="dash-goal-tile">
+                        <small className="tv-label">{t("dashboard.daysLeft")}</small>
+                        <b className="tv-figure">{daysLeft}</b>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+          </>
+        )}
+      </div>
     </PageContainer>
   );
 }

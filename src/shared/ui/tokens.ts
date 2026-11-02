@@ -118,6 +118,18 @@ export const motion = {
  * `PageContainer` et `PageHeader` les consomment, donc la densité du produit
  * entier se règle ici et nulle part ailleurs.
  */
+/* LA LARGEUR DE PAGE — une seule pour toute l'app connectée : pages, en-tête
+   et squelettes de chargement. Le calendrier avait 1400 px quand le reste
+   avait 1200 : passer du Journal au Calendrier déplaçait tout le contenu (et
+   l'en-tête) d'une centaine de pixels vers la gauche sur un grand écran, et
+   le squelette, lui aussi à 1400, faisait sauter chaque page au chargement. */
+export const PAGE_WIDTH = "max-w-[1400px]";
+
+/* LES PAGES DE RÉGLAGES (Réglages, Profil, Apparence, Brokers, Abonnement)
+   partagent UNE largeur de lecture : on passe de l'une à l'autre par les
+   onglets de la section, rien ne doit changer de place. */
+export const SETTINGS_WIDTH = "max-w-[1040px]";
+
 export const density = {
   /** Card/panel inner padding. */
   cardPad: "p-4 md:p-5",

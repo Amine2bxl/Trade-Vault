@@ -65,9 +65,24 @@ export default function CompAccessSection() {
   const { toast } = useToast();
   const [grants, setGrants] = useState<Grant[]>([]);
   const [email, setEmail] = useState("");
-  const [plan, setPlan] = useState<PaidPlan>("elite_yearly");
+  const [plan, setPlan] = useState<PaidPlan>("lifetime");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
+
+  const [converting, setConverting] = useState(false);
+  /** Convertit les abonnés Stripe actifs en licence à vie (renouvellement
+   *  coupé). Une confirmation d'abord : l'action touche Stripe. */
+  const convertSubscribers = async () => {
+    if (converting || !window.confirm(t("comp.convertConfirm"))) return;
+    setConverting(true);
+    const r = await api<{ converted: number }>("/api/admin/convert-lifetime", "POST");
+    setConverting(false);
+    if (!r) {
+      toast(t("comp.convertFailed"), "error");
+      return;
+    }
+    toast(t("comp.convertDone").replace("{n}", String(r.converted)), "success");
+  };
 
   const reload = useCallback(async () => {
     const r = await api<{ grants: Grant[] }>("/api/admin/grants", "GET");
@@ -123,6 +138,18 @@ export default function CompAccessSection() {
         </div>
       </div>
 
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--tv-border)] bg-[var(--tv-plate-2)] px-4 py-3">
+        <p className="min-w-0 flex-1 text-[13px] text-slate-300">{t("comp.convertHint")}</p>
+        <Button
+          variant="subtle"
+          size="sm"
+          onClick={() => void convertSubscribers()}
+          disabled={converting}
+        >
+          {converting ? t("comp.converting") : t("comp.convert")}
+        </Button>
+      </div>
+
       <div className="grid gap-2 sm:grid-cols-[1fr_auto_auto]">
         <Input
           type="email"
@@ -138,10 +165,15 @@ export default function CompAccessSection() {
           onChange={(v) => setPlan(v as PaidPlan)}
           className="h-10"
           width="12rem"
-          options={PAID_TIERS.map((t) => ({
-            value: planId(t, "yearly"),
-            label: TIER_BY_ID[t].name[fr ? "fr" : "en"],
-          }))}
+          // Une seule offre aujourd'hui : la licence à vie. Les anciens paliers
+          // restent proposés pour reproduire un accès d'avant si besoin.
+          options={[
+            { value: "lifetime", label: TIER_BY_ID.elite.name[fr ? "fr" : "en"] },
+            ...PAID_TIERS.map((t) => ({
+              value: planId(t, "yearly"),
+              label: `${TIER_BY_ID[t].name[fr ? "fr" : "en"]} · ${fr ? "ancien" : "legacy"}`,
+            })),
+          ]}
         />
         <Button onClick={add} disabled={busy}>
           <Plus className="h-4 w-4" />

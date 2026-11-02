@@ -397,25 +397,15 @@ function AccountCalendarPage({
   );
 
   return (
-    // `minHeight`, pas `height` — et `overflow-y-auto`, pas `overflow-hidden`.
+    // LA PAGE TIENT DANS L'ÉCRAN, LA GRILLE GARDE SON PLANCHER.
     //
-    // La hauteur mesurée est une CIBLE (« remplis l'écran »), pas un plafond
-    // (« tiens dans l'écran, quoi qu'il en coûte »). Avec `height` +
-    // `overflow-hidden`, les six lignes de semaine se partageaient ce qui
-    // restait après les KPI, l'en-tête, la ligne des jours et la légende : sur
-    // un écran un peu court, chaque cellule tombait sous le seuil lisible et
-    // son contenu — P&L, nombre de trades, pastilles — s'écrasait, sans qu'il
-    // soit possible de défiler pour compenser.
-    //
-    // En minimum, la page se comporte exactement pareil tant qu'il y a la
-    // place : `flex-1` étire les lignes jusqu'à remplir la hauteur. Quand il
-    // n'y a plus la place, les cellules s'arrêtent à leur plancher et le cadre
-    // défile, au lieu de comprimer la grille.
-    <PageContainer
-      ref={boxRef}
-      style={height ? { minHeight: height } : undefined}
-      className="flex h-full max-w-[1400px] flex-col overflow-y-auto"
-    >
+    // La hauteur mesurée est celle de la page (`fit`) : les KPI et l'en-tête du
+    // mois restent en place. Les six lignes de semaine se partagent ce qui
+    // reste (`flex-1`) tant qu'il y a la place ; sur un écran court, chaque
+    // cellule s'arrête à son plancher lisible et c'est la CARTE du calendrier
+    // qui défile (`overflow-y-auto`), jamais la page — et jamais en écrasant
+    // le contenu des cellules (P&L, nombre de trades, pastilles).
+    <PageContainer ref={boxRef} fit height={height} className="flex flex-col">
       {/* Summary Cards */}
       <KpiGrid className="tv-flat shrink-0">
         {(
@@ -508,7 +498,7 @@ function AccountCalendarPage({
           suffi à réécraser la grille, quel que soit le plancher des cellules.
           `overflow-hidden` reste — il sert les coins arrondis, plus à rogner
           un débordement. */}
-      <div className="stat-card-elevated tv-flat mt-2 flex flex-1 flex-col overflow-hidden animate-fade-in-up stagger-5 md:mt-3">
+      <div className="stat-card-elevated tv-flat tv-grow mt-2 flex flex-1 flex-col overflow-x-hidden overflow-y-auto animate-fade-in-up stagger-5 md:mt-3">
         {/* Compact month/year navigation; direct year jumps without 12 clicks. */}
         <div className="flex shrink-0 items-center justify-between gap-2 px-3 py-2.5 md:px-5 md:py-3">
           <h3 className="tv-title hidden tracking-tight sm:block">{t("calendar.title")}</h3>
