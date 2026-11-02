@@ -6498,10 +6498,12 @@ thead .plan-cmp-col.is-pro {
   flex-direction: column;
   justify-content: center;
 }
-.dash-tight .dash-hero {
-  gap: 8px;
-  padding-bottom: 18px;
-}
+/* PAS DE `.dash-tight .dash-hero` : le mode serré se calcule À PARTIR de la
+   hauteur du héros. Le modifier ici le faisait grandir de 10 px, la courbe
+   repassait sous son seuil, le mode tombait, le héros rapetissait… et la page
+   basculait sans fin entre deux mises en page (1536×730, l'écran Windows le
+   plus courant). Le héros ne se resserre qu'avec la place disponible
+   (`dash-short`). Test : tests/fullScreenPages.test.ts. */
 .dash-tight .dash-goal-figure {
   font-size: 28px;
 }
