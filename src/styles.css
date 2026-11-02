@@ -1,6 +1,11 @@
 @import "tailwindcss" source(none);
 @source "../src";
 @import "tw-animate-css";
+/* GLISSE — le verre liquide d'iOS 26 (paquet `glisse`, MIT). Rangé dans la
+   couche `components` de Tailwind : les utilitaires passés par un appelant
+   (`w-full`, `h-4`…) gardent le dernier mot, et nos règles non rangées aussi.
+   On n'importe Glisse QUE depuis `shared/ui` (règle ESLint). */
+@import "glisse/styles.css" layer(components);
 @import "./shared/ui/selection.css";
 
 /* Le même dessin ExtraBold pour chaque chiffre, même dans une phrase sans
@@ -693,14 +698,19 @@
    *   fill-strong  menus, modales, feuilles : du texte dense se lit dessus
    *   specular     l'arête haute éclairée d'1px — blanche, jamais colorée
    *   shadow       l'ombre NOIRE d'un objet qui flotte réellement */
-  --tv-glass-fill: rgb(28 30 34 / 0.52);
-  --tv-glass-fill-solid: rgb(19 20 22 / 0.9);
-  --tv-glass-fill-strong: rgb(22 24 27 / 0.94);
-  --tv-glass-blur: 28px;
-  --tv-glass-saturate: 170%;
-  --tv-glass-edge: rgb(255 255 255 / 0.09);
-  --tv-glass-specular: inset 0 1px 0 rgb(255 255 255 / 0.1), inset 0 -1px 0 rgb(255 255 255 / 0.02);
-  --tv-glass-shadow: 0 16px 40px -18px rgb(0 0 0 / 0.9);
+  /* GLISSE — les valeurs du verre sombre de Glisse (iOS 26) : la même
+     matière pour notre couche de navigation (rail, barre mobile, en-tête,
+     menus, feuilles) que pour ses contrôles. `fill` = son verre de contrôle
+     (`--lg-glass`), `fill-strong` = sa surface de menu (`--lg-surface`), le
+     flou et la saturation de ses menus, son arête d'un demi-pixel. */
+  --tv-glass-fill: rgb(40 40 40 / 0.62);
+  --tv-glass-fill-solid: rgb(28 28 31 / 0.9);
+  --tv-glass-fill-strong: rgb(28 28 31 / 0.86);
+  --tv-glass-blur: 22px;
+  --tv-glass-saturate: 190%;
+  --tv-glass-edge: rgb(255 255 255 / 0.13);
+  --tv-glass-specular: inset 0 0 0 0.5px rgb(255 255 255 / 0.13);
+  --tv-glass-shadow: 0 12px 40px rgb(0 0 0 / 0.38);
 
   /* ══ LE RESSORT ══
    * Les états actifs (pilule du rail, pouce du segmented, feuille) glissent
@@ -727,6 +737,23 @@
       1
     );
   }
+}
+
+/* ══ GLISSE — LE PONT DE JETONS ══
+ *
+ * Glisse déclare ses couleurs en `--lg-*` sous `:where(...)` (spécificité
+ * nulle) : on les rebranche ici sur les jetons de TradeVault, et le studio de
+ * thèmes repeint Glisse avec le reste. `<body data-theme="dark">` (posé côté
+ * serveur dans `__root.tsx`) choisit la version sombre de Glisse ; seuls
+ * l'accent, l'état « activé », le rouge et l'anneau de focus deviennent ceux
+ * de TradeVault. Le verre lui-même reste celui de Glisse, tel quel. Le pont
+ * est posé sur les deux porteurs possibles des jetons de Glisse. */
+:root,
+[data-theme="dark"] {
+  --lg-fill: var(--tv-accent);
+  --lg-on: var(--tv-accent);
+  --lg-destructive: var(--tv-chart-red);
+  --lg-ring: rgb(var(--tv-accent-rgb) / 0.7);
 }
 
 html {
@@ -1762,7 +1789,9 @@ input[type="number"] {
   background: var(--tv-glass-fill-strong);
   -webkit-backdrop-filter: blur(var(--tv-glass-blur)) saturate(var(--tv-glass-saturate));
   backdrop-filter: blur(var(--tv-glass-blur)) saturate(var(--tv-glass-saturate));
-  border: 1px solid var(--tv-glass-edge);
+  /* GLISSE — l'arête est le demi-pixel de `--tv-glass-specular` (ombre
+     intérieure), plus une bordure d'un pixel qui la doublerait. */
+  border: 1px solid transparent;
 }
 /* Même réponse que les cellules du calendrier : le liseré répond,
  * la surface reste stable. Réservé aux cartes réellement interactives. */
@@ -2127,52 +2156,58 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
   }
 }
 
-/* ══ LA BARRE MOBILE — LIQUID, version SOLIDE ══
+/* ══ LA BARRE MOBILE — la barre d'onglets d'iOS 26 (Glisse) ══
  *
- * Une barre détachée, presque opaque (90 % + flou) : le contenu qui défile
- * dessous ne la traverse plus, il s'y estompe. Le voile en dégradé sous la
- * barre dissout la dernière ligne avant qu'elle n'atteigne le bord. */
+ * Une capsule de verre qui FLOTTE au-dessus du contenu (`TabBar` de Glisse :
+ * sa piste, sa sélection qui glisse et se soulève en lentille), et à côté,
+ * détaché, le cercle plein de l'ajout. Le voile en dégradé sous la barre
+ * dissout la dernière ligne avant qu'elle n'atteigne le bord. */
 .bottom-nav {
-  padding: 0 12px calc(env(safe-area-inset-bottom, 0px) + 10px);
+  padding: 0 16px calc(env(safe-area-inset-bottom, 0px) + 10px);
   background: linear-gradient(
     to top,
     var(--tv-bg) 0%,
-    var(--tv-bg) 55%,
+    rgb(var(--tv-bg-rgb) / 0.85) 45%,
     rgb(var(--tv-bg-rgb) / 0) 100%
   );
   pointer-events: none;
 }
-.bottom-nav-shell {
+.bottom-nav-row {
   pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+/* Quatre onglets et le cercle d'ajout tiennent sur l'écran le plus étroit :
+   un onglet fait 72 px (iOS) tant qu'il y a la place, moins sinon. */
+.lg-tab-bar.bottom-nav-tabs {
+  --lg-tab-width: min(72px, calc((100vw - 32px - 70px) / 4));
+}
+.bottom-nav-add-wrap {
   position: relative;
-  isolation: isolate;
-  border-radius: 24px;
-  border: 1px solid var(--tv-glass-edge);
-  box-shadow: var(--tv-glass-specular), var(--tv-glass-shadow);
-  overflow: visible;
+  flex: none;
 }
-.bottom-nav-shell::before {
-  content: "";
+.lg-button.bottom-nav-add {
+  width: 60px;
+  height: 60px;
+  border-radius: 30px;
+}
+.lg-button.bottom-nav-add > svg {
+  width: 24px;
+  height: 24px;
+}
+/* Un brouillon de trade attend : une pastille ambre sur le cercle. */
+.bottom-nav-draft {
   position: absolute;
-  inset: 0;
-  z-index: -1;
-  border-radius: inherit;
-  background: var(--tv-glass-fill-solid);
-  -webkit-backdrop-filter: blur(24px) saturate(160%);
-  backdrop-filter: blur(24px) saturate(160%);
+  top: 2px;
+  right: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 9999px;
+  border: 2px solid var(--tv-bg);
+  background: #fbbf24;
   pointer-events: none;
-}
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .bottom-nav-shell::before {
-    background: var(--tv-plate-1);
-  }
-}
-@media (prefers-reduced-transparency: reduce) {
-  .bottom-nav-shell::before {
-    background: var(--tv-plate-1);
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
 }
 /* Bulles flottantes (dock Jarvis + pilule sous-comptes) : la MÊME surface que
    la barre de navigation — même dégradé (opacité renforcée), même liseré
@@ -2184,66 +2219,6 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
   box-shadow: var(--tv-elev-3);
 }
 
-.bottom-nav-item {
-  position: relative;
-  min-width: 44px;
-  min-height: 54px;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  border-radius: 16px;
-  color: rgb(255 255 255 / 0.5);
-  transition:
-    color var(--tv-dur-2) var(--tv-ease),
-    background-color var(--tv-dur-2) var(--tv-ease),
-    transform var(--tv-dur-1) var(--tv-ease);
-  -webkit-tap-highlight-color: transparent;
-}
-.bottom-nav-item:active {
-  transform: var(--tv-press);
-}
-.bottom-nav-item:focus-visible {
-  outline: 2px solid rgb(var(--tv-accent-rgb) / 0.7);
-  outline-offset: -2px;
-}
-/* L'ONGLET ACTIF — une tuile sombre posée dans la barre, l'icône à l'accent,
-   le libellé en blanc. Un état qui se lit d'un coup d'œil, sans trait ni
-   point à chercher. */
-.bottom-nav-item-on {
-  color: #fff;
-  background: rgb(255 255 255 / 0.07);
-}
-.bottom-nav-item-on > svg {
-  color: var(--tv-accent);
-}
-
-/* L'AJOUT — LE bouton d'action de la barre : un carré adouci plein, à
-   l'accent, icône blanche. Même hauteur que les onglets, au centre exact :
-   le pouce le trouve sans regarder. Aucune ombre colorée, aucun anneau. */
-.bottom-nav-add {
-  display: grid;
-  height: 48px;
-  width: 48px;
-  place-items: center;
-  border-radius: 16px;
-  background: var(--tv-cta);
-  color: #fff;
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.22),
-    inset 0 -1px 0 rgb(0 0 0 / 0.18);
-  transition:
-    background-color var(--tv-dur-1) var(--tv-ease),
-    transform var(--tv-dur-1) var(--tv-ease);
-}
-.bottom-nav-add > svg {
-  filter: drop-shadow(0 1px 1px rgb(4 18 11 / 0.45));
-}
-button:active > .bottom-nav-add {
-  transform: var(--tv-press);
-}
 
 /* Setup-quality stars — soft amber glow + spring pop on select */
 .star-btn {
@@ -2575,45 +2550,26 @@ svg.lucide {
 }
 
 /* ══ L'ACTION RONDE — `ActionButton` (shared/ui) ══
- * La rangée d'actions de Revolut : un disque de 52px et son libellé dessous.
- * Le disque `primary` est le seul plein (accent, icône blanche) ; les autres
- * sont des plaques. Pression = 0,97, rien d'autre ne bouge. */
+ * Un disque de VERRE LIQUIDE (le `Button` de Glisse, icône seule) de 52 px et
+ * son libellé dessous. Le disque `primary` est plein (accent, icône blanche),
+ * les autres sont du verre clair. Le geste — soulèvement, étirement,
+ * éclaircissement — est celui de Glisse. */
 .tv-action {
   display: inline-flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
   min-width: 64px;
-  -webkit-tap-highlight-color: transparent;
 }
-.tv-action-disc {
-  display: grid;
-  place-items: center;
+.lg-button.tv-action-disc {
   width: 52px;
   height: 52px;
-  border-radius: 9999px;
-  background: var(--tv-plate-3);
-  border: 1px solid var(--tv-border);
-  color: var(--tv-text-primary);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06);
-  transition:
-    background-color var(--tv-dur-1) var(--tv-ease),
-    transform var(--tv-dur-1) var(--tv-ease);
+  padding: 0;
+  border-radius: 26px;
 }
 .tv-action-disc > svg {
   width: 22px;
   height: 22px;
-}
-.tv-action-primary .tv-action-disc {
-  background: var(--tv-cta);
-  border-color: transparent;
-  color: #fff;
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.22),
-    inset 0 -1px 0 rgb(0 0 0 / 0.18);
-}
-.tv-action-primary .tv-action-disc > svg {
-  filter: drop-shadow(0 1px 1px rgb(4 18 11 / 0.45));
 }
 .tv-action-label {
   font-size: var(--tv-t-caption);
@@ -2621,35 +2577,18 @@ svg.lucide {
   line-height: 1.2;
   color: var(--tv-text-secondary);
   white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
 }
 @media (hover: hover) {
-  .tv-action:hover .tv-action-disc {
-    background: var(--tv-surface-hover);
-  }
-  .tv-action-primary:hover .tv-action-disc {
-    background: var(--tv-cta-hover);
-  }
   .tv-action:hover .tv-action-label {
     color: var(--tv-text-primary);
   }
 }
-.tv-action:active .tv-action-disc {
-  transform: var(--tv-press);
-}
-.tv-action:focus-visible {
-  outline: none;
-}
-.tv-action:focus-visible .tv-action-disc {
-  outline: 2px solid rgb(var(--tv-accent-rgb) / 0.7);
-  outline-offset: 2px;
-}
-@media (prefers-reduced-motion: reduce) {
-  .tv-action-disc {
-    transition: background-color var(--tv-dur-1) linear;
-  }
-  .tv-action:active .tv-action-disc {
-    transform: none;
-  }
+.tv-action-disabled .tv-action-label {
+  opacity: 0.35;
+  cursor: default;
 }
 .btn-primary,
 .btn-ghost {
@@ -2746,11 +2685,22 @@ a:focus-visible,
 .rail {
   isolation: isolate;
   border-radius: var(--tv-shell-radius);
-  border: 1px solid var(--tv-glass-edge);
-  box-shadow: var(--tv-glass-specular), var(--tv-glass-shadow);
+  border: 0;
+  box-shadow: var(--tv-glass-shadow);
   /* La largeur est la SEULE chose qui s'anime au pli/dépli (260 ms) : les
      icônes ne bougent pas d'un pixel, les libellés s'effacent en fondu. */
   transition: width var(--tv-dur-3) var(--tv-ease);
+}
+/* GLISSE — la surface du rail est un `Glass` de Glisse (`.rail-glass`) : son
+   verre, son arête et sa réfraction. Le pseudo-élément ne sert plus que de
+   repli opaque (navigateur sans flou, transparence réduite). */
+.rail-glass.lg-glass {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  --lg-blur: 18px;
 }
 .rail::before {
   content: "";
@@ -2758,9 +2708,7 @@ a:focus-visible,
   inset: 0;
   z-index: -1;
   border-radius: inherit;
-  background: rgb(24 26 29 / 0.62);
-  -webkit-backdrop-filter: blur(var(--tv-glass-blur)) saturate(var(--tv-glass-saturate));
-  backdrop-filter: blur(var(--tv-glass-blur)) saturate(var(--tv-glass-saturate));
+  background: transparent;
   pointer-events: none;
 }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
@@ -2773,6 +2721,9 @@ a:focus-visible,
     background: var(--tv-plate-1);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
+  }
+  .rail-glass.lg-glass {
+    display: none;
   }
 }
 
@@ -2911,10 +2862,10 @@ a:focus-visible,
   top: 0;
   width: calc(100% - 1.25rem);
   border-radius: 9999px;
-  background: rgb(255 255 255 / 0.1);
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.14),
-    inset 0 0 0 1px rgb(255 255 255 / 0.04);
+  /* GLISSE — la sélection d'une barre d'onglets de Glisse (`--lg-selection`)
+     et son arête d'un demi-pixel. */
+  background: var(--lg-selection);
+  box-shadow: inset 0 0 0 0.5px var(--lg-edge);
   z-index: 1;
   pointer-events: none;
 }
@@ -3635,155 +3586,23 @@ body.tv-app-type :is(.tv-figure, .tv-num, .tabular-nums) {
    de plus que la fenêtre. En dessous, c'est le sélecteur compact (le même
    menu que sur téléphone) qui porte la navigation. */
 .section-tabs {
-  /* LIQUID — le segmented d'iOS en version « solide » : une piste creuse
-     (plate-0) et une pastille pleine posée dedans, rayons concentriques
-     (14 dehors, 11 dedans). */
+  /* GLISSE — les vues d'une section sont la barre d'onglets d'iOS 26
+     (`TabBar`) : sa piste de verre, sa sélection qui glisse et se soulève en
+     lentille viennent de la bibliothèque. Ici, seulement quand elle s'affiche
+     (sous 1024 px, c'est le sélecteur qui prend le relais). */
   display: none;
   max-width: 100%;
-  padding: 3px;
-  border-radius: var(--radius-lg);
-  background: var(--tv-plate-0);
-  border: 1px solid var(--tv-border);
-  box-shadow: none;
+  min-width: 0;
 }
 @media (min-width: 1024px) {
   .section-tabs {
-    display: inline-flex;
+    display: flex;
   }
 }
-.section-tabs-row {
-  /* `min-width: 0` : sans lui, la rangée (élément flex) ne descend jamais
-     sous la largeur de ses onglets — son défilement interne ne s'enclenchait
-     pas, et c'est la fenêtre de contenu entière qui débordait. */
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  overflow-x: auto;
-  overflow-y: hidden;
-  flex-wrap: nowrap; /* jamais deux rangées, même à 380px */
-  scroll-snap-type: x proximity;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
-}
-.section-tabs-row::-webkit-scrollbar {
-  display: none;
-}
-.section-tab {
-  scroll-snap-align: start;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  height: 2.25rem;
-  padding: 0 0.95rem;
-  border-radius: 11px;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  line-height: 1;
-  white-space: nowrap;
-  text-decoration: none;
-  /* La MÊME motion que les entrées du rail : même durée, même courbe. Un
-     onglet de section et une entrée de navigation sont deux fois le même
-     geste ; deux durées différentes se remarquent au passage de l'un à
-     l'autre, même sans savoir dire pourquoi. */
-  transition-property: color, background-color, box-shadow;
-  transition-duration: var(--tv-dur-2);
-  transition-timing-function: var(--tv-ease);
-}
-.section-tab-idle {
-  /* Le gris du texte secondaire, pas un slate en dur : un onglet au repos est
-     du texte de second plan, et il doit suivre le même token que lui. */
-  color: var(--tv-text-secondary);
-}
-.section-tab-idle:hover {
-  color: var(--tv-text-primary);
-  background-color: var(--tv-plate-2);
-}
-/* L'onglet actif est une pastille CLAIRE sur un cadre sombre — la grammaire
-   d'un contrôle segmenté (macOS, Linear, Lucid), pas d'un bouton allumé. Il se
-   lit par le contraste, comme un onglet de classeur, et n'a donc besoin ni de
-   teinte d'accent ni d'ombre colorée. */
-.section-tab-active {
-  color: var(--tv-text-primary);
-  background: var(--tv-plate-3);
-  /* L'arête claire et une ombre NOIRE d'un pixel : la pastille est posée sur
-     la piste, elle n'y est pas peinte. */
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.08),
-    0 1px 2px rgb(0 0 0 / 0.5);
-}
-.section-tab-active svg {
-  color: var(--tv-accent);
-}
-.section-tab:focus-visible {
-  outline: 2px solid rgb(var(--tv-accent-rgb) / 0.7);
-  outline-offset: -2px;
-}
-
-/* ══ LA PILULE QUI GLISSE (`useGlidingIndicator`, shared/ui) ══
- *
- * Le geste de la languette du rail, étendu aux contrôles segmentés : onglets
- * de section, `SubNav`, périodes du tableau de bord. Une seule pièce glisse
- * sous l'onglet choisi au lieu que chaque onglet se repeigne.
- *
- * Sans mesure (rendu serveur, premier passage), `.tv-glide-on` est absente et
- * l'onglet actif garde son propre fond : l'état se lit toujours.
- *
- * Comme la languette (`transform` + `height`), la pilule anime `transform` et
- * sa largeur : elle est en position absolue, rien d'autre ne se remet en page.
- */
-.section-tabs-row,
-.tv-subnav {
-  position: relative;
-}
-.tv-glide {
-  position: absolute;
-  left: 0;
-  top: 0;
-  z-index: 0;
-  pointer-events: none;
-}
-.tv-glide-ready {
-  transition:
-    transform var(--tv-dur-spring) var(--tv-spring),
-    width var(--tv-dur-spring) var(--tv-spring);
-}
-@media (prefers-reduced-motion: reduce) {
-  .tv-glide-ready {
-    transition: none;
-  }
-}
-.tv-glide-on > :not(.tv-glide) {
-  position: relative;
-  z-index: 1;
-}
-.tv-glide-section {
-  border-radius: 11px;
-  background: var(--tv-plate-3);
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.08),
-    0 1px 2px rgb(0 0 0 / 0.5);
-}
-.tv-glide-on > .section-tab-active {
-  background: transparent;
-  box-shadow: none;
-}
-.tv-glide-subnav {
-  border-radius: var(--radius-lg);
-  background: var(--tv-plate-3);
-}
-.tv-glide-on > .tv-subnav-item-active,
-.tv-glide-on > .tv-subnav-item-active:hover {
-  background: transparent;
-}
-.tv-glide-period {
-  border-radius: 9999px;
-  background: rgb(255 255 255 / 0.14);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16);
-}
-.tv-glide-on > .dash-period-btn[aria-pressed="true"] {
-  background: transparent;
-  box-shadow: none;
+.tv-seg-lock {
+  width: 12px !important;
+  height: 12px !important;
+  opacity: 0.6;
 }
 
 /* ══ LA CASCADE — une liste arrive comme un relevé Revolut ══
@@ -3957,19 +3776,6 @@ body.tv-app-type :is(.tv-figure, .tv-num, .tabular-nums) {
 @media (min-width: 768px) {
   .section-picker {
     display: none;
-  }
-}
-
-/* ── Mobile : onglets en icônes seules (le texte, illisible à six onglets sur
- * 380px, revient à partir de md).
- *
- * L'onglet actif PULSAIT en boucle, indéfiniment, tant que la page restait
- * ouverte. C'était le gadget le plus coûteux du produit — un contrôle qui
- * s'agite en permanence pour dire ce que sa couleur dit déjà — et le premier
- * à disparaître. Il est actif, il est plus clair : c'est tout. */
-@media (max-width: 767px) {
-  .section-tab {
-    padding: 0 0.7rem;
   }
 }
 
@@ -4961,69 +4767,30 @@ body.tv-app-type :is(.tv-figure, .tv-num, .tabular-nums) {
    et que la barre latérale, qui pose déjà l'actif de la page, n'est pas dans
    le même plan de lecture. */
 .tv-subnav {
+  /* GLISSE — `SubNav` est le contrôle segmenté d'iOS 26. Tenue, sa pastille
+     se soulève en lentille qui DÉBORDE la piste (24 × 16 px) : aucun cadre ne
+     la rogne. La largeur des segments se cale sur la place (voir SubNav.tsx). */
   display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 3px;
-  border-radius: var(--radius-xl);
-  background: var(--tv-plate-1);
-  border: 1px solid var(--tv-border-strong);
-  overflow-x: auto;
-  overflow-y: hidden;
-  flex-wrap: nowrap;
-  scroll-snap-type: x proximity;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
   min-width: 0;
 }
-.tv-subnav::-webkit-scrollbar {
-  display: none;
-}
-.tv-subnav-item {
-  flex-shrink: 0;
-  position: relative;
-  scroll-snap-align: start;
+.tv-seg-label {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  height: 2rem;
-  padding: 0 0.75rem;
-  border-radius: var(--radius-lg);
-  font-size: var(--tv-t-caption);
-  font-weight: 600;
-  line-height: 1;
+  gap: 6px;
+  max-width: calc(var(--lg-tab-width) - 12px);
+  overflow: hidden;
   white-space: nowrap;
-  color: var(--tv-text-secondary);
-  transition-property: color, background-color;
-  transition-duration: var(--tv-dur-2);
-  transition-timing-function: var(--tv-ease);
 }
-@media (min-width: 768px) {
-  .tv-subnav-item {
-    height: 2.125rem;
-    padding: 0 0.9rem;
-    font-size: 13px;
-  }
+.tv-seg-label > svg {
+  flex: none;
+  width: 14px;
+  height: 14px;
 }
-@media (hover: hover) {
-  .tv-subnav-item:hover {
-    color: var(--tv-text-primary);
-    background: var(--tv-plate-2);
-  }
-}
-.tv-subnav-item-active,
-.tv-subnav-item-active:hover {
-  color: var(--tv-text-primary);
-  background: var(--tv-plate-3);
-}
-.tv-subnav-item:focus-visible {
-  outline: 2px solid rgb(var(--tv-accent-rgb) / 0.7);
-  outline-offset: -2px;
-}
-@media (pointer: coarse) {
-  .tv-subnav-item {
-    min-height: 44px;
-  }
+.tv-seg-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Le compteur d'un onglet (nombre d'éléments) — jamais une pastille colorée :
@@ -5035,7 +4802,7 @@ body.tv-app-type :is(.tv-figure, .tv-num, .tabular-nums) {
   font-size: 10px;
   color: var(--tv-text-muted);
 }
-.tv-subnav-item-active .tv-subnav-count {
+[data-selected] .tv-subnav-count {
   color: var(--tv-highlight);
 }
 
@@ -6282,65 +6049,9 @@ thead .plan-cmp-col.is-pro {
 /* Le sélecteur de période — Jour · Semaine · Mois · Année · Tout. Une
    capsule de verre, la pastille active en verre clair (maquette v1). C'est une
    VUE, pas une action : jamais d'aplat d'accent. */
-.dash-period {
-  position: relative;
-  isolation: isolate;
-  display: inline-flex;
-  gap: 2px;
-  padding: 3px;
-  border-radius: 9999px;
-  border: 1px solid var(--tv-glass-edge);
-  box-shadow: var(--tv-glass-specular);
-}
-.dash-period::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  border-radius: inherit;
-  background: var(--tv-glass-fill);
-  -webkit-backdrop-filter: blur(var(--tv-glass-blur)) saturate(var(--tv-glass-saturate));
-  backdrop-filter: blur(var(--tv-glass-blur)) saturate(var(--tv-glass-saturate));
-}
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .dash-period::before {
-    background: var(--tv-plate-1);
-  }
-}
-@media (prefers-reduced-transparency: reduce) {
-  .dash-period::before {
-    background: var(--tv-plate-1);
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
-}
-.dash-period-btn {
-  height: 32px;
-  padding: 0 14px;
-  border-radius: 9999px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--tv-text-secondary);
-  transition:
-    background-color var(--tv-dur-1) var(--tv-ease),
-    color var(--tv-dur-1) var(--tv-ease);
-}
-@media (min-width: 640px) {
-  .dash-period-btn {
-    padding: 0 16px;
-  }
-}
-.dash-period-btn:hover {
-  color: var(--tv-text-primary);
-}
-.dash-period-btn[aria-pressed="true"] {
-  background: rgb(255 255 255 / 0.14);
-  color: #fff;
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16);
-}
-.dash-period-btn:focus-visible {
-  outline: 2px solid var(--tv-accent);
-  outline-offset: 1px;
+.tv-subnav.dash-period {
+  /* Les périodes du héros : le segmenté de Glisse, centré sous le chiffre. */
+  justify-content: center;
 }
 
 /* La pilule du compte, au-dessus du chiffre héros. */
@@ -6364,26 +6075,13 @@ thead .plan-cmp-col.is-pro {
   background: rgb(255 255 255 / 0.09);
 }
 
-/* L'en-tête du Dashboard : la recherche en capsule, la cloche en disque. */
-.dash-search {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
+/* L'en-tête du Dashboard : trois boutons de verre de Glisse — la recherche
+   en capsule, la cloche en cercle, l'ajout plein. */
+.lg-button.dash-search {
   height: 40px;
   padding: 0 8px 0 14px;
-  border-radius: 9999px;
-  border: 1px solid var(--tv-glass-edge);
-  background: rgb(255 255 255 / 0.04);
-  box-shadow: var(--tv-glass-specular);
-  font-size: 13px;
+  border-radius: 20px;
   color: var(--tv-text-secondary);
-  transition:
-    background-color var(--tv-dur-1) var(--tv-ease),
-    color var(--tv-dur-1) var(--tv-ease);
-}
-.dash-search:hover {
-  background: rgb(255 255 255 / 0.08);
-  color: var(--tv-text-primary);
 }
 .dash-search kbd {
   padding: 3px 7px;
@@ -6392,21 +6090,14 @@ thead .plan-cmp-col.is-pro {
   font: 600 11px var(--font-figure);
   color: var(--tv-text-secondary);
 }
-.dash-icon-btn {
+.dash-icon-wrap {
   position: relative;
-  display: grid;
-  place-items: center;
+  display: inline-flex;
+}
+.lg-button.dash-icon-btn {
   width: 40px;
   height: 40px;
-  border-radius: 9999px;
-  border: 1px solid var(--tv-glass-edge);
-  background: rgb(255 255 255 / 0.04);
-  box-shadow: var(--tv-glass-specular);
-  color: var(--tv-text-primary);
-  transition: background-color var(--tv-dur-1) var(--tv-ease);
-}
-.dash-icon-btn:hover {
-  background: rgb(255 255 255 / 0.08);
+  border-radius: 20px;
 }
 .dash-icon-dot {
   position: absolute;
@@ -6416,6 +6107,7 @@ thead .plan-cmp-col.is-pro {
   height: 7px;
   border-radius: 9999px;
   background: var(--tv-accent);
+  pointer-events: none;
 }
 .dash-lead {
   display: flex;
@@ -6720,19 +6412,34 @@ body::after {
   z-index: -1;
   pointer-events: none;
 }
-/* LIQUID — LE PAPIER PEINT. Trois nappes très floues, fixes, dans la teinte
-   du thème : c'est ce que le verre de la navigation laisse deviner. La grille
-   a disparu (un fond d'écran n'est pas une feuille quadrillée). Aucune
-   animation, aucun repeint au défilement. */
+/* GLISSE — LE PAPIER PEINT. Le verre liquide ne se voit que s'il a quelque
+   chose à courber : sur un noir uni, une lentille ne déforme rien. Comme dans
+   la démonstration de Glisse, le fond porte donc des VAGUES de couleur (la
+   teinte du thème, menthe par défaut) et un fin trait de lumière en
+   diagonale, que le verre plie en passant dessus. Le noir `--tv-bg` reste la
+   base : les cartes de contenu sont opaques, la lecture des chiffres ne
+   change pas. Fixe, sans animation, aucun repeint au défilement. */
 body::before {
   background:
-    radial-gradient(60rem 40rem at 88% -8%, rgb(var(--tv-accent-rgb) / 0.16), transparent 62%),
-    radial-gradient(
-      48rem 36rem at -6% 104%,
-      rgb(var(--tv-accent-2-rgb, var(--tv-accent-rgb)) / 0.08),
-      transparent 60%
+    linear-gradient(
+      122deg,
+      transparent 56.6%,
+      rgb(255 255 255 / 0.16) 57%,
+      rgb(var(--tv-accent-rgb) / 0.22) 57.25%,
+      transparent 57.9%
     ),
-    radial-gradient(40rem 30rem at 50% 45%, rgb(255 255 255 / 0.025), transparent 70%);
+    radial-gradient(72rem 44rem at 92% -12%, rgb(var(--tv-accent-rgb) / 0.34), transparent 62%),
+    radial-gradient(
+      60rem 38rem at 70% 58%,
+      rgb(var(--tv-accent-2-rgb, var(--tv-accent-rgb)) / 0.16),
+      transparent 66%
+    ),
+    radial-gradient(
+      56rem 40rem at -8% 106%,
+      rgb(var(--tv-accent-2-rgb, var(--tv-accent-rgb)) / 0.24),
+      transparent 62%
+    ),
+    radial-gradient(44rem 26rem at 18% 22%, rgb(var(--tv-accent-rgb) / 0.09), transparent 70%);
 }
 body::after {
   content: none;
@@ -6826,7 +6533,7 @@ body::after {
   /* LIQUID — une FEUILLE de verre fort : rayon de feuille (28), papier peint
      et page devinés derrière, arête spéculaire, ombre noire large. */
   border-radius: var(--radius-3xl);
-  border-color: var(--tv-glass-edge);
+  border-color: transparent;
   background: var(--tv-glass-fill-strong);
   -webkit-backdrop-filter: blur(var(--tv-glass-blur)) saturate(var(--tv-glass-saturate));
   backdrop-filter: blur(var(--tv-glass-blur)) saturate(var(--tv-glass-saturate));
@@ -9040,11 +8747,9 @@ body.tv-app-type svg.lucide {
   min-width: 0;
   justify-content: flex-end;
 }
-.tv-set-control > * {
+/* L'interrupteur garde la largeur que Glisse lui donne. */
+.tv-set-control > :not(.tv-switch) {
   width: 100%;
-}
-.tv-set-control > .tv-switch {
-  width: 46px;
 }
 .tv-set-action {
   display: flex;
@@ -9093,57 +8798,9 @@ body.tv-app-type svg.lucide {
 .tv-set-action[data-danger="true"]:hover:not(:disabled) {
   background: rgb(239 68 68 / 0.05);
 }
-/* L'interrupteur aux proportions d'iOS (46 × 28, bouton de 24) : le bouton
-   glisse sur le ressort du système, ombre noire courte, rien d'autre. */
-.tv-switch {
-  position: relative;
-  width: 46px;
-  height: 28px;
-  flex-shrink: 0;
-  border-radius: 999px;
-  background: var(--tv-plate-3);
-  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.04);
-  transition: background-color var(--tv-dur-2) var(--tv-ease);
-}
-.tv-switch[aria-checked="true"] {
-  background: var(--tv-accent);
-}
-.tv-switch:disabled {
-  opacity: 0.5;
-}
-.tv-switch-knob {
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 24px;
-  height: 24px;
-  border-radius: 999px;
-  background: #fff;
-  box-shadow: 0 2px 6px rgb(0 0 0 / 0.35);
-  /* L'INTERRUPTEUR D'iOS : sous le doigt, le pouce s'étire vers le côté où il
-     va partir (ancré du côté qu'il quitte), puis glisse sur le ressort. La
-     propriété `scale` se compose avec le `translateX` de l'état, sans le
-     remplacer. */
-  transform-origin: left center;
-  transition:
-    transform var(--tv-dur-spring) var(--tv-spring),
-    scale var(--tv-dur-1) var(--tv-ease);
-}
-.tv-switch[aria-checked="true"] .tv-switch-knob {
-  transform: translateX(18px);
-  transform-origin: right center;
-}
-.tv-switch:not(:disabled):active .tv-switch-knob {
-  scale: 1.18 1;
-}
-@media (prefers-reduced-motion: reduce) {
-  .tv-switch-knob {
-    transition: none;
-  }
-  .tv-switch:not(:disabled):active .tv-switch-knob {
-    scale: none;
-  }
-}
+/* L'interrupteur est celui de Glisse (`Switch`, iOS 26) : sa géométrie, son
+   pouce en lentille et son ressort viennent de la bibliothèque. Ici, rien
+   d'autre que sa place dans la rangée. */
 /* Le rail des rubriques reprend la pilule du rail principal : même clair,
    même arête spéculaire, l'icône à l'accent — on reconnaît le geste. */
 .tv-set-rail-item {
@@ -9907,4 +9564,69 @@ body.tv-app-type svg.lucide {
   .strategy-welcome {
     min-height: 380px;
   }
+}
+
+/* ══ GLISSE — LES PRIMITIVES ══
+ *
+ * Les composants de Glisse (`Button`, `Switch`, `SegmentedControl`, `Slider`,
+ * `Input`, `Menu`) arrivent avec leur verre, leur géométrie et leur geste.
+ * Ici, seulement ce que TradeVault règle par-dessus : la graisse du texte,
+ * la petite taille, les boutons de la barre de tête, la recherche traduite.
+ */
+.lg-button.tv-btn {
+  font-weight: 500;
+  white-space: nowrap;
+}
+.lg-button.tv-btn > svg {
+  width: 18px;
+  height: 18px;
+}
+.lg-button.tv-btn-sm {
+  height: 32px;
+  padding: 0 12px;
+  gap: 6px;
+  border-radius: 16px;
+  font-size: 13px;
+}
+.lg-button.tv-btn-sm > svg {
+  width: 15px;
+  height: 15px;
+}
+/* L'ajout d'un trade dans la barre de tête : la capsule pleine, un cran plus
+   haute que la petite taille, le signe « + » devant. */
+.lg-button.tv-entry-button {
+  height: 36px;
+  padding: 0 14px 0 12px;
+  gap: 6px;
+  border-radius: 18px;
+  font-weight: 600;
+}
+
+/* La recherche : le champ de verre de Glisse, et l'effacement traduit posé
+   dans sa capsule. */
+.tv-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+.tv-search > .lg-input {
+  max-width: none;
+}
+.tv-search-clear {
+  position: absolute;
+  right: 6px;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  color: var(--lg-muted);
+}
+.tv-search-clear > svg {
+  width: 14px;
+  height: 14px;
+}
+.tv-search:has(.tv-search-clear) input {
+  padding-right: 28px;
 }

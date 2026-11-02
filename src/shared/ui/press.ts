@@ -26,8 +26,9 @@
  * Le désactivé, l'interrupteur (son pouce s'étire, en CSS), le lien dans un
  * paragraphe, les objets qui ont leur propre pression CSS — le disque de
  * `.tv-action`, la barre mobile, le rail (sa languette ne s'enfonce pas avec
- * l'entrée), les étoiles, l'onboarding cinématique — et tout ce qui porte
- * `data-press="off"`.
+ * l'entrée), les étoiles, l'onboarding cinématique —, les contrôles Glisse
+ * (ils se SOULÈVENT à l'appui, à la manière d'iOS 26, et gardent leur geste)
+ * et tout ce qui porte `data-press="off"`.
  *
  * Mouvement réduit : rien ne bouge. Le contenu ne dépend jamais de ce module.
  */
@@ -57,6 +58,14 @@ const EXCLUDED = [
   ".star-btn",
   ".tv-trade-star",
   ".onb-root",
+  // Glisse porte son propre geste (soulèvement, étirement, lentille) : deux
+  // moteurs sur la même propriété `scale` se battraient.
+  ".lg-glass",
+  ".lg-tab-bar",
+  ".lg-segmented",
+  ".lg-switch",
+  ".lg-slider",
+  ".lg-menu",
 ].join(",");
 
 /** Recul maximal du bord de l'objet, en pixels. */

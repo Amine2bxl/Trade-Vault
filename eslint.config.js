@@ -5,6 +5,19 @@ import reactHooks from "eslint-plugin-react-hooks";
 import reactRefresh from "eslint-plugin-react-refresh";
 import tseslint from "typescript-eslint";
 
+const SERVER_ONLY = {
+  name: "server-only",
+  message:
+    "TanStack Start does not use the Next.js `server-only` package. Rename the module to `*.server.ts` or mark it with `@tanstack/react-start/server-only`.",
+};
+// Glisse (le verre liquide) n'entre QUE par les primitives de `shared/ui` :
+// les pages utilisent `Button`, `Toggle`, `SubNav`… et un changement de
+// bibliothèque ne touche qu'un dossier.
+const GLISSE = {
+  name: "glisse",
+  message: "Importer Glisse via les primitives de `@/shared/ui` (Button, Toggle, SubNav…).",
+};
+
 export default tseslint.config(
   // `.vercel` est LA sortie de build de ce projet (`nitro.preset = "vercel"`,
   // voir vite.config.ts) — elle manquait à cette liste. En CI le lint passe
@@ -25,18 +38,7 @@ export default tseslint.config(
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
-      "no-restricted-imports": [
-        "error",
-        {
-          paths: [
-            {
-              name: "server-only",
-              message:
-                "TanStack Start does not use the Next.js `server-only` package. Rename the module to `*.server.ts` or mark it with `@tanstack/react-start/server-only`.",
-            },
-          ],
-        },
-      ],
+      "no-restricted-imports": ["error", { paths: [SERVER_ONLY, GLISSE] }],
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
       // Re-enabled (progressive): unused code and imports are surfaced again
       // as warnings. Kept at "warn" for now so the existing debt is visible
@@ -56,6 +58,11 @@ export default tseslint.config(
       // progressively without breaking the build.
       "@typescript-eslint/no-explicit-any": "warn",
     },
+  },
+  {
+    // Les primitives sont le seul endroit où Glisse est importé.
+    files: ["src/shared/ui/**/*.{ts,tsx}"],
+    rules: { "no-restricted-imports": ["error", { paths: [SERVER_ONLY] }] },
   },
   eslintPluginPrettier,
 );

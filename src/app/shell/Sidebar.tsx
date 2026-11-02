@@ -19,7 +19,7 @@ import { useT } from "../i18n/LanguageContext";
 import { useUnreadCount } from "../features/inbox/useUnreadCount";
 import { badgeLabel } from "@/modules/notifications";
 import logoSrc from "@/assets/tradevault-logo-128.png";
-import { Modal, BrandWord } from "@/shared/ui";
+import { Modal, BrandWord, Glass } from "@/shared/ui";
 import AccountSwitcher from "./AccountSwitcher";
 
 interface SidebarProps {
@@ -167,6 +167,9 @@ export default memo(function Sidebar({ page, setPage, totalPnl }: SidebarProps) 
         collapsed ? "rail-collapsed w-[68px]" : "w-[212px]",
       )}
     >
+      {/* LE VERRE DE GLISSE : la surface du rail courbe le papier peint sur
+          ses bords (réfraction réelle sous Chromium, flou et arête ailleurs). */}
+      <Glass aria-hidden className="rail-glass" />
       <div className="flex h-full min-h-0 flex-col">
         {/* ── MARQUE + PLI ──
             Déplié : disque blanc + nom à gauche, chevron à droite.

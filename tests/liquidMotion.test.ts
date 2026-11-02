@@ -13,7 +13,6 @@ import { pressScale } from "../src/shared/ui/press";
 
 const css = stripComments(readSource(import.meta.dir, "../src/styles.css"));
 const press = readSource(import.meta.dir, "../src/shared/ui/press.ts");
-const glide = readSource(import.meta.dir, "../src/shared/ui/useGlidingIndicator.ts");
 const modal = readSource(import.meta.dir, "../src/shared/ui/Modal.tsx");
 const root = readSource(import.meta.dir, "../src/routes/__root.tsx");
 
@@ -70,41 +69,28 @@ describe("l'appui", () => {
   });
 });
 
-describe("la pilule qui glisse", () => {
-  test("les trois contrôles segmentés la partagent", () => {
-    for (const file of [
-      "../src/app/shell/SectionTabs.tsx",
-      "../src/shared/ui/SubNav.tsx",
-      "../src/app/features/dashboard/Dashboard.tsx",
-    ]) {
-      const src = readSource(import.meta.dir, file);
-      expect(src).toContain("useGlidingIndicator");
-      expect(src).toContain("tv-glide-ready");
+describe("la sélection qui glisse (Glisse)", () => {
+  test("les contrôles segmentés sont ceux de Glisse, en lentille", () => {
+    // `SubNav` (et donc les périodes du tableau de bord) = SegmentedControl ;
+    // les vues d'une section et la barre mobile = TabBar.
+    expect(readSource(import.meta.dir, "../src/shared/ui/SubNav.tsx")).toContain(
+      "<SegmentedControl",
+    );
+    expect(readSource(import.meta.dir, "../src/app/features/dashboard/Dashboard.tsx")).toContain(
+      "<SubNav",
+    );
+    for (const file of ["../src/app/shell/SectionTabs.tsx", "../src/app/shell/MobileNav.tsx"]) {
+      expect(readSource(import.meta.dir, file)).toContain("<GlassTabBar");
     }
   });
 
-  test("elle se lit sur l'état ARIA, sans seconde vérité", () => {
-    expect(glide).toContain('[aria-selected="true"]');
-    expect(glide).toContain('[aria-pressed="true"]');
-  });
-
-  test("elle glisse sur le ressort, et s'arrête sous mouvement réduit", () => {
-    expect(css).toMatch(
-      /\.tv-glide-ready\s*\{[^}]*transform var\(--tv-dur-spring\) var\(--tv-spring\)/,
-    );
-    expect(css).toMatch(
-      /@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.tv-glide-ready\s*\{\s*transition:\s*none/,
-    );
-  });
-});
-
-describe("l'interrupteur", () => {
-  test("le pouce s'étire sous le doigt, sauf sous mouvement réduit", () => {
-    expect(css).toMatch(
-      /\.tv-switch:not\(:disabled\):active \.tv-switch-knob\s*\{\s*scale:\s*1\.18 1/,
-    );
-    expect(css).toMatch(
-      /prefers-reduced-motion: reduce[^@]*\.tv-switch:not\(:disabled\):active \.tv-switch-knob\s*\{\s*scale:\s*none/,
+  test("les contrôles à geste ne montent qu'une fois affichés", () => {
+    const controls = readSource(import.meta.dir, "../src/shared/ui/GlassControls.tsx");
+    expect(controls).toMatch(/<WhenShown>\s*<GlisseTabBar/);
+    expect(controls).toMatch(/<WhenShown>\s*<GlisseSlider/);
+    expect(readSource(import.meta.dir, "../src/shared/ui/SubNav.tsx")).toContain("<WhenShown>");
+    expect(readSource(import.meta.dir, "../src/shared/ui/SettingsList.tsx")).toContain(
+      "<WhenShown",
     );
   });
 });

@@ -383,13 +383,15 @@
 .tv-control {
   width: 100%;
   min-width: 0;
-  height: 44px;
-  border: 1px solid var(--tv-border);
-  /* LIQUID — champ plein, rayon de contrôle (14) : concentrique avec la
-     carte (22) qui le contient. */
-  border-radius: var(--radius-lg);
-  background: var(--tv-plate-2);
-  padding-inline: 12px;
+  height: 40px;
+  /* GLISSE — le champ d'iOS 26 : une capsule de verre (le même verre que
+     l'`Input` de Glisse, ses jetons `--lg-*`), sans bordure, l'arête d'un
+     demi-pixel. Au focus, le verre s'éclaircit et l'anneau prend l'accent. */
+  border: 0;
+  border-radius: 20px;
+  background: var(--lg-glass);
+  box-shadow: inset 0 0 0 0.5px var(--lg-edge);
+  padding-inline: 14px;
   font-size: var(--tv-t-body-sm);
   font-weight: 400;
   color: var(--tv-text-primary);
@@ -408,16 +410,11 @@
   color: var(--tv-text-muted);
 }
 
-.tv-control:focus {
-  outline: 2px solid rgb(var(--tv-accent-rgb) / 0.16);
-  outline-offset: 0;
-  border-color: var(--tv-border-accent);
-}
-
+.tv-control:focus,
 .tv-control[aria-expanded="true"] {
-  outline: 2px solid rgb(var(--tv-accent-rgb) / 0.16);
-  outline-offset: 0;
-  border-color: var(--tv-border-accent);
+  outline: 2px solid var(--lg-ring);
+  outline-offset: 2px;
+  background: var(--lg-glass-active);
 }
 
 .tv-control:disabled {
@@ -428,6 +425,8 @@
 .tv-control-textarea {
   height: auto;
   min-height: 88px;
+  /* Une zone de plusieurs lignes n'est pas une capsule. */
+  border-radius: 16px;
 }
 
 /* Notes mises en forme (`RichTextarea`, `RichTextView`) : le gras reste au

@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+  forwardRef,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type AnchorHTMLAttributes,
+  type CSSProperties,
+} from "react";
 import { createPortal } from "react-dom";
 import type { Page, SectionId } from "../types";
 import { Check, ChevronDown, Lock } from "@/shared/ui/icons";
@@ -6,10 +14,10 @@ import { PAGE_META, pagesOfSection } from "./navigation";
 import { useSubscription } from "../hooks/useSubscription";
 import { canAccessPage } from "../utils/pricing";
 import { preloadPage } from "./pageModules";
-import { pathForPage } from "../utils/pageUrl";
+import { pageFromPath, pathForPage } from "../utils/pageUrl";
 import { cn } from "@/shared/ui/cn";
 import { useT } from "../i18n/LanguageContext";
-import { useGlidingIndicator } from "@/shared/ui/useGlidingIndicator";
+import { GlassTabBar, useSegmentWidth } from "@/shared/ui";
 
 interface SectionTabsProps {
   section: SectionId;
@@ -18,29 +26,22 @@ interface SectionTabsProps {
 }
 
 /**
- * Les vues d'une section — un CONTRÔLE SEGMENTÉ.
+ * Les vues d'une section.
  *
- * ── POURQUOI PLUS DE SOULIGNEMENT ──────────────────────────────────────────
- * La version précédente était une rangée soulignée. Sur le même écran, la
- * barre latérale marque déjà l'endroit actif par un liseré : deux grammaires
- * d'« actif », et l'œil doit apprendre les deux. Un segment — un cadre, des
- * pastilles, une seule posée sur une surface pleine — dit d'un coup d'œil
- * qu'on choisit UNE vue parmi N, sans rien à apprendre.
- *
- * Ça supprime aussi toute la mécanique de mesure (`useLayoutEffect`,
- * `ResizeObserver`, `translateX`/`scaleX`) : l'état actif est une classe, pas
- * une position calculée. Moins de code, rien à re-mesurer quand la police ou
- * la traduction change de largeur.
+ * ── ORDINATEUR : LA BARRE D'ONGLETS D'iOS 26 (Glisse) ─────────────────────
+ * Une piste de verre et une sélection qui GLISSE d'une vue à l'autre, suit
+ * la souris ou le doigt, et se soulève en lentille tant qu'on la tient.
+ * Tous les onglets ont la même largeur (celle du libellé le plus long) : la
+ * sélection avance d'un cran exact.
  *
  * ── DE VRAIS LIENS ─────────────────────────────────────────────────────────
  * Chaque onglet reste un `<a href>` vers l'URL canonique de la page : clic
  * milieu, « ouvrir dans un nouvel onglet » et copie du lien fonctionnent comme
- * sur n'importe quel site. Le clic simple est intercepté pour naviguer côté
- * client — sauf s'il porte un modificateur.
+ * sur n'importe quel site. Le clic simple navigue côté client.
  *
- * ── MOBILE ─────────────────────────────────────────────────────────────────
- * La rangée défile horizontalement avec accrochage ; elle ne passe JAMAIS sur
- * deux lignes. Préparation a six vues : à 380 px elles défilent.
+ * ── TÉLÉPHONE ──────────────────────────────────────────────────────────────
+ * Un sélecteur qui dit où l'on est, en toutes lettres, et ouvre la liste
+ * complète des vues.
  */
 export default function SectionTabs({ section, page, setPage }: SectionTabsProps) {
   const { t } = useT();
@@ -48,7 +49,6 @@ export default function SectionTabs({ section, page, setPage }: SectionTabsProps
   // Un petit cadenas sur l'onglet dit ce qui est payant AVANT le clic : on
   // n'apprend pas qu'une page est verrouillée en y arrivant.
   const { tier, loading: subLoading } = useSubscription();
-  const tabRefs = useRef<(HTMLAnchorElement | null)[]>([]);
   const [pickerOpen, setPickerOpen] = useState(false);
   const pickerRef = useRef<HTMLDivElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -105,53 +105,9 @@ export default function SectionTabs({ section, page, setPage }: SectionTabsProps
     pages.findIndex((p) => p === page),
   );
 
-  /* L'onglet actif reste visible quand la RANGÉE défile — et rien d'autre ne
-     bouge.
-     `scrollIntoView` faisait défiler TOUS les ancêtres scrollables, y compris
-     la fenêtre de contenu. Comme la rangée d'onglets est en haut de la page,
-     cliquer sur un onglet depuis le milieu du Journal ramenait la fenêtre tout
-     en haut : on perdait sa position à chaque changement de vue. Ici on ne
-     touche qu'au défilement HORIZONTAL de la rangée, calculé à la main. */
-  // La pilule qui glisse d'un onglet à l'autre. La piste est la rangée qui
-  // défile : la pilule défile avec elle.
-  const glide = useGlidingIndicator<HTMLDivElement>(page);
-  const row = glide.track;
-  useEffect(() => {
-    const tab = tabRefs.current[activeIndex];
-    if (!row || !tab) return;
-    if (row.scrollWidth <= row.clientWidth) return; // rien à faire, tout tient
-    const marge = 12;
-    const gauche = tab.offsetLeft - marge;
-    const droite = tab.offsetLeft + tab.offsetWidth + marge;
-    if (gauche < row.scrollLeft) row.scrollLeft = gauche;
-    else if (droite > row.scrollLeft + row.clientWidth) row.scrollLeft = droite - row.clientWidth;
-  }, [activeIndex, row]);
-
-  const go = useCallback(
-    (target: Page, e: React.MouseEvent) => {
-      // Clic milieu, Cmd/Ctrl, Shift, Alt : c'est une demande d'ouverture
-      // ailleurs. On ne la vole pas.
-      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
-      e.preventDefault();
-      setPage(target);
-    },
-    [setPage],
-  );
-
-  // Flèches : déplacement au clavier entre onglets, comme un vrai tablist.
-  const onKeyDown = (e: React.KeyboardEvent) => {
-    const delta = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
-    if (!delta && e.key !== "Home" && e.key !== "End") return;
-    e.preventDefault();
-    const next =
-      e.key === "Home"
-        ? 0
-        : e.key === "End"
-          ? pages.length - 1
-          : (activeIndex + delta + pages.length) % pages.length;
-    tabRefs.current[next]?.focus();
-    setPage(pages[next]);
-  };
+  // La largeur commune des onglets, calée sur le libellé le plus long.
+  const wrapRef = useRef<HTMLDivElement | null>(null);
+  const width = useSegmentWidth(wrapRef, pages.length);
 
   const { icon: ActiveIcon, labelKey: activeLabelKey } = PAGE_META[pages[activeIndex]];
 
@@ -239,60 +195,63 @@ export default function SectionTabs({ section, page, setPage }: SectionTabsProps
           )}
       </div>
 
-      {/* ── DESKTOP : le contrôle segmenté, inchangé ── */}
-      <div
-        className="section-tabs"
-        role="tablist"
-        aria-orientation="horizontal"
-        onKeyDown={onKeyDown}
-      >
-        <div ref={glide.trackRef} className={cn("section-tabs-row", glide.on && "tv-glide-on")}>
-          {glide.style && (
-            <span
-              data-glide="1"
-              aria-hidden
-              className={cn("tv-glide tv-glide-section", glide.ready && "tv-glide-ready")}
-              style={glide.style}
-            />
-          )}
-          {pages.map((p, i) => {
+      {/* ── ORDINATEUR : la barre d'onglets d'iOS 26 (Glisse) ──
+          La sélection glisse d'une vue à l'autre, suit le doigt ou la souris,
+          et se soulève en lentille tant qu'on la tient. Chaque onglet reste
+          un VRAI lien vers l'URL de la vue : clic du milieu et Cmd/Ctrl-clic
+          ouvrent un nouvel onglet (Glisse les laisse passer) ; le clic simple
+          navigue sans recharger (`SectionLink`). */}
+      <div ref={wrapRef} className="section-tabs">
+        <GlassTabBar
+          aria-label={t("nav.sectionViews")}
+          items={pages.map((p) => {
             const { labelKey, icon: Icon } = PAGE_META[p];
-            const active = p === page;
-            return (
-              <a
-                key={p}
-                ref={(el) => {
-                  tabRefs.current[i] = el;
-                }}
-                href={pathForPage(p)}
-                role="tab"
-                aria-selected={active}
-                aria-label={t(labelKey)}
-                title={t(labelKey)}
-                tabIndex={active ? 0 : -1}
-                onClick={(e) => go(p, e)}
-                // Le chunk part au survol / focus / premier contact du doigt,
-                // soit 100 à 300 ms avant le clic.
-                onPointerEnter={() => preloadPage(p)}
-                onFocus={() => preloadPage(p)}
-                onTouchStart={() => preloadPage(p)}
-                className={cn("section-tab", active ? "section-tab-active" : "section-tab-idle")}
-              >
-                <Icon
-                  className={cn("h-4 w-4 shrink-0", active ? "text-cyan-300" : "text-slate-500")}
-                  strokeWidth={active ? 2.2 : 1.9}
-                />
-                {/* Mobile : icônes seules (le texte revient dès md) — un label sur
-                  une rangée de 6 onglets devenait illisible et dur à toucher. */}
-                <span className="hidden whitespace-nowrap md:inline">{t(labelKey)}</span>
-                {!subLoading && !canAccessPage(tier, p) && (
-                  <Lock className="hidden h-3 w-3 shrink-0 text-slate-500 md:block" aria-hidden />
-                )}
-              </a>
-            );
+            const locked = !subLoading && !canAccessPage(tier, p);
+            return {
+              value: p,
+              href: pathForPage(p),
+              label: (
+                <span className="tv-seg-label">
+                  <Icon aria-hidden />
+                  <span className="tv-seg-text">{t(labelKey)}</span>
+                  {locked && <Lock className="tv-seg-lock" aria-hidden />}
+                </span>
+              ),
+            };
           })}
-        </div>
+          value={page}
+          onValueChange={(next) => setPage(next as Page)}
+          link={SectionLink}
+          style={width ? ({ "--lg-tab-width": `${width}px` } as CSSProperties) : undefined}
+        />
       </div>
     </>
   );
 }
+
+/**
+ * Le lien d'un onglet : le clic SIMPLE ne recharge pas la page (la vue change
+ * par `onValueChange`, côté client). Un clic avec modificateur garde son sens
+ * — ouvrir ailleurs. Le code de la vue part dès le survol, 100 à 300 ms avant
+ * le clic.
+ */
+const SectionLink = forwardRef<HTMLAnchorElement, AnchorHTMLAttributes<HTMLAnchorElement>>(
+  function SectionLink({ href, onClick, ...rest }, ref) {
+    const target = href ? pageFromPath(href) : null;
+    return (
+      <a
+        ref={ref}
+        href={href}
+        {...rest}
+        onClick={(e) => {
+          onClick?.(e);
+          if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+          e.preventDefault();
+        }}
+        onPointerEnter={() => target && preloadPage(target)}
+        onFocus={() => target && preloadPage(target)}
+        onTouchStart={() => target && preloadPage(target)}
+      />
+    );
+  },
+);

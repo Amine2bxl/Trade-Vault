@@ -282,6 +282,11 @@ function RootShell({ children }: { children: ReactNode }) {
     <html lang={lang}>
       <head>
         <HeadContent />
+        {/* GLISSE — ses styles viennent de `styles.css`, rangés dans la couche
+            `components` (les utilitaires Tailwind d'un appelant gardent le
+            dernier mot). Glisse injecte sinon sa propre copie, hors couche, en
+            tête de document ; il ne le fait pas si cet identifiant existe déjà. */}
+        <style id="glisse-styles" />
         {/* schema.org identity for the brand + application. Rendered here rather
             than through head() so the JSON body is emitted verbatim. */}
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: structuredData() }} />
@@ -311,7 +316,11 @@ function RootShell({ children }: { children: ReactNode }) {
           }}
         />
       </head>
-      <body>
+      {/* `data-theme="dark"` : la version sombre de Glisse (le verre liquide),
+          quel que soit le réglage clair/sombre du système — TradeVault est
+          sombre. Posé sur `body`, il couvre aussi les portails (menus,
+          feuilles). */}
+      <body data-theme="dark">
         {children}
         <Scripts />
       </body>

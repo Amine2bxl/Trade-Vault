@@ -1,13 +1,16 @@
-import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
+import { forwardRef, useId, type ButtonHTMLAttributes, type ReactNode } from "react";
+import { Button as GlassButton } from "glisse";
 import { cn } from "./cn";
 
 /**
- * ActionButton — l'action ronde de Revolut : un disque de 52 px et son libellé
- * dessous. Sert aux rangées d'actions rapides (ajouter un trade, importer,
- * checklist, Jarvis…). Une rangée porte au plus UN disque `primary` (plein,
- * accent) ; les autres sont des plaques. Styles : `.tv-action*` (styles.css).
+ * ActionButton — l'action ronde : un disque de verre liquide (Glisse) de
+ * 52 px et son libellé dessous. Sert aux rangées d'actions rapides (ajouter un
+ * trade, importer, checklist, Jarvis…). Une rangée porte au plus UN disque
+ * `primary` (plein, accent) ; les autres sont du verre clair.
  *
- * Le libellé visible nomme l'action : pas besoin d'`aria-label`.
+ * Le disque EST le bouton : c'est lui qui se soulève et réfracte sous le
+ * doigt, comme sur iOS 26. Le libellé le nomme (`aria-labelledby`) et le
+ * déclenche aussi au clic, pour garder la grande cible d'avant.
  */
 export interface ActionButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   icon: ReactNode;
@@ -16,20 +19,41 @@ export interface ActionButtonProps extends ButtonHTMLAttributes<HTMLButtonElemen
 }
 
 export const ActionButton = forwardRef<HTMLButtonElement, ActionButtonProps>(function ActionButton(
-  { icon, label, variant = "default", type = "button", className, ...rest },
+  { icon, label, variant = "default", type = "button", className, disabled, ...rest },
   ref,
 ) {
+  const labelId = useId();
   return (
-    <button
-      ref={ref}
-      type={type}
-      className={cn("tv-action", variant === "primary" && "tv-action-primary", className)}
-      {...rest}
+    <div
+      className={cn(
+        "tv-action",
+        variant === "primary" && "tv-action-primary",
+        disabled && "tv-action-disabled",
+        className,
+      )}
     >
-      <span className="tv-action-disc" aria-hidden>
-        {icon}
+      <GlassButton
+        ref={ref}
+        type={type}
+        icon={icon}
+        variant={variant === "primary" ? "filled" : "glass"}
+        aria-labelledby={labelId}
+        disabled={disabled}
+        className="tv-action-disc"
+        {...rest}
+      />
+      {/* Le libellé déclenche le disque : un clic sur le texte, comme avant,
+          lance l'action. Il n'est pas focalisable, le disque l'est. */}
+      <span
+        id={labelId}
+        className="tv-action-label"
+        onClick={(e) => {
+          const disc = e.currentTarget.previousElementSibling;
+          if (disc instanceof HTMLButtonElement && !disc.disabled) disc.click();
+        }}
+      >
+        {label}
       </span>
-      <span className="tv-action-label">{label}</span>
-    </button>
+    </div>
   );
 });
