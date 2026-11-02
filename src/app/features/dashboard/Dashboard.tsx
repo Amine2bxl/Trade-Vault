@@ -675,7 +675,16 @@ export default function Dashboard({
                         </Suspense>
                       </div>
                     ) : (
-                      <div className="h-48 md:h-60 flex items-center justify-center text-slate-600 text-sm">
+                      /* Même hauteur que la courbe qu'il remplace : une hauteur
+                         fixe de 240 px débordait de la carte ajustée sur un
+                         écran bas (1536×730), et le message était coupé. */
+                      <div
+                        className={cn(
+                          "flex items-center justify-center text-slate-600 text-sm",
+                          !fit && "h-48 md:h-60",
+                        )}
+                        style={fit ? { height: (row1H as number) - CARD_CHROME } : undefined}
+                      >
                         {t("dashboard.noTradesInPeriod")}
                       </div>
                     )}

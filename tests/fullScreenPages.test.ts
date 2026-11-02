@@ -149,3 +149,17 @@ describe("la grille du calendrier", () => {
     expect(src).not.toContain("min-h-0");
   });
 });
+
+describe("le tableau de bord ajusté", () => {
+  const css = stripComments(readSource(import.meta.dir, "../src/styles.css"));
+
+  test("le héros ne dépend pas du mode ajusté : aucune boucle de mesure", () => {
+    // Le mode ajusté (`dash-fit`, `dash-tight`) se calcule à partir de la
+    // hauteur du héros. Si ce mode changeait à son tour la hauteur du héros,
+    // la page basculait sans fin entre deux mises en page à la frontière
+    // (constaté à 1536×730, l'écran Windows le plus courant : la courbe et
+    // les quatre tuiles clignotaient). Seule la place disponible (`dash-short`)
+    // peut resserrer le héros.
+    expect(css).not.toMatch(/\.dash-(?:fit|tight)\s+\.dash-hero\b/);
+  });
+});

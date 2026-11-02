@@ -27,6 +27,7 @@ import { TourProduit } from "./Tour";
 import { CursorOrb } from "@/shared/ui/CursorOrb";
 import { LIENS_NAV } from "./nav";
 import MegaNav from "./MegaNav";
+import { closeAuthForm, openAuthForm, setDemoOpen, useLandingModals } from "./landingModals";
 import { LangMenuPied } from "./LangMenu";
 import { CookieConsent } from "./CookieConsent";
 import {
@@ -459,11 +460,10 @@ function oublierIntentionAuth() {
 /* ─────────────────────────── LANDING ─────────────────────────── */
 function LandingPage() {
   const { t, lang } = useLandingT();
-  const [auth, setAuth] = useState(false);
-  const [demo, setDemo] = useState(false);
-  const [authMode, setAuthMode] = useState<"login" | "signup">("signup");
-  const [authPlan, setAuthPlan] = useState<string | undefined>();
-  const [authError, setAuthError] = useState<string | undefined>();
+  /* Le formulaire de connexion et la démo : un état partagé par les instances
+     successives de la vitrine (`landingModals.ts`), sinon un clic pendant le
+     chargement se perdait avec l'instance qui l'avait reçu. */
+  const modals = useLandingModals();
   const [faq, setFaq] = useState<number | null>(0);
   const [activeSec, setActiveSec] = useState("");
   /* `collee` est le SEUL état que le défilement fait remonter à React, et il
@@ -583,10 +583,7 @@ function LandingPage() {
   }, []);
 
   const open = (mode: "login" | "signup", plan?: string) => {
-    setAuthMode(mode);
-    setAuthPlan(plan);
-    setAuthError(undefined);
-    setAuth(true);
+    openAuthForm(mode, plan);
   };
 
   /* LES ADRESSES QUI OUVRENT LE FORMULAIRE.
@@ -605,13 +602,23 @@ function LandingPage() {
    * fermeture du formulaire : sur `/`, la vitrine est montée plusieurs fois
    * pendant le chargement (rendu serveur, attente du code, application), et
    * c'est la DERNIÈRE instance qui doit l'ouvrir. */
+  /* Le code du formulaire se télécharge pendant que le navigateur est au
+     repos : au clic, la fenêtre s'ouvre tout de suite au lieu d'attendre son
+     fichier, sans rien afficher, une seconde sur une connexion lente. */
+  useEffect(() => {
+    const precharger = () => void import("./AuthModal").catch(() => {});
+    if (typeof window.requestIdleCallback === "function") {
+      const id = window.requestIdleCallback(precharger, { timeout: 4000 });
+      return () => window.cancelIdleCallback(id);
+    }
+    const id = window.setTimeout(precharger, 2000);
+    return () => window.clearTimeout(id);
+  }, []);
+
   useEffect(() => {
     const intention = lireIntentionAuth();
     if (!intention) return;
-    setAuthMode(intention.mode);
-    setAuthPlan(undefined);
-    setAuthError(intention.error);
-    setAuth(true);
+    openAuthForm(intention.mode, undefined, intention.error);
   }, []);
   const go = (id: string) => {
     setActiveSec(id);
@@ -753,7 +760,7 @@ function LandingPage() {
                 {/* La démo en troisième rang, sous les deux boutons : un lien, pas un
                     troisième bouton qui partagerait le clic avec l'inscription. */}
                 <button
-                  onClick={() => setDemo(true)}
+                  onClick={() => setDemoOpen(true)}
                   className="fade-up d3 group mt-3 inline-flex min-h-[44px] items-center gap-2.5 whitespace-nowrap text-sm text-slate-400 transition-colors hover:text-white"
                 >
                   <span className="grid h-7 w-7 place-items-center rounded-full border border-white/[.14] text-[var(--tv-accent)] transition-colors group-hover:border-[rgb(var(--tv-accent-rgb)/0.5)]">
@@ -1258,22 +1265,22 @@ function LandingPage() {
         </footer>
       </main>
 
-      {auth && (
+      {modals.auth && (
         <Suspense fallback={null}>
           <AuthModal
-            initialMode={authMode}
-            plan={authPlan}
-            initialError={authError}
+            initialMode={modals.auth.mode}
+            plan={modals.auth.plan}
+            initialError={modals.auth.error}
             onClose={() => {
               oublierIntentionAuth();
-              setAuth(false);
+              closeAuthForm();
             }}
           />
         </Suspense>
       )}
-      {demo && (
+      {modals.demo && (
         <Suspense fallback={null}>
-          <DemoModal onClose={() => setDemo(false)} />
+          <DemoModal onClose={() => setDemoOpen(false)} />
         </Suspense>
       )}
       <CookieConsent />
