@@ -9867,6 +9867,182 @@ body.tv-app-type svg.lucide {
   }
 }
 
+/* ══ ANALYSES — vue d'ensemble ═══════════════════════════════════════════
+ * Même matière que le tableau de bord (`.dash-panel`, `.dash-kpis`) : une
+ * bande de huit chiffres, puis cinq blocs visuels sur une grille de trois.
+ * Chaque bloc : un titre, un graphe, une ligne de lecture chiffrée. */
+.ana-overview {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ana-kpi-panel {
+  padding-bottom: 0;
+}
+.ana-kpis {
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  margin-bottom: 0;
+  border-bottom: 0;
+}
+.ana-kpis .dash-kpi {
+  padding-bottom: 10px;
+}
+@media (max-width: 1279px) {
+  .ana-kpis {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .ana-kpis .dash-kpi:nth-child(5) {
+    border-left: 0;
+  }
+  .ana-kpis .dash-kpi:nth-child(n + 5) {
+    border-top: 1px solid var(--tv-border);
+  }
+}
+@media (max-width: 639px) {
+  .ana-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .ana-kpis .dash-kpi:nth-child(odd) {
+    border-left: 0;
+  }
+  .ana-kpis .dash-kpi:nth-child(n + 3) {
+    border-top: 1px solid var(--tv-border);
+  }
+}
+/* Le nom d'une section : un libellé, pas un titre — il range, il ne parle pas. */
+.ana-group {
+  margin: 6px 2px -2px;
+  font-family: var(--font-figure);
+  font-size: var(--tv-t-micro);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--tv-text-muted);
+}
+/* Gagnés / Perdus : l'anneau, le taux au centre. */
+.ana-donut {
+  position: relative;
+  height: 8.5rem;
+}
+.ana-donut-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  pointer-events: none;
+}
+.ana-donut-center b {
+  font-size: var(--tv-t-h2);
+  line-height: 1;
+  color: var(--tv-text-primary);
+}
+.ana-donut-center small {
+  color: var(--tv-text-muted);
+}
+.ana-wl-stats {
+  margin-top: auto;
+}
+.ana-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 5px;
+  border-radius: 9999px;
+  vertical-align: middle;
+}
+/* Les ratios : une liste clé / valeur, une ligne par ratio. */
+.ana-ratios {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  margin: 0 -14px -12px;
+}
+.ana-ratio {
+  display: flex;
+  flex: 1;
+  min-height: 2.5rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 14px;
+  border-top: 1px solid var(--tv-border);
+}
+.ana-ratio dt {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--tv-t-body-sm);
+  color: var(--tv-text-secondary);
+}
+.ana-ratio dd {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+}
+.ana-ratio dd > span {
+  font-size: var(--tv-t-body);
+  line-height: 1.1;
+}
+.ana-ratio dd > small {
+  max-width: 12rem;
+  overflow: hidden;
+  font-size: var(--tv-t-micro);
+  color: var(--tv-text-muted);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.ana-board {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.ana-span-2 {
+  grid-column: span 2;
+}
+@media (max-width: 1023px) {
+  .ana-board {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ana-span-2 {
+    grid-column: auto;
+  }
+}
+.ana-chart {
+  height: 11.5rem;
+}
+.ana-chart-main {
+  height: 8.5rem;
+}
+.ana-chart-dd {
+  height: 4.5rem;
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid var(--tv-border);
+}
+.ana-read {
+  margin-top: 6px;
+  overflow: hidden;
+  font-size: var(--tv-t-caption);
+  color: var(--tv-text-secondary);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.ana-empty {
+  display: grid;
+  min-height: 11.5rem;
+  place-items: center;
+  padding: 0 12px;
+  font-size: var(--tv-t-body-sm);
+  text-align: center;
+  color: var(--tv-text-muted);
+}
+
 /* ══ LA PALETTE ⌘K — la recherche d'une app ═══════════════════════════════
  * Une surface centrée en haut d'écran : le champ, des lignes de même
  * hauteur (vignette 28 px, libellé, valeur), les touches en pied. */

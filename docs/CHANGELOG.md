@@ -3,6 +3,19 @@
 Journal des changements **structurels** (pas des features ni des correctifs,
 qui vivent dans l'historique git et les PR).
 
+## 2026-11-14 — Analyses : l'ancienne et la nouvelle vue réunies
+
+- Vue d'ensemble en trois sections ordonnées, une seule matière
+  (`.dash-panel`) : bande de 8 chiffres ; Performance (courbe + drawdown,
+  Gagnés/Perdus) ; Mois et ratios (performance mensuelle, ratios avec ⓘ) ;
+  Projection (où atterrissent les trades, où finissent les 100 prochains,
+  dépassement de drawdown).
+- `modules/probability/outlook` : le moteur Monte Carlo appliqué au journal
+  (2 000 tirages, graine fixe, risque = médiane des risques saisis), aucun
+  chiffre sous 20 trades réels.
+- La barre « Profit factor » au-dessus des vues est retirée (le chiffre est
+  dans la bande, avec gagné/perdu).
+
 ## 2026-11-14 — Réglages et boîte de réception allégés
 
 - `SettingsRow` : l'aide passe derrière un ⓘ à côté du libellé (`InfoTip`) ;
