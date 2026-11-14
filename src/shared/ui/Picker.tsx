@@ -37,6 +37,15 @@ export interface PickerOption<V extends string = string> {
   hint?: string;
   /** Nombre d'éléments derrière l'option (trades, notifications…). */
   count?: number;
+  /** Vignette de l'option (logo d'instrument…) : remplace la puce de choix. */
+  icon?: ReactNode;
+}
+
+/** Saisie libre : la recherche devient une valeur quand rien ne correspond. */
+export interface PickerCustom {
+  /** Libellé de la ligne « utiliser cette saisie ». */
+  label: (query: string) => string;
+  onPick: (query: string) => void;
 }
 
 type Variant = "pill" | "field";
@@ -57,7 +66,9 @@ function Trigger({
   className,
   icon,
   id,
+  muted,
 }: {
+  muted?: boolean;
   variant: Variant;
   label: string;
   display: string;
@@ -87,7 +98,9 @@ function Trigger({
         )}
       >
         {icon}
-        <span className="min-w-0 flex-1 truncate">{numericText(display)}</span>
+        <span className={cn("min-w-0 flex-1 truncate", muted && "text-slate-600")}>
+          {numericText(display)}
+        </span>
         <ChevronDown
           className={cn(
             "h-3.5 w-3.5 shrink-0 text-slate-500 transition-transform",
@@ -130,6 +143,7 @@ function OptionList<V extends string>({
   multi,
   searchLabel,
   id,
+  custom,
 }: {
   options: PickerOption<V>[];
   isOn: (v: V) => boolean;
@@ -137,16 +151,21 @@ function OptionList<V extends string>({
   multi: boolean;
   searchLabel: string;
   id: string;
+  custom?: PickerCustom;
 }) {
   const [q, setQ] = useState("");
   const listRef = useRef<HTMLUListElement | null>(null);
-  const searchable = options.length > selection.searchThreshold;
+  const searchable = !!custom || options.length > selection.searchThreshold;
   const shown = useMemo(() => {
     const n = q.trim().toLowerCase();
     return n
       ? options.filter((o) => `${o.label} ${o.hint ?? ""}`.toLowerCase().includes(n))
       : options;
   }, [options, q]);
+  // La saisie ne devient une option que si elle n'en désigne aucune déjà.
+  const typed = q.trim();
+  const offerCustom =
+    !!custom && typed !== "" && !options.some((o) => o.value.toLowerCase() === typed.toLowerCase());
 
   // À l'ouverture, l'option choisie est sous les yeux — pas vingt lignes plus bas.
   useEffect(() => {
@@ -187,6 +206,15 @@ function OptionList<V extends string>({
                   e.preventDefault();
                   listRef.current?.querySelector<HTMLElement>("button")?.focus();
                 }
+                // Entrée valide ce qu'on vient d'écrire : la première
+                // correspondance, sinon la saisie telle quelle.
+                if (e.key === "Enter" && typed) {
+                  e.preventDefault();
+                  const exact = shown.find((o) => o.value.toLowerCase() === typed.toLowerCase());
+                  if (exact) onPick(exact.value);
+                  else if (offerCustom) custom?.onPick(typed);
+                  else if (shown[0]) onPick(shown[0].value);
+                }
               }}
               placeholder={searchLabel}
               aria-label={searchLabel}
@@ -203,6 +231,14 @@ function OptionList<V extends string>({
         onKeyDown={move}
         className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-1.5"
       >
+        {offerCustom && (
+          <li>
+            <button type="button" className="tv-pick-opt" onClick={() => custom?.onPick(typed)}>
+              <span aria-hidden className="tv-pick-dot" />
+              <span className="min-w-0 flex-1 truncate">{custom?.label(typed)}</span>
+            </button>
+          </li>
+        )}
         {shown.map((o) => {
           const on = isOn(o.value);
           return (
@@ -214,18 +250,21 @@ function OptionList<V extends string>({
                 onClick={() => onPick(o.value)}
                 className={cn("tv-pick-opt", on && "tv-pick-opt-on")}
               >
-                <span
-                  aria-hidden
-                  className={cn(multi ? "tv-pick-box" : "tv-pick-dot", on && "is-on")}
-                >
-                  {on && <Check className="h-3 w-3" strokeWidth={3} />}
-                </span>
+                {o.icon ?? (
+                  <span
+                    aria-hidden
+                    className={cn(multi ? "tv-pick-box" : "tv-pick-dot", on && "is-on")}
+                  >
+                    {on && <Check className="h-3 w-3" strokeWidth={3} />}
+                  </span>
+                )}
                 <span className="min-w-0 flex-1">
                   <span className="block truncate">{numericText(o.label)}</span>
                   {o.hint && (
                     <span className="block truncate text-[11px] text-slate-500">{o.hint}</span>
                   )}
                 </span>
+                {o.icon && on && <Check className="h-3.5 w-3.5 shrink-0" strokeWidth={3} />}
                 {o.count !== undefined && (
                   <span className="tv-figure tv-figure-secondary text-[11px] text-slate-500">
                     {o.count}
@@ -235,7 +274,9 @@ function OptionList<V extends string>({
             </li>
           );
         })}
-        {shown.length === 0 && <li className="px-3 py-4 text-center text-xs text-slate-500">—</li>}
+        {shown.length === 0 && !offerCustom && (
+          <li className="px-3 py-4 text-center text-xs text-slate-500">—</li>
+        )}
       </ul>
     </>
   );
@@ -338,9 +379,15 @@ export interface SelectPickerProps<V extends string> {
   /** Déclencheur sur mesure (un sélecteur de mois, un en-tête…) : reçoit
    *  l'état et la bascule ; le panneau reste celui de la famille. */
   renderTrigger?: (p: { open: boolean; toggle: () => void; controls: string }) => ReactNode;
+  /** Autorise une valeur hors liste, tapée dans la recherche. */
+  custom?: PickerCustom;
+  /** Texte du champ tant que rien n'est choisi. */
+  placeholder?: string;
 }
 
 export function SelectPicker<V extends string>({
+  custom,
+  placeholder,
   label,
   value,
   options,
@@ -389,7 +436,8 @@ export function SelectPicker<V extends string>({
         <Trigger
           variant={variant}
           label={label}
-          display={current?.label ?? String(value)}
+          display={current?.label ?? (String(value) || placeholder || "")}
+          muted={!current && !String(value)}
           active={neutralValue !== undefined && value !== neutralValue}
           open={open}
           disabled={disabled}
@@ -416,6 +464,15 @@ export function SelectPicker<V extends string>({
           }}
           multi={false}
           searchLabel={searchLabel}
+          custom={
+            custom && {
+              label: custom.label,
+              onPick: (q) => {
+                custom.onPick(q);
+                setOpen(false);
+              },
+            }
+          }
         />
       </PickerPanel>
     </div>

@@ -3,6 +3,18 @@
 Journal des changements **structurels** (pas des features ni des correctifs,
 qui vivent dans l'historique git et les PR).
 
+## 2026-11-14 — Logos d'instruments, symbole au choix, téléphone allégé
+
+- Chaque instrument porte son logo (`trading/SymbolLogo` ; table unique
+  `trading/symbolCatalog.ts`, images et licences dans `src/assets/symbols/`).
+  Un symbole inconnu retombe sur ses initiales, jamais sur un logo approchant.
+- Le symbole d'un trade se CHOISIT (`SelectPicker` + saisie libre) : symboles
+  déjà journalisés en tête, puis le catalogue. `PickerOption.icon` et
+  `SelectPicker.custom` sont les deux extensions de la famille.
+- Téléphone : une ligne par trade dans le Journal (supprimer vit dans le
+  détail), phrase d'intention des pages, sous-titres de cartes et détail de
+  la page Brokers réservés au bureau ; aide d'un réglage sur une ligne.
+
 ## 2026-11-02 — Retour au langage Liquid d'avant le mouvement
 
 - À la demande du propriétaire, l'interface revient exactement à son état du

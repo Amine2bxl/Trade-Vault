@@ -89,7 +89,7 @@ export default function Seasonality({ trades, tradesLoading }: SeasonalityProps)
         <>
           {/* Une ligne, plus une carte : c'est une précision sur la source, pas
               un contenu. */}
-          <p className="mb-3 flex shrink-0 items-center gap-2 px-1 text-xs text-slate-500">
+          <p className="mb-3 flex shrink-0 items-center gap-2 px-1 text-xs text-slate-500 max-md:hidden">
             <Info className="h-3.5 w-3.5 shrink-0" aria-hidden />
             {t("seasonality.verifiedMarketUnavailable")}
           </p>
@@ -630,7 +630,9 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
           <>
             <div className="glass rounded-3xl p-4 md:p-5 mb-4">
               <h3 className="tv-title mb-0.5">{t("seasonality.monthly")}</h3>
-              <p className="tv-hint mb-4">{t("seasonality.monthlySub")}</p>
+              <p className="tv-hint mb-4 max-md:mb-2 max-md:h-0 max-md:overflow-hidden">
+                {t("seasonality.monthlySub")}
+              </p>
               <div className="h-56 md:h-64">
                 <ResponsiveContainer debounce={100} width="100%" height="100%">
                   <BarChart data={monthly} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
@@ -676,7 +678,9 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
 
             <div className="glass rounded-3xl p-4 md:p-5">
               <h3 className="tv-title mb-0.5">{t("seasonality.heatmap")}</h3>
-              <p className="tv-hint mb-4">{t("seasonality.heatmapSub")}</p>
+              <p className="tv-hint mb-4 max-md:mb-2 max-md:h-0 max-md:overflow-hidden">
+                {t("seasonality.heatmapSub")}
+              </p>
               <div className="space-y-3">
                 {monthRows.map((months) => (
                   <div
@@ -714,7 +718,9 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
           <div className="grid md:grid-cols-2 gap-4">
             <div className="glass rounded-3xl p-4 md:p-5">
               <h3 className="tv-title mb-0.5">{t("seasonality.weekday")}</h3>
-              <p className="tv-hint mb-4">{t("seasonality.weekdaySub")}</p>
+              <p className="tv-hint mb-4 max-md:mb-2 max-md:h-0 max-md:overflow-hidden">
+                {t("seasonality.weekdaySub")}
+              </p>
               <div className="h-48">
                 <ResponsiveContainer debounce={100} width="100%" height="100%">
                   <BarChart data={weekdays} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
@@ -743,7 +749,9 @@ function JournalSeasonality({ trades, tradesLoading }: SeasonalityProps) {
 
             <div className="glass rounded-3xl p-4 md:p-5">
               <h3 className="tv-title mb-0.5">{t("seasonality.hourly")}</h3>
-              <p className="tv-hint mb-4">{t("seasonality.hourlySub")}</p>
+              <p className="tv-hint mb-4 max-md:mb-2 max-md:h-0 max-md:overflow-hidden">
+                {t("seasonality.hourlySub")}
+              </p>
               <div className="h-48">
                 <ResponsiveContainer debounce={100} width="100%" height="100%">
                   <BarChart data={hours} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>

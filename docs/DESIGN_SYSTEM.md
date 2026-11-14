@@ -301,7 +301,7 @@ par le même moteur, y compris dans une modale ou un filtre de période.
 | --- | --- |
 | Texte, nombre, note | `Field` + `Input` / `Textarea` ; `SignedNumberInput` pour un nombre signé (bouton +/− tactile, virgule décimale acceptée) |
 | Note mise en forme (gras, italique, souligné) | `RichTextarea` (même peau que `Textarea`, mini-barre sur la sélection, ⌘/Ctrl+B/I/U) + `RichTextView` à l’affichage ; stockage en texte à marques (`shared/richText.ts`) |
-| Un choix, plusieurs choix, période | `SelectPicker`, `MultiPicker`, `RangePicker` |
+| Un choix, plusieurs choix, période | `SelectPicker` (option `icon` : vignette à la place de la puce ; `custom` : la recherche devient une valeur hors liste), `MultiPicker`, `RangePicker` |
 | Date civile, heure civile | `DateField`, `TimeField` |
 | Choix courts visibles | `ChoiceGroup` (radio, clavier, état neutre) |
 | Options avancées | `Disclosure` (titre, commande 44 px, corps espacé) |

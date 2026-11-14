@@ -636,7 +636,9 @@ export default function Brokers() {
                     </h2>
                     {!isPro && <Badge variant="accent">{t("credits.plan.pro")}</Badge>}
                   </div>
-                  <p className="tv-prose mt-1.5 max-w-xl text-slate-400">{t("brokers.heroBody")}</p>
+                  <p className="tv-prose mt-1.5 max-w-xl text-slate-400 max-md:hidden">
+                    {t("brokers.heroBody")}
+                  </p>
                 </div>
 
                 <Steps t={t} />
@@ -765,19 +767,24 @@ export default function Brokers() {
           </Card>
         )}
 
-        {/* Ce que fait la synchro, en clair — sans promesse. */}
-        <SettingsGroup title={t("brokers.howTitle")} className="animate-fade-in-up">
-          {(["brokers.how1", "brokers.how2", "brokers.how3", "brokers.how4"] as const).map(
-            (k, i) => (
-              <div key={k} className="tv-set-row tv-set-item">
-                <span className="tv-set-action-icon tv-figure text-[13px] font-semibold">
-                  {i + 1}
-                </span>
-                <p className="min-w-0 flex-1 text-[13px] leading-relaxed text-slate-300">{t(k)}</p>
-              </div>
-            ),
-          )}
-        </SettingsGroup>
+        {/* Ce que fait la synchro, en clair — sans promesse. Quatre
+            paragraphes de fonctionnement : au bureau, pas sur un téléphone. */}
+        <div className="max-md:hidden">
+          <SettingsGroup title={t("brokers.howTitle")} className="animate-fade-in-up">
+            {(["brokers.how1", "brokers.how2", "brokers.how3", "brokers.how4"] as const).map(
+              (k, i) => (
+                <div key={k} className="tv-set-row tv-set-item">
+                  <span className="tv-set-action-icon tv-figure text-[13px] font-semibold">
+                    {i + 1}
+                  </span>
+                  <p className="min-w-0 flex-1 text-[13px] leading-relaxed text-slate-300">
+                    {t(k)}
+                  </p>
+                </div>
+              ),
+            )}
+          </SettingsGroup>
+        </div>
 
         <SyncCelebration
           state={celebration}
@@ -890,7 +897,7 @@ function Steps({ t }: { t: T }) {
     ["brokers.step3Title", "brokers.step3Body"],
   ];
   return (
-    <ol className="grid gap-2 sm:grid-cols-3">
+    <ol className="grid grid-cols-3 gap-2">
       {steps.map(([title, body], i) => (
         <li
           key={title}
@@ -900,7 +907,7 @@ function Steps({ t }: { t: T }) {
             0{i + 1}
           </span>
           <div className="mt-0.5 text-[13px] font-semibold text-slate-100">{t(title)}</div>
-          <div className="text-xs leading-snug text-slate-500">{t(body)}</div>
+          <div className="text-xs leading-snug text-slate-500 max-md:hidden">{t(body)}</div>
         </li>
       ))}
     </ol>
@@ -916,6 +923,7 @@ function Steps({ t }: { t: T }) {
 function TrustPanel({ t, className, wide }: { t: T; className?: string; wide?: boolean }) {
   const can: TKey[] = ["brokers.can1", "brokers.can2", "brokers.can3", "brokers.can4"];
   const cant: TKey[] = ["brokers.cant1", "brokers.cant2", "brokers.cant3", "brokers.cant4"];
+  const [openLists, setOpenLists] = useState(false);
   return (
     <div className={cn("space-y-4 bg-[var(--tv-plate-0)] p-5 md:p-6", className)}>
       <div className="flex items-center gap-2.5">
@@ -933,7 +941,23 @@ function TrustPanel({ t, className, wide }: { t: T; className?: string; wide?: b
           <span className="h-4 w-1.5 rounded-sm bg-white/[0.1]" />
         </div>
       </div>
-      <div className={cn("grid gap-4", wide && "sm:grid-cols-2")}>
+      {/* Téléphone : les deux listes se déplient à la demande — le niveau
+          d'accès (« lecture seule ») reste, lui, toujours écrit au-dessus. */}
+      <button
+        type="button"
+        aria-expanded={openLists}
+        onClick={() => setOpenLists((o) => !o)}
+        className="flex min-h-11 w-full items-center justify-between gap-2 text-left text-[13px] font-semibold text-slate-300 md:hidden"
+      >
+        {t("brokers.canTitle")}
+        <ChevronDown
+          className={cn(
+            "h-4 w-4 shrink-0 text-slate-500 transition-transform",
+            openLists && "rotate-180",
+          )}
+        />
+      </button>
+      <div className={cn("grid gap-4", wide && "sm:grid-cols-2", !openLists && "max-md:hidden")}>
         <div>
           <span className="tv-label text-slate-500">{t("brokers.canTitle")}</span>
           <ul className="mt-1.5 space-y-1.5">

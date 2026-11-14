@@ -8,9 +8,6 @@ import {
   ChevronDown,
   ChevronUp,
   Trash,
-  ArrowUpRight,
-  ArrowDownRight,
-  Minus,
   Download,
   Target,
   ClipboardCheck,
@@ -34,6 +31,7 @@ import { intlLocale } from "@/app/i18n/locale";
 import { useTradeFilter } from "./useTradeFilter";
 import { useAvailableHeight } from "@/app/hooks/useAvailableHeight";
 import TradeDetailModal from "./TradeDetailModal";
+import { SymbolLogo } from "@/app/trading/SymbolLogo";
 import {
   PageContainer,
   Button,
@@ -637,32 +635,19 @@ export default function Journal({
             shown.map((trade, i) => {
               const be = isBreakEven(trade);
               return (
-                <div key={trade.id} className="glass rounded-xl overflow-hidden trade-card">
-                  {/* Le montant et l'instrument gardent toute la largeur ; les
-                      actions vivent dessous plutôt que de rogner le symbole. */}
+                <div
+                  key={trade.id}
+                  className="glass trade-card flex items-center overflow-hidden rounded-xl"
+                >
+                  {/* Une ligne par trade : le logo dit l'instrument, la
+                      couleur du montant dit l'issue. Supprimer vit dans le
+                      détail (un geste rare n'occupe pas chaque carte). */}
                   <button
                     type="button"
-                    className="grid min-h-11 w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-3 pb-2 pt-3 text-left transition-opacity active:opacity-70"
+                    className="grid min-h-14 min-w-0 flex-1 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 py-2 pl-3 text-left transition-opacity active:opacity-70"
                     onClick={() => setViewingIdx(i)}
                   >
-                    <span
-                      className={cn(
-                        "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
-                        be
-                          ? "bg-slate-500/10"
-                          : trade.pnl >= 0
-                            ? "bg-emerald-500/10"
-                            : "bg-red-500/10",
-                      )}
-                    >
-                      {be ? (
-                        <Minus className="h-4 w-4 text-slate-300" />
-                      ) : trade.pnl >= 0 ? (
-                        <ArrowUpRight className="h-4 w-4 text-emerald-400" />
-                      ) : (
-                        <ArrowDownRight className="h-4 w-4 text-red-400" />
-                      )}
-                    </span>
+                    <SymbolLogo symbol={trade.symbol} size="md" />
                     <span className="min-w-0">
                       <span className="flex items-center gap-1.5">
                         <span className="truncate text-sm font-semibold text-white">
@@ -676,9 +661,15 @@ export default function Journal({
                         >
                           {directionLabel(trade.direction)}
                         </span>
+                        {trade.isExample && (
+                          <span className="tv-label shrink-0 text-amber-400">
+                            {t("journal.exampleBadge")}
+                          </span>
+                        )}
                       </span>
-                      <span className="tv-num tv-prose text-slate-500">
-                        {formatShortDate(trade.date)}
+                      <span className="tv-prose block truncate text-slate-500">
+                        <span className="tv-num">{formatShortDate(trade.date)}</span>
+                        {trade.strategy ? ` · ${trade.strategy}` : ""}
                       </span>
                     </span>
                     <span className="shrink-0 text-right">
@@ -715,32 +706,13 @@ export default function Journal({
                       })()}
                     </span>
                   </button>
-                  <div className="flex min-w-0 items-center gap-2 border-t border-[var(--tv-border)] px-3">
-                    <span className="tv-prose min-w-0 flex-1 truncate text-slate-500">
-                      {trade.strategy}
-                    </span>
-                    {trade.isExample && (
-                      <span className="tv-label shrink-0 text-amber-400">
-                        {t("journal.exampleBadge")}
-                      </span>
-                    )}
-                    <div className="-mr-2 flex shrink-0 items-center">
-                      <button
-                        onClick={() => onEdit(trade)}
-                        aria-label={t("common.edit")}
-                        className="flex h-11 w-11 items-center justify-center rounded-lg text-slate-500 transition-colors active:bg-cyan-500/10 active:text-cyan-400"
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </button>
-                      <button
-                        onClick={() => onDelete(trade.id)}
-                        aria-label={t("common.delete")}
-                        className="flex h-11 w-11 items-center justify-center rounded-lg text-slate-500 transition-colors active:bg-red-500/10 active:text-red-400"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  </div>
+                  <button
+                    onClick={() => onEdit(trade)}
+                    aria-label={t("common.edit")}
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-slate-500 transition-colors active:bg-cyan-500/10 active:text-cyan-400"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </button>
                 </div>
               );
             })
@@ -820,7 +792,10 @@ export default function Journal({
                           {formatShortDate(trade.date)}
                         </td>
                         <td className="px-4 py-1.5">
-                          <span className="text-sm font-bold text-white">{trade.symbol}</span>
+                          <span className="inline-flex items-center gap-2 align-middle">
+                            <SymbolLogo symbol={trade.symbol} size="xs" />
+                            <span className="text-sm font-bold text-white">{trade.symbol}</span>
+                          </span>
                           {trade.isExample && (
                             <span className="ml-2 text-[11px] font-bold px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/25 align-middle">
                               {t("journal.exampleBadge")}

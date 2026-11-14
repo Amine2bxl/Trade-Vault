@@ -1335,6 +1335,8 @@ const en = {
   "trade.secContext": "Confluences & mistakes",
   "trade.secNotes": "Notes & screenshots",
   "trade.symbolPh": "NQ, ES, EURUSD…",
+  "trade.symbolSearch": "Search or type a symbol",
+  "trade.symbolUse": "Use",
   "trade.rrHintShort": "R won — tap +/− for a loss (−1 = stop hit)",
   "trade.toggleSign": "Change sign (+/−)",
   "trade.newsNone": "No major {ccy} release that day",

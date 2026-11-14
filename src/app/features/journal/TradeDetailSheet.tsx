@@ -1,3 +1,4 @@
+import { SymbolLogo } from "@/app/trading/SymbolLogo";
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { X, Trash2, ChevronLeft, ChevronRight, Target } from "@/shared/ui/icons";
 import { Trade, MissedOpportunity, isBreakEven } from "@/app/types";
@@ -363,6 +364,7 @@ function SheetTrade({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
+            <SymbolLogo symbol={trade.symbol} size="sm" />
             <span className="truncate text-base font-bold text-white">{trade.symbol}</span>
             <span
               className={cn(

@@ -1,3 +1,4 @@
+import { SymbolLogo } from "@/app/trading/SymbolLogo";
 import {
   X,
   Trash2,
@@ -324,6 +325,7 @@ export default function TradeDetailModal({
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
+                        <SymbolLogo symbol={trade.symbol} size="xs" />
                         <span className="text-sm font-bold text-white">{trade.symbol}</span>
                         <span
                           className={cn(

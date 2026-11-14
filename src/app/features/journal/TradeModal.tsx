@@ -84,10 +84,14 @@ import { todayLocalDate } from "@/shared/calendar-date";
 import { takeHandoff } from "@/app/utils/handoff";
 import { useTradeNews } from "../news/useTradeNews";
 import { useLiveTable } from "@/app/hooks/useLiveTable";
+import { SymbolLogo } from "@/app/trading/SymbolLogo";
+import { symbolChoices } from "@/app/trading/symbolCatalog";
 import { draftOnlyScreenshots, restoreDraftScreenshots } from "./tradeDraft";
 
 interface TradeModalProps {
   trade: Trade | null;
+  /** Symboles déjà journalisés : proposés en tête du sélecteur. */
+  usedSymbols?: readonly string[];
   onClose: () => void;
   onSave: (trade: Trade, meta: TradeJournalMeta) => Promise<boolean | void> | boolean | void;
 }
@@ -150,7 +154,7 @@ const REASON_LABELS: Record<ReflectionReason, string> = {
   other: "trade.reason.other",
 };
 
-export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) {
+export default function TradeModal({ trade, usedSymbols, onClose, onSave }: TradeModalProps) {
   const { user } = useAuth();
   const userId = user?.id || "";
   const { t, lang } = useT();
@@ -731,6 +735,16 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
      coche quand ses champs obligatoires sont remplis : le trader voit d'un
      coup d'œil ce qu'il reste à saisir, et où. */
   const symbolOk = form.symbol.trim() !== "";
+  const symbolOptions = useMemo(
+    () =>
+      symbolChoices(usedSymbols ?? [], form.symbol).map((c) => ({
+        value: c.symbol,
+        label: c.symbol,
+        hint: c.name || undefined,
+        icon: <SymbolLogo symbol={c.symbol} size="sm" />,
+      })),
+    [usedSymbols, form.symbol],
+  );
   const riskOk = parseFloat(form.riskAmount) > 0;
   const rOk = pnlLocked || form.direction === "be" || form.rMultiple !== "";
   const tradeDone = symbolOk && !!form.date;
@@ -865,17 +879,24 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
             {/* 1 — LE TRADE */}
             <FormSection n={1} title={t("trade.secTrade")} done={tradeDone}>
               <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
-                <label className="block min-w-0">
+                <div className="block min-w-0">
                   <FormLabel ok={symbolOk}>{req("trade.symbol")}</FormLabel>
-                  <Input
-                    aria-label={t("trade.symbol")}
-                    value={form.symbol}
-                    onChange={(e) => setForm((f) => ({ ...f, symbol: e.target.value }))}
+                  <SelectPicker
+                    variant="field"
+                    label={t("trade.symbol")}
+                    value={form.symbol.toUpperCase()}
+                    options={symbolOptions}
+                    onChange={(symbol) => setForm((f) => ({ ...f, symbol }))}
                     placeholder={t("trade.symbolPh")}
-                    autoCapitalize="characters"
-                    className="tv-figure uppercase placeholder:normal-case"
+                    searchLabel={t("trade.symbolSearch")}
+                    icon={form.symbol ? <SymbolLogo symbol={form.symbol} size="xs" /> : undefined}
+                    className="tv-figure"
+                    custom={{
+                      label: (q) => `${t("trade.symbolUse")} ${q.toUpperCase()}`,
+                      onPick: (q) => setForm((f) => ({ ...f, symbol: q.toUpperCase() })),
+                    }}
                   />
-                </label>
+                </div>
                 <div className="order-last col-span-2 min-w-0 sm:order-none sm:col-span-1">
                   <FormLabel>{t("trade.direction")}</FormLabel>
                   <ChoiceGroup
@@ -1548,6 +1569,7 @@ export default function TradeModal({ trade, onClose, onSave }: TradeModalProps) 
             <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden text-[12px] text-slate-500">
               {isValid ? (
                 <>
+                  <SymbolLogo symbol={form.symbol} size="xs" />
                   <span className="tv-figure shrink-0 text-white">{form.symbol.toUpperCase()}</span>
                   {session && (
                     <span className="tv-label hidden shrink-0 rounded px-1.5 py-0.5 text-[var(--tv-highlight)] sm:inline tv-trade-session">

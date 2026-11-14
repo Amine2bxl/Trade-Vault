@@ -6440,19 +6440,6 @@ thead .plan-cmp-col.is-pro {
   outline: 2px solid rgb(var(--tv-accent-rgb) / 0.7);
   outline-offset: 2px;
 }
-.dash-row-avatar {
-  display: grid;
-  flex-shrink: 0;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 9999px;
-  background: var(--tv-plate-3);
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.02em;
-  color: var(--tv-text-primary);
-}
 .dash-row-main {
   display: flex;
   min-width: 0;
@@ -6523,7 +6510,7 @@ thead .plan-cmp-col.is-pro {
 .dash-tight .dash-row {
   padding: 7px 0;
 }
-.dash-tight .dash-row-avatar {
+.dash-tight .dash-row-logo {
   width: 36px;
   height: 36px;
 }
@@ -8963,6 +8950,17 @@ body.tv-app-type svg.lucide {
   font-size: 12.5px;
   font-weight: 400;
   line-height: 1.45;
+}
+/* Téléphone : l'aide d'un réglage tient sur UNE ligne. Trois lignes
+   d'explication sous chaque champ doublaient la hauteur de la page ; le
+   libellé porte le sens, l'aide n'en est que le rappel. La zone de danger
+   garde son texte entier : on ne tronque pas un avertissement. */
+@media (max-width: 767px) {
+  .tv-set-group:not([data-tone="danger"]) .tv-set-hint {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }
 .tv-set-control {
   display: flex;

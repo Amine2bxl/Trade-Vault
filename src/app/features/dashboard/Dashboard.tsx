@@ -1,3 +1,4 @@
+import { SymbolLogo } from "@/app/trading/SymbolLogo";
 import { lazyPage } from "@/shared/lazy-page";
 import {
   useEffect,
@@ -811,9 +812,11 @@ export default function Dashboard({
                                 : {})}
                               className={cn("dash-row", onEditTrade && "dash-row-action")}
                             >
-                              <span className="dash-row-avatar" aria-hidden>
-                                {trade.symbol.slice(0, 3)}
-                              </span>
+                              <SymbolLogo
+                                symbol={trade.symbol}
+                                size="lg"
+                                className="dash-row-logo"
+                              />
                               <span className="dash-row-main">
                                 <span className="dash-row-title">
                                   {trade.symbol} · {side}

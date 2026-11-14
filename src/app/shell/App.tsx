@@ -591,6 +591,7 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
   // Stats are derived from the trade list — memoized so they recompute only
   // when trades actually change, not on every render of the shell.
   const stats = useTradeStats(trades);
+  const usedSymbols = useMemo(() => trades.map((tr) => tr.symbol), [trades]);
 
   // Optimistic writes: the UI updates instantly and rolls back to the previous
   // snapshot if the request fails, so saving never blocks the workflow.
@@ -1390,7 +1391,12 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
       </PageErrorBoundary>
       <Suspense fallback={null}>
         {modalOpen && (
-          <TradeModal trade={editingTrade} onClose={handleCloseModal} onSave={handleSave} />
+          <TradeModal
+            trade={editingTrade}
+            usedSymbols={usedSymbols}
+            onClose={handleCloseModal}
+            onSave={handleSave}
+          />
         )}
       </Suspense>
       <Suspense fallback={null}>

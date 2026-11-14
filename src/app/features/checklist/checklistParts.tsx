@@ -327,7 +327,7 @@ export function GatePreview({
           <SlidersHorizontal className="h-3.5 w-3.5" /> {t("chk.customize")}
         </Button>
       </div>
-      <p className="tv-prose text-slate-500">{t("chk.gatePreviewHint")}</p>
+      <p className="tv-prose text-slate-500 max-md:hidden">{t("chk.gatePreviewHint")}</p>
       {questions.length === 0 ? (
         <p className="text-xs text-slate-400">{t("chk.gateEmpty")}</p>
       ) : hideList ? null : (

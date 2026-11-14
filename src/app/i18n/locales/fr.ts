@@ -1299,6 +1299,8 @@ const fr: Dict = {
   "trade.secContext": "Confluences et erreurs",
   "trade.secNotes": "Notes et captures",
   "trade.symbolPh": "NQ, ES, EURUSD…",
+  "trade.symbolSearch": "Chercher ou saisir un symbole",
+  "trade.symbolUse": "Utiliser",
   "trade.rrHintShort": "R gagnés — +/− pour une perte (−1 = stop touché)",
   "trade.toggleSign": "Changer le signe (+/−)",
   "trade.newsNone": "Aucune annonce majeure {ccy} ce jour-là",

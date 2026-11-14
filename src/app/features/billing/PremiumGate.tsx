@@ -181,8 +181,10 @@ export function PageGate({
   // La phrase « à quoi sert cette page » est affichée pour TOUT LE MONDE, pas
   // seulement derrière le mur : un abonné qui ouvre Monte-Carlo pour la
   // première fois a le même besoin de comprendre que le visiteur qui hésite.
+  // Sur téléphone, le titre de la page et son sélecteur le disent déjà : la
+  // phrase prenait deux lignes au-dessus de chaque écran, elle reste au bureau.
   const purpose = value ? (
-    <p className="px-4 pt-3 text-[13px] leading-snug text-slate-400 md:px-5">
+    <p className="px-4 pt-3 text-[13px] leading-snug text-slate-400 max-md:hidden md:px-5">
       <span className="font-semibold text-slate-200">{value.title[fr ? "fr" : "en"]}</span>
       <span className="mx-1.5 text-slate-600">·</span>
       {value.benefit[fr ? "fr" : "en"]}
