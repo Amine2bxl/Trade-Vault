@@ -3,6 +3,17 @@
 Journal des changements **structurels** (pas des features ni des correctifs,
 qui vivent dans l'historique git et les PR).
 
+## 2026-11-14 — Densité de l'app, bureau compris
+
+- La couche `html.tv-app` couvre aussi le bureau : base fluide
+  (`clamp(13.5px, 10px + 0.3vw, 15px)`), échelle et rayons resserrés, champs
+  de 36 px, disques d'action de 40 px, tuiles de chiffres basses.
+- `density` resserré (`p-3 md:p-4`, `p-2.5 md:p-3`, `p-4 md:p-5`, écarts
+  `gap-2 md:gap-3`) ; 52 rembourrages de carte codés en dur alignés.
+- Tableau de bord du bureau : rangée de la courbe plafonnée à 300 px, quatre
+  chiffres en bandes fines, seconde rangée limitée à six trades — un grand
+  écran montre la même composition.
+
 ## 2026-11-14 — Densité mobile
 
 - Couche unique `html.tv-app` (fin de `styles.css`) : base 13–14 px sur

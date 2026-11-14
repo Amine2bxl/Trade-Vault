@@ -170,7 +170,7 @@ export function GoalPicker({
   return (
     /* La carte porte `glass`, pas `glass-strong` : elle est POSÉE sur la page,
        elle ne flotte pas au-dessus. La plaque forte est celle des modales. */
-    <div className="glass animate-fade-in-up rounded-3xl p-4 md:p-5">
+    <div className="glass animate-fade-in-up rounded-3xl p-3 md:p-4">
       <h2 className="tv-title">{t("goals.pickYourGoals")}</h2>
       <p className="tv-row-label mt-0.5 mb-3">{t("goals.selectAsManyAs")}</p>
 

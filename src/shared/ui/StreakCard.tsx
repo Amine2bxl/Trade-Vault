@@ -98,7 +98,7 @@ const StreakCard = React.forwardRef<HTMLDivElement, StreakCardProps>(function St
          l'AFFICHAGE (`hidden lg:flex`). Sans lui, `lg:flex` rangeait en-tête,
          chiffre, calendrier et stats CÔTE À CÔTE, et la largeur min-content de
          cette rangée (≈ 600px) écrasait la colonne voisine du tableau de bord. */
-      className={cn("stat-card flex min-w-0 flex-col rounded-2xl p-4 md:p-5", className)}
+      className={cn("stat-card flex min-w-0 flex-col rounded-2xl p-3 md:p-4", className)}
       {...props}
     >
       <header className="mb-3">

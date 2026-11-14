@@ -536,7 +536,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
 
   if (trades.length === 0)
     return (
-      <div className="p-4 md:p-5">
+      <div className="p-3 md:p-4">
         <EmptyState title={t("analytics.noTrades")} />
       </div>
     );
@@ -719,13 +719,13 @@ export default function Analytics({ trades }: AnalyticsProps) {
                 ))}
               </KpiGrid>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                <div className="relative md:col-span-2 glass rounded-2xl p-4 md:p-5 animate-fade-in-up stagger-2 overflow-hidden">
+                <div className="relative md:col-span-2 glass rounded-2xl p-3 md:p-4 animate-fade-in-up stagger-2 overflow-hidden">
                   <h3 className="tv-title mb-4">{t("analytics.equityCurve")}</h3>
                   <div className="h-44 md:h-56 chart-draw">
                     <EquityChart data={stats.equityCurve} />
                   </div>
                 </div>
-                <Card className="p-4 md:p-5 animate-fade-in-up stagger-3">
+                <Card className="p-3 md:p-4 animate-fade-in-up stagger-3">
                   <h3 className="tv-title mb-3">{t("analytics.winLoss")}</h3>
                   <div className="h-36 md:h-48">
                     <ResponsiveContainer debounce={100} width="100%" height="100%">
@@ -778,7 +778,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                   </div>
                 </Card>
               </div>
-              <Card className="p-4 md:p-5 animate-fade-in-up stagger-4">
+              <Card className="p-3 md:p-4 animate-fade-in-up stagger-4">
                 <h3 className="tv-title mb-1">{t("analytics.monthlyPerformance")}</h3>
                 <p className="tv-hint mb-3">{t("analytics.monthlyPerformanceSub")}</p>
                 {monthlyData.length > 0 ? (
@@ -991,7 +991,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                 accountName={(id) => accounts.find((a) => a.id === id)?.name ?? id}
               />
               <div className="grid gap-3 md:grid-cols-2 md:gap-4">
-                <Card className="p-4 md:p-5 animate-fade-in-up stagger-6">
+                <Card className="p-3 md:p-4 animate-fade-in-up stagger-6">
                   <h3 className="tv-title mb-3">{t("analytics.pnlByStrategy")}</h3>
                   <div className="h-40 md:h-48">
                     <ResponsiveContainer debounce={100} width="100%" height="100%">
@@ -1027,7 +1027,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                     </ResponsiveContainer>
                   </div>
                 </Card>
-                <Card className="p-4 md:p-5 animate-fade-in-up stagger-8">
+                <Card className="p-3 md:p-4 animate-fade-in-up stagger-8">
                   <h3 className="tv-title mb-3">{t("analytics.symbolPerformance")}</h3>
                   <div className="space-y-1.5 max-h-48 md:max-h-64 overflow-y-auto">
                     {symbolData.map((s) => (
@@ -1061,7 +1061,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                   </div>
                 </Card>
               </div>
-              <Card className="p-4 md:p-5 animate-fade-in-up stagger-7">
+              <Card className="p-3 md:p-4 animate-fade-in-up stagger-7">
                 <h3 className="tv-title mb-3">{t("analytics.pnlDistribution")}</h3>
                 <div className="h-40 md:h-48">
                   <ResponsiveContainer debounce={100} width="100%" height="100%">
@@ -1107,7 +1107,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                 </p>
               )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Card className="p-4 md:p-5 animate-fade-in-up stagger-2">
+                <Card className="p-3 md:p-4 animate-fade-in-up stagger-2">
                   <h3 className="tv-title mb-1">{t("analytics.heatmap")}</h3>
                   <p className="tv-hint mb-3">{t("analytics.heatmapSub")}</p>
                   <div
@@ -1181,7 +1181,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                     ))}
                   </div>
                 </Card>
-                <Card className="p-4 md:p-5 animate-fade-in-up stagger-3">
+                <Card className="p-3 md:p-4 animate-fade-in-up stagger-3">
                   <h3 className="tv-title mb-1">{t("analytics.byHour")}</h3>
                   <p className="tv-hint mb-3">{t("analytics.byHourSub")}</p>
                   {hourData.length > 0 ? (
@@ -1240,7 +1240,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                   )}
                 </Card>
               </div>
-              <Card className="p-4 md:p-5 animate-fade-in-up stagger-5">
+              <Card className="p-3 md:p-4 animate-fade-in-up stagger-5">
                 <h3 className="tv-title mb-3">{t("analytics.pnlWinRateByDay")}</h3>
                 <div className="h-40 md:h-48">
                   <ResponsiveContainer debounce={100} width="100%" height="100%">
@@ -1343,7 +1343,7 @@ function SeasonalitySection({ trades }: { trades: Trade[] }) {
       <div className="px-4 md:px-5 py-3 border-b border-white/[0.06]">
         <h3 className="tv-title">{t("trends.title")}</h3>
       </div>
-      <div className="p-4 md:p-5 space-y-4">
+      <div className="p-3 md:p-4 space-y-4">
         {/* LES QUATRE FAITS — DES CASES. Quatre blocs centrés de 76px pour
             porter « Août / +2 487,50 $ » : le libellé, le chiffre et sa mention
             n'ont jamais eu besoin de plus que la case standard du produit, et

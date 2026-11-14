@@ -89,7 +89,7 @@ export default function ChecklistSettings({
 
   return (
     <Modal open={open} onClose={onClose} size="sm" labelledBy="chk-settings-title">
-      <div className="space-y-5 p-4 md:p-5">
+      <div className="space-y-5 p-3 md:p-4">
         <header className="flex items-center gap-2">
           <h2 id="chk-settings-title" className="tv-title flex-1">
             {t("chk.settings")}

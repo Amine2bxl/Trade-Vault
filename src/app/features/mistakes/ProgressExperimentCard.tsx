@@ -106,7 +106,7 @@ export function ProgressExperimentCard({ trades }: { trades: Trade[] }) {
   );
 
   return (
-    <Card className="p-4 md:p-5">
+    <Card className="p-3 md:p-4">
       <h3 className="tv-title flex flex-wrap items-center gap-2">
         {t("experiment.title")}
         {active && <Badge variant="accent">{t("experiment.running")}</Badge>}

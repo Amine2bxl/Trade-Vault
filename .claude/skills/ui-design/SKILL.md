@@ -52,12 +52,12 @@ Pas de `translateY`, pas de `scale`, pas d'ombre qui grandit.
 
 | Token | Valeur | Usage |
 | --- | --- | --- |
-| `cardPad` | `p-4 md:p-5` | Carte standard |
-| `cardPadTight` | `p-3.5` | Ligne de liste, tuile compacte |
-| `cardPadLoose` | `p-5 md:p-6` | Surface héros |
-| `pagePad` | `p-4 md:p-6` | Page |
-| `sectionGap` | `mb-4 md:mb-5` | Entre deux blocs |
-| `gridGap` | `gap-4` | Grille |
+| `cardPad` | `p-3 md:p-4` | Carte standard |
+| `cardPadTight` | `p-2.5 md:p-3` | Ligne de liste, tuile compacte |
+| `cardPadLoose` | `p-4 md:p-5` | Surface héros |
+| `pagePad` | `px-3 py-2 md:px-5 md:py-3` | Page |
+| `sectionGap` | `mb-2 md:mb-3` | Entre deux blocs |
+| `gridGap` | `gap-2 md:gap-3` | Grille |
 
 Marketing (landing) : section `py-14 lg:py-20` (`lg:py-24` pour une section
 majeure), conteneur `max-w-1200px` + `px-5 lg:px-8`, gouttière de grille

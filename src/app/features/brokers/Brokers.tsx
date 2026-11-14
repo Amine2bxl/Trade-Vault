@@ -628,7 +628,7 @@ export default function Brokers() {
             className="animate-fade-in-up overflow-hidden rounded-[var(--radius-3xl)]"
           >
             <div className="grid lg:grid-cols-[1.35fr_1fr]">
-              <div className="space-y-5 p-5 md:p-6">
+              <div className="space-y-5 p-4 md:p-5">
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
                     <h2 className="text-[1.25rem] font-bold tracking-tight text-white">
@@ -925,7 +925,7 @@ function TrustPanel({ t, className, wide }: { t: T; className?: string; wide?: b
   const cant: TKey[] = ["brokers.cant1", "brokers.cant2", "brokers.cant3", "brokers.cant4"];
   const [openLists, setOpenLists] = useState(false);
   return (
-    <div className={cn("space-y-4 bg-[var(--tv-plate-0)] p-5 md:p-6", className)}>
+    <div className={cn("space-y-4 bg-[var(--tv-plate-0)] p-4 md:p-5", className)}>
       <div className="flex items-center gap-2.5">
         <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-[var(--tv-border-accent)] bg-[rgb(var(--tv-accent-rgb)/0.08)] text-[var(--tv-accent)]">
           <ShieldCheck className="h-4 w-4" />

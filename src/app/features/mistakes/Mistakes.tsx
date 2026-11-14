@@ -182,7 +182,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
   if (trades.length === 0) {
     if (embedded) return null;
     return (
-      <div className="p-4 md:p-5">
+      <div className="p-3 md:p-4">
         <EmptyState title={t("mistakes.noTrades")} />
       </div>
     );
@@ -510,7 +510,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
             Affiché seulement si des règles vérifiables ont réellement été
             éprouvées — une section vide vaudrait mieux qu'un 100 % inventé. */}
             {adherence.length > 0 && (
-              <Card className="p-4 md:p-5">
+              <Card className="p-3 md:p-4">
                 <h3 className="tv-title mb-1">{t("mistakes.adherence")}</h3>
                 <p className="tv-row-label mb-3">
                   {t("mistakes.adherenceSub").replace("{n}", String(ADHERENCE_WINDOW_DAYS))}
@@ -573,7 +573,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
             {b.totalIncidents > 0 && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Session + day distribution */}
-                <Card className="p-4 md:p-5 animate-fade-in-up stagger-6 space-y-4">
+                <Card className="p-3 md:p-4 animate-fade-in-up stagger-6 space-y-4">
                   <div>
                     <h3 className="tv-title mb-2">{t("mistakes.bySession")}</h3>
                     <div className="space-y-2">

@@ -54,7 +54,7 @@ export default function UpgradeModal({ open, onClose }: { open: boolean; onClose
       wrapperClassName="z-[var(--tv-z-modal-top)]"
       className="md:max-w-2xl"
     >
-      <div className="p-5 md:p-6">
+      <div className="p-4 md:p-5">
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2 className="font-display text-sm font-bold tracking-tight text-white">

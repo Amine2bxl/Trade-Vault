@@ -45,10 +45,11 @@ affiche des chiffres : sa personnalité vient de la densité et de l'alignement.
 | `--tv-t-caption` | 12px | Légende — `.tv-prose` |
 | `--tv-t-micro` | 11px | Mention, libellé — `.tv-hint`, `.tv-label` |
 
-Sur téléphone, l'app connectée resserre cette échelle (display 34, h1 23,
-h2 17, h3 14, body 13) dans la couche « densité mobile » de `styles.css` :
-y modifier les valeurs, jamais au point d'appel. Une taille arbitraire
-≥ 14 px s'écrit en `rem` pour suivre la base mobile.
+L'app connectée resserre cette échelle (display 36 / 32 sur téléphone, h1
+24 / 22, h2 17 / 16, h3 14, body 13,5 / 13) sur une base fluide, dans la
+couche « densité de l'app » de `styles.css` : y modifier les valeurs, jamais
+au point d'appel. Une taille arbitraire ≥ 14 px s'écrit en `rem` pour suivre
+la base. La vitrine garde le tableau ci-dessus.
 
 **Plancher assumé : 10px**, et uniquement pour un libellé en capitales ou une
 mention. Rien sous 10px. Du texte réel à lire : 12px minimum.

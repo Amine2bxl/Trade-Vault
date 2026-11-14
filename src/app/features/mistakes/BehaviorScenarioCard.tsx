@@ -22,7 +22,7 @@ export function BehaviorScenarioCard({ trades }: { trades: Trade[] }) {
   const r = useMemo(() => stopAfterLossesScenario(trades, Number(n)), [trades, n]);
 
   return (
-    <Card className="p-4 md:p-5">
+    <Card className="p-3 md:p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <h3 className="tv-title flex flex-wrap items-center gap-2">

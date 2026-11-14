@@ -661,7 +661,7 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <div className="glass animate-fade-in-up rounded-3xl p-4 md:p-5">
+    <div className="glass animate-fade-in-up rounded-3xl p-3 md:p-4">
       <div className="mb-4 flex items-start gap-3">
         <span className="card-header-icon shrink-0">
           <Icon className="h-4 w-4" />

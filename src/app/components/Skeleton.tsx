@@ -94,7 +94,7 @@ export function PageSkeleton() {
       </div>
 
       {/* Equity hero */}
-      <div className="glass rounded-3xl p-4 md:p-6 mb-4 md:mb-6">
+      <div className="glass rounded-3xl p-3 md:p-5 mb-4 md:mb-6">
         <div className="flex items-start justify-between gap-3 mb-4">
           <div className="space-y-2">
             <Skeleton className="h-2.5 w-24 rounded" />
@@ -185,11 +185,11 @@ export function ChartSkeleton() {
           </div>
         ))}
       </div>
-      <div className="glass rounded-3xl p-4 md:p-6 mb-6">
+      <div className="glass rounded-3xl p-3 md:p-5 mb-6">
         <Skeleton className="h-3.5 w-40 mb-5 rounded" />
         <CurveGhost className="h-56 md:h-80" />
       </div>
-      <div className="glass rounded-2xl p-4 md:p-6 mb-6">
+      <div className="glass rounded-2xl p-3 md:p-5 mb-6">
         <Skeleton className="h-3.5 w-32 mb-5 rounded" />
         <div className="flex items-end gap-2 h-40 md:h-52">
           {bars.map((h, i) => (
@@ -203,13 +203,13 @@ export function ChartSkeleton() {
         </div>
       </div>
       <div className="grid md:grid-cols-2 gap-4">
-        <div className="glass rounded-2xl p-4 md:p-6">
+        <div className="glass rounded-2xl p-3 md:p-5">
           <Skeleton className="h-3.5 w-32 mb-5 rounded" />
           <div className="flex items-center justify-center py-4">
             <div className="skeleton w-36 h-36 rounded-full" />
           </div>
         </div>
-        <div className="glass rounded-2xl p-4 md:p-6">
+        <div className="glass rounded-2xl p-3 md:p-5">
           <Skeleton className="h-3.5 w-32 mb-5 rounded" />
           <div className="space-y-3 pt-2">
             {[0, 1, 2, 3].map((i) => (
@@ -330,7 +330,7 @@ export function CalculatorSkeleton() {
     <Shell width="max-w-[860px]">
       <Skeleton className="h-11 w-56 rounded-2xl mb-5" />
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px] items-start">
-        <div className="glass-strong rounded-3xl p-5 md:p-6 space-y-4">
+        <div className="glass-strong rounded-3xl p-4 md:p-5 space-y-4">
           <Skeleton className="h-2.5 w-40 rounded" />
           <div className="grid grid-cols-2 gap-3">
             {[0, 1].map((i) => (
@@ -356,7 +356,7 @@ export function CalculatorSkeleton() {
             ))}
           </div>
         </div>
-        <div className="glass-strong rounded-3xl p-5 md:p-6">
+        <div className="glass-strong rounded-3xl p-4 md:p-5">
           <div className="flex items-center gap-2 mb-4">
             <Skeleton className="h-8 w-8 rounded-xl" />
             <Skeleton className="h-3.5 w-28 rounded" />
@@ -383,7 +383,7 @@ export function CalculatorSkeleton() {
 export function JarvisSkeleton() {
   return (
     <Shell width="max-w-4xl">
-      <div className="rounded-2xl border border-cyan-500/15 bg-cyan-500/[0.05] p-4 md:p-5 mb-4 flex items-start gap-3.5">
+      <div className="rounded-2xl border border-cyan-500/15 bg-cyan-500/[0.05] p-3 md:p-4 mb-4 flex items-start gap-3.5">
         <Skeleton className="h-11 w-11 rounded-2xl shrink-0" />
         <div className="flex-1 space-y-2">
           <Skeleton className="h-2.5 w-28 rounded" />
@@ -481,7 +481,7 @@ export function SubscriptionSkeleton() {
 export function CalendarSkeleton() {
   return (
     <Shell>
-      <div className="glass rounded-2xl p-4 md:p-5">
+      <div className="glass rounded-2xl p-3 md:p-4">
         <div className="flex items-center justify-between mb-5">
           <Skeleton className="h-6 w-36 rounded-lg" />
           <div className="flex gap-2">

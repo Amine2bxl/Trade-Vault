@@ -255,7 +255,7 @@ export default function LotSizeCalculator({ onAddTrade }: LotSizeCalculatorProps
           </div>
 
           {/* ── Capital — verrouillé, prérempli depuis le compte sélectionné ── */}
-          <div className="glass-strong rounded-3xl p-4 md:p-5 animate-fade-in-up stagger-1">
+          <div className="glass-strong rounded-3xl p-3 md:p-4 animate-fade-in-up stagger-1">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2.5">
                 <Lock className="w-4 h-4 text-[var(--tv-highlight)] shrink-0" />
@@ -276,7 +276,7 @@ export default function LotSizeCalculator({ onAddTrade }: LotSizeCalculatorProps
           </div>
 
           {/* ── Risque — un clic, quatre tailles ── */}
-          <div className="glass-strong rounded-3xl p-4 md:p-5 animate-fade-in-up stagger-2">
+          <div className="glass-strong rounded-3xl p-3 md:p-4 animate-fade-in-up stagger-2">
             <div className="flex items-center justify-between gap-3 mb-3">
               <div className="flex items-center gap-2.5">
                 <Gauge className="w-4 h-4 text-[var(--tv-highlight)] shrink-0" />
@@ -363,7 +363,7 @@ export default function LotSizeCalculator({ onAddTrade }: LotSizeCalculatorProps
           </div>
 
           {/* ── Instrument — une seule saisie : la distance de stop ── */}
-          <div className="glass-strong rounded-3xl p-4 md:p-5 animate-fade-in-up stagger-3">
+          <div className="glass-strong rounded-3xl p-3 md:p-4 animate-fade-in-up stagger-3">
             <div className="flex items-center gap-2.5 mb-3">
               <Layers className="w-4 h-4 text-[var(--tv-highlight)] shrink-0" />
               <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
@@ -451,7 +451,7 @@ export default function LotSizeCalculator({ onAddTrade }: LotSizeCalculatorProps
         {/* ══ Colonne droite : la taille, en direct ══ */}
         <div
           className={cn(
-            "relative overflow-hidden glass-strong rounded-3xl p-4 md:p-5 animate-fade-in-up stagger-4 border transition-colors md:sticky md:top-4",
+            "relative overflow-hidden glass-strong rounded-3xl p-3 md:p-4 animate-fade-in-up stagger-4 border transition-colors md:sticky md:top-4",
             hasResult ? "border-[var(--tv-border-accent)]" : "border-transparent",
           )}
         >

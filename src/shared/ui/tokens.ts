@@ -130,19 +130,22 @@ export const PAGE_WIDTH = "max-w-[1400px]";
    onglets de la section, rien ne doit changer de place. */
 export const SETTINGS_WIDTH = "max-w-[1040px]";
 
+/* Un cran plus serré que la première version : les cartes se lisaient
+   « épaisses » — beaucoup de marge autour de peu de contenu. Ces pas se
+   multiplient en plus par la base fluide de l'app (`html.tv-app`). */
 export const density = {
   /** Card/panel inner padding. */
-  cardPad: "p-4 md:p-5",
+  cardPad: "p-3 md:p-4",
   /** Tighter variant for list rows and compact tiles. */
-  cardPadTight: "p-3.5",
+  cardPadTight: "p-2.5 md:p-3",
   /** Roomier variant, reserved for hero/feature surfaces. */
-  cardPadLoose: "p-5 md:p-6",
+  cardPadLoose: "p-4 md:p-5",
   /** Page gutters — mobile reste un cran plus serré, l'écran est étroit. */
   pagePad: "px-3 py-2 md:px-5 md:py-3",
   /** Vertical rhythm between page sections. */
-  sectionGap: "mb-3 md:mb-4",
+  sectionGap: "mb-2 md:mb-3",
   /** Grid gap between sibling cards. */
-  gridGap: "gap-3 md:gap-4",
+  gridGap: "gap-2 md:gap-3",
 } as const;
 
 /**

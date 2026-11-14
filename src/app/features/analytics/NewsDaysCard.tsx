@@ -22,7 +22,7 @@ export function NewsDaysCard({ trades }: { trades: Trade[] }) {
   const split = useMemo(() => newsDaySplit(trades, events), [trades, events]);
 
   return (
-    <Card className="p-4 md:p-5 animate-fade-in-up stagger-6">
+    <Card className="p-3 md:p-4 animate-fade-in-up stagger-6">
       <h3 className="tv-title mb-1">{t("analytics.newsDays")}</h3>
       <p className="tv-hint mb-3">{t("analytics.newsDaysSub")}</p>
       {loading ? (

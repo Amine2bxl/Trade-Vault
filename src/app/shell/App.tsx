@@ -1377,7 +1377,7 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
                page répond avec son squelette contextuel — pas de porte plein
                écran, et surtout aucune donnée peinte avant de savoir LESQUELLES
                peindre (réelles ou démonstration). */
-            <div className="p-4 md:p-5">
+            <div className="p-3 md:p-4">
               <SkeletonForPage page={page} />
             </div>
           )}

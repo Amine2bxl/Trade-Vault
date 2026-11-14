@@ -248,15 +248,23 @@ export default function Dashboard({
     ro.observe(el);
     return () => ro.disconnect();
   }, [hasTrades]);
-  const ROW_GAP = 16;
+  // Écart entre deux rangées : celui de `.dash-grid` (couche densité).
+  const ROW_GAP = 10;
   /* La courbe est la PREMIÈRE donnée de la page : sa rangée prend 58 % de la
      place, les derniers trades et l'objectif se partagent le reste. */
   // 1 px de marge : les hauteurs mesurées sont arrondies, la somme pouvait
   // dépasser d'un pixel et faire apparaître une barre de défilement.
   const rest = wide && available && heroH ? available - heroH - ROW_GAP * 2 - 1 : null;
   // …sans jamais laisser moins de 180 px aux derniers trades et à l'objectif.
-  const row1H = rest !== null ? Math.floor(Math.min(rest * 0.64, rest - 170)) : null;
-  const rowH = rest !== null && row1H !== null ? rest - row1H : null;
+  // Plafonnée : sur un grand écran, la courbe et ses quatre tuiles
+  // s'étiraient jusqu'à 400 px — des blocs épais autour d'un seul chiffre.
+  // Un écran plus haut montre la même composition, pas des cartes plus
+  // grosses ; le surplus revient aux derniers trades, puis reste libre.
+  const ROW1_MAX = 300;
+  const ROW2_MAX = 80 + 6 * 58;
+  const row1H = rest !== null ? Math.floor(Math.min(rest * 0.64, rest - 170, ROW1_MAX)) : null;
+  // La seconde rangée ne dépasse pas ce que six trades occupent.
+  const rowH = rest !== null && row1H !== null ? Math.min(rest - row1H, ROW2_MAX) : null;
   const fit = rowH !== null && row1H !== null && rowH >= 160 && row1H >= 180;
   /* Fenêtre basse (≈ 768 px) : le héros se resserre — la pilule du compte,
      déjà dans le rail, s'efface — pour rendre la place aux deux rangées. Le
@@ -266,12 +274,17 @@ export default function Dashboard({
   const tight = fit && (rowH as number) < 250;
   const tightWidgets = fit && (row1H as number) < 260;
   // En-tête de carte (titre + marge) et rembourrage : ce que le contenu n'a pas.
-  const CARD_CHROME = 86;
-  // Hauteur d'une ligne de trade : 58 px, 50 px en rangée serrée (pastille de 36).
+  // Valeurs prises à la base la plus large (15 px) : une base plus petite
+  // montre au pire une ligne de moins, jamais une ligne coupée.
+  const CARD_CHROME = 80;
+  // Hauteur d'une ligne de trade : 58 px, 50 px en rangée serrée.
   const ROW_ITEM = tight ? 50 : 58;
   const listRows = fit
     ? Math.max(1, Math.min(6, Math.floor(((rowH as number) - CARD_CHROME) / ROW_ITEM)))
     : 4;
+  // Les quatre tuiles de chiffres s'empilent en bandes fines à côté de la
+  // courbe dès que la rangée a la hauteur de quatre bandes.
+  const stackWidgets = fit && (row1H as number) >= 280;
   const fitRow = fit ? ({ height: rowH as number } as CSSProperties) : undefined;
   const fitRow1 = fit ? ({ height: row1H as number } as CSSProperties) : undefined;
 
@@ -632,7 +645,10 @@ export default function Dashboard({
                 {/* ── 2. LA COURBE ET SES QUATRE CHIFFRES ── */}
                 <div className="dash-grid">
                   <div
-                    className="stat-card-elevated dash-span-2 overflow-hidden p-4 md:p-5"
+                    className={cn(
+                      "stat-card-elevated dash-span-2 overflow-hidden",
+                      density.cardPad,
+                    )}
                     style={fitRow1}
                   >
                     <div className="dash-card-head">
@@ -684,7 +700,10 @@ export default function Dashboard({
 
                   {/* Chaque widget affiche son échantillon : un chiffre sans
                     son `n` ne se lit pas (AGENTS.md). */}
-                  <div className="dash-widgets" style={fitRow1}>
+                  <div
+                    className={cn("dash-widgets", stackWidgets && "dash-widgets-stack")}
+                    style={fitRow1}
+                  >
                     <Metric
                       compact={tightWidgets}
                       title={t("stats.winRate")}
@@ -774,7 +793,10 @@ export default function Dashboard({
 
                 {/* ── 3. LES DERNIERS TRADES ET L'OBJECTIF ── */}
                 <div className="dash-grid">
-                  <div className="stat-card dash-span-2 overflow-hidden p-4 md:p-5" style={fitRow}>
+                  <div
+                    className={cn("stat-card dash-span-2 overflow-hidden", density.cardPad)}
+                    style={fitRow}
+                  >
                     <div className="dash-card-head">
                       <h2 className="dash-card-title">{t("dashboard.recentTrades")}</h2>
                       {onOpenJournal && (
@@ -854,7 +876,10 @@ export default function Dashboard({
                     )}
                   </div>
 
-                  <div className="stat-card dash-goal overflow-hidden p-4 md:p-5" style={fitRow}>
+                  <div
+                    className={cn("stat-card dash-goal overflow-hidden", density.cardPad)}
+                    style={fitRow}
+                  >
                     <div className="dash-card-head">
                       <h2 className="dash-card-title">{t("copilot.objTitle")}</h2>
                       <Target className="h-4 w-4 text-slate-500" aria-hidden />

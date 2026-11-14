@@ -144,13 +144,18 @@ titre `.tv-large-title`), `h2` (20), `h3` (15), `body`, `body-sm`, `caption`,
 (tabulaires). Libellés : `.tv-label` (petites capitales espacées). Détail :
 skill `typography`.
 
-**Densité mobile** (`html.tv-app`, sous 768 px, fin de `styles.css`) : l'app
-connectée passe à une base de 13–14 px (`clamp(13px, 3.6vw, 14px)`), donc
-toute mesure Tailwind en rem suit ; l'échelle descend à `display` 34, `h1` 23,
-`h2` 17, `h3` 14, `body` 13 ; rayons, barre du bas, héros, disques d'action,
-champs (38 px) et rangées de réglages ont leur mesure resserrée au même
-endroit. Une taille de texte arbitraire ≥ 14 px s'écrit en rem pour suivre.
-La vitrine et le bureau ne changent pas. Les champs de l'app sont à 13,5 px :
+**Densité de l'app** (`html.tv-app`, fin de `styles.css`) : l'app connectée
+a une base FLUIDE — `clamp(13.5px, 10px + 0.3vw, 15px)` au bureau,
+`clamp(13px, 3.6vw, 14px)` sur téléphone — pour qu'un écran plus grand montre
+la même composition, pas des blocs plus gros ; toute mesure Tailwind en rem
+suit. Échelle resserrée : `display` 36 (32 mobile), `h1` 24 (22), `h2` 17
+(16), `h3` 14, `body` 13,5 (13) ; rayons d'un cran plus petits ; héros,
+disques d'action (40 px), champs (36 px), tuiles de chiffres et rangées de
+réglages ont leur mesure au même endroit. Les pas `density` sont `p-3 md:p-4`
+(carte), `p-2.5 md:p-3` (serré), `p-4 md:p-5` (héros). Une taille de texte
+arbitraire ≥ 14 px s'écrit en rem pour suivre. Tableau de bord du bureau :
+rangée de la courbe plafonnée à 300 px, ses quatre chiffres en bandes fines.
+La vitrine ne change pas. Les champs de l'app sont à 13,5 px :
 le zoom de saisie d'iOS est coupé par `maximum-scale=1`, posé sur la balise
 viewport par `shell/App.tsx` pour l'app seule.
 
@@ -254,7 +259,7 @@ Réutiliser avant de restyler. Graphes : `app/trading/chartTheme.ts` +
   guide vers l'action ; erreur honnête (un `PageErrorBoundary` par page).
 - **Formulaires** : écriture optimiste, brouillons autosauvegardés
   (`useDraftAutosave`), aucune perte silencieuse.
-- **Mobile** : barre flottante (onglets de 44 px), densité mobile (§3), zéro
+- **Mobile** : barre flottante (onglets de 44 px), densité de l'app (§3), zéro
   débordement horizontal (vérifié de 360 à 1920 px). Aucune bulle flottante
   au-dessus de la barre : le compte actif et Jarvis vivent dans l'en-tête
   (`MobileActions`), la bulle de Jarvis ne paraît que pour refermer son
