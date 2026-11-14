@@ -251,6 +251,10 @@ export default {
         const { handleEconomicCalendarCron } = await import("./backend/economic-calendar.server");
         return await handleEconomicCalendarCron(request);
       }
+      if (pathname === "/api/cron/market-history" && isCronMethod(request.method)) {
+        const { handleMarketHistoryCron } = await import("./backend/market-history.server");
+        return await handleMarketHistoryCron(request);
+      }
       // Rattrapage quotidien de la synchro broker. GET ET POST : Vercel Cron
       // appelle en GET (voir `docs/ROADMAP.md` L1), un déclenchement manuel
       // en POST. Le secret partagé est exigé dans les deux cas.

@@ -3,6 +3,18 @@
 Journal des changements **structurels** (pas des features ni des correctifs,
 qui vivent dans l'historique git et les PR).
 
+## 2026-11-14 — Saisonnalité de marché mesurée
+
+- Nouvelle source : `modules/market-history` (chaîne Yahoo → Stooq → FRED,
+  validation, contrôle croisé), cron quotidien `market-history`, tables
+  `market_monthly_closes` / `market_history_assets` / `market_history_sync`
+  (migration `20261114130000`, additive, lecture publique).
+- `domain/marketSeasonality` : moyenne, part positive et `n` par mois ; aucun
+  chiffre sous 5 années.
+- Saisonnalité : vue « Marchés » (actifs entièrement mesurés, provenance
+  affichée) et « Mon journal ». Le jeu de chiffres saisonniers écrit à la
+  main (`ASSET_SEASONALITY`) est supprimé.
+
 ## 2026-11-14 — Recherche ⌘K et filtres à deux gestes
 
 - Palette ⌘K : une surface centrée (champ, lignes de 40 px avec logos et

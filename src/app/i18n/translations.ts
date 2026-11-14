@@ -1713,6 +1713,8 @@ const en = {
   "seasonality.curvePeak": "Typical peak",
   "seasonality.curveDip": "Deepest dip",
   "seasonality.curveDipHint": "Peak-to-trough in the average year",
+  "seasonality.viewMarket": "Markets",
+  "seasonality.viewJournal": "My journal",
   "seasonality.mineTitle": "Your equity",
   "seasonality.mineSub": "Your journal trades on this market",
   "seasonality.mineEmpty": "No trade on this market yet",

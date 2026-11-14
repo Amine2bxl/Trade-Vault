@@ -1659,6 +1659,8 @@ const fr: Dict = {
   "seasonality.curvePeak": "Sommet type",
   "seasonality.curveDip": "Creux le plus profond",
   "seasonality.curveDipHint": "Du sommet au creux de l'année moyenne",
+  "seasonality.viewMarket": "Marchés",
+  "seasonality.viewJournal": "Mon journal",
   "seasonality.mineTitle": "Ton equity",
   "seasonality.mineSub": "Les trades de ton journal sur ce marché",
   "seasonality.mineEmpty": "Aucun trade sur ce marché pour l'instant",

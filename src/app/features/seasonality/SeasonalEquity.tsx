@@ -113,7 +113,6 @@ export function SeasonalEquity({
                 {asset.name} — {t("seasonality.curveTitle")}
               </span>
             </h3>
-            <p className="tv-hint">{t("seasonality.curveSub")}</p>
           </div>
           <span
             className={cn("tv-figure shrink-0 text-sm font-semibold", up ? "rp-pos" : "rp-neg")}
@@ -279,11 +278,12 @@ export function SeasonalEquity({
                 {t("seasonality.mineTitle")} · {asset.symbol}
               </span>
             </h3>
-            <p className="tv-hint truncate">
-              {mine.points.length > 0
-                ? `${mine.points.length} ${t("seasonality.trades")} · ${mine.symbols.join(", ")}`
-                : t("seasonality.mineSub")}
-            </p>
+            {/* Le n et les symboles comptés ; plus de phrase quand il n'y a rien. */}
+            {mine.points.length > 0 && (
+              <p className="tv-hint truncate">
+                {`${mine.points.length} ${t("seasonality.trades")} · ${mine.symbols.join(", ")}`}
+              </p>
+            )}
           </div>
           {mine.points.length > 0 && (
             <span

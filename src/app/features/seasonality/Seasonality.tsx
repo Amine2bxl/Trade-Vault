@@ -1,5 +1,8 @@
 import { usePageActions } from "@/app/contexts/PageActionsContext";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { fetchMarketSeasonality } from "@/backend/market-history.functions";
+import { MIN_YEARS_PER_MONTH } from "@/domain/marketSeasonality";
 import {
   BarChart,
   Bar,
@@ -37,7 +40,6 @@ import {
   tooltipStyle,
 } from "@/app/trading/chartTheme";
 import {
-  ASSET_SEASONALITY,
   CATEGORY_LABELS,
   MONTHS_SHORT,
   computeSeasonalStats,
@@ -71,23 +73,75 @@ interface SeasonalityProps {
   tradesLoading?: boolean;
 }
 
-// Aucun fournisseur historique vérifié n'alimente encore les moyennes
-// mensuelles par actif. Les approximations existantes restent isolées du
-// produit visible et ne doivent pas être présentées comme mesurées.
-const VERIFIED_ASSET_HISTORY_AVAILABLE = false;
+const SOURCE_VIEWS = ["market", "journal"] as const;
+const SOURCE_NAME = { yahoo: "Yahoo Finance", stooq: "Stooq", fred: "FRED" } as const;
+
+/**
+ * Les marchés synchronisés (voir `backend/market-history.functions.ts`) —
+ * seuls les actifs dont CHAQUE mois porte au moins cinq années mesurées : la
+ * page n'affiche jamais une moyenne bâtie sur trois Septembre.
+ */
+function useMarketAssets(): SeasonalAsset[] | null {
+  const read = useServerFn(fetchMarketSeasonality);
+  const [assets, setAssets] = useState<SeasonalAsset[] | null>(null);
+  useEffect(() => {
+    let live = true;
+    read()
+      .then((payload) => {
+        if (!live) return;
+        setAssets(
+          payload.assets
+            .filter(
+              (a) =>
+                a.seasonality.monthlyAvg.every((v) => v !== null) &&
+                a.seasonality.years >= MIN_YEARS_PER_MONTH,
+            )
+            .map((a) => ({
+              symbol: a.symbol,
+              name: a.name,
+              category: a.category,
+              monthlyAvg: a.seasonality.monthlyAvg as number[],
+              monthlyWin: a.seasonality.monthlyWin as number[],
+              years: a.seasonality.years,
+              source: a.source,
+              witness: a.witness,
+            })),
+        );
+      })
+      .catch(() => live && setAssets([]));
+    return () => {
+      live = false;
+    };
+  }, [read]);
+  return assets;
+}
 
 export default function Seasonality({ trades, tradesLoading }: SeasonalityProps) {
+  const { t } = useT();
   const { boxRef, height } = useAvailableHeight();
+  const market = useMarketAssets();
+  const [source, setSource] = usePageView("seasonality.source", SOURCE_VIEWS, "market");
+  const hasMarket = !!market && market.length > 0;
   return (
     <PageContainer ref={boxRef} fit height={height}>
-      {VERIFIED_ASSET_HISTORY_AVAILABLE ? (
+      {hasMarket && (
+        <SubNav
+          ariaLabel={t("common.viewMode")}
+          value={source}
+          onChange={setSource}
+          items={[
+            { id: "market", label: t("seasonality.viewMarket") },
+            { id: "journal", label: t("seasonality.viewJournal") },
+          ]}
+          className="mb-3 w-fit max-w-full shrink-0 self-start"
+        />
+      )}
+      {hasMarket && source === "market" ? (
         <ScrollArea className="tv-grow">
-          <AssetSeasonality trades={trades} />
+          <AssetSeasonality trades={trades} assets={market} />
         </ScrollArea>
       ) : (
-        <>
-          <JournalSeasonality trades={trades} tradesLoading={tradesLoading} />
-        </>
+        <JournalSeasonality trades={trades} tradesLoading={tradesLoading} />
       )}
     </PageContainer>
   );
@@ -97,21 +151,25 @@ export default function Seasonality({ trades, tradesLoading }: SeasonalityProps)
  * Asset seasonal tendencies (curated historical dataset)
  * ============================================================ */
 
-function AssetSeasonality({ trades }: { trades: Trade[] }) {
+function AssetSeasonality({ trades, assets }: { trades: Trade[]; assets: SeasonalAsset[] }) {
   const chartAnimation = useChartAnimation();
   const { t, lang } = useT();
   const { user } = useAuth();
   const catKey = nsKey(user?.id, "seasonality.cat");
   const symKey = nsKey(user?.id, "seasonality.sym");
   const savedCat = usePersistedValue<AssetCategory>(catKey, "indices");
-  const category: AssetCategory = (Object.keys(CATEGORY_LABELS) as AssetCategory[]).includes(
-    savedCat,
-  )
-    ? savedCat
-    : "indices";
+  // Seules les familles qui ont des actifs mesurés sont proposées.
+  const categories = useMemo(
+    () =>
+      (Object.keys(CATEGORY_LABELS) as AssetCategory[]).filter((c) =>
+        assets.some((a) => a.category === c),
+      ),
+    [assets],
+  );
+  const category: AssetCategory = categories.includes(savedCat) ? savedCat : categories[0];
   const inCategory = useMemo(
-    () => ASSET_SEASONALITY.filter((a) => a.category === category),
-    [category],
+    () => assets.filter((a) => a.category === category),
+    [assets, category],
   );
 
   const savedSym = usePersistedValue<string>(symKey, "");
@@ -158,7 +216,7 @@ function AssetSeasonality({ trades }: { trades: Trade[] }) {
               writeJSON(catKey, v);
               writeJSON(symKey, "");
             }}
-            options={(Object.keys(CATEGORY_LABELS) as AssetCategory[]).map((c) => ({
+            options={categories.map((c) => ({
               value: c,
               label: CATEGORY_LABELS[c],
             }))}
@@ -223,10 +281,13 @@ function AssetSeasonality({ trades }: { trades: Trade[] }) {
             <h3 className="tv-title mb-0.5">
               {asset.name} — {t("seasonality.monthlyBias")}
             </h3>
-            <p className="tv-hint">{t("seasonality.monthlyBiasSub")}</p>
           </div>
+          {/* La provenance, toujours : qui a servi la série, et qui l'a
+              confirmée. */}
           <span className="tv-figure tv-figure-secondary text-[10px] text-slate-500 shrink-0">
             {asset.years} {t("seasonality.years")}
+            {asset.source && ` · ${SOURCE_NAME[asset.source]}`}
+            {asset.witness && ` ✓ ${SOURCE_NAME[asset.witness]}`}
           </span>
         </div>
         <div className="h-60 md:h-72">
