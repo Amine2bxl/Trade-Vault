@@ -21,6 +21,7 @@ import {
   Upload,
 } from "@/shared/ui/icons";
 import { Trade, isBreakEven } from "@/app/types";
+import { measuredR } from "@/domain/trade";
 import { computeStats, formatPnl, formatPct, formatShortDate } from "@/domain/tradeCalcs";
 import { CHART_GREEN, CHART_RED } from "@/app/trading/chartTheme";
 import { loadOnboarding, MONTHLY_TARGET_EVENT } from "@/app/store/profile";
@@ -29,7 +30,7 @@ import { useAuth } from "@/app/contexts/AuthContext";
 import { useAccounts } from "@/app/contexts/AccountContext";
 import { useToast } from "@/app/contexts/ToastContext";
 import { useHasTradeDraft } from "@/app/utils/persistence";
-import { PageContainer, Metric, Button, RollingFigure, ActionButton, density } from "@/shared/ui";
+import { PageContainer, Button, RollingFigure, ActionButton, density } from "@/shared/ui";
 import { usePageActions, usePageLead } from "@/app/contexts/PageActionsContext";
 import { DeferredFallback } from "@/app/shell/PageTransition";
 import { cn } from "@/shared/ui/cn";
@@ -217,7 +218,7 @@ export default function Dashboard({
   }, [trades, cutoff]);
 
   const stats = useMemo(() => computeStats(filtered), [filtered]);
-  const recentTrades = useMemo(() => [...filtered].sort(newestFirst).slice(0, 6), [filtered]);
+  const recentTrades = useMemo(() => [...filtered].sort(newestFirst).slice(0, 12), [filtered]);
 
   /* ── UN ÉCRAN, PAS UNE PAGE ────────────────────────────────────────────
      Sur ordinateur, le tableau de bord tient dans la fenêtre : le héros garde
@@ -249,47 +250,41 @@ export default function Dashboard({
     return () => ro.disconnect();
   }, [hasTrades]);
   // Écart entre deux rangées : celui de `.dash-grid` (couche densité).
-  const ROW_GAP = 10;
-  /* La courbe est la PREMIÈRE donnée de la page : sa rangée prend 58 % de la
-     place, les derniers trades et l'objectif se partagent le reste. */
-  // 1 px de marge : les hauteurs mesurées sont arrondies, la somme pouvait
-  // dépasser d'un pixel et faire apparaître une barre de défilement.
-  const rest = wide && available && heroH ? available - heroH - ROW_GAP * 2 - 1 : null;
-  // …sans jamais laisser moins de 180 px aux derniers trades et à l'objectif.
-  // Plafonnée : sur un grand écran, la courbe et ses quatre tuiles
-  // s'étiraient jusqu'à 400 px — des blocs épais autour d'un seul chiffre.
-  // Un écran plus haut montre la même composition, pas des cartes plus
-  // grosses ; le surplus revient aux derniers trades, puis reste libre.
-  const ROW1_MAX = 300;
-  const ROW2_MAX = 80 + 6 * 58;
-  const row1H = rest !== null ? Math.floor(Math.min(rest * 0.64, rest - 170, ROW1_MAX)) : null;
-  // La seconde rangée ne dépasse pas ce que six trades occupent.
-  const rowH = rest !== null && row1H !== null ? Math.min(rest - row1H, ROW2_MAX) : null;
-  const fit = rowH !== null && row1H !== null && rowH >= 160 && row1H >= 180;
+  /* LE TABLEAU PREND TOUT CE QUE LE HÉROS LAISSE — au bureau comme sur
+     téléphone : la page ne défile jamais. La courbe s'étire avec l'écran ;
+     les chiffres et le mois gardent leur hauteur ; les derniers trades
+     montrent autant de lignes entières que la place en contient. */
+  const BOARD_GAP = 10;
+  const boardH = available && heroH ? Math.max(280, available - heroH - BOARD_GAP) : null;
+  const boardStyle = boardH ? ({ height: boardH } as CSSProperties) : undefined;
   /* Fenêtre basse (≈ 768 px) : le héros se resserre — la pilule du compte,
-     déjà dans le rail, s'efface — pour rendre la place aux deux rangées. Le
-     mode dépend de la place disponible, jamais de la hauteur du héros : pas
-     de boucle de mesure. */
+     déjà dans le rail, s'efface. Le mode dépend de la place disponible,
+     jamais de la hauteur du héros : pas de boucle de mesure. */
   const short = wide && available !== undefined && available < 700;
-  const tight = fit && (rowH as number) < 250;
-  const tightWidgets = fit && (row1H as number) < 260;
-  // En-tête de carte (titre + marge) et rembourrage : ce que le contenu n'a pas.
-  // Valeurs prises à la base la plus large (15 px) : une base plus petite
-  // montre au pire une ligne de moins, jamais une ligne coupée.
-  const CARD_CHROME = 80;
-  // Hauteur d'une ligne de trade : 58 px, 50 px en rangée serrée.
-  const ROW_ITEM = tight ? 50 : 58;
-  const listRows = fit
-    ? Math.max(1, Math.min(6, Math.floor(((rowH as number) - CARD_CHROME) / ROW_ITEM)))
-    : 4;
-  // Les quatre tuiles de chiffres s'empilent en bandes fines à côté de la
-  // courbe dès que la rangée a la hauteur de quatre bandes.
-  const stackWidgets = fit && (row1H as number) >= 280;
-  const fitRow = fit ? ({ height: rowH as number } as CSSProperties) : undefined;
-  const fitRow1 = fit ? ({ height: row1H as number } as CSSProperties) : undefined;
 
-  // % variation of the period relative to the equity at its start
-  // (starting balance + PnL accumulated before the period).
+  // Combien de derniers trades tiennent ENTIERS dans leur panneau.
+  const recentRef = useRef<HTMLDivElement | null>(null);
+  const [recentFit, setRecentFit] = useState(4);
+  useIsoLayoutEffect(() => {
+    const box = recentRef.current;
+    if (!box || typeof ResizeObserver === "undefined") return;
+    const count = () => {
+      const rows = Array.from(box.children) as HTMLElement[];
+      const first = rows[0];
+      if (!first) return;
+      const wasHidden = first.hidden;
+      first.hidden = false;
+      const rowH = first.offsetHeight || 1;
+      first.hidden = wasHidden;
+      const n = Math.max(1, Math.floor((box.clientHeight + 1) / rowH));
+      setRecentFit((prev) => (prev === n ? prev : n));
+    };
+    count();
+    const ro = new ResizeObserver(count);
+    ro.observe(box);
+    return () => ro.disconnect();
+  }, [hasTrades]);
+
   const baseline = startingBalance + pnlBefore;
   const periodPct = baseline > 0 ? stats.totalPnl / baseline : null;
 
@@ -325,6 +320,81 @@ export default function Dashboard({
     };
   }, [trades, startingBalance, monthlyTarget]);
   const daysLeft = tradingDaysLeftInMonth();
+  const hasObjective = objective.targetPct !== null && objective.targetAmount !== null;
+  const objectiveShare =
+    hasObjective && (objective.targetAmount as number) > 0
+      ? Math.max(0, objective.monthPnl / (objective.targetAmount as number))
+      : 0;
+
+  /* LES QUATRE CHIFFRES — chacun dit sur sa seconde ligne d'où il vient,
+     en données, pas en phrase : 13G · 7P, ce qui a été gagné / perdu, le
+     nombre de trades au risque connu, les séances. C'est aussi leur `n`. */
+  const kpis = useMemo(() => {
+    let won = 0;
+    let lost = 0;
+    for (const tr of filtered) {
+      if (tr.pnl > 0) won += tr.pnl;
+      else if (tr.pnl < 0) lost -= tr.pnl;
+    }
+    const decided = stats.wins + stats.losses;
+    return [
+      {
+        label: t("stats.winRate"),
+        short: t("stats.winRate"),
+        subShort: `${stats.wins}·${stats.losses}`,
+        value: decided > 0 ? formatPct(stats.winRate) : "—",
+        sub: t("dashboard.winLoss")
+          .replace("{w}", String(stats.wins))
+          .replace("{l}", String(stats.losses)),
+        tone: decided === 0 ? "" : stats.winRate >= 0.5 ? "text-emerald-400" : "text-red-400",
+        pct: stats.winRate,
+        color: stats.winRate >= 0.5 ? CHART_GREEN : CHART_RED,
+      },
+      {
+        label: t("dashboard.profitFactor"),
+        short: "PF",
+        subShort: `n ${stats.totalTrades}`,
+        value: stats.profitFactor === null ? "—" : stats.profitFactor.toFixed(2),
+        sub:
+          decided > 0
+            ? `${formatMoney(won, { whole: true })} / ${formatMoney(-lost, { whole: true })}`
+            : "—",
+        tone:
+          stats.profitFactor === null
+            ? ""
+            : stats.profitFactor >= 1
+              ? "text-emerald-400"
+              : "text-red-400",
+        pct: stats.profitFactor === null ? 0 : stats.profitFactor / 3,
+        color: stats.profitFactor !== null && stats.profitFactor >= 1 ? CHART_GREEN : CHART_RED,
+      },
+      {
+        label: t("dashboard.avgR"),
+        short: t("dashboard.avgR"),
+        subShort: `n ${stats.rSampleSize}`,
+        value:
+          stats.avgRR === null
+            ? "—"
+            : `${stats.avgRR >= 0 ? "+" : "−"}${Math.abs(stats.avgRR).toFixed(2)} R`,
+        sub: t("dashboard.rKnown")
+          .replace("{n}", String(stats.rSampleSize))
+          .replace("{total}", String(stats.totalTrades)),
+        tone: stats.avgRR === null ? "" : stats.avgRR >= 0 ? "text-emerald-400" : "text-red-400",
+        pct: stats.avgRR === null ? 0 : Math.abs(stats.avgRR) / 2,
+        color: stats.avgRR !== null && stats.avgRR < 0 ? CHART_RED : CHART_GREEN,
+      },
+      {
+        label: t("dashboard.discipline"),
+        short: t("dashboard.discipline"),
+        subShort: `n ${edge.tradedDays}`,
+        value: edge.score === null ? "—" : `${Math.round(edge.score)}/100`,
+        sub: t("dashboard.sampleSessions").replace("{n}", String(edge.tradedDays)),
+        tone: "",
+        pct: edge.score === null ? 0 : edge.score / 100,
+        color: CHART_GREEN,
+      },
+    ];
+  }, [filtered, stats, edge.score, edge.tradedDays, t]);
   const unread = useUnreadCount(user?.id);
   /* Le libellé de la période : « octobre » pour le mois en cours (le nom du
      mois dans la langue de l'app), sinon la période en toutes lettres. */
@@ -435,10 +505,7 @@ export default function Dashboard({
 
   return (
     <PageContainer>
-      <div
-        ref={boxRef}
-        className={cn(fit && "dash-fit", tight && "dash-tight", short && "dash-short")}
-      >
+      <div ref={boxRef} className={cn(boardH !== null && "dash-fit", short && "dash-short")}>
         {/* Le « Bonjour » horodaté a été retiré. C'était la PREMIÈRE chose que
           l'œil rencontrait sur la page la plus consultée du produit, et il ne
           portait aucune information : ni un chiffre, ni un état, ni une action.
@@ -642,32 +709,51 @@ export default function Dashboard({
                   </div>
                 </section>
 
-                {/* ── 2. LA COURBE ET SES QUATRE CHIFFRES ── */}
-                <div className="dash-grid">
-                  <div
-                    className={cn(
-                      "stat-card-elevated dash-span-2 overflow-hidden",
-                      density.cardPad,
-                    )}
-                    style={fitRow1}
-                  >
-                    <div className="dash-card-head">
-                      <div className="flex min-w-0 items-center gap-4">
-                        <h2 className="dash-card-title">{t("dashboard.equityCurve")}</h2>
-                        {/* La légende monte dans l'en-tête : la courbe garde toute
-                            la hauteur de la carte. */}
-                        <span className="dash-legend" aria-hidden>
-                          <i style={{ background: CHART_GREEN }} />
-                          {t("chart.balance")}
-                        </span>
-                        <span className="dash-legend" aria-hidden>
-                          <i style={{ background: CHART_RED }} />
-                          {t("chart.breakEven")}
-                        </span>
-                      </div>
+                {/* ── 2. LE TABLEAU — trois panneaux d'une même matière ──
+                   À gauche, la courbe coiffée de ses quatre chiffres ; à
+                   droite, le mois en cours puis les derniers trades. Même
+                   plaque, même rayon, même en-tête : rien ne s'étire autour
+                   d'un chiffre isolé, la page ne défile pas. */}
+                <div className="dash-board" style={boardStyle}>
+                  <section className="dash-panel dash-main" aria-label={t("dashboard.equityCurve")}>
+                    <div className="dash-kpis">
+                      {kpis.map((k) => (
+                        <div key={k.label} className="dash-kpi">
+                          {/* Téléphone : libellé et provenance courts — quatre
+                              cases tiennent sur une ligne, chacune garde son n. */}
+                          <span className="tv-label dash-kpi-label">
+                            <span className="max-sm:hidden">{k.label}</span>
+                            <span className="sm:hidden">{k.short}</span>
+                          </span>
+                          <span className={cn("tv-figure dash-kpi-value", k.tone)}>{k.value}</span>
+                          <span className="dash-kpi-sub tv-num">
+                            <span className="max-sm:hidden">{k.sub}</span>
+                            <span className="sm:hidden">{k.subShort}</span>
+                          </span>
+                          <span className="dash-kpi-bar" aria-hidden>
+                            <span
+                              style={{
+                                width: `${Math.round(Math.max(0, Math.min(1, k.pct)) * 100)}%`,
+                                background: k.color,
+                              }}
+                            />
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="dash-panel-head">
+                      <h2 className="dash-panel-title">{t("dashboard.equityCurve")}</h2>
+                      <span className="dash-legend" aria-hidden>
+                        <i style={{ background: CHART_GREEN }} />
+                        {t("chart.balance")}
+                      </span>
+                      <span className="dash-legend" aria-hidden>
+                        <i style={{ background: CHART_RED }} />
+                        {t("chart.breakEven")}
+                      </span>
                       <button
                         type="button"
-                        className="dash-link"
+                        className="dash-link ml-auto"
                         onClick={() =>
                           window.dispatchEvent(
                             new CustomEvent("tv:navigate", { detail: { page: "analytics" } }),
@@ -678,11 +764,8 @@ export default function Dashboard({
                         <ChevronRight className="h-3.5 w-3.5" aria-hidden />
                       </button>
                     </div>
-                    {stats.equityCurve.length > 0 ? (
-                      <div
-                        className={cn("chart-draw", !fit && "h-36 md:h-60")}
-                        style={fit ? { height: (row1H as number) - CARD_CHROME } : undefined}
-                      >
+                    <div className="dash-chart chart-draw">
+                      {stats.equityCurve.length > 0 ? (
                         <Suspense
                           fallback={
                             <div className="h-full w-full animate-pulse rounded-lg bg-white/[0.03]" />
@@ -690,258 +773,169 @@ export default function Dashboard({
                         >
                           <EquityChart data={stats.equityCurve} legend={false} />
                         </Suspense>
-                      </div>
-                    ) : (
-                      <div className="h-36 md:h-60 flex items-center justify-center text-slate-600 text-sm">
-                        {t("dashboard.noTradesInPeriod")}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Chaque widget affiche son échantillon : un chiffre sans
-                    son `n` ne se lit pas (AGENTS.md). */}
-                  <div
-                    className={cn("dash-widgets", stackWidgets && "dash-widgets-stack")}
-                    style={fitRow1}
-                  >
-                    <Metric
-                      compact={tightWidgets}
-                      title={t("stats.winRate")}
-                      value={stats.wins + stats.losses > 0 ? formatPct(stats.winRate) : "—"}
-                      valueClass={
-                        stats.wins + stats.losses === 0
-                          ? undefined
-                          : stats.winRate >= 0.5
-                            ? "text-emerald-400"
-                            : "text-red-400"
-                      }
-                      visual={{
-                        kind: "track",
-                        pct: stats.winRate,
-                        color: stats.winRate >= 0.5 ? CHART_GREEN : CHART_RED,
-                      }}
-                      subtitle={t("dashboard.sampleTrades").replace(
-                        "{n}",
-                        String(stats.wins + stats.losses),
-                      )}
-                      delay={0}
-                    />
-                    <Metric
-                      compact={tightWidgets}
-                      title={t("dashboard.profitFactor")}
-                      value={stats.profitFactor === null ? "—" : stats.profitFactor.toFixed(2)}
-                      valueClass={
-                        stats.profitFactor !== null && stats.profitFactor >= 1.5
-                          ? "text-emerald-400"
-                          : stats.profitFactor !== null && stats.profitFactor < 1
-                            ? "text-red-400"
-                            : undefined
-                      }
-                      visual={{
-                        kind: "track",
-                        pct: stats.profitFactor === null ? 0 : Math.min(stats.profitFactor / 3, 1),
-                        color:
-                          stats.profitFactor !== null && stats.profitFactor >= 1
-                            ? CHART_GREEN
-                            : CHART_RED,
-                      }}
-                      subtitle={t("dashboard.sampleTrades").replace(
-                        "{n}",
-                        String(stats.totalTrades),
-                      )}
-                      delay={40}
-                    />
-                    <Metric
-                      compact={tightWidgets}
-                      title={t("dashboard.avgR")}
-                      value={
-                        stats.avgRR === null
-                          ? "—"
-                          : `${stats.avgRR >= 0 ? "+" : "−"}${Math.abs(stats.avgRR).toFixed(2)} R`
-                      }
-                      valueClass={
-                        stats.avgRR === null
-                          ? undefined
-                          : stats.avgRR >= 0
-                            ? "text-emerald-400"
-                            : "text-red-400"
-                      }
-                      visual={{
-                        kind: "track",
-                        pct: stats.avgRR === null ? 0 : Math.min(Math.abs(stats.avgRR) / 2, 1),
-                        color: stats.avgRR !== null && stats.avgRR < 0 ? CHART_RED : CHART_GREEN,
-                      }}
-                      subtitle={t("dashboard.sampleTrades").replace(
-                        "{n}",
-                        String(stats.rSampleSize),
-                      )}
-                      delay={80}
-                    />
-                    <Metric
-                      compact={tightWidgets}
-                      title={t("dashboard.discipline")}
-                      value={edge.score === null ? "—" : `${Math.round(edge.score)}/100`}
-                      visual={{ kind: "track", pct: edge.score === null ? 0 : edge.score / 100 }}
-                      subtitle={t("dashboard.sampleSessions").replace(
-                        "{n}",
-                        String(edge.tradedDays),
-                      )}
-                      delay={120}
-                    />
-                  </div>
-                </div>
-
-                {/* ── 3. LES DERNIERS TRADES ET L'OBJECTIF ── */}
-                <div className="dash-grid">
-                  <div
-                    className={cn("stat-card dash-span-2 overflow-hidden", density.cardPad)}
-                    style={fitRow}
-                  >
-                    <div className="dash-card-head">
-                      <h2 className="dash-card-title">{t("dashboard.recentTrades")}</h2>
-                      {onOpenJournal && (
-                        <button type="button" className="dash-link" onClick={onOpenJournal}>
-                          {t("common.viewAll")}
-                          <ChevronRight className="h-3.5 w-3.5" aria-hidden />
-                        </button>
+                      ) : (
+                        <div className="dash-empty">{t("dashboard.noTradesInPeriod")}</div>
                       )}
                     </div>
-                    {recentTrades.length === 0 ? (
-                      <div className="py-10 text-center text-sm text-slate-600">
-                        {t("dashboard.noTradesInPeriod")}
-                      </div>
-                    ) : (
-                      <div className="dash-list">
-                        {recentTrades.slice(0, listRows).map((trade) => {
-                          const be = isBreakEven(trade);
-                          const RowTag = onEditTrade ? "button" : "div";
-                          const side =
-                            trade.direction === "long"
-                              ? t("common.long")
-                              : trade.direction === "short"
-                                ? t("common.short")
-                                : "BE";
-                          const r = trade.rMultiple;
-                          return (
-                            <RowTag
-                              key={trade.id}
-                              {...(onEditTrade
-                                ? {
-                                    type: "button" as const,
-                                    onClick: () => onEditTrade(trade),
-                                    "aria-label": `${t("common.edit")} ${trade.symbol} ${formatShortDate(trade.date)}`,
-                                  }
-                                : {})}
-                              className={cn("dash-row", onEditTrade && "dash-row-action")}
+                  </section>
+
+                  <div className="dash-side">
+                    {/* LE MOIS — l'objectif, sa jauge, puis trois chiffres du
+                        mois en cours, sur une ligne. */}
+                    <section className="dash-panel dash-month">
+                      <div className="dash-panel-head">
+                        <h2 className="dash-panel-title">{t("copilot.objTitle")}</h2>
+                        {hasObjective ? (
+                          <span className="tv-figure dash-month-pct">
+                            {formatPct(objectiveShare)}
+                          </span>
+                        ) : (
+                          onSetObjective && (
+                            <button
+                              type="button"
+                              className="dash-link ml-auto"
+                              onClick={onSetObjective}
                             >
-                              <SymbolLogo
-                                symbol={trade.symbol}
-                                size="lg"
-                                className="dash-row-logo"
-                              />
-                              <span className="dash-row-main">
-                                <span className="dash-row-title">
-                                  {trade.symbol} · {side}
-                                </span>
-                                <span className="dash-row-sub tv-num">
-                                  {formatShortDate(trade.date)}
-                                  {trade.entryTime ? ` · ${trade.entryTime}` : ""}
-                                  {trade.quantity
-                                    ? ` · ${trade.quantity} ${t("trade.contracts")}`
-                                    : ""}
-                                </span>
-                              </span>
-                              <span className="dash-row-end">
-                                <span
-                                  className={cn(
-                                    "tv-figure dash-row-pnl",
-                                    be
-                                      ? "text-slate-300"
-                                      : trade.pnl >= 0
-                                        ? "text-emerald-400"
-                                        : "text-red-400",
-                                  )}
-                                >
-                                  {formatPnl(trade.pnl)}
-                                </span>
-                                <span className="dash-row-sub tv-num">
-                                  {r >= 0 ? "+" : "−"}
-                                  {Math.abs(r).toFixed(1)} R
-                                </span>
-                              </span>
-                            </RowTag>
-                          );
-                        })}
+                              <Target className="h-3.5 w-3.5" aria-hidden />
+                              {t("copilot.objNone")}
+                            </button>
+                          )
+                        )}
                       </div>
-                    )}
-                  </div>
+                      {hasObjective && (
+                        <>
+                          <span className="dash-month-track" aria-hidden>
+                            <span
+                              style={{
+                                width: `${Math.round(Math.min(1, objectiveShare) * 100)}%`,
+                                background: objective.monthPnl >= 0 ? CHART_GREEN : CHART_RED,
+                              }}
+                            />
+                          </span>
+                          <span className="dash-kpi-sub tv-num">
+                            {t("dashboard.objOf")
+                              .replace("{a}", formatMoney(objective.monthPnl, { whole: true }))
+                              .replace(
+                                "{b}",
+                                formatMoney(objective.targetAmount as number, { whole: true }),
+                              )}
+                          </span>
+                        </>
+                      )}
+                      <div className="dash-month-stats">
+                        <span>
+                          <small className="tv-label">{t("dashboard.monthPnl")}</small>
+                          <b
+                            className={cn(
+                              "tv-figure",
+                              objective.monthTrades === 0
+                                ? "text-slate-400"
+                                : objective.monthPnl >= 0
+                                  ? "text-emerald-400"
+                                  : "text-red-400",
+                            )}
+                          >
+                            {objective.monthTrades > 0
+                              ? formatMoney(objective.monthPnl, { whole: true, signed: true })
+                              : "—"}
+                          </b>
+                        </span>
+                        <span>
+                          <small className="tv-label">{t("dashboard.ddShort")}</small>
+                          <b className="tv-figure">
+                            {objective.monthTrades > 0
+                              ? formatMoney(objective.monthDrawdown, { whole: true })
+                              : "—"}
+                          </b>
+                        </span>
+                        <span>
+                          <small className="tv-label">{t("dashboard.daysShort")}</small>
+                          <b className="tv-figure">{daysLeft}</b>
+                        </span>
+                      </div>
+                    </section>
 
-                  <div
-                    className={cn("stat-card dash-goal overflow-hidden", density.cardPad)}
-                    style={fitRow}
-                  >
-                    <div className="dash-card-head">
-                      <h2 className="dash-card-title">{t("copilot.objTitle")}</h2>
-                      <Target className="h-4 w-4 text-slate-500" aria-hidden />
-                    </div>
-                    {objective.targetPct !== null && objective.targetAmount !== null ? (
-                      <>
-                        <span className="tv-figure dash-goal-figure">
-                          {formatPct(
-                            objective.targetAmount > 0
-                              ? Math.max(0, objective.monthPnl / objective.targetAmount)
-                              : 0,
-                          )}
-                        </span>
-                        <span className="dash-row-sub tv-num">
-                          {t("dashboard.objOf")
-                            .replace("{a}", formatMoney(objective.monthPnl, { whole: true }))
-                            .replace("{b}", formatMoney(objective.targetAmount, { whole: true }))}
-                        </span>
-                        <span className="dash-goal-track" aria-hidden>
-                          <span
-                            className="metric-bar-fill"
-                            style={
-                              {
-                                "--metric-fill":
-                                  objective.targetAmount > 0
-                                    ? Math.max(
-                                        0,
-                                        Math.min(1, objective.monthPnl / objective.targetAmount),
-                                      )
-                                    : 0,
-                              } as CSSProperties
-                            }
-                          />
-                        </span>
-                      </>
-                    ) : (
-                      onSetObjective && (
-                        <Button
-                          variant="accent"
-                          size="sm"
-                          onClick={onSetObjective}
-                          className="self-start"
-                        >
-                          <Target className="h-4 w-4" aria-hidden />
-                          {t("copilot.objNone")}
-                        </Button>
-                      )
-                    )}
-                    <div className="dash-goal-tiles">
-                      <span className="dash-goal-tile">
-                        <small className="tv-label">{t("dashboard.monthDrawdown")}</small>
-                        <b className="tv-figure">
-                          {objective.monthTrades > 0
-                            ? formatMoney(objective.monthDrawdown, { whole: true })
-                            : "—"}
-                        </b>
-                      </span>
-                      <span className="dash-goal-tile">
-                        <small className="tv-label">{t("dashboard.daysLeft")}</small>
-                        <b className="tv-figure">{daysLeft}</b>
-                      </span>
-                    </div>
+                    {/* LES DERNIERS TRADES — autant de lignes ENTIÈRES que le
+                        panneau en contient : jamais une ligne coupée, jamais
+                        de défilement. */}
+                    <section className="dash-panel dash-recent">
+                      <div className="dash-panel-head">
+                        <h2 className="dash-panel-title">{t("dashboard.recentTrades")}</h2>
+                        {onOpenJournal && (
+                          <button
+                            type="button"
+                            className="dash-link ml-auto"
+                            onClick={onOpenJournal}
+                          >
+                            {t("common.viewAll")}
+                            <ChevronRight className="h-3.5 w-3.5" aria-hidden />
+                          </button>
+                        )}
+                      </div>
+                      {recentTrades.length === 0 ? (
+                        <div className="dash-empty">{t("dashboard.noTradesInPeriod")}</div>
+                      ) : (
+                        <div ref={recentRef} className="dash-recent-list">
+                          {recentTrades.map((trade, i) => {
+                            const be = isBreakEven(trade);
+                            const RowTag = onEditTrade ? "button" : "div";
+                            const side =
+                              trade.direction === "long"
+                                ? t("common.long")
+                                : trade.direction === "short"
+                                  ? t("common.short")
+                                  : "BE";
+                            // R MESURÉ seulement : « +0.0 R » pour un risque
+                            // inconnu se lisait comme un trade neutre.
+                            const r = measuredR(trade);
+                            return (
+                              <RowTag
+                                key={trade.id}
+                                hidden={i >= recentFit || undefined}
+                                {...(onEditTrade
+                                  ? {
+                                      type: "button" as const,
+                                      onClick: () => onEditTrade(trade),
+                                      "aria-label": `${t("common.edit")} ${trade.symbol} ${formatShortDate(trade.date)}`,
+                                    }
+                                  : {})}
+                                className={cn("dash-row", onEditTrade && "dash-row-action")}
+                              >
+                                <SymbolLogo symbol={trade.symbol} size="md" />
+                                <span className="dash-row-main">
+                                  <span className="dash-row-title">
+                                    {trade.symbol} · {side}
+                                  </span>
+                                  <span className="dash-row-sub tv-num">
+                                    {formatShortDate(trade.date)}
+                                    {trade.entryTime ? ` · ${trade.entryTime}` : ""}
+                                  </span>
+                                </span>
+                                <span className="dash-row-end">
+                                  <span
+                                    className={cn(
+                                      "tv-figure dash-row-pnl",
+                                      be
+                                        ? "text-slate-300"
+                                        : trade.pnl >= 0
+                                          ? "text-emerald-400"
+                                          : "text-red-400",
+                                    )}
+                                  >
+                                    {formatPnl(trade.pnl)}
+                                  </span>
+                                  <span className="dash-row-sub tv-num">
+                                    {r === null
+                                      ? "—"
+                                      : `${r >= 0 ? "+" : "−"}${Math.abs(r).toFixed(1)} R`}
+                                  </span>
+                                </span>
+                              </RowTag>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </section>
                   </div>
                 </div>
               </>

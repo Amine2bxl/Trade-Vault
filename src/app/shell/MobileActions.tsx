@@ -12,10 +12,6 @@ import { badgeLabel } from "@/modules/notifications";
 interface MobileActionsProps {
   page: Page;
   setPage: (p: Page) => void;
-  /** Ajoute le compte actif et Jarvis : les deux bulles flottantes d'autrefois,
-   *  rangées dans l'en-tête. Le tableau de bord (pilule de compte sous le
-   *  titre, Jarvis dans ses actions) et Jarvis lui-même n'en ont pas besoin. */
-  withAccount?: boolean;
 }
 
 /**
@@ -35,7 +31,7 @@ interface MobileActionsProps {
  *
  * Desktop : la barre latérale porte déjà ces trois-là, d'où `md:hidden`.
  */
-export default function MobileActions({ page, setPage, withAccount }: MobileActionsProps) {
+export default function MobileActions({ page, setPage }: MobileActionsProps) {
   const { t } = useT();
   const { user } = useAuth();
   const unread = useUnreadCount(user?.id);
@@ -77,19 +73,22 @@ export default function MobileActions({ page, setPage, withAccount }: MobileActi
   );
 
   return (
-    <div className="flex shrink-0 items-center gap-0.5 md:hidden">
-      {withAccount && (
-        <>
-          <AccountSwitcher variant="pill" compact />
-          <button
-            type="button"
-            onClick={() => window.dispatchEvent(new CustomEvent("tv:open-jarvis"))}
-            aria-label={t("assistant.open")}
-            className="grid h-8 w-8 place-items-center rounded-xl text-slate-400 transition-colors duration-200 hover:bg-white/[0.04]"
-          >
-            <JarvisMark className="h-[17px] w-[17px]" />
-          </button>
-        </>
+    /* La barre d'app mobile : le compte actif à gauche (les deux bulles
+       flottantes d'autrefois, rangées ici), Jarvis, la cloche et les réglages
+       à droite. La même sur chaque page. */
+    <div className="flex items-center gap-1 md:hidden">
+      <div className="min-w-0 flex-1">
+        <AccountSwitcher variant="pill" compact />
+      </div>
+      {page !== "insights" && (
+        <button
+          type="button"
+          onClick={() => window.dispatchEvent(new CustomEvent("tv:open-jarvis"))}
+          aria-label={t("assistant.open")}
+          className="grid h-8 w-8 place-items-center rounded-xl text-slate-400 transition-colors duration-200 hover:bg-white/[0.04]"
+        >
+          <JarvisMark className="h-[17px] w-[17px]" />
+        </button>
       )}
       {action(
         "inbox",

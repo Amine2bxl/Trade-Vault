@@ -3,6 +3,24 @@
 Journal des changements **structurels** (pas des features ni des correctifs,
 qui vivent dans l'historique git et les PR).
 
+## 2026-11-14 — Barre d'app sans titres, tableau de bord en trois panneaux
+
+- `PageHead` : plus de grand titre (il répétait l'onglet et le sélecteur) ni
+  de barre compacte ; nom de page en `sr-only`. Mobile : barre d'app (compte
+  à gauche, Jarvis · cloche · réglages à droite), puis vue + actions.
+- Phrase « à quoi sert cette page » (`PremiumGate`) et avertissement de la
+  Saisonnalité retirés ; la promesse ne reste que sur le mur d'aperçu.
+- Tableau de bord : courbe coiffée de ses quatre chiffres (provenance + n),
+  panneau du mois, derniers trades en lignes entières ; hauteur posée, la
+  page ne défile plus (bureau, tablette, téléphone).
+- `useAvailableHeight` suit l'élément (ref à état) : une page qui rendait
+  d'abord un chargement sans la ref restait blanche (Objectifs).
+- Objectifs : échec de chargement affiché avec « réessayer », renvoi vers le
+  compte qui porte le plan.
+- Calendrier : plancher des cellules en rem (3,5 rem) — un mois de six
+  semaines tient sans défiler. Calendrier éco : tableau à la hauteur de son
+  contenu, provenance au survol du badge.
+
 ## 2026-11-14 — Densité de l'app, bureau compris
 
 - La couche `html.tv-app` couvre aussi le bureau : base fluide

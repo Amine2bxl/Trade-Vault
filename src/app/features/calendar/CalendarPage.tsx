@@ -316,7 +316,7 @@ function AccountCalendarPage({
         style={cellStyle}
         aria-label={summary}
         className={cn(
-          "cal-cell relative flex min-h-[2.75rem] flex-col items-center justify-center gap-0.5 overflow-hidden rounded-lg border px-0.5 text-center transition-[filter,transform] duration-200 md:min-h-[84px] md:gap-1 md:rounded-xl",
+          "cal-cell relative flex min-h-[2.75rem] flex-col items-center justify-center gap-0.5 overflow-hidden rounded-lg border px-0.5 text-center transition-[filter,transform] duration-200 md:min-h-[3.5rem] md:gap-1 md:rounded-xl",
           out ? "cal-cell-out" : !cellStyle && "cal-cell-empty",
           !cellStyle && !out && missedCount > 0 && "border-amber-500/25",
           isToday && "ring-1 ring-inset ring-[var(--tv-border-accent)]",
@@ -584,6 +584,9 @@ function AccountCalendarPage({
             return (
               // PAS de `min-h-0` : la ligne ne descend jamais sous le plancher
               // de ses cellules, et `flex-1` l'étire dès qu'il y a la place.
+              // Plancher bas (3,5 rem) : un mois de SIX semaines tient dans la
+              // même hauteur qu'un mois de cinq, ses lignes juste un peu moins
+              // hautes — jamais de défilement.
               <div key={row[0].date} className="flex flex-1 flex-col gap-0.5">
                 <div className="grid flex-1 grid-cols-8 gap-1.5">
                   {row.map((cell, colIdx) => renderDay(cell, colIdx))}

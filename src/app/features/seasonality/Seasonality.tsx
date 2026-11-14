@@ -77,7 +77,6 @@ interface SeasonalityProps {
 const VERIFIED_ASSET_HISTORY_AVAILABLE = false;
 
 export default function Seasonality({ trades, tradesLoading }: SeasonalityProps) {
-  const { t } = useT();
   const { boxRef, height } = useAvailableHeight();
   return (
     <PageContainer ref={boxRef} fit height={height}>
@@ -87,12 +86,6 @@ export default function Seasonality({ trades, tradesLoading }: SeasonalityProps)
         </ScrollArea>
       ) : (
         <>
-          {/* Une ligne, plus une carte : c'est une précision sur la source, pas
-              un contenu. */}
-          <p className="mb-3 flex shrink-0 items-center gap-2 px-1 text-xs text-slate-500 max-md:hidden">
-            <Info className="h-3.5 w-3.5 shrink-0" aria-hidden />
-            {t("seasonality.verifiedMarketUnavailable")}
-          </p>
           <JournalSeasonality trades={trades} tradesLoading={tradesLoading} />
         </>
       )}

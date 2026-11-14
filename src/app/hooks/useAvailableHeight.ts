@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
+import { useEffect, useLayoutEffect, useMemo, useState, type RefObject } from "react";
 import { flushSync } from "react-dom";
 
 // Mesurer AVANT la peinture (côté client) ; `useEffect` au rendu serveur, où
@@ -94,7 +94,26 @@ export function useAvailableHeight(): {
   boxRef: RefObject<HTMLDivElement | null>;
   height: number | undefined;
 } {
-  const boxRef = useRef<HTMLDivElement | null>(null);
+  /* LE BLOC SUIVI EST UN ÉTAT, PAS UNE REF LUE UNE FOIS.
+     Une page qui rend d'abord un écran de chargement SANS la ref (Objectifs,
+     par exemple), puis son vrai cadre, ne déclenchait jamais la mesure : la
+     ref était vide au montage, l'effet ne repassait plus. Le cadre restait à
+     hauteur automatique et sa zone `tv-grow` à 0 px — une page blanche,
+     « mes objectifs ont disparu ». La ref rendue ici écrit l'élément dans un
+     état : la mesure repart à chaque nouveau cadre. */
+  const [el, setEl] = useState<HTMLDivElement | null>(null);
+  const boxRef = useMemo(() => {
+    let current: HTMLDivElement | null = null;
+    return {
+      get current() {
+        return current;
+      },
+      set current(node: HTMLDivElement | null) {
+        current = node;
+        setEl(node);
+      },
+    } as RefObject<HTMLDivElement | null>;
+  }, []);
   const [height, setHeight] = useState<number | undefined>(undefined);
 
   /* ── LE « ZOOM EN DEUX TEMPS » ─────────────────────────────────────────
@@ -109,7 +128,6 @@ export function useAvailableHeight(): {
    * Mesure maintenant avant la peinture, et `ResizeObserver` sur la fenêtre
    * et la barre de tête : la première image est déjà la bonne. */
   useIsomorphicLayoutEffect(() => {
-    const el = boxRef.current;
     if (!el) return;
 
     const mesurer = () => {
@@ -152,7 +170,7 @@ export function useAvailableHeight(): {
       stop();
       window.removeEventListener("resize", mesurer);
     };
-  }, []);
+  }, [el]);
 
   return { boxRef, height };
 }

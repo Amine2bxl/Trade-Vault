@@ -1,4 +1,4 @@
-import { PageContainer, ScrollArea } from "@/shared/ui";
+import { Button, EmptyState, PageContainer, ScrollArea } from "@/shared/ui";
 import { useAvailableHeight } from "@/app/hooks/useAvailableHeight";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import MonthCelebration from "./MonthCelebration";
@@ -23,6 +23,7 @@ import {
   type MeasureCtx,
   currentMonthIndex,
   deleteGoalPlan,
+  accountsWithGoalPlan,
   loadGoalPlan,
   monthTaskCompletion,
   saveGoalPlan,
@@ -40,7 +41,7 @@ import { useLiveTable } from "@/app/hooks/useLiveTable";
 export default function Goals({ trades }: { trades: Trade[] }) {
   const { user } = useAuth();
   const { boxRef, height } = useAvailableHeight();
-  const { activeId } = useAccounts();
+  const { activeId, accounts, switchAccount } = useAccounts();
   const { lang, t } = useT();
   const { toast } = useToast();
   const confirm = useConfirm();
@@ -49,6 +50,12 @@ export default function Goals({ trades }: { trades: Trade[] }) {
 
   const [plan, setPlan] = useState<GoalPlan | null>(null);
   const [loading, setLoading] = useState(true);
+  /* Un chargement raté affichait le CHOIX des objectifs, vide — exactement
+     l'écran « mes objectifs ont disparu ». Il est désormais dit, avec un
+     bouton pour réessayer, et rien n'invite à recréer un plan par-dessus. */
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [elsewhere, setElsewhere] = useState<string[]>([]);
+  const [attempt, setAttempt] = useState(0);
   const [startingBalance, setStartingBalance] = useState(0);
   const [busy, setBusy] = useState(false);
 
@@ -62,18 +69,27 @@ export default function Goals({ trades }: { trades: Trade[] }) {
     }
     let active = true;
     setLoading(true);
-    Promise.all([loadGoalPlan(user.id, activeId), loadStartingBalance(user.id)])
-      .then(([p, b]) => {
+    setLoadFailed(false);
+    Promise.all([
+      loadGoalPlan(user.id, activeId),
+      loadStartingBalance(user.id),
+      accountsWithGoalPlan(user.id).catch(() => [] as string[]),
+    ])
+      .then(([p, b, ids]) => {
         if (!active) return;
         setPlan(p);
         setStartingBalance(b);
+        setElsewhere(ids.filter((id) => id !== activeId));
       })
-      .catch((e) => console.error("Failed to load goal plan", e))
+      .catch((e) => {
+        console.error("Failed to load goal plan", e);
+        if (active) setLoadFailed(true);
+      })
       .finally(() => active && setLoading(false));
     return () => {
       active = false;
     };
-  }, [user?.id, activeId]);
+  }, [user?.id, activeId, attempt]);
 
   // Plan d'objectifs, compte ou solde changés sur un autre appareil : relecture
   // SILENCIEUSE — pas de retour à l'écran de chargement pour un changement distant.
@@ -93,6 +109,7 @@ export default function Goals({ trades }: { trades: Trade[] }) {
   useLiveTable("profiles", reloadLive);
   useLiveTable("accounts", reloadLive);
   useLiveTable("goal_plans", reloadLive);
+  const otherPlanAccount = accounts.find((a) => elsewhere.includes(a.id)) ?? null;
 
   // Contexte de mesure : hook PARTAGÉ avec Jarvis. Deux implémentations de
   // « où en est cet objectif ? » auraient divergé au premier changement de
@@ -236,8 +253,35 @@ export default function Goals({ trades }: { trades: Trade[] }) {
   return (
     <PageContainer ref={boxRef} fit height={height}>
       <ScrollArea className="tv-grow">
-        {!plan ? (
-          <GoalPicker ctx={ctx} busy={busy} onGenerate={generate} />
+        {loadFailed ? (
+          <EmptyState
+            icon={<Flag className="h-6 w-6" />}
+            title={t("goals.loadFailed")}
+            action={
+              <Button size="sm" variant="ghost" onClick={() => setAttempt((n) => n + 1)}>
+                {t("error.retry")}
+              </Button>
+            }
+          />
+        ) : !plan ? (
+          <>
+            {otherPlanAccount && (
+              <div className="mb-3 flex items-center gap-3 rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-3 py-2.5">
+                <Flag className="h-4 w-4 shrink-0 text-[var(--tv-accent)]" />
+                <span className="min-w-0 flex-1 truncate text-sm text-slate-300">
+                  {t("goals.onOtherAccount").replace("{account}", otherPlanAccount.name)}
+                </span>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => switchAccount(otherPlanAccount.id)}
+                >
+                  {t("goals.openThere")}
+                </Button>
+              </div>
+            )}
+            <GoalPicker ctx={ctx} busy={busy} onGenerate={generate} />
+          </>
         ) : (
           <PlanView
             plan={plan}

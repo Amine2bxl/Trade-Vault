@@ -132,10 +132,16 @@ describe("la grille du calendrier", () => {
   test("garde un plancher de hauteur sur ses cellules", () => {
     // Le plancher a existé (`md:min-h-[112px]`), puis a été remplacé par
     // `md:min-h-[0]` — ce qui revient à n'en avoir aucun. Une cellule doit
-    // pouvoir porter la date, le P&L et le nombre de trades.
-    const planchers = [...src.matchAll(/md:min-h-\[(\d+)px\]/g)].map((m) => Number(m[1]));
+    // pouvoir porter la date, le P&L et le nombre de trades : ~52 px.
+    // Demande du propriétaire (14/11/2026) : un mois de SIX semaines tient à
+    // l'écran sans défiler, comme un mois de cinq. Le plancher s'écrit donc en
+    // rem (il suit la base de l'app) et descend à 3,25 rem minimum (52 px à la
+    // base de référence) — assez pour le contenu, pas assez pour déborder.
+    const planchers = [...src.matchAll(/md:min-h-\[(\d+(?:\.\d+)?)(px|rem)\]/g)].map((m) =>
+      m[2] === "rem" ? Number(m[1]) * 16 : Number(m[1]),
+    );
     expect(planchers.length).toBeGreaterThan(0);
-    for (const p of planchers) expect(p).toBeGreaterThanOrEqual(80);
+    for (const p of planchers) expect(p).toBeGreaterThanOrEqual(52);
     // Et surtout : jamais un plancher nul, qui annule la protection.
     expect(src).not.toContain("md:min-h-[0]");
     expect(src).not.toContain("md:min-h-0");

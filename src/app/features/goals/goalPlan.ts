@@ -71,6 +71,20 @@ export async function loadGoalPlan(userId: string, accountId: string): Promise<G
   };
 }
 
+/**
+ * Les comptes qui portent DÉJÀ un plan. Un plan vit par compte : passer sur un
+ * sous-compte faisait « disparaître » les objectifs — ils étaient sur l'autre.
+ * La page s'en sert pour le dire et proposer d'y revenir.
+ */
+export async function accountsWithGoalPlan(userId: string): Promise<string[]> {
+  const { data, error } = await supabase
+    .from("goal_plans")
+    .select("account_id")
+    .eq("user_id", userId);
+  if (error) throw error;
+  return (data ?? []).map((r) => r.account_id as string);
+}
+
 export async function saveGoalPlan(
   userId: string,
   accountId: string,

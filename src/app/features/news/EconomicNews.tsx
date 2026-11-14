@@ -374,7 +374,18 @@ export default function EconomicNews() {
      indicatif (repli local). Une donnée de marché sans source ne se lit pas. */
   const headerActions = useMemo(
     () => (
-      <span className={cn("ff-source", verified ? "ff-source-ok" : "ff-source-warn")}>
+      <span
+        className={cn("ff-source", verified ? "ff-source-ok" : "ff-source-warn")}
+        // Le détail du repli vit au survol du badge, plus dans un bandeau
+        // jaune posé au-dessus du tableau : la provenance se lit d'un mot.
+        title={
+          verified
+            ? undefined
+            : isFallback
+              ? `${t("news.fallbackWarning")} ${t("news.notice")}`
+              : t("news.staleWarning").replace("{value}", freshness ?? "—")
+        }
+      >
         {verified ? (
           <ShieldCheck className="h-3.5 w-3.5" aria-hidden />
         ) : (
@@ -384,7 +395,7 @@ export default function EconomicNews() {
         {verified && freshness && <span className="ff-source-time">· {freshness}</span>}
       </span>
     ),
-    [verified, freshness, t],
+    [verified, isFallback, freshness, t],
   );
   usePageActions(headerActions);
 
@@ -393,17 +404,6 @@ export default function EconomicNews() {
 
   return (
     <PageContainer ref={boxRef} fit height={height}>
-      {(isFallback || stale) && !loading && (
-        <div className="mb-3 flex shrink-0 items-start gap-2 rounded-xl border border-amber-500/25 bg-amber-500/[0.07] px-3 py-2.5 text-xs text-amber-200/90">
-          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-          <span>
-            {isFallback
-              ? t("news.fallbackWarning")
-              : t("news.staleWarning").replace("{value}", freshness ?? "—")}
-          </span>
-        </div>
-      )}
-
       {/* ── UNE SEULE BARRE : la semaine, le prochain événement, les filtres ── */}
       <div className="ff-toolbar shrink-0">
         <div className="ff-week">
@@ -606,7 +606,9 @@ export default function EconomicNews() {
       ) : (
         /* Le tableau défile DANS sa carte (en-tête de colonnes collant) : la
            barre de la semaine et des filtres reste sous les yeux. */
-        <div className="ff-table tv-grow tv-scroll" role="table" aria-label={t("news.title")}>
+        /* Hauteur de son contenu, plafonnée par la page : une semaine calme
+           ne laisse plus un grand cadre vide sous ses quatre lignes. */
+        <div className="ff-table tv-scroll min-h-0" role="table" aria-label={t("news.title")}>
           <div className="ff-row ff-head" role="row">
             <span role="columnheader">{t("news.colTime")}</span>
             <span role="columnheader">{t("news.colCurrency")}</span>
@@ -711,12 +713,6 @@ export default function EconomicNews() {
         <span>
           {freshness ? t("news.updated").replace("{value}", freshness) : t("news.updatedNever")}
         </span>
-        {isFallback && (
-          <>
-            <span aria-hidden>·</span>
-            <span>{t("news.notice")}</span>
-          </>
-        )}
       </div>
     </PageContainer>
   );

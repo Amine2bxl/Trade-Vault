@@ -265,8 +265,10 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
           s'affichait « Discov… ». Une action redondante qui en cache une
           vraie.
           Le module reste MONTÉ (il écoute `tv:open-jarvis` et `tv:ask-coach`,
-          que d'autres pages émettent) : seul son déclencheur s'efface. */}
-      {!(page === "insights" && !open) && (
+          que d'autres pages émettent) : seul son déclencheur s'efface. Même
+          chose sur le tableau de bord : Jarvis y a son action ronde, et la
+          bulle recouvrait la dernière ligne des derniers trades. */}
+      {!((page === "insights" || page === "dashboard") && !open) && (
         <button
           onClick={toggleOpen}
           aria-label={open ? t("assistant.close") : t("assistant.open")}

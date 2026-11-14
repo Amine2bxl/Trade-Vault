@@ -3561,78 +3561,6 @@ body.tv-app-type :is(.tv-figure, .tv-num, .tabular-nums) {
  * Animer `left`/`width` aurait fait recalculer la disposition à chaque frame ;
  * `transform` compose sur le GPU et ne touche à rien d'autre.
  */
-/* ══ LE GRAND TITRE — LIQUID ══
- * Le Large Title d'iOS : 30px, 700, approche serrée. Un seul par page, posé
- * par `PageHead` à partir de la navigation. */
-.tv-large-title {
-  font-size: var(--tv-t-h1);
-  font-weight: 700;
-  line-height: 1.1;
-  letter-spacing: -0.025em;
-  color: var(--tv-text-primary);
-}
-/* La barre compacte : un conteneur collant de hauteur NULLE (il ne prend
-   aucune place) qui porte une barre de verre absolue. Elle n'apparaît qu'une
-   fois le grand titre sorti de la fenêtre — fondu + 6px, rien d'autre. */
-.page-compact {
-  position: sticky;
-  top: 0;
-  z-index: var(--tv-z-nav);
-  height: 0;
-}
-.page-compact-bar {
-  position: absolute;
-  inset: 0 0 auto;
-  isolation: isolate;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 52px;
-  padding: env(safe-area-inset-top, 0px) 64px 0;
-  box-sizing: content-box;
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  color: var(--tv-text-primary);
-  border-bottom: 1px solid var(--tv-glass-edge);
-  opacity: 0;
-  transform: translateY(-6px);
-  pointer-events: none;
-  transition:
-    opacity var(--tv-dur-2) var(--tv-ease),
-    transform var(--tv-dur-2) var(--tv-ease);
-}
-.page-compact-bar::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: var(--tv-glass-fill-solid);
-  -webkit-backdrop-filter: blur(var(--tv-glass-blur)) saturate(var(--tv-glass-saturate));
-  backdrop-filter: blur(var(--tv-glass-blur)) saturate(var(--tv-glass-saturate));
-}
-.page-compact-bar-on {
-  opacity: 1;
-  transform: none;
-}
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .page-compact-bar::before {
-    background: var(--tv-plate-1);
-  }
-}
-@media (prefers-reduced-transparency: reduce) {
-  .page-compact-bar::before {
-    background: var(--tv-plate-1);
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .page-compact-bar {
-    transform: none;
-    transition: opacity var(--tv-dur-1) linear;
-  }
-}
 
 /* ── Onglets de section — CONTRÔLE SEGMENTÉ ──
  * Un cadre unique, des pastilles dedans, celle qui est active posée sur une
@@ -6346,42 +6274,6 @@ thead .plan-cmp-col.is-pro {
   text-transform: uppercase;
 }
 
-/* Les deux rangées de la maquette : deux tiers / un tiers. */
-.dash-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 16px;
-  margin-bottom: 16px;
-}
-@media (min-width: 1024px) {
-  .dash-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-  .dash-span-2 {
-    grid-column: span 2;
-  }
-}
-.dash-widgets {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-.dash-widgets .metric-tile {
-  border-radius: var(--radius-2xl);
-}
-.dash-card-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 14px;
-}
-.dash-card-title {
-  font-size: var(--tv-t-h3);
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  color: var(--tv-text-primary);
-}
 .dash-link {
   display: inline-flex;
   align-items: center;
@@ -6410,10 +6302,236 @@ thead .plan-cmp-col.is-pro {
   border-radius: 9999px;
 }
 
-/* Les derniers trades : la liste de transactions de Revolut. */
-.dash-list {
+/* ══ LE TABLEAU DE BORD — trois panneaux d'une même matière ══════════════
+ * La courbe coiffée de ses quatre chiffres (deux tiers), le mois puis les
+ * derniers trades (un tiers). Une plaque, un rayon, un en-tête : les blocs se
+ * lisent comme une seule surface, aucun ne s'étire autour d'un chiffre.
+ * Hauteur posée par le composant (`boardH`) : la page ne défile pas. */
+.dash-board {
   display: flex;
+  min-height: 0;
   flex-direction: column;
+  gap: 10px;
+}
+.dash-main {
+  flex: 1 1 0;
+}
+@media (min-width: 1024px) {
+  .dash-board {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+  }
+}
+.dash-panel {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--tv-border);
+  border-radius: var(--radius-2xl);
+  background: var(--tv-plate-1);
+  padding: 12px 14px;
+}
+.dash-panel-head {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.dash-panel-title {
+  font-size: var(--tv-t-body-sm);
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  color: var(--tv-text-primary);
+  white-space: nowrap;
+}
+.dash-empty {
+  display: grid;
+  flex: 1;
+  place-items: center;
+  min-height: 64px;
+  font-size: var(--tv-t-body-sm);
+  color: var(--tv-text-muted);
+}
+
+/* Les quatre chiffres : une rangée de cases égales séparées d'un filet, en
+   tête du panneau de la courbe. Libellé, chiffre, sa provenance, une jauge
+   d'un pixel. */
+.dash-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: -12px -14px 12px;
+  border-bottom: 1px solid var(--tv-border);
+}
+.dash-kpi {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 14px 0;
+}
+.dash-kpi + .dash-kpi {
+  border-left: 1px solid var(--tv-border);
+}
+.dash-kpi-label {
+  overflow: hidden;
+  color: var(--tv-text-muted);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.dash-kpi-value {
+  font-size: var(--tv-t-h2);
+  line-height: 1.1;
+  color: var(--tv-text-primary);
+}
+.dash-kpi-sub {
+  overflow: hidden;
+  font-size: var(--tv-t-micro);
+  color: var(--tv-text-muted);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.dash-kpi-bar {
+  display: block;
+  height: 2px;
+  margin: 8px -14px 0;
+  background: rgb(255 255 255 / 0.05);
+}
+.dash-kpi-bar > span {
+  display: block;
+  height: 100%;
+}
+.dash-chart {
+  position: relative;
+  min-height: 120px;
+  flex: 1 1 0;
+}
+/* Téléphone : quatre cases sur UNE ligne (libellés courts), la courbe et
+   les derniers trades se partagent la hauteur ; le mois tient en une ligne
+   — son P&L est déjà le chiffre héros quand la période est « Mois ». */
+@media (max-width: 639px) {
+  .dash-panel {
+    padding: 10px 12px;
+  }
+  .dash-kpis {
+    margin: -10px -12px 8px;
+  }
+  .dash-kpi {
+    gap: 2px;
+    padding: 8px 8px 0;
+  }
+  .dash-kpi-value {
+    font-size: var(--tv-t-body);
+  }
+  .dash-kpi-bar {
+    margin: 6px -8px 0;
+  }
+  .dash-chart {
+    min-height: 90px;
+  }
+}
+
+/* La colonne de droite : le mois (hauteur de son contenu), puis les
+   derniers trades qui prennent le reste. */
+.dash-side {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  gap: 10px;
+}
+.dash-month-pct {
+  margin-left: auto;
+  font-size: var(--tv-t-h2);
+  line-height: 1;
+  color: var(--tv-text-primary);
+}
+.dash-month-track {
+  display: block;
+  overflow: hidden;
+  height: 4px;
+  margin-bottom: 6px;
+  border-radius: 9999px;
+  background: rgb(255 255 255 / 0.07);
+}
+.dash-month-track > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+}
+.dash-month-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 10px -14px -12px;
+  border-top: 1px solid var(--tv-border);
+}
+.dash-month-stats > span {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+  padding: 9px 14px 10px;
+}
+.dash-month-stats > span + span {
+  border-left: 1px solid var(--tv-border);
+}
+.dash-month-stats small {
+  overflow: hidden;
+  color: var(--tv-text-muted);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.dash-month-stats b {
+  font-size: var(--tv-t-body);
+  color: var(--tv-text-primary);
+}
+.dash-recent {
+  flex: 1 1 0;
+  min-height: 0;
+}
+@media (max-width: 1023px) {
+  .dash-side {
+    flex: 0 1 auto;
+  }
+  /* Deux lignes entières : la courbe garde le reste de l'écran. */
+  .dash-recent {
+    flex: 0 0 auto;
+    height: 10.75rem;
+  }
+}
+/* Téléphone : le mois en une ligne (titre, part de l'objectif, jauge). */
+@media (max-width: 639px) {
+  .dash-month .dash-month-stats,
+  .dash-month .dash-kpi-sub {
+    display: none;
+  }
+  .dash-month .dash-month-track {
+    margin-bottom: 0;
+  }
+  .dash-recent .dash-row {
+    padding: 5px 0;
+  }
+}
+/* Petit téléphone (hauteur < 760 px) : la courbe passe avant la liste —
+   les derniers trades restent à un appui, dans le Journal. */
+@media (max-width: 639px) and (max-height: 759px) {
+  .dash-recent {
+    display: none;
+  }
+}
+
+/* Les derniers trades : la liste de transactions de Revolut. Seules les
+   lignes ENTIÈRES restent visibles (voir Dashboard.tsx). */
+.dash-recent-list {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 0;
+  flex-direction: column;
+  overflow: hidden;
+}
+.dash-recent-list > [hidden] {
+  display: none;
 }
 .dash-row {
   display: flex;
@@ -6470,50 +6588,9 @@ thead .plan-cmp-col.is-pro {
   gap: 2px;
 }
 .dash-row-pnl {
-  font-size: 15px;
+  font-size: var(--tv-t-body);
 }
 
-/* Le tableau de bord AJUSTÉ À L'ÉCRAN (voir Dashboard.tsx) : les hauteurs de
-   rangée sont posées en pixels par le composant ; ici, les tuiles remplissent
-   leur part et l'objectif se resserre quand la rangée est courte. */
-.dash-fit .dash-widgets {
-  grid-auto-rows: minmax(0, 1fr);
-}
-.dash-fit .dash-widgets .metric-tile {
-  display: flex;
-  min-height: 0;
-  flex-direction: column;
-  justify-content: center;
-}
-.dash-tight .dash-hero {
-  gap: 8px;
-  padding-bottom: 18px;
-}
-.dash-tight .dash-goal-figure {
-  font-size: 28px;
-}
-.dash-tight .dash-goal-track {
-  margin: 8px 0 10px;
-}
-.dash-tight .dash-goal-tiles {
-  gap: 8px;
-  padding-top: 8px;
-}
-.dash-tight .dash-goal-tile {
-  padding: 9px 10px;
-}
-.dash-tight .dash-goal-tile b {
-  font-size: 15px;
-}
-
-/* Rangées courtes : pastilles et lignes un cran plus serrées. */
-.dash-tight .dash-row {
-  padding: 7px 0;
-}
-.dash-tight .dash-row-logo {
-  width: 36px;
-  height: 36px;
-}
 /* Fenêtre basse : le héros rend de la place (la pilule du compte vit déjà
    dans le rail). */
 .dash-short .dash-hero .tv-account-pill {
@@ -6562,49 +6639,16 @@ thead .plan-cmp-col.is-pro {
   height: 44px;
 }
 
-/* L'objectif du mois. */
-.dash-goal {
-  display: flex;
-  flex-direction: column;
-}
-.dash-goal-figure {
-  font-size: 34px;
-  line-height: 1;
-  color: var(--tv-text-primary);
-}
-.dash-goal-track,
+/* La jauge des tuiles de chiffres (`Metric`). */
 .metric-track {
   display: block;
   overflow: hidden;
   border-radius: 9999px;
   background: rgb(255 255 255 / 0.07);
 }
-.dash-goal-track {
-  height: 8px;
-  margin: 12px 0 16px;
-}
 .metric-track {
   height: 5px;
   margin-top: 8px;
-}
-.dash-goal-tiles {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  margin-top: auto;
-  padding-top: 12px;
-}
-.dash-goal-tile {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 12px;
-  border-radius: 16px;
-  background: var(--tv-plate-2);
-}
-.dash-goal-tile b {
-  font-size: 17px;
-  color: var(--tv-text-primary);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -9897,36 +9941,12 @@ html.tv-app .tv-account-pill {
 
 /* Cartes rapprochées, tuiles de chiffres basses : un bloc dit son chiffre,
    il ne l'encadre pas d'un centimètre de vide. */
-html.tv-app .dash-grid {
-  gap: 10px;
-}
-html.tv-app .dash-widgets {
-  gap: 8px;
-}
-html.tv-app .dash-card-head {
-  margin-bottom: 8px;
-}
 html.tv-app .dash-row {
   gap: 10px;
   padding: 7px 0;
 }
 html.tv-app .metric-tile {
   padding: 9px 11px;
-}
-/* Tableau de bord, grand écran : les quatre chiffres en bandes fines à côté
-   de la courbe. La jauge s'efface — le chiffre et son `n` restent. */
-html.tv-app .dash-widgets-stack {
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: repeat(4, minmax(0, 1fr));
-}
-html.tv-app .dash-widgets-stack .metric-tile {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: 6px 12px;
-}
-html.tv-app .dash-widgets-stack .metric-track {
-  display: none;
 }
 html.tv-app .metric-label-row {
   margin-bottom: 3px;
@@ -9950,10 +9970,6 @@ html.tv-app .tv-set-row {
 html.tv-app .tv-set-label {
   font-size: 13.5px;
 }
-html.tv-app .page-compact-bar {
-  height: 44px;
-  font-size: 14px;
-}
 
 @media (max-width: 767px) {
   html.tv-app {
@@ -9967,10 +9983,26 @@ html.tv-app .page-compact-bar {
     --tv-t-body: 13px;
   }
 
-  /* Les quatre chiffres du tableau de bord : tuiles basses, sans jauge —
-     le chiffre et son `n` suffisent sur un écran de poche. */
-  html.tv-app .dash-widgets .metric-track {
+  /* Le compte vit dans la barre d'app mobile : pas une seconde pastille
+     au-dessus du chiffre héros. */
+  html.tv-app .dash-hero .tv-account-pill {
     display: none;
+  }
+  /* Le héros du tableau de bord, resserré : le tableau dessous a besoin de
+     la hauteur pour tenir sans défiler. */
+  html.tv-app .dash-hero {
+    gap: 4px;
+    padding-bottom: 10px;
+  }
+  html.tv-app .tv-action-disc {
+    width: 36px;
+    height: 36px;
+  }
+  html.tv-app .tv-action {
+    gap: 3px;
+  }
+  html.tv-app .dash-period-btn {
+    height: 26px;
   }
   /* La barre du bas : 56 px au lieu de 78, même ordre, même pouce. */
   html.tv-app .bottom-nav {

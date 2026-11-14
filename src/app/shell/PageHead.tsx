@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import type { Page } from "../types";
 import { cn } from "@/shared/ui/cn";
 import { PAGE_WIDTH } from "@/shared/ui/tokens";
@@ -8,22 +8,19 @@ import { PAGE_META, SECTION_META, pagesOfSection, sectionForPage } from "./navig
 import { useT } from "../i18n/LanguageContext";
 
 /**
- * L'EN-TÊTE DE PAGE — LIQUID.
+ * L'EN-TÊTE DE PAGE — une barre d'application, pas un titre de site.
  *
- * Deux étages, dans le flux :
+ * Le grand titre (« Analysis ») a disparu : il répétait l'onglet actif du
+ * rail, le sélecteur de vue (« Analysis ▾ ») et parfois le titre de la carte
+ * juste dessous — trois fois le même mot avant le premier chiffre. Le nom de
+ * la page reste dans le document pour les lecteurs d'écran (`sr-only`).
  *
- *   1. le GRAND TITRE (Large Title d'iOS), dérivé de la navigation — le nom de
- *      la section, ou de la page quand elle n'en a pas. Source unique :
- *      `SECTION_META` / `PAGE_META`, donc chaque page a un titre sans en
- *      écrire un, et il ne peut pas diverger du rail ;
- *   2. la rangée d'ORIGINE, inchangée : onglets de section (ou résumé d'une
- *      ligne) à gauche, actions de la page à droite. L'ordre que le trader
- *      connaît ne bouge pas, il gagne seulement un titre au-dessus.
- *
- * Au défilement, une BARRE COMPACTE de verre se pose en haut de la fenêtre
- * avec le titre en petit, dès que le grand titre est sorti : on sait toujours
- * où l'on est. Elle vit dans un conteneur collant de hauteur nulle — elle
- * n'occupe aucune place dans la page, rien ne saute à son apparition.
+ *   • téléphone — une barre d'app : le compte actif à gauche, Jarvis, la
+ *     cloche et les réglages à droite ; dessous, le sélecteur de vue et les
+ *     actions de la page ;
+ *   • bureau — une seule rangée : les onglets de la section (ou la ligne
+ *     d'état de la page) à gauche, les actions à droite. Le rail porte déjà
+ *     le compte, la cloche et les réglages.
  */
 export default function PageHead({
   page,
@@ -41,67 +38,16 @@ export default function PageHead({
   const hasTabs = section && pagesOfSection(section).length > 1;
   const title = t(section ? SECTION_META[section].labelKey : PAGE_META[page].labelKey);
 
-  /* Le grand titre est-il encore visible dans la fenêtre de défilement ?
-     Observé, pas calculé au scroll : aucun écouteur, aucun calcul par image.
-
-     L'élément est suivi par une REF DE RAPPEL, pas par une ref lue une fois :
-     passer d'une section à onglets à une vue unique remplace le <h1> (autre
-     branche du rendu). L'ancien, détaché, était encore observé — et un
-     élément hors du document « ne croise plus » la fenêtre : la barre
-     compacte restait affichée en permanence par-dessus le haut de la page. */
-  const [titleEl, setTitleEl] = useState<HTMLHeadingElement | null>(null);
-  const [compact, setCompact] = useState(false);
-  useEffect(() => {
-    setCompact(false);
-    if (!titleEl || typeof IntersectionObserver === "undefined") return;
-    const io = new IntersectionObserver(
-      ([entry]) => setCompact(titleEl.isConnected && !entry.isIntersecting),
-      { root: titleEl.closest("main"), threshold: 0 },
-    );
-    io.observe(titleEl);
-    return () => io.disconnect();
-  }, [titleEl]);
-
   return (
-    <>
-      <div className="page-compact" aria-hidden={!compact}>
-        <div className={cn("page-compact-bar", compact && "page-compact-bar-on")}>
-          <span className="truncate">{title}</span>
+    <div className={cn("app-page-head mx-auto w-full px-4 pt-3 md:px-6 md:pt-5", PAGE_WIDTH)}>
+      <h1 className="sr-only">{title}</h1>
+      <MobileActions page={page} setPage={setPage} />
+      <div className="mt-2 flex min-h-9 items-center gap-2 md:mt-0 md:gap-3">
+        <div className="min-w-0 flex-1">
+          {hasTabs ? <SectionTabs section={section} page={page} setPage={setPage} /> : lead}
         </div>
+        {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
       </div>
-      <div className={cn("app-page-head mx-auto w-full px-4 pt-4 md:px-6 md:pt-6", PAGE_WIDTH)}>
-        {hasTabs ? (
-          <>
-            <div className="flex items-center gap-2">
-              <h1 ref={setTitleEl} className="tv-large-title min-w-0 flex-1 truncate">
-                {title}
-              </h1>
-              <MobileActions page={page} setPage={setPage} withAccount />
-            </div>
-            {/* Section à plusieurs vues : la rangée d'ORIGINE, inchangée —
-                onglets à gauche, actions de la page à droite. */}
-            <div className="mt-3 flex items-center gap-2 md:mt-4 md:gap-3">
-              <div className="min-w-0 flex-1">
-                <SectionTabs section={section} page={page} setPage={setPage} />
-              </div>
-              {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
-            </div>
-          </>
-        ) : (
-          /* Vue unique (maquette Liquid v1) : le titre et son sous-titre à
-             gauche, les actions de la page à droite, sur la même ligne. */
-          <div className="flex items-start gap-2 md:gap-3">
-            <div className="min-w-0 flex-1">
-              <h1 ref={setTitleEl} className="tv-large-title truncate">
-                {title}
-              </h1>
-              {lead && <div className="mt-1.5 min-w-0">{lead}</div>}
-            </div>
-            {actions && <div className="flex shrink-0 items-center gap-2 pt-1">{actions}</div>}
-            <MobileActions page={page} setPage={setPage} />
-          </div>
-        )}
-      </div>
-    </>
+    </div>
   );
 }
