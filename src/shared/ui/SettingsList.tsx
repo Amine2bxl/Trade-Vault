@@ -1,4 +1,5 @@
-import type { ReactNode } from "react";
+import { createContext, useContext, type ReactNode } from "react";
+import { InfoTip } from "./InfoTip";
 import { ChevronRight } from "./icons";
 import { cn } from "./cn";
 
@@ -11,6 +12,10 @@ import { cn } from "./cn";
  * à droite. Les rangées d'un même sujet partagent un seul cadre, séparées par
  * un filet. Rien d'autre : pas de bannière, pas de pastille décorative.
  */
+
+/* Le ton du groupe, pour ses rangées : une zone de danger garde ses
+   avertissements écrits en clair. */
+const GroupTone = createContext<"danger" | undefined>(undefined);
 
 export function SettingsGroup({
   title,
@@ -26,7 +31,9 @@ export function SettingsGroup({
   return (
     <section className={cn("tv-set-group", className)} data-tone={tone}>
       {title != null && <h2 className="tv-set-title">{title}</h2>}
-      <div className="tv-set-list">{children}</div>
+      <GroupTone.Provider value={tone}>
+        <div className="tv-set-list">{children}</div>
+      </GroupTone.Provider>
     </section>
   );
 }
@@ -45,14 +52,21 @@ export function SettingsRow({
   children?: ReactNode;
   htmlFor?: string;
 }) {
+  const tone = useContext(GroupTone);
   return (
     <div className="tv-set-row">
       <div className="min-w-0">
+        {/* L'aide d'un réglage n'est plus une phrase sous chaque champ : elle
+            vit derrière un ⓘ, à côté du libellé. La page se lit en libellés et
+            en valeurs. Exception : la zone de danger, qui reste écrite. */}
         <label htmlFor={htmlFor} className="tv-set-label">
           {label}
+          {hint != null && typeof hint === "string" && tone !== "danger" && <InfoTip text={hint} />}
           {aside}
         </label>
-        {hint != null && <p className="tv-set-hint">{hint}</p>}
+        {hint != null && (typeof hint !== "string" || tone === "danger") && (
+          <p className="tv-set-hint">{hint}</p>
+        )}
       </div>
       {children != null && <div className="tv-set-control">{children}</div>}
     </div>

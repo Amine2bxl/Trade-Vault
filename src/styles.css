@@ -8665,9 +8665,10 @@ body.tv-app-type svg.lucide {
   flex-shrink: 0;
   align-self: center;
 }
+/* Une ligne : la notification entière s'ouvre au clic. */
 .tv-inbox-body {
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
   font-size: var(--tv-t-caption);

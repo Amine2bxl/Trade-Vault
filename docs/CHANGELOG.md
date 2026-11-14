@@ -3,6 +3,14 @@
 Journal des changements **structurels** (pas des features ni des correctifs,
 qui vivent dans l'historique git et les PR).
 
+## 2026-11-14 — Réglages et boîte de réception allégés
+
+- `SettingsRow` : l'aide passe derrière un ⓘ à côté du libellé (`InfoTip`) ;
+  la zone de danger garde ses avertissements écrits (contexte de ton du
+  groupe).
+- Boîte de réception : le texte d'une notification tient sur une ligne, le
+  détail complet s'ouvre au clic.
+
 ## 2026-11-14 — Saisonnalité de marché mesurée
 
 - Nouvelle source : `modules/market-history` (chaîne Yahoo → Stooq → FRED,
