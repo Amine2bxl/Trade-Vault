@@ -275,7 +275,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
                       <span className="flex w-full items-center justify-between gap-1">
                         <span
                           className={cn(
-                            "tv-figure text-[22px] leading-none",
+                            "tv-figure text-[1.375rem] leading-none",
                             v.n > 0 ? texte : "text-slate-600",
                           )}
                         >
@@ -397,7 +397,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
                   <div className="tv-label text-slate-500">{t("mistakes.streak")}</div>
                   <div
                     className={cn(
-                      "tv-figure mt-1.5 text-[32px] leading-none md:text-[40px]",
+                      "tv-figure mt-1.5 text-[2rem] leading-none md:text-[2.5rem]",
                       streak.current > 0 ? "rp-pos" : "text-slate-500",
                     )}
                   >
@@ -413,7 +413,7 @@ export default function Mistakes({ trades, embedded = false }: MistakesProps) {
                   <div className="tv-label text-slate-500">{t("mistakes.ratePerTrade")}</div>
                   {rate.recent ? (
                     <>
-                      <div className="tv-figure mt-1.5 text-[32px] leading-none text-white md:text-[40px]">
+                      <div className="tv-figure mt-1.5 text-[2rem] leading-none text-white md:text-[2.5rem]">
                         {(rate.recent.incidents / rate.recent.trades).toFixed(2)}
                       </div>
                       {rate.deltaPct === null ? (

@@ -76,7 +76,7 @@ function Side({
     >
       <div className="tv-label truncate text-slate-500">{label}</div>
       <div className="mt-0.5 truncate text-[13px] font-semibold text-slate-100">{name}</div>
-      <div className="tv-figure truncate text-[15px] text-white">
+      <div className="tv-figure truncate text-[0.9375rem] text-white">
         {formatMoney(balance, { whole: true })}
       </div>
     </div>

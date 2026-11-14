@@ -66,7 +66,12 @@ export function Kpi({
         <RollingFigure value={value} />
       </div>
       {hint !== undefined && hint !== null && (
-        <div className={cn("tv-row-label mt-0.5", wrapHint ? "leading-snug" : "truncate")}>
+        <div
+          className={cn(
+            "tv-row-label mt-0.5",
+            wrapHint ? "leading-snug max-md:line-clamp-2" : "truncate",
+          )}
+        >
           {numericText(hint)}
         </div>
       )}

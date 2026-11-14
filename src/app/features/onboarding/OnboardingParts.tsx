@@ -158,7 +158,7 @@ export function OptionTile({
         <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <span
             className={cn(
-              "text-[14px] font-semibold leading-tight",
+              "text-[0.875rem] font-semibold leading-tight",
               selected ? "text-white" : "text-slate-200",
             )}
           >
@@ -262,7 +262,7 @@ export function Stepper({
         <Minus className="h-3.5 w-3.5" />
       </button>
       <span
-        className="tv-figure min-w-[3.25rem] text-center text-[17px] text-white"
+        className="tv-figure min-w-[3.25rem] text-center text-[1.0625rem] text-white"
         aria-live="polite"
       >
         {format(value)}

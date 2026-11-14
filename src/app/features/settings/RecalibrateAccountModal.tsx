@@ -228,7 +228,7 @@ export default function RecalibrateAccountModal({
                 value={target}
                 onChange={(e) => setTarget(e.target.value)}
                 autoFocus
-                className={cn(FIELD_BASE, "tv-figure h-11 text-[15px]")}
+                className={cn(FIELD_BASE, "tv-figure h-11 text-[0.9375rem]")}
               />
               <div className={cn(CHIP_ROW, "mt-2.5")} aria-label={t("recal.presets")}>
                 {presets.map((p) => (

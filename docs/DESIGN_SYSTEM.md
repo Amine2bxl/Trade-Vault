@@ -144,6 +144,16 @@ titre `.tv-large-title`), `h2` (20), `h3` (15), `body`, `body-sm`, `caption`,
 (tabulaires). Libellés : `.tv-label` (petites capitales espacées). Détail :
 skill `typography`.
 
+**Densité mobile** (`html.tv-app`, sous 768 px, fin de `styles.css`) : l'app
+connectée passe à une base de 13–14 px (`clamp(13px, 3.6vw, 14px)`), donc
+toute mesure Tailwind en rem suit ; l'échelle descend à `display` 34, `h1` 23,
+`h2` 17, `h3` 14, `body` 13 ; rayons, barre du bas, héros, disques d'action,
+champs (38 px) et rangées de réglages ont leur mesure resserrée au même
+endroit. Une taille de texte arbitraire ≥ 14 px s'écrit en rem pour suivre.
+La vitrine et le bureau ne changent pas. Les champs de l'app sont à 13,5 px :
+le zoom de saisie d'iOS est coupé par `maximum-scale=1`, posé sur la balise
+viewport par `shell/App.tsx` pour l'app seule.
+
 ## 4. Motion
 
 **Ressort Liquid** : `--tv-spring` (courbe `linear()` à peine amortie, repli
@@ -244,8 +254,11 @@ Réutiliser avant de restyler. Graphes : `app/trading/chartTheme.ts` +
   guide vers l'action ; erreur honnête (un `PageErrorBoundary` par page).
 - **Formulaires** : écriture optimiste, brouillons autosauvegardés
   (`useDraftAutosave`), aucune perte silencieuse.
-- **Mobile** : barre flottante, cibles tactiles ≥ 44 px, zéro débordement
-  horizontal (vérifié de 360 à 1920 px).
+- **Mobile** : barre flottante (onglets de 44 px), densité mobile (§3), zéro
+  débordement horizontal (vérifié de 360 à 1920 px). Aucune bulle flottante
+  au-dessus de la barre : le compte actif et Jarvis vivent dans l'en-tête
+  (`MobileActions`), la bulle de Jarvis ne paraît que pour refermer son
+  panneau.
 
 Le laboratoire Monte Carlo privilégie un graphe, quatre chiffres et un éditeur
 compact (modal sur mobile). Les vues Capital / Drawdown / Objectif partagent

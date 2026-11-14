@@ -185,7 +185,7 @@ export default memo(function Sidebar({ page, setPage, totalPnl }: SidebarProps) 
               height={34}
             />
             <span className="rail-label min-w-0" aria-hidden={collapsed || undefined}>
-              <BrandWord className="truncate text-[15px] text-white" />
+              <BrandWord className="truncate text-[0.9375rem] text-white" />
             </span>
           </div>
           {/* Le chevron n'existe en haut que DÉPLIÉ. Plié, la tête du rail est

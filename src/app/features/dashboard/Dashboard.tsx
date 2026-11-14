@@ -664,7 +664,7 @@ export default function Dashboard({
                     </div>
                     {stats.equityCurve.length > 0 ? (
                       <div
-                        className={cn("chart-draw", !fit && "h-48 md:h-60")}
+                        className={cn("chart-draw", !fit && "h-36 md:h-60")}
                         style={fit ? { height: (row1H as number) - CARD_CHROME } : undefined}
                       >
                         <Suspense
@@ -676,7 +676,7 @@ export default function Dashboard({
                         </Suspense>
                       </div>
                     ) : (
-                      <div className="h-48 md:h-60 flex items-center justify-center text-slate-600 text-sm">
+                      <div className="h-36 md:h-60 flex items-center justify-center text-slate-600 text-sm">
                         {t("dashboard.noTradesInPeriod")}
                       </div>
                     )}

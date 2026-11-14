@@ -993,7 +993,7 @@ export default function Onboarding({
             {c.bootTitleA} <span className="text-[var(--tv-highlight)]">{c.bootTitleB}</span>
           </h1>
           <p
-            className="onb-rise mt-4 max-w-[520px] text-[15px] leading-relaxed text-slate-400"
+            className="onb-rise mt-4 max-w-[520px] text-[0.9375rem] leading-relaxed text-slate-400"
             style={rise(4)}
           >
             {c.bootSub}
@@ -1020,7 +1020,7 @@ export default function Onboarding({
             type="button"
             onClick={ignite}
             disabled={igniting}
-            className="onb-cta onb-rise tv-accent-fill mt-8 inline-flex h-12 items-center gap-2 px-6 text-[15px] font-bold disabled:opacity-70"
+            className="onb-cta onb-rise tv-accent-fill mt-8 inline-flex h-12 items-center gap-2 px-6 text-[0.9375rem] font-bold disabled:opacity-70"
             style={rise(8)}
           >
             {c.bootCta} <ArrowRight className="h-4 w-4" />
@@ -1080,7 +1080,7 @@ export default function Onboarding({
               <h1 className="onb-launch-title mt-1 truncate text-3xl font-semibold tracking-[-0.035em] text-white sm:text-5xl">
                 {launchTitle}
               </h1>
-              <p className="onb-launch-copy mt-1 text-[14px] text-slate-400">{c.launchSub}</p>
+              <p className="onb-launch-copy mt-1 text-[0.875rem] text-slate-400">{c.launchSub}</p>
             </div>
           </div>
 
@@ -1122,7 +1122,7 @@ export default function Onboarding({
               </div>
               <div className="col-span-2 border-t border-[var(--tv-border)] px-4 py-3 sm:col-span-1 sm:border-l sm:border-t-0">
                 <div className="tv-label text-slate-500">{c.fLeak}</div>
-                <div className="mt-1 truncate text-[15px] font-semibold text-[var(--tv-highlight)]">
+                <div className="mt-1 truncate text-[0.9375rem] font-semibold text-[var(--tv-highlight)]">
                   {answers.leak ? L.leak[answers.leak].label : "—"}
                 </div>
               </div>
@@ -1166,7 +1166,7 @@ export default function Onboarding({
           maxLength={40}
           autoComplete="given-name"
           aria-label={c.idPlaceholder}
-          className="onb-rise h-14 w-full rounded-2xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-5 text-[18px] font-semibold text-white outline-none transition-colors placeholder:text-slate-600 focus:border-[var(--tv-border-accent)]"
+          className="onb-rise h-14 w-full rounded-2xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-5 text-[1.125rem] font-semibold text-white outline-none transition-colors placeholder:text-slate-600 focus:border-[var(--tv-border-accent)]"
           style={rise(3)}
         />
         <div className="onb-rise mt-6" style={rise(4)}>
@@ -1262,7 +1262,7 @@ export default function Onboarding({
                   const v = Number.parseFloat(e.target.value.replace(",", "."));
                   set("capital", Number.isFinite(v) && v > 0 ? v : null);
                 }}
-                className="tv-figure w-28 bg-transparent text-[14px] text-white outline-none placeholder:font-sans placeholder:text-[12px] placeholder:font-semibold placeholder:text-slate-600"
+                className="tv-figure w-28 bg-transparent text-[0.875rem] text-white outline-none placeholder:font-sans placeholder:text-[12px] placeholder:font-semibold placeholder:text-slate-600"
               />
             </label>
           </div>
@@ -1274,7 +1274,7 @@ export default function Onboarding({
             label={c.currencyLabel}
             value={answers.currency}
             onChange={(v) => chooseCurrency(parseCurrency(v))}
-            className="rounded-xl text-[14px]"
+            className="rounded-xl text-[0.875rem]"
             searchLabel={t("picker.search")}
             options={CURRENCIES.map((cur) => ({
               value: cur.code,
@@ -1719,7 +1719,7 @@ export default function Onboarding({
             <button
               type="button"
               onClick={() => goTo("start")}
-              className="onb-cta tv-accent-fill mt-5 inline-flex h-12 w-full items-center justify-center gap-2 text-[15px] font-bold"
+              className="onb-cta tv-accent-fill mt-5 inline-flex h-12 w-full items-center justify-center gap-2 text-[0.9375rem] font-bold"
               autoFocus
             >
               {c.cont} <ArrowRight className="h-4 w-4" />
@@ -1822,7 +1822,9 @@ export default function Onboarding({
             height={27}
             className="h-[27px] w-[27px] rounded-md"
           />
-          <span className="text-[15px] font-semibold tracking-tight text-white">TradeVault</span>
+          <span className="text-[0.9375rem] font-semibold tracking-tight text-white">
+            TradeVault
+          </span>
         </div>
         <div className="mt-10 font-mono text-[9px] uppercase tracking-[0.22em] text-slate-600">
           {c.systemModules}
@@ -1949,7 +1951,7 @@ export default function Onboarding({
                 <button
                   type="button"
                   onClick={next}
-                  className="onb-cta onb-rise tv-accent-fill mt-7 inline-flex h-12 w-full items-center justify-center gap-2 text-[15px] font-bold"
+                  className="onb-cta onb-rise tv-accent-fill mt-7 inline-flex h-12 w-full items-center justify-center gap-2 text-[0.9375rem] font-bold"
                   style={rise(10)}
                 >
                   {c.cont} <ArrowRight className="h-4 w-4" />

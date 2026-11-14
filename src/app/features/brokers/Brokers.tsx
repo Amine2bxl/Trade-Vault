@@ -631,7 +631,7 @@ export default function Brokers() {
               <div className="space-y-5 p-5 md:p-6">
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="text-[20px] font-bold tracking-tight text-white">
+                    <h2 className="text-[1.25rem] font-bold tracking-tight text-white">
                       {t("brokers.heroTitle")}
                     </h2>
                     {!isPro && <Badge variant="accent">{t("credits.plan.pro")}</Badge>}
@@ -1066,7 +1066,7 @@ function ConnectionCard({
     <Card pad="default" className="animate-fade-in-up">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
-          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-2)] text-[15px] font-extrabold text-white">
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-2)] text-[0.9375rem] font-extrabold text-white">
             T
           </span>
           <div className="min-w-0">

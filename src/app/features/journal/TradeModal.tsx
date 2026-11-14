@@ -1580,7 +1580,7 @@ export default function TradeModal({ trade, usedSymbols, onClose, onSave }: Trad
                     {getDuration(form.entryTime, form.exitTime)}
                   </span>
                   <span
-                    className="tv-figure tv-trade-recap-pnl shrink-0 text-[14px]"
+                    className="tv-figure tv-trade-recap-pnl shrink-0 text-[0.875rem]"
                     data-tone={tone}
                   >
                     {form.direction === "be" ? "BE" : formatMoney(calculatedPnl, { signed: true })}

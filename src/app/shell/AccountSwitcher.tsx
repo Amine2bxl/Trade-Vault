@@ -1,5 +1,4 @@
 import { Suspense, lazy, useEffect, useState } from "react";
-import { createPortal } from "react-dom";
 import {
   Check,
   ChevronDown,
@@ -66,7 +65,7 @@ export default function AccountSwitcher({
    *  variante `card` (le rail), elle réduit le sélecteur au seul disque de
    *  couleur du compte — l'état du rail plié. */
   compact?: boolean;
-  variant?: "bar" | "fab" | "card" | "pill";
+  variant?: "bar" | "card" | "pill";
   balance?: number;
 }) {
   const { accounts, activeAccount, mainAccount, switchAccount, removeAccount, setMain } =
@@ -354,217 +353,12 @@ export default function AccountSwitcher({
           aria-label={`${activeAccount.name} — ${fmtBalance} — ${t("account.switch")}`}
           aria-haspopup="dialog"
           aria-expanded={open}
-          className="tv-account-pill"
+          className={cn("tv-account-pill", compact && "tv-account-pill-sm")}
         >
           <span className="truncate">{activeAccount.name}</span>
           <ChevronDown className={cn("h-3.5 w-3.5 shrink-0", open && "rotate-180")} aria-hidden />
         </button>
         <AccountSheet open={open} onClose={() => setOpen(false)} />
-        {sideModals}
-      </>
-    );
-  }
-
-  // Mobile FAB: a floating circular button (bottom-left, mirroring the AI Coach)
-  // that opens a premium bottom sheet of tappable account cards — one tap to
-  // switch sub-accounts. Original layout, no dropdown crowding the top bar.
-  if (variant === "fab") {
-    if (!activeAccount) return null;
-    const ActiveIcon = getAccountIcon(activeAccount);
-    return (
-      <>
-        {/* La pilule mobile dit EXACTEMENT ce que dit celle du rail : le disque
-            de couleur, le nom, le solde, le chevron. C'est le même sélecteur,
-            posé sur un autre écran — pas un composant cousin.
-
-            Ce qui a sauté, et pourquoi :
-              • le HALO COLORÉ sous le disque (`0 0 14px` de la teinte du
-                compte). La version desktop n'en a jamais eu, et un halo n'est
-                pas une information ;
-              • le `max-w-[96px]` sur le nom. Quatre-vingt-seize pixels coupent
-                « Compte principal » au milieu : la pilule s'étire maintenant
-                jusqu'aux deux tiers de l'écran et ne tronque qu'au-delà ;
-              • le libellé « COMPTE » au-dessus du nom, qui volait la ligne où
-                le SOLDE devait s'écrire. Le disque et le chevron disent déjà
-                qu'on est sur un sélecteur de compte. */}
-        <button
-          onClick={() => setOpen(true)}
-          aria-label={`${activeAccount.name} — ${fmtBalance} — ${t("account.switch")}`}
-          className="md:hidden fixed z-[var(--tv-z-float)] left-3 bottom-[calc(96px_+_env(safe-area-inset-bottom,0px))] h-12 max-w-[66vw] pl-1.5 pr-3 rounded-full flex items-center gap-2.5 float-shell active:scale-95 transition"
-        >
-          <span
-            className="relative grid h-9 w-9 shrink-0 place-items-center rounded-xl border"
-            style={{
-              background: ACCOUNT_TINT.bg,
-              color: ACCOUNT_TINT.fg,
-              borderColor: ACCOUNT_TINT.border,
-            }}
-          >
-            <ActiveIcon className="w-4 h-4" />
-          </span>
-          <span className="min-w-0 flex-1 text-left">
-            <span className="block truncate text-[13px] font-semibold leading-tight text-white">
-              {activeAccount.name}
-            </span>
-            <span className="tv-figure block text-[13px] leading-tight text-slate-400">
-              {fmtBalance}
-            </span>
-          </span>
-          <ChevronDown className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-        </button>
-
-        {open &&
-          createPortal(
-            <div
-              className="tv-dialog-wrap tv-dialog-backdrop fixed inset-0 z-[var(--tv-z-modal-top)] flex items-center justify-center md:hidden"
-              onClick={() => setOpen(false)}
-            >
-              <div
-                role="dialog"
-                aria-modal="true"
-                aria-label={t("account.title")}
-                onClick={(e) => e.stopPropagation()}
-                className="tv-dialog glass-strong w-full max-w-md overflow-y-auto pb-4"
-              >
-                <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
-                  <div>
-                    <h2 className="tv-title">{t("account.title")}</h2>
-                    <p className="tv-row-label">{t("account.subtitle")}</p>
-                  </div>
-                  <button
-                    onClick={() => setOpen(false)}
-                    aria-label={t("common.close")}
-                    className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:bg-white/[0.05]"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2.5 p-4 max-h-[55vh] overflow-y-auto">
-                  {accounts.map((a) => {
-                    const Icon = getAccountIcon(a);
-                    const active = a.id === activeAccount.id;
-
-                    return (
-                      <div
-                        key={a.id}
-                        className={cn(
-                          "relative flex flex-col gap-2 rounded-2xl p-3.5 border transition",
-                          active ? "bg-white/[0.06]" : "bg-white/[0.03] border-white/[0.06]",
-                        )}
-                        style={
-                          active
-                            ? {
-                                borderColor: ACCOUNT_TINT.border,
-                                boxShadow: `0 0 0 1px ${ACCOUNT_TINT.ring}`,
-                              }
-                            : undefined
-                        }
-                      >
-                        <button
-                          onClick={() => {
-                            switchAccount(a.id);
-                            setOpen(false);
-                          }}
-                          className="flex flex-col gap-2 text-left active:scale-[0.97] transition-transform"
-                        >
-                          <span
-                            className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                            style={{ background: ACCOUNT_TINT.bg, color: ACCOUNT_TINT.fg }}
-                          >
-                            <Icon className="w-4.5 h-4.5" />
-                          </span>
-                          <span className="min-w-0 pr-6">
-                            <span className="block text-sm font-bold text-white truncate">
-                              {a.name}
-                            </span>
-                            <span className="block text-[10px] text-slate-500 truncate">
-                              {a.id === mainAccount?.id
-                                ? `${t("account.mainBadge")} · ${t(TYPE_LABEL_KEY[a.type])}`
-                                : t(TYPE_LABEL_KEY[a.type])}
-                            </span>
-                          </span>
-                        </button>
-
-                        {/* Rename + delete affordances */}
-                        <div className="absolute bottom-2.5 right-2.5 flex items-center gap-1">
-                          {accounts.length > 1 && (
-                            <button
-                              onClick={() => setDeleting(a)}
-                              aria-label={t("account.delete")}
-                              className="w-6 h-6 rounded-lg flex items-center justify-center text-slate-600 hover:text-red-400 hover:bg-red-500/10"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          )}
-                          <button
-                            onClick={() => {
-                              setEditingModalAccount(a);
-                              setOpen(false);
-                            }}
-                            aria-label={t("account.rename")}
-                            className="w-6 h-6 rounded-lg flex items-center justify-center text-slate-500 hover:text-white hover:bg-white/[0.08]"
-                          >
-                            <Pencil className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-
-                        {active && (
-                          <span className="tv-accent-fill absolute top-2.5 right-2.5 w-5 h-5 rounded-full flex items-center justify-center">
-                            <Check className="w-3 h-3" strokeWidth={3} />
-                          </span>
-                        )}
-                      </div>
-                    );
-                  })}
-
-                  {canAddAccount ? (
-                    <button
-                      onClick={() => {
-                        setCreateOpen(true);
-                        setOpen(false);
-                      }}
-                      className="flex flex-col items-center justify-center gap-2 rounded-2xl p-3.5 border border-dashed border-cyan-500/30 bg-cyan-500/[0.06] text-cyan-300 hover:bg-cyan-500/10 transition active:scale-[0.97] min-h-[92px]"
-                    >
-                      <Plus className="w-5 h-5" />
-                      <span className="text-xs font-semibold text-center">
-                        {t("account.newShort")}
-                      </span>
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => {
-                        goPro();
-                        setOpen(false);
-                      }}
-                      className="flex flex-col items-center justify-center gap-2 rounded-2xl p-3.5 border border-dashed border-white/[0.1] bg-white/[0.03] text-slate-400 hover:text-cyan-300 hover:bg-cyan-500/[0.06] transition active:scale-[0.97] min-h-[92px]"
-                    >
-                      <Lock className="w-5 h-5" />
-                      <span className="text-xs font-semibold text-center">
-                        {t("account.goProShort")}
-                      </span>
-                    </button>
-                  )}
-                  {accounts.length > 1 && (
-                    <button
-                      onClick={() => {
-                        setTransferOpen(true);
-                        setOpen(false);
-                      }}
-                      className="flex min-h-[92px] flex-col items-center justify-center gap-2 rounded-2xl border border-[var(--tv-border)] bg-white/[0.03] p-3.5 text-slate-300 transition active:scale-[0.97]"
-                    >
-                      {canTransfer ? <Repeat2 className="h-5 w-5" /> : <Lock className="h-5 w-5" />}
-                      <span className="text-center text-xs font-semibold">
-                        {t("transfer.open")}
-                      </span>
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>,
-            document.body,
-          )}
-
         {sideModals}
       </>
     );

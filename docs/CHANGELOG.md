@@ -3,6 +3,16 @@
 Journal des changements **structurels** (pas des features ni des correctifs,
 qui vivent dans l'historique git et les PR).
 
+## 2026-11-14 — Densité mobile
+
+- Couche unique `html.tv-app` (fin de `styles.css`) : base 13–14 px sur
+  téléphone, échelle `--tv-t-*` et rayons resserrés, barre du bas de 56 px,
+  héros et disques d'action plus petits. Bureau et vitrine inchangés.
+- Les bulles flottantes du compte et de Jarvis quittent le bas d'écran pour
+  l'en-tête mobile ; la variante `fab` d'`AccountSwitcher` est supprimée.
+- Viewport `maximum-scale=1` posé par l'app seule : champs à 13,5 px sans
+  zoom de saisie iOS.
+
 ## 2026-11-14 — Logos d'instruments, symbole au choix, téléphone allégé
 
 - Chaque instrument porte son logo (`trading/SymbolLogo` ; table unique

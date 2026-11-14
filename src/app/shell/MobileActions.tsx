@@ -1,4 +1,6 @@
 import { Bell, Settings } from "@/shared/ui/icons";
+import { JarvisMark } from "@/shared/ui/JarvisMark";
+import AccountSwitcher from "./AccountSwitcher";
 import type { Page } from "../types";
 import { preloadPage } from "./pageModules";
 import { cn } from "@/shared/ui/cn";
@@ -10,6 +12,10 @@ import { badgeLabel } from "@/modules/notifications";
 interface MobileActionsProps {
   page: Page;
   setPage: (p: Page) => void;
+  /** Ajoute le compte actif et Jarvis : les deux bulles flottantes d'autrefois,
+   *  rangées dans l'en-tête. Le tableau de bord (pilule de compte sous le
+   *  titre, Jarvis dans ses actions) et Jarvis lui-même n'en ont pas besoin. */
+  withAccount?: boolean;
 }
 
 /**
@@ -29,7 +35,7 @@ interface MobileActionsProps {
  *
  * Desktop : la barre latérale porte déjà ces trois-là, d'où `md:hidden`.
  */
-export default function MobileActions({ page, setPage }: MobileActionsProps) {
+export default function MobileActions({ page, setPage, withAccount }: MobileActionsProps) {
   const { t } = useT();
   const { user } = useAuth();
   const unread = useUnreadCount(user?.id);
@@ -50,7 +56,7 @@ export default function MobileActions({ page, setPage }: MobileActionsProps) {
       aria-label={label}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "relative grid h-9 w-9 place-items-center rounded-xl",
+        "relative grid h-8 w-8 place-items-center rounded-xl",
         "transition-colors duration-200",
         active
           ? "bg-white/[0.06] text-[var(--tv-highlight)]"
@@ -71,18 +77,31 @@ export default function MobileActions({ page, setPage }: MobileActionsProps) {
   );
 
   return (
-    <div className="flex items-center gap-1 md:hidden">
+    <div className="flex shrink-0 items-center gap-0.5 md:hidden">
+      {withAccount && (
+        <>
+          <AccountSwitcher variant="pill" compact />
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent("tv:open-jarvis"))}
+            aria-label={t("assistant.open")}
+            className="grid h-8 w-8 place-items-center rounded-xl text-slate-400 transition-colors duration-200 hover:bg-white/[0.04]"
+          >
+            <JarvisMark className="h-[17px] w-[17px]" />
+          </button>
+        </>
+      )}
       {action(
         "inbox",
         t("nav.inbox"),
-        <Bell className="h-[19px] w-[19px]" strokeWidth={1.9} />,
+        <Bell className="h-[17px] w-[17px]" strokeWidth={1.9} />,
         page === "inbox",
         unread,
       )}
       {action(
         "settings",
         t("nav.settings"),
-        <Settings className="h-[19px] w-[19px]" strokeWidth={1.9} />,
+        <Settings className="h-[17px] w-[17px]" strokeWidth={1.9} />,
         page === "settings",
       )}
     </div>

@@ -988,7 +988,10 @@ export function MissedEditor({
           {m.symbol ? (
             <>
               <span className="tv-figure shrink-0 text-white">{m.symbol}</span>
-              <span className="tv-figure tv-trade-recap-pnl shrink-0 text-[14px]" data-tone={tone}>
+              <span
+                className="tv-figure tv-trade-recap-pnl shrink-0 text-[0.875rem]"
+                data-tone={tone}
+              >
                 {r > 0 ? "+" : ""}
                 {r.toFixed(1)}R
               </span>

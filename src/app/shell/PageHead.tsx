@@ -76,7 +76,7 @@ export default function PageHead({
               <h1 ref={setTitleEl} className="tv-large-title min-w-0 flex-1 truncate">
                 {title}
               </h1>
-              <MobileActions page={page} setPage={setPage} />
+              <MobileActions page={page} setPage={setPage} withAccount />
             </div>
             {/* Section à plusieurs vues : la rangée d'ORIGINE, inchangée —
                 onglets à gauche, actions de la page à droite. */}

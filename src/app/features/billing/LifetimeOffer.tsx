@@ -42,7 +42,7 @@ export default function LifetimeOffer({
         <span className="lifetime-badge">{LIFETIME_COPY.badge[lang]}</span>
         <span className="tv-label text-slate-500">{def.name[lang]}</span>
       </div>
-      <h3 className="mt-4 text-[20px] font-bold tracking-tight text-white">
+      <h3 className="mt-4 text-[1.25rem] font-bold tracking-tight text-white">
         {LIFETIME_COPY.title[lang]}
       </h3>
       <p className="mt-1 text-[13px] text-slate-400">{def.tagline[lang]}</p>

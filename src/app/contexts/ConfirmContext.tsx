@@ -68,7 +68,9 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
             >
               <AlertTriangle className="w-5 h-5" />
             </div>
-            <p className="text-[15px] font-semibold leading-snug text-white">{pending.message}</p>
+            <p className="text-[0.9375rem] font-semibold leading-snug text-white">
+              {pending.message}
+            </p>
             {pending.detail && (
               <p className="mt-1.5 text-sm leading-relaxed text-slate-400">{pending.detail}</p>
             )}

@@ -20,7 +20,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import Sidebar from "./Sidebar";
 import ChartDefs from "../trading/ChartDefs";
 import MobileNav from "./MobileNav";
-import AccountSwitcher from "./AccountSwitcher";
 import PageHead from "./PageHead";
 // Dashboard is the landing page — keep it in the main chunk. Every other page
 // (and its heavy deps: recharts, react-markdown) loads on demand.
@@ -189,7 +188,7 @@ interface PublicSlots {
 
 function AppContent({ publicPage, publicFallback }: PublicSlots) {
   const { user, isAuthenticated, loading } = useAuth();
-  const { activeId, ready: accountsReady, activeAccount } = useAccounts();
+  const { activeId, ready: accountsReady } = useAccounts();
   const { t, lang } = useT();
   const { toast } = useToast();
   const confirm = useConfirm();
@@ -1151,7 +1150,23 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
   useEffect(() => {
     if (!isAuthenticated) return;
     document.body.classList.add("tv-app-type");
-    return () => document.body.classList.remove("tv-app-type");
+    // Et sur <html> : la densité mobile (`html.tv-app` dans `styles.css`)
+    // règle la taille de base du document, que seule la racine porte.
+    document.documentElement.classList.add("tv-app");
+    // Les champs de l'app sont dessinés à la densité mobile (13,5 px). iOS
+    // zoome sur tout champ sous 16 px au moment de la saisie — un saut de
+    // page en plein journal. `maximum-scale=1` coupe ce zoom automatique
+    // (iOS laisse toujours le pincement à l'utilisateur) ; posé ici, il ne
+    // touche que l'app connectée, jamais la vitrine.
+    const viewport = document.querySelector<HTMLMetaElement>('meta[name="viewport"]');
+    const viewportBefore = viewport?.content;
+    if (viewport && viewportBefore && !/maximum-scale/.test(viewportBefore))
+      viewport.content = `${viewportBefore}, maximum-scale=1`;
+    return () => {
+      document.body.classList.remove("tv-app-type");
+      document.documentElement.classList.remove("tv-app");
+      if (viewport && viewportBefore !== undefined) viewport.content = viewportBefore;
+    };
   }, [isAuthenticated]);
 
   /* LE PREMIER ÉCRAN NE CLIGNOTE PLUS.
@@ -1372,17 +1387,9 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
       <TrustpilotPrompt tradeCount={trades.length} page={page} modalOpen={modalOpen} />
       {/* Hors ligne ou synchro en direct qui se reconnecte : dit, sinon muet. */}
       <LiveStatus />
-      {/* Mobile : la pastille des sous-comptes flotte en bas à gauche, en miroir
-          de la bulle Jarvis. Solde = départ + P&L. */}
-      {/* Chaque widget flottant a son propre filet : une erreur dans la bulle
-          des sous-comptes ne doit jamais faire tomber toute l'application sur
-          l'écran 500 — elle s'efface, se signale, et se relance. */}
-      <PageErrorBoundary resetKey={`fab-${page}`}>
-        <AccountSwitcher
-          variant="fab"
-          balance={(activeAccount?.startingBalance ?? 0) + stats.totalPnl}
-        />
-      </PageErrorBoundary>
+      {/* Mobile : plus de bulle des sous-comptes en bas d'écran — le compte se
+          choisit dans l'en-tête (`MobileActions`), à côté de Jarvis. Les deux
+          bulles réservaient 140 px sous chaque page. */}
       <MobileNav page={page} setPage={setPage} onAddTrade={handleAdd} />
       <PageErrorBoundary resetKey={`jarvis-${page}`}>
         <Suspense fallback={null}>

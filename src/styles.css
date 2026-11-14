@@ -9821,3 +9821,189 @@ body.tv-app-type svg.lucide {
     min-height: 380px;
   }
 }
+
+/* ══ DENSITÉ MOBILE — l'app entière d'un coup d'œil ══════════════════════
+ *
+ * Sur téléphone, l'app se lisait « zoomée » : grand titre de 30 px, chiffre
+ * héros de 44 px, disques de 52 px, barre du bas de 78 px, cartes à 22 px de
+ * rayon et 16 px de marge — chaque écran n'en montrait que la moitié. Plutôt
+ * que de retoucher cent composants un par un, UNE couche resserre tout :
+ *
+ *   1. la taille de base du document passe à 14 px : chaque mesure Tailwind
+ *      (marges, hauteurs, textes `text-*`, écarts) suit d'un même pas, −12,5 % ;
+ *   2. l'échelle typographique `--tv-t-*` et les rayons `--radius-*`, écrits
+ *      en px, descendent d'un cran ;
+ *   3. les rares surfaces dessinées en px (barre du bas, héros, disques
+ *      d'action, champs, rangées de réglages) reçoivent leur mesure resserrée.
+ *
+ * Bornée à l'app connectée (`html.tv-app`, posée par `shell/App.tsx`) : la
+ * vitrine garde sa propre échelle. Le bureau ne change pas. Les champs de
+ * saisie gardent 16 px de texte (garde anti-zoom d'iOS, plus haut).
+ */
+@media (max-width: 767px) {
+  html.tv-app {
+    /* 14 px dès 390 px de large ; un petit téléphone (360, 375) descend
+       jusqu'à 13 px — c'est lui qui manquait le plus de place. */
+    font-size: clamp(13px, 3.6vw, 14px);
+    /* `text-xs` suivrait à 10,5 px : sous le plancher d'une légende lue. */
+    --text-xs: 0.8125rem;
+    --tv-t-display: 34px;
+    --tv-t-h1: 23px;
+    --tv-t-h2: 17px;
+    --tv-t-h3: 14px;
+    --tv-t-body: 13px;
+    --tv-t-body-sm: 12.5px;
+    --tv-t-caption: 12px;
+    --tv-t-micro: 10.5px;
+    --radius-sm: 8px;
+    --radius-md: 10px;
+    --radius-lg: 11px;
+    --radius-xl: 13px;
+    --radius-2xl: 16px;
+    --radius-3xl: 20px;
+    --radius-4xl: 26px;
+  }
+
+  /* La barre du bas : 56 px au lieu de 78, même ordre, même pouce. */
+  html.tv-app .bottom-nav {
+    padding: 0 10px calc(env(safe-area-inset-bottom, 0px) + 6px);
+  }
+  html.tv-app .bottom-nav-shell {
+    border-radius: 20px;
+  }
+  html.tv-app .bottom-nav-item {
+    min-height: 44px;
+    gap: 2px;
+    border-radius: 13px;
+  }
+  html.tv-app .bottom-nav-item > svg {
+    width: 19px;
+    height: 19px;
+  }
+  html.tv-app .bottom-nav-item > span {
+    font-size: 10px;
+  }
+  html.tv-app .bottom-nav-add {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+  }
+  html.tv-app .bottom-nav-add > svg {
+    width: 19px;
+    height: 19px;
+  }
+  /* Plus de bulles flottantes au-dessus de la barre : le bas de page ne
+     réserve que la barre elle-même. */
+  html.tv-app .app-main {
+    padding-bottom: calc(70px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* La barre compacte qui remplace le grand titre au défilement. */
+  html.tv-app .page-compact-bar {
+    height: 44px;
+    font-size: 14px;
+  }
+
+  /* Le héros du tableau de bord et ses disques d'action. */
+  html.tv-app .dash-hero {
+    gap: 6px;
+    padding: 0 0 12px;
+  }
+  html.tv-app .dash-hero-actions {
+    margin-top: 4px;
+  }
+  html.tv-app .tv-action {
+    gap: 5px;
+    min-width: 56px;
+  }
+  html.tv-app .tv-action-disc {
+    width: 42px;
+    height: 42px;
+  }
+  html.tv-app .tv-action-disc > svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  /* Le compte actif, dans l'en-tête : une capsule courte. */
+  html.tv-app .tv-account-pill {
+    height: 30px;
+    padding: 0 11px;
+    font-size: 12.5px;
+  }
+  html.tv-app .tv-account-pill-sm {
+    height: 28px;
+    max-width: 118px;
+    gap: 3px;
+    padding: 0 9px;
+    font-size: 12px;
+  }
+
+  /* Champs, onglets, rangées : un cran plus bas, toujours lisibles. */
+  html.tv-app .tv-control {
+    height: 38px;
+    padding-inline: 10px;
+  }
+  html.tv-app .tv-subnav-item {
+    min-height: 34px;
+  }
+  html.tv-app .tv-set-title {
+    padding-inline: 14px;
+  }
+  html.tv-app .tv-set-row {
+    min-height: 46px;
+    padding: 10px 14px;
+  }
+  html.tv-app .tv-set-label {
+    font-size: 13.5px;
+  }
+  html.tv-app .dash-row {
+    gap: 10px;
+    padding: 7px 0;
+  }
+  /* Les champs suivent la densité (le zoom de saisie d'iOS est coupé par la
+     balise viewport de l'app, voir `shell/App.tsx`). Spécificité d'un simple
+     sélecteur d'élément : une classe de champ garde la main. */
+  :where(html.tv-app) :is(input, select, textarea) {
+    font-size: 13.5px;
+  }
+  /* Tableau de bord : cartes rapprochées, tuiles de chiffres resserrées —
+     le héros, la courbe et les quatre chiffres tiennent dans l'écran. */
+  html.tv-app .dash-grid {
+    gap: 10px;
+  }
+  html.tv-app .dash-widgets {
+    gap: 8px;
+  }
+  html.tv-app .dash-card-head {
+    margin-bottom: 8px;
+  }
+  html.tv-app .metric-tile {
+    padding: 9px 11px;
+  }
+  html.tv-app .metric-label-row {
+    margin-bottom: 3px;
+  }
+  /* Le sélecteur de vue d'une section (« Journal ▾ »). */
+  html.tv-app .section-picker {
+    height: 2.5rem;
+  }
+  /* Calendrier économique : une annonce sur deux lignes serrées. */
+  html.tv-app .ff-row {
+    row-gap: 1px;
+    padding: 6px 12px;
+  }
+  html.tv-app .ff-day {
+    padding: 6px 12px;
+  }
+  /* Jarvis s'ouvre depuis l'en-tête : sa bulle ne paraît que pour refermer
+     le panneau. (`display` de la bulle l'emporterait sur un `hidden`.) */
+  html.tv-app .tv-jarvis-dock:not(.tv-jarvis-dock-active) {
+    display: none;
+  }
+}
+@media (max-width: 380px) {
+  html.tv-app .dash-hero-figure {
+    font-size: 30px;
+  }
+}

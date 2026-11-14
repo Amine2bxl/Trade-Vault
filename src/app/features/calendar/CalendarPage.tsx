@@ -316,7 +316,7 @@ function AccountCalendarPage({
         style={cellStyle}
         aria-label={summary}
         className={cn(
-          "cal-cell relative flex min-h-[52px] flex-col items-center justify-center gap-0.5 overflow-hidden rounded-lg border px-0.5 text-center transition-[filter,transform] duration-200 md:min-h-[84px] md:gap-1 md:rounded-xl",
+          "cal-cell relative flex min-h-[2.75rem] flex-col items-center justify-center gap-0.5 overflow-hidden rounded-lg border px-0.5 text-center transition-[filter,transform] duration-200 md:min-h-[84px] md:gap-1 md:rounded-xl",
           out ? "cal-cell-out" : !cellStyle && "cal-cell-empty",
           !cellStyle && !out && missedCount > 0 && "border-amber-500/25",
           isToday && "ring-1 ring-inset ring-[var(--tv-border-accent)]",
@@ -354,7 +354,7 @@ function AccountCalendarPage({
         {data && (
           <span
             className={cn(
-              "tv-figure tv-figure-secondary max-w-full truncate text-[10px] font-bold leading-none sm:text-[11px] md:text-[14px]",
+              "tv-figure tv-figure-secondary max-w-full truncate text-[10px] font-bold leading-none sm:text-[11px] md:text-[0.875rem]",
               out && "opacity-70",
               isAllBE
                 ? "text-slate-400"
@@ -663,7 +663,7 @@ function AccountCalendarPage({
                     }
                     aria-label={`${t("calendar.weekendShort")} ${sat.day}–${sun.day}`}
                     className={cn(
-                      "cal-cell cal-cell-empty flex min-h-[52px] flex-col items-center justify-center gap-0.5 rounded-lg border text-center",
+                      "cal-cell cal-cell-empty flex min-h-[2.75rem] flex-col items-center justify-center gap-0.5 rounded-lg border text-center",
                       weDays.length === 0 && "opacity-60",
                     )}
                   >
@@ -694,7 +694,7 @@ function AccountCalendarPage({
                     week.trades === 0 ? "—" : formatMoney(week.pnl, { signed: true })
                   }`}
                   className={cn(
-                    "cal-week cal-week-m flex min-h-[52px] flex-col items-center justify-center gap-0.5 rounded-lg px-0.5 text-center",
+                    "cal-week cal-week-m flex min-h-[2.75rem] flex-col items-center justify-center gap-0.5 rounded-lg px-0.5 text-center",
                     !weekHasTrades && "opacity-45",
                   )}
                 >

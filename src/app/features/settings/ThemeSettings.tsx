@@ -53,9 +53,12 @@ function ThemePreview({ theme }: { theme: ThemeDef }) {
   );
 }
 
-function Swatch({ color }: { color: string }) {
+function Swatch({ color, className }: { color: string; className?: string }) {
   return (
-    <span className="w-4 h-4 rounded-full border border-white/15" style={{ background: color }} />
+    <span
+      className={cn("w-4 h-4 rounded-full border border-white/15", className)}
+      style={{ background: color }}
+    />
   );
 }
 
@@ -135,8 +138,10 @@ export default function ThemeSettings() {
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5 min-w-0">
             <Swatch color={th.primary} />
-            <Swatch color={th.secondary} />
-            <Swatch color={th.highlight} />
+            {/* Trois vignettes par rangée sur téléphone : la pastille de
+                l'accent suffit, la courbe montre déjà les deux autres. */}
+            <Swatch color={th.secondary} className="max-sm:hidden" />
+            <Swatch color={th.highlight} className="max-sm:hidden" />
             <span className="text-xs font-semibold text-white truncate">{th.name}</span>
           </div>
           {isActive && <Check className="w-4 h-4 shrink-0" style={{ color: th.primary }} />}
@@ -186,7 +191,7 @@ export default function ThemeSettings() {
         open={openPresets}
         onToggle={() => setOpenPresets((v) => !v)}
       >
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-2 sm:gap-3">
           {presets.map((th) => (
             <Card key={th.id} th={th} />
           ))}
@@ -199,13 +204,13 @@ export default function ThemeSettings() {
         open={openCustom}
         onToggle={() => setOpenCustom((v) => !v)}
       >
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-2 sm:gap-3">
           {custom.map((th) => (
             <Card key={th.id} th={th} />
           ))}
           <button
             onClick={startNew}
-            className="rounded-2xl border-2 border-dashed border-white/[0.10] hover:border-[var(--tv-border-accent)] hover:bg-[rgb(var(--tv-accent-rgb)/0.04)] transition flex flex-col items-center justify-center gap-1.5 min-h-[136px] text-slate-500 hover:text-[var(--tv-highlight)]"
+            className="rounded-2xl border-2 border-dashed border-white/[0.10] hover:border-[var(--tv-border-accent)] hover:bg-[rgb(var(--tv-accent-rgb)/0.04)] transition flex flex-col items-center justify-center gap-1.5 min-h-[8.5rem] text-slate-500 hover:text-[var(--tv-highlight)]"
           >
             <Plus className="w-5 h-5" />
             <span className="text-[11px] font-semibold">{t("appearance.new")}</span>
