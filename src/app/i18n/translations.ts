@@ -1559,6 +1559,7 @@ const en = {
   "analytics.s.days": "{n} d",
   "analytics.s.winStreak": "Longest winning streak",
   "analytics.s.lossStreak": "Longest losing streak",
+  "analytics.weeklyPerformance": "Weekly performance",
   "quant.bestDay": "best day",
   "quant.recovery": "Recovery",
   "quant.inDrawdown": "in drawdown",

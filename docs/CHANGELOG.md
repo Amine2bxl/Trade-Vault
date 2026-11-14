@@ -3,6 +3,19 @@
 Journal des changements **structurels** (pas des features ni des correctifs,
 qui vivent dans l'historique git et les PR).
 
+## 2026-11-14 — Analyses complètes rétablies et enrichies
+
+- À la demande du propriétaire, la page d'Analyses d'origine revient en
+  entier (trois vues, barre Profit factor, sept indicateurs, courbe,
+  Gagnés/Perdus, mensuel, tableau par setup, EdgeLab, carte jour × heure,
+  jours d'annonce) avec ses fichiers (`EdgeLabCard`, `NewsDaysCard`,
+  `ResearchNotes`, `useResearchNotes`, `store/research`).
+- Ajouts dans la vue d'ensemble : performance **hebdomadaire** (P&L et taux
+  de réussite des 16 dernières semaines), « Ce qui marche » (8 cases,
+  `domain/analyticsInsights`), « Tes 100 prochains trades »
+  (`NextTradesPanel`).
+- Migration `market_history` appliquée en production.
+
 ## 2026-11-14 — Analyses simplifiées : une page, des réponses
 
 - Une seule vue (fin des onglets Vue d'ensemble / Exécution / Timing) :

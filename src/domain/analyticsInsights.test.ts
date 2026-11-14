@@ -96,4 +96,16 @@ describe("analyticsInsights", () => {
       { month: "2026-10", pnl: 75, count: 2 },
     ]);
   });
+
+  test("P&L par semaine, la semaine commence le lundi", () => {
+    const r = analyticsInsights([
+      tr({ date: "2026-10-05", pnl: 100 }), // lundi
+      tr({ date: "2026-10-11", pnl: -40 }), // dimanche, même semaine
+      tr({ date: "2026-10-12", pnl: 30 }), // lundi suivant
+    ]);
+    expect(r.weeks).toEqual([
+      { week: "2026-10-05", pnl: 60, count: 2, winRate: 0.5 },
+      { week: "2026-10-12", pnl: 30, count: 1, winRate: 1 },
+    ]);
+  });
 });

@@ -1,7 +1,5 @@
 import { useMemo } from "react";
 import {
-  Area,
-  AreaChart,
   Bar,
   BarChart,
   CartesianGrid,
@@ -11,7 +9,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import type { Trade, TradeStats } from "@/app/types";
+import type { Trade } from "@/app/types";
 import { formatMoney } from "@/shared/currency";
 import { InfoTip } from "@/shared/ui/InfoTip";
 import { cn } from "@/shared/ui/cn";
@@ -22,117 +20,13 @@ import { journalOutlook, OUTLOOK_MIN_TRADES, OUTLOOK_TRADES } from "@/modules/pr
 import { histogram } from "../monte-carlo/monteCarloViz";
 
 /**
- * LES DEUX PANNEAUX GRAPHIQUES DES ANALYSES.
+ * « TES 100 PROCHAINS TRADES » — le panneau de projection des Analyses.
  *
- * Ils n'affichent que des résultats : la courbe et son drawdown (de
- * `computeStats`), et « tes 100 prochains trades » (de `journalOutlook`, le
- * moteur Monte Carlo appliqué au journal). Aucune mécanique à l'écran — pas
+ * Il n'affiche que des résultats : « tes 100 prochains trades » (de
+ * `journalOutlook`, le moteur Monte Carlo appliqué au journal). Aucune mécanique à l'écran — pas
  * de « trajectoires », de « tirages » ni de courbe de dépassement : un
  * histogramme et trois chiffres en clair.
  */
-
-export function EquityPanel({ stats, className }: { stats: TradeStats; className?: string }) {
-  const { t, lang } = useT();
-  const dayFmt = useMemo(
-    () => new Intl.DateTimeFormat(lang, { day: "numeric", month: "short", timeZone: "UTC" }),
-    [lang],
-  );
-  // « 2026-10-14 » → « 14 oct. », lu en UTC : une date civile ne glisse pas.
-  const shortDate = (v: string) => {
-    const [y, m, d] = v.split("-").map(Number);
-    return y && m && d ? dayFmt.format(new Date(Date.UTC(y, m - 1, d))) : v;
-  };
-  const equity = useMemo(() => {
-    let peak = -Infinity;
-    return stats.equityCurve.map((p) => {
-      peak = Math.max(peak, p.equity);
-      return { date: p.date, equity: p.equity, dd: p.equity - peak };
-    });
-  }, [stats.equityCurve]);
-
-  return (
-    <section className={cn("dash-panel", className)}>
-      <div className="dash-panel-head">
-        <h2 className="dash-panel-title">{t("analytics.ob.equityDd")}</h2>
-      </div>
-      {equity.length > 1 ? (
-        <>
-          <div className="ana-chart-main">
-            <ResponsiveContainer debounce={100} width="100%" height="100%">
-              <AreaChart data={equity} margin={{ left: 0, right: 8, top: 6, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="anaEq" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={CHART_GREEN} stopOpacity={0.22} />
-                    <stop offset="100%" stopColor={CHART_GREEN} stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid vertical={false} stroke="var(--tv-border)" />
-                <XAxis dataKey="date" hide />
-                <YAxis
-                  tick={AXIS_TICK}
-                  tickLine={false}
-                  axisLine={false}
-                  width={48}
-                  tickFormatter={(v) => formatMoney(v, { compact: true })}
-                />
-                <Tooltip
-                  {...tooltipStyle}
-                  labelFormatter={(v) => shortDate(String(v))}
-                  formatter={(v: number) => [formatMoney(v), t("chart.balance")]}
-                />
-                <Area
-                  dataKey="equity"
-                  type="monotone"
-                  stroke={CHART_GREEN}
-                  strokeWidth={2}
-                  fill="url(#anaEq)"
-                  isAnimationActive={false}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="ana-chart-dd">
-            <ResponsiveContainer debounce={100} width="100%" height="100%">
-              <AreaChart data={equity} margin={{ left: 0, right: 8, top: 2, bottom: 0 }}>
-                <XAxis
-                  dataKey="date"
-                  tick={AXIS_TICK}
-                  tickLine={false}
-                  axisLine={false}
-                  minTickGap={40}
-                  tickFormatter={shortDate}
-                />
-                <YAxis
-                  tick={AXIS_TICK}
-                  tickLine={false}
-                  axisLine={false}
-                  width={48}
-                  tickFormatter={(v) => formatMoney(v, { compact: true })}
-                />
-                <Tooltip
-                  {...tooltipStyle}
-                  labelFormatter={(v) => shortDate(String(v))}
-                  formatter={(v: number) => [formatMoney(v), t("analytics.ob.drawdown")]}
-                />
-                <Area
-                  dataKey="dd"
-                  type="monotone"
-                  stroke={CHART_RED}
-                  strokeWidth={1.5}
-                  fill={CHART_RED}
-                  fillOpacity={0.14}
-                  isAnimationActive={false}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </>
-      ) : (
-        <div className="ana-empty">{t("dashboard.noTradesInPeriod")}</div>
-      )}
-    </section>
-  );
-}
 
 export function NextTradesPanel({
   trades,

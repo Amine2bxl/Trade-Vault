@@ -36,6 +36,9 @@ export interface AnalyticsInsights {
   longestLossStreak: number;
   /** P&L par mois civil, chronologique (« AAAA-MM »). */
   months: { month: string; pnl: number; count: number }[];
+  /** P&L par semaine (clé = lundi « AAAA-MM-JJ »), chronologique, avec le
+   *  taux de réussite des trades décisifs (null sans trade décisif). */
+  weeks: { week: string; pnl: number; count: number; winRate: number | null }[];
 }
 
 type Acc = { pnl: number; count: number; wins: number; decided: number };
@@ -129,8 +132,33 @@ export function analyticsInsights(trades: readonly Trade[]): AnalyticsInsights {
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([month, m]) => ({ month, pnl: Math.round(m.pnl * 100) / 100, count: m.count }));
 
+  const byWeek = new Map<string, Acc>();
+  for (const t of trades) {
+    const wd = isoWeekday(t.date);
+    if (wd === null || !Number.isFinite(t.pnl)) continue;
+    const [y, m, d] = t.date.split("-").map(Number);
+    const monday = new Date(Date.UTC(y, m - 1, d - (wd - 1))).toISOString().slice(0, 10);
+    const a = byWeek.get(monday) ?? { pnl: 0, count: 0, wins: 0, decided: 0 };
+    a.pnl += t.pnl;
+    a.count++;
+    if (!isBreakEven(t)) {
+      a.decided++;
+      if (t.pnl > 0) a.wins++;
+    }
+    byWeek.set(monday, a);
+  }
+  const weeks = [...byWeek.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([week, a]) => ({
+      week,
+      pnl: Math.round(a.pnl * 100) / 100,
+      count: a.count,
+      winRate: a.decided ? a.wins / a.decided : null,
+    }));
+
   return {
     months,
+    weeks,
     setup: bestWorst(maps.setup),
     symbol: bestWorst(maps.symbol),
     day: bestWorst(maps.day),

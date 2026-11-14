@@ -1517,6 +1517,7 @@ const fr: Dict = {
   "analytics.s.days": "{n} j",
   "analytics.s.winStreak": "Plus longue série gagnante",
   "analytics.s.lossStreak": "Plus longue série perdante",
+  "analytics.weeklyPerformance": "Performance hebdomadaire",
   "quant.bestDay": "meilleur jour",
   "quant.recovery": "Récupération",
   "quant.inDrawdown": "en drawdown",
