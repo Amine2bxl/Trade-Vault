@@ -3,6 +3,20 @@
 Journal des changements **structurels** (pas des features ni des correctifs,
 qui vivent dans l'historique git et les PR).
 
+## 2026-11-14 — Analyses simplifiées : une page, des réponses
+
+- Une seule vue (fin des onglets Vue d'ensemble / Exécution / Timing) :
+  Résultats, Ce qui marche, La suite. Plus de Sharpe, Sortino, Kelly,
+  intervalles ni courbes de dépassement à l'écran.
+- `domain/analyticsInsights` (pur, testé) : meilleur et pire setup, marché,
+  jour, heure de New York (≥ 5 trades par case, avec n), séries, P&L par
+  mois. La page n'agrège plus rien elle-même.
+- « Tes 100 prochains trades » : un histogramme et quatre chiffres en clair
+  (résultat typique, 9 fois sur 10, risque de perte, risque de drawdown).
+- Supprimés (plus importés) : `EdgeLabCard`, `NewsDaysCard`,
+  `ResearchNotes`, `useResearchNotes`, `store/research` ; les données de la
+  table des notes de recherche restent en base.
+
 ## 2026-11-14 — Analyses : l'ancienne et la nouvelle vue réunies
 
 - Vue d'ensemble en trois sections ordonnées, une seule matière

@@ -9880,21 +9880,21 @@ body.tv-app-type svg.lucide {
   padding-bottom: 0;
 }
 .ana-kpis {
-  grid-template-columns: repeat(8, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   margin-bottom: 0;
   border-bottom: 0;
 }
 .ana-kpis .dash-kpi {
   padding-bottom: 10px;
 }
-@media (max-width: 1279px) {
+@media (max-width: 1023px) {
   .ana-kpis {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
-  .ana-kpis .dash-kpi:nth-child(5) {
+  .ana-kpis .dash-kpi:nth-child(4) {
     border-left: 0;
   }
-  .ana-kpis .dash-kpi:nth-child(n + 5) {
+  .ana-kpis .dash-kpi:nth-child(n + 4) {
     border-top: 1px solid var(--tv-border);
   }
 }
@@ -9905,7 +9905,40 @@ body.tv-app-type svg.lucide {
   .ana-kpis .dash-kpi:nth-child(odd) {
     border-left: 0;
   }
+  .ana-kpis .dash-kpi:nth-child(even) {
+    border-left: 1px solid var(--tv-border);
+  }
   .ana-kpis .dash-kpi:nth-child(n + 3) {
+    border-top: 1px solid var(--tv-border);
+  }
+}
+/* « Ce qui marche » : six cases égales, trois par rangée (deux sur téléphone). */
+.ana-tiles {
+  display: grid;
+  height: 100%;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+@media (max-width: 639px) {
+  .ana-tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.ana-chart-sm {
+  height: 9rem;
+}
+/* Les quatre chiffres sous « tes 100 prochains trades ». */
+.ana-next-stats {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+@media (max-width: 639px) {
+  .ana-next-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .ana-next-stats > span:nth-child(3) {
+    border-left: 0;
+  }
+  .ana-next-stats > span:nth-child(n + 3) {
     border-top: 1px solid var(--tv-border);
   }
 }
