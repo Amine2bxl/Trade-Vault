@@ -1183,6 +1183,7 @@ const fr: Dict = {
   "journal.title": "Journal de trading",
   "journal.colDate": "date",
   "journal.colSymbol": "symbole",
+  "journal.filterResult": "Résultat",
   "journal.colStrategy": "stratégie",
   "journal.colPnl": "P&L",
   "journal.quickEditR": "Clique pour modifier le R multiple",
@@ -1565,6 +1566,9 @@ const fr: Dict = {
   "palette.noResults": "Aucun résultat",
   "palette.actions": "Actions",
   "palette.goTo": "Aller à",
+  "palette.navigate": "Naviguer",
+  "palette.open": "Ouvrir",
+  "palette.close": "Fermer",
   "palette.import": "Importer un CSV",
 
   "journal.loadMore": "Afficher plus",

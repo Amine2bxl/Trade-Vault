@@ -303,11 +303,14 @@ function InlineChoices<V extends string>({
 }) {
   const [expanded, setExpanded] = useState(false);
   const [query, setQuery] = useState("");
-  const long = options.length > selection.searchThreshold;
+  /* Dans un panneau de filtres, une douzaine de pastilles se lisent d'un
+     regard : « plus » n'apparaît qu'au-delà — un filtre reste à deux gestes. */
+  const INLINE_MAX = 12;
+  const long = options.length > INLINE_MAX;
   const shown = options.filter((o, i) =>
     query.trim()
       ? `${o.label} ${o.hint ?? ""}`.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())
-      : !long || expanded || i < 6 || isOn(o.value),
+      : !long || expanded || i < INLINE_MAX - 1 || isOn(o.value),
   );
   return (
     <>

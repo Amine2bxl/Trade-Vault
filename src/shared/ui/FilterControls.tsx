@@ -1,12 +1,10 @@
-import { createContext, useContext, useId, useRef, useState, type ReactNode } from "react";
-import { Check, ChevronDown, RotateCcw, SlidersHorizontal } from "./icons";
+import { useId, useRef, useState, type ReactNode } from "react";
+import { Check, RotateCcw, SlidersHorizontal } from "./icons";
 import { numericText } from "./NumericText";
 import { SelectionPanel } from "./SelectionPanel";
 
-const FilterGroup = createContext("");
-
 /** Un accès, un résumé, des choix directs et une application immédiate.
- * Les sections partagent un accordéon natif pour éviter les menus imbriqués. */
+ * Toutes les familles sont ouvertes : un filtre est à deux gestes au plus. */
 export function FilterControls({
   label,
   summary,
@@ -69,21 +67,27 @@ export function FilterControls({
           </div>
         }
       >
-        <FilterGroup.Provider value={id}>
-          <div id={id} className="tv-filter-body">
-            {children}
-          </div>
-        </FilterGroup.Provider>
+        <div id={id} className="tv-filter-body">
+          {children}
+        </div>
       </SelectionPanel>
     </div>
   );
 }
 
-/** La valeur active reste visible même quand le groupe est replié. */
+/**
+ * Une famille de filtres, TOUJOURS dépliée.
+ *
+ * C'était un accordéon exclusif : ouvrir le panneau, déplier la section,
+ * puis choisir — trois gestes, et une seule famille visible à la fois. Le
+ * propriétaire veut deux gestes au plus et tout réglable d'un coup : le
+ * panneau s'ouvre sur toutes les familles, chacune avec ses choix directs.
+ * Le libellé porte la valeur active à droite, lisible d'un regard.
+ * (`defaultOpen` est conservé pour les appelants : toutes sont ouvertes.)
+ */
 export function FilterSection({
   label,
   summary,
-  defaultOpen = false,
   children,
 }: {
   label: string;
@@ -91,15 +95,13 @@ export function FilterSection({
   defaultOpen?: boolean;
   children: ReactNode;
 }) {
-  const group = useContext(FilterGroup);
   return (
-    <details name={group || undefined} open={defaultOpen} className="tv-filter-section">
-      <summary>
+    <section className="tv-filter-section" aria-label={label}>
+      <div className="tv-filter-section-head">
         <span>{label}</span>
         <span className="tv-filter-section-value">{numericText(summary)}</span>
-        <ChevronDown className="h-3.5 w-3.5 shrink-0" />
-      </summary>
+      </div>
       <div className="tv-filter-section-body">{children}</div>
-    </details>
+    </section>
   );
 }

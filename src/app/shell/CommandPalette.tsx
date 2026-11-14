@@ -9,6 +9,7 @@ import { cn } from "@/shared/ui/cn";
 import { stripRichText } from "@/shared/richText";
 import { useT } from "../i18n/LanguageContext";
 import { Modal } from "@/shared/ui";
+import { SymbolLogo } from "../trading/SymbolLogo";
 
 interface CommandPaletteProps {
   open: boolean;
@@ -57,70 +58,59 @@ export default function CommandPalette({
           .slice(0, 8)
       : [];
 
-  const itemClass =
-    "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-300 cursor-pointer data-[selected=true]:bg-cyan-500/10 data-[selected=true]:text-white transition-colors";
-
+  /* LA PALETTE — une seule surface centrée, comme la recherche d'une app :
+     le champ en tête, les résultats en lignes de même hauteur, les touches
+     en pied. Elle se calait en haut à gauche : la fenêtre portait sa propre
+     largeur pleine et la palette s'y logeait à gauche, dans un second cadre. */
   return (
     <Modal
       open={open}
       onClose={onClose}
-      // Command palettes sit near the top (pt-[12vh]), not dead-centre — keep
-      // that convention via the wrapper override. The panel keeps its own shape.
-      wrapperClassName="z-[var(--tv-z-sheet)] items-start justify-center pt-[12vh] px-4 md:items-start md:pt-[12vh]"
+      wrapperClassName="tv-palette-wrap z-[var(--tv-z-sheet)]"
+      className="tv-palette"
       focusPanel={false}
     >
       <Command
         label={t("palette.title")}
         shouldFilter={matchingTrades.length === 0}
-        className="relative glass-strong rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl shadow-black/60 animate-slide-in border border-cyan-500/15"
+        className="flex min-h-0 flex-col"
       >
-        <div className="flex items-center gap-2.5 px-4 border-b border-white/[0.06]">
-          <Search className="w-4 h-4 text-cyan-400/70 shrink-0" />
+        <div className="tv-palette-input">
+          <Search className="h-[18px] w-[18px] shrink-0 text-slate-500" />
           <Command.Input
             value={query}
             onValueChange={setQuery}
             placeholder={t("palette.placeholder")}
             autoFocus
-            className="flex-1 bg-transparent py-3.5 text-sm text-white placeholder-slate-500 focus:outline-none"
+            className="min-w-0 flex-1 bg-transparent text-white placeholder-slate-500 focus:outline-none"
           />
-          <kbd className="hidden md:inline text-[11px] font-bold text-slate-600 border border-white/[0.08] rounded px-1.5 py-0.5">
-            ESC
-          </kbd>
+          <kbd className="tv-palette-kbd">esc</kbd>
         </div>
-        <Command.List className="max-h-[50vh] overflow-y-auto p-2">
-          <Command.Empty className="py-8 text-center text-sm text-slate-500">
+        <Command.List className="tv-palette-list">
+          <Command.Empty className="py-10 text-center text-sm text-slate-500">
             {t("palette.noResults")}
           </Command.Empty>
 
           {matchingTrades.length > 0 && (
-            <Command.Group
-              heading={t("common.trades")}
-              className="[&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-[11px] [&_[cmdk-group-heading]]:font-bold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:text-slate-500"
-            >
+            <Command.Group heading={t("common.trades")} className="tv-palette-group">
               {matchingTrades.map((tr) => (
                 <Command.Item
                   key={tr.id}
                   value={`trade-${tr.id}`}
                   onSelect={() => run(() => onViewTrade(tr))}
-                  className={itemClass}
+                  className="tv-palette-item"
                 >
-                  <span
-                    className={cn(
-                      "w-1.5 h-1.5 rounded-full shrink-0",
-                      tr.direction === "be"
-                        ? "bg-slate-400"
-                        : tr.pnl >= 0
-                          ? "bg-emerald-400"
-                          : "bg-red-400",
-                    )}
-                  />
-                  <span className="font-bold text-white">{tr.symbol}</span>
-                  <span className="tv-num text-[10px] text-slate-500">
-                    {formatShortDate(tr.date)} · {tr.strategy}
+                  <SymbolLogo symbol={tr.symbol} size="sm" />
+                  <span className="min-w-0 flex-1 truncate">
+                    <span className="font-semibold text-white">{tr.symbol}</span>
+                    <span className="tv-num ml-2 text-xs text-slate-500">
+                      {formatShortDate(tr.date)}
+                      {tr.strategy ? ` · ${tr.strategy}` : ""}
+                    </span>
                   </span>
                   <span
                     className={cn(
-                      "tv-figure tv-figure-secondary ml-auto text-xs",
+                      "tv-figure text-[0.8125rem]",
                       tr.direction === "be"
                         ? "text-slate-300"
                         : tr.pnl >= 0
@@ -135,52 +125,70 @@ export default function CommandPalette({
             </Command.Group>
           )}
 
-          <Command.Group
-            heading={t("palette.actions")}
-            className="[&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-[11px] [&_[cmdk-group-heading]]:font-bold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:text-slate-500"
-          >
+          <Command.Group heading={t("palette.actions")} className="tv-palette-group">
             <Command.Item
               value={`${t("common.addTrade")} new trade add`}
               onSelect={() => run(onAddTrade)}
-              className={itemClass}
+              className="tv-palette-item"
             >
-              <Plus className="w-4 h-4 text-cyan-400" /> {t("common.addTrade")}
+              <span className="tv-palette-icon tv-palette-icon-accent">
+                <Plus className="h-4 w-4" />
+              </span>
+              {t("common.addTrade")}
             </Command.Item>
             <Command.Item
               value={`${t("palette.import")} import csv`}
               onSelect={() => run(onOpenImport)}
-              className={itemClass}
+              className="tv-palette-item"
             >
-              <Upload className="w-4 h-4 text-cyan-400" /> {t("palette.import")}
+              <span className="tv-palette-icon">
+                <Upload className="h-4 w-4" />
+              </span>
+              {t("palette.import")}
             </Command.Item>
             <Command.Item
               value={`${t("common.exportCsv")} export csv download`}
               onSelect={() => run(() => exportTradesCSV(trades))}
-              className={itemClass}
+              className="tv-palette-item"
             >
-              <Download className="w-4 h-4 text-cyan-400" /> {t("common.exportCsv")}
+              <span className="tv-palette-icon">
+                <Download className="h-4 w-4" />
+              </span>
+              {t("common.exportCsv")}
             </Command.Item>
           </Command.Group>
 
-          <Command.Group
-            heading={t("palette.goTo")}
-            className="[&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-[11px] [&_[cmdk-group-heading]]:font-bold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:text-slate-500"
-          >
+          <Command.Group heading={t("palette.goTo")} className="tv-palette-group">
             {NAV_ITEMS.map(({ id, labelKey, icon: Icon }) => (
               <Command.Item
                 key={id}
                 value={`${t(labelKey)} ${id}`}
                 onSelect={() => run(() => setPage(id))}
-                className={itemClass}
+                className="tv-palette-item"
               >
-                <span className="text-slate-500">
-                  <Icon className="w-4 h-4" />
-                </span>{" "}
+                <span className="tv-palette-icon">
+                  <Icon className="h-4 w-4" />
+                </span>
                 {t(labelKey)}
               </Command.Item>
             ))}
           </Command.Group>
         </Command.List>
+        <div className="tv-palette-foot" aria-hidden>
+          <span>
+            <kbd className="tv-palette-kbd">↑</kbd>
+            <kbd className="tv-palette-kbd">↓</kbd>
+            {t("palette.navigate")}
+          </span>
+          <span>
+            <kbd className="tv-palette-kbd">↵</kbd>
+            {t("palette.open")}
+          </span>
+          <span>
+            <kbd className="tv-palette-kbd">esc</kbd>
+            {t("palette.close")}
+          </span>
+        </div>
       </Command>
     </Modal>
   );

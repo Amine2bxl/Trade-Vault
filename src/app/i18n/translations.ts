@@ -1208,6 +1208,7 @@ const en = {
   "journal.title": "Trade Journal",
   "journal.colDate": "date",
   "journal.colSymbol": "symbol",
+  "journal.filterResult": "Result",
   "journal.colStrategy": "strategy",
   "journal.colPnl": "P&L",
   "journal.quickEditR": "Click to edit the R multiple",
@@ -1614,6 +1615,9 @@ const en = {
   "palette.noResults": "No results",
   "palette.actions": "Actions",
   "palette.goTo": "Go to",
+  "palette.navigate": "Navigate",
+  "palette.open": "Open",
+  "palette.close": "Close",
   "palette.import": "Import CSV",
 
   // Journal v2

@@ -23,6 +23,7 @@ import {
 import type { AppNotification, NotificationCategory } from "@/modules/notifications/types";
 import { events } from "@/modules/events";
 import { useAuth } from "@/app/contexts/AuthContext";
+import { nsKey, usePersistedValue, writeJSON } from "@/app/utils/persistence";
 import { useT } from "@/app/i18n/LanguageContext";
 import type { TKey } from "@/app/i18n/translations";
 import { usePageActions, usePageLead } from "@/app/contexts/PageActionsContext";
@@ -127,14 +128,22 @@ const needsAttention = (n: AppNotification) =>
  *   4. COMPTE JUSTE : toutes les non lues sont chargées, le chiffre de la
  *      page est celui du badge, et « tout marquer comme lu » vide les deux.
  */
+const NO_CATEGORIES: NotificationCategory[] = [];
+
 export default function Inbox() {
   const { t, lang } = useT();
   const { user } = useAuth();
   const { boxRef, height } = useAvailableHeight();
   const [notifs, setNotifs] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(true);
-  const [categories, setCategories] = useState<NotificationCategory[]>([]);
-  const [unreadOnly, setUnreadOnly] = useState(false);
+  // Filtres mémorisés, comme partout : la boîte rouvre sur le même tri.
+  const catKey = nsKey(user?.id, "inbox.categories");
+  const unreadKey = nsKey(user?.id, "inbox.unreadOnly");
+  const categories = usePersistedValue<NotificationCategory[]>(catKey, NO_CATEGORIES);
+  const setCategories = (v: NotificationCategory[]) => writeJSON(catKey, v);
+  const unreadOnly = usePersistedValue<boolean>(unreadKey, false);
+  const setUnreadOnly = (v: boolean | ((prev: boolean) => boolean)) =>
+    writeJSON(unreadKey, typeof v === "function" ? v(unreadOnly) : v);
   const [failed, setFailed] = useState(false);
 
   const reload = useCallback(() => {

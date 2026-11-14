@@ -538,12 +538,12 @@ export default function Journal({
               />
             </FilterSection>
             <FilterSection
-              label={t("tradeDetail.result")}
+              label={t("journal.filterResult")}
               summary={resultFilter === "all" ? t("common.all") : t(`common.${resultFilter}`)}
             >
               <SelectPicker
                 inline
-                label={t("tradeDetail.result")}
+                label={t("journal.filterResult")}
                 value={resultFilter}
                 onChange={setResultFilter}
                 options={(["all", "win", "loss", "be"] as const).map((v) => ({
@@ -555,12 +555,12 @@ export default function Journal({
             </FilterSection>
             {strategyOptions.length > 0 && (
               <FilterSection
-                label={t("journal.colStrategy")}
+                label={t("trade.strategy")}
                 summary={strategies.length ? strategies.join(", ") : t("common.all")}
               >
                 <MultiPicker
                   inline
-                  label={t("journal.colStrategy")}
+                  label={t("trade.strategy")}
                   values={strategies}
                   options={strategyOptions}
                   onChange={setStrategies}

@@ -359,11 +359,13 @@ la valeur. Les minutes importées hors du pas restent disponibles. Pas de
 **Filtres de page :** `FilterControls.tsx` est le point d’assemblage commun au
 Journal, à Analytics, aux actualités économiques, à la saisonnalité et à
 l’Inbox. Le déclencheur affiche le résumé actif (nom complet accessible, texte
-tronqué si nécessaire) et son nombre. Chaque `FilterSection` garde sa valeur
-visible lorsqu’elle est repliée ; l’accordéon natif ne développe qu’un groupe
-à la fois. Les options sont **inline**, jamais un second popover pour un jour,
-un résultat, une devise ou un setup. Les listes longues montrent d’abord six
-choix et les sélections ; la suite et la recherche se demandent explicitement.
+tronqué si nécessaire) et son nombre. Toutes les `FilterSection` s’ouvrent
+avec le panneau (plus d’accordéon) : un filtre est à **deux gestes** au plus,
+et tout se règle d’un coup ; chaque section affiche sa valeur active à droite
+de son libellé. Les options sont **inline**, jamais un second popover pour un
+jour, un résultat, une devise ou un setup. Les listes montrent douze choix et
+les sélections ; au-delà, « plus » et la recherche. Chaque page **mémorise**
+ses filtres (`usePersistedValue` + `writeJSON`, clé `nsKey`).
 Le pied reste fixe : réinitialiser, mention « mise à jour immédiate », terminer.
 Les changements s’appliquent immédiatement ; seule une période personnalisée
 attend « appliquer la période » après choix de ses deux bornes. La date reste

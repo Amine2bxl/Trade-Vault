@@ -809,25 +809,13 @@
 .tv-filter-section + .tv-filter-section {
   border-top: 1px solid var(--tv-border);
 }
-.tv-filter-section > summary {
+.tv-filter-section-head {
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 44px;
-  cursor: pointer;
-  list-style: none;
+  min-height: 36px;
   font-size: var(--tv-t-body-sm);
   font-weight: 600;
-}
-.tv-filter-section > summary::-webkit-details-marker {
-  display: none;
-}
-.tv-filter-section > summary > svg {
-  color: var(--tv-text-muted);
-  transition: transform var(--tv-dur-1);
-}
-.tv-filter-section[open] > summary > svg {
-  transform: rotate(180deg);
 }
 .tv-filter-section-value {
   min-width: 0;

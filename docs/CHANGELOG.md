@@ -3,6 +3,17 @@
 Journal des changements **structurels** (pas des features ni des correctifs,
 qui vivent dans l'historique git et les PR).
 
+## 2026-11-14 — Recherche ⌘K et filtres à deux gestes
+
+- Palette ⌘K : une surface centrée (champ, lignes de 40 px avec logos et
+  P&L, touches en pied) ; elle se calait en haut à gauche dans un cadre vide.
+- `FilterSection` n'est plus un accordéon : toutes les familles s'ouvrent
+  avec le panneau, un filtre est à deux gestes ; douze pastilles visibles
+  avant « plus ».
+- Filtres mémorisés partout : Analyses (période, jours) et Boîte de
+  réception (catégories, non lus) rejoignent Journal, Calendrier éco et
+  Saisonnalité.
+
 ## 2026-11-14 — Barre d'app sans titres, tableau de bord en trois panneaux
 
 - `PageHead` : plus de grand titre (il répétait l'onglet et le sélecteur) ni

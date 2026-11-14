@@ -16,6 +16,7 @@ import {
 } from "@/domain/quantStats";
 import { loadStartingBalance } from "@/app/store";
 import { useAuth } from "@/app/contexts/AuthContext";
+import { nsKey, usePersistedValue, writeJSON } from "@/app/utils/persistence";
 import { useAccounts } from "@/app/contexts/AccountContext";
 import { cn } from "@/shared/ui/cn";
 import {
@@ -111,6 +112,9 @@ const weekdayOf = (date: string) => new Date(`${date}T12:00:00`).getDay();
 
 const ANALYTICS_VIEWS = ["overview", "execution", "timing"] as const;
 
+const ALL_PERIOD: RangeValue<AnalyticsPeriod> = { kind: "preset", preset: "all" };
+const NO_DAYS: string[] = [];
+
 export default function Analytics({ trades }: AnalyticsProps) {
   const chartAnimation = useChartAnimation();
   const [view, setView] = usePageView("analytics", ANALYTICS_VIEWS, "overview");
@@ -119,10 +123,12 @@ export default function Analytics({ trades }: AnalyticsProps) {
   const { user } = useAuth();
   const { activeId, accounts } = useAccounts();
   const locale = LOCALE_MAP[lang] || "en-US";
-  const [period, setPeriod] = useState<RangeValue<AnalyticsPeriod>>({
-    kind: "preset",
-    preset: "all",
-  });
+  /* Filtres MÉMORISÉS (par utilisateur, sur cet appareil) : la page rouvre
+     sur la question que le trader se posait la dernière fois. */
+  const periodKey = nsKey(user?.id, "analytics.period");
+  const daysKey = nsKey(user?.id, "analytics.days");
+  const period = usePersistedValue<RangeValue<AnalyticsPeriod>>(periodKey, ALL_PERIOD);
+  const setPeriod = (v: RangeValue<AnalyticsPeriod>) => writeJSON(periodKey, v);
   /* LE JOUR DE LA SEMAINE — la deuxième moitié de la question.
      La page ne savait filtrer qu'une DURÉE : « les trente derniers jours ».
      Or la question qu'un trader se pose sur ses statistiques est presque
@@ -132,7 +138,8 @@ export default function Analytics({ trades }: AnalyticsProps) {
      la page : chaque chiffre, chaque graphe répond alors à la question posée,
      et pas seulement l'un d'entre eux. */
   /** Jours retenus (1 = lundi … 5 = vendredi) — vide : tous. */
-  const [days, setDays] = useState<string[]>([]);
+  const days = usePersistedValue<string[]>(daysKey, NO_DAYS);
+  const setDays = (v: string[]) => writeJSON(daysKey, v);
   const [activePieIndex, setActivePieIndex] = useState<number | null>(null);
   const [startingBalance, setStartingBalance] = useState(0);
 
