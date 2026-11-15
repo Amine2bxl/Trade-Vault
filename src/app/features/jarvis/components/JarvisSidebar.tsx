@@ -1,15 +1,5 @@
 import { useState } from "react";
-import {
-  Plus,
-  History,
-  Pin,
-  PinOff,
-  Pencil,
-  Check,
-  X,
-  Trash2,
-  CheckCheck,
-} from "@/shared/ui/icons";
+import { Plus, Pin, PinOff, Pencil, Check, X, Trash2 } from "@/shared/ui/icons";
 import { useT } from "@/app/i18n/LanguageContext";
 import { cn } from "@/shared/ui/cn";
 import AccountSwitcher from "@/app/shell/AccountSwitcher";
@@ -67,23 +57,15 @@ export default function JarvisSidebar({
         <button
           type="button"
           onClick={onNew}
-          className="flex h-8 w-full items-center gap-2 rounded-lg border border-[var(--tv-border)] bg-[var(--tv-plate-2)] px-2.5 text-[13px] font-semibold text-slate-200 transition-colors hover:border-[var(--tv-border-strong)] hover:bg-[var(--tv-plate-3)] hover:text-white"
+          className="flex h-9 w-full items-center gap-2 rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-2)] px-2.5 text-[13px] font-semibold text-slate-200 transition-colors hover:border-[var(--tv-border-strong)] hover:bg-[var(--tv-plate-3)] hover:text-white"
         >
           <Plus className="h-3.5 w-3.5 shrink-0" />
           <span className="truncate">{t("jarvisSide.new")}</span>
         </button>
 
-        {/* Historique — les conversations, épinglées en tête */}
-        <div className="mt-1 space-y-px">
-          <div className="tv-label flex items-center gap-1.5 px-2.5 pb-1 pt-3 text-slate-600">
-            <History className="w-3 h-3" />
-            {t("jarvisSide.history")}
-          </div>
-
-          {conversations.length === 0 && (
-            <p className="tv-row-label px-2.5 pt-2 leading-relaxed">{t("jarvisConv.empty")}</p>
-          )}
-
+        {/* Les conversations, épinglées en tête — sans intertitre ni phrase
+            d'explication : la liste se comprend d'elle-même. */}
+        <div className="mt-3 space-y-px">
           {conversations.slice(0, 12).map((c) => {
             const renaming = renamingId === c.id;
             if (renaming) {
@@ -134,13 +116,13 @@ export default function JarvisSidebar({
                 )}
                 onClick={() => onOpenConversation(c.id)}
               >
-                <Pin
+                {c.pinned && <Pin className="h-3 w-3 shrink-0 text-[var(--tv-highlight)]" />}
+                <span
                   className={cn(
-                    "w-3 h-3 shrink-0 transition-colors",
-                    c.pinned ? "text-[var(--tv-highlight)]" : "text-slate-700",
+                    "min-w-0 flex-1 truncate px-1 text-[13px]",
+                    c.id === activeId ? "text-white" : "text-slate-400",
                   )}
-                />
-                <span className="flex-1 min-w-0 text-[13px] text-slate-300 truncate">
+                >
                   {c.title}
                 </span>
                 <button
@@ -177,17 +159,10 @@ export default function JarvisSidebar({
             );
           })}
         </div>
-
-        {conversations.length > 3 && (
-          <div className="flex items-center gap-1.5 px-3 pt-3 text-[10px] text-slate-700">
-            <CheckCheck className="w-3 h-3" />
-            <span>{t("jarvisSide.historyNote")}</span>
-          </div>
-        )}
       </div>
 
-      {/* Compte actif — bas gauche de la sidebar (carte CTA premium) */}
-      <div className="shrink-0 border-t border-[var(--tv-border)] px-2 py-2.5">
+      {/* Compte actif — même hauteur que la barre du quota, à droite. */}
+      <div className="tv-jarvis-side-foot">
         <AccountSwitcher variant="card" />
       </div>
     </div>

@@ -9,6 +9,7 @@ import {
   Volume2,
   Zap,
 } from "@/shared/ui/icons";
+import { loadOnboarding, type OnboardingData } from "@/app/store";
 import { JarvisMark, JarvisOrb, type JarvisOrbState } from "@/shared/ui";
 import Composer from "../Composer";
 import { VoiceBar } from "../components/VoiceBar";
@@ -61,11 +62,9 @@ import {
   type TradeIntent,
   type TradeReflection,
 } from "@/app/store/tradeIntel";
-import { buildSuggestions } from "../insights/suggestions";
 import { useT } from "@/app/i18n/LanguageContext";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useToast } from "@/app/contexts/ToastContext";
-import { loadOnboarding, type OnboardingData } from "@/app/store";
 import { exceedsDailyLimit, incrementAiUsage, jarvisDailyLimit } from "../aiUsage";
 import { effectiveCopyLang, readAutoSpeak } from "../prefs";
 import { jarvisConversationStore } from "../conversations";
@@ -481,11 +480,6 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
   // question — la mémoire doit rendre Jarvis plus pertinent, jamais plus lent.
   // Une ref plutôt qu'un state : cette donnée ne déclenche aucun rendu.
   const memoryRef = useRef<MemoryEntry[]>([]);
-  /* CE QUE JARVIS SAIT DU TRADER, montré au trader. La mémoire nourrissait
-     les réponses sans jamais se voir : la relation restait invisible. Les
-     souvenirs les plus importants s'affichent à l'accueil — le trader voit
-     qu'il parle à quelqu'un qui le connaît, et ce qu'il sait. */
-  const [knownFacts, setKnownFacts] = useState<MemoryEntry[]>([]);
   const SpeechRecognitionCtor = getSpeechRecognition();
   const draftKey = conversationId ? `tv:jarvis:draft:${userId ?? "anon"}:${conversationId}` : null;
 
@@ -523,11 +517,6 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
       .then((entries) => {
         if (!active) return;
         memoryRef.current = entries;
-        setKnownFacts(
-          entries
-            .filter((e) => e.kind === "profile" || e.kind === "fact" || e.kind === "lesson")
-            .slice(0, 4),
-        );
       })
       .catch(() => {
         /* la mémoire est un bonus, jamais un prérequis */
@@ -638,10 +627,10 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
 
   const [onboarding, setOnboarding] = useState<OnboardingData | null>(null);
 
-  // Suggestions intelligentes — `buildSuggestions` existait déjà (utilisé par
-  // l'Accueil) mais n'était jamais branché ici : la conversation n'orientait
-  // donc jamais le trader. Elles sont dérivées de SES données réelles (pire
-  // jour, erreur la plus coûteuse, dérive de risque…), pas d'une liste figée.
+  /* PLUS DE SUGGESTIONS NI DE RELANCES (décision du propriétaire,
+     2026-11-15) : « chaque trader doit pouvoir parler comme il le souhaite ».
+     Des questions écrites d'avance cadraient la conversation ; le champ
+     suffit. */
   /* La salutation de l'accueil : l'heure LOCALE du trader, son prénom. */
   const greeting = useMemo(() => {
     const h = new Date().getHours();
@@ -657,33 +646,7 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
     return `${hello}, ${first}`;
   }, [t, user?.name]);
 
-  const suggestions = useMemo(
-    () =>
-      buildSuggestions(
-        {
-          trades: context.trades,
-          stats,
-          signals,
-          rule: null,
-          profile: context.profile ?? null,
-          onboarding,
-        },
-        context.page,
-        effectiveCopyLang(lang),
-      ).slice(0, 4),
-    [context.trades, context.profile, context.page, stats, signals, onboarding, lang],
-  );
-
-  /* LA CONVERSATION CONTINUE. Après chaque réponse, les questions tirées
-     des données du trader qu'il n'a pas encore posées — un échange qui mène
-     quelque part, plutôt qu'une page qui attend. */
-  const followUps = useMemo(() => {
-    const asked = new Set(
-      messages.filter((m) => m.role === "user").map((m) => (textOf(m) || "").trim()),
-    );
-    return suggestions.filter((s) => !asked.has(s.prompt.trim())).slice(0, 3);
-  }, [messages, suggestions]);
-
+  // L'onboarding du trader (objectif, style…) nourrit le contexte des réponses.
   useEffect(() => {
     if (!userId) {
       setOnboarding(null);
@@ -1253,18 +1216,6 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
                 ou on choisit : dans cet ordre. */}
             <h2 className="jarvis-accueil-greeting">{greeting}</h2>
             <p className="jarvis-accueil-invite">{t("assistant.empty")}</p>
-            {knownFacts.length > 0 && (
-              <div className="jarvis-known">
-                <span className="tv-label text-slate-500">{t("jarvis.knowsYou")}</span>
-                <div className="jarvis-known-list">
-                  {knownFacts.map((f) => (
-                    <span key={f.id} className="jarvis-known-item" title={f.content}>
-                      {f.content.length > 48 ? `${f.content.slice(0, 46)}…` : f.content}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         ) : (
           messages.map((m) =>
@@ -1346,32 +1297,6 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
             ),
           )
         )}
-
-        {messages.length > 0 &&
-          !loading &&
-          typingId === null &&
-          messages[messages.length - 1]?.role === "assistant" &&
-          followUps.length > 0 && (
-            <div className="jarvis-followups animate-fade-in">
-              <span className="tv-label text-slate-500">{t("jarvis.followUps")}</span>
-              <div className="jarvis-followups-list">
-                {followUps.map((s) => (
-                  <button
-                    key={s.id}
-                    type="button"
-                    onClick={() => {
-                      followRef.current = true;
-                      void ask(s.prompt);
-                    }}
-                    className="jarvis-followup"
-                  >
-                    {s.label}
-                    <ArrowUpRight className="h-3 w-3 shrink-0" aria-hidden />
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
       </div>
 
       {!neuralInThread && (
@@ -1462,25 +1387,6 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
             micAvailable={!!SpeechRecognitionCtor}
             onVoice={talk.supported ? startVoice : undefined}
           />
-        )}
-
-        {/* Les questions tirées des motifs mesurés sur les trades
-            (`buildSuggestions`) : des puces sous le champ, comme les
-            raccourcis de Claude. Un appui pose la question. */}
-        {loaded && messages.length === 0 && voiceTurn === "off" && suggestions.length > 0 && (
-          <div className="jarvis-starters animate-fade-in" aria-label={t("jarvisHome.suggestions")}>
-            {suggestions.map((s) => (
-              <button
-                key={s.id}
-                type="button"
-                onClick={() => void ask(s.prompt)}
-                className="jarvis-suggestion"
-              >
-                <span className="min-w-0 truncate">{s.label}</span>
-                <ArrowUpRight className="jarvis-suggestion-fleche" aria-hidden />
-              </button>
-            ))}
-          </div>
         )}
       </div>
     </div>

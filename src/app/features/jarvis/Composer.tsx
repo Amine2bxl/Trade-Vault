@@ -116,8 +116,8 @@ export default function Composer({
           disabled={disabled}
           placeholder={t("jarvis.composerPlaceholder")}
           aria-label={t("assistant.title")}
-          title={t("jarvis.composerHint")}
-          className="jarvis-composer-input min-h-9 min-w-0 flex-1 resize-none bg-transparent px-1.5 py-2 leading-6 text-white outline-none placeholder:text-slate-500 disabled:opacity-50"
+          title={`${t("jarvis.reassure")} ${t("jarvis.composerHint")}`}
+          className="jarvis-composer-input min-h-8 min-w-0 flex-1 resize-none bg-transparent px-1.5 py-1 leading-6 text-white outline-none placeholder:text-slate-500 disabled:opacity-50"
         />
 
         {/* CHAMP VIDE : LA VOIX PREND LA PLACE DE L'ENVOI. Un bouton
@@ -152,15 +152,6 @@ export default function Composer({
           </button>
         )}
       </div>
-
-      {/* RASSURER, PAS EXPLIQUER LE CLAVIER. Entrée envoie partout ; ce que le
-          trader veut savoir sous le champ, c'est ce que Jarvis peut faire de
-          son journal : le lire, jamais le modifier sans son accord. Le
-          raccourci reste dans l'infobulle du champ. */}
-      <p className="jarvis-composer-hint" title={t("jarvis.composerHint")}>
-        <ShieldCheck className="h-3.5 w-3.5 shrink-0" aria-hidden />
-        <span>{t("jarvis.reassure")}</span>
-      </p>
     </div>
   );
 }

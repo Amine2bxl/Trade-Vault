@@ -1222,13 +1222,6 @@ body {
 .jarvis-thread-empty {
   flex: 0 1 auto;
 }
-.jarvis-starters {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 8px;
-  margin-top: 14px;
-}
 /* La signature d'une réponse de Jarvis : sa marque, sur une plaque sourde
    liserée d'émeraude — plus un aplat plein à chaque message, qui répétait la
    couleur d'action dix fois dans un fil de dix réponses. */
@@ -1263,55 +1256,6 @@ body {
   border-color: rgb(var(--tv-accent-rgb) / 0.45);
   background: rgb(var(--tv-accent-rgb) / 0.08);
   color: var(--tv-highlight);
-}
-/* LES QUESTIONS SONT L'OBJET PRINCIPAL DE L'ÉCRAN, pas une note de bas de
- * bloc : elles sont tirées des motifs mesurés sur les trades du trader
- * (`buildSuggestions`), donc chacune est une vraie porte d'entrée. Elles
- * étaient des rangées grises indifférenciées, avec un survol CYAN resté de
- * l'identité d'avant. */
-.jarvis-suggestion {
-  /* Une puce, pas une carte : on la lit d'un coup d'œil et on l'effleure. */
-  display: inline-flex;
-  max-width: 100%;
-  align-items: center;
-  gap: 8px;
-  min-height: 38px;
-  border: 1px solid var(--tv-glass-edge);
-  border-radius: 9999px;
-  background: rgb(255 255 255 / 0.04);
-  padding: 0 14px 0 16px;
-  text-align: left;
-  font-size: 13px;
-  color: var(--tv-text-secondary);
-  box-shadow: var(--tv-glass-specular);
-  transition:
-    background-color var(--tv-dur-1) var(--tv-ease),
-    color var(--tv-dur-1) var(--tv-ease),
-    transform var(--tv-dur-1) var(--tv-ease);
-}
-.jarvis-suggestion:hover {
-  background: rgb(255 255 255 / 0.08);
-  color: var(--tv-text-primary);
-}
-.jarvis-suggestion:active {
-  transform: var(--tv-press);
-}
-.jarvis-suggestion-fleche {
-  height: 0.875rem;
-  width: 0.875rem;
-  flex-shrink: 0;
-  color: var(--tv-text-muted, #64748b);
-  transition: color 0.18s ease;
-}
-.jarvis-suggestion:hover .jarvis-suggestion-fleche {
-  color: var(--tv-accent);
-}
-@media (prefers-reduced-motion: reduce) {
-  .jarvis-suggestion,
-  .jarvis-suggestion:active {
-    transition: none;
-    transform: none;
-  }
 }
 
 /* ══ L'ÉCRAN D'ERREUR ══
@@ -5091,8 +5035,21 @@ body.tv-app-type :is(.tv-figure, .tv-num, .tabular-nums) {
 .tv-jarvis-bar-top {
   border-bottom: 1px solid var(--tv-border);
 }
-.tv-jarvis-bar-bottom {
+/* LE BAS DE LA FENÊTRE : le quota (à droite) et le compte (en bas de la
+   colonne) partagent LA MÊME hauteur — une seule ligne de base. */
+.tv-jarvis-bar-bottom,
+.tv-jarvis-side-foot {
+  height: 60px;
   border-top: 1px solid var(--tv-border);
+}
+.tv-jarvis-bar-bottom {
+  padding-block: 0;
+}
+.tv-jarvis-side-foot {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  padding: 0 8px;
 }
 
 /* Le bouton d'icône des bandes — fermer, réglages, tiroir. Une seule cible,
@@ -5187,10 +5144,12 @@ body.tv-app-type :is(.tv-figure, .tv-num, .tabular-nums) {
 .jarvis-composer {
   /* LE CHAMP DE CLAUDE : une grande plaque douce, rayon 24, de l'air autour
      du texte. Au focus elle s'éclaircit d'un cran — aucun anneau coloré. */
-  min-height: 60px;
-  padding: 10px 10px 10px 12px;
+  /* Plus compacte (retour du propriétaire, 2026-11-15) : une ligne de
+     46 px, pas une boîte de 60. */
+  min-height: 46px;
+  padding: 5px 5px 5px 10px;
   border: 1px solid var(--tv-border-strong);
-  border-radius: 24px;
+  border-radius: 23px;
   background: var(--tv-plate-2);
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 0.05),
@@ -8672,67 +8631,9 @@ body.tv-app-type svg.lucide {
   justify-content: flex-end;
   padding: 2px max(16px, calc((100% - 760px) / 2)) 0;
 }
-/* Ce que Jarvis sait du trader — des faits, pas des cartes. */
-.jarvis-known {
-  display: grid;
-  justify-items: center;
-  gap: 8px;
-  margin-top: 18px;
-}
-.jarvis-known-list {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 6px;
-}
-.jarvis-known-item {
-  max-width: 100%;
-  padding: 3px 10px;
-  border: 1px solid var(--tv-border);
-  border-radius: 999px;
-  color: var(--tv-text-secondary);
-  font-size: 12px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-/* Les relances après une réponse : la conversation continue. */
-.jarvis-followups {
-  display: grid;
-  gap: 8px;
-}
-.jarvis-followups-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-.jarvis-followup {
-  /* Même puce que les questions de l'accueil : une seule forme pour
-     « poser une question en un appui ». */
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 34px;
-  max-width: 100%;
-  padding: 4px 12px 4px 14px;
-  border: 1px solid var(--tv-glass-edge);
-  border-radius: 999px;
-  background: rgb(255 255 255 / 0.04);
-  box-shadow: var(--tv-glass-specular);
-  color: var(--tv-text-secondary);
-  font-size: 12.5px;
-  text-align: left;
-  transition:
-    color var(--tv-dur-1) var(--tv-ease),
-    background-color var(--tv-dur-1) var(--tv-ease);
-}
-.jarvis-followup:hover {
-  background: rgb(255 255 255 / 0.08);
-  color: var(--tv-text-primary);
-}
 .jarvis-composer-action {
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   transition:
     transform var(--tv-dur-1),
     background-color var(--tv-dur-1);

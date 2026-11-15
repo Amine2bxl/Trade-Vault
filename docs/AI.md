@@ -168,8 +168,9 @@ active.
 **Fondations non branchées** (compilées, testées, appelées par aucune
 surface) : `modules/ai/infra.ts` et `router/router.ts` (ancien routeur d'intentions), `rag/types.ts`
 (contrat d'embeddings), le catalogue `backend/ai.functions.ts`, et le moteur
-d'insights `app/features/jarvis/insights/` hormis `suggestions.ts` (seul utilisé
-par l'UI).
+d'insights `app/features/jarvis/insights/`. Les questions suggérées
+(`suggestions.ts`) ont été retirées le 2026-11-15 : le trader parle comme il
+veut, sans puces ni relances écrites d'avance.
 
 ## 4. Boucle de motifs et propositions
 

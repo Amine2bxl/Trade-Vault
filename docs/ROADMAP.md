@@ -33,7 +33,7 @@ Ce qui ne se prouve pas dans le code — validation humaine requise.
 | Réponses en streaming | Absent (le transport RPC ne fait pas de SSE) |
 | Notifications jamais émises | `goal_completed`, `goal_milestone`, `trade_analyzed`, `daily_brief` : déclarées, sans émetteur (Daily Brief automatique non livré) |
 | Simulateur de probabilités | `features/simulator/Simulator.tsx` non monté |
-| Moteur d'insights | `features/jarvis/insights/` testé mais non branché (hors `suggestions.ts`) |
+| Moteur d'insights | `features/jarvis/insights/` testé mais non branché (les suggestions ont été retirées le 2026-11-15) |
 | Fondations IA | Routeur d'intentions (`modules/ai/router`), RAG (`ai_embeddings`), `ai_jobs`, catalogue `backend/ai.functions.ts` : sans consommateur — brancher ou retirer |
 | Scale | Statistiques calculées côté client ; agrégats SQL/RPC + pagination à prévoir avant que le volume ne pèse |
 | Traductions | `fr` et `en` complets (~1 750 clés) ; les dix autres langues ~300 clés (repli anglais) |

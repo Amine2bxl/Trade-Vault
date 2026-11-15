@@ -166,11 +166,12 @@ export default function Jarvis() {
             l'orbe (l'état de Jarvis) et la promesse. Elle ne tient pas dans la
             barre d'un téléphone : elle y perdait « journal », le mot qui la
             rend vraie. */}
+        {/* L'orbe seule : la phrase d'accroche est partie (moins de texte,
+            retour du propriétaire du 2026-11-15). */}
         <JarvisOrb state={activity} size={22} />
-        <span className="tv-row-label hidden truncate md:block">{t("jarvis.pageLead")}</span>
       </div>
     ),
-    [t, activity],
+    [activity],
   );
   usePageLead(lead);
 

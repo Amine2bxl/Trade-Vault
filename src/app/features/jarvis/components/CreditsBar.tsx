@@ -105,16 +105,15 @@ export default function CreditsBar() {
           ))}
         </span>
       </span>
-      <span className="min-w-0 flex-1 truncate">
-        <span
-          className={cn("text-[12px] font-semibold", exhausted ? "text-amber-300" : "text-white")}
-        >
-          {exhausted ? t("credits.exhausted") : counter}
-        </span>
-        <span className="tv-row-label hidden md:inline">
-          {" · "}
-          {exhausted ? t("credits.freePitch") : t("credits.reset")}
-        </span>
+      {/* Le compte, court ; « remis à zéro à minuit » passe en infobulle. */}
+      <span
+        className={cn(
+          "min-w-0 flex-1 truncate text-[12.5px] font-semibold",
+          exhausted ? "text-amber-300" : "text-slate-200",
+        )}
+        title={t("credits.reset")}
+      >
+        {exhausted ? t("credits.exhausted") : counter}
       </span>
       {!loading && (
         <button type="button" onClick={upgrade} className="jarvis-upgrade jarvis-upgrade-hot">
