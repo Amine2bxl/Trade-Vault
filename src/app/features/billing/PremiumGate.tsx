@@ -9,10 +9,9 @@ import {
   TIER_BY_ID,
   eur,
   tierAtLeast,
-  yearlyPerMonth,
-  monthsFree,
   type Tier,
 } from "@/app/utils/pricing";
+import { LIFETIME_COPY, LIFETIME_EUR, MONTHLY_EUR } from "@/domain/plans";
 import type { Page } from "@/app/types";
 
 /**
@@ -70,13 +69,14 @@ function maskStyle(blur: number, from: number, to: number): CSSProperties {
 
 export function PreviewWall({
   locked,
-  requiredTier,
   benefit,
   onUpgrade,
   children,
   className,
 }: {
   locked: boolean;
+  /** Palier technique requis — gardé pour les appelants ; l'offre affichée
+   *  est toujours celle en vente (voir plus bas). */
   requiredTier: Tier;
   /** Ce que la page apporte, en une phrase — le vrai argument de vente. */
   benefit?: string;
@@ -88,9 +88,13 @@ export function PreviewWall({
   const fr = lang === "fr";
   if (!locked) return <>{children}</>;
 
-  const tier = TIER_BY_ID[requiredTier];
-  const perMonth = eur(Math.round(yearlyPerMonth(requiredTier) * 100) / 100, lang);
-  const freeMonths = monthsFree(requiredTier);
+  /* L'offre affichée est celle qu'on VEND aujourd'hui, pas le palier
+     technique requis : ce dernier vaut souvent `pro`, un palier retiré de la
+     vente, et la barre affichait son ancien tarif annuel. Les deux plans en
+     vente ouvrent tout ; on montre l'entrée (le mensuel) et la licence. */
+  const tier = TIER_BY_ID.elite;
+  const lg = fr ? "fr" : "en";
+  const perMonth = eur(MONTHLY_EUR, lang);
 
   return (
     <div className={cn("relative", className)}>
@@ -125,14 +129,10 @@ export function PreviewWall({
                 {benefit ?? t("gate.thisPageWithYour")}
               </p>
               <p className="mt-1 text-[11px] font-medium text-slate-400">
-                {tier.name[fr ? "fr" : "en"]} ·{" "}
-                <span className="tv-figure text-white">{perMonth}</span>
-                {t("gate.month")}
-                {freeMonths > 0 && (
-                  <span className="tv-num ml-1 text-emerald-400">
-                    · {freeMonths} {t("gate.moFree")}
-                  </span>
-                )}
+                {tier.name[lg]} · <span className="tv-figure text-white">{perMonth}</span>
+                {t("gate.month")} ·{" "}
+                <span className="tv-figure text-white">{eur(LIFETIME_EUR, lang)}</span>{" "}
+                {LIFETIME_COPY.priceNote[lg]}
               </p>
             </div>
             <button

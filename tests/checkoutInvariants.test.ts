@@ -116,6 +116,18 @@ describe("openCheckoutSession — un seul constructeur de session", () => {
     expect(fn).toContain('params["metadata[plan]"] = opts.plan');
     expect(fn).toContain('params["payment_intent_data[metadata][user_id]"] = opts.userId');
     expect(fn).toContain('params["payment_intent_data[metadata][plan]"] = opts.plan');
+    // La marque `offer` distingue un mensuel vendu aujourd'hui d'un ancien
+    // abonnement : sans elle, le webhook le convertirait en licence à vie.
+    expect(fn).toContain('params["subscription_data[metadata][offer]"] = SUBSCRIPTION_OFFER');
+  });
+
+  test("on ne vend pas deux fois la même chose", () => {
+    // Un second mensuel ouvrirait un DEUXIÈME abonnement facturé en
+    // parallèle ; une licence possédée rend tout achat inutile.
+    const fn = BILLING.slice(idx(BILLING, "export async function handleCheckout"));
+    expect(fn).toContain("const salePlan: PaidPlan = salePlanFor(plan)");
+    expect(fn).toContain("await alreadyHolds(sb, user.id, salePlan)");
+    expect(fn).toContain("return json({ error: blocked }, 409)");
   });
 
   test("il n'existe plus qu'un seul constructeur", () => {

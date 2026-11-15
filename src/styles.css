@@ -8830,9 +8830,11 @@ body.tv-app-type svg.lucide {
   }
 }
 
-/* ── L'OFFRE UNIQUE — licence à vie (matière Revolut) ─────────────────────── */
-.lifetime-offer,
-.pricing-free {
+/* ── LES OFFRES — mensuel, licence à vie, gratuit (matière Revolut) ───────────
+   Une carte opaque à grand rayon par offre ; la licence porte le liseré
+   d'accent (l'offre la plus avantageuse dès le sixième mois). Aucune ombre
+   colorée : le liseré suffit à la distinguer. */
+.offer-card {
   display: flex;
   flex-direction: column;
   border: 1px solid var(--tv-border);
@@ -8841,10 +8843,13 @@ body.tv-app-type svg.lucide {
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05);
   padding: 24px;
 }
-.lifetime-offer {
+.offer-card--featured {
   border-color: rgb(var(--tv-accent-rgb) / 0.35);
 }
-.lifetime-badge {
+.offer-card--flat {
+  padding: 20px 24px;
+}
+.offer-badge {
   display: inline-flex;
   align-items: center;
   height: 24px;
@@ -8855,18 +8860,22 @@ body.tv-app-type svg.lucide {
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.02em;
+  white-space: nowrap;
 }
-.lifetime-price {
+.offer-badge--neutral {
+  background: var(--tv-plate-3);
+  color: var(--tv-text-primary);
+}
+.offer-price {
   color: var(--tv-text-primary);
   font: 700 var(--tv-t-display) / 1 var(--font-figure);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.035em;
 }
-.lifetime-owned {
+.offer-owned {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 22px;
   padding: 12px 14px;
   border-radius: var(--radius-lg);
   background: rgb(var(--tv-chart-green-rgb) / 0.1);

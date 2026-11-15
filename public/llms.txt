@@ -41,13 +41,17 @@ interface supports twelve languages once signed in.
 
 ## Pricing
 
-Three plans, billed in euros:
+Three plans, billed in euros. The two paid plans unlock exactly the same
+product; only the way of paying differs:
 
-- **Free** — €0, no time limit and no credit card. Journal, dashboard, equity
-  curve, economic calendar, pre-market checklist and trading plan.
-- **Pro** — €15 / month, or €120 / year. Adds the Jarvis AI coach, CSV import,
-  advanced quantitative analytics and automatic monthly reports.
-- **Elite** — €25 / month, or €200 / year.
+- **Free** — €0, no time limit and no credit card. Journal, dashboard,
+  calendar, pre-market checklist, trading plan and position calculator.
+  10 trades a month, 1 trading account.
+- **Monthly** — €9 / month, no commitment, cancel in one click. Unlimited
+  trades and accounts, every analysis, the Jarvis AI coach, Monte Carlo,
+  automatic monthly reports.
+- **Lifetime license** — €49, paid once, never renews. The same access as
+  the monthly plan, for good.
 
 Plans and prices come from the product catalogue and may change; the pricing
 section of the home page is authoritative.

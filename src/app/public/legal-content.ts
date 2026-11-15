@@ -1,7 +1,7 @@
 import type { Lang } from "../i18n/translations";
 import { SUPPORT_EMAIL } from "../types";
 import { SITE_DOMAIN } from "@/shared/site";
-import { LIFETIME_EUR } from "@/domain/plans";
+import { LIFETIME_EUR, MONTHLY_EUR } from "@/domain/plans";
 
 /**
  * LES DOCUMENTS LÉGAUX — écrits contre le produit, pas contre son souvenir.
@@ -177,10 +177,11 @@ const termsByLang: Partial<Record<Lang, LegalDoc>> = {
       },
       {
         h: "Plans and billing",
-        p: `A free plan exists with no time limit. Full access is sold as a single lifetime license at ${LIFETIME_EUR} EUR, paid once: no subscription, nothing renews. Card payments are handled by Stripe; a cryptocurrency option is handled by Coinbase Commerce. TradeVault never sees or stores your card number.`,
+        p: `A free plan exists with no time limit. Full access is sold in two ways that unlock the same product: a monthly subscription at ${MONTHLY_EUR} EUR per month, with no commitment, or a lifetime license at ${LIFETIME_EUR} EUR, paid once. Card payments are handled by Stripe; a cryptocurrency option (lifetime license only) is handled by Coinbase Commerce. TradeVault never sees or stores your card number.`,
         list: [
-          "The lifetime license is paid once; it does not renew and there is nothing to cancel.",
-          "Earlier subscriptions are converted to the lifetime license; their renewal is turned off, with no further charge.",
+          "The monthly subscription renews each month until you cancel it; cancelling takes one click from your account and keeps access until the end of the month already paid.",
+          "The lifetime license is paid once; it does not renew and there is nothing to cancel. Buying it during a monthly subscription turns that subscription's renewal off.",
+          "Subscriptions taken before the lifetime license existed are converted to it; their renewal is turned off, with no further charge.",
           "Refunds are considered case by case.",
           "If a price changes, the change applies to your next renewal, never retroactively.",
         ],
@@ -240,10 +241,11 @@ const termsByLang: Partial<Record<Lang, LegalDoc>> = {
       },
       {
         h: "Offres et facturation",
-        p: `Une offre gratuite existe, sans limite de durée. L'accès complet se vend sous la forme d'une licence à vie unique de ${LIFETIME_EUR} €, payée une fois : aucun abonnement, rien ne se renouvelle. Les paiements par carte passent par Stripe ; une option en cryptomonnaie passe par Coinbase Commerce. TradeVault ne voit ni ne conserve jamais votre numéro de carte.`,
+        p: `Une offre gratuite existe, sans limite de durée. L'accès complet se vend de deux façons qui ouvrent le même produit : un abonnement mensuel de ${MONTHLY_EUR} € par mois, sans engagement, ou une licence à vie de ${LIFETIME_EUR} €, payée une fois. Les paiements par carte passent par Stripe ; une option en cryptomonnaie (licence à vie uniquement) passe par Coinbase Commerce. TradeVault ne voit ni ne conserve jamais votre numéro de carte.`,
         list: [
-          "La licence à vie se paie une fois ; elle ne se renouvelle pas et il n'y a rien à résilier.",
-          "Les abonnements antérieurs sont convertis en licence à vie ; leur renouvellement est coupé, sans aucun nouveau prélèvement.",
+          "L'abonnement mensuel se renouvelle chaque mois jusqu'à sa résiliation ; résilier se fait en un clic depuis votre compte et garde l'accès jusqu'à la fin du mois déjà payé.",
+          "La licence à vie se paie une fois ; elle ne se renouvelle pas et il n'y a rien à résilier. L'acheter pendant un abonnement mensuel coupe le renouvellement de celui-ci.",
+          "Les abonnements souscrits avant l'existence de la licence à vie sont convertis en licence ; leur renouvellement est coupé, sans aucun nouveau prélèvement.",
           "Les remboursements sont examinés au cas par cas.",
           "Si un prix change, le changement s'applique à votre prochain renouvellement, jamais rétroactivement.",
         ],

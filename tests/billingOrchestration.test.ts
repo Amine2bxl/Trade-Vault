@@ -5,7 +5,13 @@ import {
   reservePromoRedemption,
   type RedemptionOutcome,
 } from "../src/backend/promo.server";
-import { applySubscriptionEvent, timingSafeEqualHex } from "../src/backend/billing.server";
+import {
+  SUBSCRIPTION_OFFER,
+  applySubscriptionEvent,
+  isLegacySubscription,
+  stripeLookupKey,
+  timingSafeEqualHex,
+} from "../src/backend/billing.server";
 
 /**
  * L'ORCHESTRATION côté serveur : ce que le TypeScript envoie à Postgres, et ce
@@ -194,5 +200,70 @@ describe("timingSafeEqualHex", () => {
     expect(timingSafeEqualHex("abcd", "zbcd")).toBe(false);
     expect(timingSafeEqualHex("abcd", "abc")).toBe(false);
     expect(timingSafeEqualHex("", "")).toBe(true);
+  });
+});
+
+/**
+ * QUI DEVIENT UNE LICENCE À VIE ?
+ *
+ * Les abonnés d'AVANT la licence ont reçu une promesse : convertis, sans
+ * repayer. Depuis la relance du mensuel (9 €), un abonnement actif peut aussi
+ * être un abonné d'aujourd'hui — le convertir offrirait 49 € à qui en a payé
+ * 9. La frontière est `isLegacySubscription`.
+ */
+describe("isLegacySubscription", () => {
+  const PRICE = "price_monthly_current";
+  const avant = process.env.STRIPE_PRICE_ELITE_MONTHLY;
+
+  test("un abonnement vendu depuis la relance n'est jamais converti", () => {
+    process.env.STRIPE_PRICE_ELITE_MONTHLY = PRICE;
+    expect(
+      isLegacySubscription({
+        metadata: { plan: "elite_monthly", offer: SUBSCRIPTION_OFFER },
+        items: { data: [{ price: { id: "price_any" } }] },
+      }),
+    ).toBe(false);
+  });
+
+  test("le prix mensuel actuel suffit (abonnement créé depuis le dashboard)", () => {
+    process.env.STRIPE_PRICE_ELITE_MONTHLY = PRICE;
+    expect(isLegacySubscription({ items: { data: [{ price: { id: PRICE } }] } })).toBe(false);
+  });
+
+  test("un ancien abonnement, sans marque ni prix actuel, reste converti", () => {
+    process.env.STRIPE_PRICE_ELITE_MONTHLY = PRICE;
+    expect(
+      isLegacySubscription({
+        metadata: { plan: "pro_monthly" },
+        items: { data: [{ price: { id: "price_old_pro" } }] },
+      }),
+    ).toBe(true);
+  });
+
+  test("un prix porteur d'une clé du catalogue est un prix actuel", () => {
+    expect(
+      isLegacySubscription({
+        items: {
+          data: [{ price: { id: "price_x", lookup_key: "tradevault_elite_monthly_eur_900" } }],
+        },
+      }),
+    ).toBe(false);
+  });
+
+  test("sans prix configuré, seule la marque protège — jamais l'inverse", () => {
+    delete process.env.STRIPE_PRICE_ELITE_MONTHLY;
+    expect(isLegacySubscription({ metadata: { offer: SUBSCRIPTION_OFFER } })).toBe(false);
+    expect(isLegacySubscription({ metadata: { plan: "elite_monthly" } })).toBe(true);
+    if (avant === undefined) delete process.env.STRIPE_PRICE_ELITE_MONTHLY;
+    else process.env.STRIPE_PRICE_ELITE_MONTHLY = avant;
+  });
+});
+
+describe("stripeLookupKey — le prix facturé est celui du catalogue", () => {
+  test("la clé encode le montant affiché, en centimes", () => {
+    // Si le catalogue change de montant, la clé change avec lui : un prix
+    // Stripe resté à l'ancien tarif n'est plus trouvé, donc plus vendu.
+    expect(stripeLookupKey("elite_monthly")).toBe("tradevault_elite_monthly_eur_900");
+    expect(stripeLookupKey("lifetime")).toBe("tradevault_lifetime_eur_4900");
   });
 });

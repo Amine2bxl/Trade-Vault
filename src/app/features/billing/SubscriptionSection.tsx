@@ -70,7 +70,10 @@ export default function SubscriptionSection({
      annulé s'y lisait en vert. L'état est calculé une seule fois, dans
      `Subscription.tsx` ; ce bloc ne fait plus que ce que son nom dit —
      encaisser. */
-  const showPlans = !isPro || sub?.status === "trialing";
+  // Un abonné mensuel voit encore la grille : la licence lui reste ouverte
+  // (le webhook coupe alors le renouvellement du mensuel). Seule une licence
+  // possédée la referme.
+  const showPlans = !isPro || sub?.status === "trialing" || sub?.plan !== "lifetime";
   const isStripeActive = sub?.status === "active" && sub.source === "stripe";
   const portal =
     showPortal && (isStripeActive || (!!sub?.hasStripeCustomer && sub.status !== "trialing"));
@@ -136,6 +139,7 @@ export default function SubscriptionSection({
           busy={busy}
           onChoose={(plan) => run(plan, () => checkout(plan, promo))}
           onCrypto={(plan) => run(`crypto-${plan}`, () => cryptoCheckout(plan))}
+          onManage={isStripeActive ? () => run("portal", openPortal) : undefined}
         />
       )}
 

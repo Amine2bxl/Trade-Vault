@@ -36,7 +36,7 @@ const COMMERCE_API = "https://api.commerce.coinbase.com";
  */
 function cryptoPricing(plan: PaidPlan): { amount: string; label: string; days: number } | null {
   if (!isPaidPlan(plan)) return null;
-  // La licence à vie : 20 € une fois, aucune échéance (`days: 0`).
+  // La licence à vie : payée une fois, aucune échéance (`days: 0`).
   if (plan === LIFETIME_PLAN) {
     return {
       amount: planPrice(plan).toFixed(2),

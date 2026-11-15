@@ -4,17 +4,18 @@ import { Modal } from "@/shared/ui";
 import { useT } from "@/app/i18n/LanguageContext";
 import { useSubscription } from "@/app/hooks/useSubscription";
 import type { PaidPlan } from "@/app/utils/pricing";
-import LifetimeOffer from "./LifetimeOffer";
+import OfferCard from "./OfferCard";
+import { LIFETIME_PLAN, MONTHLY_PLAN } from "@/domain/plans";
 
 /**
- * Passer Pro — la modale unique qui s'ouvre sur chaque « Go Pro ».
+ * Débloquer TradeVault — la modale unique qui s'ouvre sur chaque cadenas.
  *
  * L'utilisateur a DÉJÀ décidé de payer : pas de pitch, pas de bénéfices à
- * répéter. Deux offres (Pro, Elite), mensuel ou annuel, un prix, un bouton.
- * Le code promo (100 % / réduction) reste disponible en une ligne, pour que
- * les clients venus d'une URL `?promo=` ou avec leur code puissent le poser.
+ * répéter. Deux cartes côte à côte — le mensuel et la licence — qui ouvrent
+ * la même chose ; seule la manière de payer change. Le code promo
+ * (100 % / réduction) reste disponible en une ligne, pour les clients venus
+ * d'une URL `?promo=` ou avec leur code.
  */
-
 export default function UpgradeModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { t, lang } = useT();
   const fr = lang === "fr";
@@ -73,14 +74,21 @@ export default function UpgradeModal({ open, onClose }: { open: boolean; onClose
           </button>
         </div>
 
-        {/* L'OFFRE UNIQUE : la licence à vie. Plus de bascule mensuel/annuel ni
-            de paliers à comparer — un prix, payé une fois. */}
-        <LifetimeOffer
-          lang={fr ? "fr" : "en"}
-          busy={busy != null}
-          onChoose={(plan) => void pay(plan)}
-          className="mt-4"
-        />
+        {/* DEUX FAÇONS DE PAYER LE MÊME PRODUIT : au mois, ou une fois. */}
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <OfferCard
+            plan={MONTHLY_PLAN}
+            lang={fr ? "fr" : "en"}
+            busy={busy != null}
+            onChoose={(plan) => void pay(plan)}
+          />
+          <OfferCard
+            plan={LIFETIME_PLAN}
+            lang={fr ? "fr" : "en"}
+            busy={busy != null}
+            onChoose={(plan) => void pay(plan)}
+          />
+        </div>
 
         {/* Code promo — une ligne, pas plus. */}
         <div className="mt-4">

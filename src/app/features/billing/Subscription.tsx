@@ -20,6 +20,8 @@ import { useSubscription } from "@/app/hooks/useSubscription";
 import { cn } from "@/shared/ui/cn";
 import {
   eur,
+  LIFETIME_COPY,
+  LIFETIME_PLAN,
   planPrice,
   intervalOf,
   tierOf,
@@ -76,14 +78,21 @@ export default function Subscription({ trades = [] }: { trades?: Trade[] } = {})
 
   const currentTier = tierOf(sub?.plan);
   const paid = currentTier !== "free";
+  /* La licence n'a pas de rythme de facturation : ni « mensuel » ni
+     « annuel ». Sans ce cas, `intervalOf("lifetime")` la lisait comme un
+     mensuel et la page annonçait « 49 € / mois » à qui a payé une fois. */
+  const lifetime = sub?.plan === LIFETIME_PLAN;
+  const lg = fr ? "fr" : "en";
 
   const planLabel =
     currentTier === "free"
       ? t("billing.planFree")
-      : `TradeVault ${TIER_BY_ID[currentTier].name[fr ? "fr" : "en"]} · ${
-          intervalOf(sub?.plan ?? "free") === "yearly"
-            ? t("subscription.yearly")
-            : t("subscription.monthly")
+      : `TradeVault ${TIER_BY_ID[currentTier].name[lg]} · ${
+          lifetime
+            ? LIFETIME_COPY.priceNote[lg]
+            : intervalOf(sub?.plan ?? "free") === "yearly"
+              ? t("subscription.yearly")
+              : t("subscription.monthly")
         }`;
 
   const dateFmt = useCallback(
@@ -174,9 +183,11 @@ export default function Subscription({ trades = [] }: { trades?: Trade[] } = {})
                   {sub && <Pastille etat={etat} t={t} />}
                   {paid && (
                     <span className="tv-row-label">
-                      {intervalOf(sub?.plan ?? "free") === "yearly"
-                        ? t("sub.billedYearly")
-                        : t("sub.billedMonthly")}
+                      {lifetime
+                        ? LIFETIME_COPY.priceNote[lg]
+                        : intervalOf(sub?.plan ?? "free") === "yearly"
+                          ? t("sub.billedYearly")
+                          : t("sub.billedMonthly")}
                     </span>
                   )}
                 </div>
@@ -193,12 +204,14 @@ export default function Subscription({ trades = [] }: { trades?: Trade[] } = {})
                 </div>
                 <div className="tv-row-label mt-1.5">
                   {paid
-                    ? intervalOf(sub?.plan ?? "free") === "yearly"
-                      ? `${t("billing.perYear")} · ${eur(
-                          Math.round(yearlyPerMonth(currentTier) * 100) / 100,
-                          lang,
-                        )}${t("billing.perMonth")}`
-                      : t("billing.perMonth")
+                    ? lifetime
+                      ? LIFETIME_COPY.priceNote[lg]
+                      : intervalOf(sub?.plan ?? "free") === "yearly"
+                        ? `${t("billing.perYear")} · ${eur(
+                            Math.round(yearlyPerMonth(currentTier) * 100) / 100,
+                            lang,
+                          )}${t("billing.perMonth")}`
+                        : t("billing.perMonth")
                     : t("sub.forever")}
                 </div>
               </div>
