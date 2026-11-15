@@ -17,7 +17,7 @@
 import { SITE_URL, TRUSTPILOT_URL } from "./site";
 import { URLS_RESEAUX } from "./socials";
 import { SSR_LANG, FR_PREFIX, type SiteLang } from "./lang";
-import { LIFETIME_EUR, TIERS } from "@/domain/plans";
+import { SALE_PLANS, planPrice } from "@/domain/plans";
 
 export const SITE_NAME = "TradeVault";
 
@@ -181,14 +181,14 @@ export function structuredData(): string {
         image: DEFAULT_OG_IMAGE,
         inLanguage: ["en", "fr"],
         author: { "@id": `${SITE_URL}/#organization` },
-        // Deux offres réelles : l'offre gratuite et la licence à vie (paiement
-        // unique). Rien d'autre n'est vendu.
+        // Trois offres réelles : le gratuit, le mensuel et la licence à vie.
+        // Les montants sortent du catalogue — rien n'est recopié ici.
         offers: {
           "@type": "AggregateOffer",
           priceCurrency: "EUR",
           lowPrice: "0",
-          highPrice: String(LIFETIME_EUR),
-          offerCount: String(TIERS.length),
+          highPrice: String(Math.max(...SALE_PLANS.map(planPrice))),
+          offerCount: String(1 + SALE_PLANS.length),
         },
       },
     ],

@@ -47,10 +47,11 @@ L'élévation est réservée aux modales et menus ; une carte de graphique ou de
 statistique ne change plus de fond au survol.
 
 `PageContainer` porte les marges communes (`px-3 py-2 md:px-5 md:py-3`) et la
-largeur unique `PAGE_WIDTH` (1400 px, `shared/ui/tokens.ts`), partagée par l'en-tête et les squelettes — plus d'écart entre deux pages d'une même section, y compris pour les pages à hauteur mesurée (ref transmise
-directement). Les cinq pages de réglages (Réglages, Profil, Apparence, Brokers,
-Abonnement) passent `measure="settings"` : même cadre que l'en-tête, et dedans
-une colonne de lecture `SETTINGS_WIDTH` (1040 px) alignée à gauche — le bord
+largeur unique `PAGE_WIDTH` (pleine largeur depuis le 2026-11-15, `shared/ui/tokens.ts`), partagée par l'en-tête et l'attente de page (`PageLoader`) — plus d'écart entre deux pages d'une même section, y compris pour les pages à hauteur mesurée (ref transmise
+directement). Les pages de réglages (Réglages, Profil, Apparence, Abonnement — Brokers est
+masquée, `HIDDEN_PAGES`) passent `measure="settings"` : même cadre que l'en-tête,
+et dedans `SETTINGS_WIDTH` (pleine largeur, elle aussi) ; la page Abonnement
+centre sa carte d'achat (1040 px) — le bord
 gauche ne bouge pas d'un onglet à l'autre. La disposition reste propre à l'usage : courbe dominante au Dashboard,
 tableau sur ordinateur et cartes à deux rangées sur mobile dans le Journal
 (instrument et P&L au-dessus, contexte et actions dessous), colonnes de saisie
@@ -69,9 +70,14 @@ sans champ de particules ni flash plein écran.
 3. Un titre n'est jamais peint en vert (le contre-temps d'une accroche est gris).
 
 **Ce qui ne change jamais** : rien ne rayonne (ni ombre colorée, ni halo, ni
-`animate-ping`, ni dégradé sur un texte, un bouton ou une carte ; la seule
-lumière permise est le papier peint fixe et l'arête spéculaire blanche d'1 px
-du verre) — la profondeur vient de la valeur des surfaces, d'un liseré quasi
+`animate-ping`, ni dégradé sur un texte, un bouton ou une carte ; les seules
+lumières permises sont le papier peint fixe, l'arête spéculaire blanche d'1 px
+du verre et — décision du propriétaire du 2026-11-15 — une lueur d'ambiance
+très légère DERRIÈRE les blocs : deux nappes radiales en arrière-plan de
+chaque page (`.tv-page::before`) et de quelques blocs de la vitrine
+(`.tv-glow`), intensité `--tv-glow-alpha` plafonnée à 0.08, et une lumière
+douce sous les cartes de contenu par le seul jeton `--tv-card-glow` (alpha ≤
+0.3, flou large, jamais un anneau)) — la profondeur vient de la valeur des surfaces, d'un liseré quasi
 invisible et, pour ce qui flotte, d'une ombre noire ; le verre n'est jamais
 posé sur une carte de contenu (`tests/liquidGlass.test.ts`) ; chiffres tabulaires partout ;
 plancher de lisibilité 10 px (12 px pour du texte à lire) ;
@@ -217,6 +223,13 @@ l'écran « apparence » s'applique à chaud à la séquence elle-même.
 Sa sortie est une **métamorphose**, pas une coupure : la carte finale se vide
 (`.onb-morphing`), puis le shell s'ouvre depuis son rectangle jusqu'au plein
 écran (`.tv-morph-in`, `clip-path`, 760 ms en entrée-sortie, coupée sous mouvement réduit).
+Son cadre est **épuré** depuis le 2026-11-15 (« trop slop AI ») : une colonne
+centrée, la question en grand, une progression continue, et en bas le
+**portrait** du trader qui se compose en pastilles — plus de codes de module,
+de rail « calibration » ni de fiche « TRADER FILE ». Deux de ses effets
+reviennent dans tout le produit, en **clin d'œil** : le liseré qui se trace
+autour d'un choix (`TraceRing`, 280 ms dans l'app) et son ciel de points
+fixes (`--tv-sky`, papier peint statique de l'app et de la vitrine).
 
 ## 5. Primitives (`src/shared/ui`)
 
@@ -255,7 +268,7 @@ Réutiliser avant de restyler. Graphes : `app/trading/chartTheme.ts` +
   `hooks/useAvailableHeight`. Calendrier et Monte Carlo utilisent un minimum
   de hauteur et peuvent défiler si leur contenu dépasse ; Journal, Inbox et
   Jarvis conservent leur défilement interne.
-- **États** : chargement par squelette à la géométrie finale ; état vide qui
+- **États** : chargement **en un temps**, sans squelette (2026-11-15) — place réservée, données lues tout de suite quand elles sont locales (conversations Jarvis) ou préchargées (boîte de réception), et au-delà de 320 ms un seul anneau (`PageLoader`) ; état vide qui
   guide vers l'action ; erreur honnête (un `PageErrorBoundary` par page).
 - **Formulaires** : écriture optimiste, brouillons autosauvegardés
   (`useDraftAutosave`), aucune perte silencieuse.
@@ -277,9 +290,17 @@ sont pas retirées des calculs ; la méthode l'explicite.
 
 ## 7. Landing et marketing
 
-Même langage Lucid que l'app, accent encore plus rare. Structure : Hero →
-Problème → Journal → Analyze → Understand → Improve → Produit → Analytics →
-Jarvis → Erreurs / cas d'usage → Excel/Notion → Tarifs → CTA.
+Même langage **Liquid** que l'app (lot L9, novembre 2026), accent encore plus
+rare : barre de navigation en capsule de verre, tout le contenu en plaques
+opaques rayon 28 (`.lq-card`), papier peint de l'app, aucune lueur derrière les
+captures, aucun bouton à ombre colorée, rien qui boucle. Structure : Héros
+centré (comme l'accueil de l'app, capture du tableau de bord + téléphone) →
+Confiance → Problème (+ capture Erreurs) → la boucle en quatre gestes (disques
+façon `ActionButton`) → Produit en bento (`Tour.tsx` : Journal, Calendrier,
+Analyses, Checklist) → Jarvis → Engagements → Tarifs (coût d'un reset face au
+mensuel et à la licence, montants du catalogue) → FAQ → CTA. Classes `lq-*` en
+fin de `landing.css`. Les captures viennent du banc `/dev/ui` (trades
+d'exemple, mention « compte de démonstration » sous chaque groupe).
 
 - **Les captures produit sont le protagoniste** de chaque section
   (« lead every section with a product screenshot »)
@@ -413,7 +434,7 @@ Aucune notification de démonstration n’est ajoutée dans le produit.
 
 **Calendrier économique (façon Forex Factory) :** un TABLEAU, une ligne par publication — heure (écrite une fois pour les publications simultanées), devise, impact en barres (3 rouge, 2 orange, 1 jaune), événement, réel, prévu, précédent — groupé par jour, trié par heure. La provenance est dans l'en-tête (« Vérifié · Forex Factory » + fraîcheur, ou « Horaires indicatifs » en repli). Les filtres (impact, devises, période) vivent dans les préférences du compte (`news.filters.v1`, `userPrefs`) : ils survivent à la fermeture du site et suivent le trader d'un appareil à l'autre.
 
-**Pages contenues :** cadre unique `PAGE_WIDTH` (1400 px), graphiques moins hauts ;
+**Pages contenues :** cadre unique `PAGE_WIDTH` (pleine largeur), graphiques moins hauts ;
 Analytics organise tous ses blocs en Synthèse, Exécution et Timing, un groupe
 à la fois. Le calendrier partage le même cadre que les autres pages.
 

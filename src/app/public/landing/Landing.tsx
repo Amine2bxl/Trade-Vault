@@ -1,29 +1,24 @@
 import { lazyPage } from "@/shared/lazy-page";
 import { Suspense, useEffect, useRef, useState } from "react";
-// Les cinq logos de réseaux sociaux ont quitté cet import avec les liens morts
-// qu'ils portaient : voir le pied de page plus bas.
 import { Check } from "lucide-react";
 import logoSrc from "@/assets/tradevault-logo-128.png";
 import { Icon, type IName } from "./Icon";
 import { ShotOuVisuel } from "./ProductShot";
+import { shot } from "./shots";
 /**
  * L'ÉCRAN D'AUTHENTIFICATION EST DIFFÉRÉ, et c'est lui qui porte Supabase.
  *
  * Il est le SEUL module de la vitrine à toucher `AuthContext`, donc le seul
- * à faire entrer le SDK Supabase (204 Ko) dans le graphe de la page. Or il
- * ne s'affiche qu'après un clic sur « Se connecter » ou « Commencer » : un
- * visiteur qui lit la page de vente et repart ne l'ouvre jamais.
- *
- * Aucun repli de `Suspense` : le module descend pendant que la modale
- * s'apprête à s'ouvrir, et l'écran derrière ne bouge pas. Poser un
- * chargement ici ferait clignoter la page pour quelques dizaines de
- * millisecondes.
+ * à faire entrer le SDK Supabase dans le graphe de la page. Il ne s'affiche
+ * qu'après un clic : un visiteur qui lit la page et repart ne l'ouvre jamais.
+ * Aucun repli de `Suspense` : l'écran derrière ne bouge pas pendant les
+ * quelques millisecondes du chargement.
  */
 const AuthModal = lazyPage(() => import("./AuthModal").then((m) => ({ default: m.AuthModal })));
 const DemoModal = lazyPage(() => import("./DemoModal").then((m) => ({ default: m.DemoModal })));
 import { TrustStrip } from "./Showcase";
 import { TRUSTPILOT_URL } from "@/shared/site";
-import { TourProduit } from "./Tour";
+import { TourProduit, type EcranBento } from "./Tour";
 import { CursorOrb } from "@/shared/ui/CursorOrb";
 import { LIENS_NAV } from "./nav";
 import MegaNav from "./MegaNav";
@@ -40,74 +35,44 @@ import { useLenis } from "lenis/react";
 import { faqPageJsonLd } from "@/shared/seo";
 import { RESEAUX_ACTIFS } from "@/shared/socials";
 import { lireLePassage, positionDeReprise } from "./langSwap";
-import { LIFETIME_EUR, eur } from "@/app/utils/pricing";
+import { eur } from "@/app/utils/pricing";
+import { LIFETIME_EUR, MONTHLY_EUR, breakEvenCopy } from "@/domain/plans";
 import { LandingLangProvider, useLandingT, type LandingKey, type LandingLang } from "./i18n";
 import { oauthErrorFromUrl } from "@/app/utils/authErrors";
 import "./landing.css";
 
-/**
- * UN MONTANT, FACE À UN AUTRE.
+/* ═══════════════════════════════════════════════════════════════════════════
+ * LA VITRINE, REFAITE À LA DA DE L'APP — langage Liquid (novembre 2026).
  *
- * Les deux panneaux de l'ancrage tarifaire. Ils ne diffèrent que par leur
- * RAIL de gauche — rouge pour ce que coûte un reset, émeraude pour ce que
- * coûte l'abonnement. Le reste est identique, et c'est voulu : deux plaques
- * de valeurs différentes se compareraient mal, l'œil attribuerait l'écart à
- * la mise en forme plutôt qu'aux chiffres.
+ * Le problème qu'elle règle : la vitrine montrait l'ANCIEN produit (captures
+ * d'avant Liquid, composition « site SaaS » texte-à-gauche) et vendait une
+ * licence à 20 € qui n'existe plus. L'app, elle, est devenue une app native :
+ * verre pour ce qui navigue, plaques opaques à grand rayon pour le contenu, un
+ * chiffre héros, des actions rondes.
  *
- * Le rail suffit à porter le sens, et il ne remplit rien : l'accent reste
- * rare, la couleur dit « perte » ou « offre » sur trois pixels de large.
- */
-function PanneauAncrage({
-  variante,
-  label,
-  valeur,
-  suffixe,
-  detail,
-}: {
-  variante: "cout" | "offre";
-  label: string;
-  valeur: string;
-  suffixe?: string;
-  detail: string;
-}) {
-  const offre = variante === "offre";
-  return (
-    <div
-      className={`relative overflow-hidden rounded-2xl border p-6 sm:p-7 ${
-        offre
-          ? "border-[rgb(var(--tv-accent-rgb)/0.3)] bg-[var(--tv-plate-1)]"
-          : "border-white/[0.07] bg-white/[0.015]"
-      }`}
-    >
-      <span
-        className={`absolute inset-y-0 left-0 w-[3px] ${
-          offre ? "bg-[var(--tv-accent)]" : "bg-[var(--tv-chart-red)]"
-        }`}
-        aria-hidden
-      />
-      <p className="tv-label text-slate-500">{label}</p>
-      <p className="mt-3 flex items-baseline gap-1.5">
-        <span
-          className={`tv-figure text-[clamp(1.9rem,4vw,2.6rem)] leading-none ${
-            offre ? "text-white" : "text-[var(--tv-chart-red)]"
-          }`}
-        >
-          {valeur}
-        </span>
-        {suffixe && <span className="text-[13px] text-slate-500">{suffixe}</span>}
-      </p>
-      <p className="mt-3 text-[13px] leading-6 text-slate-400">{detail}</p>
-    </div>
-  );
-}
+ * La page reprend donc la grammaire de l'app, section par section :
+ *
+ *   Héros      centré comme l'accueil de l'app, le produit en scène dessous
+ *   Confiance  les portes d'entrée + la vraie fiche Trustpilot
+ *   Problème   trois symptômes, puis leur prix (capture Erreurs)
+ *   Boucle     quatre gestes en disques — la rangée d'actions de l'app
+ *   Produit    le bento des écrans réels (`Tour.tsx`)
+ *   Jarvis     la preuve que le coach ne raconte pas d'histoires
+ *   Confiance  trois engagements vérifiables
+ *   Tarifs     le coût d'un reset face aux deux offres (catalogue)
+ *   FAQ · CTA final · pied de page
+ *
+ * Ce qui ne change pas : aucun chiffre n'est écrit à la main (captures du
+ * compte de démonstration, ou catalogue `domain/plans`), aucun avis n'est
+ * inventé, le verre reste à la navigation (barre en capsule), rien ne rayonne
+ * et rien ne boucle.
+ * ═══════════════════════════════════════════════════════════════════════════ */
 
 /* ─────────────────────────── LOGO ────────────────────────── */
 function Logo() {
   return (
-    // `href="/"`, pas `href="#"`. Le logo est le lien de retour à l'accueil le
-    // plus universellement compris du web, et c'est le seul lien qu'un robot
-    // d'indexation s'attend à trouver sur chaque page. Pointé sur `#`, il ne
-    // désignait rien.
+    // `href="/"` : le lien de retour à l'accueil le plus universellement
+    // compris du web, et le seul qu'un robot s'attend à trouver partout.
     <a
       href="/"
       className="flex items-center gap-2.5 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--tv-accent)] rounded-sm"
@@ -129,27 +94,10 @@ function Logo() {
 /* ─────────────────────────── PIED DE PAGE ─────────────────────────── */
 
 /**
- * LES LIENS DU PIED DE PAGE — deux colonnes, huit liens.
- *
- * Il y en avait TREIZE, répartis sur « Produit » (5), « Ressources » (4) et
- * une barre basse de liens légaux (4), soit trois blocs pour une seule
- * fonction. Un pied de page n'est pas un plan du site : c'est la sortie de
- * secours de quelqu'un qui n'a pas trouvé ce qu'il cherchait plus haut.
- *
- * Ce qui a disparu, et pourquoi :
- * - « Le problème », « Edge Score », « Confiance » : trois ancres vers des
- *   sections que le visiteur vient de traverser pour arriver ici. Les
- *   reproposer en bas, c'est lui demander de remonter lire ce qu'il a déjà lu.
- * - « Démo guidée » + « Démo en vidéo » : deux entrées pour une même
- *   intention. Celle qui reste est la démo du site, qui montre le produit.
- * - La barre basse : ses quatre liens légaux étaient une TROISIÈME colonne
- *   déguisée en ligne. Ils rejoignent la colonne « Légal », où ils ont
- *   toujours eu leur place.
- *
- * Chaque entrée désigne une ancre RÉELLE de cette page ou une route RÉELLE du
- * produit — `tests/seo.test.ts` le vérifie. Le lien vers `/demo-site` est
- * délibéré bien que la route soit en `noindex` : elle est utile au visiteur,
- * et un lien vers une page non indexée reste un lien parfaitement valide.
+ * LES LIENS DU PIED DE PAGE — chaque entrée désigne une ancre RÉELLE de cette
+ * page ou une route RÉELLE du produit (`tests/seo.test.ts` le vérifie). Un
+ * pied de page est la sortie de secours de quelqu'un qui n'a pas trouvé ce
+ * qu'il cherchait plus haut, pas un plan du site.
  */
 type FooterLink = { k: LandingKey; href: string };
 
@@ -158,14 +106,10 @@ const FOOTER_PRODUCT: FooterLink[] = [
   { k: "footer.f4", href: "/pricing" },
   { k: "footer.r1", href: "/demo-site" },
   { k: "footer.r3", href: "#faq" },
-  /* « Contact » vivait sous l'intitulé LÉGAL. Écrire à quelqu'un n'est pas
-     un acte juridique, et sa présence dans cette colonne faisait passer les
-     quatre documents pour cinq. */
   { k: "footer.r4", href: "/contact" },
 ];
 
-/* Les QUATRE documents, dans le même ordre que la navigation des pages
-   légales (`LEGAL_ROUTES`) : on retrouve la liste telle qu'on l'a quittée. */
+/* Les QUATRE documents, dans l'ordre de la navigation des pages légales. */
 const FOOTER_LEGAL: FooterLink[] = [
   { k: "footer.terms", href: "/terms" },
   { k: "footer.cgu", href: "/cgu" },
@@ -174,15 +118,9 @@ const FOOTER_LEGAL: FooterLink[] = [
 ];
 
 /**
- * UNE RANGÉE DE LIENS, PAS UNE COLONNE.
- *
- * Les deux colonnes empilaient quatre et cinq liens, soit près de 160px de
- * hauteur pour neuf mots. Un pied de page n'est pas un sommaire : on n'y
- * descend pas pour lire, on y descend pour attraper UN lien précis. Mis en
- * ligne derrière leur intitulé, les mêmes neuf liens tiennent sur deux
- * lignes, et le regard les balaie au lieu de les parcourir.
- *
- * Rien n'a été retiré : c'est la FORME qui se simplifie, pas le fond.
+ * UNE RANGÉE DE LIENS derrière son intitulé. Deux enfants de grille, pas un
+ * bloc : les deux intitulés se calent sur le plus long, quelle que soit la
+ * langue, et les deux rangées de liens restent alignées.
  */
 function FooterRow({
   title,
@@ -194,13 +132,6 @@ function FooterRow({
   t: (k: LandingKey) => string;
 }) {
   const id = `pied-${links[0]?.k ?? "x"}`;
-  /* DEUX ENFANTS DE GRILLE, pas un bloc.
-     L'intitulé portait `w-[72px]` : une largeur devinée pour « Produit » et
-     « Légal » en anglais. Elle ne tient pas la première langue qui allonge
-     le mot — et rien ne le signale, l'intitulé passe simplement à la ligne
-     tout seul. Rendus côte à côte dans la grille du parent, les deux
-     intitulés se calent sur le plus long, quelle que soit la langue, et les
-     deux rangées de liens restent alignées. */
   return (
     <>
       <p id={id} className="tv-label self-baseline text-slate-600">
@@ -214,8 +145,7 @@ function FooterRow({
           <li key={k}>
             <a
               href={href}
-              /* 44 px au doigt, 28 à la souris. C'est la cible tactile
-                 minimale recommandée ; sous elle, on vise le lien d'à côté. */
+              /* 44 px au doigt, 28 à la souris : la cible tactile minimale. */
               className="-my-2 inline-flex min-h-[44px] items-center text-slate-400 transition-colors hover:text-white sm:-my-0.5 sm:min-h-[28px]"
             >
               {t(k)}
@@ -228,20 +158,9 @@ function FooterRow({
 }
 
 /**
- * LES RÉSEAUX — ceux qui existent, et eux seuls.
- *
- * La table (`shared/socials.ts`) en prévoit cinq et n'en ouvre que deux. Une
- * entrée sans `url` n'est pas dessinée : c'est la règle posée le jour où les
- * cinq icônes précédentes, toutes pointées sur `#`, ont été retirées. Un
- * logo de réseau est une affirmation — « nous sommes là ».
- *
- * L'intitulé du lien porte le nom ET l'identifiant : « TikTok, @tradevault.be ».
- * Une icône seule ne dit rien à un lecteur d'écran, et le survol montre la
- * même chose à la souris.
- *
- * `rel="me"` déclare que ce profil est bien le nôtre — c'est ce que lisent
- * les vérifications d'identité décentralisées, et c'est le pendant visible du
- * `sameAs` des données structurées, qui sort de la même table.
+ * LES RÉSEAUX — ceux qui existent, et eux seuls (`shared/socials.ts`). Un logo
+ * de réseau est une affirmation — « nous sommes là ». `rel="me"` déclare que
+ * le profil est bien le nôtre, pendant visible du `sameAs` structuré.
  */
 function ReseauxSociaux() {
   if (!RESEAUX_ACTIFS.length) return null;
@@ -255,9 +174,6 @@ function ReseauxSociaux() {
             rel="me noopener noreferrer"
             aria-label={`${r.nom}, ${r.handle}`}
             title={`${r.nom} · ${r.handle}`}
-            /* 44px : la cible tactile minimale, la même que les liens de la
-               rangée au-dessus. Une icône de 18px dans un carré de 44 se
-               touche ; dans un carré de 24, on vise la suivante. */
             className="grid h-11 w-11 place-items-center rounded-lg text-slate-500 transition-colors hover:text-white focus-visible:text-white"
           >
             <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden className="h-[17px] w-[17px]">
@@ -271,17 +187,10 @@ function ReseauxSociaux() {
 }
 
 /**
- * L'ÉTOILE TRUSTPILOT — reproduite, pas inventée.
- *
- * Le carré vert `#00b67a` est la marque déposée de Trustpilot, et `AGENTS.md`
- * la déclare ZONE GELÉE : elle ne suit aucun thème, elle ne s'accorde à rien.
- * La repeindre à l'accent du produit serait une contrefaçon de badge de
- * confiance — exactement ce qu'un visiteur ne peut pas vérifier d'un coup
- * d'œil, donc exactement ce qu'on ne fait pas.
- *
- * AUCUNE NOTE, AUCUN NOMBRE D'AVIS. Les cinq carrés sont le LOGO de
- * Trustpilot, pas une note de 5/5 : le lien mène au vrai profil, où le
- * visiteur lit ce qui s'y trouve réellement.
+ * L'ÉTOILE TRUSTPILOT — reproduite, pas inventée. Le carré `#00b67a` est la
+ * marque déposée de Trustpilot, ZONE GELÉE (`AGENTS.md`) : elle ne suit aucun
+ * thème. AUCUNE NOTE, AUCUN NOMBRE D'AVIS : les cinq carrés sont le LOGO, et
+ * le lien mène à la vraie fiche.
  */
 function TrustpilotStar() {
   return (
@@ -297,30 +206,13 @@ function TrustpilotStar() {
 }
 
 /**
- * LA BANDE DE CONFIANCE — une seule plaque, deux informations.
- *
- * Il y en avait DEUX, empilées : les quatre portes d'entrée dans une carte,
- * puis le lien Trustpilot dans une autre, 32px plus bas. Deux plaques
- * centrées l'une sur l'autre pour dire la même chose — « ça rentre vite, et
- * d'autres l'utilisent » — c'est 190px de page pour une idée, et deux fois
- * le même geste de lecture.
- *
- * Fusionnées : comment les trades entrent à gauche, la preuve à droite. On
- * lit la bande d'un coup au lieu de la parcourir deux fois.
- *
- * AUCUNE NOTE, AUCUN NOMBRE D'AVIS. Les cinq carrés sont le LOGO de
- * Trustpilot, pas un 5/5 : le lien mène à la vraie fiche, où le visiteur lit
- * ce qui s'y trouve réellement. C'est la seule preuve sociale honnête dont
- * on dispose, et l'inventer est la première ligne que `landing-copy`
- * interdit.
- *
- * Le carré vert `#00b67a` est la marque déposée de Trustpilot, et
- * `AGENTS.md` la déclare ZONE GELÉE : elle ne suit aucun thème.
+ * LA BANDE DE CONFIANCE — une seule plaque : comment les trades entrent à
+ * gauche, la preuve que d'autres l'utilisent à droite.
  */
 function BandeConfiance({ t }: { t: (k: LandingKey) => string }) {
   const portes: LandingKey[] = ["platforms.i1", "platforms.i2", "platforms.i3", "platforms.i4"];
   return (
-    <div className="reveal flex flex-col gap-6 rounded-2xl border border-white/[.07] bg-white/[.02] px-6 py-6 lg:flex-row lg:items-center lg:justify-between lg:gap-10 lg:px-8">
+    <div className="reveal lq-card flex flex-col gap-6 px-6 py-6 lg:flex-row lg:items-center lg:justify-between lg:gap-10 lg:px-8">
       <div className="min-w-0">
         <p className="tv-label text-slate-500">{t("platforms.label")}</p>
         <div className="mt-3 flex flex-wrap items-center gap-x-7 gap-y-2">
@@ -331,11 +223,7 @@ function BandeConfiance({ t }: { t: (k: LandingKey) => string }) {
           ))}
         </div>
       </div>
-
-      {/* Le filet vertical ne sépare qu'à partir de `lg` : empilées, les deux
-          moitiés n'ont pas besoin d'être séparées, elles le sont déjà. */}
       <span className="hidden h-12 w-px shrink-0 bg-white/[.08] lg:block" />
-
       <a
         href={TRUSTPILOT_URL}
         target="_blank"
@@ -353,84 +241,71 @@ function BandeConfiance({ t }: { t: (k: LandingKey) => string }) {
   );
 }
 
-/* ─────────────────────────── HOOKS ─────────────────────────── */
-/* `useScroll` est parti chez `landing/motion.tsx` sous le nom
-   `useDefilementSansRendu`, et surtout sans le `useState` : il reposait la
-   position à chaque évènement de défilement, ce qui reconstruisait la
-   vitrine entière soixante fois par seconde pour déplacer deux éléments. */
-
-/* ─────────────────────────── SPLINE · COURBE ─────────────────────────── */
-/* ─────────────────────────── SECTION HEAD ─────────────────────────── */
-function SectionHead({ title, sub }: { title: React.ReactNode; sub?: string }) {
+/* ─────────────────────────── TÊTE DE SECTION ─────────────────────────── */
+/**
+ * Deux temps, le second en gris (`.lq-h2-soft`) : un titre n'est jamais peint
+ * en vert, le vert appartient aux actions et aux résultats.
+ */
+function SectionHead({ a, b, sub, tag }: { a: string; b?: string; sub?: string; tag?: string }) {
   return (
-    <div className="mx-auto mb-12 max-w-2xl text-center">
-      <h2 className="font-display text-[clamp(1.9rem,3.6vw,2.7rem)] font-semibold tracking-[-0.03em] text-white leading-[1.1]">
-        {title}
+    <div className="reveal lq-head">
+      {tag && <p className="lq-tag">{tag}</p>}
+      <h2 className="lq-h2">
+        {a}
+        {b && (
+          <>
+            {" "}
+            <span className="lq-h2-soft">{b}</span>
+          </>
+        )}
       </h2>
-      {sub && <p className="mt-4 leading-7 text-slate-400">{sub}</p>}
+      {sub && <p className="lq-sub">{sub}</p>}
     </div>
   );
 }
 
-/* LE GÉNÉRATEUR DE COURBES A SUIVI LES MAQUETTES QU'IL DESSINAIT.
- *
- * `buildSpline` et ses deux jeux de points ne servaient qu'aux replis
- * supprimés juste en dessous. Une spline Catmull-Rom qui ne trace plus rien
- * est exactement le genre de code qu'on retrouve dans six mois en se
- * demandant quelle courbe elle alimente.
- */
-
-/* LA TROISIÈME MAQUETTE DE REPLI EST PARTIE AVEC LES DEUX AUTRES.
- *
- * `AnalyticsSection` servait de repli à l'étape « analyses » de la visite,
- * et portait elle-même un second repli pour les rapports mensuels : une
- * courbe d'equity dessinée à la main, « +$4,218.50 · 6m », « Win rate
- * 64 % », « Profit factor 2.31 », « Sharpe 1.96 ». Quatre métriques de
- * performance inventées, présentées comme un aperçu du produit.
- *
- * Celle-là était la plus dangereuse des trois : `monthly-reports.webp`
- * n'est PAS publié — le compte vitrine n'a jamais généré de rapport, la
- * page tombe sur son état vide, et le harnais refuse donc d'encoder cette
- * capture (voir le commentaire dans `scripts/capture-product.mjs`). Le
- * repli était le SEUL rendu possible de ce bloc. Il n'attendait pas une
- * panne pour publier des chiffres faux : il le faisait déjà, dès que
- * `analytics.webp` venait à manquer.
- *
- * Repli `null`. Une capture absente ne montre rien.
- */
-
-/* LA QUATRIÈME ET DERNIÈRE MAQUETTE DE REPLI.
- *
- * `MistakesSection` dessinait trois « fuites » avec leur coût : Revenge
- * trading −$1,240, FOMO entry −$890, Overtrading −$670. Aucun de ces
- * montants ne vient d'un compte ; ils ont été choisis pour être crédibles,
- * ce qui est précisément le problème.
- *
- * Avec les trois autres, c'était le dernier endroit de la vitrine où un
- * chiffre fabriqué pouvait atteindre l'écran. Il n'en reste aucun : toute
- * valeur affichée vient soit d'une capture du produit, soit du catalogue
- * d'offres. `tests/productShots.test.ts` en fait une règle.
- */
-
-/* ─────────────────────────── USE CASES ─────────────────────────── */
-
-/* ─────────────────────────── EXCEL / NOTION ─────────────────────────── */
-
-/* ─────────────────────────── NAV ─────────────────────────── */
+/* ─────────────────────────── LES DEUX OFFRES ─────────────────────────── */
 /**
- * LES SECTIONS SUIVIES PAR LE SCROLLSPY.
+ * UNE TUILE DE PRIX — le chiffre héros de l'offre, son rythme, une phrase.
  *
- * Elles doivent correspondre EXACTEMENT aux liens de `MegaNav` : une section
- * suivie ici mais absente de la barre rendrait `activeSec` égal à un identifiant
- * qu'aucun lien ne porte — donc aucun lien actif pendant toute la traversée de
- * cette section, ce qui se lit comme un bug de navigation.
+ * Les montants sortent du catalogue (`MONTHLY_EUR`, `LIFETIME_EUR`) et passent
+ * par `eur()` : ils ne peuvent diverger ni de `/pricing`, ni de Stripe. La
+ * licence porte le liseré d'accent et la phrase calculée qui la relie au
+ * mensuel (`breakEvenCopy`).
  */
+function TuilePrix({
+  titre,
+  montant,
+  rythme,
+  phrase,
+  note,
+  vedette = false,
+}: {
+  titre: string;
+  montant: string;
+  rythme: string;
+  phrase: string;
+  note?: string;
+  vedette?: boolean;
+}) {
+  return (
+    <div className={`lq-price-tile${vedette ? " lq-price-tile--featured" : ""}`}>
+      <p className="lq-price-name">{titre}</p>
+      <p className="mt-3 flex items-baseline gap-1.5">
+        <span className="lq-price-figure tv-figure">{montant}</span>
+        <span className="text-[13px] font-medium text-slate-400">{rythme}</span>
+      </p>
+      <p className="mt-3 text-[13px] leading-6 text-slate-300">{phrase}</p>
+      {note && <p className="mt-1 text-[12.5px] leading-5 text-slate-500">{note}</p>}
+    </div>
+  );
+}
 
+/* ─────────────────────────── INTENTION D'AUTHENTIFICATION ─────────────── */
 /**
- * L'intention d'authentification portée par l'adresse (`?auth=…`, ou l'erreur
- * d'un retour OAuth). Lue une seule fois par document, puis retirée de
- * l'adresse (`replaceState`) : recharger après avoir fermé le formulaire ne le
- * rouvre pas, et une erreur passée ne se réaffiche pas.
+ * L'intention portée par l'adresse (`?auth=…`, ou l'erreur d'un retour OAuth).
+ * Lue une seule fois par document, puis retirée de l'adresse : recharger
+ * après avoir fermé le formulaire ne le rouvre pas.
  */
 type IntentionAuth = { mode: "login" | "signup"; error?: string };
 let intentionAuth: IntentionAuth | null | undefined;
@@ -456,6 +331,38 @@ function oublierIntentionAuth() {
   intentionAuth = null;
 }
 
+/* ─────────────────────────── LA VISITE (bento) ─────────────────────────── */
+/* L'ORDRE EST UN TRAJET : le trade entre (Journal), le mois se lit
+   (Calendrier), on mesure (Analyses), puis le geste qui agit AVANT le clic
+   (Checklist). Largeurs sur six colonnes : 4 + 2, puis 3 + 3. */
+const ECRANS_BENTO: EcranBento[] = [
+  { nom: "journal", titre: "v2.s5.t", texte: "v2.s5.d", alt: "shot.journal.alt", largeur: 4 },
+  { nom: "calendar", titre: "lq.cal.t", texte: "lq.cal.d", alt: "shot.calendar.alt", largeur: 2 },
+  {
+    nom: "analytics",
+    titre: "v2.s3.t",
+    texte: "v2.s3.d",
+    alt: "shot.analytics.alt",
+    largeur: 3,
+  },
+  {
+    nom: "checklist",
+    titre: "v2.s6.t",
+    texte: "v2.s6.d",
+    alt: "shot.checklist.alt",
+    largeur: 3,
+  },
+];
+
+/* La boucle en quatre gestes : la rangée d'actions rondes de l'app, transposée.
+   Le premier disque est plein (l'action d'entrée), les autres en plaque. */
+const GESTES: { icone: IName; titre: LandingKey; texte: LandingKey }[] = [
+  { icone: "plus", titre: "lq.how.1.t", texte: "lq.how.1.d" },
+  { icone: "chart", titre: "lq.how.2.t", texte: "lq.how.2.d" },
+  { icone: "brain", titre: "lq.how.3.t", texte: "lq.how.3.d" },
+  { icone: "target", titre: "lq.how.4.t", texte: "lq.how.4.d" },
+];
+
 /* ─────────────────────────── LANDING ─────────────────────────── */
 function LandingPage() {
   const { t, lang } = useLandingT();
@@ -467,21 +374,17 @@ function LandingPage() {
   const [faq, setFaq] = useState<number | null>(0);
   const [activeSec, setActiveSec] = useState("");
   /* `collee` est le SEUL état que le défilement fait remonter à React, et il
-     ne change que deux fois par visite. La jauge et la parallaxe sont
-     écrites directement dans le DOM par `useDefilementSansRendu`. */
+     ne change que deux fois par visite. La jauge et la parallaxe sont écrites
+     directement dans le DOM par `useDefilementSansRendu`. */
   const [collee, setCollee] = useState(false);
   const jaugeRef = useRef<HTMLDivElement>(null);
   const parallaxeRef = useRef<HTMLDivElement>(null);
   const racineRef = useRef<HTMLDivElement>(null);
-  /* Lu une seule fois par document (le paquet est effacé à la lecture) :
-     la même valeur sert au fondu d'ensemble, à la reprise de position et à
-     la suppression de la cascade. */
+  /* Lu une seule fois par document : la même valeur sert au fondu d'ensemble,
+     à la reprise de position et à la suppression de la cascade. */
   const repriseLangue = useRef(typeof window === "undefined" ? null : lireLePassage()).current;
   useApparitions(racineRef, Boolean(repriseLangue));
   const lenis = useLenis();
-  /* Lu UNE fois, pas à chaque rendu : `matchMedia` n'existe pas au rendu
-     serveur, et l'interroger soixante fois par seconde pendant un défilement
-     serait du gâchis pour une valeur qui ne change quasiment jamais. */
   const reduitLeMouvement = usePrefereMoinsDeMouvement();
   useDefilementSansRendu({
     jauge: jaugeRef,
@@ -495,30 +398,27 @@ function LandingPage() {
     { n: "heart" as IName, t: t("problem.p2.t"), d: t("problem.p2.d") },
     { n: "compass" as IName, t: t("problem.p3.t"), d: t("problem.p3.d") },
   ];
-  // Six objections, dans l'ordre où elles viennent. Ce tableau alimente À LA
+  // Les objections, dans l'ordre où elles viennent. Ce tableau alimente À LA
   // FOIS l'accordéon et le balisage `FAQPage` : les deux ne peuvent pas
-  // diverger.
+  // diverger. « Le gratuit est-il vraiment gratuit ? » vit sur `/pricing`,
+  // où on se la pose vraiment.
   const faqs = [
     { q: t("faq.q1"), a: t("faq.a1") },
     { q: t("faq.q2"), a: t("faq.a2") },
     { q: t("faq.q3"), a: t("faq.a3") },
-    /* « Le gratuit est-il vraiment gratuit ? » a quitté cette liste : c'est
-       maintenant la première question de `/pricing`, où elle arrive au
-       moment où on se la pose vraiment. La garder ici la faisait poser deux
-       fois, à deux endroits, avec le risque que les deux réponses divergent
-       le jour où l'offre change. */
+    { q: t("price.faq3.q"), a: t("price.faq3.a") },
     { q: t("faq.q5"), a: t("faq.a5") },
     { q: t("faq.q6"), a: t("faq.a6") },
   ];
+  const mensuel = eur(MONTHLY_EUR, lang);
+  const licence = eur(LIFETIME_EUR, lang);
+  const telephone = shot("dashboard-m");
+
   /**
-   * LA REPRISE APRÈS UN CHANGEMENT DE LANGUE.
-   *
-   * On retombe sur l'ancre franchie, pas sur un nombre de pixels : les deux
-   * langues n'ont pas la même hauteur de texte. Deux passes — une au montage,
-   * une après `load`, parce que les captures chargées en différé déplacent
-   * tout ce qui est en dessous d'elles. La seconde est abandonnée si le
-   * visiteur a déjà touché au défilement : reprendre la main sous ses doigts
-   * serait pire que d'atterrir à cinquante pixels près.
+   * LA REPRISE APRÈS UN CHANGEMENT DE LANGUE : on retombe sur l'ancre
+   * franchie, pas sur un nombre de pixels (les deux langues n'ont pas la même
+   * hauteur). Deux passes — au montage, puis après `load` — abandonnées si le
+   * visiteur a déjà touché au défilement.
    */
   useEffect(() => {
     if (!repriseLangue) return;
@@ -529,10 +429,6 @@ function LandingPage() {
     const poser = () => {
       if (!intact) return;
       const y = positionDeReprise(repriseLangue);
-      /* Par Lenis quand il est là, pour que son défilement interne parte de
-         la bonne valeur — un `window.scrollTo` seul le laisserait croire
-         qu'on est resté en haut, et le premier cran de molette ramènerait
-         brutalement la page à zéro. */
       if (lenis) lenis.scrollTo(y, { immediate: true, force: true });
       else window.scrollTo(0, y);
     };
@@ -564,10 +460,8 @@ function LandingPage() {
         const el = document.getElementById(id);
         if (el && el.getBoundingClientRect().top + window.scrollY <= pos) cur = id;
       }
-      /* `setActiveSec` avec la même valeur ne re-rend pas : React compare.
-         Mais la MESURE, elle, coûtait à chaque évènement — et quatre
-         `getBoundingClientRect` qui suivent une invalidation forcent la
-         remise en page immédiate. Une fois par image suffit. */
+      // Une mesure par image, pas par évènement : quatre lectures de
+      // géométrie après une invalidation forcent la remise en page.
       setActiveSec(cur);
     };
     const auDefilement = () => {
@@ -589,22 +483,10 @@ function LandingPage() {
     setAuth(true);
   };
 
-  /* LES ADRESSES QUI OUVRENT LE FORMULAIRE.
-   *
-   * `/login`, `/signup`, `/register`… répondaient 404 : ce sont pourtant les
-   * adresses qu'un trader tape de mémoire, et celles qu'on colle dans un
-   * e-mail ou une bio. Elles redirigent ici avec `?auth=login|signup`
-   * (`utils/pageUrl.ts`) et la vitrine s'ouvre directement sur le bon
-   * formulaire.
-   *
-   * Même geste au retour d'un Google raté (accès refusé, lien expiré) :
-   * l'adresse porte `error=…` et le visiteur retombait sur la vitrine sans
-   * un mot. Il retrouve maintenant le formulaire, avec la raison.
-   *
-   * L'intention est lue UNE fois (`lireIntentionAuth`) et gardée jusqu'à la
-   * fermeture du formulaire : sur `/`, la vitrine est montée plusieurs fois
-   * pendant le chargement (rendu serveur, attente du code, application), et
-   * c'est la DERNIÈRE instance qui doit l'ouvrir. */
+  /* LES ADRESSES QUI OUVRENT LE FORMULAIRE (`/login`, `/signup`… redirigées
+     ici avec `?auth=`), et le retour d'un Google raté (`error=…`). Lue UNE
+     fois et gardée jusqu'à la fermeture : c'est la DERNIÈRE instance montée
+     qui doit l'ouvrir. */
   useEffect(() => {
     const intention = lireIntentionAuth();
     if (!intention) return;
@@ -613,15 +495,14 @@ function LandingPage() {
     setAuthError(intention.error);
     setAuth(true);
   }, []);
+
   const go = (id: string) => {
     setActiveSec(id);
     if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
     scrollLockRef.current = true;
     const cible = document.getElementById(id);
-    /* Sous Lenis, c'est lui qui fait le trajet (il lit `scroll-margin-top`
-       comme le navigateur) ; sans lui, le défilement natif. `allerVers` rend
-       la durée réelle du voyage : le verrou du scrollspy se relâche quand la
-       page est arrivée, pas une seconde plus tard par convention. */
+    /* Sous Lenis, c'est lui qui fait le trajet ; `allerVers` rend la durée
+       réelle du voyage, et le verrou du scrollspy se relâche à l'arrivée. */
     const duree =
       cible && lenis?.options.smoothWheel
         ? allerVers(lenis, cible)
@@ -636,252 +517,135 @@ function LandingPage() {
       ref={racineRef}
       className="landing-root min-h-screen overflow-x-clip bg-[var(--tv-bg)] text-white"
     >
-      {/* La lueur qui suit le pointeur. Montée AVANT tout le reste : elle vit
-          sous le contenu (`z-index: 0`) et ne doit jamais passer devant. */}
+      {/* La même orbe que dans l'app, sous le contenu (`z-index: 0`). */}
       <CursorOrb />
       <MegaNav activeSec={activeSec} go={go} open={open} collee={collee} jauge={jaugeRef} />
 
       <main className="relative z-10">
-        {/* ── HERO ──
-            TEXTE À GAUCHE, PRODUIT À DROITE. LES DEUX DANS LE PREMIER ÉCRAN.
+        {/* ── HÉROS ──
+            CENTRÉ, COMME L'ACCUEIL DE L'APP. Le tableau de bord de l'app
+            ouvre sur un bloc centré — le chiffre, son libellé, les actions —
+            et c'est cette composition que la vitrine reprend : la promesse au
+            centre, le produit en scène juste dessous, qui affleure dès le
+            premier écran sur un portable de 900 px.
 
-            La capture a d'abord vécu dans une colonne étroite (vignette
-            illisible), puis en pleine largeur SOUS le texte. La pleine largeur
-            réglait la lisibilité et créait un autre problème : sur un portable
-            de 900px de haut, l'écran d'ouverture ne montrait que du texte. Le
-            produit commençait sous la ligne de flottaison, et la promesse du
-            titre restait une affirmation jusqu'au premier défilement.
-
-            Côte à côte, les deux sont là d'emblée : on lit la promesse ET on
-            voit ce qu'on achète, sans un geste. La capture déborde
-            volontairement à droite (`hero-shot-bleed`) — un écran coupé par le
-            bord se lit comme une fenêtre sur quelque chose de plus grand,
-            là où une image entière et centrée se lit comme une illustration.
-
-            Sous 1024px la pile reprend : à cette largeur, deux colonnes
-            donneraient deux vignettes au lieu d'une lecture. */}
-        <section className="relative overflow-hidden pt-[104px] pb-10 lg:pt-[132px] lg:pb-16">
+            Le texte est resserré (titre plafonné, sous-titre court) pour que
+            le haut de la capture reste dans le premier écran : une promesse
+            sans le produit sous les yeux reste une affirmation. */}
+        <section className="lq-hero">
           <div className="lp-container">
-            <div className="hero-grid">
-              <div className="hero-copy">
-                {/* Le titre se lit en DEUX TEMPS : la capacité, puis la faille.
-                    Le passage à la ligne n'est pas une mise en page, c'est la
-                    respiration qui fait porter le second membre — mis bout à
-                    bout, les deux propositions se lisaient comme une seule
-                    phrase et le contre-temps disparaissait. */}
-                {/* La taille plafonne à 3.2rem, pas 4.2 : la colonne de texte
-                    fait ~600px, et à 67px la première proposition passait
-                    elle-même à la ligne — le titre montait à quatre lignes et
-                    le passage à la ligne VOULU ne se distinguait plus des
-                    passages subis. À 51px, chaque proposition tient sa place. */}
-                {/* Le titre monte à 4.4rem : centré sur 3xl, chaque proposition
-                  tient sa ligne, et l'accroche pèse enfin ce qu'elle doit
-                  peser en haut d'une page de vente. */}
-                {/* À QUI ON PARLE — la ligne qui manquait.
-                  Le héros disait ce que le produit fait et à quelle douleur il
-                  répond, jamais POUR QUI. Un trader en challenge prop-firm ne
-                  se reconnaissait qu'au bout de trois sections ; un
-                  investisseur long terme, lui, descendait toute la page avant
-                  de comprendre qu'elle ne lui était pas destinée. Une ligne
-                  sourde au-dessus du titre suffit à faire les deux tris, et
-                  elle ne coûte rien à la lecture de l'accroche. */}
-                <p className="fade-up tv-label mb-4 text-[var(--tv-text-secondary)]">
-                  {t("v2.hero.eyebrow")}
-                </p>
-                {/* LA TAILLE SUIT LA COLONNE, PAS L'ENVIE.
-                    4.4rem était calibré pour une accroche CENTRÉE sur toute
-                    la largeur. Dans une colonne de ~520px, la même valeur
-                    mettait le titre sur quatre lignes et repoussait le bouton
-                    sous la ligne de flottaison : on avait rendu le produit
-                    visible et perdu l'action. À 3.1rem chaque proposition
-                    tient sur deux lignes au plus, et le bloc entier reste
-                    dans le premier écran. */}
-                {/* TROIS TEMPS, ET L'ACCENT SUR LE TROISIÈME.
-                    Le second membre était gris, au motif qu'il énonce le
-                    problème et qu'on ne peint pas un problème de la couleur
-                    du succès. L'argument tient pour la phrase - pas pour ses
-                    trois derniers mots : « quand ça compte » n'est pas le
-                    problème, c'est le MOMENT, et c'est le seul endroit de
-                    l'accroche où l'accent ajoute du sens. */}
-                <h1 className="fade-up font-display text-[clamp(2.05rem,3.3vw,2.8rem)] font-semibold leading-[1.08] tracking-[-0.03em] text-balance text-white">
-                  {t("hero.h1a")}
-                  <br />
-                  <span className="text-[var(--tv-text-secondary)]">{t("hero.h1b1")}</span>
-                  <span className="mark-accent">{t("hero.h1b2")}</span>
-                </h1>
-                {/* LA VERSION COURTE DU SOUS-TITRE.
-                  L'ancienne énumérait les trois symptômes — dérive de taille,
-                  overtrading, entrées hors plan. C'est exactement le travail
-                  de la section « Le problème », 400px plus bas : deux blocs
-                  répondaient à la même objection, et le héros payait la
-                  redite en 37 mots. Ici on garde la mécanique (lit, chiffre,
-                  donne une règle) ; les symptômes se lisent juste après. */}
-                <p className="fade-up d2 mt-5 max-w-[560px] text-[17px] leading-7 text-slate-400">
-                  {t("v2.hero.sub.a")}
-                  {/* LE SEUL SURLIGNEUR DE LA PAGE.
-                      Un groupe de mots porté par l'accent, pas une phrase :
-                      surligner une phrase entière ne souligne rien, ça
-                      repeint. Et c'est la PROMESSE qu'on surligne, jamais le
-                      nom du produit - si on ne lit que trois mots, ce sont
-                      ceux-là qu'il faut avoir lus. */}
-                  <span className="mark-accent font-semibold">{t("v2.hero.sub.b")}</span>
-                  {t("v2.hero.sub.c")}
-                </p>
-                {/* DEUX ACTIONS, ET LA SECONDE N'EST PAS UNE DÉMO.
-                    Le lien secondaire menait à la visite guidée. Or la
-                    question qui suit immédiatement une accroche n'est pas
-                    « montre-moi », c'est « combien ». Il mène donc aux
-                    tarifs.
-
-                    La hiérarchie reste franche : un bouton plein, un lien
-                    bordé. Deux boutons pleins côte à côte partagent le clic
-                    au lieu de l'additionner. */}
-                <div className="fade-up d3 mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-                  <button
-                    onClick={() => open("signup", t("nav.cta.plan"))}
-                    className="btn-primary w-full sm:w-auto"
-                  >
-                    {t("hero.cta")} <Icon n="arrow" cls="h-4 w-4" />
-                  </button>
-                  <a
-                    href="/pricing"
-                    className="btn-secondaire min-h-[44px] w-full px-5 text-sm sm:w-auto"
-                  >
-                    {t("hero.pricing")}
-                  </a>
-                </div>
-                {/* La démo en troisième rang, sous les deux boutons : un lien, pas un
-                    troisième bouton qui partagerait le clic avec l'inscription. */}
+            <div className="lq-hero-copy">
+              <p className="fade-up lq-tag">{t("v2.hero.eyebrow")}</p>
+              {/* Deux temps : la capacité, puis la faille — et l'accent sur
+                  « quand ça compte », le MOMENT, seul endroit où il ajoute du
+                  sens. Le passage à la ligne est la respiration voulue. */}
+              <h1 className="fade-up lq-h1">
+                {t("hero.h1a")}
+                <br />
+                <span className="lq-h2-soft">{t("hero.h1b1")}</span>
+                <span className="mark-accent">{t("hero.h1b2")}</span>
+              </h1>
+              <p className="fade-up d2 lq-hero-sub">
+                {t("v2.hero.sub.a")}
+                <span className="font-semibold text-white">{t("v2.hero.sub.b")}</span>
+                {t("v2.hero.sub.c")}
+              </p>
+              {/* UN bouton plein (créer un compte), et un lien qui répond à la
+                  question qui suit toute accroche — « combien ? » — avec le
+                  prix d'entrée, tiré du catalogue. */}
+              <div className="fade-up d3 mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
                 <button
-                  onClick={() => setDemo(true)}
-                  className="fade-up d3 group mt-3 inline-flex min-h-[44px] items-center gap-2.5 whitespace-nowrap text-sm text-slate-400 transition-colors hover:text-white"
+                  onClick={() => open("signup", t("nav.cta.plan"))}
+                  className="btn-primary w-full sm:w-auto"
                 >
-                  <span className="grid h-7 w-7 place-items-center rounded-full border border-white/[.14] text-[var(--tv-accent)] transition-colors group-hover:border-[rgb(var(--tv-accent-rgb)/0.5)]">
-                    <Icon n="play" cls="h-3 w-3 translate-x-[1px] fill-current" />
-                  </span>
-                  {t("hero.demo")}
-                  <span className="text-slate-600">· {t("hero.demo.len")}</span>
+                  {t("hero.cta")} <Icon n="arrow" cls="h-4 w-4" />
                 </button>
-                <div className="fade-up d4 mt-6 flex flex-wrap items-center gap-x-6 gap-y-2">
-                  {[t("hero.t1"), t("hero.t2"), t("hero.t3")].map((s) => (
-                    <span key={s} className="flex items-center gap-1.5 text-[13px] text-slate-500">
-                      <Check className="h-3.5 w-3.5 text-[var(--tv-chart-green)]" />
-                      {s}
-                    </span>
-                  ))}
-                </div>
+                <a
+                  href="#pricing"
+                  className="btn-secondaire min-h-[44px] w-full px-5 text-sm sm:w-auto"
+                >
+                  {t("lq.hero.from")} <span className="tv-figure">{mensuel}</span>
+                  {t("lq.perMonth")}
+                </a>
               </div>
-
-              {/* LA CAPTURE PASSE DEVANT LE DESSIN.
-                  `docs/DESIGN_SYSTEM.md` : « lead EVERY section with a product screenshot ».
-                  Tant qu'aucun `dashboard.*` n'est déposé dans
-                  `src/assets/product/`, le dessin ci-dessous tient la place ;
-                  le fichier posé, il s'efface. */}
-              {/* LA PARALLAXE DU HÉROS.
-                  La capture remonte de 6 % de la distance défilée, plafonnée
-                  à 60px. C'est peu, et c'est voulu : au-delà, l'image se
-                  décroche du texte qu'elle illustre et on lit deux blocs qui
-                  bougent l'un par rapport à l'autre. À cette amplitude on ne
-                  voit pas un effet, on sent que la page a de l'épaisseur.
-
-                  `transform` seul, donc composité par le GPU : aucune remise
-                  en page, aucun repeint. Neutralisée si le visiteur a demandé
-                  moins de mouvement.
-
-                  ── POURQUOI DEUX ÉLÉMENTS ────────────────────────────────
-                  L'extérieur porte `fade-up`, l'entrée du héros. Une
-                  animation CSS en `fill: both` continue d'imposer son
-                  `transform` final APRÈS sa fin, et elle appartient à une
-                  origine de cascade qui bat le style en ligne : tant que la
-                  parallaxe était écrite sur ce même élément, elle était
-                  calculée, posée, et ignorée par le navigateur. Elle vit
-                  donc sur un élément intérieur, qui n'anime rien. */}
-              <div className="fade-up d4 hero-shot-col">
-                <div ref={parallaxeRef}>
-                  <ShotOuVisuel
-                    nom="dashboard"
-                    alt={t("shot.dashboard.alt")}
-                    /* Pas de légende dans le héros : le titre juste à gauche
-                       dit déjà ce qu'on regarde, et une ligne de texte sous
-                       l'image casserait le débordement qui fait tout l'effet. */
-                    priorite
-                    hero
-                    repli={null}
-                  />
-                </div>
+              <div className="fade-up d4 mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
+                {[t("hero.t1"), t("hero.t2"), t("hero.t3")].map((s) => (
+                  <span key={s} className="flex items-center gap-1.5 text-[13px] text-slate-400">
+                    <Check className="h-3.5 w-3.5 text-[var(--tv-chart-green)]" />
+                    {s}
+                  </span>
+                ))}
               </div>
+              <button
+                onClick={() => setDemo(true)}
+                className="fade-up d4 group mt-3 inline-flex min-h-[44px] items-center gap-2.5 whitespace-nowrap text-sm text-slate-400 transition-colors hover:text-white"
+              >
+                <span className="grid h-7 w-7 place-items-center rounded-full bg-[var(--tv-plate-3)] text-[var(--tv-accent)]">
+                  <Icon n="play" cls="h-3 w-3 translate-x-[1px] fill-current" />
+                </span>
+                {t("hero.demo")}
+                <span className="text-slate-600">· {t("hero.demo.len")}</span>
+              </button>
             </div>
+
+            {/* LA SCÈNE : l'écran de bureau, et le même tableau de bord sur
+                téléphone posé devant, en bas à droite (bureau seulement). La
+                parallaxe (6 % du défilement, plafonnée) vit sur un élément
+                INTÉRIEUR : une animation CSS en `fill: both` sur l'extérieur
+                battrait le style en ligne. */}
+            <div className="fade-up d4 lq-hero-stage tv-glow">
+              <div ref={parallaxeRef}>
+                <ShotOuVisuel
+                  nom="dashboard"
+                  alt={t("shot.dashboard.alt")}
+                  priorite
+                  hero
+                  repli={null}
+                />
+              </div>
+              {telephone && (
+                <div className="lq-phone" aria-hidden>
+                  <img src={telephone} alt="" loading="lazy" decoding="async" />
+                </div>
+              )}
+            </div>
+            <p className="lq-demo-note">{t("lq.shot.demo")}</p>
           </div>
         </section>
 
-        {/* ── UNE SEULE BANDE DE CONFIANCE ──
-            Il y en avait DEUX, empilées : les quatre portes d'entrée dans
-            une carte, puis le lien Trustpilot dans une autre, 32px plus bas.
-            Deux plaques centrées l'une sur l'autre pour dire la même chose —
-            « ça rentre vite, et d'autres l'utilisent » — c'est 190px de page
-            pour une seule idée, et deux fois le même geste de lecture.
-
-            Fusionnées, elles se lisent d'un coup : ce qui te fait entrer à
-            gauche, la preuve que tu n'es pas le premier à droite. */}
-        <section className="relative pb-12 lg:pb-16">
+        {/* ── CONFIANCE : comment ça rentre, et la vraie fiche d'avis ── */}
+        <section className="relative pb-6">
           <div className="lp-container">
             <BandeConfiance t={t} />
           </div>
         </section>
 
         {/* ── LE PROBLÈME, PUIS SON PRIX ──
-            La section nommait trois symptômes et s'arrêtait là. Nommer une
-            douleur sans la CHIFFRER, c'est de la psychologie de comptoir :
-            le visiteur acquiesce et passe à autre chose, parce que rien ne
-            lui a montré que ça lui coûte quelque chose.
-
-            La capture des erreurs monte donc ICI, juste sous les trois
-            cartes, au lieu d'attendre le milieu de la visite. C'est le
-            contraste sur lequel toute la page repose : trois phrases qui
-            font mal, puis un écran réel qui met un montant dessus. On passe
-            du « oui, c'est moi » au « et ça me coûte ça » en un défilement.
-
-            Effet de bord voulu : la première grande capture après le héros
-            arrive 2 000px plus tôt qu'avant. */}
-        <section id="problem" className="relative section-divider py-12 sm:py-16 lg:py-24">
+            Trois symptômes qu'on reconnaît en une seconde, puis un écran
+            réel qui met un montant dessus : on passe du « c'est moi » au « et
+            ça me coûte ça » en un défilement. Le liseré rouge des cartes est
+            sémantique (`--tv-chart-red` = ce qui coûte). */}
+        <section id="problem" className="lq-section">
           <div className="lp-container">
-            <SectionHead
-              title={
-                <>
-                  {t("problem.title.a")}{" "}
-                  <span className="text-[var(--tv-text-secondary)]">{t("problem.title.b")}</span>
-                </>
-              }
-              sub={t("problem.sub")}
-            />
-            {/* Les trois symptômes portent un liseré ROUGE à gauche. C'est la
-                seule place du rouge sur la vitrine, et elle est sémantique :
-                le produit garde le vert pour ce qui va, le rouge pour ce qui
-                coûte (`--tv-chart-red`). Trois cartes grises se lisaient
-                comme trois fonctionnalités. */}
+            <SectionHead a={t("problem.title.a")} b={t("problem.title.b")} sub={t("problem.sub")} />
             <div className="grid gap-4 sm:grid-cols-3">
               {problems.map((p) => (
-                <article key={p.t} className="reveal carte-symptome p-6">
-                  <div className="feat-icon feat-icon--rouge mb-4 h-11 w-11">
+                <article key={p.t} className="reveal lq-card lq-symptom">
+                  <span className="lq-disc lq-disc--red">
                     <Icon n={p.n} cls="h-5 w-5" />
-                  </div>
-                  <h3 className="font-display text-base font-bold text-white">{p.t}</h3>
-                  <p className="mt-2 text-[13px] leading-6 text-slate-400">{p.d}</p>
+                  </span>
+                  <h3 className="lq-card-title mt-5">{p.t}</h3>
+                  <p className="lq-card-body">{p.d}</p>
                 </article>
               ))}
             </div>
 
-            {/* LA BASCULE. Une seule phrase entre la douleur et sa preuve,
-                et c'est elle qui fait tout le travail émotionnel : elle
-                annonce un montant, et l'écran juste dessous le donne. */}
             <div className="reveal mt-16 text-center lg:mt-20">
-              <p className="tv-label text-[var(--tv-chart-red)]">{t("cout.tag")}</p>
-              <h3 className="mx-auto mt-4 max-w-[680px] font-display text-[clamp(1.6rem,3vw,2.3rem)] font-semibold leading-[1.12] tracking-[-0.03em] text-white">
+              <p className="lq-tag text-[var(--tv-chart-red)]">{t("cout.tag")}</p>
+              <h3 className="lq-h3 mx-auto mt-4 max-w-[680px]">
                 {t("cout.title.a")} <span className="mark-accent">{t("cout.title.b")}</span>
               </h3>
-              <p className="mx-auto mt-4 max-w-[560px] text-[15px] leading-7 text-slate-400">
-                {t("cout.sub")}
-              </p>
+              <p className="lq-sub mx-auto mt-4 max-w-[560px]">{t("cout.sub")}</p>
             </div>
             <div className="reveal mt-9">
               <ShotOuVisuel
@@ -894,212 +658,173 @@ function LandingPage() {
           </div>
         </section>
 
-        <TourProduit
-          /* L'ORDRE EST UN TRAJET, PAS UN CATALOGUE.
-             Le trade entre (Journal), on le mesure (Analytics), on voit ce
-             qu'il coûte (Erreurs), on voit ce qu'on n'a pas pris et ce qui
-             arrive (la grille), et Jarvis lit l'ensemble. Chaque temps a sa
-             propre composition ; c'est `Tour.tsx` qui les porte. */
-          journal={{
-            nom: "journal",
-            titre: "v2.s5.t",
-            texte: "v2.s5.d",
-            alt: "shot.journal.alt",
-            repli: null,
-          }}
-          analytics={{
-            nom: "analytics",
-            titre: "v2.s3.t",
-            texte: "v2.s3.d",
-            alt: "shot.analytics.alt",
-            repli: null,
-          }}
-          /* Quatre écrans qui portent chacun un argument que rien d'autre ne
-             porte, et qui ne méritent pas une rangée entière chacun : ce
-             serait quatre écrans de page en plus pour quatre phrases. */
-          /* L'ORDRE SUIT LA SÉANCE, pas l'importance : ce qu'on regarde avant
-             d'ouvrir (le calendrier des annonces), puis ce qui arrive pendant
-             (la checklist, avant chaque entrée), puis ce qu'on relit après
-             (les setups manqués), puis ce qu'on projette pour la suite.
-             C'est ce que dit l'étiquette de MOMENT en tête de chaque carte,
-             et c'est ce qui manquait le plus - « Où ton compte peut
-             atterrir » ne dit pas tout seul qu'il s'agit de projection. */
-          secondaires={[
-            {
-              nom: "news",
-              moment: "moment.avant",
-              titre: "v2.s9.t",
-              texte: "v2.s9.d",
-              alt: "shot.news.alt",
-            },
-            {
-              nom: "checklist",
-              moment: "moment.jour",
-              titre: "v2.s6.t",
-              texte: "v2.s6.d",
-              alt: "shot.checklist.alt",
-            },
-            {
-              nom: "missed",
-              moment: "moment.apres",
-              titre: "v2.s8.t",
-              texte: "v2.s8.d",
-              alt: "shot.missed.alt",
-            },
-            {
-              nom: "montecarlo",
-              moment: "moment.suite",
-              titre: "v2.s7.t",
-              texte: "v2.s7.d",
-              alt: "shot.montecarlo.alt",
-            },
-          ]}
-          jarvis={{
-            nom: "jarvis",
-            titre: "v2.s2.t",
-            texte: "v2.s2.d",
-            alt: "shot.jarvis.alt",
-            repli: null,
-          }}
-        />
-
-        {/* ── CONFIANCE ──
-            Ce qui reste est vérifiable : les trois engagements de sécurité.
-            Pas de note, pas de nombre d'avis, pas d'étoiles - nous n'en
-            avons pas, et les inventer est la ligne que `landing-copy`
-            interdit en premier. Le lien vers la vraie fiche est remonté dans
-            la bande sous le héros, là où il sert encore à décider. */}
-        <section id="trust" className="relative section-divider py-10 sm:py-14 lg:py-20">
+        {/* ── LA BOUCLE, EN QUATRE GESTES ──
+            La rangée d'actions rondes du tableau de bord (Trade · Importer ·
+            Checklist · Jarvis) devient la mécanique du produit : un disque,
+            un verbe, une phrase. Le premier est plein — c'est l'action
+            d'entrée —, les autres en plaque, comme dans l'app. */}
+        <section className="lq-section">
           <div className="lp-container">
-            <SectionHead title={t("v2.trust.title")} sub={t("v2.trust.sub")} />
-            <div className="mt-10">
-              <TrustStrip />
+            <SectionHead
+              tag={t("lq.how.tag")}
+              a={t("lq.how.title.a")}
+              b={t("lq.how.title.b")}
+              sub={t("lq.how.sub")}
+            />
+            <ol className="lq-steps">
+              {GESTES.map((g, i) => (
+                <li key={g.titre} className="reveal lq-step">
+                  <span className={`lq-action${i === 0 ? " lq-action--primary" : ""}`}>
+                    <Icon n={g.icone} cls="h-5 w-5" />
+                  </span>
+                  <span className="lq-step-num tv-figure">{String(i + 1).padStart(2, "0")}</span>
+                  <h3 className="lq-card-title mt-1">{t(g.titre)}</h3>
+                  <p className="lq-card-body max-w-[240px]">{t(g.texte)}</p>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </section>
+
+        <TourProduit ecrans={ECRANS_BENTO} />
+
+        {/* ── JARVIS : LE COACH QUI MONTRE SES CHIFFRES ──
+            La preuve que l'IA ne raconte pas d'histoires : une vraie réponse,
+            et à côté les trois règles qui la tiennent — chiffres et
+            échantillon, lecture seule du passé, rien sans accord. */}
+        <section className="lq-section">
+          <div className="lp-container">
+            <div className="lq-duo">
+              <div className="reveal lq-duo-text">
+                <p className="lq-tag">{t("lq.jarvis.tag")}</p>
+                <h2 className="lq-h2 mt-4 text-left">{t("v2.s2.t")}</h2>
+                <p className="lq-sub mt-4 text-left">{t("v2.s2.d")}</p>
+                <ul className="mt-7 space-y-3">
+                  {(["lq.jarvis.p1", "lq.jarvis.p2", "lq.jarvis.p3"] as LandingKey[]).map((k) => (
+                    <li
+                      key={k}
+                      className="flex items-start gap-3 text-[14px] leading-6 text-slate-300"
+                    >
+                      <span className="lq-disc lq-disc--sm">
+                        <Icon n="check" cls="h-3.5 w-3.5" />
+                      </span>
+                      {t(k)}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="reveal lq-duo-scene">
+                <ShotOuVisuel
+                  nom="jarvis"
+                  alt={t("shot.jarvis.alt")}
+                  className="lq-jarvis-shot"
+                  repli={null}
+                />
+              </div>
             </div>
           </div>
         </section>
 
-        {/* ── LE PRIX, EN UN BLOC, QUI MÈNE À /pricing ──
-            La grille complète vivait ICI, et elle vit maintenant sur sa
-            propre adresse. La garder aux deux endroits, c'était présenter
-            deux fois la même décision : une fois au bout d'un parcours, une
-            fois sur une page qu'on ouvre AVEC la question. Et c'était 900px
-            de landing pour un composant qui se partage mieux seul.
-
-            Ce qui reste est ce qu'il faut pour décider de CLIQUER : l'ancrage
-            (on se compare à un challenge raté, jamais à un journal moins
-            cher), le montant d'entrée, et le fait que le gratuit n'expire
-            pas. Le reste est à un clic. */}
-        <section id="pricing" className="relative section-divider py-12 sm:py-16 lg:py-24">
+        {/* ── CE QU'ON NE FERA JAMAIS ── trois engagements vérifiables, pas
+            de note ni de nombre d'avis : nous n'en inventons pas. */}
+        <section id="trust" className="lq-section">
           <div className="lp-container">
-            <div className="reveal mx-auto max-w-[760px] text-center">
-              <p className="tv-label text-[var(--tv-highlight)]">{t("pricing.tag")}</p>
-              <h2 className="mt-4 font-display text-[clamp(1.8rem,3.4vw,2.6rem)] font-semibold leading-[1.1] tracking-[-0.03em] text-white">
-                {t("pricing.title")}
-              </h2>
-              <p className="mx-auto mt-5 max-w-[520px] text-[15px] leading-7 text-slate-400">
-                {t("anchor.sub")}
-              </p>
+            <SectionHead a={t("v2.trust.title")} sub={t("v2.trust.sub")} />
+            <TrustStrip />
+          </div>
+        </section>
+
+        {/* ── LES TARIFS ──
+            L'ancrage est ARITHMÉTIQUE : on ne se compare pas à un journal
+            moins cher, on se compare à ce que coûte un challenge qu'on se
+            saborde. À gauche le prix du marché d'un reset (la fourchette du
+            secteur), à droite les deux offres, au mois ou une fois — montants
+            du catalogue, donc identiques à `/pricing` et à Stripe. */}
+        <section id="pricing" className="lq-section">
+          <div className="lp-container">
+            <SectionHead tag={t("pricing.tag")} a={t("pricing.title")} sub={t("anchor.sub")} />
+
+            <div className="reveal lq-pricing tv-glow">
+              <div className="lq-card lq-cost">
+                <span className="lq-rail" aria-hidden />
+                <p className="tv-label text-slate-500">{t("anchor.a.l")}</p>
+                <p className="lq-price-figure tv-figure mt-3 text-[var(--tv-chart-red)]">
+                  {t("anchor.a.v")}
+                </p>
+                <p className="mt-3 text-[13px] leading-6 text-slate-400">{t("anchor.a.d")}</p>
+                <p className="mt-auto pt-6 text-[15px] font-semibold text-white">
+                  {t("anchor.punch")}
+                </p>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <TuilePrix
+                  titre={t("lq.price.monthly")}
+                  montant={mensuel}
+                  rythme={t("lq.perMonth")}
+                  phrase={t("lq.price.monthly.d")}
+                />
+                <TuilePrix
+                  vedette
+                  titre={t("lq.price.lifetime")}
+                  montant={licence}
+                  rythme={t("lq.price.once")}
+                  phrase={t("lq.price.lifetime.d")}
+                  note={breakEvenCopy(lang)}
+                />
+                <p className="text-center text-[12.5px] text-slate-500 sm:col-span-2">
+                  {t("lq.price.same")}
+                </p>
+              </div>
             </div>
 
-            {/* ── L'ANCRAGE, MONTRÉ AU LIEU D'ÊTRE RACONTÉ ──
-                L'argument de cette section est ARITHMÉTIQUE : on ne se
-                compare pas à un journal moins cher, on se compare à ce que
-                coûte un challenge qu'on se saborde. Il était écrit en
-                paragraphe, au milieu d'une colonne de texte centré — donc
-                lu comme une opinion, alors que c'est une soustraction.
-
-                Deux montants face à face, et l'écart se voit sans être
-                calculé. Celui de gauche est le prix du marché d'un reset
-                (la fourchette du secteur, pas un chiffre inventé) ; celui
-                de droite vient du catalogue `@/domain/plans`, donc il ne
-                peut pas diverger de `/pricing` ni de Stripe. */}
-            <div className="reveal mx-auto mt-11 grid max-w-[880px] gap-3 sm:grid-cols-[1fr_auto_1fr] sm:items-stretch sm:gap-0">
-              <PanneauAncrage
-                variante="cout"
-                label={t("anchor.a.l")}
-                valeur={t("anchor.a.v")}
-                detail={t("anchor.a.d")}
-              />
-              <div className="flex items-center justify-center py-1 sm:px-6">
-                <span className="tv-label text-slate-600">{t("anchor.vs")}</span>
-              </div>
-              <PanneauAncrage
-                variante="offre"
-                label={t("anchor.b.l")}
-                valeur={eur(LIFETIME_EUR, lang)}
-                suffixe={t("anchor.b.per")}
-                detail={t("anchor.b.d")}
-              />
+            <div className="reveal mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
+              <button
+                onClick={() => open("signup", t("nav.cta.plan"))}
+                className="btn-primary w-full sm:w-auto"
+              >
+                {t("hero.cta")} <Icon n="arrow" cls="h-4 w-4" />
+              </button>
+              <a
+                href="/pricing"
+                className="btn-secondaire min-h-[44px] w-full px-5 text-sm sm:w-auto"
+              >
+                {t("lq.price.compare")}
+              </a>
             </div>
-            <p className="reveal mt-6 text-center text-[15px] font-semibold text-white">
-              {t("anchor.punch")}
-            </p>
-
-            <div className="reveal mx-auto max-w-[760px] text-center">
-              <div className="mt-9 flex flex-col items-center justify-center gap-4 sm:flex-row sm:gap-3">
-                <button
-                  onClick={() => open("signup", t("nav.cta.plan"))}
-                  className="btn-primary w-full sm:w-auto"
-                >
-                  {t("hero.cta")} <Icon n="arrow" cls="h-4 w-4" />
-                </button>
-                <a
-                  href="/pricing"
-                  className="btn-secondaire min-h-[44px] w-full px-5 text-sm sm:w-auto"
-                >
-                  {t("hero.pricing")}
-                </a>
-              </div>
-
-              <div className="mt-7 flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
-                {[
+            <div className="mt-7 flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
+              {(
+                [
                   ["shield", "pricing.trust1"],
                   ["lock", "pricing.trust2"],
                   ["check", "pricing.trust3"],
-                ].map(([ic, s2]) => (
-                  <span
-                    key={s2}
-                    className="flex items-center gap-2 text-[13px] font-medium text-slate-500"
-                  >
-                    <Icon n={ic as IName} cls="h-4 w-4 text-[var(--tv-chart-green)]" />
-                    {t(s2 as LandingKey)}
-                  </span>
-                ))}
-              </div>
+                ] as [IName, LandingKey][]
+              ).map(([ic, k]) => (
+                <span
+                  key={k}
+                  className="flex items-center gap-2 text-[13px] font-medium text-slate-500"
+                >
+                  <Icon n={ic} cls="h-4 w-4 text-[var(--tv-chart-green)]" />
+                  {t(k)}
+                </span>
+              ))}
             </div>
           </div>
         </section>
 
-        {/* ── FAQ, EN DEUX COLONNES ──
-            Elle était une colonne de 760px centrée sous son titre : le titre
-            prenait sa propre bande de hauteur, l'accordéon commençait
-            300px plus bas, et les deux tiers de la largeur restaient vides
-            de chaque côté. Le titre passe à gauche, en vis-à-vis, et la
-            page cesse de descendre pour rien. Il y tient compagnie au seul
-            recours utile ici : quelqu'un à qui écrire quand la réponse
-            n'est pas dans la liste. */}
-        <section id="faq" className="relative section-divider py-12 sm:py-16 lg:py-20">
+        {/* ── FAQ, EN DEUX COLONNES ── le titre à gauche (avec le seul
+            recours utile : quelqu'un à qui écrire), l'accordéon à droite. */}
+        <section id="faq" className="lq-section">
           <div className="lp-container">
             {/* `FAQPage` — construit à partir du MÊME tableau `faqs` que
-                l'accordéon rendu juste en dessous, donc incapable d'en
-                diverger. C'est le contenu le plus directement extractible du
-                site, par un moteur de recherche comme par un moteur de
-                réponse, et il n'était balisé nulle part.
-
-                Émis dans le corps plutôt que dans `head()` : le JSON doit
-                sortir VERBATIM (`head()` sérialise des balises, pas un corps de
-                script), et schema.org accepte le JSON-LD partout dans le
-                document. Autre bénéfice : le balisage suit automatiquement la
-                langue rendue, donc `/fr` publie la FAQ française. */}
+                l'accordéon : incapable d'en diverger, et il suit la langue
+                rendue (`/fr` publie la FAQ française). */}
             <script
               type="application/ld+json"
               dangerouslySetInnerHTML={{ __html: faqPageJsonLd(faqs) }}
             />
             <div className="grid gap-8 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)] lg:gap-16">
               <div className="reveal lg:sticky lg:top-28 lg:self-start">
-                <h2 className="font-display text-[clamp(1.8rem,3.4vw,2.5rem)] font-semibold leading-[1.1] tracking-[-0.03em] text-white">
-                  {t("faq.title")}
-                </h2>
+                <h2 className="lq-h2 text-left">{t("faq.title")}</h2>
                 <p className="mt-4 text-[14px] leading-6 text-slate-500">{t("faq.aside")}</p>
                 <a
                   href="/contact"
@@ -1113,7 +838,7 @@ function LandingPage() {
                 </a>
               </div>
 
-              <div className="reveal border-t border-white/[.08]">
+              <div className="reveal lq-card lq-faq">
                 {faqs.map(({ q, a }, i) => {
                   const o = faq === i;
                   return (
@@ -1129,7 +854,7 @@ function LandingPage() {
                           {q}
                         </span>
                         <span
-                          className={`grid h-7 w-7 shrink-0 place-items-center rounded-full border transition-all duration-300 ${o ? "rotate-180 border-[rgb(var(--tv-accent-rgb)/0.4)] bg-[rgb(var(--tv-accent-rgb)/0.1)] text-[var(--tv-highlight)]" : "border-white/[.12] text-slate-500"}`}
+                          className={`grid h-8 w-8 shrink-0 place-items-center rounded-full transition-transform duration-300 ${o ? "rotate-180 bg-[var(--tv-plate-3)] text-white" : "bg-[var(--tv-plate-2)] text-slate-400"}`}
                         >
                           <Icon n="chevron" cls="h-4 w-4" />
                         </span>
@@ -1147,66 +872,33 @@ function LandingPage() {
           </div>
         </section>
 
-        {/* ── CTA FINAL ──
-            Il flottait au milieu de 200px de vide haut et bas, sur le fond
-            de la page : rien ne disait que c'était la fin, seulement que la
-            page continuait. Il devient une PLAQUE — la même grammaire de
-            surface que les cartes du reste de la vitrine — posée entre la
-            FAQ et le pied de page. Un bloc qui se referme se lit comme une
-            conclusion, et il n'a plus besoin de deux cents pixels de marge
-            pour exister. */}
-        <section className="relative section-divider py-14 lg:py-20">
-          <div className="lp-container">
-            <div className="reveal relative overflow-hidden rounded-3xl border border-white/[0.07] bg-[var(--tv-plate-1)] px-6 py-14 text-center sm:px-10 lg:py-16">
-              {/* La seule lueur de la section, très basse, posée derrière le
-                  titre : elle sépare la plaque du fond sans rien éclairer. */}
-              <span
-                className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-[radial-gradient(60%_100%_at_50%_0%,rgb(var(--tv-accent-rgb)/0.1),transparent_70%)]"
-                aria-hidden
-              />
-              <div className="relative mx-auto max-w-[680px]">
-                <h2 className="font-display text-[clamp(2rem,4.4vw,3.2rem)] font-semibold leading-[1.08] tracking-[-0.03em] text-white">
-                  {t("cta.title.a")}
-                  <br />
-                  <span className="text-accent">{t("cta.title.b")}</span>
-                </h2>
-                <button
-                  onClick={() => open("signup", t("nav.cta.plan"))}
-                  className="btn-primary mt-9 px-8 py-3 text-lg"
-                >
-                  {t("hero.cta")} <Icon n="arrow" cls="h-5 w-5" />
-                </button>
-                <p className="mt-5 text-sm text-slate-500">{t("cta.note")}</p>
-              </div>
+        {/* ── CTA FINAL ── une plaque qui se referme : elle se lit comme une
+            conclusion. Plus de lueur derrière le titre — rien ne rayonne. */}
+        <section className="lq-section">
+          <div className="lp-container tv-glow">
+            <div className="reveal lq-card lq-final">
+              <h2 className="lq-h2">
+                {t("cta.title.a")}
+                <br />
+                <span className="lq-h2-soft">{t("cta.title.b")}</span>
+              </h2>
+              <button
+                onClick={() => open("signup", t("nav.cta.plan"))}
+                className="btn-primary mt-9 px-8 py-3 text-lg"
+              >
+                {t("hero.cta")} <Icon n="arrow" cls="h-5 w-5" />
+              </button>
+              <p className="mt-5 text-sm text-slate-500">{t("cta.note")}</p>
             </div>
           </div>
         </section>
 
-        {/* ── PIED DE PAGE ──
-            Deux bandes, et c'est tout.
-
-            Il en faisait près de 400px. La cause n'était pas le nombre de
-            liens mais leur DISPOSITION : trois colonnes empilées, un CTA, un
-            sélecteur de langue et une mention de droits, chacun sur sa
-            propre ligne. Un pied de page n'est pas une page : on y descend
-            pour attraper un lien, pas pour lire.
-
-            Bande haute : l'identité à gauche, les neuf liens à droite sur
-            deux rangées derrière leur intitulé. Bande basse : les droits et
-            la langue, épaule contre épaule.
-
-            Le bouton « Get Started » du pied de page a disparu. Il vivait à
-            200px du bouton plein de la section précédente — deux appels
-            identiques aussi près ne doublent pas le clic, ils le partagent,
-            et le second se lit comme une insistance. */}
+        {/* ── PIED DE PAGE ── deux bandes : l'identité et les liens, puis les
+            droits et la langue. Pas de second bouton d'inscription à 200 px
+            du premier : il partagerait le clic au lieu de l'additionner. */}
         <footer className="relative section-divider pb-8 pt-10">
           <div className="lp-container">
             <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between lg:gap-16">
-              {/* L'IDENTITÉ, ET OÙ NOUS TROUVER. Les réseaux appartiennent à
-                  ce bloc, pas à la bande basse : celle-ci porte le légal et la
-                  langue, deux choses qu'on consulte, alors qu'un réseau est
-                  une suite donnée à la marque — il se range avec le logo et
-                  la phrase qui la décrit. */}
               <div className="shrink-0">
                 <Logo />
                 <p className="mt-3 max-w-[260px] text-[13px] leading-6 text-slate-500">
@@ -1214,36 +906,12 @@ function LandingPage() {
                 </p>
                 <ReseauxSociaux />
               </div>
-              {/* UNE SEULE GRILLE POUR LES DEUX RANGÉES. Elles étaient deux
-                  blocs indépendants : chacun décidait de la largeur de son
-                  intitulé, et rien ne garantissait que les liens commencent à
-                  la même abscisse. `auto` cale la colonne sur le plus long des
-                  deux intitulés, une fois pour les deux rangées.
-                  Sous 640px la grille retombe à une colonne : l'intitulé passe
-                  AU-DESSUS de ses liens, ce qui est la seule disposition
-                  lisible quand la largeur ne permet plus les deux côte à côte. */}
               <div className="grid gap-x-6 gap-y-3 sm:grid-cols-[auto_1fr] sm:gap-y-4 lg:min-w-0 lg:flex-1 lg:max-w-[640px]">
                 <FooterRow title={t("footer.product")} links={FOOTER_PRODUCT} t={t} />
-                {/* UN FILET, PAS UN ÉCART PLUS GRAND.
-                    Les deux rangées se ressemblent trait pour trait : même
-                    graisse, même couleur, même hauteur. Espacées, elles se
-                    lisaient comme UNE liste de neuf liens dont deux mots en
-                    capitales dépassaient à gauche. Le filet dit qu'il y a
-                    deux groupes, ce que l'écart seul n'arrivait pas à dire —
-                    et il coûte un pixel de hauteur là où doubler l'écart en
-                    aurait coûté quatorze.
-                    Il commence à la colonne des LIENS : passer sous
-                    l'intitulé en ferait une ligne de tableau, et ces deux
-                    mots ne sont pas des cellules. */}
+                {/* Le filet commence à la colonne des liens (style, pas
+                    classe : `col-start-2` n'était pas généré ici). */}
                 <div
                   aria-hidden
-                  /* La colonne est posée en STYLE, pas en classe : `col-start-2`
-                     de Tailwind n'était pas généré ici, et le filet retombait
-                     dans la première colonne — où sa largeur automatique
-                     étirait la colonne des intitulés à 385px et faisait passer
-                     la seconde rangée à la ligne. Un filet décoratif ne vaut
-                     pas de dépendre d'un utilitaire dont on vérifie la
-                     présence à l'œil. */
                   style={{ gridColumnStart: 2 }}
                   className="hidden h-px bg-white/[.06] sm:block"
                 />
@@ -1282,19 +950,15 @@ function LandingPage() {
 }
 
 /**
- * `lang` — la langue portée par l'URL, quand l'URL en porte une.
- *
- * `/` sert l'anglais (`SSR_LANG`) et laisse la préférence enregistrée du
- * visiteur reprendre la main après hydratation. `/fr` sert le français dès le
- * rendu serveur, et l'impose : c'est l'adresse qui fait foi. Voir
- * `shared/lang.ts` pour la raison — jusqu'ici la vitrine française n'avait
- * aucune adresse, donc aucune existence pour un moteur de recherche.
+ * `lang` — la langue portée par l'URL, quand l'URL en porte une. `/` sert
+ * l'anglais (`SSR_LANG`) et laisse la préférence du visiteur reprendre la main
+ * après hydratation ; `/fr` sert le français dès le rendu serveur, et l'impose.
  */
 export default function Landing({ lang }: { lang?: LandingLang } = {}) {
   return (
     <LandingLangProvider pinned={lang}>
-      {/* Le défilement doux vit ICI, et nulle part plus haut : il disparaît
-          avec la landing, avant que l'application ne s'affiche. */}
+      {/* Le défilement doux vit ICI : il disparaît avec la landing, avant que
+          l'application ne s'affiche. */}
       <DefilementDoux>
         <LandingPage />
       </DefilementDoux>

@@ -139,6 +139,23 @@ function sortList(list: ConversationMeta[]): ConversationMeta[] {
   });
 }
 
+/**
+ * LECTURES SYNCHRONES — pour peindre la conversation dès la première image.
+ *
+ * L'interface du magasin est asynchrone (elle doit pouvoir passer sur le
+ * réseau un jour), mais le support d'aujourd'hui est `localStorage`, lisible
+ * tout de suite. Attendre une promesse avant de peindre donnait deux temps :
+ * « Jarvis se réveille… », un squelette, puis les messages. Ces deux lectures
+ * servent l'état INITIAL ; le chargement asynchrone suit et confirme.
+ */
+export function peekConversations(userId: string | undefined): ConversationMeta[] {
+  return userId ? sortList(read<ConversationMeta[]>(indexKey(userId), [])) : [];
+}
+
+export function peekMessages(userId: string | undefined, id: string | null): JarvisMessage[] {
+  return userId && id ? read<JarvisMessage[]>(convKey(userId, id), []) : [];
+}
+
 export class JarvisConversationStore implements ConversationStore {
   constructor(private readonly userId: string) {}
 

@@ -1,4 +1,5 @@
 import { lazyPage } from "@/shared/lazy-page";
+import ConversationWorkspace from "./workspaces/ConversationWorkspace";
 import { type ComponentType, type LazyExoticComponent } from "react";
 import type { JarvisContext } from "./context";
 
@@ -44,9 +45,15 @@ export interface JarvisWorkspaceProps {
  * fallback du Shell (espace « à venir »).
  */
 export const JARVIS_WORKSPACES: Partial<
-  Record<JarvisWorkspaceId, LazyExoticComponent<ComponentType<JarvisWorkspaceProps>>>
+  Record<
+    JarvisWorkspaceId,
+    ComponentType<JarvisWorkspaceProps> | LazyExoticComponent<ComponentType<JarvisWorkspaceProps>>
+  >
 > = {
-  conversation: lazyPage(() => import("./workspaces/ConversationWorkspace")),
+  // La conversation est importée DIRECTEMENT : la fenêtre s'ouvre déjà
+  // remplie (son morceau, celui d'`AiAssistant`, se charge au démarrage de
+  // l'app). Les réglages restent différés — on y va rarement.
+  conversation: ConversationWorkspace,
   settings: lazyPage(() => import("./workspaces/SettingsWorkspace")),
   // reports, analyses, memory, goals, history, tools — à venir
 };

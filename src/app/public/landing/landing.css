@@ -20,6 +20,13 @@
   color: #f7f8f8;
 }
 
+/* Le ciel de l'onboarding, en fond de vitrine (clin d'œil, 2026-11-15) :
+   la même tuile de points fixes que l'app (`--tv-sky`, `styles.css`). */
+.landing-root {
+  background-image: var(--tv-sky);
+  background-size: 720px 720px;
+}
+
 .landing-root > main {
   min-height: calc(100vh - 200px);
 }
@@ -45,17 +52,6 @@
   outline: 2px solid rgb(var(--tv-accent-rgb) / 0.7);
   outline-offset: 2px;
 }
-.landing-scroll::-webkit-scrollbar {
-  width: 10px;
-}
-.landing-scroll::-webkit-scrollbar-thumb {
-  background: var(--tv-border-strong);
-  border-radius: 8px;
-  border: 2px solid var(--tv-bg);
-}
-.landing-scroll::-webkit-scrollbar-track {
-  background: transparent;
-}
 
 /* ── Mesures ── */
 .landing-root .lp-container {
@@ -68,25 +64,6 @@
   .landing-root .lp-container {
     padding-inline: 32px;
   }
-}
-
-/* La plaque marketing — la MÊME surface qu'une carte du produit. */
-/* LIQUID — rayons de la vitrine sur l'échelle de l'app : carte 22,
-   panneau 28, encart 14. */
-.lp-card {
-  border: 1px solid var(--tv-border);
-  border-radius: var(--radius-2xl);
-  background: var(--tv-plate-1);
-}
-.lp-card-inset {
-  border: 1px solid var(--tv-border);
-  border-radius: var(--radius-lg);
-  background: var(--tv-plate-2);
-}
-.lp-panel {
-  border: 1px solid var(--tv-border);
-  border-radius: var(--radius-3xl);
-  background: var(--tv-plate-1);
 }
 
 /* L'estampille au-dessus d'un titre — supprimée. Le titre porte seul.
@@ -130,56 +107,6 @@
   );
 }
 
-/* ── Le CONTRE-TEMPS d'un titre ──
- *
- * Ce n'est PAS l'accent, et c'est un changement voulu depuis l'adoption du
- * langage Lucid (`docs/DESIGN_SYSTEM.md`). Là-bas le vert appartient aux
- * VALEURS et aux ACTIONS — un solde, un bouton, un onglet actif — et jamais à
- * du texte de titre. Peindre une phrase entière en vert menthe fait deux
- * dégâts d'un coup : le titre crie, et le vert cesse de vouloir dire « ceci
- * agit » puisqu'il dit aussi « ceci est un titre ».
- *
- * Il y a une seconde raison, propre à cette page : le second membre de
- * l'accroche énonce le PROBLÈME (« tu casses tes propres règles »). L'habiller
- * de la couleur du succès est un contresens.
- *
- * Le gris sourd garde donc la lecture en deux temps — une proposition tenue,
- * une proposition qui retombe — sans dépenser la couleur rare de la page. */
-.text-accent {
-  color: var(--tv-text-secondary);
-}
-
-/* ── Nav ── */
-.nav-link {
-  position: relative;
-  padding: 0.3rem 0;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #9aa1a9;
-  transition: color 0.18s ease;
-}
-.nav-link:hover {
-  color: #f7f8f8;
-}
-.nav-link::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  bottom: -2px;
-  width: 100%;
-  height: 1.5px;
-  background: var(--tv-highlight);
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
-}
-.nav-link:hover::after,
-.nav-link.nav-active::after {
-  transform: scaleX(1);
-}
-.nav-link.nav-active {
-  color: #f7f8f8;
-}
 .mobile-nav-link {
   width: 100%;
   padding: 0.875rem 0;
@@ -215,81 +142,11 @@
 .card-premium:hover {
   border-color: var(--tv-border-strong);
 }
-.card-featured {
-  position: relative;
-  border: 1px solid rgb(var(--tv-accent-rgb) / 0.4);
-  border-radius: var(--radius-2xl);
-  background: var(--tv-plate-2);
-  overflow: hidden;
-}
 
-/* ── Icônes de fonctionnalité : une plaque sourde, la couleur est l'état
-   actif là où elle sert — jamais un dégradé. ── */
-.feat-icon {
-  display: grid;
-  place-items: center;
-  border-radius: 8px;
-  border: 1px solid var(--tv-border);
-  background: var(--tv-plate-2);
-  color: var(--tv-highlight);
-  flex-shrink: 0;
-}
-
-/* ── Chart draw animation (la courbe du héros — même rythme que l'app) ── */
-.chart-line {
-  stroke-dasharray: 900;
-  stroke-dashoffset: 900;
-  animation: chart-draw 760ms 200ms cubic-bezier(0.33, 1, 0.68, 1) forwards;
-}
-@media (prefers-reduced-motion: reduce) {
-  .chart-line {
-    animation: none;
-    stroke-dashoffset: 0;
-  }
-}
 @keyframes chart-draw {
   to {
     stroke-dashoffset: 0;
   }
-}
-
-/* ── Journey / système en 4 temps ── */
-.journey-node {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.75rem;
-  z-index: 1;
-}
-.journey-line {
-  position: absolute;
-  top: 1.4rem;
-  left: 1.05rem;
-  width: 1px;
-  height: calc(100% - 1.4rem);
-  background: var(--tv-border-strong);
-}
-.journey-step {
-  position: relative;
-  display: grid;
-  grid-template-columns: 2.1rem 1fr;
-  gap: 0.85rem;
-  align-items: start;
-}
-.journey-num {
-  display: grid;
-  place-items: center;
-  width: 2.1rem;
-  height: 2.1rem;
-  border-radius: 8px;
-  border: 1px solid var(--tv-border-strong);
-  background: var(--tv-plate-2);
-  color: var(--tv-highlight);
-  font-family: var(--font-display);
-  font-size: 0.8rem;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
 }
 
 /* ── FAQ ── */
@@ -448,55 +305,6 @@
     opacity: 1;
     transform: translateY(0);
   }
-}
-
-/* ── Barre d'outils mobile / table de comparaison ── */
-.cmp-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 40px 40px 40px;
-  gap: 8px;
-  align-items: center;
-  padding: 12px 0;
-  border-bottom: 1px solid var(--tv-border);
-}
-@media (min-width: 640px) {
-  .cmp-row {
-    grid-template-columns: minmax(0, 1fr) 88px 88px 72px;
-    gap: 12px;
-  }
-}
-/* LES TROIS COLONNES SE VOIENT AUSSI SUR UN TÉLÉPHONE.
-   Elles portaient `hidden sm:block` alors que `.cmp-row` réservait ses quatre
-   colonnes à TOUTES les tailles : sous 640px, le tableau affichait donc le
-   libellé, 80px de vide, puis la seule coche TradeVault. Ce n'était plus une
-   comparaison — c'était une liste de coches, sur la taille d'écran la plus
-   fréquente, dans la section dont la comparaison EST le sujet.
-   Onze pixels suffisent pour « Excel » et « Notion » dans 40px ; la taille
-   remonte à 13px dès qu'il y a la place. */
-.cmp-col {
-  text-align: center;
-  font-size: 11px;
-}
-@media (min-width: 640px) {
-  .cmp-col {
-    font-size: 13px;
-  }
-}
-.cmp-col.cmp-tv {
-  color: var(--tv-highlight);
-  font-weight: 600;
-}
-
-/* ── Use-cases : chaque carte relie une audience à un besoin réel ── */
-.use-card {
-  border: 1px solid var(--tv-border);
-  border-radius: var(--radius-2xl);
-  background: var(--tv-plate-1);
-  padding: 24px;
-  transition: border-color 0.3s ease;
-}
-.use-card:hover {
-  border-color: var(--tv-border-strong);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -874,15 +682,6 @@
   }
 }
 
-/* La pastille d'icône d'une carte — creusée, pas posée.
- * Une icône sur un aplat clair flotte ; la même icône dans un creux appartient
- * à la carte. C'est un `inset` de plus, pas une couleur de plus. */
-.landing-root .feat-icon {
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.07),
-    inset 0 -1px 0 rgb(0 0 0 / 0.35);
-}
-
 /* ── LA VISITE DU PRODUIT ──
  *
  * Une grille à deux pistes où la capture tient la LARGE : la capture prouve,
@@ -987,28 +786,6 @@
   }
 }
 
-/* ══ LA LIGNE QUI SE TRACE ══
- *
- * `pathLength` n'est pas utilisé : on fixe un `stroke-dasharray` plus grand
- * que la courbe (≈ 1000 px de développé) et on ramène l'offset à zéro. Le
- * tracé part donc du bord gauche et court jusqu'au bout, à la même durée et
- * au même easing que le reveal des blocs voisins — c'est ce qui le fait lire
- * comme un geste de la page, pas comme une animation rapportée.
- *
- * L'opacité reste basse : cette ligne est une respiration entre deux
- * sections, pas un élément à regarder. Elle doit se remarquer une fois, en
- * défilant, et jamais retenir l'œil. */
-.landing-root .tv-draw-wrap {
-  margin: 0 auto;
-  width: min(100%, 900px);
-  padding: 0 1rem;
-}
-.landing-root .tv-draw-svg {
-  display: block;
-  width: 100%;
-  height: clamp(48px, 7vw, 96px);
-  overflow: visible;
-}
 .landing-root .tv-draw-path {
   opacity: 0.32;
 }
@@ -1076,55 +853,6 @@
   color: var(--tv-accent);
 }
 
-/* ══ LE HÉROS EN DEUX COLONNES ══
- *
- * Texte à gauche, produit à droite, les deux dans le premier écran. Le
- * gabarit n'est pas 50/50 : l'accroche a besoin d'une mesure de lecture
- * (~560px, une cinquantaine de signes par ligne), la capture veut tout le
- * reste et même un peu plus.
- *
- * Sous 1024px on empile, texte d'abord. Deux colonnes sur une tablette
- * donneraient deux vignettes au lieu d'une lecture. */
-.landing-root .hero-grid {
-  display: grid;
-  gap: 2.5rem;
-  align-items: center;
-}
-@media (min-width: 1024px) {
-  /* PARTS ÉGALES. La colonne de texte recevait 0,86 contre 1,14, soit
-     443px à 1440 : à cette largeur, une accroche de 44px passe à cinq
-     lignes et se met à orpheliner des mots (« trade. » seul, « you. »
-     seul). La capture, elle, déborde volontairement par la droite — lui
-     reprendre 50px ne change rien à ce qu'on en voit, alors que les mêmes
-     50px font gagner une ligne au titre. */
-  .landing-root .hero-grid {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    gap: 3rem;
-  }
-}
-
-/* LE DÉBORDEMENT.
- *
- * La capture sort du conteneur par la droite et se fait couper par le bord de
- * la fenêtre (`overflow: hidden` sur la section). Un écran coupé par le bord
- * se lit comme une fenêtre sur quelque chose de plus grand ; la même image
- * entière et centrée se lit comme une illustration posée sur la page.
- *
- * La marge négative est en `vw` plafonnée : sur un très grand écran, laisser
- * la capture filer indéfiniment la ferait sortir de la zone de mise au point
- * du regard. */
-@media (min-width: 1024px) {
-  .landing-root .hero-shot-col {
-    /* PLUS DE DÉBORDEMENT. Le bord de la fenêtre coupait la capture, ce qui
-       devait se lire comme « une fenêtre sur plus grand » ; à l'usage ça se
-       lit comme une image mal calée, et on ne voit plus l'écran en entier.
-       Une capture produit dont il manque un tiers ne prouve plus rien.
-       Elle tient maintenant dans sa colonne, entière, et gagne en largeur ce
-       qu'elle perd en effet. */
-    margin-right: 0;
-  }
-}
-
 /* ══ LES COINS DES CAPTURES ══
  *
  * LE DÉFAUT : on voyait des ANGLES NOIRS à 90° dans les coins. Le cadre est
@@ -1147,432 +875,6 @@
 }
 .landing-root .shot-frame::after {
   border-radius: 16px;
-}
-
-/* ══ LA VISITE DU PRODUIT — CINQ COMPOSITIONS, UN SEUL SYSTÈME ══
- *
- * Six rangées identiques se lisaient comme un gabarit, et un gabarit se
- * saute : passé la deuxième, on ne lit plus, on défile. Les compositions
- * varient donc d'un temps à l'autre — et rien d'autre ne varie. Même cadre,
- * même lueur, même échelle typographique, même rythme vertical.
- *
- * La contrainte de lisibilité, elle, ne bouge pas : une capture dans une
- * demi-colonne tombe à ~600px sur un écran de 1440 alors que sa mise en page
- * est calculée sur 1352 — échelle 0,45, texte du produit à 6px. Les deux
- * rangées en deux colonnes font donc DÉBORDER la capture vers le bord de la
- * fenêtre, ce qui lui rend ~250px. */
-
-/* ══ LES TROIS SYMPTÔMES PORTENT DU ROUGE ══
- *
- * Elles étaient trois cartes grises, identiques à toutes les autres cartes
- * de la page : trois symptômes qui font mal se lisaient comme trois
- * fonctionnalités. Le produit a pourtant une sémantique de couleur claire —
- * vert pour ce qui va, rouge pour ce qui coûte (`--tv-chart-red`) — et la
- * vitrine ne s'en servait nulle part.
- *
- * Un liseré à gauche, pas un fond : un aplat rouge sur trois cartes
- * transformerait la section en avertissement système. Le liseré suffit à
- * dire « ceci est le passif », et il prépare le contraste avec la capture
- * qui suit, où le même rouge chiffre le montant. */
-.landing-root .carte-symptome {
-  position: relative;
-  overflow: hidden;
-  border: 1px solid var(--tv-border);
-  border-radius: var(--radius-2xl);
-  background: var(--tv-plate-1);
-  transition:
-    border-color 260ms var(--lp-expo),
-    transform 260ms var(--lp-expo);
-}
-.landing-root .carte-symptome::before {
-  content: "";
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 2px;
-  background: linear-gradient(
-    180deg,
-    transparent,
-    rgb(var(--tv-chart-red-rgb) / 0.75) 22%,
-    rgb(var(--tv-chart-red-rgb) / 0.75) 78%,
-    transparent
-  );
-}
-@media (prefers-reduced-motion: no-preference) {
-  .landing-root .carte-symptome:hover {
-    border-color: var(--tv-border-strong);
-    transform: translateY(-2px);
-  }
-}
-.landing-root .feat-icon--rouge {
-  border-color: rgb(var(--tv-chart-red-rgb) / 0.22);
-  background: rgb(var(--tv-chart-red-rgb) / 0.09);
-  color: var(--tv-chart-red);
-}
-
-/* ── LE FIL ──
- * Un trait d'un pixel dans la gouttière, un point numéroté par temps. Le
- * dégradé l'éteint aux deux bouts : une ligne franche qui commence et
- * s'arrête net se lit comme une bordure oubliée, une ligne qui s'efface se
- * lit comme un parcours. */
-.landing-root .tour-fil {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 4.5rem;
-  padding-left: 2.25rem;
-}
-.landing-root .tour-fil::before {
-  content: "";
-  position: absolute;
-  left: 11px;
-  top: 14px;
-  bottom: 14px;
-  width: 1px;
-  background: linear-gradient(
-    180deg,
-    transparent,
-    var(--tv-border-strong) 8%,
-    var(--tv-border-strong) 92%,
-    transparent
-  );
-}
-.landing-root .tour-etape {
-  position: relative;
-}
-.landing-root .tour-pastille {
-  position: absolute;
-  /* AU-DESSUS DE LA CAPTURE. La rangée dont l'image déborde à GAUCHE
-     (`margin-left: -5vw`, soit -72px à 1440) passait par-dessus le point :
-     l'étape 02 n'avait plus de numéro, et le fil semblait sauter un cran. */
-  z-index: 2;
-  left: -2.25rem;
-  top: 2px;
-  display: grid;
-  place-items: center;
-  width: 23px;
-  height: 23px;
-  border-radius: 999px;
-  border: 1px solid var(--tv-border-strong);
-  background: var(--tv-bg);
-  color: var(--tv-text-secondary);
-  font-size: 9px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.02em;
-}
-@media (min-width: 1024px) {
-  .landing-root .tour-fil {
-    gap: 7rem;
-    padding-left: 3.5rem;
-  }
-  .landing-root .tour-fil::before {
-    left: 13px;
-  }
-  .landing-root .tour-pastille {
-    left: -3.5rem;
-    width: 27px;
-    height: 27px;
-    font-size: 10px;
-  }
-}
-
-/* ── TITRE ET PHRASE, PARTOUT LES MÊMES ── */
-.landing-root .tour-titre {
-  font-family: var(--tv-font-display, inherit);
-  font-size: clamp(1.4rem, 2.7vw, 2rem);
-  font-weight: 600;
-  line-height: 1.13;
-  letter-spacing: -0.028em;
-  color: #fff;
-}
-.landing-root .tour-phrase {
-  margin-top: 0.85rem;
-  max-width: 54ch;
-  font-size: 15px;
-  line-height: 1.75;
-  color: var(--tv-text-secondary);
-}
-
-/* ── 1 et 2 : DEUX COLONNES, CAPTURE DÉBORDANTE ── */
-.landing-root .tour-duo {
-  display: grid;
-  gap: 2.25rem;
-}
-.landing-root .tour-duo-scene {
-  position: relative;
-}
-@media (min-width: 1024px) {
-  .landing-root .tour-duo {
-    grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
-    align-items: center;
-    gap: 3.5rem;
-  }
-  /* Le débordement. `width` dépasse la colonne et `margin` négatif tire la
-     capture vers le bord : elle gagne ~250px, soit la différence entre une
-     capture qu'on déchiffre et une texture entre deux paragraphes. Borné par
-     `overflow-x: clip` sur la racine, donc aucun défilement horizontal. */
-  .landing-root .tour-duo--droite .tour-duo-scene {
-    width: calc(100% + 5vw);
-    margin-right: -5vw;
-  }
-  /* LES COLONNES SE RETOURNENT AVEC LEUR CONTENU.
-     `order` échangeait les deux blocs sans toucher au gabarit : la capture
-     se retrouvait dans la colonne ÉTROITE (0.82fr) et le texte dans la
-     large. La rangée Analytics sortait donc une capture sensiblement plus
-     petite que celle du Journal, pour aucune raison lisible.
-     On inverse le gabarit lui-même : la capture garde 1.18fr des deux
-     côtés. */
-  .landing-root .tour-duo--gauche {
-    grid-template-columns: minmax(0, 1.18fr) minmax(0, 0.82fr);
-  }
-  .landing-root .tour-duo--gauche .tour-duo-texte {
-    order: 2;
-  }
-  .landing-root .tour-duo--gauche .tour-duo-scene {
-    order: 1;
-    width: calc(100% + 5vw);
-    margin-left: -5vw;
-  }
-}
-
-/* ── 3 : PLEINE LARGEUR ──
-   Le moment le plus large de la page, réservé à l'argument le plus
-   singulier. Le titre est centré : c'est le seul de la visite à l'être, et
-   c'est ce qui signale la rupture de rythme. */
-.landing-root .tour-pleine-texte {
-  text-align: center;
-  max-width: 44rem;
-  margin-inline: auto;
-}
-
-/* ── 3 : LES QUATRE ÉCRANS, EN CARTES ──
- *
- * Elles étaient quatre captures nues, recadrées au même rapport et posées à
- * même le fond. Trois défauts d'un coup : le recadrage `cover` coupait le
- * bas de chaque écran (on n'en voyait jamais un en entier) ; rien ne disait
- * QUAND cet écran sert ; et sans cadre, à côté de trois rangées qui en ont
- * un, elles se lisaient comme un appendice.
- *
- * Devenues des cartes : une plaque, une étiquette de moment, un titre, une
- * ligne, puis l'écran ENTIER en bas. L'image est en `contain` — à cette
- * taille on ne lit pas les chiffres, mais on reconnaît une forme d'écran, et
- * une forme tronquée ne se reconnaît pas.
- *
- * Le texte est EN HAUT et l'image en bas, contrairement à une tuile
- * ordinaire : on veut qu'on sache ce qu'on regarde avant de le regarder. */
-/* `.tour-carte-titre` et `.tour-carte-texte` survivent à la grille de
-   cartes qui les portait : le panneau à onglets réemploie la même échelle,
-   et deux classes pour la même taille de titre finiraient par diverger. */
-.landing-root .tour-carte-titre {
-  margin-top: 0.7rem;
-  font-size: 1.0625rem;
-  font-weight: 600;
-  letter-spacing: -0.015em;
-  color: #fff;
-}
-.landing-root .tour-carte-texte {
-  margin-top: 0.5rem;
-  font-size: 13.5px;
-  line-height: 1.65;
-  color: var(--tv-text-secondary);
-}
-/* ══ LES QUATRE ÉCRANS SECONDAIRES : UN SEUL À LA FOIS, EN GRAND ══
- *
- * Voir `Tour.tsx` pour le pourquoi. Ici, trois choses.
- *
- * LES ONGLETS SONT DES MOMENTS, pas des noms de page : on choisit un moment
- * de sa journée, l'écran suit. L'onglet actif porte un aplat léger et un
- * texte blanc — pas de soulignement mobile, qui demanderait d'animer une
- * position et n'ajouterait rien à cette échelle.
- *
- * LE PANNEAU NE SAUTE PAS. Les quatre captures sont cadrées au même rapport
- * par le harnais (3/2) : la hauteur du panneau est donc constante, et
- * changer d'onglet ne déplace rien sous le doigt.
- *
- * LA CAPTURE EST ENTIÈRE ET PLEINE LARGEUR. C'est tout l'intérêt : à 1078px
- * elle rend l'interface à 80 % — on lit les intitulés et les chiffres, ce
- * qui n'était pas le cas à 36 % dans une carte d'une grille de quatre.
- */
-.landing-root .tour-onglets {
-  margin-top: 2rem;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.375rem;
-}
-.landing-root .tour-onglet {
-  border-radius: 10px;
-  border: 1px solid transparent;
-  padding: 0.55rem 0.9rem;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.055em;
-  text-transform: uppercase;
-  color: var(--tv-text-muted);
-  transition:
-    background-color 180ms var(--lp-expo),
-    border-color 180ms var(--lp-expo),
-    color 180ms var(--lp-expo);
-}
-.landing-root .tour-onglet:hover {
-  color: #fff;
-}
-.landing-root .tour-onglet[aria-selected="true"] {
-  border-color: rgb(var(--tv-accent-rgb) / 0.3);
-  background: rgb(var(--tv-accent-rgb) / 0.08);
-  color: var(--tv-highlight);
-}
-/* Sous 640px les quatre moments ne tiennent pas sur une ligne : ils
-   défilent, plutôt que de passer à deux lignes et de doubler la hauteur
-   du sélecteur. */
-@media (max-width: 639px) {
-  .landing-root .tour-onglets {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    scrollbar-width: none;
-    margin-inline: -1.25rem;
-    padding-inline: 1.25rem;
-  }
-  .landing-root .tour-onglets::-webkit-scrollbar {
-    display: none;
-  }
-  .landing-root .tour-onglet {
-    flex: 0 0 auto;
-  }
-}
-
-/* LA PILE PORTE LA PLAQUE, les panneaux ne portent rien.
-   Les quatre panneaux occupent la MÊME cellule de grille : la hauteur est
-   celle du plus grand, et changer d'onglet ne déplace rien sous le doigt.
-   Le cadre, lui, appartient à la pile - il ne participe donc pas au fondu
-   et ne clignote pas entre deux écrans. */
-.landing-root .tour-pile {
-  margin-top: 1.25rem;
-  display: grid;
-  border: 1px solid var(--tv-border);
-  border-radius: 20px;
-  background: var(--tv-plate-1);
-  padding: 1.5rem;
-}
-.landing-root .tour-panneau {
-  grid-area: 1 / 1;
-}
-/* L'état de repos, correct dès le rendu serveur et sans JavaScript : le
-   panneau inactif est invisible ET hors de l'arbre d'accessibilité (`inert`
-   côté balisage). Pendant le fondu, GSAP écrit `opacity`/`visibility` en
-   style en ligne, qui l'emporte sur cette règle le temps de la transition. */
-.landing-root .tour-panneau[data-actif="false"] {
-  opacity: 0;
-  visibility: hidden;
-}
-@media (min-width: 768px) {
-  .landing-root .tour-pile {
-    padding: 1.75rem;
-  }
-}
-.landing-root .tour-panneau-texte {
-  max-width: 54ch;
-}
-.landing-root .tour-panneau-scene {
-  margin-top: 1.5rem;
-}
-/* La capture, entière, sans recadrage : c'est la demande, et c'est ce que
-   permet la pleine largeur. Le cadre n'a plus rien à poser puisque le
-   panneau est déjà la surface. */
-.landing-root .tour-vitrine-shot .shot-frame {
-  padding: 0;
-  overflow: hidden;
-  border: 1px solid var(--tv-border);
-  border-radius: 12px;
-  background: var(--tv-plate-0);
-  box-shadow: none;
-}
-.landing-root .tour-vitrine-shot .shot-frame > picture,
-.landing-root .tour-vitrine-shot .shot-frame > picture > img,
-.landing-root .tour-vitrine-shot .shot-frame > img {
-  display: block;
-  width: 100%;
-  height: auto;
-  border-radius: 0;
-}
-/* Sous 640px c'est la capture TÉLÉPHONE qui est servie : portrait, déjà à
-   l'échelle 1. On la borne en hauteur, ancrée en haut, comme les autres
-   captures mobiles de la page. */
-@media (max-width: 639px) {
-  .landing-root .tour-vitrine-shot .shot-frame {
-    aspect-ratio: 5 / 6;
-  }
-  .landing-root .tour-vitrine-shot .shot-frame > picture > img,
-  .landing-root .tour-vitrine-shot .shot-frame > img {
-    height: 100%;
-    object-fit: cover;
-    object-position: top;
-  }
-}
-
-/* ── 5 : LE DÉNOUEMENT ──
-   Resserré et centré. Après trois compositions qui occupent toute la
-   largeur, un bloc plus étroit se lit comme une conclusion. */
-.landing-root .tour-final-texte {
-  text-align: center;
-  max-width: 40rem;
-  margin-inline: auto;
-}
-.landing-root .tour-final-scene {
-  position: relative;
-  margin-top: 2.25rem;
-  max-width: 62rem;
-  margin-inline: auto;
-}
-
-/* La vignette téléphone, posée sur le coin de la capture de bureau. Les deux
-   sont des captures RÉELLES du même écran : les voir ensemble dit « ça
-   marche aussi dans ta poche » sans une ligne de texte. Elle ne s'affiche
-   qu'à partir de `lg` — en dessous, elle recouvrirait ce qu'elle complète. */
-.landing-root .tour-tel {
-  display: none;
-}
-@media (min-width: 1024px) {
-  .landing-root .tour-tel {
-    display: block;
-    position: absolute;
-    bottom: -2.5rem;
-    width: 150px;
-    border-radius: 18px;
-    border: 1px solid var(--tv-border-strong);
-    box-shadow: 0 26px 52px -22px rgb(0 0 0 / 0.92);
-    transition: transform 420ms var(--lp-expo);
-  }
-  .landing-root .tour-tel--droite {
-    right: -1.25rem;
-  }
-  .landing-root .tour-final-scene:hover .tour-tel {
-    transform: translateY(-6px);
-  }
-}
-
-/* Le héros sur téléphone : même traitement que les rangées de la visite.
- *
- * Sans variante `-m`, il servait la capture de BUREAU réduite à 350px, soit
- * l'échelle 0,22 - la seule image de la page encore illisible au téléphone,
- * et c'était la première qu'on voyait. Avec `dashboard-m.webp` (le produit
- * photographié à 390px), le texte se lit à l'échelle 1.
- *
- * On borne la hauteur : 780x1800 affichée sur 350px ferait 807px de haut, et
- * le bouton passerait sous la ligne de flottaison - exactement ce que la
- * refonte du héros cherchait à éviter. */
-@media (max-width: 639px) {
-  .landing-root .hero-shot-col .shot-frame {
-    overflow: hidden;
-    aspect-ratio: 5 / 6;
-  }
-  .landing-root .hero-shot-col .shot-frame > picture,
-  .landing-root .hero-shot-col .shot-frame > picture > img {
-    display: block;
-    height: 100%;
-    width: 100%;
-    object-fit: cover;
-    object-position: top;
-  }
 }
 
 /* ══ LE VERT CLAIR PREND LE DESSUS ══
@@ -2059,4 +1361,486 @@
 }
 .landing-root .faq-ligne[data-ouverte="oui"]::before {
   background: var(--tv-accent);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LIQUID — LA VITRINE À LA DA DE L'APP (novembre 2026)
+   ───────────────────────────────────────────────────────────────────────────
+   Dernier lot du langage Liquid (spec 2026-10-31, lot L9) : la vitrine parle
+   comme l'app. Le verre reste à la navigation (barre en capsule) ; tout ce
+   qui porte un contenu est une plaque opaque à grand rayon (28) ; un chiffre
+   héros par offre ; les actions sont des rectangles adoucis pleins ou des
+   disques, comme la rangée d'actions du tableau de bord.
+
+   Ce bloc vient EN DERNIER : à spécificité égale, il gagne sur les règles
+   d'avant, et il neutralise ce que Liquid interdit et que la vitrine portait
+   encore — la lueur d'accent derrière les captures, l'ombre colorée des
+   boutons, la trame de grille, la capture qui flotte en boucle. Rien ne
+   rayonne, rien ne boucle ; la seule lumière est le papier peint fixe.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Le papier peint : celui de l'app (spec §3.1), fixe, sans animation. ── */
+.landing-root::before {
+  background:
+    radial-gradient(60rem 40rem at 88% -8%, rgb(var(--tv-accent-rgb) / 0.16), transparent 62%),
+    radial-gradient(48rem 36rem at -6% 104%, rgb(var(--tv-accent-2-rgb) / 0.08), transparent 60%),
+    radial-gradient(40rem 30rem at 50% 45%, rgb(255 255 255 / 0.025), transparent 70%);
+}
+.landing-root::after {
+  content: none;
+}
+
+/* ── Les captures : un écran posé, pas une lampe. ──
+   Une plaque, un liseré, une ombre NOIRE. Plus de lueur d'accent, plus de
+   reflet diagonal (c'est un effet de verre, et une capture est un contenu),
+   plus de bascule en perspective ni de flottement perpétuel. */
+.landing-root .shot-halo::before {
+  content: none;
+}
+.landing-root .shot-flotte {
+  animation: none;
+}
+.landing-root .shot-frame {
+  border-radius: 28px;
+  padding: 6px;
+  background: var(--tv-plate-1);
+  border: 1px solid var(--tv-border-strong);
+  box-shadow:
+    0 40px 90px -36px rgb(0 0 0 / 0.9),
+    inset 0 1px 0 rgb(255 255 255 / 0.06);
+}
+.landing-root .shot-frame > img,
+.landing-root .shot-frame > picture > img {
+  border-radius: 22px;
+}
+.landing-root .shot-frame::after {
+  content: none;
+}
+.landing-root .shot-hero,
+.landing-root .shot-hero:hover {
+  transform: none;
+}
+
+/* ── Les actions : rectangles adoucis, comme dans l'app. ──
+   L'ombre colorée part (rien ne rayonne) ; la pression est celle de l'app
+   (`--tv-press`), pas un décollage au survol. */
+.landing-root .btn-primary {
+  border-radius: 14px;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.18),
+    0 1px 2px rgb(0 0 0 / 0.4);
+}
+.landing-root .btn-primary:hover {
+  transform: none;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.22),
+    0 1px 2px rgb(0 0 0 / 0.4);
+}
+.landing-root .btn-primary:active {
+  transform: var(--tv-press);
+}
+/* L'action secondaire est une PLAQUE, comme le bouton `subtle` de l'app :
+   remplie, sans liseré d'accent ni teinte verte au survol. */
+.landing-root .btn-secondaire {
+  border-radius: 14px;
+  border-color: var(--tv-border);
+  background: var(--tv-plate-2);
+  color: var(--tv-text-primary);
+}
+.landing-root .btn-secondaire:hover {
+  border-color: var(--tv-border-strong);
+  background: var(--tv-plate-3);
+  color: #fff;
+  transform: none;
+}
+.landing-root .btn-secondaire:active {
+  transform: var(--tv-press);
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing-root .btn-primary:active,
+  .landing-root .btn-secondaire:active {
+    transform: none;
+  }
+}
+
+/* ── Le rythme des sections ── */
+.landing-root .lq-section {
+  position: relative;
+  padding-block: 4.5rem;
+}
+@media (min-width: 1024px) {
+  .landing-root .lq-section {
+    padding-block: 6.5rem;
+  }
+}
+.landing-root .lq-head {
+  max-width: 46rem;
+  margin: 0 auto 3rem;
+  text-align: center;
+}
+
+/* ── La typographie de la vitrine (Inter, chiffres Inter 800) ──
+   Titres serrés et lourds, le second temps en gris : un titre n'est jamais
+   peint en vert. */
+.landing-root .lq-tag {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--tv-text-secondary);
+}
+.landing-root .lq-h1 {
+  margin-top: 1.1rem;
+  font-family: var(--font-display);
+  font-size: clamp(2.35rem, 5.4vw, 4.1rem);
+  font-weight: 700;
+  line-height: 1.04;
+  letter-spacing: -0.04em;
+  color: #fff;
+  text-wrap: balance;
+}
+.landing-root .lq-h2 {
+  font-family: var(--font-display);
+  font-size: clamp(1.9rem, 3.6vw, 2.85rem);
+  font-weight: 700;
+  line-height: 1.08;
+  letter-spacing: -0.035em;
+  color: #fff;
+  text-wrap: balance;
+}
+.landing-root .lq-h3 {
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 3vw, 2.3rem);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  color: #fff;
+}
+.landing-root .lq-h2-soft {
+  color: var(--tv-text-secondary);
+}
+.landing-root .lq-sub {
+  margin-top: 1rem;
+  font-size: 17px;
+  line-height: 1.65;
+  color: #94a3b8;
+}
+.landing-root .lq-card-title {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: #fff;
+}
+.landing-root .lq-card-body {
+  margin-top: 0.5rem;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #94a3b8;
+}
+
+/* ── La plaque de contenu (matière Revolut) : rayon 28, opaque, liseré. ── */
+.landing-root .lq-card {
+  border-radius: 28px;
+  border: 1px solid var(--tv-border);
+  background: var(--tv-plate-1);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05);
+}
+
+/* ── Les disques : la pastille d'icône de l'app. ── */
+.landing-root .lq-disc {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: 9999px;
+  background: var(--tv-plate-3);
+  color: var(--tv-text-primary);
+}
+.landing-root .lq-disc--red {
+  background: rgb(var(--tv-chart-red-rgb) / 0.12);
+  color: var(--tv-chart-red);
+}
+.landing-root .lq-disc--sm {
+  width: 24px;
+  height: 24px;
+  margin-top: 1px;
+  background: rgb(var(--tv-chart-green-rgb) / 0.12);
+  color: var(--tv-chart-green);
+}
+
+/* ── LE HÉROS — centré, comme l'accueil de l'app ── */
+.landing-root .lq-hero {
+  position: relative;
+  padding-top: 112px;
+  padding-bottom: 3rem;
+}
+@media (min-width: 1024px) {
+  .landing-root .lq-hero {
+    padding-top: 148px;
+  }
+}
+.landing-root .lq-hero-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 54rem;
+  margin: 0 auto;
+  text-align: center;
+}
+.landing-root .lq-hero-sub {
+  max-width: 36rem;
+  margin-top: 1.25rem;
+  font-size: 18px;
+  line-height: 1.6;
+  color: #94a3b8;
+}
+.landing-root .lq-hero-stage {
+  position: relative;
+  max-width: 1080px;
+  margin: 3.25rem auto 0;
+}
+/* Sur téléphone, la capture servie est l'écran mobile (`<picture>`), très
+   haut : on n'en garde que le haut, ce qu'un pouce verrait. */
+@media (max-width: 639px) {
+  .landing-root .lq-hero-stage .shot-frame > picture > img {
+    max-height: 620px;
+    object-fit: cover;
+    object-position: top;
+  }
+}
+/* Le téléphone posé devant l'écran — bureau seulement : en dessous, la
+   capture mobile occupe déjà toute la scène. */
+.landing-root .lq-phone {
+  display: none;
+}
+@media (min-width: 1024px) {
+  .landing-root .lq-phone {
+    display: block;
+    position: absolute;
+    right: -2.5%;
+    bottom: -7%;
+    width: 19%;
+    padding: 6px;
+    border-radius: 34px;
+    border: 1px solid var(--tv-border-strong);
+    background: var(--tv-plate-0);
+    box-shadow: 0 40px 80px -30px rgb(0 0 0 / 0.9);
+  }
+  .landing-root .lq-phone > img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 390 / 780;
+    object-fit: cover;
+    object-position: top;
+    border-radius: 28px;
+  }
+}
+.landing-root .lq-demo-note {
+  margin-top: 1.25rem;
+  text-align: center;
+  font-size: 12px;
+  color: #64748b;
+}
+
+/* ── LES SYMPTÔMES ── */
+.landing-root .lq-symptom {
+  padding: 28px;
+}
+
+/* ── LA BOUCLE EN QUATRE GESTES — la rangée d'actions de l'app ── */
+.landing-root .lq-steps {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  list-style: none;
+  padding: 0;
+}
+@media (min-width: 1024px) {
+  .landing-root .lq-steps {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+.landing-root .lq-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 28px 18px;
+  border-radius: 28px;
+  border: 1px solid var(--tv-border);
+  background: var(--tv-plate-1);
+  text-align: center;
+}
+.landing-root .lq-action {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 9999px;
+  background: var(--tv-plate-3);
+  color: var(--tv-text-primary);
+}
+.landing-root .lq-action--primary {
+  background: var(--tv-cta);
+  color: #fff;
+}
+.landing-root .lq-step-num {
+  margin-top: 14px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: #64748b;
+}
+
+/* ── LE BENTO DU PRODUIT ──
+   Chaque écran est une carte : le texte en tête, la capture qui affleure par
+   le bas, recadrée sur son coin haut-gauche à une échelle LISIBLE plutôt que
+   réduite entière à l'illisible. La largeur de l'image suit la largeur de la
+   carte (`--lq-shot-w`). */
+.landing-root .lq-bento {
+  display: grid;
+  gap: 1rem;
+}
+@media (min-width: 768px) {
+  .landing-root .lq-bento {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+  .landing-root .lq-span-2 {
+    grid-column: span 2;
+    --lq-shot-w: 760px;
+  }
+  .landing-root .lq-span-3 {
+    grid-column: span 3;
+    --lq-shot-w: 900px;
+  }
+  .landing-root .lq-span-4 {
+    grid-column: span 4;
+    --lq-shot-w: 1120px;
+  }
+}
+.landing-root .lq-bento-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 420px;
+  overflow: hidden;
+  border-radius: 28px;
+  border: 1px solid var(--tv-border);
+  background: var(--tv-plate-1);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05);
+}
+.landing-root .lq-bento-text {
+  padding: 28px 28px 0;
+}
+.landing-root .lq-bento-window {
+  position: relative;
+  flex: 1;
+  max-height: 360px;
+  margin: 24px 0 0 28px;
+  overflow: hidden;
+  border: 1px solid var(--tv-border-strong);
+  border-right: 0;
+  border-bottom: 0;
+  border-top-left-radius: 18px;
+  background: var(--tv-bg);
+}
+.landing-root .lq-bento-window img {
+  display: block;
+  width: var(--lq-shot-w, 100%);
+  max-width: none;
+}
+@media (max-width: 767px) {
+  .landing-root .lq-bento-card {
+    min-height: 0;
+  }
+  .landing-root .lq-bento-window {
+    max-height: 380px;
+    margin-right: 28px;
+    border-right: 1px solid var(--tv-border-strong);
+    border-top-right-radius: 18px;
+  }
+}
+
+/* ── LE DUO TEXTE / CAPTURE (Jarvis) ── */
+.landing-root .lq-duo {
+  display: grid;
+  gap: 3rem;
+  align-items: center;
+}
+@media (min-width: 1024px) {
+  .landing-root .lq-duo {
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+    gap: 4rem;
+  }
+}
+
+/* ── LES TARIFS : le coût d'un reset face aux deux offres ── */
+.landing-root .lq-pricing {
+  display: grid;
+  gap: 1rem;
+  max-width: 1040px;
+  margin: 0 auto;
+}
+@media (min-width: 1024px) {
+  .landing-root .lq-pricing {
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.6fr);
+  }
+}
+.landing-root .lq-cost {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 28px;
+}
+/* Le rail rouge porte seul le sens « ce que ça coûte » : trois pixels, pas
+   un aplat. */
+.landing-root .lq-rail {
+  position: absolute;
+  inset-block: 0;
+  left: 0;
+  width: 3px;
+  background: var(--tv-chart-red);
+}
+.landing-root .lq-price-tile {
+  display: flex;
+  flex-direction: column;
+  padding: 28px;
+  border-radius: 28px;
+  border: 1px solid var(--tv-border);
+  background: var(--tv-plate-1);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05);
+}
+.landing-root .lq-price-tile--featured {
+  border-color: rgb(var(--tv-accent-rgb) / 0.35);
+}
+.landing-root .lq-price-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+}
+.landing-root .lq-price-figure {
+  font-family: var(--font-figure);
+  font-size: clamp(2.2rem, 4vw, 2.9rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.035em;
+}
+.landing-root .lq-price-tile .lq-price-figure {
+  color: var(--tv-text-primary);
+}
+
+/* ── FAQ et conclusion ── */
+.landing-root .lq-faq {
+  padding: 4px 24px;
+}
+.landing-root .lq-final {
+  padding: 64px 24px;
+  text-align: center;
+}
+@media (min-width: 640px) {
+  .landing-root .lq-final {
+    padding: 76px 40px;
+  }
+}
+.landing-root .lq-faq .faq-ligne:last-child {
+  border-bottom: 0;
 }

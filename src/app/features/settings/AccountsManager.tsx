@@ -138,22 +138,17 @@ export default function AccountsManager({ trades }: { trades: Trade[] }) {
               </AccountRow>
             ))}
       </div>
-      {subs.length === 0 && ready && (
-        <p className="tv-prose text-slate-500">{t("account.subEmpty")}</p>
-      )}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <Button
           variant="ghost"
           size="sm"
           disabled={accounts.length < 2}
+          title={accounts.length < 2 ? t("transfer.needTwo") : undefined}
           onClick={() => setTransferFor({})}
         >
           {canTransfer ? <Repeat2 className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
           {t("transfer.open")}
         </Button>
-        {accounts.length < 2 && (
-          <span className="tv-prose text-slate-500">{t("transfer.needTwo")}</span>
-        )}
       </div>
 
       {createOpen && <CreateAccountModal onClose={() => setCreateOpen(false)} />}

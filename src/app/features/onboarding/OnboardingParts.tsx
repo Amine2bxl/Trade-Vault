@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { Check, ChevronDown, Minus, Plus, type LucideIcon } from "@/shared/ui/icons";
+import { Check, Minus, Plus, type LucideIcon } from "@/shared/ui/icons";
 import { JarvisOrb } from "@/shared/ui/JarvisOrb";
+import { TraceRing } from "@/shared/ui/TraceRing";
 import { cn } from "@/shared/ui/cn";
 import { computeThemeVars, type ThemeDef } from "@/app/utils/themes";
 import { play } from "./onboardingSound";
@@ -66,28 +67,10 @@ export function JarvisLine({
   );
 }
 
-/** Le liseré qui se trace autour d'une réponse choisie (`.onb-lock-sweep`). */
+/** Le liseré qui se trace autour d'une réponse choisie — la primitive
+ *  partagée (`TraceRing`), au rythme long de l'onboarding. */
 export function LockSweep({ radius = 16 }: { radius?: number }) {
-  return (
-    <svg
-      className="pointer-events-none absolute inset-0 h-full w-full overflow-visible"
-      preserveAspectRatio="none"
-      aria-hidden
-    >
-      <rect
-        x="0"
-        y="0"
-        width="100%"
-        height="100%"
-        rx={radius}
-        fill="none"
-        stroke="var(--tv-accent)"
-        strokeWidth="1.5"
-        pathLength={1}
-        className="onb-lock-sweep"
-      />
-    </svg>
-  );
+  return <TraceRing radius={radius} pace="onboarding" />;
 }
 
 /**
@@ -280,168 +263,11 @@ export function Stepper({
   );
 }
 
-/**
- * LE DOSSIER TRADER — la preuve, en direct, que les réponses servent.
- *
- * Chaque réponse s'y inscrit à l'instant où elle est donnée : le trader VOIT
- * l'application se configurer autour de lui, au lieu d'avoir à le croire.
- */
+/** Une ligne du portrait du trader (voir `Portrait`). */
 export interface FileRow {
   label: string;
   value: string | null;
   accent?: boolean;
-}
-
-export function TraderFile({
-  title,
-  live,
-  empty,
-  rows,
-  pending,
-  headless,
-  className,
-}: {
-  title: string;
-  live: string;
-  empty: string;
-  rows: FileRow[];
-  /** Libellé des lignes encore vides. Fourni, elles s'affichent en attente :
-   *  le trader voit aussi ce qui reste à régler, pas seulement ce qui l'est. */
-  pending?: string;
-  /** Sans en-tête : quand un conteneur (la feuille mobile) porte déjà le titre. */
-  headless?: boolean;
-  className?: string;
-}) {
-  const shown = pending ? rows : rows.filter((r) => r.value);
-  return (
-    <div
-      className={cn(
-        "rounded-2xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)]",
-        className,
-      )}
-    >
-      {!headless && (
-        <div className="flex items-center justify-between border-b border-[var(--tv-border)] px-4 py-3">
-          <span className="tv-label text-slate-400">{title}</span>
-          <span className="tv-label flex items-center gap-1.5 text-[var(--tv-highlight)]">
-            <span className="onb-status-dot h-1.5 w-1.5 rounded-full bg-[var(--tv-accent)]" />
-            {live}
-          </span>
-        </div>
-      )}
-      {shown.length === 0 ? (
-        <p className="px-4 py-5 text-[12px] leading-relaxed text-slate-500">{empty}</p>
-      ) : (
-        <dl className="divide-y divide-[var(--tv-border)]">
-          {shown.map((r) => (
-            <div
-              key={r.label}
-              className="onb-rise flex items-baseline justify-between gap-3 px-4 py-2.5"
-            >
-              <dt className="tv-label shrink-0 text-slate-500">{r.label}</dt>
-              {r.value ? (
-                <dd
-                  key={r.value}
-                  className={cn(
-                    "onb-pop min-w-0 truncate text-right text-[13px] font-semibold",
-                    r.accent ? "text-[var(--tv-highlight)]" : "text-slate-100",
-                  )}
-                >
-                  {r.value}
-                </dd>
-              ) : (
-                <dd className="text-right text-[12px] text-slate-600">{pending}</dd>
-              )}
-            </div>
-          ))}
-        </dl>
-      )}
-    </div>
-  );
-}
-
-/**
- * LE DOSSIER, EN TÉLÉPHONE — la même preuve, réduite à une ligne.
- *
- * Le dossier trader n'a de place qu'à côté des questions, sur grand écran.
- * Sur téléphone, il disparaissait : le trader répondait sans jamais voir ce
- * que ses réponses écrivaient. Ce bandeau garde la preuve sous les yeux — le
- * dernier réglage écrit apparaît à l'instant où il l'est, avec le compte des
- * réglages déjà posés — et s'ouvre sur le dossier complet d'un toucher.
- */
-export function FileTicker({
-  title,
-  empty,
-  rows,
-  onOpen,
-  className,
-}: {
-  title: string;
-  empty: string;
-  rows: FileRow[];
-  onOpen: () => void;
-  className?: string;
-}) {
-  const filled = rows.filter((r) => r.value);
-  // La ligne affichée est la DERNIÈRE ÉCRITE, pas la dernière de la liste :
-  // revenir modifier son compte doit montrer le compte, pas la mission.
-  const previous = useRef<Map<string, string | null> | null>(null);
-  const [lastLabel, setLastLabel] = useState<string | null>(null);
-  const signature = rows.map((r) => `${r.label}=${r.value ?? ""}`).join("|");
-  useEffect(() => {
-    const before = previous.current;
-    const now = new Map(rows.map((r) => [r.label, r.value]));
-    previous.current = now;
-    const changed = rows.find((r) => r.value && before?.get(r.label) !== r.value);
-    if (changed) setLastLabel(changed.label);
-    else if (!rows.some((r) => r.label === lastLabel && r.value)) {
-      setLastLabel([...rows].reverse().find((r) => r.value)?.label ?? null);
-    }
-    // `signature` résume `rows` : l'effet ne tourne que si une valeur change.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [signature]);
-  const last = rows.find((r) => r.label === lastLabel && r.value) ?? null;
-
-  return (
-    <button
-      type="button"
-      onClick={onOpen}
-      aria-haspopup="dialog"
-      className={cn(
-        "flex h-11 w-full items-center gap-2.5 rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-3 text-left transition-colors hover:border-[var(--tv-border-strong)]",
-        className,
-      )}
-    >
-      <span className="onb-status-dot h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--tv-accent)]" />
-      <span className="tv-label shrink-0 text-slate-400">{title}</span>
-      <span className="tv-figure tv-figure-secondary shrink-0 text-[11px] text-slate-500">
-        {filled.length}/{rows.length}
-      </span>
-      <span className="h-3.5 w-px shrink-0 bg-[var(--tv-border-strong)]" aria-hidden />
-      {last ? (
-        <span
-          key={`${last.label}=${last.value}`}
-          className="onb-pop flex min-w-0 flex-1 items-center gap-1.5"
-        >
-          <Check className="h-3 w-3 shrink-0 text-[var(--tv-highlight)]" strokeWidth={3} />
-          <span className="truncate text-[12px] text-slate-300">
-            <span className="text-slate-500">{last.label} · </span>
-            <span
-              className={cn(
-                "font-semibold",
-                last.accent ? "text-[var(--tv-highlight)]" : "text-white",
-              )}
-            >
-              {last.value}
-            </span>
-          </span>
-        </span>
-      ) : (
-        <span className="min-w-0 flex-1 truncate text-[12px] text-slate-500">{empty}</span>
-      )}
-      <ChevronDown className="h-4 w-4 shrink-0 text-slate-500" />
-    </button>
-  );
 }
 
 /**
@@ -571,13 +397,13 @@ export function ThemeCard({
 
 /** Le gabarit commun d'une question : code, titre, pourquoi, réponses. */
 export function SceneFrame({
-  code,
   title,
   why,
   children,
   footer,
 }: {
-  code: string;
+  /** Ancien code de module (« ARN-02 ») — ignoré : il ne s'affiche plus. */
+  code?: string;
   title: string;
   why: string;
   children: ReactNode;
@@ -591,24 +417,47 @@ export function SceneFrame({
   }, [title]);
   return (
     <div className="onb-scene w-full">
-      <div
-        className="onb-rise mb-3 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.2em] text-slate-600"
-        style={rise(0)}
-      >
-        <span className="h-px w-6 bg-[var(--tv-accent)]" />
-        <span className="text-[var(--tv-highlight)]">{code}</span>
-      </div>
+      {/* LA QUESTION, AU CENTRE, ET RIEN AUTOUR (2026-11-15). Plus de code de
+          module (« ARN-02 ») au-dessus : un décor de terminal qui faisait
+          « généré », pas « fait main ». */}
       <h2
         ref={ref}
         tabIndex={-1}
-        className="onb-rise text-[clamp(1.45rem,3.2vw,2rem)] font-semibold leading-[1.12] tracking-[-0.03em] text-white outline-none"
+        className="onb-rise text-center text-[clamp(1.6rem,3.6vw,2.4rem)] font-semibold leading-[1.1] tracking-[-0.035em] text-white outline-none"
         style={rise(1)}
       >
         {title}
       </h2>
-      <JarvisLine text={why} className="onb-rise mt-3 mb-6" />
+      <JarvisLine text={why} className="onb-rise mx-auto mt-4 mb-8 max-w-[520px] justify-center" />
       {children}
       {footer}
     </div>
+  );
+}
+
+/**
+ * LE PORTRAIT — ce que TradeVault sait déjà de toi, en bas de l'écran.
+ *
+ * Remplace la « fiche trader » en colonne (titres en capitales, pastille
+ * LIVE) : la même preuve que chaque réponse sert, mais en quelques pastilles
+ * sobres qui apparaissent une à une. Le trader voit son espace se composer,
+ * sans rien lire de plus.
+ */
+export function Portrait({ rows, label }: { rows: FileRow[]; label: string }) {
+  const filled = rows.filter((r) => r.value);
+  if (filled.length === 0) return null;
+  return (
+    <ul className="onb-portrait" aria-label={label}>
+      {filled.map((r) => (
+        <li
+          key={r.label}
+          className="onb-portrait-chip"
+          data-accent={r.accent ? "oui" : undefined}
+          title={r.label}
+        >
+          {r.value}
+        </li>
+      ))}
+    </ul>
   );
 }

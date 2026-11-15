@@ -18,6 +18,7 @@
  */
 
 export { cn } from "./cn";
+export { TraceRing } from "./TraceRing";
 
 // Design tokens — the centralized landing theme (typography, color, surface,
 // motion). The single reference every primitive and future screen builds on.

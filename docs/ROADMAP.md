@@ -15,8 +15,8 @@ Ce qui ne se prouve pas dans le code — validation humaine requise.
 
 | # | Point | Détail |
 | --- | --- | --- |
-| L2 | **Parcours d'achat réel** (mode test Stripe) | Mensuel, annuel, 3DS, échec de paiement (`past_due`), rejeu de webhook (`deduped`), résiliation via portail, retour à Free, changement mensuel → annuel, pas de client Stripe en double, signature invalide et horodatage périmé → 400 |
-| L3 | **Tâches du propriétaire (dashboard)** | Endpoint webhook Stripe (test puis live) + `STRIPE_WEBHOOK_SECRET` ; produits Pro et Elite (mensuel/annuel) et leurs `STRIPE_PRICE_*` ; CGU et confidentialité déclarées dans Stripe ; Stripe Tax + OSS (TVA UE, puis `automatic_tax` au checkout) ; `ADMIN_EMAILS` ; branding du checkout |
+| L2 | **Parcours d'achat réel** (live, petit montant puis remboursement) | Mensuel 9 €, licence 49 €, 3DS, échec de paiement (`past_due`), rejeu de webhook (`deduped`), résiliation via portail, retour à Free, mensuel → licence (renouvellement coupé), 409 sur double achat, signature invalide → 400. Les gestionnaires sont couverts sans réseau par `tests/billingFlow.test.ts` |
+| L3 | **Tâches du propriétaire (dashboard)** | Fait le 2026-11-15 : produit « TradeVault » + prix 9 €/mois et 49 € (lookup keys), événements du webhook complétés, résiliation du portail active. Reste : CGU et confidentialité déclarées dans Stripe ; Stripe Tax + OSS (TVA UE, puis `automatic_tax`) ; `RESEND_API_KEY` ; supprimer la clé limitée « Nq » |
 | L4 | **Validation visuelle** mobile et desktop des écrans principaux | Dashboard, Journal, Checklist, Analytics, Jarvis, Inbox, Goals, Réglages |
 | L5 | **Justesse des chiffres** des pages d'analyse | Analytics, Saisonnalité, Rapports, Calendrier : auditer la classe de défaut « chiffre juste, interprétation fausse » |
 | L6 | Auth | Politique de mots de passe, protection des mots de passe divulgués (dashboard Supabase), vérification d'e-mail |
@@ -33,7 +33,7 @@ Ce qui ne se prouve pas dans le code — validation humaine requise.
 | Réponses en streaming | Absent (le transport RPC ne fait pas de SSE) |
 | Notifications jamais émises | `goal_completed`, `goal_milestone`, `trade_analyzed`, `daily_brief` : déclarées, sans émetteur (Daily Brief automatique non livré) |
 | Simulateur de probabilités | `features/simulator/Simulator.tsx` non monté |
-| Moteur d'insights | `features/jarvis/insights/` testé mais non branché (hors `suggestions.ts`) |
+| Moteur d'insights | `features/jarvis/insights/` testé mais non branché (les suggestions ont été retirées le 2026-11-15) |
 | Fondations IA | Routeur d'intentions (`modules/ai/router`), RAG (`ai_embeddings`), `ai_jobs`, catalogue `backend/ai.functions.ts` : sans consommateur — brancher ou retirer |
 | Scale | Statistiques calculées côté client ; agrégats SQL/RPC + pagination à prévoir avant que le volume ne pèse |
 | Traductions | `fr` et `en` complets (~1 750 clés) ; les dix autres langues ~300 clés (repli anglais) |
@@ -44,6 +44,30 @@ récupération → Monte Carlo × discipline → playbook personnel et frise de
 mémoire → comportemental avancé (« what
 changed », contrefactuel). Rétention : bloc « Aujourd'hui », série de
 discipline, rappels pré-market, « Share my week ».
+
+## Croissance — intégrations et idées (2026-11-15)
+
+Existant : calendrier économique façon Forex Factory, synchro Tradovate en
+lecture seule (en attente de l'accès partenaire, L9), saisonnalité de marché
+(Yahoo → Stooq → FRED), push web. `DATABENTO_API_KEY` est posée dans Vercel
+mais lue par aucun code.
+
+Par ordre impact / effort :
+
+| # | Idée | Pourquoi | Effort |
+| --- | --- | --- | --- |
+| G1 | **Préréglages CSV par plateforme** : NinjaTrader, Rithmic R\|Trader, ProjectX / TopstepX, MT4/MT5, cTrader, IBKR Flex | La première porte d'entrée de la cible, sans partenariat | Faible |
+| G2 | **Règles de prop firms préchargées** (Apex, Topstep, FTMO, The5ers…) : drawdown suiveur, perte du jour, objectif | Branche Monte-Carlo, checklist et alertes sur la VRAIE règle du compte ; parle directement au cœur de cible | Moyen |
+| G3 | **Exporteur MetaTrader 4/5** : un EA qui pousse les trades clôturés vers un point d'entrée à jeton personnel, lecture seule | Ouvre les prop firms forex (FTMO, The5ers) sans API courtier | Moyen |
+| G4 | **ProjectX (TopstepX)** : synchro par l'API de la plateforme | Topstep est dans le cœur de cible ; même modèle que Tradovate | Moyen |
+| G5 | **TradingView** : webhook d'alerte → setup manqué noté ; lien de capture du graphique attaché au trade | Le trader vit dans TradingView ; le setup manqué devient automatique | Moyen |
+| G6 | **« Partage ma semaine »** : une carte image (discipline, pas P&L) à poster | Acquisition virale honnête, sans chiffre de gain mis en avant | Faible |
+| G7 | **Discord** : webhook de la revue hebdomadaire, puis bot de communauté (classement de DISCIPLINE, opt-in) | La cible vit en Discord ; canal de parrainage | Moyen |
+| G8 | **Alertes Telegram** : rappel pré-market, « stop » après N pertes | Prolonge le push existant là où le trader regarde | Faible |
+| G9 | **Flux ICS** : annonces économiques et plan de séance dans l'agenda | Rétention quotidienne, coût quasi nul | Faible |
+| G10 | **Contexte de marché par trade** : régime de volatilité (VIX, ATR) et rapport COT de la CFTC | « Tu perds les jours de forte volatilité » — un diagnostic de plus, mêmes sources gratuites | Moyen |
+| G11 | **Offre communautés et formateurs** : licences en lot pour un Discord ou une école de trading, vue mentor en lecture seule | Nouveau revenu B2B, acquisition par groupes entiers | Élevé |
+| G12 | **Affiliation** (Rewardful ou Tolt sur Stripe) + invitations Trustpilot à 30 jours d'usage | Industrialise les codes partenaires et la preuve sociale réelle | Faible |
 
 ## Acquisition et SEO
 

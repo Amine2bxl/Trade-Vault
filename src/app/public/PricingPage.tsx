@@ -15,7 +15,7 @@ import { PublicHeader } from "./landing/PublicHeader";
 import { LangMenuPied } from "./landing/LangMenu";
 import { usePublicSubscription } from "./landing/usePublicSubscription";
 import { LandingLangProvider, useLandingT, type LandingKey } from "./landing/i18n";
-import { TIER_BY_ID } from "@/domain/plans";
+import { LIFETIME_COPY, LIFETIME_PLAN, MONTHLY_COPY, TIER_BY_ID } from "@/domain/plans";
 import { pathForPage } from "../utils/pageUrl";
 import { breadcrumbJsonLd } from "@/shared/seo";
 import "./landing/landing.css";
@@ -74,6 +74,7 @@ const TOUJOURS_GRATUIT: LandingKey[] = [
   "price.free.4",
   "price.free.5",
   "price.free.6",
+  "price.free.7",
 ];
 
 const FAQ: [LandingKey, LandingKey, typeof Unlock][] = [
@@ -149,7 +150,12 @@ function Contenu() {
           <PricingPlans
             lang={lang}
             currentPlan={abo.charge ? undefined : abo.plan}
-            onChoose={(plan) => setAuth({ mode: "signup", plan: `TradeVault - ${plan}` })}
+            onChoose={(plan) =>
+              setAuth({
+                mode: "signup",
+                plan: `TradeVault · ${(plan === LIFETIME_PLAN ? LIFETIME_COPY : MONTHLY_COPY).title[lang]}`,
+              })
+            }
             onFree={() => setAuth({ mode: "signup", plan: "Free" })}
           />
         </div>

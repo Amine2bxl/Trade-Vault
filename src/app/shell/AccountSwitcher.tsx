@@ -226,10 +226,7 @@ export default function AccountSwitcher({
       >
         <div className="border-b border-white/[0.06] px-5 py-4">
           <div className="flex items-center justify-between">
-            <div>
-              <h2 className="tv-title">{t("account.title")}</h2>
-              <p className="tv-row-label">{t("account.subtitleMain")}</p>
-            </div>
+            <h2 className="tv-title">{t("account.title")}</h2>
             <button
               onClick={onClose}
               aria-label={t("common.close")}
@@ -239,30 +236,11 @@ export default function AccountSwitcher({
             </button>
           </div>
         </div>
-        <div className="max-h-[56vh] space-y-3 overflow-y-auto p-3">
-          {mainAccount && (
-            <div>
-              <div className="tv-label px-1.5 pb-1.5 text-slate-500">
-                {t("account.mainSection")}
-              </div>
-              {row(mainAccount, true)}
-            </div>
-          )}
-          <div>
-            <div className="tv-label px-1.5 pb-1.5 text-slate-500">
-              {t("account.subSection")}
-              {subs.length > 0 && (
-                <span className="tv-figure ml-1.5 text-slate-600">{subs.length}</span>
-              )}
-            </div>
-            {subs.length === 0 ? (
-              <p className="px-1.5 pb-1 text-xs leading-snug text-slate-500">
-                {t("account.subEmpty")}
-              </p>
-            ) : (
-              <div className="space-y-1">{subs.map((a) => row(a, false))}</div>
-            )}
-          </div>
+        {/* UNE liste : le compte principal en tête, sa couronne suffit à le
+            distinguer. Plus d'intertitres ni de phrase d'explication. */}
+        <div className="max-h-[56vh] space-y-1 overflow-y-auto p-3">
+          {mainAccount && row(mainAccount, true)}
+          {subs.map((a) => row(a, false))}
         </div>
         <div className="grid grid-cols-2 gap-2 border-t border-white/[0.06] p-3">
           {canAddAccount ? (
@@ -271,10 +249,10 @@ export default function AccountSwitcher({
                 setCreateOpen(true);
                 onClose();
               }}
-              className="flex h-10 items-center justify-center gap-2 rounded-xl border border-[var(--tv-border-accent)] bg-[rgb(var(--tv-accent-rgb)/0.08)] text-[13px] font-semibold text-[var(--tv-accent)] transition-colors hover:bg-[rgb(var(--tv-accent-rgb)/0.14)]"
+              className="tv-sheet-action tv-sheet-action-accent"
             >
-              <Plus className="h-4 w-4" />
-              {t("account.newSub")}
+              <Plus className="h-4 w-4 shrink-0" />
+              <span className="truncate">{t("account.newSub")}</span>
             </button>
           ) : (
             <button
@@ -282,10 +260,10 @@ export default function AccountSwitcher({
                 goPro();
                 onClose();
               }}
-              className="flex h-10 items-center justify-center gap-2 rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-2)] text-[13px] font-semibold text-slate-400 transition-colors hover:text-white"
+              className="tv-sheet-action"
             >
-              <Lock className="h-4 w-4" />
-              {t("account.moreAccountsPro")}
+              <Lock className="h-4 w-4 shrink-0" />
+              <span className="truncate">{t("account.moreAccountsPro")}</span>
             </button>
           )}
           <button
@@ -295,12 +273,16 @@ export default function AccountSwitcher({
             }}
             disabled={accounts.length < 2}
             title={accounts.length < 2 ? t("transfer.needTwo") : undefined}
-            className="flex h-10 items-center justify-center gap-2 rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-2)] text-[13px] font-semibold text-slate-200 transition-colors hover:border-[var(--tv-border-strong)] hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+            className="tv-sheet-action"
           >
             {/* Hors Pro, la modale s'ouvre quand même (elle montre ce que
                 l'offre apporte) ; le cadenas l'annonce dès ici. */}
-            {canTransfer ? <Repeat2 className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
-            {t("transfer.open")}
+            {canTransfer ? (
+              <Repeat2 className="h-4 w-4 shrink-0" />
+            ) : (
+              <Lock className="h-4 w-4 shrink-0" />
+            )}
+            <span className="truncate">{t("transfer.open")}</span>
           </button>
         </div>
       </Modal>

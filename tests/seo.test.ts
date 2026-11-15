@@ -12,7 +12,7 @@ import {
   DEFAULT_OG_IMAGE,
   LANDING_ALTERNATES,
 } from "../src/shared/seo";
-import { TIERS } from "../src/domain/plans";
+import { SALE_PLANS, TIERS, planPrice } from "../src/domain/plans";
 import { langForPath, SSR_LANG } from "../src/shared/lang";
 import { tr } from "../src/app/public/landing/i18n";
 import { readSource, stripComments } from "./helpers/source";
@@ -65,9 +65,11 @@ describe("le graphe schema.org ne dit que ce que la page dit", () => {
     const offers = node("SoftwareApplication").offers;
     expect(offers["@type"]).toBe("AggregateOffer");
     expect(offers.priceCurrency).toBe("EUR");
+    // Le gratuit en bas, le plus cher des plans EN VENTE en haut (la licence
+    // à vie), et une offre par plan vendu plus le gratuit.
     expect(offers.lowPrice).toBe(String(Math.min(...TIERS.map((t) => t.monthly))));
-    expect(offers.highPrice).toBe(String(Math.max(...TIERS.map((t) => t.monthly))));
-    expect(offers.offerCount).toBe(String(TIERS.length));
+    expect(offers.highPrice).toBe(String(Math.max(...SALE_PLANS.map(planPrice))));
+    expect(offers.offerCount).toBe(String(TIERS.length + SALE_PLANS.length - 1));
   });
 
   test("`sameAs` ne liste que des profils qui existent vraiment", async () => {

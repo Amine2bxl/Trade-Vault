@@ -132,6 +132,7 @@ import type { AppNotification } from "@/modules/notifications/types";
 import { buildDemoTrades } from "./demoTrades";
 import { todayLocalDate } from "@/shared/calendar-date";
 import { previewTrades } from "../utils/previewTrades";
+import { prefetchInbox } from "../features/inbox/inboxCache";
 import { canLogTrade, isPlanLimitError } from "../utils/planLimits";
 import { computeBehavioral } from "@/domain/behavioral";
 import { useEconomicCalendar } from "../features/news/useEconomicCalendar";
@@ -146,10 +147,13 @@ import { AccountProvider, useAccounts } from "../contexts/AccountContext";
 import { PageActionsProvider } from "../contexts/PageActionsContext";
 const Landing = lazyPage(() => import("../public/landing/Landing"));
 import FirstSessionWelcome from "./FirstSessionWelcome";
-import { SkeletonForPage } from "../components/Skeleton";
-import { DeferredFallback, PageTransition } from "./PageTransition";
+import { PageLoader, PageTransition } from "./PageTransition";
 import PageErrorBoundary from "./PageErrorBoundary";
-import { PageGate, usePageLockState } from "../features/billing/PremiumGate";
+import {
+  PREVIEW_OWN_MIN_TRADES,
+  PageGate,
+  usePageLockState,
+} from "../features/billing/PremiumGate";
 import UpgradeModal from "../features/billing/UpgradeModal";
 import UpgradeSuccessOverlay from "../features/billing/UpgradeSuccessOverlay";
 import { LanguageProvider, useT } from "../i18n/LanguageContext";
@@ -347,6 +351,8 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
     if (!isAuthenticated) return;
     const run = () => {
       LIKELY_NEXT_PAGES.forEach(preloadPage);
+      // La boîte de réception s'ouvre en un temps : sa liste est déjà là.
+      if (user?.id) void prefetchInbox(user.id);
       // Même raisonnement que pour les pages : le coût est retiré du démarrage,
       // pas déplacé sur le clic. Silencieux — un préchargement qui échoue ne
       // doit jamais remonter d'erreur, le chargement au clic réessaiera.
@@ -361,7 +367,7 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
     }
     const id = window.setTimeout(run, 1500);
     return () => window.clearTimeout(id);
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user?.id]);
 
   // Bouton retour / avant du navigateur.
   useEffect(() => {
@@ -390,7 +396,11 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
   // les voyait remplacés par des données de démonstration une fois l'abonnement
   // résolu — ses propres nombres, changés sous ses yeux.
   const { locked: pageLocked, resolved: gateResolved } = usePageLockState(page);
-  const shownTrades = pageLocked ? previewTrades() : trades;
+  // Assez de trades : l'aperçu montre SA page, avec SES chiffres (demande du
+  // propriétaire, 2026-11-15) ; sinon l'historique d'exemple. Les pages qui
+  // vont chercher leurs propres données (setups manqués) gardent l'exemple.
+  const ownPreview = trades.length >= PREVIEW_OWN_MIN_TRADES && page !== "missed";
+  const shownTrades = pageLocked && !ownPreview ? previewTrades() : trades;
 
   // Tous les « Go Pro » ouvrent la modale d'abonnement (Pro/Elite, mensuel ou
   // annuel) au lieu d'un checkout forcé : l'utilisateur a décidé de payer,
@@ -1271,19 +1281,11 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
         <PageActionsProvider setActions={setHeaderSlot}>
           {accountsReady && gateResolved ? (
             <PageErrorBoundary key={currency} resetKey={page}>
-              {/* Squelette CONTEXTUEL et DIFFÉRÉ. Le squelette imite la page de
-              destination — mais il n'apparaît qu'au-delà de 320 ms d'attente.
-              En dessous, le chunk est déjà en mémoire (préchargement au survol
-              + `LIKELY_NEXT_PAGES`) et le squelette n'était qu'un clignotement
-              gris de deux frames : le signal « ça charge » sans le chargement.
-              L'espace, lui, reste réservé, donc rien ne bouge. */}
-              <Suspense
-                fallback={
-                  <DeferredFallback key={page}>
-                    <SkeletonForPage page={page} />
-                  </DeferredFallback>
-                }
-              >
+              {/* PLUS DE SQUELETTE (2026-11-15) : rien pendant 320 ms, la place
+              réservée ; au-delà, un seul anneau (`PageLoader`). Le morceau est
+              presque toujours déjà là (préchargement au survol +
+              `LIKELY_NEXT_PAGES`) : la page arrive en un temps. */}
+              <Suspense fallback={<PageLoader key={page} />}>
                 {/* PageTransition est DANS le Suspense, pas autour.
                 Autour, il jouait sa transition sur la boîte vide réservée
                 pendant l'attente, puis le contenu réel arrivait après coup,
@@ -1296,7 +1298,7 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
                   {/* Le verrou premium enveloppe la page rendue : la table
                     `PAGE_TIER` décide, les pages elles-mêmes ne savent rien de
                     la facturation. */}
-                  <PageGate page={page} onUpgrade={openUpgrade}>
+                  <PageGate page={page} onUpgrade={openUpgrade} ownData={ownPreview}>
                     {page === "dashboard" && (
                       <Dashboard
                         trades={trades}
@@ -1374,12 +1376,9 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
             </PageErrorBoundary>
           ) : (
             /* Comptes OU abonnement en chargement : le shell est peint, la
-               page répond avec son squelette contextuel — pas de porte plein
-               écran, et surtout aucune donnée peinte avant de savoir LESQUELLES
-               peindre (réelles ou démonstration). */
-            <div className="p-3 md:p-4">
-              <SkeletonForPage page={page} />
-            </div>
+               page attend sans squelette — et surtout aucune donnée peinte
+               avant de savoir LESQUELLES peindre (réelles ou démonstration). */
+            <PageLoader key={page} />
           )}
         </PageActionsProvider>
       </main>

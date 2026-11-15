@@ -109,12 +109,14 @@ export function eur(n: number, lang?: string): string {
  * Le palier requis pour chaque page.
  *
  * Les pages absentes sont ouvertes à tout le monde : le journal, le tableau de
- * bord, le calendrier, la checklist, le plan et le calculateur restent
- * gratuits pour toujours — c'est ce qui rend l'offre gratuite réellement
+ * bord, le calendrier, les analyses, la checklist, le plan et le calculateur
+ * restent gratuits pour toujours — c'est ce qui rend l'offre gratuite réellement
  * utilisable, et donc l'offre payante honnête.
  */
 export const PAGE_TIER: Partial<Record<Page, Tier>> = {
-  analytics: "pro",
+  // Analytics est GRATUIT depuis le 2026-11-15 (décision du propriétaire) :
+  // voir ce qu'on fait (setups, heures, jours) installe l'habitude ; le
+  // payant garde le POURQUOI — erreurs chiffrées, Jarvis, projections.
   mistakes: "pro",
   missed: "pro",
   goals: "pro",

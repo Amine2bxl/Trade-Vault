@@ -3,6 +3,93 @@
 Journal des changements **structurels** (pas des features ni des correctifs,
 qui vivent dans l'historique git et les PR).
 
+## 2026-11-15 — Pages en un temps, pleine largeur, onboarding épuré
+
+- **Chargement en un temps** : plus de squelettes de page (`PageLoader` :
+  rien pendant 320 ms, puis un anneau) ; conversations Jarvis lues de façon
+  synchrone (`peekConversations`/`peekMessages`), espace conversation
+  importé directement ; boîte de réception préchargée (`inboxCache`).
+- **Pleine largeur** : `PAGE_WIDTH` et `SETTINGS_WIDTH` passent à
+  `max-w-none`.
+- **Brokers masquée** (`HIDDEN_PAGES`) : hors navigation et ⌘K, route
+  gardée pour le retour OAuth.
+- **Jarvis** : plus de questions suggérées ni de relances
+  (`insights/suggestions.ts` retiré) ; bas de fenêtre aligné.
+- **Mur d'aperçu** : fondu jusqu'à `--tv-bg`, hauteur mesurée (barre au
+  même pixel partout), trades du trader dès 10.
+- **Paiement** : crypto retirée de l'interface (le serveur garde la route
+  pour les anciens accès) ; carte d'achat en deux colonnes, sans défilement.
+- **Onboarding** : cadre épuré (plus de codes ni de fiche « TRADER FILE »),
+  portrait en pastilles ; ses effets reviennent partout — `TraceRing`
+  (liseré tracé) et `--tv-sky` (ciel de points fixes).
+
+## 2026-11-15 — Analytics gratuit, carte d'achat, lumière sous les blocs
+
+- **Analytics ouvert au gratuit** (décision du propriétaire) : retiré de
+  `PAGE_TIER` et des capacités ; le gratuit voit CE QU'IL FAIT, le payant
+  garde le POURQUOI (erreurs, saisonnalité, Jarvis, projections, rapports).
+  Catalogue, `/pricing` (sept outils gratuits), `llms.txt`, `PRODUCT.md`.
+- **Carte d'achat** (`SubscriptionSection`) : une promesse, le P&L net des
+  trades marqués d'une erreur, deux lignes à choisir (licence par défaut),
+  UN bouton au prix qui roule, six résultats. Même carte dans
+  `UpgradeModal`. Au gratuit, un bandeau compact remplace la grande carte
+  « Gratuit · 0 € ».
+- **Lueur visible** : `.tv-page::before` recentrée sous l'en-tête (elle
+  tombait derrière la barre d'onglets et la première carte) et lumière douce
+  sous les cartes de contenu (`--tv-card-glow`, alpha ≤ 0.3, testé).
+
+## 2026-11-15 — Page de paiement épurée, lueur d'ambiance
+
+- Page Abonnement réduite à trois blocs : l'état avec SES chiffres (compteur
+  du mois, P&L net de ses trades marqués d'une erreur avec leur nombre, sans
+  formulation causale), les deux offres + six résultats concrets
+  (`FULL_ACCESS_POINTS`), trois questions. Comparatif, neuf cartes et faits
+  en cases retirés ; code promo replié.
+- Grille `PricingPlans` : deux cartes, six résultats sans cadre, le gratuit
+  sur une ligne (`/pricing`).
+- Lueur d'ambiance TRÈS légère derrière les blocs (décision du
+  propriétaire) : `.tv-page::before` et `.tv-glow`, jeton `--tv-glow-alpha`
+  plafonné à 0.08 par `tests/liquidGlass.test.ts`. AGENTS.md,
+  DESIGN_SYSTEM.md et la skill `theme` mis à jour.
+
+## 2026-11-15 — Page Abonnement refaite, parcours de paiement vérifiés
+
+- Page Abonnement : carte d'adhésion par état, compteur du mois (gratuit,
+  `tradesThisMonth`), offres ou passage mensuel → licence, ce que chaque
+  page payante apporte (`PAGE_VALUE`), comparatif tiré de `LIMITS`, FAQ de
+  facturation, erreurs de paiement traduites. Logique pure dans
+  `subscriptionState.ts` (testée) ; états visibles au banc
+  `/dev/ui?screen=subscription&sub=monthly|lifetime|cancelling|pastdue|expired`.
+- Webhook : `STRIPE_PRICE_ELITE_MONTHLY` n'est plus une preuve de mensuel
+  actuel (en production il désigne l'ancien Elite) ; seules la marque
+  `offer` et la clé de catalogue `tradevault_…` comptent.
+- `tests/billingFlow.test.ts` : checkout et webhook de bout en bout, Supabase
+  et Stripe simulés au niveau HTTP (pas de `mock.module`, qui fuit entre
+  fichiers sous Bun).
+- Stratégie commerciale (`PRODUCT.md`) et pistes de croissance
+  (`ROADMAP.md`, G1–G12).
+
+## 2026-11-15 — Vitrine Liquid et deux offres (9 €/mois, 49 € à vie)
+
+- Offre : le mensuel revient (`elite_monthly`, 9 €/mois, sans engagement) à
+  côté de la licence à vie (49 €, une fois) ; les deux ouvrent `elite`.
+  Catalogue `domain/plans` (`SALE_PLANS`, `salePlanFor`,
+  `lifetimeBreakEvenMonths`, `MONTHLY_COPY`). Aucune migration : le plan
+  était déjà autorisé en base.
+- Paiement : prix Stripe retrouvés par `lookup_key` dérivée du montant
+  (`stripeLookupKey`), repli `STRIPE_PRICE_*` vérifié au montant ; marque
+  `metadata.offer` sur les mensuels vendus, et seuls les abonnements d'avant
+  la licence sont convertis (`isLegacySubscription`, webhook et action
+  admin) ; checkout 409 si l'achat est inutile.
+- App : grille partagée gratuit / mensuel / licence (`OfferCard`, remplace
+  `LifetimeOffer`), modale d'achat à deux offres, mur d'aperçu au tarif
+  vendu, page Abonnement juste pour une licence ; les « 20 € » écrits en dur
+  dans les traductions sont retirés.
+- Vitrine : refaite au langage Liquid (lot L9) — héros centré, bento,
+  boucle en quatre gestes, tarifs à deux offres. Captures refaites au banc
+  `/dev/ui` ; `montecarlo`, `missed`, `news` retirées (plus montées).
+  ~22 Ko de CSS mort et 283 clés de dictionnaire orphelines supprimés.
+
 ## 2026-11-14 — Analyses complètes rétablies et enrichies
 
 - À la demande du propriétaire, la page d'Analyses d'origine revient en

@@ -5,8 +5,9 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 // the four calls we make). All handlers here are wired as raw HTTP endpoints
 // in src/server.ts.
 //
-// Plans : free, puis deux paliers payants (pro / elite) en mensuel ou annuel —
-// le catalogue est dans `src/domain/plans.ts`, partagé avec l'app.
+// Plans en vente : `elite_monthly` (abonnement mensuel) et `lifetime`
+// (paiement unique) — le catalogue est dans `src/domain/plans.ts`, partagé
+// avec l'app. Les anciens plans pro_* / elite_yearly restent reconnus.
 //
 // PAS D'ESSAI GRATUIT. Une inscription démarre sur l'offre gratuite, qui est
 // utilisable indéfiniment ; le paiement ouvre l'accès payant immédiatement.
@@ -19,19 +20,84 @@ type AnyClient = SupabaseClient<any, any, any>;
 const STRIPE_API = "https://api.stripe.com/v1";
 
 export type { PaidPlan } from "../domain/plans";
-import { LIFETIME_PLAN, isPaidPlan, tierOf, type PaidPlan } from "../domain/plans";
+import {
+  LIFETIME_PLAN,
+  MONTHLY_PLAN,
+  isPaidPlan,
+  planPrice,
+  salePlanFor,
+  tierOf,
+  type PaidPlan,
+} from "../domain/plans";
 import { normalizePromoCode } from "../domain/promo";
 
 /**
- * L'identifiant de prix Stripe d'un plan.
+ * LE PRIX STRIPE D'UN PLAN — retrouvé par le MONTANT du catalogue.
  *
- * Une variable d'environnement par palier et par période :
- * `STRIPE_PRICE_PRO_MONTHLY`, `STRIPE_PRICE_ELITE_YEARLY`, etc. Le nom est
- * dérivé du plan, donc ajouter un palier au catalogue ne demande aucune
- * modification ici — seulement la variable correspondante dans Vercel.
+ * ── LE DÉFAUT QUE ÇA FERME ──────────────────────────────────────────────────
+ *
+ * Le prix affiché vient de `domain/plans` ; le prix facturé venait d'une
+ * variable Vercel (`STRIPE_PRICE_LIFETIME`…) qui désignait un prix Stripe
+ * IMMUABLE. Changer un tarif demandait donc deux éditions synchronisées — le
+ * catalogue dans le code, la variable dans Vercel — et toute fenêtre entre
+ * les deux affichait un montant et en facturait un autre.
+ *
+ * ── LA RÈGLE ────────────────────────────────────────────────────────────────
+ *
+ * Chaque prix Stripe porte une `lookup_key` qui ENCODE son montant :
+ * `tradevault_<plan>_eur_<centimes>` (`stripeLookupKey`). Le serveur cherche
+ * la clé dérivée du catalogue ; s'il ne la trouve pas, il ne vend pas au
+ * mauvais prix. Changer un tarif = créer le prix Stripe avec sa clé, puis
+ * modifier le catalogue : l'ordre n'a plus d'importance, l'écart devient
+ * impossible.
+ *
+ * Repli : la variable `STRIPE_PRICE_<PLAN>`, mais SEULEMENT si le prix qu'elle
+ * désigne a exactement le montant du catalogue. Une variable restée sur
+ * l'ancien tarif répond « price not configured » plutôt que de facturer
+ * autre chose que ce que la page annonce.
+ *
+ * Le résultat est gardé en mémoire de l'instance : un prix Stripe ne change
+ * pas de montant, la clé ne change de prix que par un transfert explicite.
  */
-function stripePriceId(plan: PaidPlan): string | undefined {
-  return process.env[`STRIPE_PRICE_${plan.toUpperCase()}`];
+export function stripeLookupKey(plan: PaidPlan): string {
+  return `tradevault_${plan}_eur_${Math.round(planPrice(plan) * 100)}`;
+}
+
+const prixConnus = new Map<string, string>();
+
+async function stripePriceId(plan: PaidPlan): Promise<string | undefined> {
+  const key = stripeLookupKey(plan);
+  const connu = prixConnus.get(key);
+  if (connu) return connu;
+
+  const attendu = Math.round(planPrice(plan) * 100);
+  let id: string | undefined;
+  try {
+    const found = await stripe(
+      "/prices",
+      { "lookup_keys[]": key, active: "true", limit: "1" },
+      "GET",
+    );
+    const price = found?.data?.[0];
+    if (price?.id && price.unit_amount === attendu) id = price.id;
+  } catch (e) {
+    console.error("price lookup failed", e);
+  }
+
+  if (!id) {
+    const fromEnv = process.env[`STRIPE_PRICE_${plan.toUpperCase()}`];
+    if (fromEnv) {
+      try {
+        const price = await stripe(`/prices/${fromEnv}`, {}, "GET");
+        if (price?.unit_amount === attendu) id = fromEnv;
+        else console.error(`STRIPE_PRICE_${plan.toUpperCase()} ne vaut pas ${attendu} centimes`);
+      } catch (e) {
+        console.error("price check failed", e);
+      }
+    }
+  }
+  if (id) prixConnus.set(key, id);
+  return id;
 }
 
 import { json } from "../shared/response";
@@ -144,6 +210,32 @@ async function ensureCustomer(sb: AnyClient, userId: string, email: string): Pro
   return customer.id;
 }
 
+/**
+ * Ce que l'utilisateur possède déjà et qui rend l'achat demandé inutile.
+ *
+ * Lu en base (la projection des webhooks), pas chez Stripe : c'est la même
+ * vérité que celle qui ouvre les pages payantes. Une ligne expirée ou en
+ * défaut de paiement ne bloque rien — elle doit pouvoir repayer.
+ */
+async function alreadyHolds(
+  sb: AnyClient,
+  userId: string,
+  salePlan: PaidPlan,
+): Promise<"already lifetime" | "already subscribed" | null> {
+  const { data } = await sb
+    .from("subscriptions")
+    .select("plan, status, current_period_end")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (!data || data.status !== "active") return null;
+  if (data.plan === LIFETIME_PLAN) return "already lifetime";
+  const live = !data.current_period_end || new Date(data.current_period_end).getTime() > Date.now();
+  if (salePlan === MONTHLY_PLAN && data.plan === MONTHLY_PLAN && live) {
+    return "already subscribed";
+  }
+  return null;
+}
+
 // ── POST /api/billing/checkout  { plan, promoCode? } ────────────────────────
 // Returns { url } to a Stripe Checkout session. Cards + Apple Pay + Google Pay
 // come from Stripe's automatic payment methods (enabled per default in the
@@ -176,10 +268,18 @@ export async function handleCheckout(request: Request): Promise<Response> {
   }
   const plan = payload.plan;
   if (!isPaidPlan(plan)) return json({ error: "invalid plan" }, 400);
-  // UNE SEULE OFFRE À LA VENTE : la licence à vie. Un client resté sur une
-  // ancienne grille (onglet ouvert, cache) qui demande encore un plan mensuel
-  // ou annuel est conduit vers la licence, jamais vers un abonnement retiré.
-  const salePlan: PaidPlan = LIFETIME_PLAN;
+  // DEUX OFFRES À LA VENTE : le mensuel et la licence. Un client resté sur
+  // une ancienne grille (onglet ouvert, cache) qui demande un plan retiré est
+  // conduit vers l'offre la plus proche, jamais vers un tarif disparu.
+  const salePlan: PaidPlan = salePlanFor(plan);
+
+  // On ne vend pas deux fois la même chose. Une licence active rend tout
+  // achat inutile ; un mensuel actif rend un second mensuel absurde (Stripe
+  // ouvrirait un DEUXIÈME abonnement, facturé en parallèle). Passer du
+  // mensuel à la licence reste permis : le webhook coupe alors le
+  // renouvellement du mensuel.
+  const blocked = await alreadyHolds(sb, user.id, salePlan);
+  if (blocked) return json({ error: blocked }, 409);
 
   const appCode = normalizePromoCode(payload.promoCode);
   if (appCode) {
@@ -223,7 +323,7 @@ export async function handleCheckout(request: Request): Promise<Response> {
 
     if (app.status === "discount") {
       // Réduction communauté : on encaisse réellement, à prix réduit.
-      const price = stripePriceId(salePlan);
+      const price = await stripePriceId(salePlan);
       if (!price) return json({ error: "price not configured" }, 500);
 
       const outcome = await reservePromoRedemption(sb, appCode, user, salePlan, "discount");
@@ -253,7 +353,7 @@ export async function handleCheckout(request: Request): Promise<Response> {
     // dashboard tenter le sien plus bas.
   }
 
-  const price = stripePriceId(salePlan);
+  const price = await stripePriceId(salePlan);
   if (!price) return json({ error: "price not configured" }, 500);
 
   const customer = await ensureCustomer(sb, user.id, user.email);
@@ -340,6 +440,10 @@ async function openCheckoutSession(
   } else {
     params["subscription_data[metadata][user_id]"] = opts.userId;
     params["subscription_data[metadata][plan]"] = opts.plan;
+    // La marque qui distingue un abonnement VENDU AUJOURD'HUI d'un abonnement
+    // d'avant la licence : seuls ces derniers sont convertis en licence à vie
+    // par le webhook (voir `isLegacySubscription`).
+    params["subscription_data[metadata][offer]"] = SUBSCRIPTION_OFFER;
   }
 
   // Un coupon applicatif et un promotion code du dashboard sont exclusifs :
@@ -454,10 +558,10 @@ export interface StripeSubscriptionObject {
   status?: string;
   cancel_at_period_end?: boolean;
   current_period_end?: number;
-  metadata?: { user_id?: string; plan?: string };
+  metadata?: { user_id?: string; plan?: string; offer?: string };
   items?: {
     data?: {
-      price?: { id?: string; recurring?: { interval?: string } };
+      price?: { id?: string; lookup_key?: string | null; recurring?: { interval?: string } };
       current_period_end?: number;
     }[];
   };
@@ -518,8 +622,13 @@ async function convertToLifetime(
 }
 
 /**
- * Convertit en une fois tous les abonnés Stripe actifs (action admin). Les
- * conversions suivantes se font d'elles-mêmes au prochain événement Stripe.
+ * Convertit en une fois tous les ANCIENS abonnés Stripe actifs (action
+ * admin). Les conversions suivantes se font d'elles-mêmes au prochain
+ * événement Stripe.
+ *
+ * Depuis la relance du mensuel, une ligne `elite_monthly` active peut être un
+ * abonné d'aujourd'hui : chaque abonnement est donc relu chez Stripe et
+ * seuls les anciens (`isLegacySubscription`) sont convertis.
  */
 export async function convertAllSubscribersToLifetime(sb: AnyClient): Promise<number> {
   const { data, error } = await sb
@@ -538,6 +647,14 @@ export async function convertAllSubscribersToLifetime(sb: AnyClient): Promise<nu
     stripe_customer_id: string | null;
     cancel_at_period_end: boolean | null;
   }[]) {
+    if (row.stripe_subscription_id) {
+      const live = (await stripe(
+        `/subscriptions/${row.stripe_subscription_id}`,
+        {},
+        "GET",
+      )) as StripeSubscriptionObject;
+      if (!isLegacySubscription(live)) continue;
+    }
     await convertToLifetime(sb, {
       userId: row.user_id,
       stripeSubscriptionId: row.stripe_subscription_id,
@@ -548,6 +665,33 @@ export async function convertAllSubscribersToLifetime(sb: AnyClient): Promise<nu
     converted++;
   }
   return converted;
+}
+
+/** La valeur de `metadata.offer` posée sur tout abonnement vendu depuis la
+ *  relance du mensuel (novembre 2026). */
+export const SUBSCRIPTION_OFFER = "monthly-2026-11";
+
+/**
+ * Un abonnement d'AVANT la licence à vie ?
+ *
+ * Ceux-là ont reçu une promesse : convertis en licence, sans repayer. Les
+ * abonnements mensuels vendus depuis la relance, eux, sont de vrais
+ * abonnements et ne doivent JAMAIS devenir une licence — ce serait offrir
+ * 49 € à qui en a payé 9.
+ *
+ * Deux preuves de modernité, l'une suffit : la marque `offer` que notre
+ * checkout pose, ou la clé de catalogue du prix (`tradevault_…`, portée aussi
+ * par un abonnement créé à la main depuis le dashboard). Sans aucune, c'est un
+ * ancien abonnement.
+ *
+ * La variable `STRIPE_PRICE_ELITE_MONTHLY` n'est PAS une preuve : en
+ * production elle désigne encore l'ancien Elite mensuel, et s'y fier aurait
+ * soustrait ses abonnés à la conversion promise.
+ */
+export function isLegacySubscription(sub: StripeSubscriptionObject): boolean {
+  if (sub.metadata?.offer) return false;
+  if (sub.items?.data?.[0]?.price?.lookup_key?.startsWith("tradevault_")) return false;
+  return true;
 }
 
 function planFromStripeSub(sub: StripeSubscriptionObject): PaidPlan {
@@ -709,10 +853,12 @@ export async function handleStripeWebhook(request: Request): Promise<Response> {
       const userId = obj.metadata?.user_id;
       if (!userId) return json({ received: true, skipped: "no user_id metadata" });
 
-      // Un abonnement d'avant, encore actif : converti en licence à vie.
+      // Un abonnement d'AVANT la licence, encore actif : converti en licence
+      // à vie. Un mensuel vendu depuis la relance suit son cycle normal.
       if (
         type !== "customer.subscription.deleted" &&
-        (obj.status === "active" || obj.status === "trialing")
+        (obj.status === "active" || obj.status === "trialing") &&
+        isLegacySubscription(obj)
       ) {
         await convertToLifetime(sb, {
           userId,

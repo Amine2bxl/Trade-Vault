@@ -4,14 +4,20 @@ import {
   CAPABILITY_TIER,
   LIFETIME_EUR,
   LIFETIME_PLAN,
+  MONTHLY_EUR,
+  MONTHLY_PLAN,
   PAID_TIERS,
+  SALE_PLANS,
   TIERS,
   TIER_BY_ID,
   intervalOf,
   isPaidPlan,
+  isSalePlan,
+  lifetimeBreakEvenMonths,
   monthsFree,
   planId,
   planPrice,
+  salePlanFor,
   tierAtLeast,
   tierOf,
   yearlySaving,
@@ -19,14 +25,41 @@ import {
 
 describe("catalogue d'offres", () => {
   it("annonce les prix convenus", () => {
-    // UNE offre à la vente : la licence à vie, 20 € payés une fois. Les anciens
-    // tarifs Pro restent décrits pour les abonnés d'avant, plus vendus.
-    expect(LIFETIME_EUR).toBe(20);
-    expect(planPrice(LIFETIME_PLAN)).toBe(20);
+    // DEUX plans à la vente, qui ouvrent la même chose : 9 € par mois, ou
+    // 49 € une fois. Les anciens tarifs Pro restent décrits pour les abonnés
+    // d'avant, plus vendus.
+    expect(MONTHLY_EUR).toBe(9);
+    expect(LIFETIME_EUR).toBe(49);
+    expect(planPrice(MONTHLY_PLAN)).toBe(9);
+    expect(planPrice(LIFETIME_PLAN)).toBe(49);
+    expect(SALE_PLANS).toEqual([MONTHLY_PLAN, LIFETIME_PLAN]);
     expect(TIERS.map((t) => t.id)).toEqual(["free", "elite"]);
-    expect(TIER_BY_ID.elite.monthly).toBe(LIFETIME_EUR);
-    expect(TIER_BY_ID.elite.yearly).toBe(LIFETIME_EUR);
+    expect(TIER_BY_ID.elite.monthly).toBe(MONTHLY_EUR);
     expect(TIER_BY_ID.pro.monthly).toBe(15);
+  });
+
+  it("les deux plans en vente ouvrent le palier le plus haut", () => {
+    for (const plan of SALE_PLANS) {
+      expect(isPaidPlan(plan)).toBe(true);
+      expect(tierOf(plan)).toBe("elite");
+    }
+  });
+
+  it("la licence revient moins cher qu'un semestre de mensuel", () => {
+    // L'argument de la grille est arithmétique : il doit rester vrai.
+    expect(lifetimeBreakEvenMonths()).toBe(6);
+    expect(LIFETIME_EUR).toBeLessThan(MONTHLY_EUR * lifetimeBreakEvenMonths());
+    expect(LIFETIME_EUR).toBeGreaterThan(MONTHLY_EUR * (lifetimeBreakEvenMonths() - 1));
+  });
+
+  it("conduit une demande périmée vers l'offre en vente la plus proche", () => {
+    expect(salePlanFor("lifetime")).toBe(LIFETIME_PLAN);
+    expect(salePlanFor("elite_monthly")).toBe(MONTHLY_PLAN);
+    expect(salePlanFor("pro_monthly")).toBe(MONTHLY_PLAN);
+    expect(salePlanFor("pro_yearly")).toBe(LIFETIME_PLAN);
+    expect(salePlanFor("elite_yearly")).toBe(LIFETIME_PLAN);
+    expect(isSalePlan("pro_monthly")).toBe(false);
+    expect(isSalePlan(MONTHLY_PLAN)).toBe(true);
   });
 
   it("la licence à vie ouvre le palier le plus haut", () => {

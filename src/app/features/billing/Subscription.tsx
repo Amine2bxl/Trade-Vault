@@ -1,367 +1,385 @@
 import { useCallback, useMemo, useState } from "react";
 import {
-  Crown,
-  CheckCircle2,
   AlertTriangle,
+  Check,
+  CheckCircle2,
   CreditCard,
-  Bitcoin,
-  CalendarClock,
-  RefreshCw,
-  Download,
-  Lock,
-  Loader2,
-  PauseCircle,
-  Sparkles,
+  Crown,
   ExternalLink,
+  FileText,
+  Loader2,
+  Lock,
+  PauseCircle,
+  RefreshCw,
+  Sparkles,
 } from "@/shared/ui/icons";
 import { useT } from "@/app/i18n/LanguageContext";
 import type { TKey } from "@/app/i18n/translations";
-import { useSubscription } from "@/app/hooks/useSubscription";
+import { useSubscription, type Subscription as Sub } from "@/app/hooks/useSubscription";
 import { cn } from "@/shared/ui/cn";
 import {
-  eur,
-  planPrice,
-  intervalOf,
-  tierOf,
-  yearlyPerMonth,
+  LIFETIME_COPY,
+  LIFETIME_PLAN,
   TIER_BY_ID,
+  eur,
+  intervalOf,
+  planPrice,
   type PaidPlan,
 } from "@/app/utils/pricing";
+import { FULL_ACCESS_POINTS, LIMITS, MONTHLY_COPY, MONTHLY_PLAN } from "@/domain/plans";
+import { tradesThisMonth } from "@/app/utils/planLimits";
 import { usePageLead } from "@/app/contexts/PageActionsContext";
-import { PageContainer, Kpi, KpiGrid, ScrollArea } from "@/shared/ui";
+import { Disclosure, PageContainer, ScrollArea } from "@/shared/ui";
 import { useAvailableHeight } from "@/app/hooks/useAvailableHeight";
 import SubscriptionSection from "./SubscriptionSection";
+import { etatAbonnement, offerMode, type EtatId } from "./subscriptionState";
 import type { Trade } from "@/app/types";
 
 type TFn = (k: TKey) => string;
+type Lg = "fr" | "en";
 
 /**
- * ABONNEMENT — L'ÉTAT D'ABORD, L'OFFRE ENSUITE.
+ * ABONNEMENT — trois blocs, des chiffres, une décision.
  *
- * ══ CE QUI N'ALLAIT PAS ══
+ * ══ LE RETOUR DU PROPRIÉTAIRE (2026-11-15) ══
  *
- *   1. LE MÊME FAIT, TROIS FOIS. « TradeVault Pro · annuel » était écrit dans
- *      la barre de tête, puis dans la bande de statut, puis dans la grille de
- *      faits, puis une quatrième fois dans le bloc de facturation — qui
- *      redéclarait AUSSI sa propre pastille de statut et sa propre date de
- *      renouvellement. Quatre rendus du même état, quatre endroits à corriger
- *      le jour où la logique change.
- *   2. L'ANNULATION NE SE VOYAIT PAS. Un abonnement annulé restait vert :
- *      seule une pastille changeait de mot (« s'arrête à la fin de la
- *      période »), au milieu d'une page identique à celle d'un abonnement qui
- *      se renouvelle. Le trader ne savait ni qu'il avait annulé, ni jusqu'à
- *      quand il gardait l'accès, ni comment revenir en arrière.
- *   3. RIEN NE DONNAIT ENVIE. La page ouvrait sur « 0 € / toujours » et une
- *      matrice de fonctionnalités. La grille tarifaire — celle qui porte les
- *      bénéfices et les boutons — arrivait en quatrième position, après la
- *      matrice.
+ * « Trop de cases, trop de blabla, pas de concret ni de valeur. » La version
+ * précédente empilait sept sections : carte d'état, compteur, grille, neuf
+ * cartes « ce que ça ouvre », un tableau comparatif de seize lignes, six
+ * questions et une bande de garanties. On lisait des noms de fonctionnalités,
+ * jamais ce qu'on y gagne.
  *
- * ══ CE QUE FAIT LA PAGE MAINTENANT ══
+ * ══ CE QUI RESTE ══
  *
- * `etatAbonnement()` répond UNE fois à « où en est cet abonnement ? » et rend
- * un des sept états nommés. Tout ce qui suit s'y accroche : la couleur, le
- * titre, la phrase, l'action principale. Les sept états ont donc la même UI
- * par construction — actif, annulé, en essai, impayé, expiré, offert, gratuit
- * — et un huitième état ne pourra pas être oublié quelque part.
+ *   1. L'ÉTAT, avec SES chiffres. Pour un compte gratuit : son compteur du
+ *      mois et — quand il en a — le P&L net de ses trades marqués d'une
+ *      erreur. Des TOTAUX tirés de ses trades, vrais à toute taille
+ *      d'échantillon, affichés avec leur `n`, sans aucune formulation causale
+ *      (`computeBehavioral().totalCost` n'est PAS un coût imputable).
+ *   2. LES DEUX OFFRES et six résultats concrets (`PricingPlans`) — ou la
+ *      seule licence pour qui paie déjà au mois.
+ *   3. TROIS questions de facturation, repliées.
  *
- * L'ORDRE DE LECTURE suit la décision : où j'en suis → ce que je peux faire
- * maintenant → ce que ça coûte → ce que ça contient → ce qui me rassure.
+ * L'état est décidé UNE fois par `subscriptionState.ts` (pur, testé).
+ * `preview` ne sert qu'au banc `/dev/ui` (`&sub=…`).
  */
-export default function Subscription({ trades = [] }: { trades?: Trade[] } = {}) {
+export default function Subscription({
+  trades = [],
+  preview,
+}: {
+  trades?: Trade[];
+  preview?: Sub | null;
+} = {}) {
   const { t, lang } = useT();
-  const fr = lang === "fr";
-  const { sub, loading, openPortal, cryptoCheckout } = useSubscription();
+  const lg: Lg = lang === "fr" ? "fr" : "en";
+  const live = useSubscription();
+  const sub = preview !== undefined ? preview : live.sub;
+  const loading = preview !== undefined ? false : live.loading;
   const { boxRef, height } = useAvailableHeight();
   const [busy, setBusy] = useState(false);
 
-  const currentTier = tierOf(sub?.plan);
-  const paid = currentTier !== "free";
+  const etat = useMemo(() => etatAbonnement(sub), [sub]);
+  const mode = offerMode(sub, etat);
+  const paid = etat !== "free";
+  const lifetime = sub?.plan === LIFETIME_PLAN;
+  const meta = ETATS[etat];
 
-  const planLabel =
-    currentTier === "free"
-      ? t("billing.planFree")
-      : `TradeVault ${TIER_BY_ID[currentTier].name[fr ? "fr" : "en"]} · ${
-          intervalOf(sub?.plan ?? "free") === "yearly"
-            ? t("subscription.yearly")
-            : t("subscription.monthly")
-        }`;
+  const nomOffre = !paid
+    ? TIER_BY_ID.free.name[lg]
+    : lifetime
+      ? LIFETIME_COPY.title[lg]
+      : sub?.plan === MONTHLY_PLAN
+        ? MONTHLY_COPY.title[lg]
+        : TIER_BY_ID[sub?.plan.startsWith("pro") ? "pro" : "elite"].name[lg];
 
   const dateFmt = useCallback(
     (d: Date) => d.toLocaleDateString(lang, { day: "numeric", month: "long", year: "numeric" }),
     [lang],
   );
+  const fin = sub?.currentPeriodEnd ? dateFmt(sub.currentPeriodEnd) : null;
 
-  const etat = useMemo(() => etatAbonnement(sub, paid), [sub, paid]);
-  const meta = ETATS[etat];
-
-  /* L'action principale de l'état. Elle passe par le portail Stripe quand il
-     existe (c'est lui qui sait reprendre, changer de carte, changer d'offre) ;
-     un abonnement crypto n'a pas de portail, il se reprend par une nouvelle
-     charge. Aucune logique de facturation n'est réécrite ici. */
+  /* Portail Stripe quand il existe (reprendre, changer de carte, résilier,
+     factures) ; un ancien accès crypto se reprend par une nouvelle charge —
+     jamais pour une licence, qui possède déjà tout. */
   const agir = useCallback(async () => {
-    if (!sub || busy) return;
+    if (!sub || busy || preview !== undefined) return;
     setBusy(true);
-    if (sub.hasStripeCustomer) await openPortal();
-    else if (sub.source === "crypto" && sub.plan !== "free")
-      await cryptoCheckout(sub.plan as PaidPlan);
+    if (sub.hasStripeCustomer) await live.openPortal();
+    else if (sub.source === "crypto" && sub.plan !== "free" && !lifetime)
+      await live.cryptoCheckout(sub.plan as PaidPlan);
     setBusy(false);
-  }, [sub, busy, openPortal, cryptoCheckout]);
+  }, [sub, busy, preview, live, lifetime]);
 
   const actionDisponible =
-    !!sub && meta.action !== null && (sub.hasStripeCustomer || sub.source === "crypto");
+    !!sub &&
+    meta.action !== null &&
+    (sub.hasStripeCustomer || (sub.source === "crypto" && !lifetime));
 
-  /* L'EN-TÊTE MONTE DANS LA BARRE DE TÊTE — comme Réglages et Profil. Le
-     statut tient sur une ligne, comme la carte d'identité du profil. */
+  const aUnAbonnement = !!sub;
   const lead = useMemo(
     () => (
       <div className="flex min-w-0 items-center gap-2.5">
-        <span
-          className={cn(
-            "grid h-6 w-6 shrink-0 place-items-center rounded-lg",
-            etat === "active" || etat === "lifetime"
-              ? "bg-emerald-500 text-white"
-              : "tv-accent-fill",
-          )}
-        >
+        <span className="grid h-6 w-6 shrink-0 place-items-center rounded-lg tv-accent-fill">
           <Crown className="h-3.5 w-3.5" />
         </span>
         <span className="font-display shrink-0 text-sm font-bold tracking-tight text-white">
-          {loading ? "TradeVault" : planLabel}
+          {loading ? "TradeVault" : `TradeVault · ${nomOffre}`}
         </span>
-        {!loading && sub && <Pastille etat={etat} t={t} />}
+        {!loading && aUnAbonnement && <Pastille etat={etat} t={t} />}
       </div>
     ),
-    [etat, loading, planLabel, sub, t],
+    // Des valeurs, pas l'objet `sub` : son identité change à chaque lecture.
+    [etat, loading, nomOffre, aUnAbonnement, t],
   );
   usePageLead(lead);
 
-  const fin = sub?.currentPeriodEnd ? dateFmt(sub.currentPeriodEnd) : null;
+  const prix = paid && sub ? eur(planPrice(sub.plan as PaidPlan), lang) : eur(0, lang);
+  const rythme = !paid
+    ? t("sub.forever")
+    : lifetime
+      ? LIFETIME_COPY.priceNote[lg]
+      : intervalOf(sub?.plan ?? "free") === "yearly"
+        ? t("billing.perYear")
+        : t("billing.perMonth");
 
+  /* Les faits d'un abonnement, sur UNE ligne de texte — plus trois cases. */
+  const faits =
+    sub && paid && !lifetime
+      ? [
+          fin
+            ? `${sub.cancelAtPeriodEnd ? t("billing.accessUntil") : t("sub.nextBilling")} ${fin}`
+            : null,
+          sub.source === "crypto"
+            ? t("sub.payCrypto")
+            : sub.source === "stripe"
+              ? t("sub.payCard")
+              : t("sub.payComp"),
+          sub.cancelAtPeriodEnd
+            ? t("sub.renewStopped")
+            : sub.source === "stripe"
+              ? t("sub.renewAuto")
+              : sub.source === "crypto"
+                ? t("sub.renewManual")
+                : null,
+        ].filter(Boolean)
+      : [];
+
+  // Pleine largeur de page, contenu CENTRÉ : la page d'achat n'est pas une
+  // colonne de réglages alignée à gauche.
   return (
-    <PageContainer ref={boxRef} measure="settings" fit height={height}>
-      <ScrollArea className="tv-grow space-y-6">
-        {/* ══ 1 · MON ADHÉSION — UNE SEULE CARTE ══════════════════════════════
-          Quatre blocs disaient la même chose en quatre surfaces : une bande
-          d'état, une grille de quatre cases d'un mot chacune, une carte de
-          facturation qui répétait le bouton « Gérer », et un bloc d'échelle
-          posé à part. Ils deviennent UNE carte, lue de haut en bas comme une
-          carte de membre : l'offre et son état, le prix, les faits sur une
-          ligne, l'action. La couleur de l'état reste celle qui ne se rate pas
-          — une annulation se voit toujours au premier regard. */}
-        <section
-          className={cn("sub-hero animate-fade-in-up", `sub-hero-${etat}`)}
-          aria-busy={loading || undefined}
-        >
-          <div className="sub-hero-top">
-            <div className="min-w-0 flex-1">
-              <p className="tv-label text-slate-500">{t("sub.yourPlan")}</p>
-              <h1 className="sub-hero-title">
-                {loading ? (
-                  <span className="inline-block h-7 w-48 animate-pulse rounded-lg bg-white/[0.06]" />
-                ) : paid ? (
-                  <>
-                    TradeVault{" "}
-                    <span className="sub-hero-tier">
-                      {TIER_BY_ID[currentTier].name[fr ? "fr" : "en"]}
-                    </span>
-                  </>
-                ) : (
-                  t("billing.planFree")
-                )}
-              </h1>
-              {!loading && (
-                <div className="mt-2 flex flex-wrap items-center gap-2">
-                  {sub && <Pastille etat={etat} t={t} />}
-                  {paid && (
-                    <span className="tv-row-label">
-                      {intervalOf(sub?.plan ?? "free") === "yearly"
-                        ? t("sub.billedYearly")
-                        : t("sub.billedMonthly")}
-                    </span>
+    <PageContainer ref={boxRef} fit height={height}>
+      <ScrollArea className="tv-grow space-y-6 pb-4">
+        {/* ══ 1 · L'ÉTAT ═══════════════════════════════════════════════════
+            Au gratuit, un BANDEAU compact (l'offre, le compteur du mois) :
+            une grande carte « Gratuit · 0 € » en tête de page disait surtout
+            ce qu'on n'a pas. La carte d'achat prend la place du héros.
+            Pour un abonné, la carte d'adhésion garde son rôle. */}
+        {!loading && etat === "free" ? (
+          <Bandeau trades={trades} t={t} nom={nomOffre} prix={prix} />
+        ) : (
+          <section
+            className={cn(
+              "sub-hero",
+              etat === "cancelling" && "sub-hero-cancelling",
+              etat === "pastDue" && "sub-hero-pastDue",
+            )}
+            aria-busy={loading}
+          >
+            <div className="sub-hero-top">
+              <div className="min-w-0 flex-1">
+                <p className="tv-label text-slate-500">{t("subpage.yourPlan")}</p>
+                <h1 className={cn("sub-hero-title", meta.titleClass)}>
+                  {loading ? (
+                    <span className="inline-block h-7 w-48" aria-hidden />
+                  ) : (
+                    <>
+                      {paid && "TradeVault "}
+                      <span className={paid ? "sub-hero-tier" : undefined}>{nomOffre}</span>
+                    </>
                   )}
+                </h1>
+                {!loading && (
+                  <p className="mt-2 max-w-xl text-[13px] leading-6 text-slate-400">
+                    {meta.body(t, fin)}
+                  </p>
+                )}
+              </div>
+              {!loading && (
+                <div className="sub-hero-price">
+                  <div className="tv-figure text-3xl leading-none text-white md:text-4xl">
+                    {prix}
+                  </div>
+                  <div className="tv-row-label mt-1.5">{rythme}</div>
                 </div>
               )}
-              <p className="tv-prose mt-3 max-w-xl text-slate-400">
-                {loading ? t("sub.loading") : meta.body(t, fin)}
-              </p>
             </div>
 
-            {!loading && (
-              <div className="sub-hero-price">
-                <div className="tv-figure text-3xl leading-none text-white md:text-4xl">
-                  {paid && sub ? eur(planPrice(sub.plan as PaidPlan), lang) : eur(0, lang)}
-                </div>
-                <div className="tv-row-label mt-1.5">
-                  {paid
-                    ? intervalOf(sub?.plan ?? "free") === "yearly"
-                      ? `${t("billing.perYear")} · ${eur(
-                          Math.round(yearlyPerMonth(currentTier) * 100) / 100,
-                          lang,
-                        )}${t("billing.perMonth")}`
-                      : t("billing.perMonth")
-                    : t("sub.forever")}
-                </div>
+            {!loading && faits.length > 0 && (
+              <p className="mt-4 text-[13px] text-slate-300">{faits.join(" · ")}</p>
+            )}
+
+            {!loading && actionDisponible && (
+              <div className="sub-hero-foot">
+                <button
+                  onClick={() => void agir()}
+                  disabled={busy}
+                  className={cn(
+                    "flex h-10 w-full items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold transition disabled:opacity-60 sm:w-auto",
+                    meta.actionStrong
+                      ? "tv-accent-fill"
+                      : "border border-[var(--tv-border-strong)] bg-[var(--tv-plate-3)] text-slate-100 hover:border-[var(--tv-border-accent)]",
+                  )}
+                >
+                  {busy ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <meta.actionIcon className="h-4 w-4" />
+                  )}
+                  {meta.action!(t)}
+                  {!busy && <ExternalLink className="h-3.5 w-3.5 opacity-60" />}
+                </button>
               </div>
             )}
+          </section>
+        )}
+
+        {/* ══ 2 · LA CARTE D'ACHAT — ou, pour une licence, ce qu'elle contient ══ */}
+        {!loading && mode !== "none" && (
+          <div className="tv-glow">
+            {/* La FAQ loge sous le bouton : toute la page tient dans l'écran. */}
+            <SubscriptionSection trades={trades} preview={preview} aside={<Faq t={t} />} />
           </div>
+        )}
 
-          {/* LES FAITS — sur une ligne, séparés par des filets : ils se lisent
-            comme les mentions d'une carte, pas comme quatre tableaux de bord. */}
-          {!loading && sub && paid && (
-            <KpiGrid className="sub-hero-facts">
-              <Kpi
-                inset
-                label={sub.cancelAtPeriodEnd ? t("billing.accessUntil") : t("sub.nextBilling")}
-                value={fin ?? "—"}
-                tone={sub.cancelAtPeriodEnd ? "warn" : "neutral"}
-                adornment={<CalendarClock className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
-              />
-              <Kpi
-                inset
-                label={t("sub.payment")}
-                value={
-                  sub.source === "crypto"
-                    ? t("sub.payCrypto")
-                    : sub.source === "stripe"
-                      ? t("sub.payCard")
-                      : t("sub.payComp")
-                }
-                adornment={
-                  sub.source === "crypto" ? (
-                    <Bitcoin className="h-3.5 w-3.5 shrink-0 text-slate-500" />
-                  ) : (
-                    <CreditCard className="h-3.5 w-3.5 shrink-0 text-slate-500" />
-                  )
-                }
-              />
-              <Kpi
-                inset
-                label={t("sub.renewal")}
-                value={
-                  sub.cancelAtPeriodEnd
-                    ? t("sub.renewStopped")
-                    : sub.source === "crypto"
-                      ? t("sub.renewManual")
-                      : sub.source === "stripe"
-                        ? t("sub.renewAuto")
-                        : "—"
-                }
-                tone={sub.cancelAtPeriodEnd ? "warn" : "neutral"}
-                adornment={<RefreshCw className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
-              />
-            </KpiGrid>
-          )}
+        {!loading && mode === "none" && (
+          <section
+            className="mx-auto max-w-[1040px] space-y-4"
+            aria-labelledby="sub-included-title"
+          >
+            <h2 id="sub-included-title" className="subp-title">
+              {t("subpage.included")}
+            </h2>
+            <ul className="offer-points">
+              {FULL_ACCESS_POINTS.map((p) => (
+                <li key={p.en} className="offer-point">
+                  <span className="offer-point-icon" aria-hidden>
+                    <Check className="h-4 w-4" />
+                  </span>
+                  {p[lg]}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
-          {/* L'ACTION DE L'ÉTAT — reprendre, mettre à jour, gérer. Un seul
-            bouton, celui qui correspond à la situation, et ce qu'il ouvre. */}
-          {!loading && actionDisponible && (
-            <div className="sub-hero-foot">
-              <button
-                onClick={() => void agir()}
-                disabled={busy}
-                className={cn(
-                  "flex h-10 w-full items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold transition disabled:opacity-60 sm:w-auto",
-                  meta.actionStrong
-                    ? "tv-accent-fill"
-                    : "border border-[var(--tv-border-strong)] bg-[var(--tv-plate-3)] text-slate-100 hover:border-[var(--tv-border-accent)]",
-                )}
-              >
-                {busy ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <meta.actionIcon className="h-4 w-4" />
-                )}
-                {meta.action!(t)}
-                {!busy && <ExternalLink className="h-3.5 w-3.5 opacity-60" />}
-              </button>
-              {sub?.hasStripeCustomer && (
-                <p className="tv-row-label max-w-md">{t("billing.portalHint")}</p>
-              )}
+        {/* ══ 3 · TROIS QUESTIONS, REPLIÉES ════════════════════════════════ */}
+        {!loading && mode === "none" && (
+          <>
+            <div className="mx-auto max-w-[1040px]">
+              <Faq t={t} />
             </div>
-          )}
-        </section>
-
-        {/* ══ 2 · CHOISIR / RENOUVELER ══════════════════════════════════════
-          La grille tarifaire (offre gratuite, essai) ou le renouvellement
-          crypto. Le bouton « Gérer » n'y est plus répété quand la carte
-          d'adhésion le porte déjà. */}
-        <SubscriptionSection showPortal={!actionDisponible} />
-
-        {/* ══ 5 · CE QUI RASSURE ═════════════════════════════════════════════ */}
-        <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 pt-1 pb-2">
-          {[
-            [Lock, t("subscription.secureStripePayment")],
-            [CheckCircle2, t("subscription.cancelInOneClick")],
-            [Download, t("subscription.yourDataStaysExportable")],
-          ].map(([Ico, label]) => {
-            const I = Ico as typeof Lock;
-            return (
-              <span
-                key={label as string}
-                className="flex items-center gap-2 text-[11px] text-slate-500"
-              >
-                <I className="h-3.5 w-3.5 text-emerald-400/80" />
-                {label as string}
-              </span>
-            );
-          })}
-        </div>
+            <p className="flex items-center justify-center gap-2 pb-2 text-[11.5px] text-slate-500">
+              <Lock className="h-3.5 w-3.5" />
+              {t("subpage.trust")}
+            </p>
+          </>
+        )}
       </ScrollArea>
     </PageContainer>
   );
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
-   LES SEPT ÉTATS
+   LE BANDEAU DU GRATUIT — l'offre et le compteur, sur une ligne
    ──────────────────────────────────────────────────────────────────────────*/
 
-type Sub = NonNullable<ReturnType<typeof useSubscription>["sub"]>;
-
-/** Les états nommés d'un abonnement. Rien d'autre ne décide de l'apparence. */
-type EtatId = "free" | "trialing" | "active" | "cancelling" | "pastDue" | "expired" | "lifetime";
-
 /**
- * L'ÉTAT, CALCULÉ UNE FOIS.
- *
- * L'ordre des tests compte, et c'est lui qui corrige le bug de lisibilité de
- * l'annulation : `cancelAtPeriodEnd` est éprouvé AVANT `active`, parce qu'un
- * abonnement annulé est bien encore actif — c'est précisément ce qui le
- * rendait invisible.
+ * Le compteur vient de `tradesThisMonth`, la même fonction que celle qui
+ * bloque la saisie au-delà de la limite : ce qu'on lit ici est exactement ce
+ * qui bloquera.
  */
-function etatAbonnement(sub: Sub | null, paid: boolean): EtatId {
-  if (!sub || !paid) return "free";
-  if (sub.status === "past_due") return "pastDue";
-  if (sub.cancelAtPeriodEnd && (sub.status === "active" || sub.status === "trialing"))
-    return "cancelling";
-  if (sub.status === "trialing") return "trialing";
-  if (sub.status === "active") return sub.currentPeriodEnd ? "active" : "lifetime";
-  return "expired";
+function Bandeau({ trades, t, nom, prix }: { trades: Trade[]; t: TFn; nom: string; prix: string }) {
+  const limite = LIMITS.free.tradesPerMonth;
+  const notes = Math.min(tradesThisMonth(trades), limite);
+  const plein = notes >= limite;
+  return (
+    <section className="sub-strip" aria-label={t("subpage.yourPlan")}>
+      <div className="flex min-w-0 items-baseline gap-2">
+        <span className="tv-label text-slate-500">{t("subpage.yourPlan")}</span>
+        <span className="text-[14px] font-semibold text-white">{nom}</span>
+        <span className="tv-figure text-[13px] text-slate-400">{prix}</span>
+      </div>
+      <div className="flex min-w-0 basis-full items-center gap-3 sm:max-w-[320px] sm:flex-1 sm:basis-auto">
+        <div
+          className="subp-meter flex-1"
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={limite}
+          aria-valuenow={notes}
+        >
+          <span
+            className={cn("subp-meter-fill", plein && "subp-meter-fill--full")}
+            style={{ transform: `scaleX(${notes / limite})` }}
+          />
+        </div>
+        <span className={cn("shrink-0 text-[12.5px]", plein ? "text-amber-300" : "text-slate-400")}>
+          <span className="tv-figure font-semibold">
+            {notes}/{limite}
+          </span>{" "}
+          {t("subpage.num.trades")}
+        </span>
+      </div>
+    </section>
+  );
 }
+
+/* ────────────────────────────────────────────────────────────────────────────
+   TROIS QUESTIONS
+   ──────────────────────────────────────────────────────────────────────────*/
+
+const FAQ: [TKey, TKey][] = [
+  ["subpage.faq.q1", "subpage.faq.a1"],
+  ["subpage.faq.q2", "subpage.faq.a2"],
+  ["subpage.faq.q3", "subpage.faq.a3"],
+];
+
+function Faq({ t }: { t: TFn }) {
+  const [ouverte, setOuverte] = useState<number | null>(null);
+  return (
+    <section className="space-y-1" aria-label={t("subpage.faq.title")}>
+      {FAQ.map(([q, a], i) => (
+        <Disclosure
+          key={q}
+          title={t(q)}
+          open={ouverte === i}
+          onChange={(o) => setOuverte(o ? i : null)}
+        >
+          <p className="pb-2 text-[13px] leading-6 text-slate-400">{t(a)}</p>
+        </Disclosure>
+      ))}
+    </section>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   LES SEPT ÉTATS — l'apparence de chacun
+   ──────────────────────────────────────────────────────────────────────────*/
 
 interface EtatMeta {
   icon: typeof Crown;
-  /** Plaque + liseré de la bande. */
-  surface: string;
-  /** Vignette d'icône. */
-  badge: string;
   titleClass: string;
-  title: (t: (k: TKey) => string, planLabel: string) => string;
-  body: (t: (k: TKey) => string, fin: string | null) => string;
+  body: (t: TFn, fin: string | null) => string;
   /** Libellé de l'action principale — `null` quand l'état n'en propose pas. */
-  action: ((t: (k: TKey) => string) => string) | null;
+  action: ((t: TFn) => string) | null;
   actionIcon: typeof Crown;
-  /** L'action est-elle l'action PRINCIPALE de la page (vert plein) ? */
+  /** L'action est-elle l'action PRINCIPALE de la page (plein) ? */
   actionStrong: boolean;
 }
 
 const ETATS: Record<EtatId, EtatMeta> = {
   free: {
     icon: Sparkles,
-    surface: "glass border-[var(--tv-border)]",
-    badge:
-      "border-[var(--tv-border-accent)] bg-[rgb(var(--tv-accent-rgb)/0.12)] text-[var(--tv-highlight)]",
     titleClass: "text-white",
-    title: (t) => t("subscription.youReOnThe"),
     body: (t) => t("subscription.goProToPrice"),
     action: null,
     actionIcon: Sparkles,
@@ -369,11 +387,7 @@ const ETATS: Record<EtatId, EtatMeta> = {
   },
   trialing: {
     icon: Sparkles,
-    surface: "glass border-[var(--tv-border-accent)]",
-    badge:
-      "border-[var(--tv-border-accent)] bg-[rgb(var(--tv-accent-rgb)/0.12)] text-[var(--tv-highlight)]",
     titleClass: "text-white",
-    title: (t) => t("subscription.trialRunning"),
     body: (t, fin) =>
       fin
         ? t("subscription.yourTrialRunsUntil").replace("{a}", String(fin))
@@ -384,26 +398,17 @@ const ETATS: Record<EtatId, EtatMeta> = {
   },
   active: {
     icon: CheckCircle2,
-    surface: "glass border-emerald-500/20",
-    badge: "border-emerald-500/25 bg-emerald-500/10 text-emerald-400",
     titleClass: "text-white",
-    title: (t, planLabel) => t("subscription.aActive").replace("{a}", String(planLabel)),
-    body: (t, fin) =>
-      fin
-        ? t("subscription.yourAccessRenewsAutomatically").replace("{a}", String(fin))
-        : t("subscription.yourAccessIsActive"),
+    body: (t) => t("subscription.yourAccessIsActive"),
     action: (t) => t("subscription.manageSubscription"),
     actionIcon: CreditCard,
     actionStrong: false,
   },
-  /* L'ÉTAT QUI MANQUAIT. Ambre, pas rouge : rien n'est cassé, l'accès court
-     toujours — mais il a une fin, et cette fin est la première chose écrite. */
+  /* Ambre, pas rouge : rien n'est cassé, l'accès court toujours — mais il a
+     une fin, et cette fin est la première chose écrite. */
   cancelling: {
     icon: PauseCircle,
-    surface: "border-amber-500/25 bg-amber-500/[0.06]",
-    badge: "border-amber-500/30 bg-amber-500/10 text-amber-300",
     titleClass: "text-amber-200",
-    title: (t) => t("subscription.subscriptionCancelled"),
     body: (t, fin) =>
       fin
         ? t("subscription.youKeepFullAccess").replace("{a}", String(fin))
@@ -414,10 +419,7 @@ const ETATS: Record<EtatId, EtatMeta> = {
   },
   pastDue: {
     icon: AlertTriangle,
-    surface: "border-red-500/25 bg-red-500/[0.06]",
-    badge: "border-red-500/30 bg-red-500/10 text-red-400",
     titleClass: "text-red-200",
-    title: (t) => t("subscription.paymentFailed"),
     body: (t) => t("subscription.theLastChargeDidn"),
     action: (t) => t("subscription.updateMyCard"),
     actionIcon: CreditCard,
@@ -425,10 +427,7 @@ const ETATS: Record<EtatId, EtatMeta> = {
   },
   expired: {
     icon: AlertTriangle,
-    surface: "glass border-[var(--tv-border-strong)]",
-    badge: "border-[var(--tv-border-strong)] bg-[var(--tv-plate-3)] text-slate-300",
     titleClass: "text-white",
-    title: (t) => t("subscription.subscriptionEnded"),
     body: (t) => t("subscription.yourProAccessHas"),
     action: (t) => t("subscription.restartMySubscription"),
     actionIcon: RefreshCw,
@@ -436,13 +435,12 @@ const ETATS: Record<EtatId, EtatMeta> = {
   },
   lifetime: {
     icon: Crown,
-    surface: "glass border-emerald-500/20",
-    badge: "border-emerald-500/25 bg-emerald-500/10 text-emerald-400",
     titleClass: "text-white",
-    title: (t) => t("subscription.permanentAccess"),
     body: (t) => t("subscription.allOfTradevaultIs"),
-    action: null,
-    actionIcon: Crown,
+    // Une licence n'a rien à gérer… sauf ses factures, quand un client Stripe
+    // existe : le portail les garde.
+    action: (t) => t("subpage.invoices"),
+    actionIcon: FileText,
     actionStrong: false,
   },
 };

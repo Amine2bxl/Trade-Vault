@@ -94,3 +94,23 @@ export function PageTransition({ page, children }: { page: string; children: Rea
 
   return <div ref={ref}>{children}</div>;
 }
+
+/**
+ * PageLoader — ce qu'on voit quand une page tarde VRAIMENT (plus de 320 ms).
+ *
+ * Il remplace les squelettes de page (décision du propriétaire, 2026-11-15 :
+ * « pas de chargement squelette, des pages en un temps »). Un squelette peint
+ * une fausse page grise, puis la vraie par-dessus : deux temps, à chaque fois.
+ * Ici, rien pendant 320 ms — la place est réservée, rien ne bouge — puis, si
+ * l'attente dure, un seul anneau menthe qui tourne au centre, en fondu. La
+ * page arrive ensuite d'un seul geste (`.page-in`).
+ */
+export function PageLoader({ delay = 320 }: { delay?: number }) {
+  return (
+    <DeferredFallback delay={delay}>
+      <div className="tv-page-loader" role="status" aria-busy="true">
+        <span className="tv-page-loader-ring" aria-hidden="true" />
+      </div>
+    </DeferredFallback>
+  );
+}

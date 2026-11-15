@@ -94,8 +94,11 @@ Les crons acceptent `GET` (Vercel Cron) et `POST` (appel manuel) —
 
 - **Stripe** (`billing.server.ts`, REST sans SDK) : Checkout, portail, webhook
   à signature vérifiée (comparaison à temps constant, fenêtre anti-rejeu).
-  Plans et prix : `domain/plans.ts` (Gratuit + licence à vie `lifetime` à 20 €, paiement unique ; anciens Pro / Elite reconnus) ;
-  identifiants de prix `STRIPE_PRICE_*`. Pas d'essai gratuit.
+  Plans et prix : `domain/plans.ts` (Gratuit + mensuel `elite_monthly` à 9 € sans engagement + licence à vie `lifetime` à 49 €,
+  paiement unique ; les deux ouvrent `elite` ; anciens Pro / Elite reconnus). Prix Stripe retrouvés par `lookup_key`
+  `tradevault_<plan>_eur_<centimes>` dérivée du catalogue (`stripeLookupKey`) ; `STRIPE_PRICE_*` en repli vérifié au
+  montant. Un mensuel vendu porte `metadata.offer` : seuls les abonnements d'avant la licence sont convertis
+  (`isLegacySubscription`). Checkout refusé (409) si licence possédée ou mensuel déjà actif. Pas d'essai gratuit.
 - **Coinbase Commerce** (`crypto-pay.server.ts`) : même contrat.
 - **Idempotence** : `processed_webhook_events` rend tout rejeu inoffensif ;
   les transitions passent par la fonction SQL `apply_subscription_event`.

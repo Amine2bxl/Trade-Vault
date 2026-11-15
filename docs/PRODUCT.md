@@ -44,20 +44,112 @@ Source unique : `src/domain/plans.ts` (partagée par l'app et le serveur).
 | Offre | Prix | Esprit |
 | --- | --- | --- |
 | Gratuit | 0 € | « Log your trades. Forever. » — 10 trades par mois, 1 compte |
-| **Licence à vie** | **20 €, une fois** | Tout TradeVault, pour toujours : trades et comptes illimités, toutes les analyses, Jarvis inclus, synchro Tradovate, transfert et recalibrage |
+| **Mensuel** | **9 € / mois** | Tout TradeVault, sans engagement, résiliable en un clic (portail Stripe) |
+| **Licence à vie** | **49 €, une fois** | Le même accès, payé une fois — moins de 6 mois de mensuel |
 
-Une seule offre payante, **sans abonnement** : plan `lifetime` (Stripe Checkout en
-mode `payment`, prix `STRIPE_PRICE_LIFETIME`), qui ouvre le palier le plus haut
-(`effective_tier` → `elite`). Une licence ne se rétrograde jamais
-(`apply_subscription_event`), seul le remboursement de son paiement la retire
-(`revoke_lifetime_license`). Les anciens abonnés Pro/Elite sont convertis en
-licence à vie et leur renouvellement est coupé (webhook, ou action admin
-« Convertir les abonnés »). Coût de Jarvis : modèle non tranché — aucune
-promesse « illimité » n'est écrite.
+Deux façons de payer **le même produit** (novembre 2026) : plan `elite_monthly`
+(Stripe Checkout en mode `subscription`) et plan `lifetime` (mode `payment`),
+qui ouvrent tous deux le palier le plus haut (`effective_tier` → `elite`). Le
+rapport entre les deux est voulu : la licence coûte moins de six mensualités
+(`lifetimeBreakEvenMonths`), et la grille le dit en chiffres. Les prix Stripe
+se retrouvent par leur `lookup_key`, dérivée du montant du catalogue
+(`BACKEND.md`) : prix affiché et prix facturé ne peuvent pas diverger.
+
+Une licence ne se rétrograde jamais (`apply_subscription_event`), seul le
+remboursement de son paiement la retire (`revoke_lifetime_license`). Acheter
+la licence pendant un mensuel coupe le renouvellement du mensuel. Les anciens
+abonnés Pro/Elite (d'avant la licence) restent convertis en licence à vie ;
+un mensuel vendu depuis la relance porte `metadata.offer` et n'est jamais
+converti. Coût de Jarvis : modèle non tranché — aucune promesse « illimité »
+n'est écrite ; la licence à vie inclut Jarvis, ce coût récurrent est à
+surveiller.
 
 Pas d'essai gratuit. Limites appliquées **en base** (`enforce_trade_quota`,
 `enforce_account_quota`). Ancrage de prix : pas les journaux à 20–30 $/mois,
 mais **le coût d'un challenge raté**.
+
+## Stratégie commerciale (revue du 2026-11-15)
+
+**Positionnement prix.** On ne se compare pas aux journaux, on se compare au
+coût d'un reset de challenge (200–600 $). 9 € par mois, c'est moins qu'un
+seul contrat mal dimensionné ; 49 € une fois, c'est moins de six mois de
+mensuel. Deux formules, **le même produit** : on ne vend pas des paliers, on
+vend une façon de payer.
+
+**Pas de plan annuel** (décision du propriétaire, 2026-11-15) : à 9 €/mois,
+un annuel « 3 mois offerts » vaudrait 81 € — plus cher que la licence à
+49 €, donc invendable. Si un annuel revient un jour, la licence doit d'abord
+coûter plus de deux ans de mensuel.
+
+**Risque assumé de la licence** : Jarvis est inclus et coûte à chaque
+requête. Garde-fou à décider : un plafond « usage raisonnable » technique
+sur `LIMITS.elite.jarvisPerDay` (aujourd'hui illimité), écrit dans les CGU,
+avant que le coût par utilisateur (`ai_agent_runs`) ne dépasse la marge.
+
+### La frontière gratuit / payant
+
+Principe : **le gratuit installe l'habitude, le payant donne le diagnostic.**
+Gratuit = noter et VOIR ce qu'on fait (journal, calendrier, **Analyses**
+depuis le 2026-11-15, checklist, plan, calculateur, 10 trades/mois, 1
+compte, Jarvis 3/jour). Payant = comprendre POURQUOI on perd (Erreurs,
+Setups manqués, Monte-Carlo, Saisonnalité, Rapports, Jarvis complet,
+synchro, multi-comptes).
+
+Recommandations, par ordre de valeur :
+
+1. **Montrer le diagnostic avant le mur.** Le mur d'aperçu (`PreviewWall`)
+   montre déjà la vraie page floutée. Étape suivante : une seule « fuite »
+   réelle par mois offerte au gratuit (la plus coûteuse, avec son `n`), pour
+   que le gratuit vive le « aha » avant de payer.
+2. **Le calendrier économique en gratuit** (`news`, aujourd'hui payant) :
+   c'est l'écran qu'on ouvre CHAQUE matin, il ne coûte qu'un cron, et il fait
+   revenir les gratuits — donc il fait convertir. À trancher.
+3. **Le mur au bon moment** : relance douce à 8/10 trades, puis la modale à
+   deux offres à 10/10 — avec le compteur réel (déjà sur la page
+   Abonnement).
+4. Garder 10 trades/mois tant qu'aucune mesure ne dit le contraire ; tester
+   20 si l'activation (1er trade le jour 0) est bonne mais la conversion
+   faible.
+
+### Réductions — la politique
+
+- **Jamais de remise permanente sur la grille.** Le prix affiché est le
+  prix. Les réductions sont datées ou nominatives.
+- **Codes partenaires** (influenceurs, prop firms, communautés) : l'outil
+  existe (`promo_codes`). Les coupons de réduction sont en `duration=forever`
+  (`promo.server.ts`) : sur le mensuel, ça fait une remise À VIE. Pour le
+  mensuel, préférer « 3 premiers mois » (`duration=repeating`).
+- **Parrainage** (à construire) : un mois offert aux deux (crédit sur le
+  solde client Stripe) — le canal le moins cher pour une cible qui vit en
+  communautés Discord.
+- **Rétention** : coupon de rétention au moment de la résiliation (option
+  du portail client Stripe) ou bascule proposée vers la licence.
+- **Événements** : une opération par an au plus (Black Friday), sinon le
+  prix perd sa crédibilité.
+
+### Les leviers dans le produit (fait le 2026-11-15)
+
+Page Abonnement refaite : compteur du mois réel, grille gratuit / mensuel /
+licence, passage mensuel → licence, ce que chaque page payante apporte,
+comparatif tiré de `LIMITS`, questions de facturation, erreurs de paiement
+traduites. Modale d'achat à deux offres, mur d'aperçu au tarif vendu,
+vitrine et `/pricing` alignées.
+
+### À mesurer avant de toucher aux prix
+
+Aucun outil d'analytics produit n'est branché (`ROADMAP.md`, L8). Les
+chiffres qui décident : activation (1er trade le jour 0), part de gratuits
+qui atteignent 10/10, conversion gratuit → payant, part mensuel / licence,
+résiliation du mensuel à M1 et M3, coût IA par utilisateur payant. Outil
+recommandé : PostHog (hébergement UE) ou Plausible.
+
+### E-mails de cycle de vie
+
+Les e-mails « fin d'essai » et « relance après essai » ne partent plus : il
+n'y a plus d'essai. Et `RESEND_API_KEY` n'est pas posée dans Vercel :
+**aucun** e-mail ne part aujourd'hui, pas même la bienvenue. À remplacer par
+une séquence gratuite : J+1 (premier trade), J+7 (ta semaine), quota 8/10,
+mensuel résilié → proposition de licence.
 
 ## Règles d'honnêteté (non négociables)
 
@@ -94,7 +186,7 @@ mais **le coût d'un challenge raté**.
 | Intérêt | Aimant à leads (plan anti-échec de challenge, simulateur de règles) | E-mail |
 | Essai | Offre Free + Jarvis | Activation (1er trade loggé dès la 1re séance) |
 | Rétention | Checklist, revue hebdomadaire, Edge Score, série | Habitude (rétention J7) |
-| Monétisation | Licence à vie 20 € + preuve (avant/après) | Conversion |
+| Monétisation | Mensuel 9 € ou licence à vie 49 € + preuve (avant/après) | Conversion |
 
 Canaux : X, TikTok, YouTube Shorts (en anglais), communautés prop firm (sans
 spam), avis Trustpilot réels. Idées de contenu : [`../content/hooks.md`](../content/hooks.md).

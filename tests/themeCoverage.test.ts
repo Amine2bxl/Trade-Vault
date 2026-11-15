@@ -225,11 +225,17 @@ describe("la sortie d'onboarding est une transition, pas une coupure", () => {
     expect(onboarding).toContain("prefers-reduced-motion: reduce");
   });
 
-  test("porte les repères d'un terminal de calibration sur desktop et mobile", () => {
-    expect(onboarding).toContain("c.systemModules");
-    expect(onboarding).toContain("c.systemCalibrating");
-    expect(onboarding).toContain("STEP_CODES");
+  /* Décision du propriétaire, 2026-11-15 : le décor de « terminal de
+     calibration » (codes ID-01/ARN-02, rail des modules, boîte SYSTEM)
+     faisait « généré ». L'onboarding garde ses effets (la courbe du marché,
+     le tracé du verrou) dans un cadre épuré : une progression continue et
+     le portrait du trader qui se compose. */
+  test("garde ses effets dans un cadre épuré, sans décor de terminal", () => {
     expect(onboarding).toContain("onb-market-pulse");
     expect(onboarding).toContain("onb-lock-sweep");
+    expect(onboarding).toContain("onb-progress");
+    expect(onboarding).toContain("<Portrait");
+    expect(onboarding).not.toContain("STEP_CODES");
+    expect(onboarding).not.toContain("c.systemModules");
   });
 });

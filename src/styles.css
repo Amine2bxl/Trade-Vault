@@ -495,6 +495,14 @@
      distingue volontairement de l'accent d'action. */
   --tv-chart-green: #61f8ab;
   --tv-chart-green-rgb: 97 248 171;
+  /* La lueur d'ambiance derrière les blocs (décision du propriétaire,
+     2026-11-15) : son intensité, plafonnée à 0.08 par
+     `tests/liquidGlass.test.ts`. */
+  --tv-glow-alpha: 0.08;
+  /* …et sa version SOUS les cartes : une lumière douce qui déborde du bord
+     bas, très floue, jamais un anneau. Alpha plafonné par le même test. */
+  --tv-card-glow-alpha: 0.24;
+  --tv-card-glow: 0 22px 60px -30px rgb(var(--tv-accent-rgb) / var(--tv-card-glow-alpha));
   --tv-chart-red: #f87171;
   --tv-chart-red-rgb: 248 113 113;
 
@@ -858,6 +866,19 @@ body {
     stroke-dashoffset: 0;
   }
 }
+/* Le même tracé, au rythme de l'app (`TraceRing`, clin d'œil à
+   l'onboarding) : 280 ms, posé d'emblée sous mouvement réduit. */
+.tv-trace {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: onb-lock-sweep 280ms var(--tv-ease) forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tv-trace {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}
 .onb-lock-sweep,
 .onb-pulse-trace {
   stroke-dasharray: 1;
@@ -994,6 +1015,14 @@ body {
   border-radius: 5px;
   border: 1px solid var(--tv-border);
   color: var(--tv-text-muted);
+  /* Le raccourci clavier ne se montre qu'au survol ou au focus : au repos,
+     une carte ne porte que son choix (sobriété, 2026-11-15). */
+  opacity: 0;
+  transition: opacity var(--tv-dur-1) var(--tv-ease);
+}
+:hover > .onb-kbd,
+:focus-visible > .onb-kbd {
+  opacity: 1;
 }
 
 /* ── La ligne de Jarvis : un curseur qui ne clignote QUE pendant l'écriture ── */
@@ -1082,6 +1111,61 @@ body {
 .onb-bar {
   transform-origin: left center;
   transition: transform 420ms var(--tv-ease);
+}
+/* La progression : UNE ligne continue (plus dix segments numérotés). */
+.onb-progress {
+  position: relative;
+  height: 3px;
+  flex: 1;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.07);
+}
+.onb-progress-fill {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--tv-accent);
+  transform-origin: left center;
+  transition: transform 520ms var(--tv-ease);
+}
+
+/* Le portrait du trader : chaque réponse entre en pastille, en bas de
+   l'écran. Plaques sourdes, la fuite surveillée en menthe. */
+.onb-portrait {
+  display: flex;
+  max-width: 760px;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  margin: 0 auto;
+  list-style: none;
+}
+.onb-portrait-chip {
+  max-width: 260px;
+  overflow: hidden;
+  padding: 5px 12px;
+  border: 1px solid var(--tv-border);
+  border-radius: 999px;
+  background: rgb(var(--tv-bg-rgb) / 0.72);
+  color: var(--tv-text-secondary);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.onb-portrait-chip[data-accent="oui"] {
+  border-color: rgb(var(--tv-accent-rgb) / 0.35);
+  color: var(--tv-highlight);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .onb-portrait-chip {
+    animation: fade-in-up 420ms var(--tv-ease) both;
+  }
+}
+@media (max-width: 640px) {
+  .onb-portrait {
+    display: none;
+  }
 }
 
 /* ── Le lancement : logo, prénom, puis l'espace qui se révèle ── */
@@ -1214,13 +1298,6 @@ body {
 .jarvis-thread-empty {
   flex: 0 1 auto;
 }
-.jarvis-starters {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 8px;
-  margin-top: 14px;
-}
 /* La signature d'une réponse de Jarvis : sa marque, sur une plaque sourde
    liserée d'émeraude — plus un aplat plein à chaque message, qui répétait la
    couleur d'action dix fois dans un fil de dix réponses. */
@@ -1255,55 +1332,6 @@ body {
   border-color: rgb(var(--tv-accent-rgb) / 0.45);
   background: rgb(var(--tv-accent-rgb) / 0.08);
   color: var(--tv-highlight);
-}
-/* LES QUESTIONS SONT L'OBJET PRINCIPAL DE L'ÉCRAN, pas une note de bas de
- * bloc : elles sont tirées des motifs mesurés sur les trades du trader
- * (`buildSuggestions`), donc chacune est une vraie porte d'entrée. Elles
- * étaient des rangées grises indifférenciées, avec un survol CYAN resté de
- * l'identité d'avant. */
-.jarvis-suggestion {
-  /* Une puce, pas une carte : on la lit d'un coup d'œil et on l'effleure. */
-  display: inline-flex;
-  max-width: 100%;
-  align-items: center;
-  gap: 8px;
-  min-height: 38px;
-  border: 1px solid var(--tv-glass-edge);
-  border-radius: 9999px;
-  background: rgb(255 255 255 / 0.04);
-  padding: 0 14px 0 16px;
-  text-align: left;
-  font-size: 13px;
-  color: var(--tv-text-secondary);
-  box-shadow: var(--tv-glass-specular);
-  transition:
-    background-color var(--tv-dur-1) var(--tv-ease),
-    color var(--tv-dur-1) var(--tv-ease),
-    transform var(--tv-dur-1) var(--tv-ease);
-}
-.jarvis-suggestion:hover {
-  background: rgb(255 255 255 / 0.08);
-  color: var(--tv-text-primary);
-}
-.jarvis-suggestion:active {
-  transform: var(--tv-press);
-}
-.jarvis-suggestion-fleche {
-  height: 0.875rem;
-  width: 0.875rem;
-  flex-shrink: 0;
-  color: var(--tv-text-muted, #64748b);
-  transition: color 0.18s ease;
-}
-.jarvis-suggestion:hover .jarvis-suggestion-fleche {
-  color: var(--tv-accent);
-}
-@media (prefers-reduced-motion: reduce) {
-  .jarvis-suggestion,
-  .jarvis-suggestion:active {
-    transition: none;
-    transform: none;
-  }
 }
 
 /* ══ L'ÉCRAN D'ERREUR ══
@@ -2273,35 +2301,37 @@ button:active > .bottom-nav-add {
  * l'anime seul. Animer `background-position` repeignait chaque squelette à
  * chaque image — une page entière de squelettes, c'était un repeint plein
  * écran soixante fois par seconde sur un téléphone. */
+/* Plus de gris qui scintille (2026-11-15) : la plaque réserve la place et
+   ne peint rien ; le contenu arrive d'un seul geste. */
 .skeleton {
   overflow: hidden;
-  background: rgb(255 255 255 / 0.04);
+  background: transparent;
+}
+/* L'attente longue d'une page : un anneau menthe, au centre, en fondu. */
+.tv-page-loader {
+  display: grid;
+  min-height: 70vh;
+  place-items: center;
+  animation: fade-in var(--tv-dur-2) var(--tv-ease-out) both;
+}
+.tv-page-loader-ring {
+  width: 22px;
+  height: 22px;
+  border: 2px solid rgb(var(--tv-accent-rgb) / 0.18);
+  border-top-color: var(--tv-accent);
+  border-radius: 999px;
+  animation: spin 0.8s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tv-page-loader-ring {
+    animation-duration: 2.4s;
+  }
 }
 /* Le reflet se cale sur sa plaque ; une plaque déjà positionnée (`absolute`,
    `fixed`) garde sa position — la règle n'est pas dans un @layer et
    l'emporterait sur l'utilitaire. */
 .skeleton:not(.absolute):not(.fixed) {
   position: relative;
-}
-.skeleton::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    100deg,
-    transparent 30%,
-    rgb(255 255 255 / 0.05) 50%,
-    transparent 70%
-  );
-  transform: translateX(-100%);
-  animation: shimmer 1.6s linear infinite;
-  pointer-events: none;
-}
-@media (prefers-reduced-motion: reduce) {
-  .skeleton::after {
-    animation: none;
-    display: none;
-  }
 }
 
 /* Jarvis "thinking" — trois points qui ondulent pendant que l'IA réfléchit. */
@@ -5083,8 +5113,21 @@ body.tv-app-type :is(.tv-figure, .tv-num, .tabular-nums) {
 .tv-jarvis-bar-top {
   border-bottom: 1px solid var(--tv-border);
 }
-.tv-jarvis-bar-bottom {
+/* LE BAS DE LA FENÊTRE : le quota (à droite) et le compte (en bas de la
+   colonne) partagent LA MÊME hauteur — une seule ligne de base. */
+.tv-jarvis-bar-bottom,
+.tv-jarvis-side-foot {
+  height: 60px;
   border-top: 1px solid var(--tv-border);
+}
+.tv-jarvis-bar-bottom {
+  padding-block: 0;
+}
+.tv-jarvis-side-foot {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  padding: 0 8px;
 }
 
 /* Le bouton d'icône des bandes — fermer, réglages, tiroir. Une seule cible,
@@ -5179,10 +5222,12 @@ body.tv-app-type :is(.tv-figure, .tv-num, .tabular-nums) {
 .jarvis-composer {
   /* LE CHAMP DE CLAUDE : une grande plaque douce, rayon 24, de l'air autour
      du texte. Au focus elle s'éclaircit d'un cran — aucun anneau coloré. */
-  min-height: 60px;
-  padding: 10px 10px 10px 12px;
+  /* Plus compacte (retour du propriétaire, 2026-11-15) : une ligne de
+     46 px, pas une boîte de 60. */
+  min-height: 46px;
+  padding: 5px 5px 5px 10px;
   border: 1px solid var(--tv-border-strong);
-  border-radius: 24px;
+  border-radius: 23px;
   background: var(--tv-plate-2);
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 0.05),
@@ -6681,8 +6726,20 @@ body::before {
     ),
     radial-gradient(40rem 30rem at 50% 45%, rgb(255 255 255 / 0.025), transparent 70%);
 }
+/* Le ciel lui-même : une tuile SVG de points fixes, portée par `body` (et
+   non `:root`, qui reste identique au thème par défaut). */
+body {
+  --tv-sky: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='720'%20height='720'%3E%3Ccircle%20cx='640'%20cy='662'%20r='0.85'%20fill='white'%20fill-opacity='0.11'/%3E%3Ccircle%20cx='652'%20cy='100'%20r='0.85'%20fill='white'%20fill-opacity='0.17'/%3E%3Ccircle%20cx='448'%20cy='166'%20r='1.4'%20fill='white'%20fill-opacity='0.12'/%3E%3Ccircle%20cx='285'%20cy='131'%20r='0.85'%20fill='white'%20fill-opacity='0.20'/%3E%3Ccircle%20cx='75'%20cy='520'%20r='0.85'%20fill='white'%20fill-opacity='0.16'/%3E%3Ccircle%20cx='21'%20cy='631'%20r='0.85'%20fill='white'%20fill-opacity='0.14'/%3E%3Ccircle%20cx='303'%20cy='134'%20r='0.85'%20fill='white'%20fill-opacity='0.21'/%3E%3Ccircle%20cx='510'%20cy='434'%20r='0.85'%20fill='white'%20fill-opacity='0.12'/%3E%3Ccircle%20cx='288'%20cy='29'%20r='0.85'%20fill='white'%20fill-opacity='0.30'/%3E%3Ccircle%20cx='454'%20cy='430'%20r='0.85'%20fill='white'%20fill-opacity='0.28'/%3E%3Ccircle%20cx='280'%20cy='321'%20r='0.85'%20fill='white'%20fill-opacity='0.18'/%3E%3Ccircle%20cx='289'%20cy='280'%20r='0.85'%20fill='white'%20fill-opacity='0.14'/%3E%3Ccircle%20cx='499'%20cy='59'%20r='0.85'%20fill='white'%20fill-opacity='0.14'/%3E%3Ccircle%20cx='582'%20cy='661'%20r='0.85'%20fill='white'%20fill-opacity='0.28'/%3E%3Ccircle%20cx='502'%20cy='425'%20r='1.4'%20fill='white'%20fill-opacity='0.20'/%3E%3Ccircle%20cx='197'%20cy='221'%20r='0.85'%20fill='white'%20fill-opacity='0.13'/%3E%3Ccircle%20cx='458'%20cy='495'%20r='1.4'%20fill='white'%20fill-opacity='0.14'/%3E%3Ccircle%20cx='689'%20cy='223'%20r='0.85'%20fill='white'%20fill-opacity='0.21'/%3E%3Ccircle%20cx='28'%20cy='677'%20r='0.85'%20fill='white'%20fill-opacity='0.18'/%3E%3Ccircle%20cx='387'%20cy='302'%20r='0.85'%20fill='white'%20fill-opacity='0.12'/%3E%3Ccircle%20cx='609'%20cy='154'%20r='0.85'%20fill='white'%20fill-opacity='0.29'/%3E%3Ccircle%20cx='473'%20cy='466'%20r='0.85'%20fill='white'%20fill-opacity='0.22'/%3E%3Ccircle%20cx='129'%20cy='562'%20r='1.4'%20fill='white'%20fill-opacity='0.12'/%3E%3Ccircle%20cx='23'%20cy='699'%20r='0.85'%20fill='white'%20fill-opacity='0.20'/%3E%3Ccircle%20cx='571'%20cy='69'%20r='0.85'%20fill='white'%20fill-opacity='0.19'/%3E%3Ccircle%20cx='165'%20cy='316'%20r='0.85'%20fill='white'%20fill-opacity='0.10'/%3E%3Ccircle%20cx='130'%20cy='177'%20r='0.85'%20fill='white'%20fill-opacity='0.25'/%3E%3Ccircle%20cx='82'%20cy='685'%20r='0.85'%20fill='white'%20fill-opacity='0.21'/%3E%3Ccircle%20cx='254'%20cy='43'%20r='0.85'%20fill='white'%20fill-opacity='0.19'/%3E%3Ccircle%20cx='690'%20cy='509'%20r='0.85'%20fill='white'%20fill-opacity='0.18'/%3E%3Ccircle%20cx='207'%20cy='634'%20r='0.85'%20fill='white'%20fill-opacity='0.23'/%3E%3Ccircle%20cx='157'%20cy='223'%20r='0.85'%20fill='white'%20fill-opacity='0.11'/%3E%3Ccircle%20cx='24'%20cy='13'%20r='0.85'%20fill='white'%20fill-opacity='0.13'/%3E%3Ccircle%20cx='705'%20cy='396'%20r='0.85'%20fill='white'%20fill-opacity='0.18'/%3E%3Ccircle%20cx='353'%20cy='616'%20r='0.85'%20fill='white'%20fill-opacity='0.20'/%3E%3Ccircle%20cx='51'%20cy='611'%20r='0.85'%20fill='white'%20fill-opacity='0.22'/%3E%3Ccircle%20cx='617'%20cy='452'%20r='1.4'%20fill='white'%20fill-opacity='0.18'/%3E%3Ccircle%20cx='602'%20cy='263'%20r='0.85'%20fill='white'%20fill-opacity='0.19'/%3E%3Ccircle%20cx='531'%20cy='623'%20r='1.4'%20fill='white'%20fill-opacity='0.20'/%3E%3Ccircle%20cx='421'%20cy='561'%20r='0.85'%20fill='white'%20fill-opacity='0.18'/%3E%3Ccircle%20cx='664'%20cy='364'%20r='0.85'%20fill='white'%20fill-opacity='0.22'/%3E%3Ccircle%20cx='504'%20cy='527'%20r='0.85'%20fill='white'%20fill-opacity='0.19'/%3E%3Ccircle%20cx='599'%20cy='484'%20r='0.85'%20fill='white'%20fill-opacity='0.10'/%3E%3Ccircle%20cx='300'%20cy='677'%20r='0.85'%20fill='white'%20fill-opacity='0.22'/%3E%3Ccircle%20cx='451'%20cy='85'%20r='0.85'%20fill='white'%20fill-opacity='0.13'/%3E%3Ccircle%20cx='191'%20cy='700'%20r='0.85'%20fill='white'%20fill-opacity='0.28'/%3E%3C/svg%3E");
+}
+/* LE CIEL DE L'ONBOARDING, PARTOUT (clin d'œil, 2026-11-15). Les points
+   fixes de la première rencontre restent au fond de l'app et de la
+   vitrine : même générateur (graine 17), tuile de 720 px, opacités de 10
+   à 30 %, effacés vers le bas. Statique — aucune animation, aucun repeint. */
 body::after {
-  content: none;
+  background-image: var(--tv-sky);
+  background-size: 720px 720px;
+  mask-image: linear-gradient(to bottom, #000 0%, rgb(0 0 0 / 0.5) 55%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, rgb(0 0 0 / 0.5) 55%, transparent 100%);
 }
 @media print {
   body::before,
@@ -7135,11 +7192,15 @@ body::after {
      (`.tv-set-hero`) : rayon 28, plaque 1, arête claire. L'état ne se lit
      plus dans un filet coloré en haut, mais dans la pastille et le liseré. */
   position: relative;
+  max-width: 1040px;
+  margin-inline: auto;
   overflow: hidden;
   border-radius: var(--radius-3xl);
   border: 1px solid var(--tv-border);
   background: var(--tv-plate-1);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.05),
+    var(--tv-card-glow);
   padding: 20px;
 }
 @media (min-width: 640px) {
@@ -7195,23 +7256,540 @@ body::after {
   gap: 0.75rem 1rem;
   margin-top: 1.1rem;
 }
-/* L'échelle du prix : même plaque que la carte d'adhésion, un cran plus
-   discrète — c'est un argument, pas un état. */
-.sub-scale {
-  display: flex;
-  flex-direction: column;
-  gap: 1.1rem;
-  border-radius: var(--radius-2xl);
+/* ══ LA LUEUR DERRIÈRE LES BLOCS (décision du propriétaire, 2026-11-15) ══
+   « Une petite lueur derrière les blocs, très légère et propre, pour donner
+   de la profondeur. » Elle est peinte en ARRIÈRE-PLAN, jamais sur un objet :
+   deux nappes radiales très faibles dans la teinte du thème, posées derrière
+   le contenu de chaque page (`.tv-page::before`) et derrière quelques
+   blocs choisis de la vitrine (`.tv-glow`). Aucune ombre colorée sur une
+   carte, un texte ou un bouton ; aucune animation ; rien à l'impression.
+   Intensité unique : `--tv-glow-alpha`. */
+.tv-page {
+  position: relative;
+  /* Son propre contexte d'empilement : la lueur (`z-index: -1`) se peint
+     derrière les blocs de la page et devant tout fond opaque d'un ancêtre,
+     sans dépendre de la façon dont la coque est montée. */
+  isolation: isolate;
+}
+.tv-page::before,
+.tv-glow::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
+}
+/* LA LUMIÈRE SOUS LES BLOCS. Les cartes de contenu sont opaques et
+   couvrent presque toute la largeur : une lueur de fond ne se voit que dans
+   les interstices. Chaque carte porte donc, en plus de sa plaque, une lumière
+   douce qui déborde de son bord bas — le bloc semble posé sur un halo très
+   léger. Un seul jeton (`--tv-card-glow`), aucune variante locale. */
+.glass,
+.stat-card,
+.stat-card-elevated,
+.panel {
+  box-shadow: var(--tv-card-glow);
+}
+.tv-flat,
+.tv-flat .glass,
+.tv-flat .stat-card,
+.tv-flat .panel {
+  box-shadow: none;
+}
+
+/* Où elle se pose : AU MILIEU du contenu, pas en haut. Concentrée en haut à
+   gauche, elle tombait exactement derrière la barre d'onglets et la première
+   carte opaque — donc nulle part à l'écran. Centrée et plus large que les
+   blocs, elle déborde entre eux et autour d'eux : c'est là qu'elle donne la
+   profondeur. Elle commence sous l'en-tête de la page. */
+.tv-page::before {
+  top: 56px;
+  left: 0;
+  right: 0;
+  height: min(calc(100% - 56px), 920px);
+  background:
+    radial-gradient(
+      62% 56% at 50% 42%,
+      rgb(var(--tv-accent-rgb) / var(--tv-glow-alpha)),
+      transparent 74%
+    ),
+    radial-gradient(
+      30% 28% at 84% 80%,
+      rgb(var(--tv-accent-2-rgb) / calc(var(--tv-glow-alpha) * 0.6)),
+      transparent 72%
+    );
+}
+/* Les pages de réglages posent leur colonne à GAUCHE (1040 px dans 1400) :
+   la lueur suit la colonne, pas la largeur totale. */
+.tv-page--settings::before {
+  background:
+    radial-gradient(
+      50% 56% at 38% 42%,
+      rgb(var(--tv-accent-rgb) / var(--tv-glow-alpha)),
+      transparent 74%
+    ),
+    radial-gradient(
+      26% 28% at 70% 82%,
+      rgb(var(--tv-accent-2-rgb) / calc(var(--tv-glow-alpha) * 0.6)),
+      transparent 72%
+    );
+}
+.tv-glow {
+  position: relative;
+}
+.tv-glow::before {
+  inset: -12% -8%;
+  background: radial-gradient(
+    50% 50% at 50% 50%,
+    rgb(var(--tv-accent-rgb) / var(--tv-glow-alpha)),
+    transparent 70%
+  );
+}
+@media print {
+  .tv-page::before,
+  .tv-glow::before {
+    display: none;
+  }
+}
+
+/* ══ LA CARTE D'ACHAT (page Abonnement, fenêtre d'achat) ═══════════════════
+   UNE carte : la promesse, ses chiffres, deux lignes à choisir, UN bouton.
+   Les gestes répondent au doigt (pression `--tv-press`, coche qui pousse sur
+   le ressort) et restent sous 200 ms ; tout se coupe en mouvement réduit. */
+.pw-card {
+  position: relative;
+  max-width: 640px;
+  margin-inline: auto;
+  padding: 26px 22px 24px;
+  border-radius: var(--radius-3xl);
   border: 1px solid var(--tv-border);
   background: var(--tv-plate-1);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
-  padding: 1.1rem 1.25rem;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.06),
+    var(--tv-card-glow);
 }
 @media (min-width: 640px) {
-  .sub-scale {
-    flex-direction: row;
-    align-items: center;
-    gap: 2rem;
+  .pw-card {
+    padding: 32px 32px 28px;
+  }
+}
+/* Deux colonnes sur ordinateur : la promesse à gauche, l'achat à droite —
+   la page tient dans l'écran sans défiler. */
+.pw-card--split {
+  max-width: 1040px;
+  display: grid;
+  gap: 24px;
+}
+@media (min-width: 900px) {
+  .pw-card--split {
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+    gap: 40px;
+    align-items: start;
+  }
+  /* Deux colonnes de résultats : la carte entière tient dans l'écran. */
+  .pw-card--split .pw-points {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px 16px;
+  }
+  .pw-card--split .pw-options {
+    margin-top: 0;
+  }
+}
+/* Les questions fréquentes, sous le bouton : elles occupent la colonne
+   d'achat au lieu d'allonger la page. */
+.pw-aside {
+  margin-top: 22px;
+  padding-top: 14px;
+  border-top: 1px solid var(--tv-border);
+}
+.pw-card--stack .pw-points {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+/* ── LES ACTIONS D'UNE FEUILLE ───────────────────────────────────────────
+   Un bouton par case, le libellé tenu DANS son cadre (une ligne, coupé
+   proprement s'il le faut) : plus de libellé qui déborde ou passe à la
+   ligne dans un bouton de 40 px. */
+.tv-sheet-action {
+  display: flex;
+  min-width: 0;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 14px;
+  border: 1px solid var(--tv-border);
+  border-radius: 14px;
+  background: var(--tv-plate-2);
+  color: var(--tv-text);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
+}
+.tv-sheet-action:hover:not(:disabled) {
+  border-color: var(--tv-border-strong);
+  background: var(--tv-plate-3);
+  color: #fff;
+}
+.tv-sheet-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.tv-sheet-action-accent {
+  border-color: var(--tv-border-accent);
+  background: rgb(var(--tv-accent-rgb) / 0.1);
+  color: var(--tv-accent);
+}
+.tv-sheet-action-accent:hover:not(:disabled) {
+  border-color: var(--tv-border-accent);
+  background: rgb(var(--tv-accent-rgb) / 0.16);
+  color: var(--tv-accent);
+}
+
+/* ── LE MUR D'APERÇU ──────────────────────────────────────────────────────
+   Le fondu finit sur le fond EXACT de la page : aucune bande dessous. La
+   barre est une plaque opaque qui flotte — ombre noire, pas de lueur. */
+.tv-preview-fade {
+  background: linear-gradient(
+    to bottom,
+    rgb(var(--tv-bg-rgb) / 0) 42%,
+    rgb(var(--tv-bg-rgb) / 0.55) 68%,
+    rgb(var(--tv-bg-rgb) / 0.92) 88%,
+    var(--tv-bg) 100%
+  );
+}
+.tv-preview-bar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 14px 14px 18px;
+  border: 1px solid var(--tv-border-strong);
+  border-radius: 22px;
+  background: var(--tv-plate-2);
+  box-shadow: var(--tv-elev-3);
+}
+@media (max-width: 520px) {
+  .tv-preview-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .tv-preview-bar .btn-primary {
+    justify-content: center;
+  }
+}
+
+/* Dans une fenêtre : pas de carte dans la carte. */
+.pw-card--bare {
+  max-width: none;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+@media (min-width: 640px) {
+  .pw-card--bare {
+    padding: 0;
+  }
+}
+.pw-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--tv-highlight);
+}
+.pw-title {
+  margin-top: 8px;
+  font-size: 1.65rem;
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: -0.025em;
+  color: var(--tv-text-primary);
+  text-wrap: balance;
+}
+.pw-sub {
+  margin-top: 8px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: #94a3b8;
+}
+.pw-teaser {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  margin-top: 18px;
+  padding: 12px 14px;
+  border-radius: var(--radius-xl);
+  background: var(--tv-plate-0);
+  font-size: 13px;
+  line-height: 1.5;
+  color: #94a3b8;
+}
+.pw-teaser-figure {
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+.pw-options {
+  display: grid;
+  gap: 10px;
+  margin: 20px 0 0;
+  padding: 0;
+  border: 0;
+}
+.pw-option {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--tv-border-strong);
+  background: var(--tv-plate-2);
+  cursor: pointer;
+  transition:
+    border-color 160ms var(--tv-ease),
+    background-color 160ms var(--tv-ease),
+    transform 160ms var(--tv-ease);
+}
+.pw-option:active {
+  transform: var(--tv-press);
+}
+.pw-option[data-actif="oui"] {
+  border-color: rgb(var(--tv-accent-rgb) / 0.65);
+  background: rgb(var(--tv-accent-rgb) / 0.07);
+}
+.pw-option:has(input:focus-visible) {
+  outline: 2px solid rgb(var(--tv-accent-rgb) / 0.7);
+  outline-offset: 2px;
+}
+.pw-radio {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 9999px;
+  border: 1.5px solid var(--tv-border-strong);
+  transition:
+    background-color 160ms var(--tv-ease),
+    border-color 160ms var(--tv-ease);
+}
+.pw-option[data-actif="oui"] .pw-radio {
+  border-color: var(--tv-accent);
+  background: var(--tv-accent);
+}
+.pw-radio-check {
+  color: #ffffff;
+  opacity: 0;
+  transform: scale(0.4);
+  transition:
+    opacity 160ms var(--tv-ease),
+    transform var(--tv-dur-spring, 340ms) var(--tv-spring, ease);
+}
+.pw-option[data-actif="oui"] .pw-radio-check {
+  opacity: 1;
+  transform: scale(1);
+}
+.pw-cta {
+  width: 100%;
+  min-height: 52px;
+  margin-top: 18px;
+  gap: 6px;
+  border-radius: var(--radius-xl);
+  font-size: 15px;
+  font-weight: 700;
+}
+.pw-trust {
+  margin-top: 10px;
+  text-align: center;
+  font-size: 12px;
+  color: #64748b;
+}
+.pw-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 18px;
+  margin-top: 8px;
+}
+.pw-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #64748b;
+  transition: color 160ms var(--tv-ease);
+}
+.pw-link:hover {
+  color: #cbd5e1;
+}
+.pw-error,
+.pw-promo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 10px 14px;
+  border-radius: var(--radius-lg);
+  font-size: 13px;
+}
+.pw-error {
+  border: 1px solid rgb(var(--tv-chart-red-rgb) / 0.25);
+  background: rgb(var(--tv-chart-red-rgb) / 0.08);
+  color: #fca5a5;
+}
+.pw-promo {
+  border: 1px solid rgb(var(--tv-chart-green-rgb) / 0.25);
+  background: rgb(var(--tv-chart-green-rgb) / 0.08);
+  color: var(--tv-chart-green);
+  font-weight: 600;
+}
+.pw-points {
+  display: grid;
+  gap: 12px 20px;
+  margin-top: 24px;
+  padding: 20px 0 0;
+  border-top: 1px solid var(--tv-border);
+  list-style: none;
+}
+@media (min-width: 640px) {
+  .pw-points {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pw-option,
+  .pw-radio,
+  .pw-radio-check {
+    transition: none;
+  }
+  .pw-option:active {
+    transform: none;
+  }
+}
+/* Le bandeau du gratuit : l'offre et le compteur, sur une ligne. */
+.sub-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 24px;
+  max-width: 1040px;
+  margin-inline: auto;
+  padding: 12px 16px;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--tv-border);
+  background: var(--tv-plate-1);
+}
+
+/* ── LES RÉSULTATS DE L'ACCÈS COMPLET — sans cadre ─────────────────────────
+   Six lignes icône + phrase, en grille : la liste vaut pour les deux offres
+   et n'ajoute aucune carte. */
+.offer-points {
+  display: grid;
+  gap: 12px 24px;
+  list-style: none;
+  padding: 0;
+}
+@media (min-width: 640px) {
+  .offer-points {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (min-width: 1024px) {
+  .offer-points {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+.offer-point {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13.5px;
+  line-height: 1.4;
+  color: var(--tv-text-primary);
+}
+.offer-point-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 9999px;
+  background: rgb(var(--tv-accent-rgb) / 0.12);
+  color: var(--tv-accent);
+}
+/* Le gratuit, sur une ligne : un filet, pas une carte. */
+.offer-free-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--tv-border);
+}
+/* Les chiffres réels du gratuit, DANS la carte d'adhésion. */
+.sub-numbers {
+  display: grid;
+  gap: 14px 32px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--tv-border);
+}
+@media (min-width: 640px) {
+  .sub-numbers {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: end;
+  }
+}
+
+/* ── LES SECTIONS DE LA PAGE ABONNEMENT (refaite en novembre 2026) ──────────
+   Même grammaire que la carte d'adhésion : plaques opaques rayon 22, titres
+   de section à 17 px, phrase d'appui grise. Le compteur du mois est une
+   piste en creux qui se remplit par `transform` (aucune remise en page). */
+.subp-head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.subp-title {
+  font-size: var(--tv-t-h2);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--tv-text-primary);
+}
+.subp-sub {
+  max-width: 44rem;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #94a3b8;
+}
+.subp-meter {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 9999px;
+  background: var(--tv-plate-0);
+}
+.subp-meter-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--tv-accent);
+  transform-origin: left;
+  transition: transform var(--tv-dur-spring, 340ms) var(--tv-spring, ease);
+}
+.subp-meter-fill--full {
+  background: rgb(251 191 36);
+}
+@media (prefers-reduced-motion: reduce) {
+  .subp-meter-fill {
+    transition: none;
   }
 }
 
@@ -8144,67 +8722,9 @@ body.tv-app-type svg.lucide {
   justify-content: flex-end;
   padding: 2px max(16px, calc((100% - 760px) / 2)) 0;
 }
-/* Ce que Jarvis sait du trader — des faits, pas des cartes. */
-.jarvis-known {
-  display: grid;
-  justify-items: center;
-  gap: 8px;
-  margin-top: 18px;
-}
-.jarvis-known-list {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 6px;
-}
-.jarvis-known-item {
-  max-width: 100%;
-  padding: 3px 10px;
-  border: 1px solid var(--tv-border);
-  border-radius: 999px;
-  color: var(--tv-text-secondary);
-  font-size: 12px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-/* Les relances après une réponse : la conversation continue. */
-.jarvis-followups {
-  display: grid;
-  gap: 8px;
-}
-.jarvis-followups-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-.jarvis-followup {
-  /* Même puce que les questions de l'accueil : une seule forme pour
-     « poser une question en un appui ». */
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 34px;
-  max-width: 100%;
-  padding: 4px 12px 4px 14px;
-  border: 1px solid var(--tv-glass-edge);
-  border-radius: 999px;
-  background: rgb(255 255 255 / 0.04);
-  box-shadow: var(--tv-glass-specular);
-  color: var(--tv-text-secondary);
-  font-size: 12.5px;
-  text-align: left;
-  transition:
-    color var(--tv-dur-1) var(--tv-ease),
-    background-color var(--tv-dur-1) var(--tv-ease);
-}
-.jarvis-followup:hover {
-  background: rgb(255 255 255 / 0.08);
-  color: var(--tv-text-primary);
-}
 .jarvis-composer-action {
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   transition:
     transform var(--tv-dur-1),
     background-color var(--tv-dur-1);
@@ -8717,34 +9237,6 @@ body.tv-app-type svg.lucide {
   height: 16px;
   accent-color: var(--tv-accent);
 }
-.tv-inbox-skeleton {
-  display: flex;
-  gap: 10px;
-  padding: 12px;
-  height: 100px;
-  border-top: 1px solid var(--tv-border);
-}
-.tv-inbox-skeleton > div:first-child {
-  width: 30px;
-  height: 30px;
-  border-radius: var(--radius-sm);
-  background: var(--tv-plate-2);
-}
-.tv-inbox-skeleton > div:last-child {
-  flex: 1;
-  display: grid;
-  gap: 8px;
-  align-content: start;
-}
-.tv-inbox-skeleton span {
-  height: 13px;
-  width: 70%;
-  border-radius: 4px;
-  background: var(--tv-plate-2);
-}
-.tv-inbox-skeleton span:last-child {
-  width: 90%;
-}
 @media (pointer: coarse) {
   .jarvis-composer-action,
   .jarvis-response-actions .jarvis-listen {
@@ -8787,11 +9279,6 @@ body.tv-app-type svg.lucide {
     gap: 8px;
   }
 }
-@media (prefers-reduced-motion: no-preference) {
-  .tv-inbox-skeleton {
-    animation: pulse 1.6s ease-in-out infinite;
-  }
-}
 @media (prefers-reduced-motion: reduce) {
   .jarvis-composer-action,
   .btn-primary.tv-dashboard-add,
@@ -8830,21 +9317,28 @@ body.tv-app-type svg.lucide {
   }
 }
 
-/* ── L'OFFRE UNIQUE — licence à vie (matière Revolut) ─────────────────────── */
-.lifetime-offer,
-.pricing-free {
+/* ── LES OFFRES — mensuel, licence à vie, gratuit (matière Revolut) ───────────
+   Une carte opaque à grand rayon par offre ; la licence porte le liseré
+   d'accent (l'offre la plus avantageuse dès le sixième mois). Aucune ombre
+   colorée : le liseré suffit à la distinguer. */
+.offer-card {
   display: flex;
   flex-direction: column;
   border: 1px solid var(--tv-border);
   border-radius: var(--radius-3xl);
   background: var(--tv-plate-1);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.05),
+    var(--tv-card-glow);
   padding: 24px;
 }
-.lifetime-offer {
+.offer-card--featured {
   border-color: rgb(var(--tv-accent-rgb) / 0.35);
 }
-.lifetime-badge {
+.offer-card--flat {
+  padding: 20px 24px;
+}
+.offer-badge {
   display: inline-flex;
   align-items: center;
   height: 24px;
@@ -8855,18 +9349,22 @@ body.tv-app-type svg.lucide {
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.02em;
+  white-space: nowrap;
 }
-.lifetime-price {
+.offer-badge--neutral {
+  background: var(--tv-plate-3);
+  color: var(--tv-text-primary);
+}
+.offer-price {
   color: var(--tv-text-primary);
   font: 700 var(--tv-t-display) / 1 var(--font-figure);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.035em;
 }
-.lifetime-owned {
+.offer-owned {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 22px;
   padding: 12px 14px;
   border-radius: var(--radius-lg);
   background: rgb(var(--tv-chart-green-rgb) / 0.1);

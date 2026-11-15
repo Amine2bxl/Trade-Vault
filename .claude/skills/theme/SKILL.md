@@ -14,6 +14,13 @@ description: Loi de la couleur et des surfaces de TradeVault — tokens `--tv-*`
 > flouté, arête spéculaire blanche d'1px, ombre noire) et repose sur un papier
 > peint d'ambiance fixe. Le CONTENU reste en plaques opaques. Voir
 > `docs/DESIGN_SYSTEM.md` §1–2.
+>
+> **Lueur d'ambiance (2026-11-15, décision du propriétaire)** : une lueur TRÈS
+> légère est permise DERRIÈRE les blocs — `.tv-page::before` (chaque page) et
+> `.tv-glow` (blocs choisis de la vitrine), intensité unique `--tv-glow-alpha`
+> ≤ 0.08, toujours en pseudo-élément d'arrière-plan ; sous les cartes de
+> contenu, le seul jeton `--tv-card-glow` (alpha ≤ 0.3). Aucune autre ombre
+> colorée, ni sur un texte ni sur un bouton (`tests/liquidGlass.test.ts`).
 
 Sur fond `#07080a`, une lueur est un défaut de rendu. Une carte n'est pas « au
 dessus » parce qu'elle brille : elle est plus claire d'un cran et porte un

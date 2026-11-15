@@ -31,6 +31,7 @@ import { PageContainer, Button, FilterControls, FilterSection, MultiPicker } fro
 import { useAvailableHeight } from "@/app/hooks/useAvailableHeight";
 import { cn } from "@/shared/ui/cn";
 import { CATEGORY_LABEL, notificationTarget } from "./notificationMeta";
+import { cachedInbox, rememberInbox } from "./inboxCache";
 
 const CATEGORY_ICON: Record<NotificationCategory, typeof Bell> = {
   discipline: ShieldAlert,
@@ -134,8 +135,11 @@ export default function Inbox() {
   const { t, lang } = useT();
   const { user } = useAuth();
   const { boxRef, height } = useAvailableHeight();
-  const [notifs, setNotifs] = useState<AppNotification[]>([]);
-  const [loading, setLoading] = useState(true);
+  // EN UN TEMPS : la page s'ouvre sur la liste préchargée (`inboxCache`),
+  // puis se met à jour en silence. Sans cache, rien ne s'affiche le temps du
+  // chargement — pas de squelette — et la liste entre d'un seul geste.
+  const [notifs, setNotifs] = useState<AppNotification[]>(() => cachedInbox(user?.id) ?? []);
+  const [loading, setLoading] = useState(() => !cachedInbox(user?.id));
   // Filtres mémorisés, comme partout : la boîte rouvre sur le même tri.
   const catKey = nsKey(user?.id, "inbox.categories");
   const unreadKey = nsKey(user?.id, "inbox.unreadOnly");
@@ -152,16 +156,20 @@ export default function Inbox() {
       return;
     }
     setFailed(false);
-    loadNotifications(user.id)
-      .then(setNotifs)
+    const uid = user.id;
+    loadNotifications(uid)
+      .then((n) => {
+        rememberInbox(uid, n);
+        setNotifs(n);
+      })
       .catch(() => setFailed(true))
       .finally(() => setLoading(false));
   }, [user?.id]);
 
   useEffect(() => {
-    setLoading(true);
+    if (!cachedInbox(user?.id)) setLoading(true);
     reload();
-  }, [reload]);
+  }, [reload, user?.id]);
 
   // Créée, lue ou archivée sur un autre appareil : la boîte suit.
   useLiveTable("notifications", reload);
@@ -349,21 +357,11 @@ export default function Inbox() {
     <PageContainer
       ref={boxRef}
       style={height ? { height } : undefined}
-      className="tv-inbox flex h-full max-w-3xl flex-col overflow-hidden"
+      className="tv-inbox flex h-full flex-col overflow-hidden"
     >
       <div className="min-h-0 flex-1 overflow-y-auto">
         {loading ? (
-          <div className="tv-inbox-list" aria-busy="true" aria-label={t("common.loading")}>
-            {[0, 1, 2, 3].map((i) => (
-              <div key={i} className="tv-inbox-skeleton">
-                <div />
-                <div>
-                  <span />
-                  <span />
-                </div>
-              </div>
-            ))}
-          </div>
+          <div className="tv-inbox-list" aria-busy="true" aria-label={t("common.loading")} />
         ) : failed ? (
           <div className="p-4 text-center">
             <p className="tv-prose text-slate-400">{t("inbox.loadError")}</p>

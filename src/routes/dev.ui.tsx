@@ -24,7 +24,10 @@ import { previewTrades } from "@/app/utils/previewTrades";
 import { computeStats } from "@/domain/tradeCalcs";
 import { computeQuantStats } from "@/domain/quantStats";
 import { isPage, type Page, type Trade } from "@/app/types";
+import type { Subscription as AboApercu } from "@/app/hooks/useSubscription";
 import PageHead from "@/app/shell/PageHead";
+import { PreviewWall } from "@/app/features/billing/PremiumGate";
+import { PAGE_VALUE } from "@/app/utils/pricing";
 import Sidebar from "@/app/shell/Sidebar";
 import MobileNav from "@/app/shell/MobileNav";
 
@@ -47,6 +50,7 @@ const TradeModal = lazy(() => import("@/app/features/journal/TradeModal"));
 const CalendarPage = lazy(() => import("@/app/features/calendar/CalendarPage"));
 const Dashboard = lazy(() => import("@/app/features/dashboard/Dashboard"));
 const Journal = lazy(() => import("@/app/features/journal/Journal"));
+const Onboarding = lazy(() => import("@/app/features/onboarding/Onboarding"));
 const Checklist = lazy(() => import("@/app/features/checklist/Checklist"));
 const LotSizeCalculator = lazy(() => import("@/app/features/calculator/LotSizeCalculator"));
 const EconomicNews = lazy(() => import("@/app/features/news/EconomicNews"));
@@ -104,6 +108,7 @@ const IDS = [
   "tradingplan",
   "subscription",
   "inbox",
+  "onboarding",
 ] as const;
 type EcranId = (typeof IDS)[number];
 
@@ -173,6 +178,9 @@ function DevUiBody({
 }) {
   const [actions, setActions] = useState<ReactNode>(null);
   const [lead, setLead] = useState<ReactNode>(null);
+  /* Mémorisé : un abonnement fictif recréé à chaque rendu relançait la
+     barre de tête de la page, qui relançait ce rendu — une boucle. */
+  const apercu = useMemo(() => apercuAbonnement(), []);
   const setHeader = useCallback((slot: "actions" | "lead", node: ReactNode) => {
     if (slot === "lead") setLead(node);
     else setActions(node);
@@ -182,6 +190,7 @@ function DevUiBody({
   /* `&shell=1` monte le rail et la barre mobile autour de l'écran, comme dans
      `App` : la coque se vérifie avec la page, pas à part. */
   const withShell = new URLSearchParams(location.search).get("shell") === "1";
+  const verrou = new URLSearchParams(location.search).get("locked") === "1";
   const shellPage: Page = isPage(previewPage) ? previewPage : "dashboard";
 
   const body = (
@@ -211,52 +220,66 @@ function DevUiBody({
         {isPage(previewPage) && (
           <PageHead page={previewPage} setPage={noop} actions={head.actions} lead={head.lead} />
         )}
-        <Suspense fallback={<div className="p-6 text-sm text-slate-500">…</div>}>
-          {ecran === "trade" && <TradeHarness />}
-          {ecran === "missedform" && <MissedHarness />}
-          {ecran === "controls" && <ControlHarness />}
-          {ecran === "icons" && <IconHarness />}
-          {ecran === "calendar" && <CalendarPage trades={trades} />}
-          {ecran === "dashboard" && <DashboardHarness trades={trades} />}
-          {ecran === "journal" && (
-            <Journal
-              trades={trades}
-              onEdit={noop}
-              onDelete={noop}
-              onDeleteAll={noop}
-              onAdd={noop}
-              onOpenMissed={noop}
-            />
-          )}
-          {ecran === "checklist" && (
-            <Checklist trades={trades} setPage={noop} onAddTrade={noop} onEditTrade={noop} />
-          )}
-          {ecran === "calculator" && <LotSizeCalculator onAddTrade={noop} setPage={noop} />}
-          {ecran === "news" && <EconomicNews />}
-          {ecran === "missed" && <MissedOpportunities />}
-          {ecran === "seasonality" && <Seasonality trades={trades} />}
-          {ecran === "reports" && <Reports trades={trades} />}
-          {ecran === "accounts" && (
-            <PageContainer className="max-w-3xl">
-              <AccountsManager trades={trades} />
-            </PageContainer>
-          )}
-          {ecran === "settings" && (
-            <Settings trades={trades} onDeleteAll={noop} onOpenImport={noop} onOpenReports={noop} />
-          )}
-          {ecran === "profile" && <Profile trades={trades} />}
-          {ecran === "appearance" && <Appearance />}
-          {ecran === "brokers" && <Brokers />}
-          {ecran === "jarvis" && <Jarvis />}
-          {ecran === "montecarlo" && <MonteCarlo trades={trades} />}
-          {ecran === "analytics" && <Analytics trades={trades} />}
-          {ecran === "mistakes" && <Mistakes trades={trades} />}
-          {ecran === "goals" && <Goals trades={trades} />}
-          {ecran === "goalsplan" && <PlanHarness trades={trades} />}
-          {ecran === "tradingplan" && <TradingPlan setPage={noop} />}
-          {ecran === "subscription" && <Subscription />}
-          {ecran === "inbox" && <Inbox />}
-        </Suspense>
+        {/* `&locked=1` pose le mur d'aperçu sur l'écran, comme `PageGate`. */}
+        <PreviewWall
+          locked={verrou}
+          requiredTier="pro"
+          onUpgrade={noop}
+          benefit={isPage(previewPage) ? PAGE_VALUE[previewPage]?.benefit.en : undefined}
+        >
+          <Suspense fallback={<div className="p-6 text-sm text-slate-500">…</div>}>
+            {ecran === "trade" && <TradeHarness />}
+            {ecran === "missedform" && <MissedHarness />}
+            {ecran === "controls" && <ControlHarness />}
+            {ecran === "icons" && <IconHarness />}
+            {ecran === "calendar" && <CalendarPage trades={trades} />}
+            {ecran === "dashboard" && <DashboardHarness trades={trades} />}
+            {ecran === "journal" && (
+              <Journal
+                trades={trades}
+                onEdit={noop}
+                onDelete={noop}
+                onDeleteAll={noop}
+                onAdd={noop}
+                onOpenMissed={noop}
+              />
+            )}
+            {ecran === "checklist" && (
+              <Checklist trades={trades} setPage={noop} onAddTrade={noop} onEditTrade={noop} />
+            )}
+            {ecran === "calculator" && <LotSizeCalculator onAddTrade={noop} setPage={noop} />}
+            {ecran === "news" && <EconomicNews />}
+            {ecran === "missed" && <MissedOpportunities />}
+            {ecran === "seasonality" && <Seasonality trades={trades} />}
+            {ecran === "reports" && <Reports trades={trades} />}
+            {ecran === "accounts" && (
+              <PageContainer className="max-w-3xl">
+                <AccountsManager trades={trades} />
+              </PageContainer>
+            )}
+            {ecran === "settings" && (
+              <Settings
+                trades={trades}
+                onDeleteAll={noop}
+                onOpenImport={noop}
+                onOpenReports={noop}
+              />
+            )}
+            {ecran === "profile" && <Profile trades={trades} />}
+            {ecran === "appearance" && <Appearance />}
+            {ecran === "brokers" && <Brokers />}
+            {ecran === "jarvis" && <Jarvis />}
+            {ecran === "montecarlo" && <MonteCarlo trades={trades} />}
+            {ecran === "analytics" && <Analytics trades={trades} />}
+            {ecran === "mistakes" && <Mistakes trades={trades} />}
+            {ecran === "goals" && <Goals trades={trades} />}
+            {ecran === "goalsplan" && <PlanHarness trades={trades} />}
+            {ecran === "tradingplan" && <TradingPlan setPage={noop} />}
+            {ecran === "subscription" && <Subscription trades={trades} preview={apercu} />}
+            {ecran === "inbox" && <Inbox />}
+            {ecran === "onboarding" && <Onboarding userId="dev-onboarding" onDone={noop} />}
+          </Suspense>
+        </PreviewWall>
       </div>
     </PageActionsProvider>
   );
@@ -278,6 +301,32 @@ function DevUiBody({
  * fabrique les deux à partir des trades de démonstration, pour que la moitié
  * la plus lourde de l'écran soit vérifiable elle aussi.
  */
+/**
+ * `&sub=` — la page Abonnement dans un état donné, sans session Stripe :
+ * `free`, `monthly`, `cancelling`, `pastdue`, `expired`, `lifetime`. Sans le
+ * paramètre, la page lit le vrai abonnement (aucun en local : gratuit).
+ */
+function apercuAbonnement(): AboApercu | null | undefined {
+  const voulu = new URLSearchParams(location.search).get("sub");
+  if (!voulu) return undefined;
+  if (voulu === "free") return null;
+  const dans30j = new Date(Date.now() + 30 * 86_400_000);
+  const base: AboApercu = {
+    plan: "elite_monthly",
+    status: "active",
+    source: "stripe",
+    trialEndsAt: null,
+    currentPeriodEnd: dans30j,
+    cancelAtPeriodEnd: false,
+    hasStripeCustomer: true,
+  };
+  if (voulu === "cancelling") return { ...base, cancelAtPeriodEnd: true };
+  if (voulu === "pastdue") return { ...base, status: "past_due" };
+  if (voulu === "expired") return { ...base, status: "expired" };
+  if (voulu === "lifetime") return { ...base, plan: "lifetime", currentPeriodEnd: null };
+  return base;
+}
+
 function PlanHarness({ trades }: { trades: Trade[] }) {
   const stats = computeStats(trades);
   const ctx = {
