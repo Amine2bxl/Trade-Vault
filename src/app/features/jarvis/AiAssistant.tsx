@@ -10,7 +10,13 @@ import { JarvisMark } from "@/shared/ui";
 import JarvisShell from "./JarvisShell";
 import type { JarvisContext } from "./context";
 import type { JarvisWorkspaceId } from "./workspaces";
-import { migrateLegacyChat, jarvisConversationStore, useConversations } from "./conversations";
+import {
+  migrateLegacyChat,
+  jarvisConversationStore,
+  peekConversations,
+  peekMessages,
+  useConversations,
+} from "./conversations";
 import JarvisSidebar from "./components/JarvisSidebar";
 import CreditsBar from "./components/CreditsBar";
 import AccountSwitcher from "@/app/shell/AccountSwitcher";
@@ -40,7 +46,15 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
 
   // Conversations (couche de données dédiée, multi-sessions).
   const conversations = useConversations(user?.id);
-  const [conversationId, setConversationId] = useState<string | null>(null);
+  // La conversation vide la plus récente, lue tout de suite : la fenêtre
+  // s'ouvre dessus sans attendre (sinon l'effet plus bas en crée une).
+  const [conversationId, setConversationId] = useState<string | null>(() => {
+    if (!user?.id) return null;
+    const vide = peekConversations(user.id)
+      .slice(0, 5)
+      .find((c) => peekMessages(user.id, c.id).length === 0);
+    return vide?.id ?? null;
+  });
   const conversationIdRef = useRef<string | null>(null);
   conversationIdRef.current = conversationId;
 

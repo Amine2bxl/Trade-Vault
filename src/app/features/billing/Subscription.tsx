@@ -190,7 +190,7 @@ export default function Subscription({
                 <p className="tv-label text-slate-500">{t("subpage.yourPlan")}</p>
                 <h1 className={cn("sub-hero-title", meta.titleClass)}>
                   {loading ? (
-                    <span className="inline-block h-7 w-48 animate-pulse rounded-lg bg-white/[0.06]" />
+                    <span className="inline-block h-7 w-48" aria-hidden />
                   ) : (
                     <>
                       {paid && "TradeVault "}

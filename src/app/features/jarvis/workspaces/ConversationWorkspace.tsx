@@ -67,7 +67,7 @@ import { useAuth } from "@/app/contexts/AuthContext";
 import { useToast } from "@/app/contexts/ToastContext";
 import { exceedsDailyLimit, incrementAiUsage, jarvisDailyLimit } from "../aiUsage";
 import { effectiveCopyLang, readAutoSpeak } from "../prefs";
-import { jarvisConversationStore } from "../conversations";
+import { jarvisConversationStore, peekMessages } from "../conversations";
 import {
   listenJarvisThread,
   pendingQuestion,
@@ -360,12 +360,27 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
   /// store → save…), ce qui gelait le site au changement de workspace.
   const store = useMemo(() => (userId ? jarvisConversationStore(userId) : null), [userId]);
 
-  const [messages, setMessages] = useState<JarvisMessage[]>([]);
+  // Peinte dès la première image : la conversation est lue tout de suite
+  // (`peekMessages`), le chargement asynchrone plus bas ne fait que confirmer.
+  const [messages, setMessages] = useState<JarvisMessage[]>(() =>
+    peekMessages(userId, conversationId),
+  );
   /* « Chargé » vaut POUR UN FIL : quand le fil change, `loaded` redevient
      faux dans le même rendu. Un booléen seul restait vrai le temps d'un
      rendu, et une question posée à cet instant était effacée par le
      chargement du nouveau fil. */
-  const [loadedFor, setLoadedFor] = useState<string | null | undefined>(undefined);
+  const [loadedFor, setLoadedFor] = useState<string | null | undefined>(
+    () => conversationId ?? null,
+  );
+  /* Changement de conversation : la nouvelle est lue PENDANT le rendu (état
+     dérivé), pas dans un effet — aucune image ne montre l'ancienne, ni un
+     squelette entre les deux. */
+  const [shownFor, setShownFor] = useState<string | null>(conversationId);
+  if (shownFor !== conversationId) {
+    setShownFor(conversationId);
+    setMessages(peekMessages(userId, conversationId));
+    setLoadedFor(conversationId ?? null);
+  }
   const loaded = loadedFor === (conversationId ?? null);
   const [question, setQuestion] = useState("");
   const [loading, setLoading] = useState(false);
@@ -1170,11 +1185,9 @@ export default function ConversationWorkspace({ context, initialPrompt }: Jarvis
         aria-busy={loading || typingId !== null}
       >
         {!loaded ? (
-          /* Chargement de la conversation — squelette, jamais de texte gris. */
-          <div className="space-y-3" aria-busy="true">
-            <div className="h-16 rounded-2xl bg-white/[0.04] animate-pulse" />
-            <div className="h-24 rounded-2xl bg-white/[0.03] animate-pulse" />
-          </div>
+          /* Plus de squelette : la conversation est lue de façon synchrone,
+             ce cas ne dure jamais plus d'une image. */
+          <div aria-busy="true" />
         ) : messages.length === 0 ? (
           /* ── L'ACCUEIL DE LA CONVERSATION ──
              ══ CE QUI LE RENDAIT PAUVRE ══

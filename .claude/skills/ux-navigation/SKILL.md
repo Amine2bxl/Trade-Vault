@@ -50,7 +50,7 @@ l'arbre applicatif**, en SSR complet, et déclarées dans `PUBLIC_ROUTES`
 
 | État | Règle |
 | --- | --- |
-| **Chargement** | Skeleton **à la hauteur finale exacte** — rien ne saute quand la donnée arrive. Jamais de spinner plein écran sur une page déjà structurée. |
+| **Chargement** | **En un temps, sans squelette** (décision du 2026-11-15) : place réservée à la hauteur finale, données locales lues tout de suite, données réseau préchargées ; au-delà de 320 ms, un seul anneau (`PageLoader`). Jamais de fausse page grise. |
 | **Vide** | `EmptyState` : ce qui manque, pourquoi, **et l'action qui remplit**. Un vide sans action est un cul-de-sac. |
 | **Erreur** | `PageErrorBoundary` par page : ce qui a échoué, ce que l'utilisateur peut faire, un moyen de réessayer. Jamais une trace technique. |
 

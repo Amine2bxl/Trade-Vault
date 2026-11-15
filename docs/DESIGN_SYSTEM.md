@@ -47,7 +47,7 @@ L'élévation est réservée aux modales et menus ; une carte de graphique ou de
 statistique ne change plus de fond au survol.
 
 `PageContainer` porte les marges communes (`px-3 py-2 md:px-5 md:py-3`) et la
-largeur unique `PAGE_WIDTH` (pleine largeur depuis le 2026-11-15, `shared/ui/tokens.ts`), partagée par l'en-tête et les squelettes — plus d'écart entre deux pages d'une même section, y compris pour les pages à hauteur mesurée (ref transmise
+largeur unique `PAGE_WIDTH` (pleine largeur depuis le 2026-11-15, `shared/ui/tokens.ts`), partagée par l'en-tête et l'attente de page (`PageLoader`) — plus d'écart entre deux pages d'une même section, y compris pour les pages à hauteur mesurée (ref transmise
 directement). Les pages de réglages (Réglages, Profil, Apparence, Abonnement — Brokers est
 masquée, `HIDDEN_PAGES`) passent `measure="settings"` : même cadre que l'en-tête,
 et dedans `SETTINGS_WIDTH` (pleine largeur, elle aussi) ; la page Abonnement
@@ -261,7 +261,7 @@ Réutiliser avant de restyler. Graphes : `app/trading/chartTheme.ts` +
   `hooks/useAvailableHeight`. Calendrier et Monte Carlo utilisent un minimum
   de hauteur et peuvent défiler si leur contenu dépasse ; Journal, Inbox et
   Jarvis conservent leur défilement interne.
-- **États** : chargement par squelette à la géométrie finale ; état vide qui
+- **États** : chargement **en un temps**, sans squelette (2026-11-15) — place réservée, données lues tout de suite quand elles sont locales (conversations Jarvis) ou préchargées (boîte de réception), et au-delà de 320 ms un seul anneau (`PageLoader`) ; état vide qui
   guide vers l'action ; erreur honnête (un `PageErrorBoundary` par page).
 - **Formulaires** : écriture optimiste, brouillons autosauvegardés
   (`useDraftAutosave`), aucune perte silencieuse.

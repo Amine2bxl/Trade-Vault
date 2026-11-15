@@ -1,4 +1,3 @@
-import { lazyPage } from "@/shared/lazy-page";
 import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Eraser } from "@/shared/ui/icons";
 import { useAuth } from "@/app/contexts/AuthContext";
@@ -8,7 +7,7 @@ import { usePreviewMode } from "@/app/features/billing/PremiumGate";
 import { previewTrades } from "@/app/utils/previewTrades";
 import { useT } from "@/app/i18n/LanguageContext";
 import { loadJarvisProfile, type JarvisProfile } from "@/app/store";
-import { jarvisConversationStore } from "./conversations";
+import { jarvisConversationStore, peekConversations } from "./conversations";
 import { JARVIS_PROFILE_EVENT } from "./prefs";
 import type { JarvisContext } from "./context";
 import CreditsBar from "./components/CreditsBar";
@@ -19,7 +18,9 @@ import { usePageActions, usePageLead } from "@/app/contexts/PageActionsContext";
 import { observeLayout, stableViewportHeight, topAtRest } from "@/app/hooks/useAvailableHeight";
 import { useLiveTable } from "@/app/hooks/useLiveTable";
 
-const ConversationWorkspace = lazyPage(() => import("./workspaces/ConversationWorkspace"));
+// Importé directement, plus en différé : la page Jarvis est déjà un morceau
+// chargé à part ; un second chargement à l'intérieur donnait deux temps.
+import ConversationWorkspace from "./workspaces/ConversationWorkspace";
 
 /**
  * JARVIS — LA PAGE EST LA CONVERSATION.
@@ -61,7 +62,11 @@ export default function Jarvis() {
   const preview = usePreviewMode();
   const trades = preview ? previewTrades() : realTrades;
 
-  const [conversationId, setConversationId] = useState<string | null>(null);
+  // La conversation la plus récente, lue tout de suite : la page s'ouvre
+  // dessus, sans « Jarvis se réveille… ».
+  const [conversationId, setConversationId] = useState<string | null>(
+    () => peekConversations(user?.id)[0]?.id ?? null,
+  );
   const [profile, setProfile] = useState<JarvisProfile | null>(null);
 
   useEffect(() => {
@@ -205,14 +210,9 @@ export default function Jarvis() {
     [user?.id, trades, profile, conversationId],
   );
 
-  const spinner = (
-    <div className="flex h-full items-center justify-center">
-      <div className="flex flex-col items-center gap-3 text-sm text-slate-500">
-        <JarvisOrb state="thinking" size={56} />
-        {t("jarvis.waking")}
-      </div>
-    </div>
-  );
+  /* Le temps de créer une première conversation (une lecture locale) : rien,
+     et surtout pas de « Jarvis se réveille… » — c'est une image au plus. */
+  const spinner = <div className="flex-1" aria-busy="true" />;
 
   return (
     <PageContainer ref={boxRef} style={{ height: hauteur }}>

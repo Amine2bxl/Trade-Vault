@@ -112,12 +112,8 @@ export default function SubscriptionSection({
   const erreurs = useMemo(() => computeBehavioral(trades), [trades]);
 
   if (loading) {
-    return (
-      <div className="pw-card">
-        <div className="h-6 w-56 animate-pulse rounded bg-white/[0.06]" />
-        <div className="mt-4 h-24 animate-pulse rounded-2xl bg-white/[0.04]" />
-      </div>
-    );
+    // Pas de squelette : la place est tenue, la carte arrive d'un geste.
+    return <div className="min-h-[420px]" aria-busy="true" />;
   }
   if (mode === "none") return null;
 

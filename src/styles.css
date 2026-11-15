@@ -2225,35 +2225,37 @@ button:active > .bottom-nav-add {
  * l'anime seul. Animer `background-position` repeignait chaque squelette à
  * chaque image — une page entière de squelettes, c'était un repeint plein
  * écran soixante fois par seconde sur un téléphone. */
+/* Plus de gris qui scintille (2026-11-15) : la plaque réserve la place et
+   ne peint rien ; le contenu arrive d'un seul geste. */
 .skeleton {
   overflow: hidden;
-  background: rgb(255 255 255 / 0.04);
+  background: transparent;
+}
+/* L'attente longue d'une page : un anneau menthe, au centre, en fondu. */
+.tv-page-loader {
+  display: grid;
+  min-height: 70vh;
+  place-items: center;
+  animation: fade-in var(--tv-dur-2) var(--tv-ease-out) both;
+}
+.tv-page-loader-ring {
+  width: 22px;
+  height: 22px;
+  border: 2px solid rgb(var(--tv-accent-rgb) / 0.18);
+  border-top-color: var(--tv-accent);
+  border-radius: 999px;
+  animation: spin 0.8s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tv-page-loader-ring {
+    animation-duration: 2.4s;
+  }
 }
 /* Le reflet se cale sur sa plaque ; une plaque déjà positionnée (`absolute`,
    `fixed`) garde sa position — la règle n'est pas dans un @layer et
    l'emporterait sur l'utilitaire. */
 .skeleton:not(.absolute):not(.fixed) {
   position: relative;
-}
-.skeleton::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    100deg,
-    transparent 30%,
-    rgb(255 255 255 / 0.05) 50%,
-    transparent 70%
-  );
-  transform: translateX(-100%);
-  animation: shimmer 1.6s linear infinite;
-  pointer-events: none;
-}
-@media (prefers-reduced-motion: reduce) {
-  .skeleton::after {
-    animation: none;
-    display: none;
-  }
 }
 
 /* Jarvis "thinking" — trois points qui ondulent pendant que l'IA réfléchit. */
@@ -9146,34 +9148,6 @@ body.tv-app-type svg.lucide {
   height: 16px;
   accent-color: var(--tv-accent);
 }
-.tv-inbox-skeleton {
-  display: flex;
-  gap: 10px;
-  padding: 12px;
-  height: 100px;
-  border-top: 1px solid var(--tv-border);
-}
-.tv-inbox-skeleton > div:first-child {
-  width: 30px;
-  height: 30px;
-  border-radius: var(--radius-sm);
-  background: var(--tv-plate-2);
-}
-.tv-inbox-skeleton > div:last-child {
-  flex: 1;
-  display: grid;
-  gap: 8px;
-  align-content: start;
-}
-.tv-inbox-skeleton span {
-  height: 13px;
-  width: 70%;
-  border-radius: 4px;
-  background: var(--tv-plate-2);
-}
-.tv-inbox-skeleton span:last-child {
-  width: 90%;
-}
 @media (pointer: coarse) {
   .jarvis-composer-action,
   .jarvis-response-actions .jarvis-listen {
@@ -9214,11 +9188,6 @@ body.tv-app-type svg.lucide {
   .tv-inbox-open {
     padding: 10px;
     gap: 8px;
-  }
-}
-@media (prefers-reduced-motion: no-preference) {
-  .tv-inbox-skeleton {
-    animation: pulse 1.6s ease-in-out infinite;
   }
 }
 @media (prefers-reduced-motion: reduce) {

@@ -132,6 +132,7 @@ import type { AppNotification } from "@/modules/notifications/types";
 import { buildDemoTrades } from "./demoTrades";
 import { todayLocalDate } from "@/shared/calendar-date";
 import { previewTrades } from "../utils/previewTrades";
+import { prefetchInbox } from "../features/inbox/inboxCache";
 import { canLogTrade, isPlanLimitError } from "../utils/planLimits";
 import { computeBehavioral } from "@/domain/behavioral";
 import { useEconomicCalendar } from "../features/news/useEconomicCalendar";
@@ -146,8 +147,7 @@ import { AccountProvider, useAccounts } from "../contexts/AccountContext";
 import { PageActionsProvider } from "../contexts/PageActionsContext";
 const Landing = lazyPage(() => import("../public/landing/Landing"));
 import FirstSessionWelcome from "./FirstSessionWelcome";
-import { SkeletonForPage } from "../components/Skeleton";
-import { DeferredFallback, PageTransition } from "./PageTransition";
+import { PageLoader, PageTransition } from "./PageTransition";
 import PageErrorBoundary from "./PageErrorBoundary";
 import {
   PREVIEW_OWN_MIN_TRADES,
@@ -351,6 +351,8 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
     if (!isAuthenticated) return;
     const run = () => {
       LIKELY_NEXT_PAGES.forEach(preloadPage);
+      // La boîte de réception s'ouvre en un temps : sa liste est déjà là.
+      if (user?.id) void prefetchInbox(user.id);
       // Même raisonnement que pour les pages : le coût est retiré du démarrage,
       // pas déplacé sur le clic. Silencieux — un préchargement qui échoue ne
       // doit jamais remonter d'erreur, le chargement au clic réessaiera.
@@ -365,7 +367,7 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
     }
     const id = window.setTimeout(run, 1500);
     return () => window.clearTimeout(id);
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user?.id]);
 
   // Bouton retour / avant du navigateur.
   useEffect(() => {
@@ -1279,19 +1281,11 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
         <PageActionsProvider setActions={setHeaderSlot}>
           {accountsReady && gateResolved ? (
             <PageErrorBoundary key={currency} resetKey={page}>
-              {/* Squelette CONTEXTUEL et DIFFÉRÉ. Le squelette imite la page de
-              destination — mais il n'apparaît qu'au-delà de 320 ms d'attente.
-              En dessous, le chunk est déjà en mémoire (préchargement au survol
-              + `LIKELY_NEXT_PAGES`) et le squelette n'était qu'un clignotement
-              gris de deux frames : le signal « ça charge » sans le chargement.
-              L'espace, lui, reste réservé, donc rien ne bouge. */}
-              <Suspense
-                fallback={
-                  <DeferredFallback key={page}>
-                    <SkeletonForPage page={page} />
-                  </DeferredFallback>
-                }
-              >
+              {/* PLUS DE SQUELETTE (2026-11-15) : rien pendant 320 ms, la place
+              réservée ; au-delà, un seul anneau (`PageLoader`). Le morceau est
+              presque toujours déjà là (préchargement au survol +
+              `LIKELY_NEXT_PAGES`) : la page arrive en un temps. */}
+              <Suspense fallback={<PageLoader key={page} />}>
                 {/* PageTransition est DANS le Suspense, pas autour.
                 Autour, il jouait sa transition sur la boîte vide réservée
                 pendant l'attente, puis le contenu réel arrivait après coup,
@@ -1382,12 +1376,9 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
             </PageErrorBoundary>
           ) : (
             /* Comptes OU abonnement en chargement : le shell est peint, la
-               page répond avec son squelette contextuel — pas de porte plein
-               écran, et surtout aucune donnée peinte avant de savoir LESQUELLES
-               peindre (réelles ou démonstration). */
-            <div className="p-3 md:p-4">
-              <SkeletonForPage page={page} />
-            </div>
+               page attend sans squelette — et surtout aucune donnée peinte
+               avant de savoir LESQUELLES peindre (réelles ou démonstration). */
+            <PageLoader key={page} />
           )}
         </PageActionsProvider>
       </main>
