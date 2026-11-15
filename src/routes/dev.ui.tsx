@@ -24,6 +24,7 @@ import { previewTrades } from "@/app/utils/previewTrades";
 import { computeStats } from "@/domain/tradeCalcs";
 import { computeQuantStats } from "@/domain/quantStats";
 import { isPage, type Page, type Trade } from "@/app/types";
+import type { Subscription as AboApercu } from "@/app/hooks/useSubscription";
 import PageHead from "@/app/shell/PageHead";
 import Sidebar from "@/app/shell/Sidebar";
 import MobileNav from "@/app/shell/MobileNav";
@@ -173,6 +174,9 @@ function DevUiBody({
 }) {
   const [actions, setActions] = useState<ReactNode>(null);
   const [lead, setLead] = useState<ReactNode>(null);
+  /* Mémorisé : un abonnement fictif recréé à chaque rendu relançait la
+     barre de tête de la page, qui relançait ce rendu — une boucle. */
+  const apercu = useMemo(() => apercuAbonnement(), []);
   const setHeader = useCallback((slot: "actions" | "lead", node: ReactNode) => {
     if (slot === "lead") setLead(node);
     else setActions(node);
@@ -254,7 +258,7 @@ function DevUiBody({
           {ecran === "goals" && <Goals trades={trades} />}
           {ecran === "goalsplan" && <PlanHarness trades={trades} />}
           {ecran === "tradingplan" && <TradingPlan setPage={noop} />}
-          {ecran === "subscription" && <Subscription />}
+          {ecran === "subscription" && <Subscription trades={trades} preview={apercu} />}
           {ecran === "inbox" && <Inbox />}
         </Suspense>
       </div>
@@ -278,6 +282,32 @@ function DevUiBody({
  * fabrique les deux à partir des trades de démonstration, pour que la moitié
  * la plus lourde de l'écran soit vérifiable elle aussi.
  */
+/**
+ * `&sub=` — la page Abonnement dans un état donné, sans session Stripe :
+ * `free`, `monthly`, `cancelling`, `pastdue`, `expired`, `lifetime`. Sans le
+ * paramètre, la page lit le vrai abonnement (aucun en local : gratuit).
+ */
+function apercuAbonnement(): AboApercu | null | undefined {
+  const voulu = new URLSearchParams(location.search).get("sub");
+  if (!voulu) return undefined;
+  if (voulu === "free") return null;
+  const dans30j = new Date(Date.now() + 30 * 86_400_000);
+  const base: AboApercu = {
+    plan: "elite_monthly",
+    status: "active",
+    source: "stripe",
+    trialEndsAt: null,
+    currentPeriodEnd: dans30j,
+    cancelAtPeriodEnd: false,
+    hasStripeCustomer: true,
+  };
+  if (voulu === "cancelling") return { ...base, cancelAtPeriodEnd: true };
+  if (voulu === "pastdue") return { ...base, status: "past_due" };
+  if (voulu === "expired") return { ...base, status: "expired" };
+  if (voulu === "lifetime") return { ...base, plan: "lifetime", currentPeriodEnd: null };
+  return base;
+}
+
 function PlanHarness({ trades }: { trades: Trade[] }) {
   const stats = computeStats(trades);
   const ctx = {

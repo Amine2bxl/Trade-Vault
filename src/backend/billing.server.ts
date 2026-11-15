@@ -679,19 +679,18 @@ export const SUBSCRIPTION_OFFER = "monthly-2026-11";
  * abonnements et ne doivent JAMAIS devenir une licence — ce serait offrir
  * 49 € à qui en a payé 9.
  *
- * Trois preuves de modernité, l'une suffit : la marque `offer` que notre
- * checkout pose, la clé de catalogue du prix (`tradevault_…`), ou le prix
- * désigné par `STRIPE_PRICE_ELITE_MONTHLY` (abonnement créé à la main depuis
- * le dashboard Stripe). Sans aucune, c'est un ancien abonnement.
+ * Deux preuves de modernité, l'une suffit : la marque `offer` que notre
+ * checkout pose, ou la clé de catalogue du prix (`tradevault_…`, portée aussi
+ * par un abonnement créé à la main depuis le dashboard). Sans aucune, c'est un
+ * ancien abonnement.
+ *
+ * La variable `STRIPE_PRICE_ELITE_MONTHLY` n'est PAS une preuve : en
+ * production elle désigne encore l'ancien Elite mensuel, et s'y fier aurait
+ * soustrait ses abonnés à la conversion promise.
  */
 export function isLegacySubscription(sub: StripeSubscriptionObject): boolean {
   if (sub.metadata?.offer) return false;
-  // Un prix porteur d'une clé du catalogue (`stripeLookupKey`) est un prix
-  // vendu depuis la relance, même si l'abonnement est né dans le dashboard.
   if (sub.items?.data?.[0]?.price?.lookup_key?.startsWith("tradevault_")) return false;
-  const priceId = sub.items?.data?.[0]?.price?.id;
-  const current = process.env.STRIPE_PRICE_ELITE_MONTHLY;
-  if (priceId && current && priceId === current) return false;
   return true;
 }
 

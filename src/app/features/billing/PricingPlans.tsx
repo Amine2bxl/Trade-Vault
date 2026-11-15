@@ -30,6 +30,9 @@ export interface PricingPlansProps {
   onManage?: () => void;
   /** Action de la colonne gratuite. Absente = colonne affichée sans bouton. */
   onFree?: () => void;
+  /** Colonne gratuite affichée ? Inutile à qui paie déjà (passage à la
+   *  licence depuis le mensuel) : elle ne ferait que rallonger la grille. */
+  showFree?: boolean;
   className?: string;
 }
 
@@ -41,6 +44,7 @@ export default function PricingPlans({
   onCrypto,
   onManage,
   onFree,
+  showFree = true,
   className,
 }: PricingPlansProps) {
   const free = TIER_BY_ID.free;
@@ -56,43 +60,47 @@ export default function PricingPlans({
 
   return (
     <div className={cn("grid gap-4", className)}>
-      <div className="grid gap-4 md:grid-cols-3">
-        <article className="offer-card">
-          <h3 className="text-[1.05rem] font-bold tracking-tight text-white">{free.name[lang]}</h3>
-          <p className="mt-1 text-[13px] text-slate-400">{free.tagline[lang]}</p>
-          <div className="mt-5">
-            <PrixAnime valeur={eur(0, lang)} className="offer-price text-slate-200" />
-          </div>
-          <ul className="mt-5 space-y-2">
-            {free.features.map((f) => (
-              <li
-                key={f.en}
-                className="flex items-start gap-2 text-[13px] leading-snug text-slate-400"
-              >
-                <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-500" />
-                {f[lang]}
-              </li>
-            ))}
-          </ul>
-          <div className="mt-auto pt-6">
-            {onFreePlan ? (
-              <p className="text-center text-[12px] font-semibold text-slate-500">
-                {LIFETIME_COPY.current[lang]}
-              </p>
-            ) : (
-              onFree && (
-                <button
-                  type="button"
-                  onClick={onFree}
-                  disabled={busy != null}
-                  className="btn-ghost w-full justify-center disabled:opacity-50"
+      <div className={cn("grid gap-4", showFree ? "md:grid-cols-3" : "md:grid-cols-2")}>
+        {showFree && (
+          <article className="offer-card order-last md:order-none">
+            <h3 className="text-[1.05rem] font-bold tracking-tight text-white">
+              {free.name[lang]}
+            </h3>
+            <p className="mt-1 text-[13px] text-slate-400">{free.tagline[lang]}</p>
+            <div className="mt-5">
+              <PrixAnime valeur={eur(0, lang)} className="offer-price text-slate-200" />
+            </div>
+            <ul className="mt-5 space-y-2">
+              {free.features.map((f) => (
+                <li
+                  key={f.en}
+                  className="flex items-start gap-2 text-[13px] leading-snug text-slate-400"
                 >
-                  {LIFETIME_COPY.free[lang]}
-                </button>
-              )
-            )}
-          </div>
-        </article>
+                  <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-500" />
+                  {f[lang]}
+                </li>
+              ))}
+            </ul>
+            <div className="mt-auto pt-6">
+              {onFreePlan ? (
+                <p className="text-center text-[12px] font-semibold text-slate-500">
+                  {LIFETIME_COPY.current[lang]}
+                </p>
+              ) : (
+                onFree && (
+                  <button
+                    type="button"
+                    onClick={onFree}
+                    disabled={busy != null}
+                    className="btn-ghost w-full justify-center disabled:opacity-50"
+                  >
+                    {LIFETIME_COPY.free[lang]}
+                  </button>
+                )
+              )}
+            </div>
+          </article>
+        )}
 
         <OfferCard
           plan={MONTHLY_PLAN}

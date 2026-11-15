@@ -1,32 +1,41 @@
 import { useState } from "react";
 import { CreditCard, ExternalLink, X } from "@/shared/ui/icons";
 import { useT } from "@/app/i18n/LanguageContext";
-import { useSubscription } from "@/app/hooks/useSubscription";
+import { useSubscription, type Subscription } from "@/app/hooks/useSubscription";
 import PricingPlans from "./PricingPlans";
 import { Input } from "@/shared/ui";
+import { checkoutErrorKey, etatAbonnement, offerMode } from "./subscriptionState";
 
-// "Gestion d'abonnement" card on the profile page.
-//
-// Free / trialing users see both Pro plans with card (Stripe Checkout —
-// cards, Apple Pay, Google Pay) and crypto (Coinbase Commerce) buttons.
-// Stripe subscribers get one button into the Billing Portal, where upgrade,
-// downgrade, card change and cancellation are each one click. Crypto
-// subscribers see their access end date and renewal buttons.
-
+/**
+ * LE BLOC D'ACHAT de la page Abonnement — encaisser, et rien d'autre.
+ *
+ * L'état n'est plus recalculé ici : `subscriptionState.ts` décide, pour la
+ * page ET pour ce bloc, s'il faut proposer les deux offres, seulement la
+ * licence (mensuel en cours), ou rien (licence possédée). Le titre de la
+ * section est porté par la page.
+ *
+ * Code promo : l'influenceur tape le sien pour l'accès permanent, sa
+ * communauté colle le sien pour la réduction ; un lien d'e-mail
+ * `/?upgrade=1&promo=VAULT20` arrive ici avec le code déjà posé.
+ *
+ * Erreurs : le serveur répond par des codes courts ; chacun a sa phrase
+ * traduite (`checkoutErrorKey`), jamais le texte brut.
+ *
+ * `preview` (banc `/dev/ui` seulement) impose un abonnement fictif : aucun
+ * paiement ne part de là.
+ */
 export default function SubscriptionSection({
   /** La carte d'adhésion porte déjà le bouton « Gérer » : ne pas le répéter. */
   showPortal = true,
-}: { showPortal?: boolean } = {}) {
+  preview,
+}: { showPortal?: boolean; preview?: Subscription | null } = {}) {
   const { t, lang } = useT();
-  const { sub, loading, isPro, checkout, openPortal, cryptoCheckout } = useSubscription();
+  const live = useSubscription();
+  const sub = preview !== undefined ? preview : live.sub;
+  const loading = preview !== undefined ? false : live.loading;
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [typed, setTyped] = useState("");
-
-  // Deep link from lifecycle emails: /?upgrade=1&promo=VAULT20 lands on the
-  // subscription section with the code already applied. La saisie manuelle
-  // permet ensuite à l'influenceur de taper le sien, et à sa communauté de
-  // coller son code.
   const [promo, setPromo] = useState<string | undefined>(() =>
     typeof window !== "undefined"
       ? (new URLSearchParams(window.location.search).get("promo") ?? undefined)
@@ -41,59 +50,49 @@ export default function SubscriptionSection({
     }
   };
 
-  // Pas de ligne d'abonnement = offre gratuite. Le squelette restait affiché
-  // pour toujours chez un compte sans ligne : l'offre n'apparaissait jamais.
   if (loading) {
     return (
-      <div className="glass-strong rounded-3xl p-5">
-        <div className="h-5 w-40 rounded bg-white/[0.06] animate-pulse" />
+      <div className="subp-card">
+        <div className="h-5 w-40 animate-pulse rounded bg-white/[0.06]" />
       </div>
     );
   }
 
   const run = async (key: string, fn: () => Promise<string | null>) => {
+    if (preview !== undefined) return;
     setBusy(key);
     setError(null);
     const err = await fn();
     if (err) {
-      setError(err);
+      setError(t(checkoutErrorKey(err)));
       setBusy(null);
     }
-    // on success the browser navigates away — leave the spinner on
+    // En cas de succès le navigateur part chez Stripe : le bouton reste occupé.
   };
 
-  /* NI PASTILLE DE STATUT NI RÉSUMÉ DE FORMULE ICI.
-     Ce bloc en portait un de chacun, alors que la page d'abonnement affiche
-     déjà l'état complet juste au-dessus — et le portait avec sa PROPRE logique
-     (`sub.status === "active" ? …`), qui ne connaissait ni l'expiration ni la
-     reprise. Deux vérités sur le même écran, dont une fausse : un abonnement
-     annulé s'y lisait en vert. L'état est calculé une seule fois, dans
-     `Subscription.tsx` ; ce bloc ne fait plus que ce que son nom dit —
-     encaisser. */
-  // Un abonné mensuel voit encore la grille : la licence lui reste ouverte
-  // (le webhook coupe alors le renouvellement du mensuel). Seule une licence
-  // possédée la referme.
-  const showPlans = !isPro || sub?.status === "trialing" || sub?.plan !== "lifetime";
+  const mode = offerMode(sub, etatAbonnement(sub));
+  const showPlans = mode !== "none";
   const isStripeActive = sub?.status === "active" && sub.source === "stripe";
   const portal =
     showPortal && (isStripeActive || (!!sub?.hasStripeCustomer && sub.status !== "trialing"));
   const cryptoRenew =
     sub?.status === "active" && sub.source === "crypto" && sub.plan !== "lifetime";
-  // Rien à encaisser ni à gérer ici : pas de carte vide avec un seul titre.
+
   if (!showPlans && !portal && !cryptoRenew) return null;
 
   return (
-    <div className="glass rounded-3xl p-4 space-y-3.5 md:p-5">
-      <h2 className="tv-title">{t("billing.title")}</h2>
-
+    <div className="space-y-3.5">
       {error && (
-        <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 text-sm text-red-400">
+        <div
+          role="alert"
+          className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300"
+        >
           {error}
         </div>
       )}
 
       {promo && showPlans && (
-        <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/25 rounded-xl px-4 py-3 text-sm text-emerald-300 font-semibold">
+        <div className="flex items-center gap-2 rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-4 py-3 text-sm font-semibold text-emerald-300">
           <span className="min-w-0 flex-1 truncate">
             {t("billing.promoApplied").replace("{code}", promo)}
           </span>
@@ -107,8 +106,20 @@ export default function SubscriptionSection({
         </div>
       )}
 
-      {/* Code promo — l'influenceur tape le sien pour activer l'accès
-          permanent, sa communauté colle le sien pour la réduction. */}
+      {showPlans && (
+        <PricingPlans
+          lang={lang === "fr" ? "fr" : "en"}
+          currentPlan={sub?.plan ?? "free"}
+          showFree={mode === "choose"}
+          busy={busy}
+          onChoose={(plan) => run(plan, () => live.checkout(plan, promo))}
+          onCrypto={(plan) => run(`crypto-${plan}`, () => live.cryptoCheckout(plan))}
+          onManage={isStripeActive ? () => run("portal", live.openPortal) : undefined}
+        />
+      )}
+
+      {/* Le code promo SOUS la grille : on choisit une offre, puis on applique
+          son code. Au-dessus, il passait avant les prix qu'il réduit. */}
       {showPlans && !promo && (
         <div className="flex gap-2">
           <Input
@@ -122,51 +133,32 @@ export default function SubscriptionSection({
           <button
             onClick={applyCode}
             disabled={!typed.trim()}
-            className="shrink-0 px-4 rounded-xl border border-white/[0.1] bg-white/[0.04] text-sm font-semibold text-slate-200 transition hover:bg-white/[0.07] disabled:opacity-50"
+            className="shrink-0 rounded-xl border border-white/[0.1] bg-white/[0.04] px-4 text-sm font-semibold text-slate-200 transition hover:bg-white/[0.07] disabled:opacity-50"
           >
             {t("billing.promoApply")}
           </button>
         </div>
       )}
 
-      {/* La grille tarifaire partagée avec la landing : le trader retrouve
-          exactement l'offre qui l'a convaincu, aux mêmes prix, parce que c'est
-          littéralement le même composant et le même catalogue. */}
-      {showPlans && (
-        <PricingPlans
-          lang={lang === "fr" ? "fr" : "en"}
-          currentPlan={sub?.plan ?? "free"}
-          busy={busy}
-          onChoose={(plan) => run(plan, () => checkout(plan, promo))}
-          onCrypto={(plan) => run(`crypto-${plan}`, () => cryptoCheckout(plan))}
-          onManage={isStripeActive ? () => run("portal", openPortal) : undefined}
-        />
-      )}
-
-      {/* Stripe subscribers: everything (card, plan switch, cancel) is one
-          click away inside the Billing Portal. */}
       {portal && (
         <button
-          onClick={() => run("portal", openPortal)}
+          onClick={() => run("portal", live.openPortal)}
           disabled={busy !== null}
-          className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] text-slate-200 hover:bg-white/[0.06] transition disabled:opacity-60"
+          className="flex w-full items-center justify-between rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-3 text-slate-200 transition hover:bg-white/[0.06] disabled:opacity-60"
         >
           <span className="flex items-center gap-2.5 text-sm font-medium">
-            <CreditCard className="w-4 h-4 text-cyan-400" />
+            <CreditCard className="h-4 w-4 text-slate-400" />
             {busy === "portal" ? t("billing.opening") : t("billing.manage")}
           </span>
-          <ExternalLink className="w-4 h-4 text-slate-500" />
+          <ExternalLink className="h-4 w-4 text-slate-500" />
         </button>
-      )}
-      {portal && isStripeActive && (
-        <p className="tv-row-label leading-relaxed">{t("billing.portalHint")}</p>
       )}
 
       {/* Ancien accès crypto à durée limitée : il se prolonge désormais par
           la licence à vie, payée une fois en crypto aussi. */}
       {cryptoRenew && (
         <button
-          onClick={() => run("crypto-lifetime", () => cryptoCheckout("lifetime"))}
+          onClick={() => run("crypto-lifetime", () => live.cryptoCheckout("lifetime"))}
           disabled={busy !== null}
           className="btn-ghost w-full justify-center disabled:opacity-60"
         >

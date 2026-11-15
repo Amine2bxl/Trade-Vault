@@ -5,6 +5,7 @@ import { useT } from "@/app/i18n/LanguageContext";
 import { useSubscription } from "@/app/hooks/useSubscription";
 import type { PaidPlan } from "@/app/utils/pricing";
 import OfferCard from "./OfferCard";
+import { checkoutErrorKey } from "./subscriptionState";
 import { LIFETIME_PLAN, MONTHLY_PLAN } from "@/domain/plans";
 
 /**
@@ -35,7 +36,7 @@ export default function UpgradeModal({ open, onClose }: { open: boolean; onClose
     setError(null);
     const err = await checkout(plan, promo);
     if (err) {
-      setError(err);
+      setError(t(checkoutErrorKey(err)));
       setBusy(null);
     }
   };

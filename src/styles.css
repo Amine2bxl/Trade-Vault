@@ -7195,24 +7195,79 @@ body::after {
   gap: 0.75rem 1rem;
   margin-top: 1.1rem;
 }
-/* L'échelle du prix : même plaque que la carte d'adhésion, un cran plus
-   discrète — c'est un argument, pas un état. */
-.sub-scale {
+/* ── LES SECTIONS DE LA PAGE ABONNEMENT (refaite en novembre 2026) ──────────
+   Même grammaire que la carte d'adhésion : plaques opaques rayon 22, titres
+   de section à 17 px, phrase d'appui grise. Le compteur du mois est une
+   piste en creux qui se remplit par `transform` (aucune remise en page). */
+.subp-head {
   display: flex;
   flex-direction: column;
-  gap: 1.1rem;
+  gap: 4px;
+}
+.subp-title {
+  font-size: var(--tv-t-h2);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--tv-text-primary);
+}
+.subp-sub {
+  max-width: 44rem;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #94a3b8;
+}
+.subp-card {
   border-radius: var(--radius-2xl);
   border: 1px solid var(--tv-border);
   background: var(--tv-plate-1);
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
-  padding: 1.1rem 1.25rem;
+  padding: 18px 20px;
+  overflow: hidden;
 }
-@media (min-width: 640px) {
-  .sub-scale {
-    flex-direction: row;
-    align-items: center;
-    gap: 2rem;
+.subp-card-title {
+  font-size: var(--tv-t-h3);
+  font-weight: 700;
+  color: var(--tv-text-primary);
+}
+.subp-meter {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 9999px;
+  background: var(--tv-plate-0);
+}
+.subp-meter-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--tv-accent);
+  transform-origin: left;
+  transition: transform var(--tv-dur-spring, 340ms) var(--tv-spring, ease);
+}
+.subp-meter-fill--full {
+  background: rgb(251 191 36);
+}
+@media (prefers-reduced-motion: reduce) {
+  .subp-meter-fill {
+    transition: none;
   }
+}
+.subp-unlock {
+  display: flex;
+  gap: 12px;
+  border-radius: var(--radius-2xl);
+  border: 1px solid var(--tv-border);
+  background: var(--tv-plate-1);
+  padding: 14px 16px;
+}
+.subp-unlock-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 9999px;
+  background: var(--tv-plate-3);
+  color: var(--tv-text-primary);
 }
 
 /* ══════════════════════════════════════════════════════════════════════════

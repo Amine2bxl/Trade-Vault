@@ -225,9 +225,11 @@ describe("isLegacySubscription", () => {
     ).toBe(false);
   });
 
-  test("le prix mensuel actuel suffit (abonnement créé depuis le dashboard)", () => {
+  test("la variable d'environnement n'est pas une preuve — elle peut désigner l'ancien prix", () => {
+    // En production, STRIPE_PRICE_ELITE_MONTHLY désigne encore l'ancien Elite
+    // mensuel : s'y fier soustrairait ses abonnés à la conversion promise.
     process.env.STRIPE_PRICE_ELITE_MONTHLY = PRICE;
-    expect(isLegacySubscription({ items: { data: [{ price: { id: PRICE } }] } })).toBe(false);
+    expect(isLegacySubscription({ items: { data: [{ price: { id: PRICE } }] } })).toBe(true);
   });
 
   test("un ancien abonnement, sans marque ni prix actuel, reste converti", () => {

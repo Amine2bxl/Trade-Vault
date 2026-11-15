@@ -3,6 +3,23 @@
 Journal des changements **structurels** (pas des features ni des correctifs,
 qui vivent dans l'historique git et les PR).
 
+## 2026-11-15 — Page Abonnement refaite, parcours de paiement vérifiés
+
+- Page Abonnement : carte d'adhésion par état, compteur du mois (gratuit,
+  `tradesThisMonth`), offres ou passage mensuel → licence, ce que chaque
+  page payante apporte (`PAGE_VALUE`), comparatif tiré de `LIMITS`, FAQ de
+  facturation, erreurs de paiement traduites. Logique pure dans
+  `subscriptionState.ts` (testée) ; états visibles au banc
+  `/dev/ui?screen=subscription&sub=monthly|lifetime|cancelling|pastdue|expired`.
+- Webhook : `STRIPE_PRICE_ELITE_MONTHLY` n'est plus une preuve de mensuel
+  actuel (en production il désigne l'ancien Elite) ; seules la marque
+  `offer` et la clé de catalogue `tradevault_…` comptent.
+- `tests/billingFlow.test.ts` : checkout et webhook de bout en bout, Supabase
+  et Stripe simulés au niveau HTTP (pas de `mock.module`, qui fuit entre
+  fichiers sous Bun).
+- Stratégie commerciale (`PRODUCT.md`) et pistes de croissance
+  (`ROADMAP.md`, G1–G12).
+
 ## 2026-11-15 — Vitrine Liquid et deux offres (9 €/mois, 49 € à vie)
 
 - Offre : le mensuel revient (`elite_monthly`, 9 €/mois, sans engagement) à

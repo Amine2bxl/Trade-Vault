@@ -68,6 +68,88 @@ Pas d'essai gratuit. Limites appliquées **en base** (`enforce_trade_quota`,
 `enforce_account_quota`). Ancrage de prix : pas les journaux à 20–30 $/mois,
 mais **le coût d'un challenge raté**.
 
+## Stratégie commerciale (revue du 2026-11-15)
+
+**Positionnement prix.** On ne se compare pas aux journaux, on se compare au
+coût d'un reset de challenge (200–600 $). 9 € par mois, c'est moins qu'un
+seul contrat mal dimensionné ; 49 € une fois, c'est moins de six mois de
+mensuel. Deux formules, **le même produit** : on ne vend pas des paliers, on
+vend une façon de payer.
+
+**Pas de plan annuel** (décision du propriétaire, 2026-11-15) : à 9 €/mois,
+un annuel « 3 mois offerts » vaudrait 81 € — plus cher que la licence à
+49 €, donc invendable. Si un annuel revient un jour, la licence doit d'abord
+coûter plus de deux ans de mensuel.
+
+**Risque assumé de la licence** : Jarvis est inclus et coûte à chaque
+requête. Garde-fou à décider : un plafond « usage raisonnable » technique
+sur `LIMITS.elite.jarvisPerDay` (aujourd'hui illimité), écrit dans les CGU,
+avant que le coût par utilisateur (`ai_agent_runs`) ne dépasse la marge.
+
+### La frontière gratuit / payant
+
+Principe : **le gratuit installe l'habitude, le payant donne le diagnostic.**
+Gratuit = noter (journal, calendrier, checklist, plan, calculateur, 10
+trades/mois, 1 compte, Jarvis 3/jour). Payant = comprendre pourquoi on perd
+(Analyses, Erreurs, Setups manqués, Monte-Carlo, Saisonnalité, Rapports,
+Jarvis complet, synchro, multi-comptes).
+
+Recommandations, par ordre de valeur :
+
+1. **Montrer le diagnostic avant le mur.** Le mur d'aperçu (`PreviewWall`)
+   montre déjà la vraie page floutée. Étape suivante : une seule « fuite »
+   réelle par mois offerte au gratuit (la plus coûteuse, avec son `n`), pour
+   que le gratuit vive le « aha » avant de payer.
+2. **Le calendrier économique en gratuit** (`news`, aujourd'hui payant) :
+   c'est l'écran qu'on ouvre CHAQUE matin, il ne coûte qu'un cron, et il fait
+   revenir les gratuits — donc il fait convertir. À trancher.
+3. **Le mur au bon moment** : relance douce à 8/10 trades, puis la modale à
+   deux offres à 10/10 — avec le compteur réel (déjà sur la page
+   Abonnement).
+4. Garder 10 trades/mois tant qu'aucune mesure ne dit le contraire ; tester
+   20 si l'activation (1er trade le jour 0) est bonne mais la conversion
+   faible.
+
+### Réductions — la politique
+
+- **Jamais de remise permanente sur la grille.** Le prix affiché est le
+  prix. Les réductions sont datées ou nominatives.
+- **Codes partenaires** (influenceurs, prop firms, communautés) : l'outil
+  existe (`promo_codes`). Les coupons de réduction sont en `duration=forever`
+  (`promo.server.ts`) : sur le mensuel, ça fait une remise À VIE. Pour le
+  mensuel, préférer « 3 premiers mois » (`duration=repeating`).
+- **Parrainage** (à construire) : un mois offert aux deux (crédit sur le
+  solde client Stripe) — le canal le moins cher pour une cible qui vit en
+  communautés Discord.
+- **Rétention** : coupon de rétention au moment de la résiliation (option
+  du portail client Stripe) ou bascule proposée vers la licence.
+- **Événements** : une opération par an au plus (Black Friday), sinon le
+  prix perd sa crédibilité.
+
+### Les leviers dans le produit (fait le 2026-11-15)
+
+Page Abonnement refaite : compteur du mois réel, grille gratuit / mensuel /
+licence, passage mensuel → licence, ce que chaque page payante apporte,
+comparatif tiré de `LIMITS`, questions de facturation, erreurs de paiement
+traduites. Modale d'achat à deux offres, mur d'aperçu au tarif vendu,
+vitrine et `/pricing` alignées.
+
+### À mesurer avant de toucher aux prix
+
+Aucun outil d'analytics produit n'est branché (`ROADMAP.md`, L8). Les
+chiffres qui décident : activation (1er trade le jour 0), part de gratuits
+qui atteignent 10/10, conversion gratuit → payant, part mensuel / licence,
+résiliation du mensuel à M1 et M3, coût IA par utilisateur payant. Outil
+recommandé : PostHog (hébergement UE) ou Plausible.
+
+### E-mails de cycle de vie
+
+Les e-mails « fin d'essai » et « relance après essai » ne partent plus : il
+n'y a plus d'essai. Et `RESEND_API_KEY` n'est pas posée dans Vercel :
+**aucun** e-mail ne part aujourd'hui, pas même la bienvenue. À remplacer par
+une séquence gratuite : J+1 (premier trade), J+7 (ta semaine), quota 8/10,
+mensuel résilié → proposition de licence.
+
 ## Règles d'honnêteté (non négociables)
 
 - Jamais de promesse de résultat de trading, nulle part (page, `llms.txt`,
