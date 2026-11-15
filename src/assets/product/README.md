@@ -10,17 +10,28 @@ d'illustration vers la vraie capture dès que le fichier correspondant existe.
 Le nom du fichier, **sans son extension**, est l'identifiant. Formats acceptés :
 `.png`, `.jpg`, `.jpeg`, `.webp`, `.avif`.
 
-| Fichier      | Où il apparaît                       | Écran à capturer                |
-| ------------ | ------------------------------------ | ------------------------------- |
-| `dashboard`  | Héros — la première image de la page | Le tableau de bord, plein écran |
-| `mistakes`   | Visite du produit, rangée 1          | Journal → Erreurs               |
-| `jarvis`     | Visite du produit, rangée 2          | Une conversation Jarvis         |
-| `analytics`  | Visite du produit, rangée 3          | La page Analyses                |
-| `checklist`  | Visite du produit, rangée 4          | Préparation → Checklist         |
-| `montecarlo` | Visite du produit, rangée 5          | Analyse → Monte Carlo           |
-| `journal`    | Visite du produit, rangée 6          | Le journal de trades            |
-| `missed`     | Visite du produit                    | Journal → Setups manqués        |
-| `news`       | Visite du produit                    | Préparation → Actualités éco.   |
+| Fichier     | Où il apparaît                          | Écran à capturer                      |
+| ----------- | --------------------------------------- | ------------------------------------- |
+| `dashboard` | Héros — la première image de la page    | Le tableau de bord, rail compris      |
+| `mistakes`  | Section « le problème », sous les cartes | Journal → Erreurs                     |
+| `journal`   | Bento du produit, grande carte          | Le journal de trades                  |
+| `calendar`  | Bento du produit                        | Journal → Calendrier                  |
+| `analytics` | Bento du produit                        | La page Analyses                      |
+| `checklist` | Bento du produit                        | Préparation → Checklist               |
+| `jarvis`    | Section Jarvis                          | Une conversation Jarvis               |
+
+Le téléphone posé devant le héros est `dashboard-m`.
+
+**Novembre 2026 — captures au langage Liquid.** `dashboard`, `mistakes`,
+`journal`, `calendar`, `analytics` et `checklist` (et leurs `-m`) ont été
+refaites sur le banc `/dev/ui` (`?screen=…`, `&shell=1` pour le héros) : les
+vrais composants de l'app, nourris par les trades d'EXEMPLE du banc (marqués
+« Example » dans le journal). La vitrine le dit sous chaque groupe de
+captures (`lq.shot.demo`). Le harnais `scripts/capture-product.mjs` ne
+reconnaît plus la navigation Liquid (entrées et sous-onglets renommés) : à
+reprendre avant de s'en resservir. `jarvis` date d'avant Liquid. Les
+captures `montecarlo`, `missed` et `news`, plus montées par la vitrine, ont
+été retirées : le glob étant `eager`, elles partaient dans le build pour rien.
 
 Chaque écran a AUSSI une variante `<nom>-m` : le même écran photographié à
 390px de large. La vitrine la sert sous 640px via `<picture>`. Sans elle, le

@@ -3,6 +3,27 @@
 Journal des changements **structurels** (pas des features ni des correctifs,
 qui vivent dans l'historique git et les PR).
 
+## 2026-11-15 — Vitrine Liquid et deux offres (9 €/mois, 49 € à vie)
+
+- Offre : le mensuel revient (`elite_monthly`, 9 €/mois, sans engagement) à
+  côté de la licence à vie (49 €, une fois) ; les deux ouvrent `elite`.
+  Catalogue `domain/plans` (`SALE_PLANS`, `salePlanFor`,
+  `lifetimeBreakEvenMonths`, `MONTHLY_COPY`). Aucune migration : le plan
+  était déjà autorisé en base.
+- Paiement : prix Stripe retrouvés par `lookup_key` dérivée du montant
+  (`stripeLookupKey`), repli `STRIPE_PRICE_*` vérifié au montant ; marque
+  `metadata.offer` sur les mensuels vendus, et seuls les abonnements d'avant
+  la licence sont convertis (`isLegacySubscription`, webhook et action
+  admin) ; checkout 409 si l'achat est inutile.
+- App : grille partagée gratuit / mensuel / licence (`OfferCard`, remplace
+  `LifetimeOffer`), modale d'achat à deux offres, mur d'aperçu au tarif
+  vendu, page Abonnement juste pour une licence ; les « 20 € » écrits en dur
+  dans les traductions sont retirés.
+- Vitrine : refaite au langage Liquid (lot L9) — héros centré, bento,
+  boucle en quatre gestes, tarifs à deux offres. Captures refaites au banc
+  `/dev/ui` ; `montecarlo`, `missed`, `news` retirées (plus montées).
+  ~22 Ko de CSS mort et 283 clés de dictionnaire orphelines supprimés.
+
 ## 2026-11-14 — Analyses complètes rétablies et enrichies
 
 - À la demande du propriétaire, la page d'Analyses d'origine revient en

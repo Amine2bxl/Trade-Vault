@@ -277,9 +277,17 @@ sont pas retirées des calculs ; la méthode l'explicite.
 
 ## 7. Landing et marketing
 
-Même langage Lucid que l'app, accent encore plus rare. Structure : Hero →
-Problème → Journal → Analyze → Understand → Improve → Produit → Analytics →
-Jarvis → Erreurs / cas d'usage → Excel/Notion → Tarifs → CTA.
+Même langage **Liquid** que l'app (lot L9, novembre 2026), accent encore plus
+rare : barre de navigation en capsule de verre, tout le contenu en plaques
+opaques rayon 28 (`.lq-card`), papier peint de l'app, aucune lueur derrière les
+captures, aucun bouton à ombre colorée, rien qui boucle. Structure : Héros
+centré (comme l'accueil de l'app, capture du tableau de bord + téléphone) →
+Confiance → Problème (+ capture Erreurs) → la boucle en quatre gestes (disques
+façon `ActionButton`) → Produit en bento (`Tour.tsx` : Journal, Calendrier,
+Analyses, Checklist) → Jarvis → Engagements → Tarifs (coût d'un reset face au
+mensuel et à la licence, montants du catalogue) → FAQ → CTA. Classes `lq-*` en
+fin de `landing.css`. Les captures viennent du banc `/dev/ui` (trades
+d'exemple, mention « compte de démonstration » sous chaque groupe).
 
 - **Les captures produit sont le protagoniste** de chaque section
   (« lead every section with a product screenshot »)
