@@ -3,6 +3,26 @@
 Journal des changements **structurels** (pas des features ni des correctifs,
 qui vivent dans l'historique git et les PR).
 
+## 2026-11-15 — Pages en un temps, pleine largeur, onboarding épuré
+
+- **Chargement en un temps** : plus de squelettes de page (`PageLoader` :
+  rien pendant 320 ms, puis un anneau) ; conversations Jarvis lues de façon
+  synchrone (`peekConversations`/`peekMessages`), espace conversation
+  importé directement ; boîte de réception préchargée (`inboxCache`).
+- **Pleine largeur** : `PAGE_WIDTH` et `SETTINGS_WIDTH` passent à
+  `max-w-none`.
+- **Brokers masquée** (`HIDDEN_PAGES`) : hors navigation et ⌘K, route
+  gardée pour le retour OAuth.
+- **Jarvis** : plus de questions suggérées ni de relances
+  (`insights/suggestions.ts` retiré) ; bas de fenêtre aligné.
+- **Mur d'aperçu** : fondu jusqu'à `--tv-bg`, hauteur mesurée (barre au
+  même pixel partout), trades du trader dès 10.
+- **Paiement** : crypto retirée de l'interface (le serveur garde la route
+  pour les anciens accès) ; carte d'achat en deux colonnes, sans défilement.
+- **Onboarding** : cadre épuré (plus de codes ni de fiche « TRADER FILE »),
+  portrait en pastilles ; ses effets reviennent partout — `TraceRing`
+  (liseré tracé) et `--tv-sky` (ciel de points fixes).
+
 ## 2026-11-15 — Analytics gratuit, carte d'achat, lumière sous les blocs
 
 - **Analytics ouvert au gratuit** (décision du propriétaire) : retiré de
