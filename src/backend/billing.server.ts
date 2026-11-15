@@ -456,13 +456,21 @@ async function openCheckoutSession(
   // L'apparence de la page de paiement, puis un repli : si Stripe refusait un
   // paramètre d'apparence (version d'API, image injoignable), le paiement part
   // quand même, sans habillage — jamais un achat perdu pour une couleur.
-  let session: { url?: string } | null;
-  try {
-    session = await stripe("/checkout/sessions", { ...params, ...checkoutBranding() });
-  } catch (e) {
-    if (!/branding_settings/i.test(e instanceof Error ? e.message : String(e))) throw e;
-    console.warn("[billing] checkout branding refused, retrying without it", e);
-    session = await stripe("/checkout/sessions", params);
+  // UN SEUL appel de création de session (`tests/checkoutInvariants`) : la
+  // tentative habillée, puis, au besoin, la même sans habillage.
+  let session: { url?: string } | null = null;
+  for (const avecApparence of [true, false]) {
+    try {
+      session = await stripe(
+        "/checkout/sessions",
+        avecApparence ? { ...params, ...checkoutBranding() } : params,
+      );
+      break;
+    } catch (e) {
+      const refusApparence = /branding_settings/i.test(e instanceof Error ? e.message : String(e));
+      if (!avecApparence || !refusApparence) throw e;
+      console.warn("[billing] checkout branding refused, retrying without it", e);
+    }
   }
   if (!session?.url) throw new Error("Stripe returned a checkout session without a url");
   return session.url;
