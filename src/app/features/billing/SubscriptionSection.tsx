@@ -13,7 +13,7 @@ import {
 } from "@/shared/ui/icons";
 import { useT } from "@/app/i18n/LanguageContext";
 import { useSubscription, type Subscription } from "@/app/hooks/useSubscription";
-import { Input } from "@/shared/ui";
+import { Input, TraceRing } from "@/shared/ui";
 import { cn } from "@/shared/ui/cn";
 import PrixAnime from "./PrixAnime";
 import {
@@ -179,6 +179,8 @@ export default function SubscriptionSection({
                 onChange={() => setChoix(o.plan)}
                 className="sr-only"
               />
+              {/* Le geste de l'onboarding : le choix se fait entourer. */}
+              {actif && <TraceRing radius={18} />}
               <span className="pw-radio" aria-hidden>
                 <Check className="pw-radio-check h-3 w-3" />
               </span>

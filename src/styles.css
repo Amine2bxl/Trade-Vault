@@ -866,6 +866,19 @@ body {
     stroke-dashoffset: 0;
   }
 }
+/* Le même tracé, au rythme de l'app (`TraceRing`, clin d'œil à
+   l'onboarding) : 280 ms, posé d'emblée sous mouvement réduit. */
+.tv-trace {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: onb-lock-sweep 280ms var(--tv-ease) forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tv-trace {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}
 .onb-lock-sweep,
 .onb-pulse-trace {
   stroke-dasharray: 1;
@@ -1002,6 +1015,14 @@ body {
   border-radius: 5px;
   border: 1px solid var(--tv-border);
   color: var(--tv-text-muted);
+  /* Le raccourci clavier ne se montre qu'au survol ou au focus : au repos,
+     une carte ne porte que son choix (sobriété, 2026-11-15). */
+  opacity: 0;
+  transition: opacity var(--tv-dur-1) var(--tv-ease);
+}
+:hover > .onb-kbd,
+:focus-visible > .onb-kbd {
+  opacity: 1;
 }
 
 /* ── La ligne de Jarvis : un curseur qui ne clignote QUE pendant l'écriture ── */
@@ -1090,6 +1111,61 @@ body {
 .onb-bar {
   transform-origin: left center;
   transition: transform 420ms var(--tv-ease);
+}
+/* La progression : UNE ligne continue (plus dix segments numérotés). */
+.onb-progress {
+  position: relative;
+  height: 3px;
+  flex: 1;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.07);
+}
+.onb-progress-fill {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--tv-accent);
+  transform-origin: left center;
+  transition: transform 520ms var(--tv-ease);
+}
+
+/* Le portrait du trader : chaque réponse entre en pastille, en bas de
+   l'écran. Plaques sourdes, la fuite surveillée en menthe. */
+.onb-portrait {
+  display: flex;
+  max-width: 760px;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  margin: 0 auto;
+  list-style: none;
+}
+.onb-portrait-chip {
+  max-width: 260px;
+  overflow: hidden;
+  padding: 5px 12px;
+  border: 1px solid var(--tv-border);
+  border-radius: 999px;
+  background: rgb(var(--tv-bg-rgb) / 0.72);
+  color: var(--tv-text-secondary);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.onb-portrait-chip[data-accent="oui"] {
+  border-color: rgb(var(--tv-accent-rgb) / 0.35);
+  color: var(--tv-highlight);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .onb-portrait-chip {
+    animation: fade-in-up 420ms var(--tv-ease) both;
+  }
+}
+@media (max-width: 640px) {
+  .onb-portrait {
+    display: none;
+  }
 }
 
 /* ── Le lancement : logo, prénom, puis l'espace qui se révèle ── */
@@ -6650,8 +6726,20 @@ body::before {
     ),
     radial-gradient(40rem 30rem at 50% 45%, rgb(255 255 255 / 0.025), transparent 70%);
 }
+/* Le ciel lui-même : une tuile SVG de points fixes, portée par `body` (et
+   non `:root`, qui reste identique au thème par défaut). */
+body {
+  --tv-sky: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='720'%20height='720'%3E%3Ccircle%20cx='640'%20cy='662'%20r='0.85'%20fill='white'%20fill-opacity='0.11'/%3E%3Ccircle%20cx='652'%20cy='100'%20r='0.85'%20fill='white'%20fill-opacity='0.17'/%3E%3Ccircle%20cx='448'%20cy='166'%20r='1.4'%20fill='white'%20fill-opacity='0.12'/%3E%3Ccircle%20cx='285'%20cy='131'%20r='0.85'%20fill='white'%20fill-opacity='0.20'/%3E%3Ccircle%20cx='75'%20cy='520'%20r='0.85'%20fill='white'%20fill-opacity='0.16'/%3E%3Ccircle%20cx='21'%20cy='631'%20r='0.85'%20fill='white'%20fill-opacity='0.14'/%3E%3Ccircle%20cx='303'%20cy='134'%20r='0.85'%20fill='white'%20fill-opacity='0.21'/%3E%3Ccircle%20cx='510'%20cy='434'%20r='0.85'%20fill='white'%20fill-opacity='0.12'/%3E%3Ccircle%20cx='288'%20cy='29'%20r='0.85'%20fill='white'%20fill-opacity='0.30'/%3E%3Ccircle%20cx='454'%20cy='430'%20r='0.85'%20fill='white'%20fill-opacity='0.28'/%3E%3Ccircle%20cx='280'%20cy='321'%20r='0.85'%20fill='white'%20fill-opacity='0.18'/%3E%3Ccircle%20cx='289'%20cy='280'%20r='0.85'%20fill='white'%20fill-opacity='0.14'/%3E%3Ccircle%20cx='499'%20cy='59'%20r='0.85'%20fill='white'%20fill-opacity='0.14'/%3E%3Ccircle%20cx='582'%20cy='661'%20r='0.85'%20fill='white'%20fill-opacity='0.28'/%3E%3Ccircle%20cx='502'%20cy='425'%20r='1.4'%20fill='white'%20fill-opacity='0.20'/%3E%3Ccircle%20cx='197'%20cy='221'%20r='0.85'%20fill='white'%20fill-opacity='0.13'/%3E%3Ccircle%20cx='458'%20cy='495'%20r='1.4'%20fill='white'%20fill-opacity='0.14'/%3E%3Ccircle%20cx='689'%20cy='223'%20r='0.85'%20fill='white'%20fill-opacity='0.21'/%3E%3Ccircle%20cx='28'%20cy='677'%20r='0.85'%20fill='white'%20fill-opacity='0.18'/%3E%3Ccircle%20cx='387'%20cy='302'%20r='0.85'%20fill='white'%20fill-opacity='0.12'/%3E%3Ccircle%20cx='609'%20cy='154'%20r='0.85'%20fill='white'%20fill-opacity='0.29'/%3E%3Ccircle%20cx='473'%20cy='466'%20r='0.85'%20fill='white'%20fill-opacity='0.22'/%3E%3Ccircle%20cx='129'%20cy='562'%20r='1.4'%20fill='white'%20fill-opacity='0.12'/%3E%3Ccircle%20cx='23'%20cy='699'%20r='0.85'%20fill='white'%20fill-opacity='0.20'/%3E%3Ccircle%20cx='571'%20cy='69'%20r='0.85'%20fill='white'%20fill-opacity='0.19'/%3E%3Ccircle%20cx='165'%20cy='316'%20r='0.85'%20fill='white'%20fill-opacity='0.10'/%3E%3Ccircle%20cx='130'%20cy='177'%20r='0.85'%20fill='white'%20fill-opacity='0.25'/%3E%3Ccircle%20cx='82'%20cy='685'%20r='0.85'%20fill='white'%20fill-opacity='0.21'/%3E%3Ccircle%20cx='254'%20cy='43'%20r='0.85'%20fill='white'%20fill-opacity='0.19'/%3E%3Ccircle%20cx='690'%20cy='509'%20r='0.85'%20fill='white'%20fill-opacity='0.18'/%3E%3Ccircle%20cx='207'%20cy='634'%20r='0.85'%20fill='white'%20fill-opacity='0.23'/%3E%3Ccircle%20cx='157'%20cy='223'%20r='0.85'%20fill='white'%20fill-opacity='0.11'/%3E%3Ccircle%20cx='24'%20cy='13'%20r='0.85'%20fill='white'%20fill-opacity='0.13'/%3E%3Ccircle%20cx='705'%20cy='396'%20r='0.85'%20fill='white'%20fill-opacity='0.18'/%3E%3Ccircle%20cx='353'%20cy='616'%20r='0.85'%20fill='white'%20fill-opacity='0.20'/%3E%3Ccircle%20cx='51'%20cy='611'%20r='0.85'%20fill='white'%20fill-opacity='0.22'/%3E%3Ccircle%20cx='617'%20cy='452'%20r='1.4'%20fill='white'%20fill-opacity='0.18'/%3E%3Ccircle%20cx='602'%20cy='263'%20r='0.85'%20fill='white'%20fill-opacity='0.19'/%3E%3Ccircle%20cx='531'%20cy='623'%20r='1.4'%20fill='white'%20fill-opacity='0.20'/%3E%3Ccircle%20cx='421'%20cy='561'%20r='0.85'%20fill='white'%20fill-opacity='0.18'/%3E%3Ccircle%20cx='664'%20cy='364'%20r='0.85'%20fill='white'%20fill-opacity='0.22'/%3E%3Ccircle%20cx='504'%20cy='527'%20r='0.85'%20fill='white'%20fill-opacity='0.19'/%3E%3Ccircle%20cx='599'%20cy='484'%20r='0.85'%20fill='white'%20fill-opacity='0.10'/%3E%3Ccircle%20cx='300'%20cy='677'%20r='0.85'%20fill='white'%20fill-opacity='0.22'/%3E%3Ccircle%20cx='451'%20cy='85'%20r='0.85'%20fill='white'%20fill-opacity='0.13'/%3E%3Ccircle%20cx='191'%20cy='700'%20r='0.85'%20fill='white'%20fill-opacity='0.28'/%3E%3C/svg%3E");
+}
+/* LE CIEL DE L'ONBOARDING, PARTOUT (clin d'œil, 2026-11-15). Les points
+   fixes de la première rencontre restent au fond de l'app et de la
+   vitrine : même générateur (graine 17), tuile de 720 px, opacités de 10
+   à 30 %, effacés vers le bas. Statique — aucune animation, aucun repeint. */
 body::after {
-  content: none;
+  background-image: var(--tv-sky);
+  background-size: 720px 720px;
+  mask-image: linear-gradient(to bottom, #000 0%, rgb(0 0 0 / 0.5) 55%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, rgb(0 0 0 / 0.5) 55%, transparent 100%);
 }
 @media print {
   body::before,
@@ -7452,6 +7540,7 @@ body::after {
   border: 0;
 }
 .pw-option {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 14px;

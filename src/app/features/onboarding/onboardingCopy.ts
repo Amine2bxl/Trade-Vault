@@ -14,8 +14,6 @@ import type { Lang } from "@/app/i18n/translations";
 export interface OnboardingCopy {
   // ── Cadre ──
   personalWelcome: string;
-  systemModules: string;
-  systemCalibrating: string;
   systemComplete: string;
   cont: string;
   skip: string;
@@ -25,23 +23,16 @@ export interface OnboardingCopy {
   skipSetup: string;
   stepWord: string;
   // ── Allumage ──
-  bootKicker: string;
   bootTitleA: string;
   bootTitleB: string;
   bootSub: string;
   bootCta: string;
   bootHint: string;
-  bootP1: string;
-  bootP2: string;
-  bootP3: string;
   // ── Dossier trader (le panneau qui se remplit) ──
   fileTitle: string;
   fileLive: string;
-  fileEmpty: string;
   /** Ligne encore vide du dossier (feuille mobile). */
-  filePending: string;
   /** Sous-titre de la feuille du dossier, sur téléphone. */
-  fileSheetSub: string;
   fTrader: string;
   fArena: string;
   fAccount: string;
@@ -205,8 +196,6 @@ export interface OnboardingCopy {
 
 const en: OnboardingCopy = {
   personalWelcome: "Welcome, {name}.",
-  systemModules: "Calibration",
-  systemCalibrating: "Calibrating",
   systemComplete: "Calibration complete",
   cont: "Continue",
   skip: "Skip",
@@ -216,21 +205,14 @@ const en: OnboardingCopy = {
   skipSetup: "Skip — I'll set it up later",
   stepWord: "Step",
 
-  bootKicker: "TradeVault · calibration terminal",
-  bootTitleA: "Your trading,",
-  bootTitleB: "decoded.",
-  bootSub: "Sixty seconds. TradeVault rebuilds itself around the way you trade.",
-  bootCta: "Start calibration",
+  bootTitleA: "Your trading.",
+  bootTitleB: "Your vault.",
+  bootSub: "One minute, a few taps, nothing to type. TradeVault shapes itself around you.",
+  bootCta: "Begin",
   bootHint: "Best with sound on",
-  bootP1: "Your account, pre-wired",
-  bootP2: "Your rules, checked on every trade",
-  bootP3: "Jarvis, briefed on your leak",
 
   fileTitle: "Trader file",
   fileLive: "Live",
-  fileEmpty: "Your answers write themselves here.",
-  filePending: "to set",
-  fileSheetSub: "Every answer writes a real setting into your vault.",
   fTrader: "Trader",
   fArena: "Arena",
   fAccount: "Account",
@@ -395,8 +377,6 @@ const en: OnboardingCopy = {
 
 const fr: OnboardingCopy = {
   personalWelcome: "Bienvenue, {name}.",
-  systemModules: "Calibration",
-  systemCalibrating: "Calibration",
   systemComplete: "Calibration terminée",
   cont: "Continuer",
   skip: "Passer",
@@ -406,21 +386,14 @@ const fr: OnboardingCopy = {
   skipSetup: "Passer — je configurerai plus tard",
   stepWord: "Étape",
 
-  bootKicker: "TradeVault · terminal de calibration",
-  bootTitleA: "Ton trading,",
-  bootTitleB: "décodé.",
-  bootSub: "Soixante secondes. TradeVault se reconstruit autour de ta façon de trader.",
-  bootCta: "Lancer la calibration",
+  bootTitleA: "Ton trading.",
+  bootTitleB: "Ton coffre.",
+  bootSub: "Une minute, quelques gestes, rien à écrire. TradeVault se façonne autour de toi.",
+  bootCta: "Commencer",
   bootHint: "Meilleur avec le son",
-  bootP1: "Ton compte, déjà câblé",
-  bootP2: "Tes règles, vérifiées à chaque trade",
-  bootP3: "Jarvis, briefé sur ta fuite",
 
   fileTitle: "Dossier trader",
   fileLive: "En direct",
-  fileEmpty: "Tes réponses s'inscrivent ici.",
-  filePending: "à régler",
-  fileSheetSub: "Chaque réponse écrit un réglage réel dans ton espace.",
   fTrader: "Trader",
   fArena: "Terrain",
   fAccount: "Compte",
@@ -590,8 +563,6 @@ const fr: OnboardingCopy = {
 
 const es: Partial<OnboardingCopy> = {
   personalWelcome: "Bienvenido, {name}.",
-  systemModules: "Módulos de calibración",
-  systemCalibrating: "Calibrando",
   systemComplete: "Calibración completa",
   cont: "Continuar",
   skip: "Omitir",
@@ -649,8 +620,6 @@ const es: Partial<OnboardingCopy> = {
 
 const pt: Partial<OnboardingCopy> = {
   personalWelcome: "Bem-vindo, {name}.",
-  systemModules: "Módulos de calibração",
-  systemCalibrating: "Calibrando",
   systemComplete: "Calibração concluída",
   cont: "Continuar",
   skip: "Pular",
@@ -708,8 +677,6 @@ const pt: Partial<OnboardingCopy> = {
 
 const de: Partial<OnboardingCopy> = {
   personalWelcome: "Willkommen, {name}.",
-  systemModules: "Kalibrierungsmodule",
-  systemCalibrating: "Kalibrierung",
   systemComplete: "Kalibrierung abgeschlossen",
   cont: "Weiter",
   skip: "Überspringen",
@@ -767,8 +734,6 @@ const de: Partial<OnboardingCopy> = {
 
 const it: Partial<OnboardingCopy> = {
   personalWelcome: "Benvenuto, {name}.",
-  systemModules: "Moduli di calibrazione",
-  systemCalibrating: "Calibrazione",
   systemComplete: "Calibrazione completata",
   cont: "Continua",
   skip: "Salta",
@@ -826,8 +791,6 @@ const it: Partial<OnboardingCopy> = {
 
 const nl: Partial<OnboardingCopy> = {
   personalWelcome: "Welkom, {name}.",
-  systemModules: "Kalibratiemodules",
-  systemCalibrating: "Kalibreren",
   systemComplete: "Kalibratie voltooid",
   cont: "Doorgaan",
   skip: "Overslaan",
@@ -885,8 +848,6 @@ const nl: Partial<OnboardingCopy> = {
 
 const ru: Partial<OnboardingCopy> = {
   personalWelcome: "Добро пожаловать, {name}.",
-  systemModules: "Модули калибровки",
-  systemCalibrating: "Калибровка",
   systemComplete: "Калибровка завершена",
   cont: "Продолжить",
   skip: "Пропустить",
@@ -944,8 +905,6 @@ const ru: Partial<OnboardingCopy> = {
 
 const zh: Partial<OnboardingCopy> = {
   personalWelcome: "欢迎，{name}。",
-  systemModules: "校准模块",
-  systemCalibrating: "正在校准",
   systemComplete: "校准完成",
   cont: "继续",
   skip: "跳过",
@@ -1003,8 +962,6 @@ const zh: Partial<OnboardingCopy> = {
 
 const ja: Partial<OnboardingCopy> = {
   personalWelcome: "ようこそ、{name}。",
-  systemModules: "キャリブレーション",
-  systemCalibrating: "調整中",
   systemComplete: "調整完了",
   cont: "続ける",
   skip: "スキップ",
@@ -1062,8 +1019,6 @@ const ja: Partial<OnboardingCopy> = {
 
 const ar: Partial<OnboardingCopy> = {
   personalWelcome: "مرحبًا، {name}.",
-  systemModules: "وحدات المعايرة",
-  systemCalibrating: "جارٍ الضبط",
   systemComplete: "اكتملت المعايرة",
   cont: "متابعة",
   skip: "تخطٍّ",
@@ -1121,8 +1076,6 @@ const ar: Partial<OnboardingCopy> = {
 
 const hi: Partial<OnboardingCopy> = {
   personalWelcome: "स्वागत है, {name}।",
-  systemModules: "कैलिब्रेशन मॉड्यूल",
-  systemCalibrating: "कैलिब्रेशन जारी",
   systemComplete: "कैलिब्रेशन पूरा",
   cont: "जारी रखें",
   skip: "छोड़ें",

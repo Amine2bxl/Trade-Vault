@@ -20,6 +20,13 @@
   color: #f7f8f8;
 }
 
+/* Le ciel de l'onboarding, en fond de vitrine (clin d'œil, 2026-11-15) :
+   la même tuile de points fixes que l'app (`--tv-sky`, `styles.css`). */
+.landing-root {
+  background-image: var(--tv-sky);
+  background-size: 720px 720px;
+}
+
 .landing-root > main {
   min-height: calc(100vh - 200px);
 }

@@ -50,6 +50,7 @@ const TradeModal = lazy(() => import("@/app/features/journal/TradeModal"));
 const CalendarPage = lazy(() => import("@/app/features/calendar/CalendarPage"));
 const Dashboard = lazy(() => import("@/app/features/dashboard/Dashboard"));
 const Journal = lazy(() => import("@/app/features/journal/Journal"));
+const Onboarding = lazy(() => import("@/app/features/onboarding/Onboarding"));
 const Checklist = lazy(() => import("@/app/features/checklist/Checklist"));
 const LotSizeCalculator = lazy(() => import("@/app/features/calculator/LotSizeCalculator"));
 const EconomicNews = lazy(() => import("@/app/features/news/EconomicNews"));
@@ -107,6 +108,7 @@ const IDS = [
   "tradingplan",
   "subscription",
   "inbox",
+  "onboarding",
 ] as const;
 type EcranId = (typeof IDS)[number];
 
@@ -275,6 +277,7 @@ function DevUiBody({
             {ecran === "tradingplan" && <TradingPlan setPage={noop} />}
             {ecran === "subscription" && <Subscription trades={trades} preview={apercu} />}
             {ecran === "inbox" && <Inbox />}
+            {ecran === "onboarding" && <Onboarding userId="dev-onboarding" onDone={noop} />}
           </Suspense>
         </PreviewWall>
       </div>

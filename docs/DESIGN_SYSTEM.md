@@ -223,6 +223,13 @@ l'écran « apparence » s'applique à chaud à la séquence elle-même.
 Sa sortie est une **métamorphose**, pas une coupure : la carte finale se vide
 (`.onb-morphing`), puis le shell s'ouvre depuis son rectangle jusqu'au plein
 écran (`.tv-morph-in`, `clip-path`, 760 ms en entrée-sortie, coupée sous mouvement réduit).
+Son cadre est **épuré** depuis le 2026-11-15 (« trop slop AI ») : une colonne
+centrée, la question en grand, une progression continue, et en bas le
+**portrait** du trader qui se compose en pastilles — plus de codes de module,
+de rail « calibration » ni de fiche « TRADER FILE ». Deux de ses effets
+reviennent dans tout le produit, en **clin d'œil** : le liseré qui se trace
+autour d'un choix (`TraceRing`, 280 ms dans l'app) et son ciel de points
+fixes (`--tv-sky`, papier peint statique de l'app et de la vitrine).
 
 ## 5. Primitives (`src/shared/ui`)
 

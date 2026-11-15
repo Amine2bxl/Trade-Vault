@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { SelectPicker, Sheet } from "@/shared/ui";
+import { SelectPicker } from "@/shared/ui";
 import {
   ArrowLeft,
   ArrowRight,
@@ -22,7 +22,6 @@ import {
   LockOpen,
   NotebookPen,
   PlayCircle,
-  Radar,
   Repeat2,
   Route,
   Scale,
@@ -63,7 +62,7 @@ import { loadTradingRules, saveTradingRules } from "@/app/trading/tradingRules";
 import { loadTradingPlan, saveTradingPlan } from "@/app/trading/tradingPlan";
 import { loadUserPref, saveUserPref } from "@/app/utils/userPrefs";
 import { remember } from "@/modules/ai/memory";
-import { DEFAULT_CONFLUENCES } from "@/app/types";
+import { DEFAULT_CONFLUENCES, HIDDEN_PAGES } from "@/app/types";
 import { todayLocalDate } from "@/shared/calendar-date";
 import { BUILTIN_THEMES, DEFAULT_THEME_ID } from "@/app/utils/themes";
 import {
@@ -112,14 +111,13 @@ import {
 import { play, releaseAudio, setSoundEnabled, soundEnabled, unlockAudio } from "./onboardingSound";
 import {
   ChoiceChip,
-  FileTicker,
   JarvisLine,
   LockSweep,
   OptionTile,
+  Portrait,
   SceneFrame,
   Stepper,
   ThemeCard,
-  TraderFile,
 } from "./OnboardingParts";
 import { prefersReducedMotion, rise } from "./onboardingMotion";
 import { jarvisLines } from "./onboardingJarvis";
@@ -191,20 +189,6 @@ const QUESTIONS = [
   "look",
 ] as const satisfies readonly Scene[];
 type Question = (typeof QUESTIONS)[number];
-
-/** Le code de chaque module, affiché comme sur un terminal. */
-const STEP_CODES = [
-  "ID-01",
-  "ARN-02",
-  "ACC-03",
-  "MKT-04",
-  "STY-05",
-  "EXP-06",
-  "LEK-07",
-  "GRD-08",
-  "MSN-09",
-  "LOOK-10",
-] as const;
 
 /** Les répliques de Jarvis, prises dans ses clips enregistrés : la vraie voix. */
 const VOICE_BOOT = "Power-up complete. I'll be watching every move.";
@@ -381,7 +365,6 @@ export default function Onboarding({
   const [save, setSave] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [calStep, setCalStep] = useState(0);
   const [launching, setLaunching] = useState<OnboardingAction | "fresh" | null>(null);
-  const [fileOpen, setFileOpen] = useState(false);
   // La connexion Tradovate est-elle OUVERTE sur ce serveur ? `null` tant
   // qu'on ne sait pas : la carte s'affiche alors comme « en cours », jamais
   // comme un bouton qui mènerait à une impasse.
@@ -447,12 +430,8 @@ export default function Onboarding({
 
   /* ── Clavier : 1-9 choisit, Entrée continue ── */
   const keys = useRef<{ digits: (() => void)[]; enter?: () => void }>({ digits: [] });
-  const fileOpenRef = useRef(false);
-  fileOpenRef.current = fileOpen;
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      // Le dossier ouvert est une lecture : le clavier ne répond pas dessous.
-      if (fileOpenRef.current) return;
       const target = e.target as HTMLElement | null;
       if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA")) {
         if (e.key === "Enter" && keys.current.enter) keys.current.enter();
@@ -785,7 +764,8 @@ export default function Onboarding({
   // L'état réel de la connexion Tradovate, demandé pendant la calibration :
   // il est connu quand l'écran de départ arrive. Seuls les traders de futures
   // la voient — c'est le marché que Tradovate couvre.
-  const wantsBroker = answers.assets.includes("futures");
+  // Brokers est masquée (`HIDDEN_PAGES`) : la carte Tradovate aussi.
+  const wantsBroker = !HIDDEN_PAGES.includes("brokers") && answers.assets.includes("futures");
   useEffect(() => {
     if ((scene !== "calibrate" && scene !== "start") || !wantsBroker || brokerReady !== null) {
       return;
@@ -978,19 +958,11 @@ export default function Onboarding({
               className="h-[52px] w-[52px] rounded-xl"
             />
           </div>
-          <div
-            className="onb-rise mb-4 flex items-center gap-3 font-mono text-[10px] uppercase tracking-[0.16em] text-slate-500 sm:tracking-[0.24em]"
-            style={rise(2)}
-          >
-            <span className="onb-boot-line hidden h-px w-10 bg-[var(--tv-accent)] sm:block" />
-            {c.bootKicker}
-            <span className="onb-boot-line hidden h-px w-10 bg-[var(--tv-accent)] sm:block" />
-          </div>
           <h1
             className="onb-rise text-[clamp(2.3rem,6vw,4rem)] font-semibold leading-[1.02] tracking-[-0.04em] text-white"
             style={rise(3)}
           >
-            {c.bootTitleA} <span className="text-[var(--tv-highlight)]">{c.bootTitleB}</span>
+            {c.bootTitleA} <span className="block text-[var(--tv-highlight)]">{c.bootTitleB}</span>
           </h1>
           <p
             className="onb-rise mt-4 max-w-[520px] text-[0.9375rem] leading-relaxed text-slate-400"
@@ -998,30 +970,12 @@ export default function Onboarding({
           >
             {c.bootSub}
           </p>
-          <ul className="mt-7 grid w-full max-w-[560px] gap-2 sm:grid-cols-3">
-            {(
-              [
-                [Wallet, c.bootP1],
-                [ShieldCheck, c.bootP2],
-                [Radar, c.bootP3],
-              ] as const
-            ).map(([Icon, text], i) => (
-              <li
-                key={text}
-                className="onb-rise flex items-center gap-2.5 rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-3 py-2.5 text-left text-[12px] leading-snug text-slate-300 sm:flex-col sm:items-start"
-                style={rise(5 + i)}
-              >
-                <Icon className="h-4 w-4 shrink-0 text-[var(--tv-highlight)]" strokeWidth={1.8} />
-                {text}
-              </li>
-            ))}
-          </ul>
           <button
             type="button"
             onClick={ignite}
             disabled={igniting}
-            className="onb-cta onb-rise tv-accent-fill mt-8 inline-flex h-12 items-center gap-2 px-6 text-[0.9375rem] font-bold disabled:opacity-70"
-            style={rise(8)}
+            className="onb-cta onb-rise tv-accent-fill mt-9 inline-flex h-12 items-center gap-2 px-7 text-[0.9375rem] font-bold disabled:opacity-70"
+            style={rise(6)}
           >
             {c.bootCta} <ArrowRight className="h-4 w-4" />
           </button>
@@ -1149,7 +1103,6 @@ export default function Onboarding({
 
   /* ── Les questions, la calibration et le départ partagent un cadre ── */
   const progress = scene === "calibrate" || scene === "start" ? 1 : (qIndex + 1) / QUESTIONS.length;
-  const stepCode = qIndex >= 0 ? STEP_CODES[qIndex] : "SYS-OK";
 
   let body: ReactNode = null;
 
@@ -1157,7 +1110,7 @@ export default function Onboarding({
     const langs = Object.entries(LANG_NAMES) as [Lang, string][];
     keys.current.enter = next;
     body = (
-      <SceneFrame code={STEP_CODES[0]} title={c.idTitle} why={lines.identity}>
+      <SceneFrame title={c.idTitle} why={lines.identity}>
         <input
           type="text"
           value={answers.firstName}
@@ -1191,7 +1144,7 @@ export default function Onboarding({
     const order: Arena[] = ["prop_challenge", "funded", "personal", "demo"];
     keys.current.digits = order.map((id) => () => choose(() => set("arena", id)));
     body = (
-      <SceneFrame code={STEP_CODES[1]} title={c.arenaTitle} why={lines.arena}>
+      <SceneFrame title={c.arenaTitle} why={lines.arena}>
         <div className="grid gap-2.5 sm:grid-cols-2">
           {order.map((id, i) => (
             <OptionTile
@@ -1211,7 +1164,7 @@ export default function Onboarding({
     const title = prop ? c.firmTitle : answers.arena === "demo" ? c.capTitleDemo : c.capTitle;
     keys.current.enter = next;
     body = (
-      <SceneFrame code={STEP_CODES[2]} title={title} why={lines.account}>
+      <SceneFrame title={title} why={lines.account}>
         {prop && (
           <div className="onb-rise mb-5" style={rise(3)}>
             <div className="tv-label mb-2 text-slate-500">{c.firmLabel}</div>
@@ -1297,7 +1250,7 @@ export default function Onboarding({
     keys.current.digits = order.map((m) => () => toggle(m));
     keys.current.enter = next;
     body = (
-      <SceneFrame code={STEP_CODES[3]} title={c.assetsTitle} why={lines.markets}>
+      <SceneFrame title={c.assetsTitle} why={lines.markets}>
         <div className="grid gap-2.5 sm:grid-cols-2">
           {order.map((m, i) => (
             <OptionTile
@@ -1348,7 +1301,7 @@ export default function Onboarding({
     const order: Style[] = ["scalping", "daytrading", "swing"];
     keys.current.digits = order.map((id) => () => choose(() => set("style", id)));
     body = (
-      <SceneFrame code={STEP_CODES[4]} title={c.styleTitle} why={lines.style}>
+      <SceneFrame title={c.styleTitle} why={lines.style}>
         <div className="grid gap-2.5">
           {order.map((id, i) => (
             <OptionTile
@@ -1367,7 +1320,7 @@ export default function Onboarding({
     const order: Experience[] = ["new", "intermediate", "seasoned", "funded"];
     keys.current.digits = order.map((id) => () => choose(() => set("experience", id)));
     body = (
-      <SceneFrame code={STEP_CODES[5]} title={c.expTitle} why={lines.experience}>
+      <SceneFrame title={c.expTitle} why={lines.experience}>
         <div className="grid gap-2.5 sm:grid-cols-2">
           {order.map((id, i) => (
             <OptionTile
@@ -1388,7 +1341,7 @@ export default function Onboarding({
     keys.current.digits = order.map((id) => () => choose(() => set("leak", id), false));
     if (answers.leak) keys.current.enter = next;
     body = (
-      <SceneFrame code={STEP_CODES[6]} title={c.painTitle} why={lines.leak}>
+      <SceneFrame title={c.painTitle} why={lines.leak}>
         <div className="grid gap-2.5">
           {order.map((id, i) => (
             <OptionTile
@@ -1479,7 +1432,7 @@ export default function Onboarding({
       );
     };
     body = (
-      <SceneFrame code={STEP_CODES[7]} title={c.grTitle} why={lines.guardrails}>
+      <SceneFrame title={c.grTitle} why={lines.guardrails}>
         <div className="grid gap-2.5">
           {card(
             "riskPct",
@@ -1586,7 +1539,7 @@ export default function Onboarding({
     keys.current.digits = order.map((id) => () => choose(() => set("goal", id), false));
     keys.current.enter = next;
     body = (
-      <SceneFrame code={STEP_CODES[8]} title={c.goalTitle} why={lines.mission}>
+      <SceneFrame title={c.goalTitle} why={lines.mission}>
         <div className="grid gap-2.5">
           {order.map((id, i) => (
             <OptionTile
@@ -1641,7 +1594,7 @@ export default function Onboarding({
     keys.current.digits = themes.map((th) => () => pick(th.id));
     keys.current.enter = next;
     body = (
-      <SceneFrame code={STEP_CODES[9]} title={c.lookTitle} why={lines.look}>
+      <SceneFrame title={c.lookTitle} why={lines.look}>
         <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
           {themes.map((th, i) => (
             <ThemeCard
@@ -1663,11 +1616,7 @@ export default function Onboarding({
     if (calDone) keys.current.enter = () => goTo("start");
     body = (
       <div className="onb-scene w-full">
-        <div className="mb-3 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--tv-highlight)]">
-          <span className="h-px w-6 bg-[var(--tv-accent)]" />
-          {calDone ? c.systemComplete : c.systemCalibrating}
-        </div>
-        <h2 className="text-[clamp(1.45rem,3.2vw,2rem)] font-semibold leading-[1.12] tracking-[-0.03em] text-white">
+        <h2 className="text-center text-[clamp(1.6rem,3.6vw,2.4rem)] font-semibold leading-[1.1] tracking-[-0.035em] text-white">
           {calDone ? c.revealTitle : c.calTitle}
         </h2>
         <div className="mt-5 h-1 overflow-hidden rounded-full bg-[var(--tv-plate-2)]">
@@ -1759,14 +1708,10 @@ export default function Onboarding({
     keys.current.digits = live.map((o) => () => launch(o.id));
     body = (
       <div className="onb-scene w-full">
-        <div className="mb-3 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--tv-highlight)]">
-          <span className="h-px w-6 bg-[var(--tv-accent)]" />
-          GO
-        </div>
-        <h2 className="text-[clamp(1.45rem,3.2vw,2rem)] font-semibold leading-[1.12] tracking-[-0.03em] text-white">
+        <h2 className="text-center text-[clamp(1.6rem,3.6vw,2.4rem)] font-semibold leading-[1.1] tracking-[-0.035em] text-white">
           {c.startTitle}
         </h2>
-        <JarvisLine text={lines.start} className="mt-3 mb-6" />
+        <JarvisLine text={lines.start} className="mx-auto mt-4 mb-8 max-w-[520px] justify-center" />
         <div className="grid gap-2.5">
           {options.map((o, i) => (
             <OptionTile
@@ -1808,192 +1753,72 @@ export default function Onboarding({
   const canSkip = qIndex >= 0 && scene !== "identity" && scene !== "guardrails" && scene !== "look";
 
   return (
-    <div className="onb-root relative flex h-dvh w-full overflow-hidden">
+    <div className="onb-root relative flex h-dvh w-full flex-col overflow-hidden">
       <OnboardingField />
       <MarketPulse step={Math.max(0, qIndex + 1)} />
 
-      {/* ── Le rail des modules (bureau) ── */}
-      <aside className="relative z-20 hidden w-64 shrink-0 flex-col border-r border-[var(--tv-border)] bg-[rgb(var(--tv-bg-rgb)/0.72)] px-5 py-6 lg:flex">
-        <div className="flex items-center gap-2.5">
-          <img
-            src={logoSrc}
-            alt=""
-            width={27}
-            height={27}
-            className="h-[27px] w-[27px] rounded-md"
-          />
-          <span className="text-[0.9375rem] font-semibold tracking-tight text-white">
-            TradeVault
-          </span>
+      {/* ── LE CADRE, RÉDUIT À L'ESSENTIEL (2026-11-15) ────────────────────
+          Retour · une ligne de progression continue · le son. Le rail des
+          « modules » à codes (ID-01, ARN-02…), la boîte SYSTEM/SYNC/VAULT et
+          la fiche « TRADER FILE · LIVE » sont partis : un décor de terminal
+          qui faisait « généré ». Ce qui reste : la question, au centre, et
+          le portrait du trader qui se compose en bas. */}
+      <header className="relative z-20 mx-auto flex w-full max-w-[720px] shrink-0 items-center gap-4 px-5 pt-5">
+        {qIndex > 0 ? (
+          <button
+            type="button"
+            onClick={back}
+            aria-label={c.back}
+            className="-m-2 grid h-10 w-10 shrink-0 place-items-center rounded-full text-slate-400 transition-colors hover:text-white"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+        ) : (
+          <img src={logoSrc} alt="" width={24} height={24} className="h-6 w-6 rounded-md" />
+        )}
+        <div
+          className="onb-progress"
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.round(progress * 100)}
+        >
+          <span className="onb-progress-fill" style={{ transform: `scaleX(${progress})` }} />
         </div>
-        <div className="mt-10 font-mono text-[9px] uppercase tracking-[0.22em] text-slate-600">
-          {c.systemModules}
-        </div>
-        <ol className="mt-3 space-y-0.5">
-          {QUESTIONS.map((q, index) => {
-            const done = qIndex < 0 ? true : index < qIndex;
-            const active = index === qIndex;
-            return (
-              <li key={q}>
-                <button
-                  type="button"
-                  disabled={!done || scene === "calibrate" || scene === "start"}
-                  onClick={() => goTo(q, "back")}
-                  className={cn(
-                    "flex w-full items-center gap-3 rounded-md px-2 py-1.5 text-left font-mono text-[11px] uppercase tracking-[0.08em] transition-colors disabled:cursor-default",
-                    active
-                      ? "bg-[var(--tv-plate-2)] text-white"
-                      : done
-                        ? "text-slate-400 hover:text-white"
-                        : "text-slate-700",
-                  )}
-                >
-                  <span
-                    className={cn(
-                      "grid h-4 w-4 shrink-0 place-items-center rounded-[4px] border",
-                      done
-                        ? "border-[var(--tv-accent)] bg-[var(--tv-accent)] text-[var(--tv-bg)]"
-                        : active
-                          ? "border-[var(--tv-accent)]"
-                          : "border-[var(--tv-border-strong)]",
-                    )}
-                  >
-                    {done ? (
-                      <Check className="h-2.5 w-2.5" strokeWidth={3} />
-                    ) : active ? (
-                      <span className="onb-status-dot h-1.5 w-1.5 rounded-full bg-[var(--tv-accent)]" />
-                    ) : null}
-                  </span>
-                  <span className="min-w-0 flex-1 truncate">{STEP_CODES[index]}</span>
-                </button>
-              </li>
-            );
-          })}
-        </ol>
-        <div className="mt-auto space-y-2 rounded-lg border border-[var(--tv-border)] bg-[var(--tv-plate-1)] p-3 font-mono text-[10px]">
-          <div className="flex items-center justify-between">
-            <span className="text-slate-600">SYSTEM</span>
-            <span className="flex items-center gap-1.5 text-[var(--tv-highlight)]">
-              <span className="onb-status-dot h-1.5 w-1.5 rounded-full bg-[var(--tv-accent)]" />
-              {scene === "start" || calDone ? c.systemComplete : c.systemCalibrating}
-            </span>
-          </div>
-          <div className="flex items-center justify-between text-slate-500">
-            <span>SYNC</span>
-            <span className="tv-figure tv-figure-secondary text-[10px]">
-              {Math.round(progress * 100)}%
-            </span>
-          </div>
-          <div className="flex items-center justify-between text-slate-600">
-            <span>VAULT</span>
-            <Lock className="h-3 w-3" />
-          </div>
-        </div>
-      </aside>
+        {soundButton}
+      </header>
 
-      <main className="relative z-10 flex min-w-0 flex-1 flex-col">
-        {/* Barre haute : retour · progression segmentée · code · son */}
-        <header className="mx-auto flex w-full max-w-3xl shrink-0 items-center gap-3 px-4 pt-4 md:px-6">
-          {qIndex > 0 ? (
+      <main className="relative z-10 flex min-h-0 flex-1 justify-center overflow-y-auto px-5 pb-6 pt-8 md:pt-[8vh]">
+        <div key={scene} className="w-full max-w-[600px]">
+          {body}
+          {needsContinue && (
             <button
               type="button"
-              onClick={back}
-              aria-label={c.back}
-              className="-m-2 flex h-10 w-10 shrink-0 items-center justify-center text-slate-400 transition-colors hover:text-white"
+              onClick={next}
+              className="onb-cta onb-rise tv-accent-fill mx-auto mt-8 flex h-12 w-full max-w-[360px] items-center justify-center gap-2 text-[0.9375rem] font-bold"
+              style={rise(10)}
             >
-              <ArrowLeft className="h-5 w-5" />
+              {c.cont} <ArrowRight className="h-4 w-4" />
             </button>
-          ) : (
-            <span className="w-6" />
           )}
-          <div className="flex flex-1 gap-1" aria-hidden>
-            {QUESTIONS.map((q, index) => (
-              <span
-                key={q}
-                className="relative h-[3px] flex-1 overflow-hidden rounded-full bg-white/[0.06]"
-              >
-                <span
-                  className="onb-bar absolute inset-0 bg-[var(--tv-accent)]"
-                  style={{
-                    transform: `scaleX(${qIndex < 0 || index < qIndex ? 1 : index === qIndex ? 0.5 : 0})`,
-                  }}
-                />
-              </span>
-            ))}
-          </div>
-          <span className="tv-figure tv-figure-secondary shrink-0 text-[10px] text-slate-600">
-            {stepCode}
-          </span>
-          {soundButton}
-        </header>
-
-        {/* Le dossier, en une ligne, partout où le dossier complet n'a pas
-            sa colonne : chaque réponse s'y voit écrite. */}
-        {qIndex >= 0 && (
-          <div className="mx-auto w-full max-w-[628px] shrink-0 px-4 pt-3 md:px-6 xl:hidden">
-            <FileTicker
-              title={c.fileTitle}
-              empty={c.fileEmpty}
-              rows={fileRows}
-              onOpen={() => {
-                play("tick");
-                setFileOpen(true);
-              }}
-            />
-          </div>
-        )}
-
-        <div className="relative flex min-h-0 flex-1 justify-center overflow-y-auto px-4 pb-6 pt-6 md:px-6 md:pt-10">
-          <div className="flex w-full max-w-[1080px] items-start justify-center gap-8">
-            <div key={scene} className="w-full max-w-[580px]">
-              {body}
-              {needsContinue && (
-                <button
-                  type="button"
-                  onClick={next}
-                  className="onb-cta onb-rise tv-accent-fill mt-7 inline-flex h-12 w-full items-center justify-center gap-2 text-[0.9375rem] font-bold"
-                  style={rise(10)}
-                >
-                  {c.cont} <ArrowRight className="h-4 w-4" />
-                </button>
-              )}
-              {canSkip && (
-                <button
-                  type="button"
-                  onClick={next}
-                  className="mt-2.5 w-full py-2 text-[12px] text-slate-500 transition-colors hover:text-slate-300"
-                >
-                  {c.skip}
-                </button>
-              )}
-            </div>
-            {/* Le dossier trader : la preuve en direct que chaque réponse sert. */}
-            <TraderFile
-              className="sticky top-0 hidden w-[300px] shrink-0 xl:block"
-              title={c.fileTitle}
-              live={c.fileLive}
-              empty={c.fileEmpty}
-              rows={fileRows}
-            />
-          </div>
+          {canSkip && (
+            <button
+              type="button"
+              onClick={next}
+              className="mx-auto mt-2.5 block py-2 text-[12px] text-slate-500 transition-colors hover:text-slate-300"
+            >
+              {c.skip}
+            </button>
+          )}
         </div>
       </main>
 
-      <Sheet
-        open={fileOpen}
-        onClose={() => setFileOpen(false)}
-        title={c.fileTitle}
-        subtitle={c.fileSheetSub}
-      >
-        <TraderFile
-          headless
-          title={c.fileTitle}
-          live={c.fileLive}
-          empty={c.fileEmpty}
-          pending={c.filePending}
-          rows={fileRows}
-        />
-      </Sheet>
+      {/* Le portrait : chaque réponse y entre, en une pastille. */}
+      {qIndex >= 0 && (
+        <footer className="relative z-10 shrink-0 px-5 pb-5">
+          <Portrait rows={fileRows} label={c.fileTitle} />
+        </footer>
+      )}
     </div>
   );
 }
