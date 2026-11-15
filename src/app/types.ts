@@ -58,15 +58,21 @@ export const SECTIONS = [
   { id: "analysis", pages: ["analytics", "seasonality", "reports", "montecarlo"] },
   { id: "coach", pages: ["insights"] },
   { id: "strategy", pages: ["tradingplan", "goals"] },
-  // `brokers` vit avec le compte : on branche ses comptes une fois, dans les
-  // réglages, puis la synchro travaille seule (le Journal y renvoie).
-  { id: "settings", pages: ["settings", "profile", "appearance", "brokers", "subscription"] },
+  { id: "settings", pages: ["settings", "profile", "appearance", "subscription"] },
 ] as const satisfies readonly { id: string; pages: readonly Page[] }[];
 
 export type SectionId = (typeof SECTIONS)[number]["id"];
 
 /** Pages qui ne vivent dans aucune section (surfaces, pas destinations). */
-export const UNSECTIONED_PAGES: readonly Page[] = ["inbox"];
+//
+// `brokers` est MASQUÉE (décision du propriétaire, 2026-11-15) : la
+// synchronisation n'est pas encore confirmée de bout en bout, la page sera
+// refaite. Elle quitte la navigation et ⌘K, mais garde sa route : le retour
+// OAuth de Tradovate (`/brokers`) doit continuer d'aboutir.
+export const UNSECTIONED_PAGES: readonly Page[] = ["inbox", "brokers"];
+
+/** Pages routables mais absentes de toute navigation (rail, barre, ⌘K). */
+export const HIDDEN_PAGES: readonly Page[] = ["brokers"];
 
 /** Garde d'exécution — la seule façon sûre de valider une valeur stockée. */
 export function isPage(value: unknown): value is Page {

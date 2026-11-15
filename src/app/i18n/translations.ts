@@ -2857,7 +2857,6 @@ const en = {
     "Structure is filled in — confirm your risk to get the R, then add your setup, notes and screenshots.",
   "journal.reviewPending": "{n} imported trades to review",
   "journal.reviewNow": "Review",
-  "journal.connectBroker": "Connect a broker",
   "brokers.err.schema":
     "Broker sync isn't installed on this database yet. Your trades can still be imported from a CSV export.",
   "brokers.err.server": "TradeVault couldn't save the connection. Try again in a moment.",

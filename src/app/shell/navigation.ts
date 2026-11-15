@@ -21,7 +21,7 @@ import {
   Shuffle,
   Cable,
 } from "@/shared/ui/icons";
-import { PAGES, SECTIONS, type Page, type SectionId } from "../types";
+import { HIDDEN_PAGES, PAGES, SECTIONS, type Page, type SectionId } from "../types";
 import type { TKey } from "../i18n/translations";
 
 /**
@@ -118,4 +118,4 @@ export function defaultPageOfSection(id: SectionId): Page {
 export const MOBILE_SECTIONS: SectionId[] = ["dashboard", "preparation", "journal", "analysis"];
 
 /** Liste plate (ordre produit) — utilisée par la palette de commandes. */
-export const NAV_ITEMS: NavItem[] = PAGES.map(navItem);
+export const NAV_ITEMS: NavItem[] = PAGES.filter((p) => !HIDDEN_PAGES.includes(p)).map(navItem);

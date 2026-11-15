@@ -2790,7 +2790,6 @@ const fr: Dict = {
     "La structure est remplie — confirme ton risque pour obtenir le R, puis ajoute ton setup, tes notes et tes captures.",
   "journal.reviewPending": "{n} trades importés à relire",
   "journal.reviewNow": "Relire",
-  "journal.connectBroker": "Connecter un broker",
   "brokers.err.schema":
     "La synchro broker n'est pas encore installée sur cette base. Tes trades peuvent toujours être importés depuis un export CSV.",
   "brokers.err.server": "TradeVault n'a pas pu enregistrer la connexion. Réessaie dans un instant.",

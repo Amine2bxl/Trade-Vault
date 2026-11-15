@@ -47,10 +47,11 @@ L'élévation est réservée aux modales et menus ; une carte de graphique ou de
 statistique ne change plus de fond au survol.
 
 `PageContainer` porte les marges communes (`px-3 py-2 md:px-5 md:py-3`) et la
-largeur unique `PAGE_WIDTH` (1400 px, `shared/ui/tokens.ts`), partagée par l'en-tête et les squelettes — plus d'écart entre deux pages d'une même section, y compris pour les pages à hauteur mesurée (ref transmise
-directement). Les cinq pages de réglages (Réglages, Profil, Apparence, Brokers,
-Abonnement) passent `measure="settings"` : même cadre que l'en-tête, et dedans
-une colonne de lecture `SETTINGS_WIDTH` (1040 px) alignée à gauche — le bord
+largeur unique `PAGE_WIDTH` (pleine largeur depuis le 2026-11-15, `shared/ui/tokens.ts`), partagée par l'en-tête et les squelettes — plus d'écart entre deux pages d'une même section, y compris pour les pages à hauteur mesurée (ref transmise
+directement). Les pages de réglages (Réglages, Profil, Apparence, Abonnement — Brokers est
+masquée, `HIDDEN_PAGES`) passent `measure="settings"` : même cadre que l'en-tête,
+et dedans `SETTINGS_WIDTH` (pleine largeur, elle aussi) ; la page Abonnement
+centre sa carte d'achat (1040 px) — le bord
 gauche ne bouge pas d'un onglet à l'autre. La disposition reste propre à l'usage : courbe dominante au Dashboard,
 tableau sur ordinateur et cartes à deux rangées sur mobile dans le Journal
 (instrument et P&L au-dessus, contexte et actions dessous), colonnes de saisie
@@ -426,7 +427,7 @@ Aucune notification de démonstration n’est ajoutée dans le produit.
 
 **Calendrier économique (façon Forex Factory) :** un TABLEAU, une ligne par publication — heure (écrite une fois pour les publications simultanées), devise, impact en barres (3 rouge, 2 orange, 1 jaune), événement, réel, prévu, précédent — groupé par jour, trié par heure. La provenance est dans l'en-tête (« Vérifié · Forex Factory » + fraîcheur, ou « Horaires indicatifs » en repli). Les filtres (impact, devises, période) vivent dans les préférences du compte (`news.filters.v1`, `userPrefs`) : ils survivent à la fermeture du site et suivent le trader d'un appareil à l'autre.
 
-**Pages contenues :** cadre unique `PAGE_WIDTH` (1400 px), graphiques moins hauts ;
+**Pages contenues :** cadre unique `PAGE_WIDTH` (pleine largeur), graphiques moins hauts ;
 Analytics organise tous ses blocs en Synthèse, Exécution et Timing, un groupe
 à la fois. Le calendrier partage le même cadre que les autres pages.
 

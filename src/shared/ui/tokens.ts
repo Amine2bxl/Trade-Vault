@@ -123,12 +123,20 @@ export const motion = {
    avait 1200 : passer du Journal au Calendrier déplaçait tout le contenu (et
    l'en-tête) d'une centaine de pixels vers la gauche sur un grand écran, et
    le squelette, lui aussi à 1400, faisait sauter chaque page au chargement. */
-export const PAGE_WIDTH = "max-w-[1400px]";
+//
+// PLEINE LARGEUR (décision du propriétaire, 2026-11-15) : « utilise toute la
+// largeur du site, pour toutes les pages ». Le cadre de l'app donne déjà les
+// marges ; une colonne plafonnée à 1400 px laissait des bandes vides sur les
+// grands écrans.
+export const PAGE_WIDTH = "max-w-none";
 
 /* LES PAGES DE RÉGLAGES (Réglages, Profil, Apparence, Brokers, Abonnement)
    partagent UNE largeur de lecture : on passe de l'une à l'autre par les
    onglets de la section, rien ne doit changer de place. */
-export const SETTINGS_WIDTH = "max-w-[1040px]";
+//
+// Pleine largeur elles aussi (même décision) : les formulaires gardent leurs
+// propres colonnes à l'intérieur.
+export const SETTINGS_WIDTH = "max-w-none";
 
 /* Un cran plus serré que la première version : les cartes se lisaient
    « épaisses » — beaucoup de marge autour de peu de contenu. Ces pas se

@@ -11,7 +11,6 @@ import {
   Download,
   Target,
   ClipboardCheck,
-  Cable,
 } from "@/shared/ui/icons";
 import { Trade, isBreakEven } from "@/app/types";
 import { measuredR } from "@/domain/trade";
@@ -370,20 +369,8 @@ export default function Journal({
               <span className="hidden md:inline">{t("journal.reviewNow")}</span>
             </Button>
           )}
-          {/* Le chemin vers la synchro automatique, là où l'on saisit ses
-            trades à la main : c'est ici qu'on se demande si on pourrait ne
-            plus le faire. */}
-          <Button
-            variant="subtle"
-            size="sm"
-            onClick={() =>
-              window.dispatchEvent(new CustomEvent("tv:navigate", { detail: { page: "brokers" } }))
-            }
-            title={t("journal.connectBroker")}
-          >
-            <Cable className="h-3.5 w-3.5" />
-            <span className="hidden lg:inline">{t("nav.brokers")}</span>
-          </Button>
+          {/* Le raccourci « Brokers » est retiré tant que la page est masquée
+              (voir `HIDDEN_PAGES`). */}
           <Button variant="subtle" size="sm" onClick={() => exportTradesCSV(trades)}>
             <Download className="w-3.5 h-3.5" />
             <span className="hidden md:inline">{t("common.exportCsv")}</span>
