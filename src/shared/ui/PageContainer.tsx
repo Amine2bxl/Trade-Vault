@@ -35,7 +35,7 @@ export function PageContainer({
     return (
       <div
         className={cn(
-          "tv-page mx-auto w-full min-w-0",
+          "tv-page tv-page--settings mx-auto w-full min-w-0",
           PAGE_WIDTH,
           density.pagePad,
           fit && "tv-fit",

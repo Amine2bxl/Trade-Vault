@@ -113,16 +113,16 @@ export const MONTHLY_COPY = {
  *
  * La grille listait dix fonctionnalités par leur nom (« Monte-Carlo »,
  * « Saisonnalité »…) : un nom ne dit pas ce qu'on y gagne. Ces six lignes
- * disent le RÉSULTAT, chacune adossée à une page qui existe (Analyses,
- * Erreurs, Jarvis, Monte-Carlo, Rapports). Partagées par la page Abonnement,
+ * disent le RÉSULTAT, chacune adossée à une page PAYANTE qui existe (Erreurs,
+ * Saisonnalité, Jarvis, Monte-Carlo, Rapports) — Analyses est gratuit. Partagées par la page Abonnement,
  * `/pricing` et la modale d'achat. Aucune promesse de gain.
  */
 export const FULL_ACCESS_POINTS: readonly Bi[] = [
   { fr: "Trades et comptes illimités", en: "Unlimited trades and accounts" },
   { fr: "Chaque erreur récurrente chiffrée en €", en: "Every recurring mistake priced in €" },
   {
-    fr: "Le setup qui te paie, et celui qui te coûte",
-    en: "The setup that pays you, and the one that costs you",
+    fr: "Tes heures rentables, et celles à ne plus trader",
+    en: "Your profitable hours, and the ones to stop trading",
   },
   {
     fr: "Jarvis lit tes trades et te donne un plan",
@@ -138,6 +138,11 @@ export function breakEvenCopy(lang: "fr" | "en"): string {
   return lang === "fr"
     ? `La licence coûte moins de ${n} mois d'abonnement.`
     : `The license costs less than ${n} months of the monthly plan.`;
+}
+/** La même idée, en quelques mots — pour une ligne d'option du sélecteur. */
+export function breakEvenShort(lang: "fr" | "en"): string {
+  const n = lifetimeBreakEvenMonths();
+  return lang === "fr" ? `Moins de ${n} mois de mensuel` : `Less than ${n} months of monthly`;
 }
 export type Plan = "free" | PaidPlan;
 
@@ -207,6 +212,9 @@ export const TIERS: TierDef[] = [
       },
       { fr: "10 trades par mois", en: "10 trades a month", metered: true },
       { fr: "Tableau de bord et calendrier", en: "Dashboard and calendar" },
+      // Ouvert le 2026-11-15 : voir CE QUE l'on fait est gratuit ; savoir
+      // POURQUOI on perd (erreurs, Jarvis, projections) reste payant.
+      { fr: "Analyses : setups, heures, jours", en: "Analytics: setups, hours, days" },
       { fr: "Checklist, plan, calculateur", en: "Checklist, plan, calculator" },
       { fr: "Jarvis 3 fois par jour", en: "Jarvis 3 times a day", metered: true },
       { fr: "1 compte de trading", en: "1 trading account", metered: true },
@@ -228,7 +236,6 @@ export const TIERS: TierDef[] = [
     features: [
       { fr: "Trades illimités", en: "Unlimited trades", metered: true },
       { fr: "Comptes de trading illimités", en: "Unlimited trading accounts", metered: true },
-      { fr: "Toutes les analyses de ton edge", en: "Every analysis of your edge" },
       { fr: "Erreurs, setups manqués, saisonnalité", en: "Mistakes, missed setups, seasonality" },
       { fr: "Monte-Carlo : ta probabilité de ruine", en: "Monte Carlo: your risk of ruin" },
       { fr: "Rapports mensuels automatiques", en: "Automatic monthly reports" },
@@ -260,7 +267,6 @@ const LEGACY_TIERS: TierDef[] = [
     featured: true,
     features: [
       { fr: "Trades illimités", en: "Unlimited trades", metered: true },
-      { fr: "Toutes les analyses de ton edge", en: "Every analysis of your edge" },
       { fr: "Tes erreurs chiffrées en euros", en: "Your mistakes priced in euros" },
       { fr: "Monte-Carlo : ta probabilité de ruine", en: "Monte Carlo: your risk of ruin" },
       { fr: "Saisonnalité : tes heures rentables", en: "Seasonality: your profitable hours" },
@@ -346,7 +352,6 @@ export function monthsFree(tier: Tier): number {
  * `PAGE_TIER` ci-dessous.
  */
 export type Capability =
-  | "analytics"
   | "mistakes"
   | "goals"
   | "missed"
@@ -368,7 +373,6 @@ export const CAPABILITY_TIER: Record<Capability, Tier> = {
   // doit jamais tomber sur un second mur : Monte-Carlo et la saisonnalité sont
   // précisément ce dont il a besoin, les garder plus haut n'aurait vendu ni
   // l'un ni l'autre.
-  analytics: "pro",
   mistakes: "pro",
   goals: "pro",
   missed: "pro",

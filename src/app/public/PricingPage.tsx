@@ -74,6 +74,7 @@ const TOUJOURS_GRATUIT: LandingKey[] = [
   "price.free.4",
   "price.free.5",
   "price.free.6",
+  "price.free.7",
 ];
 
 const FAQ: [LandingKey, LandingKey, typeof Unlock][] = [

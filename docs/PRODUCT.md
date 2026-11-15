@@ -89,10 +89,11 @@ avant que le coût par utilisateur (`ai_agent_runs`) ne dépasse la marge.
 ### La frontière gratuit / payant
 
 Principe : **le gratuit installe l'habitude, le payant donne le diagnostic.**
-Gratuit = noter (journal, calendrier, checklist, plan, calculateur, 10
-trades/mois, 1 compte, Jarvis 3/jour). Payant = comprendre pourquoi on perd
-(Analyses, Erreurs, Setups manqués, Monte-Carlo, Saisonnalité, Rapports,
-Jarvis complet, synchro, multi-comptes).
+Gratuit = noter et VOIR ce qu'on fait (journal, calendrier, **Analyses**
+depuis le 2026-11-15, checklist, plan, calculateur, 10 trades/mois, 1
+compte, Jarvis 3/jour). Payant = comprendre POURQUOI on perd (Erreurs,
+Setups manqués, Monte-Carlo, Saisonnalité, Rapports, Jarvis complet,
+synchro, multi-comptes).
 
 Recommandations, par ordre de valeur :
 

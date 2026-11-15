@@ -3,6 +3,21 @@
 Journal des changements **structurels** (pas des features ni des correctifs,
 qui vivent dans l'historique git et les PR).
 
+## 2026-11-15 — Analytics gratuit, carte d'achat, lumière sous les blocs
+
+- **Analytics ouvert au gratuit** (décision du propriétaire) : retiré de
+  `PAGE_TIER` et des capacités ; le gratuit voit CE QU'IL FAIT, le payant
+  garde le POURQUOI (erreurs, saisonnalité, Jarvis, projections, rapports).
+  Catalogue, `/pricing` (sept outils gratuits), `llms.txt`, `PRODUCT.md`.
+- **Carte d'achat** (`SubscriptionSection`) : une promesse, le P&L net des
+  trades marqués d'une erreur, deux lignes à choisir (licence par défaut),
+  UN bouton au prix qui roule, six résultats. Même carte dans
+  `UpgradeModal`. Au gratuit, un bandeau compact remplace la grande carte
+  « Gratuit · 0 € ».
+- **Lueur visible** : `.tv-page::before` recentrée sous l'en-tête (elle
+  tombait derrière la barre d'onglets et la première carte) et lumière douce
+  sous les cartes de contenu (`--tv-card-glow`, alpha ≤ 0.3, testé).
+
 ## 2026-11-15 — Page de paiement épurée, lueur d'ambiance
 
 - Page Abonnement réduite à trois blocs : l'état avec SES chiffres (compteur

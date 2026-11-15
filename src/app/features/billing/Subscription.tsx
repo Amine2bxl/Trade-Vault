@@ -27,8 +27,6 @@ import {
   type PaidPlan,
 } from "@/app/utils/pricing";
 import { FULL_ACCESS_POINTS, LIMITS, MONTHLY_COPY, MONTHLY_PLAN } from "@/domain/plans";
-import { computeBehavioral } from "@/domain/behavioral";
-import { formatPnl } from "@/domain/tradeCalcs";
 import { tradesThisMonth } from "@/app/utils/planLimits";
 import { usePageLead } from "@/app/contexts/PageActionsContext";
 import { Disclosure, PageContainer, ScrollArea } from "@/shared/ui";
@@ -169,89 +167,89 @@ export default function Subscription({
   return (
     <PageContainer ref={boxRef} measure="settings" fit height={height}>
       <ScrollArea className="tv-grow space-y-8 pb-4">
-        {/* ══ 1 · L'ÉTAT, AVEC SES CHIFFRES ═══════════════════════════════ */}
-        <section
-          className={cn(
-            "sub-hero",
-            etat === "cancelling" && "sub-hero-cancelling",
-            etat === "pastDue" && "sub-hero-pastDue",
-          )}
-          aria-busy={loading}
-        >
-          <div className="sub-hero-top">
-            <div className="min-w-0 flex-1">
-              <p className="tv-label text-slate-500">{t("subpage.yourPlan")}</p>
-              <h1 className={cn("sub-hero-title", meta.titleClass)}>
-                {loading ? (
-                  <span className="inline-block h-7 w-48 animate-pulse rounded-lg bg-white/[0.06]" />
-                ) : (
-                  <>
-                    {paid && "TradeVault "}
-                    <span className={paid ? "sub-hero-tier" : undefined}>{nomOffre}</span>
-                  </>
+        {/* ══ 1 · L'ÉTAT ═══════════════════════════════════════════════════
+            Au gratuit, un BANDEAU compact (l'offre, le compteur du mois) :
+            une grande carte « Gratuit · 0 € » en tête de page disait surtout
+            ce qu'on n'a pas. La carte d'achat prend la place du héros.
+            Pour un abonné, la carte d'adhésion garde son rôle. */}
+        {!loading && etat === "free" ? (
+          <Bandeau trades={trades} t={t} nom={nomOffre} prix={prix} />
+        ) : (
+          <section
+            className={cn(
+              "sub-hero",
+              etat === "cancelling" && "sub-hero-cancelling",
+              etat === "pastDue" && "sub-hero-pastDue",
+            )}
+            aria-busy={loading}
+          >
+            <div className="sub-hero-top">
+              <div className="min-w-0 flex-1">
+                <p className="tv-label text-slate-500">{t("subpage.yourPlan")}</p>
+                <h1 className={cn("sub-hero-title", meta.titleClass)}>
+                  {loading ? (
+                    <span className="inline-block h-7 w-48 animate-pulse rounded-lg bg-white/[0.06]" />
+                  ) : (
+                    <>
+                      {paid && "TradeVault "}
+                      <span className={paid ? "sub-hero-tier" : undefined}>{nomOffre}</span>
+                    </>
+                  )}
+                </h1>
+                {!loading && (
+                  <p className="mt-2 max-w-xl text-[13px] leading-6 text-slate-400">
+                    {meta.body(t, fin)}
+                  </p>
                 )}
-              </h1>
+              </div>
               {!loading && (
-                <p className="mt-2 max-w-xl text-[13px] leading-6 text-slate-400">
-                  {meta.body(t, fin)}
-                </p>
+                <div className="sub-hero-price">
+                  <div className="tv-figure text-3xl leading-none text-white md:text-4xl">
+                    {prix}
+                  </div>
+                  <div className="tv-row-label mt-1.5">{rythme}</div>
+                </div>
               )}
             </div>
-            {!loading && (
-              <div className="sub-hero-price">
-                <div className="tv-figure text-3xl leading-none text-white md:text-4xl">{prix}</div>
-                <div className="tv-row-label mt-1.5">{rythme}</div>
+
+            {!loading && faits.length > 0 && (
+              <p className="mt-4 text-[13px] text-slate-300">{faits.join(" · ")}</p>
+            )}
+
+            {!loading && actionDisponible && (
+              <div className="sub-hero-foot">
+                <button
+                  onClick={() => void agir()}
+                  disabled={busy}
+                  className={cn(
+                    "flex h-10 w-full items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold transition disabled:opacity-60 sm:w-auto",
+                    meta.actionStrong
+                      ? "tv-accent-fill"
+                      : "border border-[var(--tv-border-strong)] bg-[var(--tv-plate-3)] text-slate-100 hover:border-[var(--tv-border-accent)]",
+                  )}
+                >
+                  {busy ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <meta.actionIcon className="h-4 w-4" />
+                  )}
+                  {meta.action!(t)}
+                  {!busy && <ExternalLink className="h-3.5 w-3.5 opacity-60" />}
+                </button>
               </div>
             )}
-          </div>
-
-          {!loading && faits.length > 0 && (
-            <p className="mt-4 text-[13px] text-slate-300">{faits.join(" · ")}</p>
-          )}
-
-          {!loading && etat === "free" && <TesChiffres trades={trades} t={t} />}
-
-          {!loading && actionDisponible && (
-            <div className="sub-hero-foot">
-              <button
-                onClick={() => void agir()}
-                disabled={busy}
-                className={cn(
-                  "flex h-10 w-full items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold transition disabled:opacity-60 sm:w-auto",
-                  meta.actionStrong
-                    ? "tv-accent-fill"
-                    : "border border-[var(--tv-border-strong)] bg-[var(--tv-plate-3)] text-slate-100 hover:border-[var(--tv-border-accent)]",
-                )}
-              >
-                {busy ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <meta.actionIcon className="h-4 w-4" />
-                )}
-                {meta.action!(t)}
-                {!busy && <ExternalLink className="h-3.5 w-3.5 opacity-60" />}
-              </button>
-            </div>
-          )}
-        </section>
-
-        {/* ══ 2 · LES OFFRES — ou, pour une licence, ce qu'elle contient ══ */}
-        {!loading && mode !== "none" && (
-          <section className="space-y-4" aria-labelledby="sub-offer-title">
-            <div className="subp-head">
-              <h2 id="sub-offer-title" className="subp-title">
-                {mode === "upgrade" ? t("subpage.upsell.title") : t("subpage.offer.title")}
-              </h2>
-              <p className="subp-sub">
-                {mode === "upgrade" ? t("subpage.upsell.sub") : t("subpage.offer.sub")}
-              </p>
-            </div>
-            <SubscriptionSection showPortal={!actionDisponible} preview={preview} />
           </section>
         )}
 
+        {/* ══ 2 · LA CARTE D'ACHAT — ou, pour une licence, ce qu'elle contient ══ */}
+        {!loading && mode !== "none" && (
+          <div className="tv-glow">
+            <SubscriptionSection trades={trades} preview={preview} />
+          </div>
+        )}
+
         {!loading && mode === "none" && (
-          <section className="space-y-4" aria-labelledby="sub-included-title">
+          <section className="mx-auto max-w-[640px] space-y-4" aria-labelledby="sub-included-title">
             <h2 id="sub-included-title" className="subp-title">
               {t("subpage.included")}
             </h2>
@@ -281,64 +279,46 @@ export default function Subscription({
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
-   SES CHIFFRES — le concret, pour un compte gratuit
+   LE BANDEAU DU GRATUIT — l'offre et le compteur, sur une ligne
    ──────────────────────────────────────────────────────────────────────────*/
 
 /**
- * Deux chiffres RÉELS, pas une promesse :
- *
- *  • le compteur du mois — `tradesThisMonth`, la même fonction que celle qui
- *    bloque la saisie au-delà de la limite ;
- *  • le P&L net de ses trades marqués d'une erreur, avec leur nombre — un
- *    TOTAL (vrai à toute taille d'échantillon). On dit ce qu'il EST, jamais
- *    que l'erreur l'a causé.
- *
- * Sans trade marqué, la seconde ligne n'apparaît pas : on n'invente rien.
+ * Le compteur vient de `tradesThisMonth`, la même fonction que celle qui
+ * bloque la saisie au-delà de la limite : ce qu'on lit ici est exactement ce
+ * qui bloquera.
  */
-function TesChiffres({ trades, t }: { trades: Trade[]; t: TFn }) {
+function Bandeau({ trades, t, nom, prix }: { trades: Trade[]; t: TFn; nom: string; prix: string }) {
   const limite = LIMITS.free.tradesPerMonth;
-  const notes = tradesThisMonth(trades);
+  const notes = Math.min(tradesThisMonth(trades), limite);
   const plein = notes >= limite;
-  const part = Math.min(1, notes / limite);
-  const erreurs = useMemo(() => computeBehavioral(trades), [trades]);
-  const avecErreur = erreurs.tradesWithMistakes;
-
   return (
-    <div className="sub-numbers">
-      <div className="min-w-0">
-        <p className="flex items-baseline gap-1.5 text-[13px] text-slate-400">
-          <span className={cn("tv-figure text-xl", plein ? "text-amber-300" : "text-white")}>
-            {Math.min(notes, limite)}/{limite}
-          </span>
-          {t("subpage.num.trades")}
-        </p>
+    <section className="sub-strip" aria-label={t("subpage.yourPlan")}>
+      <div className="flex min-w-0 items-baseline gap-2">
+        <span className="tv-label text-slate-500">{t("subpage.yourPlan")}</span>
+        <span className="text-[14px] font-semibold text-white">{nom}</span>
+        <span className="tv-figure text-[13px] text-slate-400">{prix}</span>
+      </div>
+      <div className="flex min-w-0 basis-full items-center gap-3 sm:max-w-[320px] sm:flex-1 sm:basis-auto">
         <div
-          className="subp-meter mt-2"
+          className="subp-meter flex-1"
           role="progressbar"
           aria-valuemin={0}
           aria-valuemax={limite}
-          aria-valuenow={Math.min(notes, limite)}
+          aria-valuenow={notes}
         >
           <span
             className={cn("subp-meter-fill", plein && "subp-meter-fill--full")}
-            style={{ transform: `scaleX(${part})` }}
+            style={{ transform: `scaleX(${notes / limite})` }}
           />
         </div>
+        <span className={cn("shrink-0 text-[12.5px]", plein ? "text-amber-300" : "text-slate-400")}>
+          <span className="tv-figure font-semibold">
+            {notes}/{limite}
+          </span>{" "}
+          {t("subpage.num.trades")}
+        </span>
       </div>
-      {avecErreur > 0 && (
-        <p className="flex flex-wrap items-baseline gap-1.5 text-[13px] text-slate-400">
-          <span
-            className={cn(
-              "tv-figure text-xl",
-              erreurs.totalCost < 0 ? "text-[var(--tv-chart-red)]" : "text-[var(--tv-chart-green)]",
-            )}
-          >
-            {formatPnl(erreurs.totalCost)}
-          </span>
-          {t("subpage.num.mistakes").replace("{n}", String(avecErreur))}
-        </p>
-      )}
-    </div>
+    </section>
   );
 }
 
@@ -355,7 +335,7 @@ const FAQ: [TKey, TKey][] = [
 function Faq({ t }: { t: TFn }) {
   const [ouverte, setOuverte] = useState<number | null>(null);
   return (
-    <section className="space-y-2" aria-label={t("subpage.faq.title")}>
+    <section className="mx-auto max-w-[640px] space-y-2" aria-label={t("subpage.faq.title")}>
       {FAQ.map(([q, a], i) => (
         <Disclosure
           key={q}

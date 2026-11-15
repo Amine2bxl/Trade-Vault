@@ -102,6 +102,13 @@ describe("le langage Liquid", () => {
       expect(r.selector, r.selector).toMatch(/::before/);
       expect(r.body, r.selector).not.toMatch(/box-shadow/);
     }
+    /* La lumière SOUS les cartes passe par un seul jeton, déclaré une fois
+       dans `:root`, à l'alpha plafonné. Toute autre ombre teintée par
+       l'accent reste interdite (test précédent). */
+    const carte = css.match(/--tv-card-glow-alpha:\s*([\d.]+)/);
+    expect(carte).not.toBeNull();
+    expect(parseFloat(carte![1])).toBeLessThanOrEqual(0.3);
+    expect(css.match(/--tv-card-glow:/g)?.length).toBe(1);
   });
 
   test("le bouton d'action est un rectangle adouci plein, texte blanc", () => {

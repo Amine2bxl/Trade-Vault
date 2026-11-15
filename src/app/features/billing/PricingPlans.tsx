@@ -1,6 +1,6 @@
 import {
-  BarChart3,
   Bot,
+  Clock,
   Check,
   Dices,
   FileText,
@@ -60,7 +60,7 @@ export interface PricingPlansProps {
 const ICONES: ComponentType<{ className?: string }>[] = [
   InfinityIcon,
   TriangleAlert,
-  BarChart3,
+  Clock,
   Bot,
   Dices,
   FileText,

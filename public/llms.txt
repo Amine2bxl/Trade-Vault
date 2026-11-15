@@ -45,10 +45,11 @@ Three plans, billed in euros. The two paid plans unlock exactly the same
 product; only the way of paying differs:
 
 - **Free** — €0, no time limit and no credit card. Journal, dashboard,
-  calendar, pre-market checklist, trading plan and position calculator.
+  calendar, analytics, pre-market checklist, trading plan and position
+  calculator.
   10 trades a month, 1 trading account.
 - **Monthly** — €9 / month, no commitment, cancel in one click. Unlimited
-  trades and accounts, every analysis, the Jarvis AI coach, Monte Carlo,
+  trades and accounts, mistakes priced, seasonality, the Jarvis AI coach, Monte Carlo,
   automatic monthly reports.
 - **Lifetime license** — €49, paid once, never renews. The same access as
   the monthly plan, for good.

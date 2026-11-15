@@ -806,8 +806,8 @@ const M: Record<string, Msg> = {
     fr: "Gratuit pour toujours, et pas un avant-goût",
   },
   "price.free.sub": {
-    en: "Six tools no plan ever locks. Use them for years without paying.",
-    fr: "Six outils qu'aucune offre ne ferme. Utilise-les des années sans payer.",
+    en: "Seven tools no plan ever locks. Use them for years without paying.",
+    fr: "Sept outils qu'aucune offre ne ferme. Utilise-les des années sans payer.",
   },
   "price.free.1": { en: "Journal", fr: "Journal" },
   "price.free.2": { en: "Dashboard", fr: "Tableau de bord" },
@@ -815,6 +815,7 @@ const M: Record<string, Msg> = {
   "price.free.4": { en: "Pre-market checklist", fr: "Checklist pré-market" },
   "price.free.5": { en: "Trading plan", fr: "Plan de trading" },
   "price.free.6": { en: "Position calculator", fr: "Calculateur de position" },
+  "price.free.7": { en: "Analytics", fr: "Analyses" },
 
   /* Quatre objections de FACTURATION. Aucune ne répète la FAQ de la vitrine :
      ici on ne demande plus « à quoi ça sert », on demande « qu'est-ce que je

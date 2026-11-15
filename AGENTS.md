@@ -63,7 +63,8 @@ suite ; ne jamais affaiblir une assertion pour passer.
   `::before`, replis opaques obligatoires ; **jamais** sur une carte de
   contenu. Papier peint d'ambiance fixe permis, et une lueur d'ambiance
   TRÈS légère derrière les blocs (`.tv-page::before`, `.tv-glow`, plafond
-  `--tv-glow-alpha` ≤ 0.08 — décision du 2026-11-15) ; à part elle, rien ne
+  `--tv-glow-alpha` ≤ 0.08, et sous les cartes le seul jeton `--tv-card-glow`,
+  alpha ≤ 0.3 — décision du 2026-11-15) ; à part elle, rien ne
   rayonne (ni ombre colorée, ni halo, ni `animate-ping`, ni dégradé sur un
   texte, un bouton ou une carte) — seules les surfaces qui flottent portent
   une ombre, noire.

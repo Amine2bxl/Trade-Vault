@@ -1,38 +1,97 @@
-import { useState } from "react";
-import { CreditCard, ExternalLink, X } from "@/shared/ui/icons";
+import { useEffect, useMemo, useState, type ComponentType } from "react";
+import {
+  ArrowRight,
+  Bitcoin,
+  Bot,
+  Check,
+  Clock,
+  Dices,
+  FileText,
+  Infinity as InfinityIcon,
+  Loader2,
+  TriangleAlert,
+  X,
+} from "@/shared/ui/icons";
 import { useT } from "@/app/i18n/LanguageContext";
 import { useSubscription, type Subscription } from "@/app/hooks/useSubscription";
-import PricingPlans from "./PricingPlans";
 import { Input } from "@/shared/ui";
+import { cn } from "@/shared/ui/cn";
+import PrixAnime from "./PrixAnime";
+import {
+  FULL_ACCESS_POINTS,
+  LIFETIME_COPY,
+  LIFETIME_EUR,
+  LIFETIME_PLAN,
+  MONTHLY_COPY,
+  MONTHLY_EUR,
+  MONTHLY_PLAN,
+  breakEvenShort,
+  type SalePlan,
+} from "@/domain/plans";
+import { computeBehavioral } from "@/domain/behavioral";
+import { formatPnl } from "@/domain/tradeCalcs";
+import { eur } from "@/app/utils/pricing";
 import { checkoutErrorKey, etatAbonnement, offerMode } from "./subscriptionState";
+import type { Trade } from "@/app/types";
 
 /**
- * LE BLOC D'ACHAT de la page Abonnement — encaisser, et rien d'autre.
+ * LA CARTE D'ACHAT — un seul objet, une seule décision.
  *
- * L'état n'est plus recalculé ici : `subscriptionState.ts` décide, pour la
- * page ET pour ce bloc, s'il faut proposer les deux offres, seulement la
- * licence (mensuel en cours), ou rien (licence possédée). Le titre de la
- * section est porté par la page.
+ * ── POURQUOI ELLE A ÉTÉ REFAITE (2026-11-15, retour du propriétaire) ──────
  *
- * Code promo : l'influenceur tape le sien pour l'accès permanent, sa
- * communauté colle le sien pour la réduction ; un lien d'e-mail
- * `/?upgrade=1&promo=VAULT20` arrive ici avec le code déjà posé.
+ * « La page ne donne pas du tout envie. » Deux cartes de prix côte à côte se
+ * lisent comme un tableau à comparer ; on pèse, on hésite, on repart. Les
+ * écrans d'achat qui convertissent (Revolut, les apps d'Apple) posent UNE
+ * carte : une promesse, ce que TOI tu y gagnes, un choix de formule en deux
+ * lignes, UN bouton dont le prix suit le choix.
  *
- * Erreurs : le serveur répond par des codes courts ; chacun a sa phrase
- * traduite (`checkoutErrorKey`), jamais le texte brut.
+ *   1. La promesse, en une phrase, et SES chiffres : le P&L net de ses
+ *      trades marqués d'une erreur, avec leur nombre — un total réel, jamais
+ *      présenté comme une cause (`computeBehavioral().totalCost`).
+ *   2. Le choix : deux lignes sélectionnables (des vrais boutons radio),
+ *      la licence choisie par défaut. Pour qui paie déjà au mois : la
+ *      licence seule.
+ *   3. UN bouton plein, dont le montant roule quand on change de ligne
+ *      (`PrixAnime`), puis la garantie qui va avec la formule choisie.
+ *   4. Les six résultats (`FULL_ACCESS_POINTS`), sous un filet.
+ *
+ * Utilisée par la page Abonnement ET la fenêtre d'achat (`UpgradeModal`) :
+ * un trader retrouve exactement le même objet partout où il paie.
  *
  * `preview` (banc `/dev/ui` seulement) impose un abonnement fictif : aucun
  * paiement ne part de là.
  */
+
+/** L'icône de chaque résultat — même ordre que `FULL_ACCESS_POINTS`. */
+const ICONES: ComponentType<{ className?: string }>[] = [
+  InfinityIcon,
+  TriangleAlert,
+  Clock,
+  Bot,
+  Dices,
+  FileText,
+];
+
 export default function SubscriptionSection({
-  /** La carte d'adhésion porte déjà le bouton « Gérer » : ne pas le répéter. */
-  showPortal = true,
+  trades = [],
   preview,
-}: { showPortal?: boolean; preview?: Subscription | null } = {}) {
+  compact = false,
+}: {
+  /** Les trades du compte — pour LES chiffres de la promesse. */
+  trades?: Trade[];
+  preview?: Subscription | null;
+  /** Dans une fenêtre : pas d'accroche, la fenêtre porte déjà son titre. */
+  compact?: boolean;
+} = {}) {
   const { t, lang } = useT();
+  const lg = lang === "fr" ? "fr" : "en";
   const live = useSubscription();
   const sub = preview !== undefined ? preview : live.sub;
   const loading = preview !== undefined ? false : live.loading;
+  const mode = offerMode(sub, etatAbonnement(sub));
+  const upgrade = mode === "upgrade";
+
+  const [choix, setChoix] = useState<SalePlan>(LIFETIME_PLAN);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [typed, setTyped] = useState("");
@@ -43,108 +102,218 @@ export default function SubscriptionSection({
       : undefined,
   );
 
-  const applyCode = () => {
-    const clean = typed.trim().toUpperCase();
-    if (clean) {
-      setPromo(clean);
-      setTyped("");
-    }
-  };
+  // Un abonné mensuel ne peut plus choisir le mensuel : seule la licence.
+  useEffect(() => {
+    if (upgrade) setChoix(LIFETIME_PLAN);
+  }, [upgrade]);
+
+  const erreurs = useMemo(() => computeBehavioral(trades), [trades]);
 
   if (loading) {
     return (
-      <div className="subp-card">
-        <div className="h-5 w-40 animate-pulse rounded bg-white/[0.06]" />
+      <div className="pw-card">
+        <div className="h-6 w-56 animate-pulse rounded bg-white/[0.06]" />
+        <div className="mt-4 h-24 animate-pulse rounded-2xl bg-white/[0.04]" />
       </div>
     );
   }
+  if (mode === "none") return null;
 
-  const run = async (key: string, fn: () => Promise<string | null>) => {
-    if (preview !== undefined) return;
-    setBusy(key);
+  const lifetime = choix === LIFETIME_PLAN;
+  const prix = eur(lifetime ? LIFETIME_EUR : MONTHLY_EUR, lang);
+
+  const payer = async () => {
+    if (preview !== undefined || busy) return;
+    setBusy(choix);
     setError(null);
-    const err = await fn();
+    const err = await live.checkout(choix, promo);
     if (err) {
       setError(t(checkoutErrorKey(err)));
       setBusy(null);
     }
     // En cas de succès le navigateur part chez Stripe : le bouton reste occupé.
   };
+  const payerCrypto = async () => {
+    if (preview !== undefined || busy) return;
+    setBusy("crypto");
+    setError(null);
+    const err = await live.cryptoCheckout(LIFETIME_PLAN);
+    if (err) {
+      setError(t(checkoutErrorKey(err)));
+      setBusy(null);
+    }
+  };
+  const appliquer = () => {
+    const clean = typed.trim().toUpperCase();
+    if (clean) {
+      setPromo(clean);
+      setTyped("");
+      setPromoOuvert(false);
+    }
+  };
 
-  const mode = offerMode(sub, etatAbonnement(sub));
-  const showPlans = mode !== "none";
-  const isStripeActive = sub?.status === "active" && sub.source === "stripe";
-  const portal =
-    showPortal && (isStripeActive || (!!sub?.hasStripeCustomer && sub.status !== "trialing"));
-  const cryptoRenew =
-    sub?.status === "active" && sub.source === "crypto" && sub.plan !== "lifetime";
-
-  if (!showPlans && !portal && !cryptoRenew) return null;
+  const options: { plan: SalePlan; nom: string; montant: string; rythme: string; aide: string }[] =
+    [
+      ...(upgrade
+        ? []
+        : [
+            {
+              plan: MONTHLY_PLAN as SalePlan,
+              nom: MONTHLY_COPY.title[lg],
+              montant: eur(MONTHLY_EUR, lang),
+              rythme: MONTHLY_COPY.priceNote[lg],
+              aide: MONTHLY_COPY.badge[lg],
+            },
+          ]),
+      {
+        plan: LIFETIME_PLAN,
+        nom: LIFETIME_COPY.title[lg],
+        montant: eur(LIFETIME_EUR, lang),
+        rythme: LIFETIME_COPY.priceNote[lg],
+        aide: breakEvenShort(lg),
+      },
+    ];
 
   return (
-    <div className="space-y-3.5">
-      {error && (
-        <div
-          role="alert"
-          className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300"
-        >
-          {error}
-        </div>
+    <article
+      className={cn("pw-card", compact && "pw-card--bare")}
+      aria-labelledby={compact ? undefined : "pw-title"}
+    >
+      {!compact && (
+        <header>
+          <p className="pw-eyebrow">{t("subpage.pw.eyebrow")}</p>
+          <h2 id="pw-title" className="pw-title">
+            {upgrade ? t("subpage.upsell.title") : t("subpage.pw.title")}
+          </h2>
+          <p className="pw-sub">{upgrade ? t("subpage.upsell.sub") : t("subpage.pw.sub")}</p>
+        </header>
       )}
 
-      {promo && showPlans && (
-        <div className="flex items-center gap-2 rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-4 py-3 text-sm font-semibold text-emerald-300">
+      {/* SES CHIFFRES. Un total réel, avec son nombre de trades — rien
+          d'inventé, rien de causal. Absent tant qu'aucun trade n'est marqué. */}
+      {!upgrade && erreurs.tradesWithMistakes > 0 && (
+        <p className={cn("pw-teaser", compact && "mt-0")}>
+          <span
+            className={cn(
+              "tv-figure pw-teaser-figure",
+              erreurs.totalCost < 0 ? "text-[var(--tv-chart-red)]" : "text-[var(--tv-chart-green)]",
+            )}
+          >
+            {formatPnl(erreurs.totalCost)}
+          </span>
+          <span>{t("subpage.pw.teaser").replace("{n}", String(erreurs.tradesWithMistakes))}</span>
+        </p>
+      )}
+
+      {/* LE CHOIX — de vrais boutons radio, stylés en lignes. */}
+      <fieldset className="pw-options">
+        <legend className="sr-only">{t("subpage.pw.choose")}</legend>
+        {options.map((o) => {
+          const actif = choix === o.plan;
+          return (
+            <label key={o.plan} className="pw-option" data-actif={actif ? "oui" : "non"}>
+              <input
+                type="radio"
+                name="tv-plan"
+                value={o.plan}
+                checked={actif}
+                onChange={() => setChoix(o.plan)}
+                className="sr-only"
+              />
+              <span className="pw-radio" aria-hidden>
+                <Check className="pw-radio-check h-3 w-3" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[15px] font-semibold text-white">{o.nom}</span>
+                <span className="block text-[12.5px] text-slate-400">{o.aide}</span>
+              </span>
+              <span className="text-right">
+                <span className="tv-figure block text-[17px] font-bold text-white">
+                  {o.montant}
+                </span>
+                <span className="block text-[11.5px] text-slate-500">{o.rythme}</span>
+              </span>
+            </label>
+          );
+        })}
+      </fieldset>
+
+      {error && (
+        <p role="alert" className="pw-error">
+          {error}
+        </p>
+      )}
+
+      {promo && (
+        <p className="pw-promo">
           <span className="min-w-0 flex-1 truncate">
             {t("billing.promoApplied").replace("{code}", promo)}
           </span>
           <button
+            type="button"
             onClick={() => setPromo(undefined)}
             aria-label={t("billing.promoRemove")}
-            className="grid h-6 w-6 shrink-0 place-items-center rounded-md text-emerald-300/70 transition hover:bg-emerald-500/10 hover:text-emerald-200"
+            className="grid h-6 w-6 shrink-0 place-items-center rounded-md text-emerald-300/70 transition hover:text-emerald-200"
           >
             <X className="h-3.5 w-3.5" />
           </button>
-        </div>
+        </p>
       )}
 
-      {showPlans && (
-        <PricingPlans
-          lang={lang === "fr" ? "fr" : "en"}
-          currentPlan={sub?.plan ?? "free"}
-          showFree={false}
-          lifetimeOnly={mode === "upgrade"}
-          busy={busy}
-          onChoose={(plan) => run(plan, () => live.checkout(plan, promo))}
-          onCrypto={(plan) => run(`crypto-${plan}`, () => live.cryptoCheckout(plan))}
-          onManage={isStripeActive ? () => run("portal", live.openPortal) : undefined}
-        />
-      )}
+      {/* UN bouton. Son montant roule au changement de formule. */}
+      <button
+        type="button"
+        onClick={() => void payer()}
+        disabled={busy !== null}
+        className="btn-primary pw-cta"
+      >
+        {busy === choix ? (
+          <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+        ) : (
+          <>
+            <span>{lifetime ? t("subpage.pw.ctaLifetime") : t("subpage.pw.ctaMonthly")}</span>
+            <PrixAnime valeur={prix} className="tv-figure" />
+            {!lifetime && <span>{t("subpage.pw.perMonthShort")}</span>}
+            <ArrowRight className="h-4 w-4" aria-hidden />
+          </>
+        )}
+      </button>
+      <p className="pw-trust">
+        {lifetime ? LIFETIME_COPY.trust[lg] : t("subpage.pw.trustMonthly")}
+      </p>
 
-      {/* Le code promo, REPLIÉ derrière un lien : il ne sert qu'à qui en a
-          un, et un champ ouvert sous la grille se lisait comme une étape de
-          plus avant de payer. */}
-      {showPlans && !promo && !promoOuvert && (
-        <button
-          type="button"
-          onClick={() => setPromoOuvert(true)}
-          className="text-[12.5px] font-medium text-slate-500 underline-offset-4 transition hover:text-slate-300 hover:underline"
-        >
-          {t("subpage.promoLink")}
-        </button>
-      )}
-      {showPlans && !promo && promoOuvert && (
-        <div className="flex gap-2">
+      <div className="pw-links">
+        {lifetime && (
+          <button
+            type="button"
+            onClick={() => void payerCrypto()}
+            disabled={busy !== null}
+            className="pw-link"
+          >
+            <Bitcoin className="h-3.5 w-3.5" aria-hidden />
+            {LIFETIME_COPY.crypto[lg]}
+          </button>
+        )}
+        {!promo && !promoOuvert && (
+          <button type="button" onClick={() => setPromoOuvert(true)} className="pw-link">
+            {t("subpage.promoLink")}
+          </button>
+        )}
+      </div>
+      {!promo && promoOuvert && (
+        <div className="mt-3 flex gap-2">
           <Input
             autoFocus
             value={typed}
             onChange={(e) => setTyped(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && applyCode()}
+            onKeyDown={(e) => e.key === "Enter" && appliquer()}
             placeholder={t("billing.promoPlaceholder")}
             aria-label={t("billing.promoLabel")}
             className="uppercase"
           />
           <button
-            onClick={applyCode}
+            type="button"
+            onClick={appliquer}
             disabled={!typed.trim()}
             className="shrink-0 rounded-xl border border-white/[0.1] bg-white/[0.04] px-4 text-sm font-semibold text-slate-200 transition hover:bg-white/[0.07] disabled:opacity-50"
           >
@@ -153,31 +322,20 @@ export default function SubscriptionSection({
         </div>
       )}
 
-      {portal && (
-        <button
-          onClick={() => run("portal", live.openPortal)}
-          disabled={busy !== null}
-          className="flex w-full items-center justify-between rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-3 text-slate-200 transition hover:bg-white/[0.06] disabled:opacity-60"
-        >
-          <span className="flex items-center gap-2.5 text-sm font-medium">
-            <CreditCard className="h-4 w-4 text-slate-400" />
-            {busy === "portal" ? t("billing.opening") : t("billing.manage")}
-          </span>
-          <ExternalLink className="h-4 w-4 text-slate-500" />
-        </button>
-      )}
-
-      {/* Ancien accès crypto à durée limitée : il se prolonge désormais par
-          la licence à vie, payée une fois en crypto aussi. */}
-      {cryptoRenew && (
-        <button
-          onClick={() => run("crypto-lifetime", () => live.cryptoCheckout("lifetime"))}
-          disabled={busy !== null}
-          className="btn-ghost w-full justify-center disabled:opacity-60"
-        >
-          {t("billing.cryptoLifetime")}
-        </button>
-      )}
-    </div>
+      {/* LES SIX RÉSULTATS, sous un filet — pour les deux formules. */}
+      <ul className="pw-points">
+        {FULL_ACCESS_POINTS.map((p, i) => {
+          const Ico = ICONES[i] ?? Check;
+          return (
+            <li key={p.en} className="offer-point">
+              <span className="offer-point-icon" aria-hidden>
+                <Ico className="h-4 w-4" />
+              </span>
+              {p[lg]}
+            </li>
+          );
+        })}
+      </ul>
+    </article>
   );
 }

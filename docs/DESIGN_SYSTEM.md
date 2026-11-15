@@ -74,8 +74,9 @@ lumières permises sont le papier peint fixe, l'arête spéculaire blanche d'1 p
 du verre et — décision du propriétaire du 2026-11-15 — une lueur d'ambiance
 très légère DERRIÈRE les blocs : deux nappes radiales en arrière-plan de
 chaque page (`.tv-page::before`) et de quelques blocs de la vitrine
-(`.tv-glow`), intensité unique `--tv-glow-alpha` plafonnée à 0.08, jamais
-dans l'ombre d'un objet) — la profondeur vient de la valeur des surfaces, d'un liseré quasi
+(`.tv-glow`), intensité `--tv-glow-alpha` plafonnée à 0.08, et une lumière
+douce sous les cartes de contenu par le seul jeton `--tv-card-glow` (alpha ≤
+0.3, flou large, jamais un anneau)) — la profondeur vient de la valeur des surfaces, d'un liseré quasi
 invisible et, pour ce qui flotte, d'une ombre noire ; le verre n'est jamais
 posé sur une carte de contenu (`tests/liquidGlass.test.ts`) ; chiffres tabulaires partout ;
 plancher de lisibilité 10 px (12 px pour du texte à lire) ;
