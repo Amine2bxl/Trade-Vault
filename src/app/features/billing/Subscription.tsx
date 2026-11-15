@@ -1,28 +1,17 @@
-import { useCallback, useMemo, useState, type ComponentType } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   AlertTriangle,
-  BarChart3,
-  Bitcoin,
-  Bot,
-  CalendarClock,
-  CalendarDays,
   Check,
   CheckCircle2,
   CreditCard,
   Crown,
-  Dices,
-  Download,
   ExternalLink,
-  Eye,
   FileText,
   Loader2,
   Lock,
-  Minus,
-  Newspaper,
   PauseCircle,
   RefreshCw,
   Sparkles,
-  Target,
 } from "@/shared/ui/icons";
 import { useT } from "@/app/i18n/LanguageContext";
 import type { TKey } from "@/app/i18n/translations";
@@ -31,64 +20,50 @@ import { cn } from "@/shared/ui/cn";
 import {
   LIFETIME_COPY,
   LIFETIME_PLAN,
-  PAGE_VALUE,
   TIER_BY_ID,
   eur,
   intervalOf,
   planPrice,
   type PaidPlan,
 } from "@/app/utils/pricing";
-import { LIMITS, MONTHLY_COPY, MONTHLY_PLAN, breakEvenCopy } from "@/domain/plans";
+import { FULL_ACCESS_POINTS, LIMITS, MONTHLY_COPY, MONTHLY_PLAN } from "@/domain/plans";
+import { computeBehavioral } from "@/domain/behavioral";
+import { formatPnl } from "@/domain/tradeCalcs";
 import { tradesThisMonth } from "@/app/utils/planLimits";
 import { usePageLead } from "@/app/contexts/PageActionsContext";
-import {
-  Disclosure,
-  Kpi,
-  KpiGrid,
-  PageContainer,
-  ScrollArea,
-  Table,
-  TableScroll,
-  TBody,
-  TD,
-  TH,
-  THead,
-  TR,
-} from "@/shared/ui";
+import { Disclosure, PageContainer, ScrollArea } from "@/shared/ui";
 import { useAvailableHeight } from "@/app/hooks/useAvailableHeight";
 import SubscriptionSection from "./SubscriptionSection";
 import { etatAbonnement, offerMode, type EtatId } from "./subscriptionState";
-import type { Page, Trade } from "@/app/types";
+import type { Trade } from "@/app/types";
 
 type TFn = (k: TKey) => string;
 type Lg = "fr" | "en";
 
 /**
- * ABONNEMENT — refaite en novembre 2026, avec les deux offres.
+ * ABONNEMENT — trois blocs, des chiffres, une décision.
  *
- * ══ LE PROBLÈME ══
+ * ══ LE RETOUR DU PROPRIÉTAIRE (2026-11-15) ══
  *
- * La page disait l'état de l'abonnement, puis posait la grille de prix — et
- * s'arrêtait là. Un trader sur l'offre gratuite voyait deux prix sans savoir
- * ce qu'ils ouvraient ; un abonné mensuel ne savait pas qu'il pouvait passer
- * à la licence ; un titulaire de licence lisait « 49 € / mois ». Et l'état
- * était recalculé à deux endroits (ici et dans le bloc d'achat).
+ * « Trop de cases, trop de blabla, pas de concret ni de valeur. » La version
+ * précédente empilait sept sections : carte d'état, compteur, grille, neuf
+ * cartes « ce que ça ouvre », un tableau comparatif de seize lignes, six
+ * questions et une bande de garanties. On lisait des noms de fonctionnalités,
+ * jamais ce qu'on y gagne.
  *
- * ══ L'ORDRE DE LECTURE SUIT LA DÉCISION ══
+ * ══ CE QUI RESTE ══
  *
- *   1. Où j'en suis         la carte d'adhésion (état, prix, faits, action)
- *   2. Ce que je consomme   le compteur du mois — gratuit seulement, chiffres
- *                           RÉELS tirés de ses trades, jamais estimés
- *   3. Ce que je peux faire choisir une offre, ou passer à la licence
- *   4. Ce que ça ouvre      les pages payantes, chacune avec ce qu'elle apporte
- *   5. Ce qui change        le comparatif gratuit / accès complet
- *   6. Ce qui rassure       les questions de facturation, les garanties
+ *   1. L'ÉTAT, avec SES chiffres. Pour un compte gratuit : son compteur du
+ *      mois et — quand il en a — le P&L net de ses trades marqués d'une
+ *      erreur. Des TOTAUX tirés de ses trades, vrais à toute taille
+ *      d'échantillon, affichés avec leur `n`, sans aucune formulation causale
+ *      (`computeBehavioral().totalCost` n'est PAS un coût imputable).
+ *   2. LES DEUX OFFRES et six résultats concrets (`PricingPlans`) — ou la
+ *      seule licence pour qui paie déjà au mois.
+ *   3. TROIS questions de facturation, repliées.
  *
- * L'état est décidé UNE fois par `subscriptionState.ts` (pur, testé) ; la
- * page et le bloc d'achat lisent la même réponse.
- *
- * `preview` ne sert qu'au banc `/dev/ui` : il montre la page dans un état
- * donné (mensuel, licence, annulé…) sans session Stripe.
+ * L'état est décidé UNE fois par `subscriptionState.ts` (pur, testé).
+ * `preview` ne sert qu'au banc `/dev/ui` (`&sub=…`).
  */
 export default function Subscription({
   trades = [],
@@ -111,13 +86,13 @@ export default function Subscription({
   const lifetime = sub?.plan === LIFETIME_PLAN;
   const meta = ETATS[etat];
 
-  const nomOffre = paid
-    ? lifetime
+  const nomOffre = !paid
+    ? TIER_BY_ID.free.name[lg]
+    : lifetime
       ? LIFETIME_COPY.title[lg]
       : sub?.plan === MONTHLY_PLAN
         ? MONTHLY_COPY.title[lg]
-        : TIER_BY_ID[sub?.plan.split("_")[0] === "pro" ? "pro" : "elite"].name[lg]
-    : TIER_BY_ID.free.name[lg];
+        : TIER_BY_ID[sub?.plan.startsWith("pro") ? "pro" : "elite"].name[lg];
 
   const dateFmt = useCallback(
     (d: Date) => d.toLocaleDateString(lang, { day: "numeric", month: "long", year: "numeric" }),
@@ -125,9 +100,9 @@ export default function Subscription({
   );
   const fin = sub?.currentPeriodEnd ? dateFmt(sub.currentPeriodEnd) : null;
 
-  /* L'action de l'état passe par le portail Stripe quand il existe (c'est
-     lui qui sait reprendre, changer de carte, résilier) ; un ancien accès
-     crypto se reprend par une nouvelle charge. */
+  /* Portail Stripe quand il existe (reprendre, changer de carte, résilier,
+     factures) ; un ancien accès crypto se reprend par une nouvelle charge —
+     jamais pour une licence, qui possède déjà tout. */
   const agir = useCallback(async () => {
     if (!sub || busy || preview !== undefined) return;
     setBusy(true);
@@ -137,27 +112,16 @@ export default function Subscription({
     setBusy(false);
   }, [sub, busy, preview, live, lifetime]);
 
-  /* Une licence n'a que ses factures à consulter, et seulement quand un
-     client Stripe existe : relancer une charge crypto lui revendrait ce
-     qu'elle possède déjà. */
   const actionDisponible =
     !!sub &&
     meta.action !== null &&
     (sub.hasStripeCustomer || (sub.source === "crypto" && !lifetime));
 
   const aUnAbonnement = !!sub;
-  /* L'en-tête monte dans la barre de tête — comme Réglages et Profil. */
   const lead = useMemo(
     () => (
       <div className="flex min-w-0 items-center gap-2.5">
-        <span
-          className={cn(
-            "grid h-6 w-6 shrink-0 place-items-center rounded-lg",
-            etat === "active" || etat === "lifetime"
-              ? "bg-emerald-500 text-white"
-              : "tv-accent-fill",
-          )}
-        >
+        <span className="grid h-6 w-6 shrink-0 place-items-center rounded-lg tv-accent-fill">
           <Crown className="h-3.5 w-3.5" />
         </span>
         <span className="font-display shrink-0 text-sm font-bold tracking-tight text-white">
@@ -166,14 +130,11 @@ export default function Subscription({
         {!loading && aUnAbonnement && <Pastille etat={etat} t={t} />}
       </div>
     ),
-    // Des valeurs, pas l'objet `sub` : son identité change à chaque lecture,
-    // et la barre de tête se reposerait en boucle.
+    // Des valeurs, pas l'objet `sub` : son identité change à chaque lecture.
     [etat, loading, nomOffre, aUnAbonnement, t],
   );
   usePageLead(lead);
 
-  /* Le prix affiché sur la carte : celui que le trader paie, avec son rythme.
-     Une licence n'a pas de rythme — elle se lit « une fois · à vie ». */
   const prix = paid && sub ? eur(planPrice(sub.plan as PaidPlan), lang) : eur(0, lang);
   const rythme = !paid
     ? t("sub.forever")
@@ -183,14 +144,32 @@ export default function Subscription({
         ? t("billing.perYear")
         : t("billing.perMonth");
 
+  /* Les faits d'un abonnement, sur UNE ligne de texte — plus trois cases. */
+  const faits =
+    sub && paid && !lifetime
+      ? [
+          fin
+            ? `${sub.cancelAtPeriodEnd ? t("billing.accessUntil") : t("sub.nextBilling")} ${fin}`
+            : null,
+          sub.source === "crypto"
+            ? t("sub.payCrypto")
+            : sub.source === "stripe"
+              ? t("sub.payCard")
+              : t("sub.payComp"),
+          sub.cancelAtPeriodEnd
+            ? t("sub.renewStopped")
+            : sub.source === "stripe"
+              ? t("sub.renewAuto")
+              : sub.source === "crypto"
+                ? t("sub.renewManual")
+                : null,
+        ].filter(Boolean)
+      : [];
+
   return (
     <PageContainer ref={boxRef} measure="settings" fit height={height}>
-      <ScrollArea className="tv-grow space-y-6 pb-4">
-        {/* ══ 1 · LA CARTE D'ADHÉSION ══════════════════════════════════════
-            Une carte de membre lue de haut en bas : l'offre et son état, le
-            prix, les faits sur une ligne, l'action. La couleur de l'état reste
-            celle qui ne se rate pas — une annulation se voit au premier
-            regard. */}
+      <ScrollArea className="tv-grow space-y-8 pb-4">
+        {/* ══ 1 · L'ÉTAT, AVEC SES CHIFFRES ═══════════════════════════════ */}
         <section
           className={cn(
             "sub-hero",
@@ -213,15 +192,11 @@ export default function Subscription({
                 )}
               </h1>
               {!loading && (
-                <div className="mt-2 flex flex-wrap items-center gap-2">
-                  {sub && <Pastille etat={etat} t={t} />}
-                </div>
+                <p className="mt-2 max-w-xl text-[13px] leading-6 text-slate-400">
+                  {meta.body(t, fin)}
+                </p>
               )}
-              <p className="tv-prose mt-3 max-w-xl text-slate-400">
-                {loading ? t("sub.loading") : meta.body(t, fin)}
-              </p>
             </div>
-
             {!loading && (
               <div className="sub-hero-price">
                 <div className="tv-figure text-3xl leading-none text-white md:text-4xl">{prix}</div>
@@ -230,52 +205,11 @@ export default function Subscription({
             )}
           </div>
 
-          {/* LES FAITS — seulement quand il y en a. Une licence n'a ni
-              échéance ni renouvellement : trois cases « — » ne disent rien. */}
-          {!loading && sub && paid && !lifetime && (
-            <KpiGrid className="sub-hero-facts">
-              <Kpi
-                inset
-                label={sub.cancelAtPeriodEnd ? t("billing.accessUntil") : t("sub.nextBilling")}
-                value={fin ?? "—"}
-                tone={sub.cancelAtPeriodEnd ? "warn" : "neutral"}
-                adornment={<CalendarClock className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
-              />
-              <Kpi
-                inset
-                label={t("sub.payment")}
-                value={
-                  sub.source === "crypto"
-                    ? t("sub.payCrypto")
-                    : sub.source === "stripe"
-                      ? t("sub.payCard")
-                      : t("sub.payComp")
-                }
-                adornment={
-                  sub.source === "crypto" ? (
-                    <Bitcoin className="h-3.5 w-3.5 shrink-0 text-slate-500" />
-                  ) : (
-                    <CreditCard className="h-3.5 w-3.5 shrink-0 text-slate-500" />
-                  )
-                }
-              />
-              <Kpi
-                inset
-                label={t("sub.renewal")}
-                value={
-                  sub.cancelAtPeriodEnd
-                    ? t("sub.renewStopped")
-                    : sub.source === "crypto"
-                      ? t("sub.renewManual")
-                      : sub.source === "stripe"
-                        ? t("sub.renewAuto")
-                        : "—"
-                }
-                tone={sub.cancelAtPeriodEnd ? "warn" : "neutral"}
-                adornment={<RefreshCw className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
-              />
-            </KpiGrid>
+          {!loading && faits.length > 0 && (
+            <p className="mt-4 text-[13px] text-slate-300">{faits.join(" · ")}</p>
           )}
+
+          {!loading && etat === "free" && <TesChiffres trades={trades} t={t} />}
 
           {!loading && actionDisponible && (
             <div className="sub-hero-foot">
@@ -297,290 +231,141 @@ export default function Subscription({
                 {meta.action!(t)}
                 {!busy && <ExternalLink className="h-3.5 w-3.5 opacity-60" />}
               </button>
-              {sub?.hasStripeCustomer && !lifetime && (
-                <p className="tv-row-label max-w-md">{t("billing.portalHint")}</p>
-              )}
             </div>
           )}
         </section>
 
-        {/* ══ 2 · LE COMPTEUR DU MOIS (gratuit) ═════════════════════════════
-            Le levier le plus honnête qui soit : ses propres chiffres. Les
-            trades sont comptés par `tradesThisMonth`, la même fonction que
-            celle qui bloque la saisie au-delà de la limite. */}
-        {!loading && etat === "free" && <Compteur trades={trades} t={t} />}
-
-        {/* ══ 3 · CHOISIR / PASSER À LA LICENCE ═════════════════════════════ */}
+        {/* ══ 2 · LES OFFRES — ou, pour une licence, ce qu'elle contient ══ */}
         {!loading && mode !== "none" && (
-          <section className="space-y-3" aria-labelledby="sub-offer-title">
+          <section className="space-y-4" aria-labelledby="sub-offer-title">
             <div className="subp-head">
               <h2 id="sub-offer-title" className="subp-title">
                 {mode === "upgrade" ? t("subpage.upsell.title") : t("subpage.offer.title")}
               </h2>
               <p className="subp-sub">
-                {mode === "upgrade"
-                  ? `${breakEvenCopy(lg)} ${t("subpage.upsell.sub")}`
-                  : t("subpage.offer.sub")}
+                {mode === "upgrade" ? t("subpage.upsell.sub") : t("subpage.offer.sub")}
               </p>
             </div>
             <SubscriptionSection showPortal={!actionDisponible} preview={preview} />
           </section>
         )}
 
-        {/* ══ 4 · CE QUE ÇA OUVRE ═══════════════════════════════════════════
-            Pas des noms de fonctionnalités : ce que chaque page APPORTE, en
-            une phrase (`PAGE_VALUE`). Cadenas pour le gratuit, coche pour qui
-            l'a déjà — la même grille rappelle à un abonné ce qu'il paie. */}
-        {!loading && <Ouvertures paid={paid} lg={lg} t={t} />}
+        {!loading && mode === "none" && (
+          <section className="space-y-4" aria-labelledby="sub-included-title">
+            <h2 id="sub-included-title" className="subp-title">
+              {t("subpage.included")}
+            </h2>
+            <ul className="offer-points">
+              {FULL_ACCESS_POINTS.map((p) => (
+                <li key={p.en} className="offer-point">
+                  <span className="offer-point-icon" aria-hidden>
+                    <Check className="h-4 w-4" />
+                  </span>
+                  {p[lg]}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
-        {/* ══ 5 · LE COMPARATIF ═══════════════════════════════════════════
-            Les chiffres sortent de `LIMITS` : le jour où une limite change,
-            le comparatif change avec elle. */}
-        {!loading && etat !== "lifetime" && <Comparatif lg={lg} t={t} />}
-
-        {/* ══ 6 · CE QUI RASSURE ═══════════════════════════════════════════ */}
+        {/* ══ 3 · TROIS QUESTIONS, REPLIÉES ════════════════════════════════ */}
         {!loading && <Faq t={t} />}
 
-        <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 pt-1 pb-2">
-          {(
-            [
-              [Lock, t("subscription.secureStripePayment")],
-              [CheckCircle2, t("subscription.cancelInOneClick")],
-              [Download, t("subscription.yourDataStaysExportable")],
-            ] as [ComponentType<{ className?: string }>, string][]
-          ).map(([Ico, label]) => (
-            <span key={label} className="flex items-center gap-2 text-[11px] text-slate-500">
-              <Ico className="h-3.5 w-3.5 text-emerald-400/80" />
-              {label}
-            </span>
-          ))}
-        </div>
+        <p className="flex items-center justify-center gap-2 pb-2 text-[11.5px] text-slate-500">
+          <Lock className="h-3.5 w-3.5" />
+          {t("subpage.trust")}
+        </p>
       </ScrollArea>
     </PageContainer>
   );
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
-   2 · LE COMPTEUR DU MOIS
+   SES CHIFFRES — le concret, pour un compte gratuit
    ──────────────────────────────────────────────────────────────────────────*/
 
-function Compteur({ trades, t }: { trades: Trade[]; t: TFn }) {
+/**
+ * Deux chiffres RÉELS, pas une promesse :
+ *
+ *  • le compteur du mois — `tradesThisMonth`, la même fonction que celle qui
+ *    bloque la saisie au-delà de la limite ;
+ *  • le P&L net de ses trades marqués d'une erreur, avec leur nombre — un
+ *    TOTAL (vrai à toute taille d'échantillon). On dit ce qu'il EST, jamais
+ *    que l'erreur l'a causé.
+ *
+ * Sans trade marqué, la seconde ligne n'apparaît pas : on n'invente rien.
+ */
+function TesChiffres({ trades, t }: { trades: Trade[]; t: TFn }) {
   const limite = LIMITS.free.tradesPerMonth;
   const notes = tradesThisMonth(trades);
-  const restants = Math.max(0, limite - notes);
+  const plein = notes >= limite;
   const part = Math.min(1, notes / limite);
-  const plein = restants === 0;
+  const erreurs = useMemo(() => computeBehavioral(trades), [trades]);
+  const avecErreur = erreurs.tradesWithMistakes;
+
   return (
-    <section className="subp-card" aria-labelledby="sub-usage-title">
-      <h2 id="sub-usage-title" className="subp-card-title">
-        {t("subpage.usage.title")}
-      </h2>
-      <div className="mt-4 grid gap-4 sm:grid-cols-3">
-        <div>
-          <p className="tv-label text-slate-500">{t("subpage.usage.trades")}</p>
-          <p className="mt-1.5 flex items-baseline gap-1">
-            <span className={cn("tv-figure text-2xl", plein ? "text-amber-300" : "text-white")}>
-              {notes}
-            </span>
-            <span className="tv-figure text-sm text-slate-500">/ {limite}</span>
-          </p>
-          <div
-            className="subp-meter mt-2"
-            role="progressbar"
-            aria-valuemin={0}
-            aria-valuemax={limite}
-            aria-valuenow={notes}
+    <div className="sub-numbers">
+      <div className="min-w-0">
+        <p className="flex items-baseline gap-1.5 text-[13px] text-slate-400">
+          <span className={cn("tv-figure text-xl", plein ? "text-amber-300" : "text-white")}>
+            {Math.min(notes, limite)}/{limite}
+          </span>
+          {t("subpage.num.trades")}
+        </p>
+        <div
+          className="subp-meter mt-2"
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={limite}
+          aria-valuenow={Math.min(notes, limite)}
+        >
+          <span
+            className={cn("subp-meter-fill", plein && "subp-meter-fill--full")}
+            style={{ transform: `scaleX(${part})` }}
+          />
+        </div>
+      </div>
+      {avecErreur > 0 && (
+        <p className="flex flex-wrap items-baseline gap-1.5 text-[13px] text-slate-400">
+          <span
+            className={cn(
+              "tv-figure text-xl",
+              erreurs.totalCost < 0 ? "text-[var(--tv-chart-red)]" : "text-[var(--tv-chart-green)]",
+            )}
           >
-            <span
-              className={cn("subp-meter-fill", plein && "subp-meter-fill--full")}
-              style={{ transform: `scaleX(${part})` }}
-            />
-          </div>
-        </div>
-        <div>
-          <p className="tv-label text-slate-500">{t("subpage.usage.accounts")}</p>
-          <p className="mt-1.5 flex items-baseline gap-1">
-            <span className="tv-figure text-2xl text-white">{LIMITS.free.accounts}</span>
-            <span className="tv-figure text-sm text-slate-500">/ {LIMITS.free.accounts}</span>
-          </p>
-        </div>
-        <div>
-          <p className="tv-label text-slate-500">{t("subpage.usage.jarvis")}</p>
-          <p className="mt-1.5 flex items-baseline gap-1.5">
-            <span className="tv-figure text-2xl text-white">{LIMITS.free.jarvisPerDay}</span>
-            <span className="text-sm text-slate-500">{t("subpage.usage.perDay")}</span>
-          </p>
-        </div>
-      </div>
-      <p className={cn("mt-4 text-[13px]", plein ? "text-amber-200" : "text-slate-400")}>
-        {plein ? t("subpage.usage.full") : t("subpage.usage.left").replace("{n}", String(restants))}
-      </p>
-    </section>
+            {formatPnl(erreurs.totalCost)}
+          </span>
+          {t("subpage.num.mistakes").replace("{n}", String(avecErreur))}
+        </p>
+      )}
+    </div>
   );
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
-   4 · CE QUE L'ACCÈS COMPLET OUVRE
-   ──────────────────────────────────────────────────────────────────────────*/
-
-/** L'icône de chaque page payante — les mêmes pictogrammes que la navigation. */
-const ICONES: Partial<Record<Page, ComponentType<{ className?: string }>>> = {
-  analytics: BarChart3,
-  mistakes: AlertTriangle,
-  insights: Bot,
-  reports: FileText,
-  goals: Target,
-  missed: Eye,
-  news: Newspaper,
-  montecarlo: Dices,
-  seasonality: CalendarDays,
-};
-
-function Ouvertures({ paid, lg, t }: { paid: boolean; lg: Lg; t: TFn }) {
-  const pages = Object.entries(PAGE_VALUE) as [Page, (typeof PAGE_VALUE)[Page]][];
-  return (
-    <section className="space-y-3" aria-labelledby="sub-unlock-title">
-      <div className="subp-head">
-        <h2 id="sub-unlock-title" className="subp-title">
-          {paid ? t("subpage.unlock.titlePaid") : t("subpage.unlock.titleFree")}
-        </h2>
-        <p className="subp-sub">{t("subpage.unlock.sub")}</p>
-      </div>
-      <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {pages.map(([page, v]) => {
-          if (!v) return null;
-          const Ico = ICONES[page] ?? Sparkles;
-          return (
-            <li key={page} className="subp-unlock">
-              <span className="subp-unlock-icon">
-                <Ico className="h-4 w-4" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="flex items-center justify-between gap-2 text-[13.5px] font-semibold text-white">
-                  {v.title[lg]}
-                  {paid ? (
-                    <Check className="h-3.5 w-3.5 shrink-0 text-[var(--tv-chart-green)]" />
-                  ) : (
-                    <Lock className="h-3.5 w-3.5 shrink-0 text-slate-500" />
-                  )}
-                </p>
-                <p className="mt-1 text-[12.5px] leading-snug text-slate-400">{v.benefit[lg]}</p>
-              </div>
-            </li>
-          );
-        })}
-      </ul>
-    </section>
-  );
-}
-
-/* ────────────────────────────────────────────────────────────────────────────
-   5 · LE COMPARATIF
-   ──────────────────────────────────────────────────────────────────────────*/
-
-function Comparatif({ lg, t }: { lg: Lg; t: TFn }) {
-  const chiffre = (n: number) => (Number.isFinite(n) ? String(n) : t("subpage.cmp.unlimited"));
-  const lignes: { label: string; free: string | boolean; full: string | boolean }[] = [
-    {
-      label: t("subpage.cmp.trades"),
-      free: chiffre(LIMITS.free.tradesPerMonth),
-      full: chiffre(LIMITS.elite.tradesPerMonth),
-    },
-    {
-      label: t("subpage.cmp.accounts"),
-      free: chiffre(LIMITS.free.accounts),
-      full: chiffre(LIMITS.elite.accounts),
-    },
-    {
-      label: t("subpage.cmp.jarvis"),
-      free: t("subpage.cmp.jarvisFree").replace("{n}", String(LIMITS.free.jarvisPerDay)),
-      full: t("subpage.cmp.included"),
-    },
-    { label: t("subpage.cmp.core"), free: true, full: true },
-    ...Object.values(PAGE_VALUE).map((v) => ({
-      label: v!.title[lg],
-      free: false,
-      full: true,
-    })),
-    { label: t("subpage.cmp.broker"), free: false, full: true },
-    { label: t("subpage.cmp.transfer"), free: false, full: true },
-    { label: t("subpage.cmp.push"), free: false, full: true },
-  ];
-  const cellule = (v: string | boolean) =>
-    typeof v === "string" ? (
-      <span className="tv-figure text-[13px] text-slate-200">{v}</span>
-    ) : v ? (
-      <Check className="mx-auto h-4 w-4 text-[var(--tv-chart-green)]" aria-label="✓" />
-    ) : (
-      <Minus className="mx-auto h-4 w-4 text-slate-600" aria-label="—" />
-    );
-  return (
-    <section className="space-y-3" aria-labelledby="sub-cmp-title">
-      <div className="subp-head">
-        <h2 id="sub-cmp-title" className="subp-title">
-          {t("subpage.cmp.title")}
-        </h2>
-      </div>
-      <div className="subp-card !p-0">
-        <TableScroll>
-          <Table>
-            <THead>
-              <TR>
-                <TH>{t("subpage.cmp.feature")}</TH>
-                <TH align="center">{t("subpage.cmp.free")}</TH>
-                <TH align="center">{t("subpage.cmp.full")}</TH>
-              </TR>
-            </THead>
-            <TBody>
-              {lignes.map((l) => (
-                <TR key={l.label}>
-                  <TD className="text-[13px] text-slate-300">{l.label}</TD>
-                  <TD className="text-center">{cellule(l.free)}</TD>
-                  <TD className="text-center">{cellule(l.full)}</TD>
-                </TR>
-              ))}
-            </TBody>
-          </Table>
-        </TableScroll>
-      </div>
-    </section>
-  );
-}
-
-/* ────────────────────────────────────────────────────────────────────────────
-   6 · LES QUESTIONS DE FACTURATION
+   TROIS QUESTIONS
    ──────────────────────────────────────────────────────────────────────────*/
 
 const FAQ: [TKey, TKey][] = [
   ["subpage.faq.q1", "subpage.faq.a1"],
   ["subpage.faq.q2", "subpage.faq.a2"],
   ["subpage.faq.q3", "subpage.faq.a3"],
-  ["subpage.faq.q4", "subpage.faq.a4"],
-  ["subpage.faq.q5", "subpage.faq.a5"],
-  ["subpage.faq.q6", "subpage.faq.a6"],
 ];
 
 function Faq({ t }: { t: TFn }) {
   const [ouverte, setOuverte] = useState<number | null>(null);
   return (
-    <section className="space-y-3" aria-labelledby="sub-faq-title">
-      <div className="subp-head">
-        <h2 id="sub-faq-title" className="subp-title">
-          {t("subpage.faq.title")}
-        </h2>
-      </div>
-      <div className="subp-card space-y-1 !py-2">
-        {FAQ.map(([q, a], i) => (
-          <Disclosure
-            key={q}
-            title={t(q)}
-            open={ouverte === i}
-            onChange={(o) => setOuverte(o ? i : null)}
-          >
-            <p className="pb-2 text-[13px] leading-6 text-slate-400">{t(a)}</p>
-          </Disclosure>
-        ))}
-      </div>
+    <section className="space-y-2" aria-label={t("subpage.faq.title")}>
+      {FAQ.map(([q, a], i) => (
+        <Disclosure
+          key={q}
+          title={t(q)}
+          open={ouverte === i}
+          onChange={(o) => setOuverte(o ? i : null)}
+        >
+          <p className="pb-2 text-[13px] leading-6 text-slate-400">{t(a)}</p>
+        </Disclosure>
+      ))}
     </section>
   );
 }
@@ -623,10 +408,7 @@ const ETATS: Record<EtatId, EtatMeta> = {
   active: {
     icon: CheckCircle2,
     titleClass: "text-white",
-    body: (t, fin) =>
-      fin
-        ? t("subscription.yourAccessRenewsAutomatically").replace("{a}", String(fin))
-        : t("subscription.yourAccessIsActive"),
+    body: (t) => t("subscription.yourAccessIsActive"),
     action: (t) => t("subscription.manageSubscription"),
     actionIcon: CreditCard,
     actionStrong: false,
@@ -664,8 +446,8 @@ const ETATS: Record<EtatId, EtatMeta> = {
     icon: Crown,
     titleClass: "text-white",
     body: (t) => t("subscription.allOfTradevaultIs"),
-    // Une licence n'a rien à gérer… sauf ses factures, quand il y a un client
-    // Stripe : le portail les garde.
+    // Une licence n'a rien à gérer… sauf ses factures, quand un client Stripe
+    // existe : le portail les garde.
     action: (t) => t("subpage.invoices"),
     actionIcon: FileText,
     actionStrong: false,

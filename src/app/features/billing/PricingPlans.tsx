@@ -1,20 +1,37 @@
-import { Check } from "@/shared/ui/icons";
+import {
+  BarChart3,
+  Bot,
+  Check,
+  Dices,
+  FileText,
+  Infinity as InfinityIcon,
+  TriangleAlert,
+} from "@/shared/ui/icons";
+import type { ComponentType } from "react";
 import { cn } from "@/shared/ui/cn";
 import PrixAnime from "./PrixAnime";
 import OfferCard, { type OfferState } from "./OfferCard";
-import { LIFETIME_COPY, LIFETIME_PLAN, MONTHLY_PLAN } from "@/domain/plans";
+import { FULL_ACCESS_POINTS, LIFETIME_COPY, LIFETIME_PLAN, MONTHLY_PLAN } from "@/domain/plans";
 import { TIER_BY_ID, eur, tierOf, type PaidPlan, type Plan } from "@/app/utils/pricing";
 
 /**
- * LA GRILLE TARIFAIRE — trois colonnes, puis ce que les deux payantes ouvrent.
+ * LA GRILLE TARIFAIRE — deux cartes, six résultats, une ligne pour le gratuit.
  *
- * Gratuit (pour toujours, avec ses limites), Mensuel (sans engagement),
- * Licence à vie (une fois). Les deux offres payantes ouvrent EXACTEMENT le
- * même produit : leur liste commune vit une seule fois, sous les cartes, au
- * lieu d'être répétée dans chaque colonne.
+ * ── CE QUI A CHANGÉ (2026-11-15, retour du propriétaire) ──────────────────
  *
- * Le même composant sert la vitrine (`/pricing`) et l'application
- * (Abonnement) : le trader retrouve exactement l'offre qui l'a convaincu.
+ * « Trop de cases, trop de blabla, pas assez de concret. » La grille posait
+ * trois colonnes puis une quatrième carte de dix fonctionnalités nommées.
+ * Elle pose maintenant :
+ *
+ *   1. les DEUX offres payantes côte à côte — prix, rythme, une phrase, un
+ *      bouton ;
+ *   2. ce qu'elles ouvrent, en six RÉSULTATS (`FULL_ACCESS_POINTS`), sans
+ *      cadre : une grille d'icônes, pas une carte de plus ;
+ *   3. le gratuit sur UNE ligne, quand il est utile de le rappeler
+ *      (`/pricing`) — dans l'app, l'état du compte le dit déjà.
+ *
+ * Le même composant sert `/pricing` et la page Abonnement : un trader
+ * retrouve exactement l'offre qui l'a convaincu.
  */
 export interface PricingPlansProps {
   lang: "fr" | "en";
@@ -28,13 +45,26 @@ export interface PricingPlansProps {
   onCrypto?: (plan: PaidPlan) => void;
   /** Portail Stripe — pour un mensuel en cours. */
   onManage?: () => void;
-  /** Action de la colonne gratuite. Absente = colonne affichée sans bouton. */
+  /** Action de la ligne gratuite. */
   onFree?: () => void;
-  /** Colonne gratuite affichée ? Inutile à qui paie déjà (passage à la
-   *  licence depuis le mensuel) : elle ne ferait que rallonger la grille. */
+  /** Ligne gratuite affichée ? Inutile à qui paie déjà, ou dans l'app où
+   *  l'état du compte le dit. */
   showFree?: boolean;
+  /** Masquer le mensuel (passage mensuel → licence : seule la licence
+   *  reste à vendre). */
+  lifetimeOnly?: boolean;
   className?: string;
 }
+
+/** L'icône de chaque résultat — même ordre que `FULL_ACCESS_POINTS`. */
+const ICONES: ComponentType<{ className?: string }>[] = [
+  InfinityIcon,
+  TriangleAlert,
+  BarChart3,
+  Bot,
+  Dices,
+  FileText,
+];
 
 export default function PricingPlans({
   lang,
@@ -45,10 +75,10 @@ export default function PricingPlans({
   onManage,
   onFree,
   showFree = true,
+  lifetimeOnly = false,
   className,
 }: PricingPlansProps) {
   const free = TIER_BY_ID.free;
-  const full = TIER_BY_ID.elite;
   const ownsLifetime = currentPlan === LIFETIME_PLAN;
   // Tout autre plan payant (mensuel, ancien Pro…) compte comme un abonnement
   // en cours : la licence reste achetable, le mensuel ne l'est plus.
@@ -59,57 +89,18 @@ export default function PricingPlans({
   const lifetimeState: OfferState = ownsLifetime ? "owned" : "buy";
 
   return (
-    <div className={cn("grid gap-4", className)}>
-      <div className={cn("grid gap-4", showFree ? "md:grid-cols-3" : "md:grid-cols-2")}>
-        {showFree && (
-          <article className="offer-card order-last md:order-none">
-            <h3 className="text-[1.05rem] font-bold tracking-tight text-white">
-              {free.name[lang]}
-            </h3>
-            <p className="mt-1 text-[13px] text-slate-400">{free.tagline[lang]}</p>
-            <div className="mt-5">
-              <PrixAnime valeur={eur(0, lang)} className="offer-price text-slate-200" />
-            </div>
-            <ul className="mt-5 space-y-2">
-              {free.features.map((f) => (
-                <li
-                  key={f.en}
-                  className="flex items-start gap-2 text-[13px] leading-snug text-slate-400"
-                >
-                  <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-500" />
-                  {f[lang]}
-                </li>
-              ))}
-            </ul>
-            <div className="mt-auto pt-6">
-              {onFreePlan ? (
-                <p className="text-center text-[12px] font-semibold text-slate-500">
-                  {LIFETIME_COPY.current[lang]}
-                </p>
-              ) : (
-                onFree && (
-                  <button
-                    type="button"
-                    onClick={onFree}
-                    disabled={busy != null}
-                    className="btn-ghost w-full justify-center disabled:opacity-50"
-                  >
-                    {LIFETIME_COPY.free[lang]}
-                  </button>
-                )
-              )}
-            </div>
-          </article>
+    <div className={cn("space-y-6", className)}>
+      <div className={cn("grid gap-4", !lifetimeOnly && "md:grid-cols-2")}>
+        {!lifetimeOnly && (
+          <OfferCard
+            plan={MONTHLY_PLAN}
+            lang={lang}
+            state={monthlyState}
+            busy={busy != null}
+            onChoose={onChoose}
+            onManage={onManage}
+          />
         )}
-
-        <OfferCard
-          plan={MONTHLY_PLAN}
-          lang={lang}
-          state={monthlyState}
-          busy={busy != null}
-          onChoose={onChoose}
-          onManage={onManage}
-        />
         <OfferCard
           plan={LIFETIME_PLAN}
           lang={lang}
@@ -120,26 +111,47 @@ export default function PricingPlans({
         />
       </div>
 
-      {/* CE QUE LES DEUX OFFRES PAYANTES OUVRENT — une fois, pour les deux. */}
-      <section className="offer-card offer-card--flat" aria-labelledby="offer-included">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h3 id="offer-included" className="text-[15px] font-bold text-white">
-            {full.name[lang]}
-          </h3>
-          <p className="text-[13px] text-slate-400">{full.tagline[lang]}</p>
-        </div>
-        <ul className="mt-4 grid gap-x-6 gap-y-2 sm:grid-cols-2 lg:grid-cols-3">
-          {full.features.map((f) => (
-            <li
-              key={f.en}
-              className="flex items-start gap-2 text-[13px] leading-snug text-slate-300"
-            >
-              <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--tv-chart-green)]" />
-              {f[lang]}
+      {/* SIX RÉSULTATS, SANS CADRE. Ils valent pour les deux offres : une
+          seule liste, et pas une carte de plus autour. */}
+      <ul className="offer-points" aria-label={TIER_BY_ID.elite.name[lang]}>
+        {FULL_ACCESS_POINTS.map((p, i) => {
+          const Ico = ICONES[i] ?? Check;
+          return (
+            <li key={p.en} className="offer-point">
+              <span className="offer-point-icon" aria-hidden>
+                <Ico className="h-4 w-4" />
+              </span>
+              {p[lang]}
             </li>
-          ))}
-        </ul>
-      </section>
+          );
+        })}
+      </ul>
+
+      {showFree && (
+        <div className="offer-free-row">
+          <p className="flex min-w-0 flex-wrap items-baseline gap-x-2 text-[13px] leading-snug text-slate-400">
+            <span className="font-semibold text-white">{free.name[lang]}</span>
+            <PrixAnime valeur={eur(0, lang)} className="tv-figure font-semibold text-white" />
+            <span>— {free.tagline[lang]}</span>
+          </p>
+          {onFreePlan ? (
+            <span className="shrink-0 text-[12px] font-semibold text-slate-500">
+              {LIFETIME_COPY.current[lang]}
+            </span>
+          ) : (
+            onFree && (
+              <button
+                type="button"
+                onClick={onFree}
+                disabled={busy != null}
+                className="btn-ghost shrink-0 disabled:opacity-50"
+              >
+                {LIFETIME_COPY.free[lang]}
+              </button>
+            )
+          )}
+        </div>
+      )}
     </div>
   );
 }

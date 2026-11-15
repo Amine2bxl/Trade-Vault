@@ -36,6 +36,7 @@ export default function SubscriptionSection({
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [typed, setTyped] = useState("");
+  const [promoOuvert, setPromoOuvert] = useState(false);
   const [promo, setPromo] = useState<string | undefined>(() =>
     typeof window !== "undefined"
       ? (new URLSearchParams(window.location.search).get("promo") ?? undefined)
@@ -110,7 +111,8 @@ export default function SubscriptionSection({
         <PricingPlans
           lang={lang === "fr" ? "fr" : "en"}
           currentPlan={sub?.plan ?? "free"}
-          showFree={mode === "choose"}
+          showFree={false}
+          lifetimeOnly={mode === "upgrade"}
           busy={busy}
           onChoose={(plan) => run(plan, () => live.checkout(plan, promo))}
           onCrypto={(plan) => run(`crypto-${plan}`, () => live.cryptoCheckout(plan))}
@@ -118,11 +120,22 @@ export default function SubscriptionSection({
         />
       )}
 
-      {/* Le code promo SOUS la grille : on choisit une offre, puis on applique
-          son code. Au-dessus, il passait avant les prix qu'il réduit. */}
-      {showPlans && !promo && (
+      {/* Le code promo, REPLIÉ derrière un lien : il ne sert qu'à qui en a
+          un, et un champ ouvert sous la grille se lisait comme une étape de
+          plus avant de payer. */}
+      {showPlans && !promo && !promoOuvert && (
+        <button
+          type="button"
+          onClick={() => setPromoOuvert(true)}
+          className="text-[12.5px] font-medium text-slate-500 underline-offset-4 transition hover:text-slate-300 hover:underline"
+        >
+          {t("subpage.promoLink")}
+        </button>
+      )}
+      {showPlans && !promo && promoOuvert && (
         <div className="flex gap-2">
           <Input
+            autoFocus
             value={typed}
             onChange={(e) => setTyped(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && applyCode()}

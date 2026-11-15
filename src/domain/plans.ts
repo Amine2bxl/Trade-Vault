@@ -97,8 +97,8 @@ export const MONTHLY_COPY = {
   priceNote: { fr: "par mois", en: "per month" },
   cta: { fr: "Choisir le mensuel", en: "Go monthly" },
   trust: {
-    fr: "Résiliable en 1 clic · Paiement sécurisé par Stripe · Accès immédiat",
-    en: "Cancel in 1 click · Secure payment by Stripe · Instant access",
+    fr: "Paiement sécurisé par Stripe · Accès immédiat",
+    en: "Secure payment by Stripe · Instant access",
   },
   owned: {
     fr: "Ton abonnement mensuel est actif.",
@@ -107,6 +107,30 @@ export const MONTHLY_COPY = {
   manage: { fr: "Gérer l'abonnement", en: "Manage subscription" },
   note: { fr: "Résiliable à tout moment, en un clic.", en: "Cancel anytime, in one click." },
 } as const;
+
+/**
+ * CE QUE L'ACCÈS COMPLET CHANGE, EN SIX LIGNES CONCRÈTES.
+ *
+ * La grille listait dix fonctionnalités par leur nom (« Monte-Carlo »,
+ * « Saisonnalité »…) : un nom ne dit pas ce qu'on y gagne. Ces six lignes
+ * disent le RÉSULTAT, chacune adossée à une page qui existe (Analyses,
+ * Erreurs, Jarvis, Monte-Carlo, Rapports). Partagées par la page Abonnement,
+ * `/pricing` et la modale d'achat. Aucune promesse de gain.
+ */
+export const FULL_ACCESS_POINTS: readonly Bi[] = [
+  { fr: "Trades et comptes illimités", en: "Unlimited trades and accounts" },
+  { fr: "Chaque erreur récurrente chiffrée en €", en: "Every recurring mistake priced in €" },
+  {
+    fr: "Le setup qui te paie, et celui qui te coûte",
+    en: "The setup that pays you, and the one that costs you",
+  },
+  {
+    fr: "Jarvis lit tes trades et te donne un plan",
+    en: "Jarvis reads your trades, hands you a plan",
+  },
+  { fr: "Ta probabilité de ruine sur 10 000 scénarios", en: "Your risk of ruin over 10,000 runs" },
+  { fr: "Ton rapport mensuel, écrit pour toi", en: "Your monthly report, written for you" },
+];
 
 /** La phrase qui relie les deux prix — dérivée des montants. */
 export function breakEvenCopy(lang: "fr" | "en"): string {

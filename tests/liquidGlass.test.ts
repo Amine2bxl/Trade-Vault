@@ -87,6 +87,23 @@ describe("le langage Liquid", () => {
     expect(halos.map((r) => r.selector)).toEqual([]);
   });
 
+  test("la lueur d'ambiance reste légère, et derrière les blocs", () => {
+    /* Décision du propriétaire (2026-11-15) : une lueur TRÈS légère derrière
+       les blocs. Elle a une seule intensité, plafonnée, et ne vit que dans un
+       pseudo-élément d'arrière-plan — jamais dans l'ombre d'un objet. */
+    const alpha = css.match(/--tv-glow-alpha:\s*([\d.]+)/);
+    expect(alpha).not.toBeNull();
+    expect(parseFloat(alpha![1])).toBeLessThanOrEqual(0.08);
+    const usages = all.filter(
+      (r) => r.body.includes("--tv-glow-alpha") && !r.selector.startsWith(":root"),
+    );
+    expect(usages.length).toBeGreaterThan(0);
+    for (const r of usages) {
+      expect(r.selector, r.selector).toMatch(/::before/);
+      expect(r.body, r.selector).not.toMatch(/box-shadow/);
+    }
+  });
+
   test("le bouton d'action est un rectangle adouci plein, texte blanc", () => {
     const primary = all.find((r) => r.selector === ".btn-primary");
     expect(primary?.body).toContain("border-radius: var(--radius-md)");

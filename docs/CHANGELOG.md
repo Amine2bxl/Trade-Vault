@@ -3,6 +3,20 @@
 Journal des changements **structurels** (pas des features ni des correctifs,
 qui vivent dans l'historique git et les PR).
 
+## 2026-11-15 — Page de paiement épurée, lueur d'ambiance
+
+- Page Abonnement réduite à trois blocs : l'état avec SES chiffres (compteur
+  du mois, P&L net de ses trades marqués d'une erreur avec leur nombre, sans
+  formulation causale), les deux offres + six résultats concrets
+  (`FULL_ACCESS_POINTS`), trois questions. Comparatif, neuf cartes et faits
+  en cases retirés ; code promo replié.
+- Grille `PricingPlans` : deux cartes, six résultats sans cadre, le gratuit
+  sur une ligne (`/pricing`).
+- Lueur d'ambiance TRÈS légère derrière les blocs (décision du
+  propriétaire) : `.tv-page::before` et `.tv-glow`, jeton `--tv-glow-alpha`
+  plafonné à 0.08 par `tests/liquidGlass.test.ts`. AGENTS.md,
+  DESIGN_SYSTEM.md et la skill `theme` mis à jour.
+
 ## 2026-11-15 — Page Abonnement refaite, parcours de paiement vérifiés
 
 - Page Abonnement : carte d'adhésion par état, compteur du mois (gratuit,

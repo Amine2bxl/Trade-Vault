@@ -495,6 +495,10 @@
      distingue volontairement de l'accent d'action. */
   --tv-chart-green: #61f8ab;
   --tv-chart-green-rgb: 97 248 171;
+  /* La lueur d'ambiance derrière les blocs (décision du propriétaire,
+     2026-11-15) : son intensité, plafonnée à 0.08 par
+     `tests/liquidGlass.test.ts`. */
+  --tv-glow-alpha: 0.08;
   --tv-chart-red: #f87171;
   --tv-chart-red-rgb: 248 113 113;
 
@@ -7195,6 +7199,123 @@ body::after {
   gap: 0.75rem 1rem;
   margin-top: 1.1rem;
 }
+/* ══ LA LUEUR DERRIÈRE LES BLOCS (décision du propriétaire, 2026-11-15) ══
+   « Une petite lueur derrière les blocs, très légère et propre, pour donner
+   de la profondeur. » Elle est peinte en ARRIÈRE-PLAN, jamais sur un objet :
+   deux nappes radiales très faibles dans la teinte du thème, posées derrière
+   le contenu de chaque page (`.tv-page::before`) et derrière quelques
+   blocs choisis de la vitrine (`.tv-glow`). Aucune ombre colorée sur une
+   carte, un texte ou un bouton ; aucune animation ; rien à l'impression.
+   Intensité unique : `--tv-glow-alpha`. */
+.tv-page {
+  position: relative;
+  /* Son propre contexte d'empilement : la lueur (`z-index: -1`) se peint
+     derrière les blocs de la page et devant tout fond opaque d'un ancêtre,
+     sans dépendre de la façon dont la coque est montée. */
+  isolation: isolate;
+}
+.tv-page::before,
+.tv-glow::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
+}
+.tv-page::before {
+  inset: 0 0 auto;
+  height: min(100%, 760px);
+  background:
+    radial-gradient(
+      44% 52% at 28% 16%,
+      rgb(var(--tv-accent-rgb) / var(--tv-glow-alpha)),
+      transparent 72%
+    ),
+    radial-gradient(
+      40% 46% at 80% 38%,
+      rgb(var(--tv-accent-2-rgb) / calc(var(--tv-glow-alpha) * 0.6)),
+      transparent 72%
+    );
+}
+.tv-glow {
+  position: relative;
+}
+.tv-glow::before {
+  inset: -12% -8%;
+  background: radial-gradient(
+    50% 50% at 50% 50%,
+    rgb(var(--tv-accent-rgb) / var(--tv-glow-alpha)),
+    transparent 70%
+  );
+}
+@media print {
+  .tv-page::before,
+  .tv-glow::before {
+    display: none;
+  }
+}
+
+/* ── LES RÉSULTATS DE L'ACCÈS COMPLET — sans cadre ─────────────────────────
+   Six lignes icône + phrase, en grille : la liste vaut pour les deux offres
+   et n'ajoute aucune carte. */
+.offer-points {
+  display: grid;
+  gap: 12px 24px;
+  list-style: none;
+  padding: 0;
+}
+@media (min-width: 640px) {
+  .offer-points {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (min-width: 1024px) {
+  .offer-points {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+.offer-point {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13.5px;
+  line-height: 1.4;
+  color: var(--tv-text-primary);
+}
+.offer-point-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 9999px;
+  background: rgb(var(--tv-accent-rgb) / 0.12);
+  color: var(--tv-accent);
+}
+/* Le gratuit, sur une ligne : un filet, pas une carte. */
+.offer-free-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--tv-border);
+}
+/* Les chiffres réels du gratuit, DANS la carte d'adhésion. */
+.sub-numbers {
+  display: grid;
+  gap: 14px 32px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--tv-border);
+}
+@media (min-width: 640px) {
+  .sub-numbers {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: end;
+  }
+}
+
 /* ── LES SECTIONS DE LA PAGE ABONNEMENT (refaite en novembre 2026) ──────────
    Même grammaire que la carte d'adhésion : plaques opaques rayon 22, titres
    de section à 17 px, phrase d'appui grise. Le compteur du mois est une
@@ -7215,19 +7336,6 @@ body::after {
   font-size: 13px;
   line-height: 1.55;
   color: #94a3b8;
-}
-.subp-card {
-  border-radius: var(--radius-2xl);
-  border: 1px solid var(--tv-border);
-  background: var(--tv-plate-1);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
-  padding: 18px 20px;
-  overflow: hidden;
-}
-.subp-card-title {
-  font-size: var(--tv-t-h3);
-  font-weight: 700;
-  color: var(--tv-text-primary);
 }
 .subp-meter {
   height: 6px;
@@ -7250,24 +7358,6 @@ body::after {
   .subp-meter-fill {
     transition: none;
   }
-}
-.subp-unlock {
-  display: flex;
-  gap: 12px;
-  border-radius: var(--radius-2xl);
-  border: 1px solid var(--tv-border);
-  background: var(--tv-plate-1);
-  padding: 14px 16px;
-}
-.subp-unlock-icon {
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-  width: 32px;
-  height: 32px;
-  border-radius: 9999px;
-  background: var(--tv-plate-3);
-  color: var(--tv-text-primary);
 }
 
 /* ══════════════════════════════════════════════════════════════════════════

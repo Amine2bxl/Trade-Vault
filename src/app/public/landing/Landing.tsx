@@ -593,7 +593,7 @@ function LandingPage() {
                 parallaxe (6 % du défilement, plafonnée) vit sur un élément
                 INTÉRIEUR : une animation CSS en `fill: both` sur l'extérieur
                 battrait le style en ligne. */}
-            <div className="fade-up d4 lq-hero-stage">
+            <div className="fade-up d4 lq-hero-stage tv-glow">
               <div ref={parallaxeRef}>
                 <ShotOuVisuel
                   nom="dashboard"
@@ -744,7 +744,7 @@ function LandingPage() {
           <div className="lp-container">
             <SectionHead tag={t("pricing.tag")} a={t("pricing.title")} sub={t("anchor.sub")} />
 
-            <div className="reveal lq-pricing">
+            <div className="reveal lq-pricing tv-glow">
               <div className="lq-card lq-cost">
                 <span className="lq-rail" aria-hidden />
                 <p className="tv-label text-slate-500">{t("anchor.a.l")}</p>
@@ -875,7 +875,7 @@ function LandingPage() {
         {/* ── CTA FINAL ── une plaque qui se referme : elle se lit comme une
             conclusion. Plus de lueur derrière le titre — rien ne rayonne. */}
         <section className="lq-section">
-          <div className="lp-container">
+          <div className="lp-container tv-glow">
             <div className="reveal lq-card lq-final">
               <h2 className="lq-h2">
                 {t("cta.title.a")}

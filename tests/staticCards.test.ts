@@ -46,7 +46,10 @@ const PORTENT_KPI = [
   "features/reports/Reports.tsx",
   "features/seasonality/Seasonality.tsx",
   "features/simulator/Simulator.tsx",
-  "features/billing/Subscription.tsx",
+  /* `features/billing/Subscription.tsx` a quitté cette liste le 2026-11-15 :
+     sur demande du propriétaire (« trop de cases »), ses trois cases de faits
+     sont devenues une ligne de texte. Elle n'affiche plus de rangée de cases
+     statiques — elle n'en redessine pas non plus à la main. */
   "features/jarvis/BlockRenderer.tsx",
 ];
 
