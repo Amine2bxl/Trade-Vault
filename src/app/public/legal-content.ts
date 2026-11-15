@@ -177,7 +177,7 @@ const termsByLang: Partial<Record<Lang, LegalDoc>> = {
       },
       {
         h: "Plans and billing",
-        p: `A free plan exists with no time limit. Full access is sold in two ways that unlock the same product: a monthly subscription at ${MONTHLY_EUR} EUR per month, with no commitment, or a lifetime license at ${LIFETIME_EUR} EUR, paid once. Card payments are handled by Stripe; a cryptocurrency option (lifetime license only) is handled by Coinbase Commerce. TradeVault never sees or stores your card number.`,
+        p: `A free plan exists with no time limit. Full access is sold in two ways that unlock the same product: a monthly subscription at ${MONTHLY_EUR} EUR per month, with no commitment, or a lifetime license at ${LIFETIME_EUR} EUR, paid once. Payments are handled by Stripe. TradeVault never sees or stores your card number.`,
         list: [
           "The monthly subscription renews each month until you cancel it; cancelling takes one click from your account and keeps access until the end of the month already paid.",
           "The lifetime license is paid once; it does not renew and there is nothing to cancel. Buying it during a monthly subscription turns that subscription's renewal off.",
@@ -241,7 +241,7 @@ const termsByLang: Partial<Record<Lang, LegalDoc>> = {
       },
       {
         h: "Offres et facturation",
-        p: `Une offre gratuite existe, sans limite de durée. L'accès complet se vend de deux façons qui ouvrent le même produit : un abonnement mensuel de ${MONTHLY_EUR} € par mois, sans engagement, ou une licence à vie de ${LIFETIME_EUR} €, payée une fois. Les paiements par carte passent par Stripe ; une option en cryptomonnaie (licence à vie uniquement) passe par Coinbase Commerce. TradeVault ne voit ni ne conserve jamais votre numéro de carte.`,
+        p: `Une offre gratuite existe, sans limite de durée. L'accès complet se vend de deux façons qui ouvrent le même produit : un abonnement mensuel de ${MONTHLY_EUR} € par mois, sans engagement, ou une licence à vie de ${LIFETIME_EUR} €, payée une fois. Les paiements passent par Stripe. TradeVault ne voit ni ne conserve jamais votre numéro de carte.`,
         list: [
           "L'abonnement mensuel se renouvelle chaque mois jusqu'à sa résiliation ; résilier se fait en un clic depuis votre compte et garde l'accès jusqu'à la fin du mois déjà payé.",
           "La licence à vie se paie une fois ; elle ne se renouvelle pas et il n'y a rien à résilier. L'acheter pendant un abonnement mensuel coupe le renouvellement de celui-ci.",
@@ -304,7 +304,7 @@ const privacyByLang: Partial<Record<Lang, LegalDoc>> = {
         h: "What we do not collect",
         list: [
           "No broker credentials, no API key to a broker - TradeVault has no broker connection at all.",
-          "No card number. Stripe and Coinbase Commerce handle payment; the card never reaches our servers.",
+          "No card number. Stripe handles payment; the card never reaches our servers.",
           "No advertising identifier, no third-party tracking pixel, no behavioural advertising profile.",
         ],
       },
@@ -341,7 +341,7 @@ const privacyByLang: Partial<Record<Lang, LegalDoc>> = {
       },
       {
         h: "Who else sees it",
-        p: "We do not sell your data and we do not share it for advertising. It is processed only by the providers the service needs to run: Supabase for storage and authentication, Vercel for hosting, the AI provider above when you use Jarvis, Stripe or Coinbase Commerce when you pay, and the email provider for the messages listed above.",
+        p: "We do not sell your data and we do not share it for advertising. It is processed only by the providers the service needs to run: Supabase for storage and authentication, Vercel for hosting, the AI provider above when you use Jarvis, Stripe when you pay, and the email provider for the messages listed above.",
       },
       {
         h: "What you can do about it",
@@ -381,7 +381,7 @@ const privacyByLang: Partial<Record<Lang, LegalDoc>> = {
         h: "Ce que nous ne collectons pas",
         list: [
           "Aucun identifiant de courtier, aucune clé d'API vers un courtier - TradeVault n'a aucune connexion à un courtier.",
-          "Aucun numéro de carte. Stripe et Coinbase Commerce traitent le paiement ; la carte n'atteint jamais nos serveurs.",
+          "Aucun numéro de carte. Stripe traite le paiement ; la carte n'atteint jamais nos serveurs.",
           "Aucun identifiant publicitaire, aucun pixel de suivi tiers, aucun profil publicitaire comportemental.",
         ],
       },
@@ -409,7 +409,7 @@ const privacyByLang: Partial<Record<Lang, LegalDoc>> = {
       },
       {
         h: "Qui d'autre y a accès",
-        p: "Nous ne vendons pas vos données et nous ne les partageons pas à des fins publicitaires. Elles ne sont traitées que par les prestataires dont le service a besoin pour fonctionner : Supabase pour le stockage et l'authentification, Vercel pour l'hébergement, le fournisseur d'IA ci-dessus quand vous utilisez Jarvis, Stripe ou Coinbase Commerce quand vous payez, et le prestataire d'envoi pour les e-mails listés plus haut.",
+        p: "Nous ne vendons pas vos données et nous ne les partageons pas à des fins publicitaires. Elles ne sont traitées que par les prestataires dont le service a besoin pour fonctionner : Supabase pour le stockage et l'authentification, Vercel pour l'hébergement, le fournisseur d'IA ci-dessus quand vous utilisez Jarvis, Stripe quand vous payez, et le prestataire d'envoi pour les e-mails listés plus haut.",
       },
       {
         h: "Ce que vous pouvez en faire",
@@ -479,7 +479,7 @@ const cookiesByLang: Partial<Record<Lang, LegalDoc>> = {
       },
       {
         h: "Third parties",
-        p: "Stripe and Coinbase Commerce set their own cookies on their own payment pages, when you go there to pay. Google may set cookies on its sign-in page when you use Google Sign-In. Neither happens on TradeVault itself. We install no analytics tag, no advertising pixel and no social widget.",
+        p: "Stripe sets its own cookies on its own payment pages, when you go there to pay. Google may set cookies on its sign-in page when you use Google Sign-In. Neither happens on TradeVault itself. We install no analytics tag, no advertising pixel and no social widget.",
       },
       {
         h: "Refusing and removing",
@@ -523,7 +523,7 @@ const cookiesByLang: Partial<Record<Lang, LegalDoc>> = {
       },
       {
         h: "Tiers",
-        p: "Stripe et Coinbase Commerce déposent leurs propres cookies sur leurs propres pages de paiement, lorsque vous vous y rendez pour payer. Google peut en déposer sur sa page de connexion si vous utilisez la connexion Google. Ni l'un ni l'autre n'intervient sur TradeVault même. Nous n'installons aucune balise de mesure d'audience, aucun pixel publicitaire et aucun widget social.",
+        p: "Stripe dépose ses propres cookies sur ses propres pages de paiement, lorsque vous vous y rendez pour payer. Google peut en déposer sur sa page de connexion si vous utilisez la connexion Google. Ni l'un ni l'autre n'intervient sur TradeVault même. Nous n'installons aucune balise de mesure d'audience, aucun pixel publicitaire et aucun widget social.",
       },
       {
         h: "Refuser et effacer",

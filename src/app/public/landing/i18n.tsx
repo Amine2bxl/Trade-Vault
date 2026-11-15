@@ -682,7 +682,7 @@ const M: Record<string, Msg> = {
      Il était écrit en français, en dur, sur une vitrine dont la langue par
      défaut est l'anglais. Le contenu suit MOT POUR MOT ce que dit la page
      `/cookies` : pas de balise de mesure d'audience, pas de pixel
-     publicitaire, pas de widget social, et les cookies de Stripe, Coinbase
+     publicitaire, pas de widget social, et les cookies de Stripe
      et Google déposés sur LEURS pages, pas sur la nôtre. */
   "cookie.pill": { en: "Cookies", fr: "Cookies" },
   "cookie.aria": { en: "Cookie preferences", fr: "Préférences de cookies" },
@@ -696,8 +696,8 @@ const M: Record<string, Msg> = {
     fr: "TradeVault stocke ce qu'il faut pour te garder connecté et retenir tes réglages. Aucune balise de mesure d'audience, aucun pixel publicitaire, aucun widget social.",
   },
   "cookie.note": {
-    en: "Stripe, Coinbase Commerce and Google set their own cookies on their own pages when you go there to pay or sign in. Never on TradeVault itself.",
-    fr: "Stripe, Coinbase Commerce et Google déposent leurs propres cookies sur leurs propres pages, quand tu y vas pour payer ou te connecter. Jamais sur TradeVault même.",
+    en: "Stripe and Google set their own cookies on their own pages when you go there to pay or sign in. Never on TradeVault itself.",
+    fr: "Stripe et Google déposent leurs propres cookies sur leurs propres pages, quand tu y vas pour payer ou te connecter. Jamais sur TradeVault même.",
   },
   "cookie.more": { en: "Read the details", fr: "Lire le détail" },
   "cookie.accept": { en: "Accept", fr: "J'accepte" },
@@ -847,8 +847,8 @@ const M: Record<string, Msg> = {
   },
   "price.faq4.q": { en: "How do I pay?", fr: "Comment payer ?" },
   "price.faq4.a": {
-    en: "By card through Stripe, or in cryptocurrency through Coinbase Commerce. Your card number never reaches TradeVault.",
-    fr: "Par carte via Stripe, ou en cryptomonnaie via Coinbase Commerce. Ton numéro de carte n'atteint jamais TradeVault.",
+    en: "By card, through Stripe. Your card number never reaches TradeVault.",
+    fr: "Par carte, via Stripe. Ton numéro de carte n'atteint jamais TradeVault.",
   },
 
   /* pricing */

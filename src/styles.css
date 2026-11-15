@@ -7143,7 +7143,7 @@ body::after {
      (`.tv-set-hero`) : rayon 28, plaque 1, arête claire. L'état ne se lit
      plus dans un filet coloré en haut, mais dans la pastille et le liseré. */
   position: relative;
-  max-width: 640px;
+  max-width: 1040px;
   margin-inline: auto;
   overflow: hidden;
   border-radius: var(--radius-3xl);
@@ -7322,6 +7322,38 @@ body::after {
   .pw-card {
     padding: 32px 32px 28px;
   }
+}
+/* Deux colonnes sur ordinateur : la promesse à gauche, l'achat à droite —
+   la page tient dans l'écran sans défiler. */
+.pw-card--split {
+  max-width: 1040px;
+  display: grid;
+  gap: 24px;
+}
+@media (min-width: 900px) {
+  .pw-card--split {
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+    gap: 40px;
+    align-items: start;
+  }
+  /* Deux colonnes de résultats : la carte entière tient dans l'écran. */
+  .pw-card--split .pw-points {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px 16px;
+  }
+  .pw-card--split .pw-options {
+    margin-top: 0;
+  }
+}
+/* Les questions fréquentes, sous le bouton : elles occupent la colonne
+   d'achat au lieu d'allonger la page. */
+.pw-aside {
+  margin-top: 22px;
+  padding-top: 14px;
+  border-top: 1px solid var(--tv-border);
+}
+.pw-card--stack .pw-points {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 /* Dans une fenêtre : pas de carte dans la carte. */
 .pw-card--bare {
@@ -7521,7 +7553,7 @@ body::after {
   align-items: center;
   justify-content: space-between;
   gap: 10px 24px;
-  max-width: 640px;
+  max-width: 1040px;
   margin-inline: auto;
   padding: 12px 16px;
   border-radius: var(--radius-xl);

@@ -41,8 +41,6 @@ export interface PricingPlansProps {
   busy?: string | null;
   /** Achat — checkout carte (mensuel ou licence). */
   onChoose: (plan: PaidPlan) => void;
-  /** Paiement en crypto, quand il est proposé (licence seulement). */
-  onCrypto?: (plan: PaidPlan) => void;
   /** Portail Stripe — pour un mensuel en cours. */
   onManage?: () => void;
   /** Action de la ligne gratuite. */
@@ -71,7 +69,6 @@ export default function PricingPlans({
   currentPlan,
   busy,
   onChoose,
-  onCrypto,
   onManage,
   onFree,
   showFree = true,
@@ -107,7 +104,6 @@ export default function PricingPlans({
           state={lifetimeState}
           busy={busy != null}
           onChoose={onChoose}
-          onCrypto={onCrypto}
         />
       </div>
 

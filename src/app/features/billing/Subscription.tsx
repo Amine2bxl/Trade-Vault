@@ -164,9 +164,11 @@ export default function Subscription({
         ].filter(Boolean)
       : [];
 
+  // Pleine largeur de page, contenu CENTRÉ : la page d'achat n'est pas une
+  // colonne de réglages alignée à gauche.
   return (
-    <PageContainer ref={boxRef} measure="settings" fit height={height}>
-      <ScrollArea className="tv-grow space-y-8 pb-4">
+    <PageContainer ref={boxRef} fit height={height}>
+      <ScrollArea className="tv-grow space-y-6 pb-4">
         {/* ══ 1 · L'ÉTAT ═══════════════════════════════════════════════════
             Au gratuit, un BANDEAU compact (l'offre, le compteur du mois) :
             une grande carte « Gratuit · 0 € » en tête de page disait surtout
@@ -244,12 +246,16 @@ export default function Subscription({
         {/* ══ 2 · LA CARTE D'ACHAT — ou, pour une licence, ce qu'elle contient ══ */}
         {!loading && mode !== "none" && (
           <div className="tv-glow">
-            <SubscriptionSection trades={trades} preview={preview} />
+            {/* La FAQ loge sous le bouton : toute la page tient dans l'écran. */}
+            <SubscriptionSection trades={trades} preview={preview} aside={<Faq t={t} />} />
           </div>
         )}
 
         {!loading && mode === "none" && (
-          <section className="mx-auto max-w-[640px] space-y-4" aria-labelledby="sub-included-title">
+          <section
+            className="mx-auto max-w-[1040px] space-y-4"
+            aria-labelledby="sub-included-title"
+          >
             <h2 id="sub-included-title" className="subp-title">
               {t("subpage.included")}
             </h2>
@@ -267,12 +273,17 @@ export default function Subscription({
         )}
 
         {/* ══ 3 · TROIS QUESTIONS, REPLIÉES ════════════════════════════════ */}
-        {!loading && <Faq t={t} />}
-
-        <p className="flex items-center justify-center gap-2 pb-2 text-[11.5px] text-slate-500">
-          <Lock className="h-3.5 w-3.5" />
-          {t("subpage.trust")}
-        </p>
+        {!loading && mode === "none" && (
+          <>
+            <div className="mx-auto max-w-[1040px]">
+              <Faq t={t} />
+            </div>
+            <p className="flex items-center justify-center gap-2 pb-2 text-[11.5px] text-slate-500">
+              <Lock className="h-3.5 w-3.5" />
+              {t("subpage.trust")}
+            </p>
+          </>
+        )}
       </ScrollArea>
     </PageContainer>
   );
@@ -335,7 +346,7 @@ const FAQ: [TKey, TKey][] = [
 function Faq({ t }: { t: TFn }) {
   const [ouverte, setOuverte] = useState<number | null>(null);
   return (
-    <section className="mx-auto max-w-[640px] space-y-2" aria-label={t("subpage.faq.title")}>
+    <section className="space-y-1" aria-label={t("subpage.faq.title")}>
       {FAQ.map(([q, a], i) => (
         <Disclosure
           key={q}

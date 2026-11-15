@@ -1,4 +1,4 @@
-import { ArrowRight, Bitcoin, CreditCard, ShieldCheck } from "@/shared/ui/icons";
+import { ArrowRight, CreditCard, ShieldCheck } from "@/shared/ui/icons";
 import { cn } from "@/shared/ui/cn";
 import PrixAnime from "./PrixAnime";
 import {
@@ -42,7 +42,6 @@ export default function OfferCard({
   state = "buy",
   busy = false,
   onChoose,
-  onCrypto,
   onManage,
   className,
 }: {
@@ -51,9 +50,6 @@ export default function OfferCard({
   state?: OfferState;
   busy?: boolean;
   onChoose?: (plan: PaidPlan) => void;
-  /** Paiement en crypto — proposé pour la licence seulement : un paiement
-   *  crypto ne se renouvelle pas tout seul. */
-  onCrypto?: (plan: PaidPlan) => void;
   /** Portail Stripe — pour gérer ou résilier un mensuel en cours. */
   onManage?: () => void;
   className?: string;
@@ -121,17 +117,6 @@ export default function OfferCard({
                 {copy.cta[lang]}
                 <ArrowRight className="h-4 w-4" aria-hidden />
               </button>
-              {lifetime && onCrypto && (
-                <button
-                  type="button"
-                  onClick={() => onCrypto(plan)}
-                  disabled={busy}
-                  className="mt-2 inline-flex min-h-[32px] w-full items-center justify-center gap-1.5 text-[12px] font-medium text-slate-500 transition hover:text-slate-300 disabled:opacity-60"
-                >
-                  <Bitcoin className="h-3.5 w-3.5" aria-hidden />
-                  {LIFETIME_COPY.crypto[lang]}
-                </button>
-              )}
               <p className="mt-3 text-center text-[11.5px] leading-snug text-slate-500">
                 {copy.trust[lang]}
               </p>

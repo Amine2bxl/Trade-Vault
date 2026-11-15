@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useState, type ComponentType } from "react";
+import { useEffect, useMemo, useState, type ComponentType, type ReactNode } from "react";
 import {
   ArrowRight,
-  Bitcoin,
   Bot,
   Check,
   Clock,
@@ -76,12 +75,15 @@ export default function SubscriptionSection({
   trades = [],
   preview,
   compact = false,
+  aside,
 }: {
   /** Les trades du compte — pour LES chiffres de la promesse. */
   trades?: Trade[];
   preview?: Subscription | null;
   /** Dans une fenêtre : pas d'accroche, la fenêtre porte déjà son titre. */
   compact?: boolean;
+  /** Sous le bouton, dans la colonne d'achat (page Abonnement : la FAQ). */
+  aside?: ReactNode;
 } = {}) {
   const { t, lang } = useT();
   const lg = lang === "fr" ? "fr" : "en";
@@ -133,16 +135,6 @@ export default function SubscriptionSection({
     }
     // En cas de succès le navigateur part chez Stripe : le bouton reste occupé.
   };
-  const payerCrypto = async () => {
-    if (preview !== undefined || busy) return;
-    setBusy("crypto");
-    setError(null);
-    const err = await live.cryptoCheckout(LIFETIME_PLAN);
-    if (err) {
-      setError(t(checkoutErrorKey(err)));
-      setBusy(null);
-    }
-  };
   const appliquer = () => {
     const clean = typed.trim().toUpperCase();
     if (clean) {
@@ -174,38 +166,9 @@ export default function SubscriptionSection({
       },
     ];
 
-  return (
-    <article
-      className={cn("pw-card", compact && "pw-card--bare")}
-      aria-labelledby={compact ? undefined : "pw-title"}
-    >
-      {!compact && (
-        <header>
-          <p className="pw-eyebrow">{t("subpage.pw.eyebrow")}</p>
-          <h2 id="pw-title" className="pw-title">
-            {upgrade ? t("subpage.upsell.title") : t("subpage.pw.title")}
-          </h2>
-          <p className="pw-sub">{upgrade ? t("subpage.upsell.sub") : t("subpage.pw.sub")}</p>
-        </header>
-      )}
-
-      {/* SES CHIFFRES. Un total réel, avec son nombre de trades — rien
-          d'inventé, rien de causal. Absent tant qu'aucun trade n'est marqué. */}
-      {!upgrade && erreurs.tradesWithMistakes > 0 && (
-        <p className={cn("pw-teaser", compact && "mt-0")}>
-          <span
-            className={cn(
-              "tv-figure pw-teaser-figure",
-              erreurs.totalCost < 0 ? "text-[var(--tv-chart-red)]" : "text-[var(--tv-chart-green)]",
-            )}
-          >
-            {formatPnl(erreurs.totalCost)}
-          </span>
-          <span>{t("subpage.pw.teaser").replace("{n}", String(erreurs.tradesWithMistakes))}</span>
-        </p>
-      )}
-
-      {/* LE CHOIX — de vrais boutons radio, stylés en lignes. */}
+  /* LE CHOIX ET L'ACHAT — colonne de droite sur ordinateur. */
+  const achat = (
+    <div className="pw-buy">
       <fieldset className="pw-options">
         <legend className="sr-only">{t("subpage.pw.choose")}</legend>
         {options.map((o) => {
@@ -282,24 +245,15 @@ export default function SubscriptionSection({
         {lifetime ? LIFETIME_COPY.trust[lg] : t("subpage.pw.trustMonthly")}
       </p>
 
-      <div className="pw-links">
-        {lifetime && (
-          <button
-            type="button"
-            onClick={() => void payerCrypto()}
-            disabled={busy !== null}
-            className="pw-link"
-          >
-            <Bitcoin className="h-3.5 w-3.5" aria-hidden />
-            {LIFETIME_COPY.crypto[lg]}
-          </button>
-        )}
-        {!promo && !promoOuvert && (
+      {/* Le paiement en crypto a quitté l'interface (décision du
+          propriétaire, 2026-11-15) : la carte bancaire via Stripe suffit. */}
+      {!promo && !promoOuvert && (
+        <div className="pw-links">
           <button type="button" onClick={() => setPromoOuvert(true)} className="pw-link">
             {t("subpage.promoLink")}
           </button>
-        )}
-      </div>
+        </div>
+      )}
       {!promo && promoOuvert && (
         <div className="mt-3 flex gap-2">
           <Input
@@ -321,8 +275,40 @@ export default function SubscriptionSection({
           </button>
         </div>
       )}
+      {aside && <div className="pw-aside">{aside}</div>}
+    </div>
+  );
 
-      {/* LES SIX RÉSULTATS, sous un filet — pour les deux formules. */}
+  /* LA PROMESSE ET CE QU'ELLE CONTIENT — colonne de gauche sur ordinateur. */
+  const promesse = (
+    <div className="pw-pitch">
+      {!compact && (
+        <header>
+          <p className="pw-eyebrow">{t("subpage.pw.eyebrow")}</p>
+          <h2 id="pw-title" className="pw-title">
+            {upgrade ? t("subpage.upsell.title") : t("subpage.pw.title")}
+          </h2>
+          <p className="pw-sub">{upgrade ? t("subpage.upsell.sub") : t("subpage.pw.sub")}</p>
+        </header>
+      )}
+
+      {/* SES CHIFFRES. Un total réel, avec son nombre de trades — rien
+          d'inventé, rien de causal. Absent tant qu'aucun trade n'est marqué. */}
+      {!upgrade && erreurs.tradesWithMistakes > 0 && (
+        <p className={cn("pw-teaser", compact && "mt-0")}>
+          <span
+            className={cn(
+              "tv-figure pw-teaser-figure",
+              erreurs.totalCost < 0 ? "text-[var(--tv-chart-red)]" : "text-[var(--tv-chart-green)]",
+            )}
+          >
+            {formatPnl(erreurs.totalCost)}
+          </span>
+          <span>{t("subpage.pw.teaser").replace("{n}", String(erreurs.tradesWithMistakes))}</span>
+        </p>
+      )}
+
+      {/* LES SIX RÉSULTATS — pour les deux formules. */}
       <ul className="pw-points">
         {FULL_ACCESS_POINTS.map((p, i) => {
           const Ico = ICONES[i] ?? Check;
@@ -336,6 +322,28 @@ export default function SubscriptionSection({
           );
         })}
       </ul>
+    </div>
+  );
+
+  /* SUR ORDINATEUR, DEUX COLONNES : tout tient dans l'écran, sans défiler —
+     la promesse à gauche, le choix et le bouton à droite. Dans une fenêtre
+     ou sur téléphone, une seule colonne, le choix d'abord. */
+  return (
+    <article
+      className={cn("pw-card", compact ? "pw-card--bare pw-card--stack" : "pw-card--split")}
+      aria-labelledby={compact ? undefined : "pw-title"}
+    >
+      {compact ? (
+        <>
+          {achat}
+          {promesse}
+        </>
+      ) : (
+        <>
+          {promesse}
+          {achat}
+        </>
+      )}
     </article>
   );
 }

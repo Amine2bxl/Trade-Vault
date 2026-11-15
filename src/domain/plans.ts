@@ -84,7 +84,6 @@ export const LIFETIME_COPY = {
     en: "No subscription · Secure payment by Stripe · Instant access",
   },
   owned: { fr: "TradeVault t'appartient, à vie.", en: "TradeVault is yours, for life." },
-  crypto: { fr: "Payer en crypto", en: "Pay with crypto" },
   free: { fr: "Commencer gratuitement", en: "Start for free" },
   current: { fr: "Ton offre", en: "Your plan" },
 } as const;
