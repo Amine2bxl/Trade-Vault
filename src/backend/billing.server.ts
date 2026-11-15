@@ -453,9 +453,42 @@ async function openCheckoutSession(
   else if (opts.promotionCodeId) params["discounts[0][promotion_code]"] = opts.promotionCodeId;
   else params.allow_promotion_codes = "true";
 
-  const session = await stripe("/checkout/sessions", params);
+  // L'apparence de la page de paiement, puis un repli : si Stripe refusait un
+  // paramètre d'apparence (version d'API, image injoignable), le paiement part
+  // quand même, sans habillage — jamais un achat perdu pour une couleur.
+  let session: { url?: string } | null;
+  try {
+    session = await stripe("/checkout/sessions", { ...params, ...checkoutBranding() });
+  } catch (e) {
+    if (!/branding_settings/i.test(e instanceof Error ? e.message : String(e))) throw e;
+    console.warn("[billing] checkout branding refused, retrying without it", e);
+    session = await stripe("/checkout/sessions", params);
+  }
   if (!session?.url) throw new Error("Stripe returned a checkout session without a url");
   return session.url;
+}
+
+/**
+ * L'APPARENCE DE LA PAGE DE PAIEMENT STRIPE — celle de TradeVault (2026-11-15).
+ *
+ * Le fond sombre et l'accent menthe du thème `lucid` (`src/styles.css`), les
+ * angles adoucis, la police Inter (celle des chiffres de l'app et de la
+ * vitrine), et le nouveau logo menthe — l'ancien logo violet restait celui
+ * du compte Stripe. L'icône est servie par le site de PRODUCTION, jamais par
+ * l'origine de la requête : une préversion protégée par Vercel serait
+ * injoignable pour Stripe. Exporté pour les tests.
+ */
+export function checkoutBranding(): Record<string, string> {
+  const site = (process.env.PUBLIC_SITE_URL ?? "https://tradevault.be").replace(/\/+$/, "");
+  return {
+    "branding_settings[display_name]": "TradeVault",
+    "branding_settings[background_color]": "#050607",
+    "branding_settings[button_color]": "#31d68a",
+    "branding_settings[border_style]": "rounded",
+    "branding_settings[font_family]": "inter",
+    "branding_settings[icon][type]": "url",
+    "branding_settings[icon][url]": `${site}/icon-512.png`,
+  };
 }
 
 // ── POST /api/billing/portal ─────────────────────────────────────────────────

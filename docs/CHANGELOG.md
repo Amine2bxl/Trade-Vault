@@ -5,6 +5,12 @@ qui vivent dans l'historique git et les PR).
 
 ## 2026-11-15 — Chaque bouton d'offre mène à son paiement
 
+- Page de paiement Stripe aux couleurs de TradeVault, réglée par session
+  (`checkoutBranding`, `backend/billing.server.ts`) : fond `#050607`, bouton
+  menthe `#31d68a`, angles adoucis, Inter, nouveau logo menthe
+  (`/icon-512.png` servi par la production). Si Stripe refuse un paramètre
+  d'apparence, la session repart sans habillage : jamais un achat perdu.
+
 - `features/billing/checkoutIntent.ts` : l'offre cliquée sur la vitrine (tuiles
   mensuel / licence) ou `/pricing` est retenue avant l'inscription ; `App` la
   consomme dès qu'une session existe et part vers le paiement Stripe de cette

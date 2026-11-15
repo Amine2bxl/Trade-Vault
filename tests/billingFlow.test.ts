@@ -66,6 +66,7 @@ const PRIX: Record<string, { id: string; unit_amount: number }> = {
   tradevault_lifetime_eur_4900: { id: "price_licence", unit_amount: 4900 },
 };
 let prixDisponibles = true;
+let refuserApparence = false;
 
 const fetchOriginal = globalThis.fetch;
 globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
@@ -84,7 +85,11 @@ globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) =>
     return repondre({ data: prixDisponibles && PRIX[cle] ? [PRIX[cle]] : [] });
   }
   if (path === "/customers") return repondre({ id: "cus_1" });
-  if (path === "/checkout/sessions") return repondre({ url: "https://checkout.stripe.com/c/x" });
+  if (path === "/checkout/sessions") {
+    if (refuserApparence && params.has("branding_settings[button_color]"))
+      return repondre({ error: { message: "Received unknown parameter: branding_settings" } }, 400);
+    return repondre({ url: "https://checkout.stripe.com/c/x" });
+  }
   if (path.startsWith("/subscriptions/")) return repondre({ id: path.split("/")[2] });
   return repondre({ error: { message: `route inconnue ${method} ${path}` } }, 404);
 }) as typeof fetch;
@@ -121,6 +126,7 @@ beforeEach(() => {
   etat.rpc = [];
   appels.length = 0;
   prixDisponibles = true;
+  refuserApparence = false;
 });
 
 // ── Checkout ────────────────────────────────────────────────────────────────
@@ -170,6 +176,26 @@ describe("checkout", () => {
     expect(p.get("metadata[plan]")).toBe("lifetime");
     expect(p.get("payment_intent_data[metadata][plan]")).toBe("lifetime");
     expect(p.get("invoice_creation[enabled]")).toBe("true");
+  });
+
+  test("la page de paiement porte l'apparence de TradeVault", async () => {
+    await checkout("lifetime");
+    const p = session()!;
+    expect(p.get("branding_settings[background_color]")).toBe("#050607");
+    expect(p.get("branding_settings[button_color]")).toBe("#31d68a");
+    expect(p.get("branding_settings[font_family]")).toBe("inter");
+    expect(p.get("branding_settings[display_name]")).toBe("TradeVault");
+    expect(p.get("branding_settings[icon][url]")).toBe("https://tradevault.test/icon-512.png");
+  });
+
+  test("une apparence refusée par Stripe n'empêche jamais le paiement", async () => {
+    refuserApparence = true;
+    const res = await checkout("elite_monthly");
+    expect(res.status).toBe(200);
+    const tentatives = appels.filter((a) => a.path === "/checkout/sessions");
+    expect(tentatives).toHaveLength(2);
+    expect(tentatives[1].params.has("branding_settings[button_color]")).toBe(false);
+    expect(tentatives[1].params.get("line_items[0][price]")).toBe("price_mensuel");
   });
 
   test("un plan retiré mène à l'offre en vente la plus proche", async () => {
