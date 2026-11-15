@@ -3,6 +3,14 @@
 Journal des changements **structurels** (pas des features ni des correctifs,
 qui vivent dans l'historique git et les PR).
 
+## 2026-11-15 — Chaque bouton d'offre mène à son paiement
+
+- `features/billing/checkoutIntent.ts` : l'offre cliquée sur la vitrine (tuiles
+  mensuel / licence) ou `/pricing` est retenue avant l'inscription ; `App` la
+  consomme dès qu'une session existe et part vers le paiement Stripe de cette
+  offre (avant l'onboarding, qui reprend au retour). Dans l'app, tous les
+  verrous passaient déjà par la même fenêtre d'achat.
+
 ## 2026-11-15 — Pages en un temps, pleine largeur, onboarding épuré
 
 - **Chargement en un temps** : plus de squelettes de page (`PageLoader` :
