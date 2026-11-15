@@ -2897,6 +2897,7 @@ const fr: Dict = {
   "gate.thisPageWithYour": "Cette page, avec tes trades.",
   "gate.month": "/mois",
   "gate.moFree": "mois offerts",
+  "gate.previewOwnData": "Aperçu — tes trades",
   "gate.previewSampleData": "Aperçu — données d'exemple",
   "gate.noCommitmentCancelIn": "Sans engagement · Annulation en 1 clic",
   "upgradeOk.close": "Fermer",

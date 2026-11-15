@@ -1,5 +1,6 @@
 import { createContext, useContext, type CSSProperties, type ReactNode } from "react";
-import { Lock, ArrowRight, Eye } from "@/shared/ui/icons";
+import { ArrowRight, Eye } from "@/shared/ui/icons";
+import { useAvailableHeight } from "@/app/hooks/useAvailableHeight";
 import { useT } from "@/app/i18n/LanguageContext";
 import { useSubscription } from "@/app/hooks/useSubscription";
 import { cn } from "@/shared/ui/cn";
@@ -34,27 +35,30 @@ export function usePreviewMode(): boolean {
  *
  * Une fenêtre modale par-dessus une page floutée cache précisément ce qu'on
  * essaie de vendre : le trader voit un voile et un prix, jamais la valeur. Ici
- * il voit la PAGE, remplie de données d'exemple, nette en haut — de vrais
- * graphiques, de vrais chiffres, la vraie mise en page. Le flou n'arrive que
- * progressivement vers le bas, et la page s'arrête là : impossible de
- * continuer à défiler sans s'abonner.
+ * il voit la PAGE — avec SES trades dès qu'il en a assez, sinon un historique
+ * d'exemple — nette en haut, puis fondue dans le fond.
  *
- * Le dégradé est construit en couches : chaque couche applique un flou plus
- * fort, révélé par un masque qui descend. C'est ce qui donne une transition
- * continue plutôt que la cassure nette d'un `blur` unique.
+ * ── REFAIT LE 2026-11-15 (retour du propriétaire) ─────────────────────────
+ *
+ *   1. « Un dégradé bleu qui finit en ligne droite, avec du noir dessous. »
+ *      Le voile finissait sur un bleu nuit (`rgb(6,15,24)`) dans un bloc
+ *      plafonné à 82vh : sous lui, le vrai fond — une cassure nette. Le voile
+ *      finit maintenant sur `--tv-bg`, la couleur exacte du fond, et le mur
+ *      occupe toute la hauteur disponible : plus rien dessous.
+ *   2. « Go Full Access doit toujours être au même endroit. » La barre était
+ *      collée au bas d'un bloc dont la hauteur suivait la page. Le mur est
+ *      maintenant mesuré jusqu'au bas de la fenêtre (`useAvailableHeight`) :
+ *      la barre tombe au même pixel sur toutes les pages verrouillées.
+ *   3. « Les users doivent voir à quoi ressemble LEUR page. » `ownData`
+ *      dit si l'aperçu montre ses propres trades ; la mention suit.
  */
 
 /** Les paliers de flou : début et fin du masque, en % de la hauteur.
- *  Le haut de l'aperçu reste net — ce sont les chiffres d'exemple qui vendent.
- *
- *  DEUX paliers, plus cinq. Chaque `backdrop-filter` est une passe de flou
- *  sur la carte graphique, recalculée à CHAQUE image où quelque chose bouge
- *  dessous (animations des graphiques, défilement, orbe du curseur) : cinq
- *  flous chaînés sur 82 % de l'écran faisaient ramer neuf pages pour les
- *  comptes gratuits. Le voile dégradé posé par-dessus lisse la transition. */
+ *  DEUX paliers seulement : chaque `backdrop-filter` est une passe de flou
+ *  recalculée à chaque image où quelque chose bouge dessous. */
 const BLUR_LAYERS = [
-  { blur: 3, from: 46, to: 72 },
-  { blur: 14, from: 68, to: 100 },
+  { blur: 3, from: 40, to: 66 },
+  { blur: 12, from: 60, to: 92 },
 ];
 
 function maskStyle(blur: number, from: number, to: number): CSSProperties {
@@ -67,10 +71,15 @@ function maskStyle(blur: number, from: number, to: number): CSSProperties {
   };
 }
 
+/** Sous ce nombre de trades, l'aperçu montre l'historique d'exemple : une
+ *  page presque vide ne dit rien de ce qu'elle deviendra. */
+export const PREVIEW_OWN_MIN_TRADES = 10;
+
 export function PreviewWall({
   locked,
   benefit,
   onUpgrade,
+  ownData = false,
   children,
   className,
 }: {
@@ -81,76 +90,78 @@ export function PreviewWall({
   /** Ce que la page apporte, en une phrase — le vrai argument de vente. */
   benefit?: string;
   onUpgrade: () => void;
+  /** L'aperçu montre-t-il les trades du trader (et non l'exemple) ? */
+  ownData?: boolean;
   children: ReactNode;
   className?: string;
 }) {
   const { t, lang } = useT();
-  const fr = lang === "fr";
+  const { boxRef, height } = useAvailableHeight();
   if (!locked) return <>{children}</>;
 
-  /* L'offre affichée est celle qu'on VEND aujourd'hui, pas le palier
-     technique requis : ce dernier vaut souvent `pro`, un palier retiré de la
-     vente, et la barre affichait son ancien tarif annuel. Les deux plans en
+  /* L'offre affichée est celle qu'on VEND aujourd'hui : les deux plans en
      vente ouvrent tout ; on montre l'entrée (le mensuel) et la licence. */
   const tier = TIER_BY_ID.elite;
-  const lg = fr ? "fr" : "en";
-  const perMonth = eur(MONTHLY_EUR, lang);
+  const lg = lang === "fr" ? "fr" : "en";
 
   return (
-    <div className={cn("relative", className)}>
-      {/* La page, en vraie grandeur — le plus lisible possible : aperçu haut,
-          valeurs visibles, vente réelle. L'aperçu montre une vraie page
-          remplie, et la barre d'abonnement ne la masque pas. */}
+    <div
+      ref={boxRef}
+      className={cn("relative overflow-hidden", className)}
+      style={{ height: height ?? "calc(100dvh - 9rem)" }}
+    >
+      {/* La page, en vraie grandeur, inerte. */}
       <div
         aria-hidden
         // @ts-expect-error `inert` n'est pas encore typé dans React 19 DOM
         inert=""
-        className="pointer-events-none max-h-[82vh] select-none overflow-hidden"
+        className="pointer-events-none h-full select-none overflow-hidden"
       >
         {children}
       </div>
 
-      {/* Le dégradé de flou — doux en haut (on lit les chiffres), total en
-          bas. Le voile ne débute qu'après ~la moitié de l'aperçu. */}
+      {/* Le fondu : flou progressif, puis le FOND EXACT de la page — aucune
+          ligne, aucune bande d'une autre couleur dessous. */}
       <div className="pointer-events-none absolute inset-0">
         {BLUR_LAYERS.map((l) => (
           <div key={l.blur} className="absolute inset-0" style={maskStyle(l.blur, l.from, l.to)} />
         ))}
-        <div className="absolute inset-x-0 bottom-0 top-[55%] bg-[linear-gradient(to_bottom,rgba(4,16,26,.2)_20%,rgba(4,16,26,.55)_55%,rgb(6,15,24))]" />
+        <div className="tv-preview-fade absolute inset-0" />
       </div>
 
-      {/* L'appel à l'action — UNE barre basse, pas une fenêtre : la page reste
-          lisible au-dessus. Ce qu'on voit, le prix, le geste — en une ligne. */}
+      {/* LA barre — toujours au même endroit : le bas du mur est le bas de
+          la fenêtre. */}
       <div className="absolute inset-x-0 bottom-0 flex justify-center px-4 pb-5 sm:pb-6">
-        <div className="w-full max-w-2xl rounded-2xl border border-[var(--tv-border-strong)] bg-[var(--tv-plate-2)] p-3.5 shadow-[var(--tv-elev-3)] sm:p-4">
-          <div className="flex items-center gap-3">
-            <div className="min-w-0 flex-1">
-              <p className="line-clamp-2 text-sm font-bold leading-snug text-white">
-                {benefit ?? t("gate.thisPageWithYour")}
-              </p>
-              <p className="mt-1 text-[11px] font-medium text-slate-400">
-                {tier.name[lg]} · <span className="tv-figure text-white">{perMonth}</span>
-                {t("gate.month")} ·{" "}
-                <span className="tv-figure text-white">{eur(LIFETIME_EUR, lang)}</span>{" "}
+        <div className="tv-preview-bar w-full max-w-2xl">
+          <div className="min-w-0 flex-1">
+            <p className="line-clamp-2 text-[14px] font-semibold leading-snug text-white">
+              {benefit ?? t("gate.thisPageWithYour")}
+            </p>
+            <p className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11.5px] text-slate-400">
+              <span className="inline-flex items-center gap-1 whitespace-nowrap">
+                <Eye className="h-3 w-3 shrink-0" aria-hidden />
+                {ownData ? t("gate.previewOwnData") : t("gate.previewSampleData")}
+              </span>
+              <span aria-hidden>·</span>
+              <span className="whitespace-nowrap">
+                <span className="tv-figure text-slate-200">{eur(MONTHLY_EUR, lang)}</span>
+                {t("gate.month")}
+              </span>
+              <span aria-hidden>·</span>
+              <span className="whitespace-nowrap">
+                <span className="tv-figure text-slate-200">{eur(LIFETIME_EUR, lang)}</span>{" "}
                 {LIFETIME_COPY.priceNote[lg]}
-              </p>
-            </div>
-            <button
-              onClick={onUpgrade}
-              className="inline-flex shrink-0 items-center gap-2 rounded-xl tv-accent-fill px-5 py-3 text-sm font-bold transition"
-            >
-              <Lock className="h-4 w-4" />
-              {t("upgrade.goTier").replace("{tier}", fr ? tier.name.fr : tier.name.en)}
-              <ArrowRight className="h-4 w-4" />
-            </button>
+              </span>
+            </p>
           </div>
-          <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[11px] text-slate-500">
-            <span className="inline-flex items-center gap-1">
-              <Eye className="h-3 w-3" />
-              {t("gate.previewSampleData")}
-            </span>
-            <span>{t("gate.noCommitmentCancelIn")}</span>
-          </div>
+          <button
+            type="button"
+            onClick={onUpgrade}
+            className="btn-primary inline-flex h-11 shrink-0 items-center gap-2 px-5"
+          >
+            {t("upgrade.goTier").replace("{tier}", tier.name[lg])}
+            <ArrowRight className="h-4 w-4" aria-hidden />
+          </button>
         </div>
       </div>
     </div>
@@ -167,10 +178,13 @@ export function PreviewWall({
 export function PageGate({
   page,
   onUpgrade,
+  ownData = false,
   children,
 }: {
   page: Page;
   onUpgrade: () => void;
+  /** L'aperçu est-il nourri par les trades du trader ? (voir `App`) */
+  ownData?: boolean;
   children: ReactNode;
 }) {
   const { lang } = useT();
@@ -196,6 +210,7 @@ export function PageGate({
         requiredTier={PAGE_TIER[page] ?? "pro"}
         benefit={value ? value.benefit[fr ? "fr" : "en"] : undefined}
         onUpgrade={onUpgrade}
+        ownData={ownData}
       >
         {children}
       </PreviewWall>

@@ -26,6 +26,8 @@ import { computeQuantStats } from "@/domain/quantStats";
 import { isPage, type Page, type Trade } from "@/app/types";
 import type { Subscription as AboApercu } from "@/app/hooks/useSubscription";
 import PageHead from "@/app/shell/PageHead";
+import { PreviewWall } from "@/app/features/billing/PremiumGate";
+import { PAGE_VALUE } from "@/app/utils/pricing";
 import Sidebar from "@/app/shell/Sidebar";
 import MobileNav from "@/app/shell/MobileNav";
 
@@ -186,6 +188,7 @@ function DevUiBody({
   /* `&shell=1` monte le rail et la barre mobile autour de l'écran, comme dans
      `App` : la coque se vérifie avec la page, pas à part. */
   const withShell = new URLSearchParams(location.search).get("shell") === "1";
+  const verrou = new URLSearchParams(location.search).get("locked") === "1";
   const shellPage: Page = isPage(previewPage) ? previewPage : "dashboard";
 
   const body = (
@@ -215,52 +218,65 @@ function DevUiBody({
         {isPage(previewPage) && (
           <PageHead page={previewPage} setPage={noop} actions={head.actions} lead={head.lead} />
         )}
-        <Suspense fallback={<div className="p-6 text-sm text-slate-500">…</div>}>
-          {ecran === "trade" && <TradeHarness />}
-          {ecran === "missedform" && <MissedHarness />}
-          {ecran === "controls" && <ControlHarness />}
-          {ecran === "icons" && <IconHarness />}
-          {ecran === "calendar" && <CalendarPage trades={trades} />}
-          {ecran === "dashboard" && <DashboardHarness trades={trades} />}
-          {ecran === "journal" && (
-            <Journal
-              trades={trades}
-              onEdit={noop}
-              onDelete={noop}
-              onDeleteAll={noop}
-              onAdd={noop}
-              onOpenMissed={noop}
-            />
-          )}
-          {ecran === "checklist" && (
-            <Checklist trades={trades} setPage={noop} onAddTrade={noop} onEditTrade={noop} />
-          )}
-          {ecran === "calculator" && <LotSizeCalculator onAddTrade={noop} setPage={noop} />}
-          {ecran === "news" && <EconomicNews />}
-          {ecran === "missed" && <MissedOpportunities />}
-          {ecran === "seasonality" && <Seasonality trades={trades} />}
-          {ecran === "reports" && <Reports trades={trades} />}
-          {ecran === "accounts" && (
-            <PageContainer className="max-w-3xl">
-              <AccountsManager trades={trades} />
-            </PageContainer>
-          )}
-          {ecran === "settings" && (
-            <Settings trades={trades} onDeleteAll={noop} onOpenImport={noop} onOpenReports={noop} />
-          )}
-          {ecran === "profile" && <Profile trades={trades} />}
-          {ecran === "appearance" && <Appearance />}
-          {ecran === "brokers" && <Brokers />}
-          {ecran === "jarvis" && <Jarvis />}
-          {ecran === "montecarlo" && <MonteCarlo trades={trades} />}
-          {ecran === "analytics" && <Analytics trades={trades} />}
-          {ecran === "mistakes" && <Mistakes trades={trades} />}
-          {ecran === "goals" && <Goals trades={trades} />}
-          {ecran === "goalsplan" && <PlanHarness trades={trades} />}
-          {ecran === "tradingplan" && <TradingPlan setPage={noop} />}
-          {ecran === "subscription" && <Subscription trades={trades} preview={apercu} />}
-          {ecran === "inbox" && <Inbox />}
-        </Suspense>
+        {/* `&locked=1` pose le mur d'aperçu sur l'écran, comme `PageGate`. */}
+        <PreviewWall
+          locked={verrou}
+          requiredTier="pro"
+          onUpgrade={noop}
+          benefit={isPage(previewPage) ? PAGE_VALUE[previewPage]?.benefit.en : undefined}
+        >
+          <Suspense fallback={<div className="p-6 text-sm text-slate-500">…</div>}>
+            {ecran === "trade" && <TradeHarness />}
+            {ecran === "missedform" && <MissedHarness />}
+            {ecran === "controls" && <ControlHarness />}
+            {ecran === "icons" && <IconHarness />}
+            {ecran === "calendar" && <CalendarPage trades={trades} />}
+            {ecran === "dashboard" && <DashboardHarness trades={trades} />}
+            {ecran === "journal" && (
+              <Journal
+                trades={trades}
+                onEdit={noop}
+                onDelete={noop}
+                onDeleteAll={noop}
+                onAdd={noop}
+                onOpenMissed={noop}
+              />
+            )}
+            {ecran === "checklist" && (
+              <Checklist trades={trades} setPage={noop} onAddTrade={noop} onEditTrade={noop} />
+            )}
+            {ecran === "calculator" && <LotSizeCalculator onAddTrade={noop} setPage={noop} />}
+            {ecran === "news" && <EconomicNews />}
+            {ecran === "missed" && <MissedOpportunities />}
+            {ecran === "seasonality" && <Seasonality trades={trades} />}
+            {ecran === "reports" && <Reports trades={trades} />}
+            {ecran === "accounts" && (
+              <PageContainer className="max-w-3xl">
+                <AccountsManager trades={trades} />
+              </PageContainer>
+            )}
+            {ecran === "settings" && (
+              <Settings
+                trades={trades}
+                onDeleteAll={noop}
+                onOpenImport={noop}
+                onOpenReports={noop}
+              />
+            )}
+            {ecran === "profile" && <Profile trades={trades} />}
+            {ecran === "appearance" && <Appearance />}
+            {ecran === "brokers" && <Brokers />}
+            {ecran === "jarvis" && <Jarvis />}
+            {ecran === "montecarlo" && <MonteCarlo trades={trades} />}
+            {ecran === "analytics" && <Analytics trades={trades} />}
+            {ecran === "mistakes" && <Mistakes trades={trades} />}
+            {ecran === "goals" && <Goals trades={trades} />}
+            {ecran === "goalsplan" && <PlanHarness trades={trades} />}
+            {ecran === "tradingplan" && <TradingPlan setPage={noop} />}
+            {ecran === "subscription" && <Subscription trades={trades} preview={apercu} />}
+            {ecran === "inbox" && <Inbox />}
+          </Suspense>
+        </PreviewWall>
       </div>
     </PageActionsProvider>
   );

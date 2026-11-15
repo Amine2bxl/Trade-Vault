@@ -2964,6 +2964,7 @@ const en = {
   "gate.thisPageWithYour": "This page, with your trades.",
   "gate.month": "/month",
   "gate.moFree": "mo. free",
+  "gate.previewOwnData": "Preview — your trades",
   "gate.previewSampleData": "Preview — sample data",
   "gate.noCommitmentCancelIn": "No commitment · Cancel in one click",
   "upgradeOk.close": "Close",

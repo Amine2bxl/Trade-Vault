@@ -149,7 +149,11 @@ import FirstSessionWelcome from "./FirstSessionWelcome";
 import { SkeletonForPage } from "../components/Skeleton";
 import { DeferredFallback, PageTransition } from "./PageTransition";
 import PageErrorBoundary from "./PageErrorBoundary";
-import { PageGate, usePageLockState } from "../features/billing/PremiumGate";
+import {
+  PREVIEW_OWN_MIN_TRADES,
+  PageGate,
+  usePageLockState,
+} from "../features/billing/PremiumGate";
 import UpgradeModal from "../features/billing/UpgradeModal";
 import UpgradeSuccessOverlay from "../features/billing/UpgradeSuccessOverlay";
 import { LanguageProvider, useT } from "../i18n/LanguageContext";
@@ -390,7 +394,11 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
   // les voyait remplacés par des données de démonstration une fois l'abonnement
   // résolu — ses propres nombres, changés sous ses yeux.
   const { locked: pageLocked, resolved: gateResolved } = usePageLockState(page);
-  const shownTrades = pageLocked ? previewTrades() : trades;
+  // Assez de trades : l'aperçu montre SA page, avec SES chiffres (demande du
+  // propriétaire, 2026-11-15) ; sinon l'historique d'exemple. Les pages qui
+  // vont chercher leurs propres données (setups manqués) gardent l'exemple.
+  const ownPreview = trades.length >= PREVIEW_OWN_MIN_TRADES && page !== "missed";
+  const shownTrades = pageLocked && !ownPreview ? previewTrades() : trades;
 
   // Tous les « Go Pro » ouvrent la modale d'abonnement (Pro/Elite, mensuel ou
   // annuel) au lieu d'un checkout forcé : l'utilisateur a décidé de payer,
@@ -1296,7 +1304,7 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
                   {/* Le verrou premium enveloppe la page rendue : la table
                     `PAGE_TIER` décide, les pages elles-mêmes ne savent rien de
                     la facturation. */}
-                  <PageGate page={page} onUpgrade={openUpgrade}>
+                  <PageGate page={page} onUpgrade={openUpgrade} ownData={ownPreview}>
                     {page === "dashboard" && (
                       <Dashboard
                         trades={trades}

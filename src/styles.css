@@ -7355,6 +7355,38 @@ body::after {
 .pw-card--stack .pw-points {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
+/* ── LE MUR D'APERÇU ──────────────────────────────────────────────────────
+   Le fondu finit sur le fond EXACT de la page : aucune bande dessous. La
+   barre est une plaque opaque qui flotte — ombre noire, pas de lueur. */
+.tv-preview-fade {
+  background: linear-gradient(
+    to bottom,
+    rgb(var(--tv-bg-rgb) / 0) 42%,
+    rgb(var(--tv-bg-rgb) / 0.55) 68%,
+    rgb(var(--tv-bg-rgb) / 0.92) 88%,
+    var(--tv-bg) 100%
+  );
+}
+.tv-preview-bar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 14px 14px 18px;
+  border: 1px solid var(--tv-border-strong);
+  border-radius: 22px;
+  background: var(--tv-plate-2);
+  box-shadow: var(--tv-elev-3);
+}
+@media (max-width: 520px) {
+  .tv-preview-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .tv-preview-bar .btn-primary {
+    justify-content: center;
+  }
+}
+
 /* Dans une fenêtre : pas de carte dans la carte. */
 .pw-card--bare {
   max-width: none;
