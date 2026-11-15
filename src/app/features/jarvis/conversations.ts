@@ -135,7 +135,7 @@ export function autoTitle(messages: JarvisMessage[]): string {
 function sortList(list: ConversationMeta[]): ConversationMeta[] {
   return [...list].sort((a, b) => {
     if (!!a.pinned !== !!b.pinned) return a.pinned ? -1 : 1;
-    return b.updatedAt.localeCompare(a.updatedAt);
+    return String(b.updatedAt ?? "").localeCompare(String(a.updatedAt ?? ""));
   });
 }
 
@@ -148,12 +148,34 @@ function sortList(list: ConversationMeta[]): ConversationMeta[] {
  * « Jarvis se réveille… », un squelette, puis les messages. Ces deux lectures
  * servent l'état INITIAL ; le chargement asynchrone suit et confirme.
  */
+/* Ces deux lectures tournent PENDANT LE RENDU (états initiaux) : elles ne
+   doivent jamais lever. Une valeur abîmée sur l'appareil (autre version,
+   écriture coupée, extension) donnait avant un rejet de promesse avalé ; ici
+   elle ferait tomber tout l'écran. Elles rendent donc une liste vide plutôt
+   que d'échouer. */
 export function peekConversations(userId: string | undefined): ConversationMeta[] {
-  return userId ? sortList(read<ConversationMeta[]>(indexKey(userId), [])) : [];
+  if (!userId) return [];
+  try {
+    const raw = read<unknown>(indexKey(userId), []);
+    if (!Array.isArray(raw)) return [];
+    const list = raw.filter(
+      (c): c is ConversationMeta =>
+        !!c && typeof c === "object" && typeof (c as ConversationMeta).id === "string",
+    );
+    return sortList(list);
+  } catch {
+    return [];
+  }
 }
 
 export function peekMessages(userId: string | undefined, id: string | null): JarvisMessage[] {
-  return userId && id ? read<JarvisMessage[]>(convKey(userId, id), []) : [];
+  if (!userId || !id) return [];
+  try {
+    const raw = read<unknown>(convKey(userId, id), []);
+    return Array.isArray(raw) ? (raw as JarvisMessage[]) : [];
+  } catch {
+    return [];
+  }
 }
 
 export class JarvisConversationStore implements ConversationStore {
