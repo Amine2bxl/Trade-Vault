@@ -1067,7 +1067,7 @@ const en = {
 
   // Accounts
   "account.active": "Active account",
-  "account.moreAccountsPro": "More accounts with the license",
+  "account.moreAccountsPro": "More accounts",
   "account.goProShort": "License",
 
   // Jarvis conversations
@@ -2656,12 +2656,7 @@ const en = {
   "nav.expandSidebar": "Expand the sidebar",
   "journal.demoInserted": "Demo trades added - explore your Dashboard and Analytics!",
   "account.mainBadge": "Main",
-  "account.mainSection": "Main account",
-  "account.subSection": "Sub-accounts",
-  "account.subtitleMain": "Your main account leads; sub-accounts start fresh.",
-  "account.subEmpty":
-    "No sub-account yet. Create one to restart on a new base (a new prop firm account, a fresh evaluation…).",
-  "account.newSub": "New sub-account",
+  "account.newSub": "New account",
   "account.makeMain": "Make main account",
   "account.mainSet": "{name} is now your main account",
   "account.mainSetFailed": "Couldn't change the main account",

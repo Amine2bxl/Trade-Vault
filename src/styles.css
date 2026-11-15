@@ -7355,6 +7355,50 @@ body::after {
 .pw-card--stack .pw-points {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
+/* ── LES ACTIONS D'UNE FEUILLE ───────────────────────────────────────────
+   Un bouton par case, le libellé tenu DANS son cadre (une ligne, coupé
+   proprement s'il le faut) : plus de libellé qui déborde ou passe à la
+   ligne dans un bouton de 40 px. */
+.tv-sheet-action {
+  display: flex;
+  min-width: 0;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 14px;
+  border: 1px solid var(--tv-border);
+  border-radius: 14px;
+  background: var(--tv-plate-2);
+  color: var(--tv-text);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
+}
+.tv-sheet-action:hover:not(:disabled) {
+  border-color: var(--tv-border-strong);
+  background: var(--tv-plate-3);
+  color: #fff;
+}
+.tv-sheet-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.tv-sheet-action-accent {
+  border-color: var(--tv-border-accent);
+  background: rgb(var(--tv-accent-rgb) / 0.1);
+  color: var(--tv-accent);
+}
+.tv-sheet-action-accent:hover:not(:disabled) {
+  border-color: var(--tv-border-accent);
+  background: rgb(var(--tv-accent-rgb) / 0.16);
+  color: var(--tv-accent);
+}
+
 /* ── LE MUR D'APERÇU ──────────────────────────────────────────────────────
    Le fondu finit sur le fond EXACT de la page : aucune bande dessous. La
    barre est une plaque opaque qui flotte — ombre noire, pas de lueur. */

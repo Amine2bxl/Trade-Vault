@@ -1031,7 +1031,7 @@ const fr: Dict = {
 
   // Comptes
   "account.active": "Compte actif",
-  "account.moreAccountsPro": "Plus de comptes avec la licence",
+  "account.moreAccountsPro": "Plus de comptes",
   "account.goProShort": "Licence",
 
   // Conversations Jarvis
@@ -2587,12 +2587,7 @@ const fr: Dict = {
   "nav.expandSidebar": "Déplier la barre latérale",
   "journal.demoInserted": "Trades démo ajoutés - explore ton Dashboard et tes Analytics !",
   "account.mainBadge": "Principal",
-  "account.mainSection": "Compte principal",
-  "account.subSection": "Sous-comptes",
-  "account.subtitleMain": "Le compte principal mène ; les sous-comptes repartent de zéro.",
-  "account.subEmpty":
-    "Aucun sous-compte. Crée-en un pour repartir sur une nouvelle base (un nouveau compte prop firm, une nouvelle évaluation…).",
-  "account.newSub": "Nouveau sous-compte",
+  "account.newSub": "Nouveau compte",
   "account.makeMain": "Définir comme compte principal",
   "account.mainSet": "{name} est maintenant ton compte principal",
   "account.mainSetFailed": "Impossible de changer le compte principal",
