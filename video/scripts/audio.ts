@@ -243,7 +243,7 @@ const whoosh = (tc: number, dir = 0, g = 1) => {
   }
 };
 
-/** Balayage du Monte Carlo : un souffle qui monte pendant tout le « tracé ». */
+/** Balayage du plan « wipe » (le calendrier) : un souffle qui monte pendant tout le « tracé ». */
 const sweep = (t0: number, dur: number, g = 1) => {
   const bp = new Biquad("bp");
   const i0 = Math.round(t0 * SR);

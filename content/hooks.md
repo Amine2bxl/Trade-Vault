@@ -1,5 +1,12 @@
 # TradeVault — 10 premiers hooks & posts
 
+> **Archivé le 2026-11-16** — remplacé par `content/strategie-reseaux.md`. Ne
+> pas republier tel quel : plusieurs posts portent des chiffres non sourcés
+> (« 90 % échouent ») ou des illustrations présentées comme des résultats
+> (« ~620 $ », « règle tenue 11 fois sur 12 », « 6 semaines »), et l'offre
+> « 30 trades » n'existe plus.
+
+
 Cible : traders prop firms futures (FTMO / 5%ers / Apex, NQ/ES).
 Contenu court. Chaque post s'appuie sur un **vrai comportement mesuré par
 TradeVault** — jamais une généralité.
