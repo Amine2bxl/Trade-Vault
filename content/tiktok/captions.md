@@ -1,5 +1,12 @@
 # TradeVault — TikTok : captions prêtes à poster
 
+> **Archivé le 2026-11-16** — remplacé par `content/strategie-reseaux.md`. Ne
+> pas republier tel quel : plusieurs posts portent des chiffres non sourcés
+> (« 90 % échouent ») ou des illustrations présentées comme des résultats
+> (« ~620 $ », « règle tenue 11 fois sur 12 », « 6 semaines »), et l'offre
+> « 30 trades » n'existe plus.
+
+
 Format : titre du post → texte à coller → hashtags. Les slides sont dans
 `content/tiktok/slides/<id>_N.png` (ordre de lecture = N croissant).
 Astuce : publie 1 post tous les 1–2 jours, à heure fixe (12h–14h ou 19h–21h).

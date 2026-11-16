@@ -1,6 +1,6 @@
 # Pub TradeVault — 20 s, 1920×1080, 60 fps
 
-Motion design codé avec [Remotion](https://www.remotion.dev) : de vraies captures de l'app, les jetons de la landing (émeraude `#22e08a`, fond `#07080a`, Inter), une grille à 120 BPM que l'image et le son partagent.
+Motion design codé avec [Remotion](https://www.remotion.dev) : de vraies captures de l'app (le plan Monte Carlo est devenu celui du calendrier quand sa capture a quitté `src/assets/product/`), les jetons de la landing (émeraude `#22e08a`, fond `#07080a`, Inter), une grille à 120 BPM que l'image et le son partagent.
 
 Dossier isolé : ses dépendances ne touchent ni l'app ni le build Vercel.
 
@@ -15,6 +15,23 @@ bun run render:web   # → out/tradevault-20s.webm (VP9, muet, pour la landing)
 ```
 
 Le premier rendu télécharge Chrome Headless Shell tout seul.
+
+## Les versions verticales (TikTok, Reels, Shorts, Pinterest)
+
+Quatre compositions 1080×1920 sur la **même grille et la même bande-son** :
+`Vertical-FR-A`, `Vertical-FR-B`, `Vertical-EN-A`, `Vertical-EN-B` (deux
+langues × deux accroches à tester l'une contre l'autre). Le téléphone montre
+les captures `-m` ; le texte vit dans la zone que l'interface TikTok ne couvre
+pas ; la mention « Vraie app · données d'exemple » accompagne chaque plan
+produit.
+
+```bash
+bun run render:vertical   # → out/tradevault-9x16-{fr,en}-{a,b}.mp4
+```
+
+Textes, cadrages et surlignages : `src/vertical/script.ts` (accroches dans
+`HOOKS`). Sans réseau pour télécharger Chrome Headless Shell, ajouter
+`--browser-executable=<chemin>` à `remotion render`.
 
 ## Modifier sans tout refaire
 
@@ -56,12 +73,14 @@ Brief pour choisir la piste (Artlist, Epidemic Sound, Musicbed) :
 
 ```
 src/scenes.ts    ★ le montage (texte, timing, cadrage, transitions)
+src/vertical/    ★ les déclinaisons 9:16 (script.ts = textes et cadrages)
 src/beats.ts     la grille (BPM, fps, temps → frame)
 src/theme.ts     couleurs, polices, courbes de la landing
 src/assets.ts    les captures
 src/events.ts    les événements sonores déduits du montage
 src/Scene.tsx    un plan : cadre LP, caméra, révélation, surlignages
 src/Copy.tsx     texte cinétique (montée, frappe, glitch)
+src/words.ts     découpage du texte en mots et accents
 src/Finale.tsx   montage éclair + écran de fin
 src/fx.tsx       fond LP, flou de bougé, grain, vignette, HUD, flashs
 scripts/audio.ts synthèse audio + TIMECODES.md

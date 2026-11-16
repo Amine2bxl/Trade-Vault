@@ -4,34 +4,9 @@ import { FPB } from "./beats";
 import { rand } from "./math";
 import { C, EASE, FONT } from "./theme";
 import type { Scene } from "./types";
+import { parse, type Seg } from "./words";
 
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
-
-/** « Broken rules *cost you.* » → mots, chacun en segments (accent ou non). */
-type Seg = { t: string; a: boolean };
-const parse = (s: string): Seg[][] => {
-  const words: Seg[][] = [];
-  let cur: Seg[] = [];
-  let buf = "";
-  let a = false;
-  const flush = () => {
-    if (buf) cur.push({ t: buf, a });
-    buf = "";
-  };
-  for (const ch of s) {
-    if (ch === "*") {
-      flush();
-      a = !a;
-    } else if (ch === " ") {
-      flush();
-      if (cur.length) words.push(cur);
-      cur = [];
-    } else buf += ch;
-  }
-  flush();
-  if (cur.length) words.push(cur);
-  return words;
-};
 
 const Word: React.FC<{ segs: Seg[]; mono?: boolean }> = ({ segs, mono }) => (
   <>
@@ -55,7 +30,7 @@ const Words: React.FC<{ words: Seg[][]; mono?: boolean }> = ({ words, mono }) =>
 );
 
 /** Chaque mot sort de son masque, un par double-croche. */
-const Rise: React.FC<{ words: Seg[][]; t: number }> = ({ words, t }) => (
+export const Rise: React.FC<{ words: Seg[][]; t: number }> = ({ words, t }) => (
   <>
     {words.map((w, i) => {
       const p = interpolate(t - i * (FPB / 4), [0, 20], [0, 1], { ...clamp, easing: EASE.expo });
@@ -82,7 +57,7 @@ const Rise: React.FC<{ words: Seg[][]; t: number }> = ({ words, t }) => (
 );
 
 /** Frappe caractère par caractère, sur la grille des triples-croches. */
-const Type: React.FC<{ words: Seg[][]; t: number }> = ({ words, t }) => {
+export const Type: React.FC<{ words: Seg[][]; t: number }> = ({ words, t }) => {
   const chars: Seg[] = [];
   words.forEach((w, i) => {
     if (i > 0) chars.push({ t: " ", a: false });
@@ -118,7 +93,7 @@ const Type: React.FC<{ words: Seg[][]; t: number }> = ({ words, t }) => {
 };
 
 /** Entrée en glitch : tranches décalées + franges rouge/cyan, 12 frames. */
-const Glitch: React.FC<{ words: Seg[][]; t: number }> = ({ words, t }) => {
+export const Glitch: React.FC<{ words: Seg[][]; t: number }> = ({ words, t }) => {
   const k = interpolate(t, [0, 12], [1, 0], clamp);
   if (k <= 0) return <Words words={words} />;
   const fr = Math.round(t);

@@ -27,8 +27,8 @@
 | 18 | 540 | 00:09:00 | tick | mistakes — surlignage |
 | 20 | 600 | 00:10:00 | cut | analytics (whip-up) |
 | 20 | 600 | 00:10:00 | whoosh | analytics |
-| 24 | 720 | 00:12:00 | cut | montecarlo (wipe) |
-| 24 | 720 | 00:12:00 | sweep | montecarlo (1 temps) |
+| 24 | 720 | 00:12:00 | cut | calendar (wipe) |
+| 24 | 720 | 00:12:00 | sweep | calendar (1 temps) |
 | 28 | 840 | 00:14:00 | cut | jarvis (whip-left) |
 | 28 | 840 | 00:14:00 | whoosh | jarvis |
 | 28.25 | 848 | 00:14:08 | type | jarvis — frappe ×15 (→ temps 30) |
@@ -39,7 +39,7 @@
 | 32.5 | 975 | 00:16:15 | snap | montage — checklist |
 | 32.75 | 983 | 00:16:23 | snap | montage — mistakes |
 | 33 | 990 | 00:16:30 | snap | montage — analytics |
-| 33.25 | 998 | 00:16:38 | snap | montage — montecarlo |
+| 33.25 | 998 | 00:16:38 | snap | montage — calendar |
 | 33.5 | 1005 | 00:16:45 | snap | montage — jarvis |
 | 33.8 | 1014 | 00:16:54 | silence | noir + silence total (0.2 temps) |
 | 34 | 1020 | 00:17:00 | cut | cta |
