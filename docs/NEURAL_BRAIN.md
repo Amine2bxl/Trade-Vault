@@ -139,6 +139,49 @@ la nouvelle valeur — rien n'est réécrit en silence.
 | 9 Automatisation | — | Scan nocturne des découvertes (cron `pattern-scan` comme modèle) et notifications |
 | 10 Qualité | Tests (moteur, écran, outil Jarvis), i18n en/fr, mobile utilisable | Audit d'accessibilité complet, test de charge sur 10 000 trades |
 
+## 6 bis. Version 2 — environnement immersif (conception, 2026-11-21)
+
+**Audit v1 → v2.** Le lot 1 est une page dans le cadre de l'app, rendue en
+Canvas 2D : nœuds plats, liens uniformes, aucun flux, aucune transition de
+vue. Les découvertes ne comparent qu'une dimension et n'exploitent ni
+`trade_reflection` (plan respecté) ni `trade_intent` (émotion, risque prévu).
+Aucune simulation de comportement, aucune lecture de l'évolution. Rien n'est
+simulé ni factice : tout ce qui s'affiche vient des données.
+
+**Moteurs séparés** (chacun pur et testé, sauf le rendu) :
+
+| Moteur | Où | Rôle |
+| --- | --- | --- |
+| Connaissance | `modules/knowledge/build.ts` | Graphe dérivé + bibliothèque d'erreurs (signatures inférées) |
+| Découverte | `modules/knowledge/discovery.ts` | Détecteurs v2 : après la 1re perte, concentration des pertes, piège du taux de réussite, combinaisons à deux conditions VALIDÉES hors échantillon, risque × qualité, processus × résultat, plan respecté, tendance des erreurs, décisions de ne pas trader |
+| Simulation | `modules/knowledge/simulate.ts` | Scénarios sur l'historique (risque, plafond de trades, retrait d'une erreur, d'un setup, arrêt après N pertes, plan respecté) + projection bootstrap par séances ; trois étiquettes distinctes : observé, hypothétique, simulation statistique |
+| Évolution | `modules/knowledge/evolution.ts` | Le trader face à lui-même : fenêtres mensuelles, erreurs résolues / nouvelles / persistantes avec intervalle |
+| Calcul | `features/brain/brain.worker.ts` | Découvertes, simulations et évolution hors du fil d'affichage |
+| Rendu | `features/brain/gl/` | WebGL2 maison (pas three.js : ~150 Ko gzip et un verrou npm fragile évités) — nœuds en SDF, liens « fait » pleins, « mesuré » pleins avec flux, « hypothèse » en pointillés, flux le long des chemins de preuve, champ d'étoiles en profondeur ; repli Canvas 2D sans WebGL |
+| Son | `features/brain/brainSound.ts` | Web Audio, quatre sons courts, coupables (préférence mémorisée) |
+
+**Expérience.** Plein écran au-dessus de l'app (`--tv-z-overlay`), entrée
+cinématique (étoiles, familles qui s'allument, travelling de caméra ;
+≤ 1,6 s, interrompable, instantanée sous mouvement réduit — même exception
+que l'onboarding). Quatre modes : **Explorer**, **Découvertes**,
+**Simuler**, **Évolution**. Rail des dimensions à gauche (isoler un cluster =
+vol de caméra), panneau contextuel à droite seulement quand quelque chose est
+choisi, recherche en haut, frise en bas. Survol d'un lien : sa nature, sa
+force, sa preuve. Choisir une découverte : la caméra parcourt les éléments qui
+la démontrent, le chemin s'illumine. Simuler : le graphe recule, les
+trajectoires d'equity (observée, scénario, éventail statistique) prennent la
+scène. Quitter : recul de caméra, retour à la page d'origine.
+
+**Lumière.** Décision du propriétaire (2026-11-21) : à l'intérieur du canevas
+du Neural Brain seulement, les nœuds et les flux portent une lueur bornée
+(fondu additif, intensité plafonnée) — c'est la donnée qui éclaire. Hors du
+canevas, la loi `theme` s'applique sans exception (aucune lueur sur carte,
+bouton ou texte).
+
+**Lots.** A moteur de découverte v2 + bibliothèque d'erreurs → B simulation +
+évolution → C rendu WebGL + expérience immersive + SFX → D vérification
+(données réelles, desktop/mobile, mouvement réduit, son coupé) et docs.
+
 ## 7. Risques connus
 
 - **Calcul côté client** : un journal de plusieurs milliers de trades fait

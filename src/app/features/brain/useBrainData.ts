@@ -14,9 +14,11 @@ import {
   peekMessages,
 } from "@/app/features/jarvis/conversations";
 import { useEconomicHistory } from "@/app/features/news/useTradeNews";
+import { loadTradeIntents, loadTradeReflections } from "@/app/store/tradeIntel";
 import { nsKey, readJSON } from "@/app/utils/persistence";
 import type { Trade } from "@/app/types";
 import type {
+  BehaviorContext,
   ConversationInput,
   ExperimentInput,
   MissedInput,
@@ -44,7 +46,8 @@ export type SourceId =
   | "proposals"
   | "simulations"
   | "conversations"
-  | "events";
+  | "events"
+  | "behavior";
 
 export interface BrainData {
   missed: MissedInput[];
@@ -55,6 +58,8 @@ export interface BrainData {
   simulations: SimulationInput[];
   conversations: ConversationInput[];
   events: NewsEvent[];
+  /** Plan respecté (bilans) et risque prévu (intentions), par trade. */
+  behavior: BehaviorContext;
   loading: boolean;
   failed: SourceId[];
 }
@@ -212,6 +217,38 @@ export function useBrainData(trades: readonly Trade[]): BrainData {
     };
   }, [uid, activeId]);
 
+  // Bilans et intentions : par paquets (une URL `in.(…)` a une longueur bornée).
+  const [behavior, setBehavior] = useState<BehaviorContext>({});
+  const [behaviorFailed, setBehaviorFailed] = useState(false);
+  const idsKey = useMemo(() => trades.map((t) => t.id).join(","), [trades]);
+  useEffect(() => {
+    if (!uid || !idsKey) return;
+    let active = true;
+    const ids = idsKey.split(",");
+    const CHUNK = 150;
+    const chunks = Array.from({ length: Math.ceil(ids.length / CHUNK) }, (_, i) =>
+      ids.slice(i * CHUNK, (i + 1) * CHUNK),
+    );
+    Promise.all(
+      chunks.map((c) => Promise.all([loadTradeReflections(uid, c), loadTradeIntents(uid, c)])),
+    )
+      .then((parts) => {
+        if (!active) return;
+        const planRespected: Record<string, "yes" | "partial" | "no" | null> = {};
+        const plannedRisk: Record<string, number | null> = {};
+        for (const [refl, intents] of parts) {
+          for (const [id, r] of Object.entries(refl)) planRespected[id] = r.planRespected;
+          for (const [id, i] of Object.entries(intents)) plannedRisk[id] = i.plannedRisk;
+        }
+        setBehavior({ planRespected, plannedRisk });
+        setBehaviorFailed(false);
+      })
+      .catch(() => active && setBehaviorFailed(true));
+    return () => {
+      active = false;
+    };
+  }, [uid, idsKey]);
+
   const dates = useMemo(() => [...new Set(trades.map((t) => t.date))], [trades]);
   const history = useEconomicHistory(dates);
 
@@ -224,7 +261,12 @@ export function useBrainData(trades: readonly Trade[]): BrainData {
     simulations: labPlan ? [labPlan, ...remote.scenarios] : remote.scenarios,
     conversations,
     events: history.events,
+    behavior,
     loading,
-    failed: history.failed ? [...failed, "events"] : failed,
+    failed: [
+      ...failed,
+      ...(history.failed ? ["events" as const] : []),
+      ...(behaviorFailed ? ["behavior" as const] : []),
+    ],
   };
 }

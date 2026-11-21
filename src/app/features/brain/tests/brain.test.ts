@@ -159,6 +159,9 @@ describe("textes", () => {
       alternatives: ["regime"],
       experiment: "cap_trades",
       fingerprint: "x",
+      impact: -840,
+      validation: "confirmed",
+      confidence: "moderate",
     };
     const cases: Pick<Discovery, "detector" | "params">[] = [
       { detector: "edge_condition", params: { dimension: "weekday", key: "4" } },
@@ -170,10 +173,34 @@ describe("textes", () => {
       { detector: "confidence", params: {} },
       { detector: "missed_vs_taken", params: { symbols: "NQ" } },
       { detector: "simulation_risk", params: { name: "Plan", share: 0.4 } },
+      { detector: "after_loss_outcome", params: {} },
+      { detector: "loss_concentration", params: { segment: "after_loss", key: "after_loss" } },
+      { detector: "loss_concentration", params: { segment: "signature", key: "revenge" } },
+      {
+        detector: "winrate_trap",
+        params: { dimension: "session", key: "london", winRate: 70, winRateRest: 50 },
+      },
+      { detector: "combo", params: { d1: "strategy", v1: "ORB", d2: "weekday", v2: "2" } },
+      { detector: "risk_vs_quality", params: { median: 100 } },
+      { detector: "process_outcome", params: { luckyWinsShare: 0.3, cleanLosses: 4 } },
+      { detector: "plan_adherence", params: {} },
+      { detector: "mistake_trend", params: { mistake: "FOMO entry", since: "2026-03-02" } },
+      { detector: "planned_risk", params: { share: 0.4 } },
+      { detector: "untagged_signature", params: { error: "revenge", tag: "Revenge trade" } },
+      { detector: "missed_avoided", params: { share: 0.4 } },
     ];
+    // Un sens que le détecteur ne produit jamais n'a pas de texte : on ne le teste pas.
+    const ONE_WAY: Record<string, "higher" | "lower"> = {
+      loss_concentration: "higher",
+      winrate_trap: "lower",
+      planned_risk: "higher",
+      untagged_signature: "lower",
+      missed_avoided: "lower",
+    };
     for (const t of [tEn, tFr])
       for (const c of cases)
         for (const direction of ["higher", "lower"] as const) {
+          if (ONE_WAY[c.detector] && ONE_WAY[c.detector] !== direction) continue;
           const d = { ...base, ...c, direction, id: c.detector } as Discovery;
           const { title, body } = discoveryText(d, t);
           expect(`${title} ${body}`, `${c.detector}.${direction}`).not.toMatch(/\{\w+\}|brain\./);

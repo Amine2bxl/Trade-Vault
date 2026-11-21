@@ -200,7 +200,7 @@ export function nodeLabel(
       return `${t("brain.kind.report")} · ${formatMonth(node.key, lang)}`;
     case "discovery": {
       const d = discoveries?.get(node.key);
-      return d ? discoveryText(d, t).title : t("brain.kind.discovery");
+      return d ? discoveryText(d, t, lang).title : t("brain.kind.discovery");
     }
     default:
       return node.label || t(`brain.kind.${node.kind}` as TKey);
@@ -230,18 +230,40 @@ export function formatEvidence(
       return `${signed && value > 0 ? "+" : ""}${value.toFixed(2)}×`;
     case "share":
       return `${Math.round(value * 100)} %`;
+    case "rho":
+      return `ρ ${value > 0 && signed ? "+" : ""}${value.toFixed(2)}`;
   }
 }
 
 /** Le nom lisible de la valeur étudiée par EdgeLab (setup, jour, séance…). */
-function edgeKeyLabel(d: Discovery, t: T): string {
-  const key = String(d.params.key ?? "");
-  if (d.params.dimension === "weekday") return t(WEEKDAY_KEYS[Number(key)] ?? "brain.weekday.1");
-  if (d.params.dimension === "session") return t(`session.${key}` as TKey);
-  return key;
+/** Le nom lisible d'une valeur de dimension (jour, séance traduits ; le reste tel quel). */
+export function dimensionLabel(dimension: unknown, key: unknown, t: T): string {
+  const k = String(key ?? "");
+  if (dimension === "weekday") return t(WEEKDAY_KEYS[Number(k)] ?? "brain.weekday.1");
+  if (dimension === "session") return t(`session.${k}` as TKey);
+  return k;
 }
 
-export function discoveryText(d: Discovery, t: T): { title: string; body: string } {
+function edgeKeyLabel(d: Discovery, t: T): string {
+  return dimensionLabel(d.params.dimension, d.params.key, t);
+}
+
+/** Le segment d'une concentration de pertes, en mots. */
+function segmentLabel(d: Discovery, t: T): string {
+  const key = String(d.params.key ?? "");
+  switch (d.params.segment) {
+    case "after_loss":
+      return t("brain.seg.after_loss");
+    case "session":
+      return t(`session.${key}` as TKey);
+    case "signature":
+      return t(`brain.err.${key}` as TKey);
+    default:
+      return key;
+  }
+}
+
+export function discoveryText(d: Discovery, t: T, lang = "en"): { title: string; body: string } {
   const ev = d.evidence;
   const params: Record<string, string> = {
     n: String(ev.n),
@@ -257,7 +279,21 @@ export function discoveryText(d: Discovery, t: T): { title: string; body: string
   if (d.detector === "edge_condition") params.key = edgeKeyLabel(d, t);
   if (d.detector === "simulation_risk")
     params.share = formatEvidence(Number(d.params.share), "share");
-  if (d.detector === "risk_after_loss") params.median = formatMoney(Number(d.params.median));
+  if (d.detector === "risk_after_loss" || d.detector === "risk_vs_quality")
+    params.median = formatMoney(Number(d.params.median));
+  if (d.detector === "winrate_trap") params.key = edgeKeyLabel(d, t);
+  if (d.detector === "combo") {
+    params.v1 = dimensionLabel(d.params.d1, d.params.v1, t);
+    params.v2 = dimensionLabel(d.params.d2, d.params.v2, t);
+  }
+  if (d.detector === "loss_concentration") params.segment = segmentLabel(d, t);
+  if (d.detector === "untagged_signature") params.error = t(`brain.err.${d.params.error}` as TKey);
+  if (d.detector === "process_outcome")
+    params.luckyWinsShare = formatEvidence(Number(d.params.luckyWinsShare), "share");
+  if (d.detector === "planned_risk" || d.detector === "missed_avoided")
+    params.share = formatEvidence(Number(d.params.share), "share");
+  if (d.detector === "mistake_trend") params.since = formatDay(String(d.params.since), lang);
+  params.impact = d.impact === null ? "—" : formatMoney(d.impact, { signed: true });
   const base =
     d.detector === "data_gap"
       ? `brain.disc.data_gap.${d.params.field}`

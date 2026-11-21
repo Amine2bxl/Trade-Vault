@@ -100,3 +100,81 @@ export function sessionBlockDiff(
     version: DIFF_VERSION,
   };
 }
+
+/** Rangs moyens (ex æquo partagés), base de Spearman. */
+function ranks(xs: readonly number[]): number[] {
+  const idx = xs.map((v, i) => [v, i] as const).sort((a, b) => a[0] - b[0]);
+  const out = new Array<number>(xs.length);
+  for (let i = 0; i < idx.length; ) {
+    let j = i;
+    while (j + 1 < idx.length && idx[j + 1][0] === idx[i][0]) j++;
+    const r = (i + j) / 2;
+    for (let k = i; k <= j; k++) out[idx[k][1]] = r;
+    i = j + 1;
+  }
+  return out;
+}
+
+/** Corrélation de Spearman ; `null` si une des variables est constante. */
+export function spearman(pairs: readonly (readonly [number, number])[]): number | null {
+  if (pairs.length < 3) return null;
+  const rx = ranks(pairs.map((p) => p[0]));
+  const ry = ranks(pairs.map((p) => p[1]));
+  const n = pairs.length;
+  const mx = rx.reduce((s, v) => s + v, 0) / n;
+  const my = ry.reduce((s, v) => s + v, 0) / n;
+  let sxy = 0;
+  let sxx = 0;
+  let syy = 0;
+  for (let i = 0; i < n; i++) {
+    sxy += (rx[i] - mx) * (ry[i] - my);
+    sxx += (rx[i] - mx) ** 2;
+    syy += (ry[i] - my) ** 2;
+  }
+  return sxx && syy ? sxy / Math.sqrt(sxx * syy) : null;
+}
+
+export interface CorrelationResult {
+  rho: number;
+  low: number;
+  high: number;
+  p: number;
+  iterations: number;
+  seed: number;
+}
+
+/**
+ * Spearman avec intervalle bootstrap PAR SÉANCES (mêmes raisons que l'écart
+ * entre groupes). `null` sous deux séances ou sans variance.
+ */
+export function sessionBlockSpearman(
+  sessions: readonly (readonly (readonly [number, number])[])[],
+  opts: { seed: number; iterations?: number },
+): CorrelationResult | null {
+  const blocks = sessions.filter((s) => s.length);
+  if (blocks.length < 2) return null;
+  const rho = spearman(blocks.flat());
+  if (rho === null) return null;
+  const iterations = Math.max(200, Math.floor(opts.iterations ?? 1000));
+  const rng = makeRng(opts.seed);
+  const draws: number[] = [];
+  for (let i = 0; i < iterations; i++) {
+    const sample: (readonly [number, number])[] = [];
+    for (let k = 0; k < blocks.length; k++) sample.push(...blocks[randomIndex(rng, blocks.length)]);
+    const r = spearman(sample);
+    if (r !== null) draws.push(r);
+  }
+  if (draws.length < iterations / 2) return null;
+  draws.sort((a, b) => a - b);
+  const at = (q: number) => draws[Math.min(draws.length - 1, Math.floor(q * draws.length))];
+  const below = draws.filter((d) => d <= 0).length;
+  const above = draws.filter((d) => d >= 0).length;
+  return {
+    rho,
+    low: at(0.025),
+    high: at(0.975),
+    p: Math.min(1, (2 * Math.min(below, above)) / draws.length),
+    iterations,
+    seed: opts.seed,
+  };
+}

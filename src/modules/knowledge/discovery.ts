@@ -1,13 +1,11 @@
 import { hasMeasuredRisk, isBreakEven, measuredR, type Trade } from "@/domain/trade";
 import { getSessionForTrade } from "@/domain/quantStats";
 import { compareChronological, verifiedPriorClosedTrade } from "@/domain/tradeOrder";
-import { easternClockOf } from "@/domain/easternClock";
 import {
   analyzeDimension,
   benjaminiHochberg,
   dimensionValue,
   FDR_ALPHA,
-  sessionKey,
   type EdgeDimension,
 } from "@/modules/research";
 import { seedFrom } from "@/modules/probability/rng";
@@ -17,9 +15,17 @@ import {
   MIN_R_DELTA,
   MIN_TRADES,
 } from "@/modules/patterns/thresholds";
-import { median } from "./build";
+import {
+  detectSignatures,
+  hasEntryClock,
+  median,
+  sequence,
+  sessionOf,
+  ERROR_LIBRARY,
+  type BehaviorContext,
+} from "./behavior";
 import { KnowledgeGraph } from "./graph";
-import { sessionBlockDiff, DIFF_METHOD } from "./stats";
+import { sessionBlockDiff, sessionBlockSpearman, DIFF_METHOD } from "./stats";
 import type { MissedInput, SimulationInput } from "./types";
 
 /**
@@ -45,7 +51,7 @@ import type { MissedInput, SimulationInput } from "./types";
  * que des clés et des nombres.
  */
 
-export const DISCOVERY_VERSION = 1;
+export const DISCOVERY_VERSION = 2;
 
 export type DiscoveryCategory =
   | "hidden_pattern"
@@ -65,7 +71,18 @@ export type DetectorId =
   | "confidence"
   | "missed_vs_taken"
   | "simulation_risk"
-  | "data_gap";
+  | "data_gap"
+  | "after_loss_outcome"
+  | "loss_concentration"
+  | "winrate_trap"
+  | "combo"
+  | "risk_vs_quality"
+  | "process_outcome"
+  | "plan_adherence"
+  | "mistake_trend"
+  | "planned_risk"
+  | "untagged_signature"
+  | "missed_avoided";
 
 /** Explications concurrentes — clés i18n `brain.alt.*`. */
 export type AlternativeKey =
@@ -77,7 +94,10 @@ export type AlternativeKey =
   | "hindsight"
   | "day_context"
   | "sizing_rule"
-  | "missing_data";
+  | "missing_data"
+  | "tagging_habit"
+  | "luck"
+  | "multiple_conditions";
 
 /** Expériences proposées — clés i18n `brain.exp.*`. */
 export type ExperimentKey =
@@ -89,9 +109,17 @@ export type ExperimentKey =
   | "grade_before_entry"
   | "log_missed_live"
   | "align_simulation"
-  | "complete_field";
+  | "complete_field"
+  | "pause_after_loss"
+  | "review_segment"
+  | "rr_target"
+  | "process_checklist"
+  | "plan_review"
+  | "keep_tracking"
+  | "planned_risk_rule"
+  | "tag_honestly";
 
-export type EvidenceUnit = "pnl" | "risk_ratio" | "r" | "currency" | "share";
+export type EvidenceUnit = "pnl" | "risk_ratio" | "r" | "currency" | "share" | "rho";
 
 export interface DiscoveryEvidence {
   unit: EvidenceUnit;
@@ -137,6 +165,15 @@ export interface Discovery {
   experiment: ExperimentKey;
   /** Empreinte de la preuve : si elle change, une revue passée est à relire. */
   fingerprint: string;
+  /**
+   * Impact potentiel : l'écart cumulé sur le groupe étudié (écart par trade ×
+   * n), en monnaie du compte — une ARITHMÉTIQUE descriptive, pas un gain promis.
+   */
+  impact: number | null;
+  /** Validation chronologique : le même sens d'écart sur les 30 % de séances les plus récentes ? */
+  validation: "confirmed" | "not_confirmed" | "insufficient" | null;
+  /** Niveau de confiance déclaré, dérivé de q, de la fragilité et de la validation. */
+  confidence: "strong" | "moderate" | "tentative" | "descriptive";
 }
 
 export interface DiscoveryInput {
@@ -145,6 +182,8 @@ export interface DiscoveryInput {
   simulations?: readonly SimulationInput[];
   /** Compte du graphe (nœud de rattachement des constats globaux). */
   accountKey?: string;
+  /** Réflexions (plan respecté) et intentions (risque prévu) par trade. */
+  behavior?: BehaviorContext;
 }
 
 /** Seuil de dérive entre le risque supposé par une simulation et le risque pris. */
@@ -157,11 +196,6 @@ export const DATA_GAP_COVERAGE = 0.7;
 // ── Outils communs ──────────────────────────────────────────────────────────
 
 const nodeId = KnowledgeGraph.nodeId;
-
-/** Séance d'un trade, cloisonnée par compte. */
-function sessionOf(t: Trade): string {
-  return `${t.accountId ?? ""}|${sessionKey(t)}`;
-}
 
 function groupBySession(list: readonly Trade[], value: (t: Trade) => number): number[][] {
   const map = new Map<string, number[]>();
@@ -177,7 +211,8 @@ function groupBySession(list: readonly Trade[], value: (t: Trade) => number): nu
 const round = (x: number, d = 4) => Math.round(x * 10 ** d) / 10 ** d;
 
 interface Candidate {
-  discovery: Omit<Discovery, "fingerprint">;
+  discovery: Omit<Discovery, "fingerprint" | "impact" | "validation" | "confidence"> &
+    Partial<Pick<Discovery, "impact" | "validation">>;
   /** p de la comparaison testée ; `null` pour un constat descriptif. */
   p: number | null;
   /** Un constat descriptif est publié par sa propre règle (sans test). */
@@ -196,6 +231,7 @@ function compareGroups(
 ): {
   evidence: DiscoveryEvidence;
   fragile: boolean;
+  validation: Discovery["validation"];
 } | null {
   if (a.length < MIN_GROUP || b.length < MIN_GROUP) return null;
   const sa = groupBySession(a, value);
@@ -214,6 +250,7 @@ function compareGroups(
     Math.sign(diffWithout) !== Math.sign(d.diff) || Math.abs(diffWithout) < Math.abs(d.diff) / 2;
   return {
     fragile,
+    validation: holdoutCheck(a, b, value, d.diff),
     evidence: {
       unit: "pnl",
       n: a.length,
@@ -233,6 +270,30 @@ function compareGroups(
       version: DISCOVERY_VERSION,
     },
   };
+}
+
+/**
+ * VALIDATION CHRONOLOGIQUE. Les séances sont ordonnées ; les 30 % les plus
+ * récentes servent de contrôle : l'écart y garde-t-il son sens ? Sous trois
+ * trades par groupe dans ce contrôle, on ne sait pas (`insufficient`).
+ */
+const HOLDOUT_SHARE = 0.3;
+const HOLDOUT_MIN = 3;
+function holdoutCheck(
+  a: readonly Trade[],
+  b: readonly Trade[],
+  value: (t: Trade) => number,
+  diff: number,
+): Discovery["validation"] {
+  const days = [...new Set([...a, ...b].map((t) => sessionOf(t).split("|")[1]))].sort();
+  if (days.length < 2) return "insufficient";
+  const cut = days[Math.floor(days.length * (1 - HOLDOUT_SHARE))];
+  const recent = (t: Trade) => sessionOf(t).split("|")[1] >= cut;
+  const ha = a.filter(recent).map(value);
+  const hb = b.filter(recent).map(value);
+  if (ha.length < HOLDOUT_MIN || hb.length < HOLDOUT_MIN) return "insufficient";
+  const m = (xs: number[]) => xs.reduce((s, v) => s + v, 0) / xs.length;
+  return Math.sign(m(ha) - m(hb)) === Math.sign(diff) ? "confirmed" : "not_confirmed";
 }
 
 const ids = (list: readonly Trade[]) => list.map((t) => t.id);
@@ -323,6 +384,7 @@ function mistakePairs(input: DiscoveryInput): Candidate[] {
           evidence: cmp.evidence,
           hypothetical: false,
           fragile: cmp.fragile,
+          validation: cmp.validation,
           entities: [nodeId("mistake", a), nodeId("mistake", b)],
           trades: ids(both),
           compareTrades: ids(one),
@@ -367,6 +429,7 @@ function riskAfterLoss(input: DiscoveryInput): Candidate[] {
         evidence: { ...cmp.evidence, unit: "risk_ratio" },
         hypothetical: false,
         fragile: cmp.fragile,
+        validation: cmp.validation,
         entities: [nodeId("account", input.accountKey ?? "main")],
         trades: ids(afterLoss),
         compareTrades: ids(afterWin),
@@ -378,13 +441,6 @@ function riskAfterLoss(input: DiscoveryInput): Candidate[] {
 }
 
 // ── 4. Le rang du trade dans la journée ─────────────────────────────────────
-
-/** L'heure d'entrée est-elle une preuve d'ordre dans la journée ? */
-function hasEntryClock(t: Trade): boolean {
-  if (easternClockOf(t.entryAt)) return true;
-  if (t.broker || t.reviewPending) return false;
-  return /^([01]?\d|2[0-3]):([0-5]\d)$/.test(t.entryTime?.trim() ?? "");
-}
 
 function dayRank(input: DiscoveryInput): Candidate[] {
   const days = new Map<string, Trade[]>();
@@ -416,6 +472,7 @@ function dayRank(input: DiscoveryInput): Candidate[] {
         evidence: cmp.evidence,
         hypothetical: false,
         fragile: cmp.fragile,
+        validation: cmp.validation,
         entities: [nodeId("account", input.accountKey ?? "main")],
         trades: ids(late),
         compareTrades: ids(early),
@@ -454,6 +511,7 @@ function selfAssessment(
         evidence: cmp.evidence,
         hypothetical: false,
         fragile: cmp.fragile,
+        validation: cmp.validation,
         entities: [nodeId("account", input.accountKey ?? "main")],
         trades: ids(a),
         compareTrades: ids(b),
@@ -633,6 +691,669 @@ function dataGaps(input: DiscoveryInput): Candidate[] {
   return out;
 }
 
+// ── 10. Le trade suivant une perte ─────────────────────────────────────────
+
+/**
+ * Après une perte PROUVÉE de la même séance, le trade suivant rend-il moins
+ * qu'après un gain ? On conditionne sur le trade PRÉCÉDENT, jamais sur le
+ * résultat du trade étudié : aucune sélection par l'issue.
+ */
+function afterLossOutcome(input: DiscoveryInput): Candidate[] {
+  const seq = sequence(input.trades);
+  const prevIs = (sign: 1 | -1) =>
+    seq
+      .filter((s) => s.prev && !isBreakEven(s.prev) && Math.sign(s.prev.pnl) === sign)
+      .map((s) => s.trade);
+  const afterLoss = prevIs(-1);
+  const afterWin = prevIs(1);
+  const cmp = compareGroups(afterLoss, afterWin, (t) => t.pnl, "after_loss_outcome");
+  if (!cmp) return [];
+  return [
+    {
+      p: cmp.evidence.p,
+      publish: true,
+      discovery: {
+        id: "after_loss_outcome",
+        detector: "after_loss_outcome",
+        category: cmp.evidence.diff < 0 ? "execution_weakness" : "unexpected_strength",
+        direction: cmp.evidence.diff > 0 ? "higher" : "lower",
+        params: {},
+        evidence: cmp.evidence,
+        hypothetical: false,
+        fragile: cmp.fragile,
+        validation: cmp.validation,
+        entities: [nodeId("account", input.accountKey ?? "main")],
+        trades: ids(afterLoss),
+        compareTrades: ids(afterWin),
+        alternatives: ["day_context", "regime", "single_outlier"],
+        experiment: "pause_after_loss",
+      },
+    },
+  ];
+}
+
+// ── 11. Où se concentrent les pertes ───────────────────────────────────────
+
+/** Part des pertes à partir de laquelle un segment est « concentré ». */
+export const CONCENTRATION_SHARE = 0.3;
+/** Et combien de fois sa part de trades, au moins. */
+export const CONCENTRATION_RATIO = 2;
+
+/**
+ * Un segment (une erreur, une paire, l'état « après une perte », un setup,
+ * une séance, une signature) qui porte une part des pertes très supérieure à
+ * sa part des trades. Des TOTAUX, vrais à toute taille — mais un segment sous
+ * `MIN_GROUP` trades n'est pas examiné. Deux segments au plus : la page n'est
+ * pas un classement.
+ */
+function lossConcentration(input: DiscoveryInput): Candidate[] {
+  const trades = input.trades.filter((t) => Number.isFinite(t.pnl));
+  const losers = trades.filter((t) => t.pnl < 0 && !isBreakEven(t));
+  if (trades.length < MIN_TRADES || losers.length < MIN_GROUP) return [];
+  const totalLoss = losers.reduce((s, t) => s - t.pnl, 0);
+  const segments = new Map<
+    string,
+    { kind: string; key: string; members: Trade[]; nodes: string[] }
+  >();
+  const put = (kind: string, key: string, t: Trade, nodes: string[]) => {
+    const k = `${kind}:${key}`;
+    let seg = segments.get(k);
+    if (!seg) segments.set(k, (seg = { kind, key, members: [], nodes }));
+    seg.members.push(t);
+  };
+  const norm = (m: string) => m.trim().replace(/\s+/g, " ");
+  for (const t of trades) {
+    const ms = [...new Set((t.mistakes ?? []).map(norm).filter(Boolean))].sort();
+    for (const m of ms) put("mistake", m, t, [nodeId("mistake", m)]);
+    for (let i = 0; i < ms.length; i++)
+      for (let j = i + 1; j < ms.length; j++)
+        put("pair", `${ms[i]} + ${ms[j]}`, t, [nodeId("mistake", ms[i]), nodeId("mistake", ms[j])]);
+    const strategy = dimensionValue(t, "strategy");
+    if (strategy) put("strategy", strategy, t, [nodeId("strategy", strategy)]);
+    const session = dimensionValue(t, "session");
+    if (session) put("session", session, t, [nodeId("session", session)]);
+  }
+  for (const s of sequence(trades))
+    if (s.prev && !isBreakEven(s.prev) && s.prev.pnl < 0)
+      put("after_loss", "after_loss", s.trade, [nodeId("account", input.accountKey ?? "main")]);
+  const byId = new Map(trades.map((t) => [t.id, t]));
+  for (const [sig, list] of detectSignatures(trades, input.behavior))
+    for (const id of list) {
+      const t = byId.get(id);
+      if (t) put("signature", sig, t, [nodeId("error_pattern", sig)]);
+    }
+
+  const found = [...segments.values()]
+    .filter((seg) => seg.members.length >= MIN_GROUP)
+    .map((seg) => {
+      const loss = seg.members.reduce((s, t) => s + (t.pnl < 0 ? -t.pnl : 0), 0);
+      return {
+        ...seg,
+        loss,
+        lossShare: loss / totalLoss,
+        tradeShare: seg.members.length / trades.length,
+      };
+    })
+    .filter(
+      (seg) =>
+        seg.lossShare >= CONCENTRATION_SHARE &&
+        seg.lossShare >= CONCENTRATION_RATIO * seg.tradeShare,
+    )
+    .sort((a, b) => b.lossShare - a.lossShare || a.key.localeCompare(b.key))
+    .slice(0, 2);
+
+  return found.map((seg) => ({
+    p: null,
+    publish: true,
+    discovery: {
+      id: `loss_concentration:${seg.kind}:${seg.key}`,
+      detector: "loss_concentration" as const,
+      category: "risk_anomaly" as const,
+      direction: "higher" as const,
+      params: { segment: seg.kind, key: seg.key },
+      evidence: {
+        unit: "share" as const,
+        n: seg.members.length,
+        sessions: new Set(seg.members.map(sessionOf)).size,
+        nCompare: trades.length,
+        sessionsCompare: new Set(trades.map(sessionOf)).size,
+        value: round(seg.lossShare, 3),
+        baseline: round(seg.tradeShare, 3),
+        diff: round(seg.lossShare - seg.tradeShare, 3),
+        low: null,
+        high: null,
+        p: null,
+        q: null,
+        method: `descriptive:loss-share>=${CONCENTRATION_SHARE}&>=${CONCENTRATION_RATIO}x-trade-share`,
+        seed: null,
+        iterations: null,
+        version: DISCOVERY_VERSION,
+      },
+      hypothetical: false,
+      fragile: null,
+      impact: round(-seg.loss, 2),
+      entities: seg.nodes,
+      trades: ids(seg.members),
+      compareTrades: [],
+      alternatives: ["selection", "labeling", "single_outlier"] as AlternativeKey[],
+      experiment: "review_segment" as const,
+    },
+  }));
+}
+
+// ── 12. Le piège du taux de réussite ───────────────────────────────────────
+
+/** Écart de taux de réussite (points) à partir duquel la question se pose. */
+export const WINRATE_GAP = 0.1;
+
+/**
+ * Une condition qui GAGNE plus souvent que le reste mais RAPPORTE moins par
+ * trade : le taux de réussite y masque une espérance plus faible (petits gains,
+ * grosses pertes). Publié seulement si l'écart d'espérance tient.
+ */
+function winrateTrap(input: DiscoveryInput): Candidate[] {
+  const out: Candidate[] = [];
+  const wr = (list: readonly Trade[]) => {
+    const w = list.filter((t) => t.pnl > 0 && !isBreakEven(t)).length;
+    const l = list.filter((t) => t.pnl < 0 && !isBreakEven(t)).length;
+    return w + l ? w / (w + l) : null;
+  };
+  for (const dimension of ["strategy", "symbol", "session"] as const) {
+    const values = new Set(input.trades.map((t) => dimensionValue(t, dimension)).filter(Boolean));
+    for (const v of values) {
+      const a = input.trades.filter((t) => dimensionValue(t, dimension) === v);
+      const b = input.trades.filter((t) => {
+        const x = dimensionValue(t, dimension);
+        return x !== null && x !== v;
+      });
+      const wa = wr(a);
+      const wb = wr(b);
+      if (wa === null || wb === null || wa - wb < WINRATE_GAP) continue;
+      const cmp = compareGroups(a, b, (t) => t.pnl, `winrate_trap:${dimension}:${v}`);
+      if (!cmp || cmp.evidence.diff >= 0) continue;
+      out.push({
+        p: cmp.evidence.p,
+        publish: true,
+        discovery: {
+          id: `winrate_trap:${dimension}:${v}`,
+          detector: "winrate_trap",
+          category: "hidden_pattern",
+          direction: "lower",
+          params: {
+            dimension,
+            key: String(v),
+            winRate: Math.round(wa * 100),
+            winRateRest: Math.round(wb * 100),
+          },
+          evidence: cmp.evidence,
+          hypothetical: false,
+          fragile: cmp.fragile,
+          validation: cmp.validation,
+          entities: [nodeId(dimension, String(v))],
+          trades: ids(a),
+          compareTrades: ids(b),
+          alternatives: ["single_outlier", "regime", "selection"],
+          experiment: "rr_target",
+        },
+      });
+    }
+  }
+  return out;
+}
+
+// ── 13. Deux conditions réunies, validées hors échantillon ─────────────────
+
+const COMBO_PAIRS: readonly (readonly [EdgeDimension, EdgeDimension])[] = [
+  ["strategy", "session"],
+  ["strategy", "weekday"],
+  ["strategy", "symbol"],
+  ["symbol", "session"],
+];
+
+/**
+ * À l'intérieur d'une condition (un setup), une seconde condition (une
+ * séance, un jour…) sépare-t-elle les résultats ? Chaque combinaison testée
+ * entre dans la correction des tests multiples ; seule une combinaison dont
+ * l'écart garde son SENS sur les séances les plus récentes est publiée.
+ */
+function combos(input: DiscoveryInput): Candidate[] {
+  const out: Candidate[] = [];
+  for (const [d1, d2] of COMBO_PAIRS) {
+    const outer = new Map<string, Trade[]>();
+    for (const t of input.trades) {
+      const v1 = dimensionValue(t, d1);
+      if (v1 === null) continue;
+      let list = outer.get(v1);
+      if (!list) outer.set(v1, (list = []));
+      list.push(t);
+    }
+    for (const [v1, group] of outer) {
+      if (group.length < 2 * MIN_GROUP) continue;
+      const known = group.filter((t) => dimensionValue(t, d2) !== null);
+      const inner = new Set(known.map((t) => dimensionValue(t, d2)!));
+      if (inner.size < 2) continue;
+      for (const v2 of inner) {
+        const a = known.filter((t) => dimensionValue(t, d2) === v2);
+        const b = known.filter((t) => dimensionValue(t, d2) !== v2);
+        const cmp = compareGroups(a, b, (t) => t.pnl, `combo:${d1}:${v1}:${d2}:${v2}`);
+        if (!cmp) continue;
+        const nodes = [
+          ...(d1 === "weekday" ? [] : [nodeId(d1, v1)]),
+          ...(d2 === "weekday" ? [] : [nodeId(d2, v2)]),
+        ];
+        out.push({
+          p: cmp.evidence.p,
+          publish: cmp.validation === "confirmed",
+          discovery: {
+            id: `combo:${d1}:${v1}:${d2}:${v2}`,
+            detector: "combo",
+            category: cmp.evidence.diff > 0 ? "unexpected_strength" : "strategy_inefficiency",
+            direction: cmp.evidence.diff > 0 ? "higher" : "lower",
+            params: { d1, v1, d2, v2 },
+            evidence: cmp.evidence,
+            hypothetical: false,
+            fragile: cmp.fragile,
+            validation: cmp.validation,
+            entities: nodes.length ? nodes : [nodeId("account", input.accountKey ?? "main")],
+            trades: ids(a),
+            compareTrades: ids(b),
+            alternatives: ["multiple_conditions", "regime", "selection"],
+            experiment: cmp.evidence.diff > 0 ? "focus_condition" : "reduce_condition",
+          },
+        });
+      }
+    }
+  }
+  return out;
+}
+
+// ── 14. Le risque suit-il la qualité du setup ? ─────────────────────────────
+
+function riskVsQuality(input: DiscoveryInput): Candidate[] {
+  const usable = input.trades.filter(
+    (t) => hasMeasuredRisk(t) && !t.reviewPending && t.setupQuality > 0,
+  );
+  if (usable.length < MIN_TRADES) return [];
+  const med = median(usable.map((t) => t.riskAmount));
+  if (!med) return [];
+  const bySession = new Map<string, [number, number][]>();
+  for (const t of usable) {
+    const k = sessionOf(t);
+    let list = bySession.get(k);
+    if (!list) bySession.set(k, (list = []));
+    list.push([t.setupQuality, t.riskAmount / med]);
+  }
+  const keys = [...bySession.keys()].sort();
+  if (keys.length < MIN_GROUP_SESSIONS) return [];
+  const seed = seedFrom(`risk_vs_quality:v${DISCOVERY_VERSION}`);
+  const r = sessionBlockSpearman(
+    keys.map((k) => bySession.get(k)!),
+    { seed },
+  );
+  if (!r) return [];
+  // Contrôle chronologique : le même signe sur les 30 % de séances récentes.
+  const recent = keys
+    .slice(Math.floor(keys.length * (1 - HOLDOUT_SHARE)))
+    .flatMap((k) => bySession.get(k)!);
+  const rRecent =
+    recent.length >= MIN_GROUP
+      ? (sessionBlockSpearman([recent, recent], { seed })?.rho ?? null)
+      : null;
+  const validation: Discovery["validation"] =
+    rRecent === null
+      ? "insufficient"
+      : Math.sign(rRecent) === Math.sign(r.rho)
+        ? "confirmed"
+        : "not_confirmed";
+  return [
+    {
+      p: r.p,
+      publish: true,
+      discovery: {
+        id: "risk_vs_quality",
+        detector: "risk_vs_quality",
+        category: r.rho < 0 ? "risk_anomaly" : "unexpected_strength",
+        direction: r.rho > 0 ? "higher" : "lower",
+        params: { median: round(med, 2) },
+        evidence: {
+          unit: "rho",
+          n: usable.length,
+          sessions: keys.length,
+          nCompare: 0,
+          sessionsCompare: 0,
+          value: round(r.rho, 3),
+          baseline: 0,
+          diff: round(r.rho, 3),
+          low: round(r.low, 3),
+          high: round(r.high, 3),
+          p: r.p,
+          q: null,
+          method: "spearman-session-block-percentile",
+          seed: r.seed,
+          iterations: r.iterations,
+          version: DISCOVERY_VERSION,
+        },
+        hypothetical: false,
+        fragile: null,
+        validation,
+        impact: null,
+        entities: [nodeId("account", input.accountKey ?? "main")],
+        trades: ids(usable),
+        compareTrades: [],
+        alternatives: ["sizing_rule", "labeling", "selection"],
+        experiment: "fixed_risk",
+      },
+    },
+  ];
+}
+
+// ── 15. La qualité de la décision, indépendamment du résultat ──────────────
+
+/**
+ * Processus PROPRE : aucune erreur cochée, setup noté 4–5, plan non renié.
+ * Processus SIGNALÉ : au moins une erreur, ou plan renié. On compare leur
+ * rendement par trade, et l'on compte ce que le résultat brut cache : les
+ * gains venus d'un processus signalé (la chance) et les pertes d'un processus
+ * propre (le coût normal du métier).
+ */
+function processOutcome(input: DiscoveryInput): Candidate[] {
+  const plan = input.behavior?.planRespected ?? {};
+  const usable = input.trades.filter((t) => !t.reviewPending);
+  const flaggedOf = (t: Trade) => (t.mistakes ?? []).some((m) => m.trim()) || plan[t.id] === "no";
+  const clean = usable.filter((t) => !flaggedOf(t) && t.setupQuality >= 4);
+  const flagged = usable.filter(flaggedOf);
+  const cmp = compareGroups(clean, flagged, (t) => t.pnl, "process_outcome");
+  if (!cmp) return [];
+  const wins = usable.filter((t) => t.pnl > 0 && !isBreakEven(t));
+  const luckyWins = wins.filter(flaggedOf).length;
+  const cleanLosses = clean.filter((t) => t.pnl < 0 && !isBreakEven(t)).length;
+  return [
+    {
+      p: cmp.evidence.p,
+      publish: true,
+      discovery: {
+        id: "process_outcome",
+        detector: "process_outcome",
+        category: cmp.evidence.diff > 0 ? "unexpected_strength" : "psychological_contradiction",
+        direction: cmp.evidence.diff > 0 ? "higher" : "lower",
+        params: {
+          luckyWinsShare: wins.length ? round(luckyWins / wins.length, 3) : 0,
+          cleanLosses,
+        },
+        evidence: cmp.evidence,
+        hypothetical: false,
+        fragile: cmp.fragile,
+        validation: cmp.validation,
+        entities: [nodeId("account", input.accountKey ?? "main")],
+        trades: ids(clean),
+        compareTrades: ids(flagged),
+        alternatives: ["labeling", "luck", "selection"],
+        experiment: "process_checklist",
+      },
+    },
+  ];
+}
+
+// ── 16. Plan tenu, plan renié ───────────────────────────────────────────────
+
+function planAdherence(input: DiscoveryInput): Candidate[] {
+  const plan = input.behavior?.planRespected;
+  if (!plan) return [];
+  const broke = input.trades.filter((t) => plan[t.id] === "no");
+  const kept = input.trades.filter((t) => plan[t.id] === "yes");
+  const cmp = compareGroups(broke, kept, (t) => t.pnl, "plan_adherence");
+  if (!cmp) return [];
+  return [
+    {
+      p: cmp.evidence.p,
+      publish: true,
+      discovery: {
+        id: "plan_adherence",
+        detector: "plan_adherence",
+        category: cmp.evidence.diff < 0 ? "psychological_contradiction" : "hidden_pattern",
+        direction: cmp.evidence.diff > 0 ? "higher" : "lower",
+        params: {},
+        evidence: cmp.evidence,
+        hypothetical: false,
+        fragile: cmp.fragile,
+        validation: cmp.validation,
+        entities: [nodeId("account", input.accountKey ?? "main")],
+        trades: ids(broke),
+        compareTrades: ids(kept),
+        // Le bilan s'écrit APRÈS le résultat : un plan « renié » se reconnaît
+        // plus volontiers sur une perte.
+        alternatives: ["labeling", "selection", "regime"],
+        experiment: "plan_review",
+      },
+    },
+  ];
+}
+
+// ── 17. Une erreur qui recule, une erreur qui monte ────────────────────────
+
+/** Part des séances, les plus récentes, comparée au reste. */
+export const RECENT_SHARE = 0.4;
+
+function mistakeTrend(input: DiscoveryInput): Candidate[] {
+  const norm = (m: string) => m.trim().replace(/\s+/g, " ");
+  const days = [...new Set(input.trades.map((t) => sessionOf(t).split("|")[1]))].sort();
+  if (days.length < 2 * MIN_GROUP_SESSIONS) return [];
+  const cut = days[Math.floor(days.length * (1 - RECENT_SHARE))];
+  const recent = input.trades.filter((t) => sessionOf(t).split("|")[1] >= cut);
+  const earlier = input.trades.filter((t) => sessionOf(t).split("|")[1] < cut);
+  const counts = new Map<string, number>();
+  for (const t of input.trades)
+    for (const m of new Set((t.mistakes ?? []).map(norm).filter(Boolean)))
+      counts.set(m, (counts.get(m) ?? 0) + 1);
+  const out: Candidate[] = [];
+  for (const [m, total] of counts) {
+    if (total < MIN_GROUP) continue;
+    const has = (t: Trade) => ((t.mistakes ?? []).map(norm).includes(m) ? 1 : 0);
+    const cmp = compareGroups(recent, earlier, has, `mistake_trend:${m}`);
+    if (!cmp) continue;
+    const down = cmp.evidence.diff < 0;
+    out.push({
+      p: cmp.evidence.p,
+      publish: true,
+      discovery: {
+        id: `mistake_trend:${m}`,
+        detector: "mistake_trend",
+        category: down ? "unexpected_strength" : "execution_weakness",
+        direction: down ? "lower" : "higher",
+        params: { mistake: m, since: cut },
+        evidence: { ...cmp.evidence, unit: "share" },
+        hypothetical: false,
+        fragile: null,
+        validation: null,
+        impact: null,
+        entities: [nodeId("mistake", m)],
+        trades: ids(recent.filter((t) => has(t))),
+        compareTrades: ids(earlier.filter((t) => has(t))),
+        alternatives: ["tagging_habit", "regime", "selection"],
+        experiment: down ? "keep_tracking" : "review_segment",
+      },
+    });
+  }
+  return out;
+}
+
+// ── 18. Risque prévu, risque pris ───────────────────────────────────────────
+
+export const PLANNED_RISK_TOLERANCE = 0.1;
+
+function plannedRisk(input: DiscoveryInput): Candidate[] {
+  const planned = input.behavior?.plannedRisk;
+  if (!planned) return [];
+  const pairs = input.trades
+    .filter((t) => hasMeasuredRisk(t) && typeof planned[t.id] === "number" && planned[t.id]! > 0)
+    .map((t) => ({ t, ratio: t.riskAmount / planned[t.id]! }));
+  if (pairs.length < MIN_GROUP) return [];
+  const over = pairs.filter((x) => x.ratio > 1 + PLANNED_RISK_TOLERANCE);
+  const share = over.length / pairs.length;
+  if (share < SIMULATION_RISK_SHARE) return [];
+  const med = median(pairs.map((x) => x.ratio))!;
+  return [
+    {
+      p: null,
+      publish: true,
+      discovery: {
+        id: "planned_risk",
+        detector: "planned_risk",
+        category: "risk_anomaly",
+        direction: "higher",
+        params: { share: round(share, 3) },
+        evidence: {
+          unit: "risk_ratio",
+          n: pairs.length,
+          sessions: new Set(pairs.map((x) => sessionOf(x.t))).size,
+          nCompare: 0,
+          sessionsCompare: 0,
+          value: round(med, 3),
+          baseline: 1,
+          diff: round(med - 1, 3),
+          low: null,
+          high: null,
+          p: null,
+          q: null,
+          method: `descriptive:measured/planned-risk:tol=${PLANNED_RISK_TOLERANCE}`,
+          seed: null,
+          iterations: null,
+          version: DISCOVERY_VERSION,
+        },
+        hypothetical: false,
+        fragile: null,
+        impact: null,
+        entities: [nodeId("error_pattern", "risk_above_plan")],
+        trades: over.map((x) => x.t.id),
+        compareTrades: [],
+        alternatives: ["sizing_rule", "missing_data"],
+        experiment: "planned_risk_rule",
+      },
+    },
+  ];
+}
+
+// ── 19. Observé, mais pas déclaré ──────────────────────────────────────────
+
+/**
+ * Une signature (« un trade pris dans les 30 minutes d'une perte ») apparaît
+ * souvent, mais le trader ne coche presque jamais l'erreur correspondante.
+ * L'écart entre ce qu'on fait et ce qu'on écrit — rien de plus : la signature
+ * n'est pas une preuve d'intention.
+ */
+function untaggedSignatures(input: DiscoveryInput): Candidate[] {
+  const sigs = detectSignatures(input.trades, input.behavior);
+  const byId = new Map(input.trades.map((t) => [t.id, t]));
+  const out: Candidate[] = [];
+  for (const entry of ERROR_LIBRARY) {
+    if (entry.detection.mode !== "signature" || !entry.tags.length) continue;
+    const list = (sigs.get(entry.id) ?? []).map((id) => byId.get(id)!).filter(Boolean);
+    if (list.length < MIN_GROUP) continue;
+    const tagged = list.filter((t) =>
+      (t.mistakes ?? []).some((m) => entry.tags.includes(m.trim())),
+    );
+    const share = tagged.length / list.length;
+    if (share >= 0.5) continue;
+    out.push({
+      p: null,
+      publish: true,
+      discovery: {
+        id: `untagged_signature:${entry.id}`,
+        detector: "untagged_signature",
+        category: "psychological_contradiction",
+        direction: "lower",
+        params: { error: entry.id, tag: entry.tags[0] },
+        evidence: {
+          unit: "share",
+          n: list.length,
+          sessions: new Set(list.map(sessionOf)).size,
+          nCompare: tagged.length,
+          sessionsCompare: 0,
+          value: round(share, 3),
+          baseline: 1,
+          diff: round(share - 1, 3),
+          low: null,
+          high: null,
+          p: null,
+          q: null,
+          method: `descriptive:signature:${entry.detection.method}`,
+          seed: null,
+          iterations: null,
+          version: DISCOVERY_VERSION,
+        },
+        hypothetical: false,
+        fragile: null,
+        impact: round(
+          list.reduce((s, t) => s + t.pnl, 0),
+          2,
+        ),
+        entities: [
+          nodeId("error_pattern", entry.id),
+          ...entry.tags.map((m) => nodeId("mistake", m)),
+        ],
+        trades: ids(list),
+        compareTrades: ids(tagged),
+        alternatives: ["tagging_habit", "missing_data"],
+        experiment: "tag_honestly",
+      },
+    });
+  }
+  return out;
+}
+
+// ── 20. Ce que les décisions de ne pas trader ont évité (HYPOTHÉTIQUE) ──────
+
+function missedAvoided(input: DiscoveryInput): Candidate[] {
+  const rated = (input.missed ?? []).filter(
+    (m) => Number.isFinite(m.estimatedR) && m.estimatedR !== 0,
+  );
+  const avoided = rated.filter((m) => m.estimatedR < 0);
+  if (avoided.length < MIN_GROUP) return [];
+  const sum = avoided.reduce((s, m) => s + m.estimatedR, 0);
+  const symbols = [
+    ...new Set(avoided.map((m) => m.symbol.trim().toUpperCase()).filter(Boolean)),
+  ].sort();
+  return [
+    {
+      p: null,
+      publish: true,
+      discovery: {
+        id: "missed_avoided",
+        detector: "missed_avoided",
+        category: "unexpected_strength",
+        direction: "lower",
+        params: { share: round(avoided.length / rated.length, 3) },
+        evidence: {
+          unit: "r",
+          n: avoided.length,
+          sessions: new Set(avoided.map((m) => m.date)).size,
+          nCompare: rated.length,
+          sessionsCompare: 0,
+          value: round(sum, 2),
+          baseline: 0,
+          diff: round(sum, 2),
+          low: null,
+          high: null,
+          p: null,
+          q: null,
+          method: "descriptive:estimated-r<0",
+          seed: null,
+          iterations: null,
+          version: DISCOVERY_VERSION,
+        },
+        hypothetical: true,
+        fragile: null,
+        impact: null,
+        entities: symbols.map((s) => nodeId("symbol", s)),
+        trades: [],
+        compareTrades: [],
+        alternatives: ["hindsight", "selection"],
+        experiment: "log_missed_live",
+      },
+    },
+  ];
+}
+
 /** Le registre des détecteurs : en ajouter un = une ligne. */
 const DETECTORS: readonly ((input: DiscoveryInput) => Candidate[])[] = [
   edgeConditions,
@@ -656,6 +1377,17 @@ const DETECTORS: readonly ((input: DiscoveryInput) => Candidate[])[] = [
   missedVsTaken,
   simulationRisk,
   dataGaps,
+  afterLossOutcome,
+  lossConcentration,
+  winrateTrap,
+  combos,
+  riskVsQuality,
+  processOutcome,
+  planAdherence,
+  mistakeTrend,
+  plannedRisk,
+  untaggedSignatures,
+  missedAvoided,
 ];
 
 export interface DiscoveryRun {
@@ -677,13 +1409,32 @@ export function runDiscoveries(input: DiscoveryInput): DiscoveryRun {
   const kept: Discovery[] = [];
   candidates.forEach((c, i) => {
     const ev = c.discovery.evidence;
+    // Testé mais non publiable (une combinaison non confirmée) : il a compté
+    // dans la correction, il ne sort pas.
+    if (!c.publish) return;
     if (c.p !== null) {
       const q = qs[i];
       if (q === null || q > FDR_ALPHA) return;
       if (ev.low === null || ev.high === null || !(ev.low > 0 || ev.high < 0)) return;
       ev.q = round(q);
-    } else if (!c.publish) return;
-    kept.push({ ...c.discovery, fingerprint: fingerprintOf(ev) });
+    }
+    const validation = c.discovery.validation ?? null;
+    const fragile = c.discovery.fragile === true;
+    const confidence: Discovery["confidence"] =
+      ev.q === null
+        ? "descriptive"
+        : ev.q <= 0.01 && !fragile && validation === "confirmed"
+          ? "strong"
+          : ev.q <= 0.05 && !fragile && validation !== "not_confirmed"
+            ? "moderate"
+            : "tentative";
+    const impact =
+      c.discovery.impact !== undefined
+        ? c.discovery.impact
+        : ev.unit === "pnl"
+          ? round(ev.diff * ev.n, 2)
+          : null;
+    kept.push({ ...c.discovery, impact, validation, confidence, fingerprint: fingerprintOf(ev) });
   });
   const rank = (d: Discovery) =>
     d.category === "knowledge_gap" ? 2 : d.evidence.q === null ? 1 : 0;

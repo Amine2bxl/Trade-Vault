@@ -40,6 +40,8 @@ const RESOLVERS: Record<NodeKind, (node: KnowledgeNode, g: KnowledgeGraph) => De
   economic_event: () => ({ type: "page", page: "news" }),
   mistake: (n) => ({ type: "page", page: "journal", filter: { mistake: n.key } }),
   mistake_cluster: () => ({ type: "page", page: "mistakes" }),
+  // Une signature observée : les trades qui la portent, dans le journal.
+  error_pattern: (n, g) => ({ type: "page", page: "journal", filter: { trades: tradesOf(g, n) } }),
   risk_band: (n, g) => ({ type: "page", page: "journal", filter: { trades: tradesOf(g, n) } }),
   // Une capture s'ouvre avec son trade (ou son setup manqué).
   screenshot: (n) =>

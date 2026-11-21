@@ -5,6 +5,7 @@ import { APPROXIMATE_SOURCE, newsForTrade, type Clock, type NewsEvent } from "@/
 import { MIN_GROUP } from "@/modules/patterns/thresholds";
 import { localDateOf } from "@/shared/calendar-date";
 import { KnowledgeGraph, fold } from "./graph";
+import { ERROR_LIBRARY, detectSignatures, median, type BehaviorContext } from "./behavior";
 import type {
   ConversationInput,
   EdgeProvenance,
@@ -58,6 +59,8 @@ export interface KnowledgeInput {
   clock?: Clock;
   /** Instant du calcul, pour la provenance des liens mesurés. */
   now?: string;
+  /** Réflexions et intentions par trade (plan respecté, risque prévu). */
+  behavior?: BehaviorContext;
 }
 
 /** Les bandes de risque, relatives à la médiane du risque MESURÉ du trader. */
@@ -109,12 +112,7 @@ function dayOfIso(iso: string): string | undefined {
   return Number.isNaN(d.getTime()) ? undefined : localDateOf(d);
 }
 
-export function median(values: readonly number[]): number | null {
-  if (!values.length) return null;
-  const s = [...values].sort((a, b) => a - b);
-  const mid = s.length >> 1;
-  return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
-}
+export { median };
 
 /** Un nom saisi par le trader, normalisé pour servir de clé (espaces, casse). */
 function keyOf(text: string): string {
@@ -304,6 +302,35 @@ export function buildKnowledgeGraph(input: KnowledgeInput): KnowledgeGraph {
       ),
       evidence: { previous: isBreakEven(prev) ? "be" : prev.pnl > 0 ? "win" : "loss" },
     });
+  }
+
+  // ── Bibliothèque d'erreurs : signatures OBSERVÉES ─────────────────────────
+  // Le lien trade → signature est une HYPOTHÈSE d'interprétation : la séquence
+  // est un fait (12 minutes après une perte), le mot « revenge » ne l'est pas.
+  const signatures = detectSignatures(ordered, input.behavior);
+  for (const entry of ERROR_LIBRARY) {
+    const list = signatures.get(entry.id);
+    if (!list?.length || entry.detection.mode !== "signature") continue;
+    const method = entry.detection.method;
+    const pId = hub("error_pattern", entry.id, entry.id, {
+      data: { family: entry.family, method },
+    });
+    for (const tradeId of list) {
+      const t = ordered.find((x) => x.id === tradeId);
+      if (!t) continue;
+      edge(id("trade", tradeId), pId, "exhibits", {
+        origin: "derived",
+        validation: "hypothesis",
+        methodology: `signature:${entry.id}:${method}`,
+        confidence: 0.7,
+        createdAt: t.entryAt ?? `${t.date}T00:00:00`,
+        sources: [{ table: "trades", id: tradeId }],
+      });
+      tally(pId, t);
+    }
+    // Ce que le trader COCHE pour la même erreur.
+    for (const tag of entry.tags)
+      edge(pId, id("mistake", tag), "declared_as", DERIVED("library:declared-tag", now, []));
   }
 
   // ── Bandes de risque ─────────────────────────────────────────────────────

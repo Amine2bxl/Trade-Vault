@@ -43,6 +43,7 @@ export const NODE_KINDS = {
   economic_event: { category: "market", leaf: true },
   mistake: { category: "behavior", leaf: false },
   mistake_cluster: { category: "behavior", leaf: false },
+  error_pattern: { category: "behavior", leaf: false },
   risk_band: { category: "risk", leaf: false },
   screenshot: { category: "documents", leaf: true },
   report: { category: "documents", leaf: false },
@@ -129,6 +130,10 @@ export const RELATIONS = {
   supported_by: { origin: "statistical" },
   /** Vue d'ensemble seulement : deux moyeux qui partagent des trades masqués. */
   shares_trades: { origin: "derived" },
+  /** Un trade porte la signature observable d'une erreur de la bibliothèque. */
+  exhibits: { origin: "derived" },
+  /** Une signature et la case que le trader coche pour la même erreur. */
+  declared_as: { origin: "derived" },
 } as const satisfies Record<string, { origin: EdgeOrigin }>;
 export type RelationType = keyof typeof RELATIONS;
 

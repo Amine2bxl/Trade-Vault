@@ -23,7 +23,6 @@ import type { Trade } from "@/app/types";
 import {
   addDiscoveriesToGraph,
   buildKnowledgeGraph,
-  runDiscoveries,
   visibleGraph,
   DEFAULT_MAX_NODES,
   DISCOVERY_VERSION,
@@ -43,6 +42,8 @@ import { destinationOf, followDestination } from "./destinations";
 import { briefForDiscovery, briefForSelection } from "./jarvisBrief";
 import { CATEGORY_SHAPE, nodeLabel, shapePath } from "./presentation";
 import { useBrainData } from "./useBrainData";
+import { useBrainCompute } from "./useBrainCompute";
+import type { AnalyzeResult } from "./brainCompute";
 import { useDiscoveryFeedback } from "./useDiscoveryFeedback";
 import type { Camera } from "./camera";
 import "./brain.css";
@@ -113,19 +114,24 @@ export default function NeuralBrain({ trades }: { trades: Trade[] }) {
   // centaines de ms sur un gros journal ; le graphe s'affiche d'abord).
   const [run, setRun] = useState<DiscoveryRun>(EMPTY_RUN);
   const accountKey = activeAccount?.id ?? "main";
+  const compute = useBrainCompute();
+  // Hors du fil d'affichage (Worker) : le graphe s'affiche d'abord.
   useEffect(() => {
-    const id = setTimeout(() => {
-      setRun(
-        runDiscoveries({
-          trades,
-          missed: data.missed,
-          simulations: data.simulations,
-          accountKey,
-        }),
-      );
-    }, 0);
-    return () => clearTimeout(id);
-  }, [trades, data.missed, data.simulations, accountKey]);
+    let active = true;
+    compute<AnalyzeResult>({
+      type: "analyze",
+      trades,
+      missed: data.missed,
+      simulations: data.simulations,
+      behavior: data.behavior,
+      accountKey,
+    })
+      .then((r) => active && setRun(r.run))
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [compute, trades, data.missed, data.simulations, data.behavior, accountKey]);
   const discoveries = useMemo(() => new Map(run.discoveries.map((d) => [d.id, d])), [run]);
 
   const graph = useMemo(() => {
@@ -142,6 +148,7 @@ export default function NeuralBrain({ trades }: { trades: Trade[] }) {
       proposals: data.proposals,
       account: { id: activeAccount?.id ?? null, name: activeAccount?.name ?? "" },
       clusterOf,
+      behavior: data.behavior,
       now,
     });
     addDiscoveriesToGraph(g, run, now);

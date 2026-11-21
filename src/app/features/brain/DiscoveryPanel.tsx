@@ -37,10 +37,10 @@ function DiscoveryCard({
   onAsk: () => void;
   onOpenTrades: () => void;
 }) {
-  const { t } = useT();
+  const { t, lang } = useT();
   const [open, setOpen] = useState(active);
   const [note, setNote] = useState(review?.note ?? "");
-  const { title, body } = discoveryText(d, t);
+  const { title, body } = discoveryText(d, t, lang);
   const changed = review && review.fingerprint !== d.fingerprint;
 
   return (

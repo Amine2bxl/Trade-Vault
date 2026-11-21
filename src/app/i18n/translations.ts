@@ -3383,6 +3383,179 @@ const en = {
   "brain.brief.discovery": "Neural Brain: investigate this finding from my journal.",
   "brain.brief.discoveryAsk":
     "Check it against my trades: does it hold, which alternative explanation fits the records best, and what would settle it?",
+  "brain.kind.error_pattern": "Error signature",
+  "brain.rel.exhibits": "Observed signature",
+  "brain.rel.declared_as": "Declared as",
+  "brain.alt.tagging_habit":
+    "The way you tag may have changed over time, not the behaviour itself.",
+  "brain.alt.luck": "Over a short series, luck can reward a poor process or punish a sound one.",
+  "brain.alt.multiple_conditions":
+    "Many combinations were examined; even after correction and a recent-period check, one can still be chance.",
+  "brain.exp.pause_after_loss":
+    "After a loss, wait a fixed delay (e.g. 20 minutes) before the next entry for 20 sessions, then compare the next-trade result.",
+  "brain.exp.review_segment":
+    "Open these trades and read them one by one: what do they share beyond this label?",
+  "brain.exp.rr_target":
+    "For 20 sessions, take these trades only with a minimum reward-to-risk, then compare the per-trade result.",
+  "brain.exp.process_checklist":
+    "Score each entry against your checklist BEFORE the outcome for 20 sessions, then compare clean and flagged entries.",
+  "brain.exp.plan_review":
+    "Write the plan before the session and mark deviations live, not after the result, for 20 sessions.",
+  "brain.exp.keep_tracking":
+    "Keep tagging honestly: the trend will be re-checked as new sessions arrive.",
+  "brain.exp.planned_risk_rule":
+    "Set the size from the planned risk before entry and forbid any increase after it for 20 sessions.",
+  "brain.exp.tag_honestly":
+    "Review these trades and tag what applies; the comparison will then rest on what you declare.",
+  "brain.seg.after_loss": "Trades taken right after a loss",
+  "brain.conf.strong": "Strong",
+  "brain.conf.moderate": "Moderate",
+  "brain.conf.tentative": "Tentative",
+  "brain.conf.descriptive": "Descriptive (no test)",
+  "brain.valid.confirmed": "confirmed on recent sessions",
+  "brain.valid.not_confirmed": "not confirmed on recent sessions",
+  "brain.valid.insufficient": "too few recent sessions to check",
+  "brain.x.what": "What was detected",
+  "brain.x.why": "How it was detected",
+  "brain.x.data": "The data",
+  "brain.x.n": "Observations",
+  "brain.x.confidence": "Confidence",
+  "brain.x.alternatives": "Other explanations",
+  "brain.x.impact": "Potential impact",
+  "brain.x.verify": "How to check or correct it",
+  "brain.x.impactText":
+    "{impact} accumulated over the {n} trades studied (gap per trade × n): an arithmetic reading, not a promised gain.",
+  "brain.x.impactNone": "Not expressed in money for this finding.",
+  "brain.x.obs": "{n} trades over {sessions} sessions, compared with {nCompare}.",
+  "brain.why.edge_condition":
+    "EdgeLab: net expectancy per trade for each value of the condition, session-block bootstrap, Benjamini-Hochberg correction.",
+  "brain.why.mistake_pair":
+    "Trades with both mistakes compared with trades tagged with only one of them, session-block bootstrap.",
+  "brain.why.risk_after_loss":
+    "Risk (as a multiple of your median) right after a verified loss vs right after a win, same session, close order proven.",
+  "brain.why.day_rank":
+    "Trades ranked 3rd or later in a session compared with the first two, sessions with proven entry times only.",
+  "brain.why.setup_grade":
+    "Trades graded 4–5 compared with trades graded 1–2, imports not yet reviewed excluded.",
+  "brain.why.confidence": "Trades at 75+ confidence compared with trades under 50.",
+  "brain.why.missed_vs_taken":
+    "The R you estimated for missed setups compared with the measured R of trades taken on the same instruments. No test: an estimate is not a draw.",
+  "brain.why.simulation_risk":
+    "The risk assumed by the simulation compared with your median measured risk.",
+  "brain.why.data_gap": "Share of trades carrying the field the analyses need.",
+  "brain.why.after_loss_outcome":
+    "Each trade is classified by the result of the PREVIOUS trade of the same session (proven close order), never by its own result.",
+  "brain.why.loss_concentration":
+    "Share of total losses carried by a segment compared with its share of trades. Totals, true at any size; segments under the minimum are not examined.",
+  "brain.why.winrate_trap":
+    "A condition whose win rate is at least 10 points higher than the rest, but whose net result per trade is lower, interval excluding zero.",
+  "brain.why.combo":
+    "Inside one condition, a second one is compared with the rest; every combination tested counts in the multiple-testing correction, and only a gap that keeps its direction on the most recent 30% of sessions is shown.",
+  "brain.why.risk_vs_quality":
+    "Spearman correlation between your setup grade and your risk (multiple of your median), session-block bootstrap.",
+  "brain.why.process_outcome":
+    "Clean process (no mistake, grade 4–5, plan kept) compared with a flagged process, whatever the result.",
+  "brain.why.plan_adherence":
+    "Trades whose review says the plan was broken compared with trades where it was kept.",
+  "brain.why.mistake_trend":
+    "How often the mistake is tagged in your most recent 40% of sessions compared with before, session-block bootstrap.",
+  "brain.why.planned_risk": "Measured risk compared with the risk planned at entry (trade intent).",
+  "brain.why.untagged_signature":
+    "An observable sequence from the error library compared with how often you tag the matching mistake.",
+  "brain.why.missed_avoided":
+    "Missed setups you rated afterwards as losing. Hypothetical: rated after the fact.",
+  "brain.disc.after_loss_outcome.lower.title": "After a loss, your next trade does worse",
+  "brain.disc.after_loss_outcome.lower.body":
+    "Right after a verified loss in the same session, your next trade averages {value} ({n} trades, {sessions} sessions), against {baseline} right after a win ({nCompare} trades). Gap {diff} (95% interval {low} to {high}).",
+  "brain.disc.after_loss_outcome.higher.title": "After a loss, your next trade does better",
+  "brain.disc.after_loss_outcome.higher.body":
+    "Right after a verified loss in the same session, your next trade averages {value} ({n} trades, {sessions} sessions), against {baseline} right after a win ({nCompare} trades). Gap {diff} (95% interval {low} to {high}).",
+  "brain.disc.loss_concentration.higher.title": "{segment} carries {value} of your losses",
+  "brain.disc.loss_concentration.higher.body":
+    "{segment}: {n} trades, {baseline} of your trades, but {value} of all your losses ({impact}).",
+  "brain.disc.winrate_trap.lower.title": "{key}: a higher win rate that hides a weaker result",
+  "brain.disc.winrate_trap.lower.body":
+    "{key} wins {winRate}% of decided trades against {winRateRest}% elsewhere, yet averages {value} per trade against {baseline} ({n} vs {nCompare} trades). Gap {diff} (95% interval {low} to {high}).",
+  "brain.disc.combo.lower.title": "{v1} does worse when {v2}",
+  "brain.disc.combo.lower.body":
+    "Within {v1}, trades in {v2} average {value} ({n} trades, {sessions} sessions), against {baseline} for the rest of {v1} ({nCompare} trades). Gap {diff} (95% interval {low} to {high}).",
+  "brain.disc.combo.higher.title": "{v1} does better when {v2}",
+  "brain.disc.combo.higher.body":
+    "Within {v1}, trades in {v2} average {value} ({n} trades, {sessions} sessions), against {baseline} for the rest of {v1} ({nCompare} trades). Gap {diff} (95% interval {low} to {high}).",
+  "brain.disc.risk_vs_quality.lower.title": "Your risk rises as your setup quality falls",
+  "brain.disc.risk_vs_quality.lower.body":
+    "Across {n} trades over {sessions} sessions, setup grade and risk (as a multiple of your median, {median}) move in opposite directions: {value} (95% interval {low} to {high}).",
+  "brain.disc.risk_vs_quality.higher.title": "Your risk rises with your setup quality",
+  "brain.disc.risk_vs_quality.higher.body":
+    "Across {n} trades over {sessions} sessions, setup grade and risk (as a multiple of your median, {median}) move together: {value} (95% interval {low} to {high}).",
+  "brain.disc.process_outcome.higher.title": "Your clean entries outperform your flagged ones",
+  "brain.disc.process_outcome.higher.body":
+    "Clean-process trades average {value} ({n} trades), flagged ones {baseline} ({nCompare} trades). {luckyWinsShare} of your wins came from a flagged process; {cleanLosses} losses followed a clean one. Gap {diff} (95% interval {low} to {high}).",
+  "brain.disc.process_outcome.lower.title": "Your flagged entries do better than your clean ones",
+  "brain.disc.process_outcome.lower.body":
+    "Clean-process trades average {value} ({n} trades), flagged ones {baseline} ({nCompare} trades). {luckyWinsShare} of your wins came from a flagged process; {cleanLosses} losses followed a clean one. Gap {diff} (95% interval {low} to {high}).",
+  "brain.disc.plan_adherence.lower.title": "When you leave your plan, results drop",
+  "brain.disc.plan_adherence.lower.body":
+    "Trades reviewed as off-plan average {value} ({n} trades), on-plan trades {baseline} ({nCompare} trades). Gap {diff} (95% interval {low} to {high}).",
+  "brain.disc.plan_adherence.higher.title": "Your off-plan trades do better than your on-plan ones",
+  "brain.disc.plan_adherence.higher.body":
+    "Trades reviewed as off-plan average {value} ({n} trades), on-plan trades {baseline} ({nCompare} trades). Gap {diff} (95% interval {low} to {high}).",
+  "brain.disc.mistake_trend.lower.title": "{mistake} is receding",
+  "brain.disc.mistake_trend.lower.body":
+    "Tagged on {value} of trades since {since} ({n} trades), against {baseline} before ({nCompare} trades). Gap {diff} (95% interval {low} to {high}).",
+  "brain.disc.mistake_trend.higher.title": "{mistake} is rising",
+  "brain.disc.mistake_trend.higher.body":
+    "Tagged on {value} of trades since {since} ({n} trades), against {baseline} before ({nCompare} trades). Gap {diff} (95% interval {low} to {high}).",
+  "brain.disc.planned_risk.higher.title": "You take more risk than you plan",
+  "brain.disc.planned_risk.higher.body":
+    "On {n} trades with a planned risk, the measured risk is {value} the plan at the median; {share} exceed it by more than 10%.",
+  "brain.disc.untagged_signature.lower.title":
+    "{error}: observed {n} times, declared {nCompare} times",
+  "brain.disc.untagged_signature.lower.body":
+    "{n} trades show the sequence of this error, but only {value} of them carry the “{tag}” tag. Together they returned {impact}.",
+  "brain.disc.missed_avoided.lower.title": "Some of your best decisions were not to trade",
+  "brain.disc.missed_avoided.lower.body":
+    "{n} of the setups you skipped were rated afterwards as losing ({share} of rated missed setups), for {value} in total. Hypothetical: rated after the fact.",
+  "brain.err.revenge": "Revenge trading",
+  "brain.err.post_win_escalation": "Escalation after wins",
+  "brain.err.oversize": "Oversized position",
+  "brain.err.overtrading": "Overtrading",
+  "brain.err.premature_exit": "Premature exit",
+  "brain.err.low_quality_entry": "Low-quality entry",
+  "brain.err.plan_deviation": "Off-plan trade",
+  "brain.err.risk_above_plan": "Risk above plan",
+  "brain.err.fomo": "FOMO",
+  "brain.err.chasing": "Chasing",
+  "brain.err.no_stop": "No stop-loss",
+  "brain.err.holding": "Holding too long",
+  "brain.err.averaging": "Averaging down",
+  "brain.err.context_ignored": "Market context ignored",
+  "brain.err.htf_misread": "HTF context misread",
+  "brain.err.dol_misread": "Draw on liquidity misread",
+  "brain.err.stop_placement": "Stop placement",
+  "brain.err.target_placement": "Target placement",
+  "brain.err.no_confirmation": "Entry without confirmation",
+  "brain.err.news_misread": "Macro release misread",
+  "brain.err.bias_flip": "Bias changed mid-session",
+  "brain.lib.title": "Error library",
+  "brain.lib.observed": "{n} observed",
+  "brain.lib.declared": "{n} declared",
+  "brain.lib.mode.signature": "Observable in your data",
+  "brain.lib.mode.declared": "Declared only",
+  "brain.lib.mode.needs_data": "Needs data the journal does not hold yet",
+  "brain.need.htf": "higher-timeframe context per trade",
+  "brain.need.dol": "the targeted liquidity per trade",
+  "brain.need.stop_price": "the stop price",
+  "brain.need.target_price": "the target price",
+  "brain.need.confirmation": "the entry confirmation",
+  "brain.need.news_thesis": "your thesis around the release",
+  "brain.need.session_bias": "the session bias and its changes",
+  "brain.lib.family.psychology": "Psychology",
+  "brain.lib.family.risk": "Risk",
+  "brain.lib.family.entry": "Entry",
+  "brain.lib.family.exit": "Exit",
+  "brain.lib.family.discipline": "Discipline",
+  "brain.lib.family.context": "Context",
 };
 
 // The English dict above is the source of truth and the runtime fallback —

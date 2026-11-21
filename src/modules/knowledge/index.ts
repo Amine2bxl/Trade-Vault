@@ -44,5 +44,45 @@ export {
   type ViewState,
   type VisibleGraph,
 } from "./view";
-export { sessionBlockDiff, DIFF_METHOD, DIFF_VERSION, type DiffResult } from "./stats";
+export {
+  sessionBlockDiff,
+  sessionBlockSpearman,
+  spearman,
+  DIFF_METHOD,
+  DIFF_VERSION,
+  type DiffResult,
+} from "./stats";
+export {
+  detectSignatures,
+  hasEntryClock,
+  instantsOf,
+  median,
+  sequence,
+  sessionOf,
+  ERROR_LIBRARY,
+  REVENGE_WINDOW_MIN,
+  type BehaviorContext,
+  type ErrorEntry,
+  type ErrorFamily,
+  type Sequenced,
+} from "./behavior";
+export {
+  runScenario,
+  projectSessions,
+  pathStats,
+  SIMULATION_VERSION,
+  type PathStats,
+  type Projection,
+  type ScenarioResult,
+  type ScenarioRule,
+} from "./simulate";
+export {
+  computeEvolution,
+  EVOLUTION_VERSION,
+  RECENT_EVOLUTION_SHARE,
+  type BehaviourTrend,
+  type Evolution,
+  type EvolutionWindow,
+  type TrendStatus,
+} from "./evolution";
 export * from "./types";
