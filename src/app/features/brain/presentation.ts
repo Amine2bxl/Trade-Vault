@@ -1,5 +1,5 @@
 import type { TKey } from "@/app/i18n/translations";
-import type { Discovery, KnowledgeNode, NodeCategory } from "@/modules/knowledge";
+import type { Discovery, KnowledgeEdge, KnowledgeNode, NodeCategory } from "@/modules/knowledge";
 import { formatMoney } from "@/shared/currency";
 import { MISTAKE_CLUSTERS } from "@/app/trading/mistakeClusters";
 
@@ -318,4 +318,21 @@ export function evidenceLine(d: Discovery, t: T): string {
     );
   if (ev.q !== null) parts.push(ev.q < 0.001 ? "q < 0.001" : `q ${ev.q.toFixed(3)}`);
   return parts.join(" · ");
+}
+
+/** La mesure d'un lien, en une ligne (inspecteur, info-bulle). */
+export function evidenceOf(e: KnowledgeEdge, t: T): string | null {
+  const ev = e.provenance.evidence;
+  if (!ev) return null;
+  if (e.type === "co_occurs_with")
+    return [
+      t("brain.ev.together").replace("{n}", String(ev.together)),
+      ev.lift !== null && ev.lift !== undefined ? `lift ${ev.lift}` : null,
+    ]
+      .filter(Boolean)
+      .join(" · ");
+  if (e.type === "in_risk_band") return `${ev.ratio}× ${t("brain.ev.median")}`;
+  if (e.type === "followed_by") return t(`brain.prev.${ev.previous}` as TKey);
+  if (e.type === "supported_by" && ev.n !== undefined) return `n ${ev.n}`;
+  return null;
 }

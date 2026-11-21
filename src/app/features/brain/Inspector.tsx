@@ -13,7 +13,7 @@ import {
   type KnowledgeNode,
 } from "@/modules/knowledge";
 import { formatMoney } from "@/shared/currency";
-import { CATEGORY_SHAPE, colorVarOf, formatDay, shapePath } from "./presentation";
+import { CATEGORY_SHAPE, colorVarOf, evidenceOf, formatDay, shapePath } from "./presentation";
 
 const Lightbox = lazy(() => import("@/app/components/Lightbox"));
 
@@ -40,22 +40,6 @@ export function KindTag({ node }: { node: KnowledgeNode }) {
 }
 
 const GROUP_LIMIT = 12;
-
-function evidenceOf(e: KnowledgeEdge, t: (k: TKey) => string): string | null {
-  const ev = e.provenance.evidence;
-  if (!ev) return null;
-  if (e.type === "co_occurs_with")
-    return [
-      t("brain.ev.together").replace("{n}", String(ev.together)),
-      ev.lift !== null && ev.lift !== undefined ? `lift ${ev.lift}` : null,
-    ]
-      .filter(Boolean)
-      .join(" · ");
-  if (e.type === "in_risk_band") return `${ev.ratio}× ${t("brain.ev.median")}`;
-  if (e.type === "followed_by") return t(`brain.prev.${ev.previous}` as TKey);
-  if (e.type === "supported_by" && ev.n !== undefined) return `n ${ev.n}`;
-  return null;
-}
 
 export function Inspector({
   node,
