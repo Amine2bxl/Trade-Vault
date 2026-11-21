@@ -18,6 +18,7 @@ Un document par sujet ; une information vit à un seul endroit.
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | Dossiers, couches, règles de dépendance, frontend, flux de données, règles de placement des fichiers |
 | [`FEATURES.md`](FEATURES.md) | **Index des features** : dossier, point d'entrée, dépendances, où modifier — et les métriques |
 | [`AI.md`](AI.md) | Jarvis et la plateforme IA : providers, contexte, outils, mémoire, boucle de motifs |
+| [`NEURAL_BRAIN.md`](NEURAL_BRAIN.md) | Graphe de connaissance 3D, découvertes testées, audit de départ et feuille de route du Neural Brain |
 | [`BACKEND.md`](BACKEND.md) | Frontière serveur : server functions, endpoints HTTP, crons, paiement, e-mails, push, OAuth |
 | [`DATABASE.md`](DATABASE.md) | Supabase : tables, RLS, fonctions SQL, Storage, migrations |
 | [`DESIGN_SYSTEM.md`](DESIGN_SYSTEM.md) | Thèmes, tokens, surfaces, primitives `shared/ui`, UX, landing |

@@ -238,6 +238,9 @@ export const TOOL_PROTOCOL =
   "an observed difference as a proven edge.\n" +
   "- Call get_behavior_scenario for 'what if I had stopped after N losses': it is " +
   "HYPOTHETICAL — what those trades returned, never money saved or missed.\n" +
+  "- Call get_discoveries for 'what am I missing', hidden patterns, contradictions or " +
+  "the findings of the Neural Brain: quote each with n, sessions, interval and q, as an " +
+  "association with its alternative explanations, never as a cause.\n" +
   "- Call search_memory when they refer to something said earlier or to a commitment.\n" +
   "- Call get_profile for anything about WHO they are: their name, their accounts, what " +
   "and how they trade, their goal, their written rules or plan, their subscription.\n" +

@@ -373,6 +373,7 @@ export function planContext(
       "get_edge_score",
       "get_edge_conditions",
       "get_behavior_scenario",
+      "get_discoveries",
       "search_memory",
       "get_contract_math",
     ])

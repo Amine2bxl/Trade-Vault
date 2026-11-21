@@ -137,6 +137,7 @@ moteur pour en brancher un autre.
 | `brokers` | Synchro broker : exécutions → allers-retours plat → plat (déterministe), stop initial → risque, ligne de journal ; adaptateur pur par broker (`tradovate.ts`) |
 | `voice` | Voix unique de Jarvis (clips, voix locale, prosodie) |
 | `ai`, `ai-provider` | Plateforme IA — [`AI.md`](AI.md) |
+| `knowledge` | Graphe de connaissance du Neural Brain (dérivé, provenance par lien), découvertes testées, disposition 3D — [`NEURAL_BRAIN.md`](NEURAL_BRAIN.md) |
 
 Le laboratoire Monte Carlo étend le module avec `strategy.ts` : données R
 nettes, hypothèses exactes, quantiles et résultats de 10 000 trajectoires.
