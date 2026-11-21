@@ -2,30 +2,30 @@
 
 ## Objectif
 Journal de trading + espace de performance, Jarvis comme coach IA. Chantier en
-cours : **Neural Brain** (graphe de connaissance 3D + découvertes), cahier des
-charges en 10 phases — voir `docs/NEURAL_BRAIN.md`.
+cours : **Neural Brain** (environnement immersif : graphe 3D, découvertes,
+simulation, évolution) — voir `docs/NEURAL_BRAIN.md` (§6 bis = v2).
 
 ## État actuel (2026-11-21)
-- Branche `claude/magical-allen-dpuret` : Neural Brain lot 1 livré.
-  - `src/modules/knowledge/` : graphe dérivé (aucune table), provenance par
-    lien, 9 détecteurs de découvertes (BH global), disposition 3D, vue.
-  - `src/app/features/brain/` : page `/brain` (section dédiée), canevas 3D,
-    inspecteur, découvertes + revue, recherche, filtres, frise, `?node=`.
-  - Liens profonds `?open=` (Journal, Setups manqués), conversation Jarvis par id.
-  - Outil Jarvis `get_discoveries` (lecture seule).
-- Portes : typecheck, lint (fichiers touchés), build, tests (3 fuseaux) verts.
+- Branche `claude/magical-allen-dpuret`, PR #254 (brouillon), CI verte au dernier push.
+- Lot 1 + v2 (lots A, B, C) livrés : `src/modules/knowledge/` (graphe dérivé,
+  behavior/bibliothèque d'erreurs, 20 détecteurs, simulate, evolution) et
+  `src/app/features/brain/` (plein écran WebGL2, 4 modes, Worker, sons).
+- Portes : typecheck, lint (fichiers touchés), build, 2 222 tests × 3 fuseaux.
+- Audit sécurité (agent) : 10 constats backend à trier — voir LOG 2026-11-21.
 
 ## Décisions clés
-- D-001 : graphe DÉRIVÉ à l'affichage, aucune table de nœuds/liens — une seule source de vérité.
-- D-002 : rendu Canvas 2D maison, pas three.js — volume borné par le niveau de détail, ~600 Ko évités.
-- D-003 : découvertes = moteurs déterministes existants (bootstrap par séances, BH global, seuils `thresholds.ts`) ; Jarvis formule.
-- D-004 : revues des découvertes dans `user_preferences` (`brain.feedback.v1`), pas de migration.
+- D-001 : graphe DÉRIVÉ, aucune table de nœuds/liens.
+- D-002 : rendu maison (Canvas 2D puis WebGL2), pas three.js.
+- D-003 : découvertes au-dessus des seuils (n, séances, IC bootstrap, BH global).
+- D-004 : revues dans `user_preferences` (`brain.feedback.v1`).
+- D-005 : lumière bornée permise DANS le seul canevas du Neural Brain.
+- D-006 : combinaisons à deux conditions publiées seulement si confirmées sur les séances récentes.
 
 ## Prochaines étapes
-- Extracteurs manquants : objectifs, plan de trading, checklist/séances, intent/reflection.
-- Découvertes : scan nocturne + notification ; Worker si gros journal.
-- Phases 2/6/7 (multimodal, recherche web, multi-agents) : demandent fournisseurs payants → accord du propriétaire.
+- Vérifier sur un vrai compte ; mesurer sur un gros journal (Worker déjà en place).
+- Trier/corriger les constats de l'audit sécurité (facturation licence, quota IA des rapports).
+- Extracteurs objectifs, plan de trading, checklist/séances.
 
 ## Questions ouvertes
-- Fournisseur d'embeddings / vision / recherche web : lequel, quel budget ?
-- Conversations Jarvis encore par appareil (localStorage) : synchroniser côté serveur ?
+- Fournisseurs payants (embeddings, vision/OCR, recherche web) : lesquels, quel budget ?
+- « Confirm email » est-il activé dans Supabase ? (conditionne un constat élevé de l'audit)

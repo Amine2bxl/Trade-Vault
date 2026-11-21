@@ -3,6 +3,19 @@
 Journal des changements **structurels** (pas des features ni des correctifs,
 qui vivent dans l'historique git et les PR).
 
+## 2026-11-21 — Neural Brain v2 (environnement immersif)
+
+- `modules/knowledge` : `behavior.ts` (séquences prouvées, bibliothèque
+  d'erreurs et signatures observables), onze détecteurs de plus
+  (`DISCOVERY_VERSION` 2 : impact, validation chronologique, confiance),
+  `simulate.ts` (scénarios hypothétiques, éventail statistique),
+  `evolution.ts` (le trader face à lui-même), Spearman par séances.
+- `features/brain` : plein écran au-dessus de l'app, rendu WebGL2 maison
+  (`gl/`), quatre modes, Worker de calcul, sons Web Audio ; `GraphCanvas`
+  remplacé par `BrainScene`.
+- Sources : bilans (`trade_reflection`) et intentions (`trade_intent`).
+- Exception de lumière du canevas : `DESIGN_SYSTEM.md` §1.
+
 ## 2026-11-21 — Neural Brain (lot 1)
 
 - **Nouveau moteur pur `modules/knowledge`** : graphe de connaissance DÉRIVÉ

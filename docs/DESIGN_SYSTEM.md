@@ -83,6 +83,14 @@ posé sur une carte de contenu (`tests/liquidGlass.test.ts`) ; chiffres tabulair
 plancher de lisibilité 10 px (12 px pour du texte à lire) ;
 `prefers-reduced-motion` respecté ; la zone Trustpilot (`#00b67a`) est gelée.
 
+**Exception du Neural Brain** (décision du propriétaire du 2026-11-21) : à
+l'intérieur du SEUL canevas WebGL de `/brain`, les nœuds et les flux portent
+une lueur bornée (fondu additif, plafond `GLOW` dans `BrainScene.tsx`) et un
+ciel d'étoiles fixe donne la profondeur ; c'est la donnée qui éclaire. Hors du
+canevas — barre, rail, panneaux, cartes, texte — la règle ci-dessus s'applique
+sans exception. Son entrée cinématique (≤ 1,5 s, interrompue au premier geste,
+absente sous mouvement réduit) relève de la même exception que l'onboarding.
+
 ## 2. Thèmes et tokens
 
 - Thème par défaut : **`lucid`** (`DEFAULT_THEME_ID`, `src/app/utils/themes.ts`).

@@ -182,6 +182,16 @@ bouton ou texte).
 évolution → C rendu WebGL + expérience immersive + SFX → D vérification
 (données réelles, desktop/mobile, mouvement réduit, son coupé) et docs.
 
+**État (2026-11-21).** A, B et C livrés et testés (moteurs : tests unitaires,
+bruit pseudo-aléatoire sans découverte ; écran : parcours Playwright à 1440 et
+390 px, WebGL2, mouvement réduit, aucune erreur console). Reste ouvert :
+vérification sur un vrai compte (le banc `/dev/ui` n'a pas d'utilisateur),
+mesure de performance sur plusieurs milliers de trades, extracteurs objectifs /
+plan / checklist, phases multimodal, recherche web et multi-agents (fournisseurs
+payants : accord du propriétaire). Données absentes du journal et donc non
+analysables aujourd'hui : contexte HTF, volatilité intrajournalière, distance
+au niveau clé, prix du stop et de l'objectif.
+
 ## 7. Risques connus
 
 - **Calcul côté client** : un journal de plusieurs milliers de trades fait
