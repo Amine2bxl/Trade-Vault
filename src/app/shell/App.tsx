@@ -47,6 +47,7 @@ import {
   Inbox,
   MonteCarlo,
   Brokers,
+  NeuralBrain,
   preloadPage,
   LIKELY_NEXT_PAGES,
 } from "./pageModules";
@@ -1368,6 +1369,7 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
                     {page === "subscription" && <Subscription trades={shownTrades} />}
                     {page === "montecarlo" && <MonteCarlo trades={shownTrades} />}
                     {page === "brokers" && <Brokers />}
+                    {page === "brain" && <NeuralBrain trades={shownTrades} />}
                     {page === "inbox" && <Inbox />}
                     {page === "profile" && <Profile trades={trades} />}
                   </PageGate>

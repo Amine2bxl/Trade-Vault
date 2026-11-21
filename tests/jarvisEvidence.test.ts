@@ -128,6 +128,46 @@ describe("get_behavior_scenario", () => {
   });
 });
 
+describe("get_discoveries", () => {
+  test("une paire d'erreurs coûteuse sort avec n, intervalle et q ; un autre compte ne voit rien", async () => {
+    const trades: Row[] = [];
+    for (let i = 0; i < 40; i++) {
+      const noise = ((i * 37) % 11) - 5;
+      const both = i % 2 === 1;
+      trades.push(
+        row({
+          trade_date: day(i * 3),
+          entry_time: "09:31",
+          exit_time: "09:40",
+          pnl: both ? -150 + noise : -140 + noise,
+          mistakes: both ? ["FOMO entry", "Size too large"] : ["FOMO entry"],
+        }),
+        row({
+          trade_date: day(i * 3),
+          entry_time: "10:15",
+          exit_time: "10:30",
+          pnl: both ? -260 + noise : 40 + noise,
+          mistakes: both ? ["FOMO entry", "Size too large"] : ["Size too large"],
+        }),
+      );
+    }
+    await withFakePostgrest({ trades: sorted(trades) }, async () => {
+      const out = await run("get_discoveries", {});
+      const findings = out.findings as Record<string, unknown>[];
+      const pair = findings.find((f) => f.id === "mistake_pair:FOMO entry|Size too large");
+      expect(pair).toBeDefined();
+      expect(pair!.n).toBe(40);
+      expect((pair!.interval95 as number[])[1]).toBeLessThan(0);
+      expect(pair!.q as number).toBeLessThanOrEqual(out.alpha as number);
+      expect((out.limits as string[])[0]).toContain("never causes");
+
+      const other = await run("get_discoveries", {}, "acc-other");
+      expect(other.tradesRead).toBe(0);
+      expect(other.findings).toEqual([]);
+    });
+  });
+});
+
 describe("le texte des données n'est jamais une instruction", () => {
   test("le prompt du coach et l'en-tête des résultats d'outils le disent", async () => {
     const { ANTI_HALLUCINATION } = await import("../src/modules/ai/agents/coach.agent");

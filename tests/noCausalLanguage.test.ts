@@ -26,7 +26,7 @@ const SOURCE = resolve(import.meta.dir, "../src/app/i18n/translations.ts");
 
 /** Préfixes des clés qui portent des affirmations comportementales. `chk.` :
  *  le plan de séance affiche « dans le plan / hors plan », une association. */
-const WATCHED = ["session.", "cluster.", "pattern.", "chk."];
+const WATCHED = ["session.", "cluster.", "pattern.", "chk.", "brain."];
 
 /**
  * Formulations qui promettent une cause — IMPORTÉES, jamais recopiées.

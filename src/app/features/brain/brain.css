@@ -1,0 +1,498 @@
+/* ==========================================================================
+   Neural Brain — le graphe de connaissance en 3D.
+   Portée : classes `brain-*`. Le canevas est la surface dominante ; tout le
+   reste (recherche, fil d'Ariane, outils, frise, inspecteur) le sert.
+
+   Couleurs des familles : DONNÉES, pas décor. Elles vivent ici (et non dans
+   le TSX) pour que le canevas les lise par `getComputedStyle` ; la forme du
+   nœud double toujours la couleur (une couleur seule ne suffit pas).
+   Rien ne rayonne : aucun halo, aucune ombre colorée (loi `theme`).
+   ========================================================================== */
+
+.brain-root {
+  --brain-trading: #d4d8dd;
+  --brain-time: #7b828a;
+  --brain-market: #60a5fa;
+  --brain-behavior: #a78bfa;
+  --brain-mistake: var(--tv-chart-red);
+  --brain-risk: #fb923c;
+  --brain-simulation: #818cf8;
+  --brain-ai: #2dd4bf;
+  --brain-documents: #94a3b8;
+  --brain-performance: #22d3ee;
+  --brain-win: var(--tv-chart-green);
+  --brain-loss: var(--tv-chart-red);
+  --brain-edge: var(--tv-text-muted);
+}
+
+.brain-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  cursor: grab;
+}
+.brain-canvas:active {
+  cursor: grabbing;
+}
+.brain-canvas:focus-visible {
+  outline: 2px solid rgb(var(--tv-accent-rgb) / 0.7);
+  outline-offset: -2px;
+}
+
+/* Bandeau haut : recherche + fil d'Ariane. Plaques OPAQUES : elles portent
+   du contenu (résultats), pas de la navigation flottante. */
+
+.brain-search {
+  position: relative;
+  width: min(20rem, 100%);
+}
+.brain-results {
+  position: absolute;
+  inset: calc(100% + 0.25rem) 0 auto 0;
+  max-height: 18rem;
+  overflow-y: auto;
+  border: 1px solid var(--tv-border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--tv-plate-1);
+  padding: 0.25rem;
+}
+.brain-result {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.25rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-md);
+  text-align: left;
+  font-size: var(--tv-t-body-sm);
+  color: var(--tv-text-primary);
+  transition-property: background-color;
+  transition-duration: var(--tv-dur-1);
+}
+.brain-result:hover,
+.brain-result[aria-selected="true"] {
+  background: var(--tv-surface-hover);
+}
+
+.brain-crumb {
+  max-width: 11rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0.125rem 0.375rem;
+  border-radius: var(--radius-sm);
+}
+.brain-crumb:hover {
+  color: var(--tv-text-primary);
+  background: var(--tv-plate-2);
+}
+
+/* Outils (zoom, recentrer) en bas à droite. */
+.brain-tools {
+  position: absolute;
+  right: 0.75rem;
+  bottom: 3.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.brain-tool {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 1px solid var(--tv-border);
+  border-radius: var(--radius-md);
+  background: var(--tv-plate-1);
+  color: var(--tv-text-secondary);
+  transition-property: border-color, color;
+  transition-duration: var(--tv-dur-1);
+}
+.brain-tool:hover {
+  border-color: var(--tv-border-strong);
+  color: var(--tv-text-primary);
+}
+.brain-tool[aria-pressed="true"] {
+  border-color: var(--tv-border-accent);
+  color: var(--tv-text-primary);
+}
+
+/* Légende : forme + couleur + nom, en bas à gauche. */
+.brain-legend-row {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: var(--tv-t-micro);
+  color: var(--tv-text-secondary);
+}
+.brain-legend-row svg {
+  width: 10px;
+  height: 10px;
+}
+
+/* La frise : un mois = une barre (hauteur = trades du mois). */
+.brain-timeline {
+  position: absolute;
+  inset: auto 0.75rem 0.75rem 0.75rem;
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 2.25rem;
+  padding: 0.25rem;
+  border: 1px solid var(--tv-border);
+  border-radius: var(--radius-lg);
+  background: var(--tv-plate-1);
+}
+.brain-month {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 4px;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  border-radius: 3px;
+}
+.brain-month > span {
+  width: 100%;
+  border-radius: 2px;
+  background: var(--tv-plate-3);
+  transition-property: background-color;
+  transition-duration: var(--tv-dur-1);
+}
+.brain-month:hover > span {
+  background: var(--tv-text-muted);
+}
+.brain-month[aria-pressed="true"] > span {
+  background: rgb(var(--tv-accent-rgb) / 0.85);
+}
+
+.brain-status {
+  position: absolute;
+  inset: auto auto 3.75rem 50%;
+  transform: translateX(-50%);
+  padding: 0.25rem 0.625rem;
+  border: 1px solid var(--tv-border);
+  border-radius: 999px;
+  background: var(--tv-plate-1);
+  font-size: var(--tv-t-caption);
+  color: var(--tv-text-secondary);
+  white-space: nowrap;
+}
+
+/* Panneau latéral : l'inspecteur et les découvertes. */
+
+.brain-kind {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+.brain-kind svg {
+  width: 10px;
+  height: 10px;
+  flex: none;
+}
+
+.brain-rel-group + .brain-rel-group {
+  margin-top: 0.75rem;
+}
+.brain-link {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.25rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-md);
+  text-align: left;
+  font-size: var(--tv-t-body-sm);
+  color: var(--tv-text-primary);
+  transition-property: background-color;
+  transition-duration: var(--tv-dur-1);
+}
+.brain-link:hover {
+  background: var(--tv-surface-hover);
+}
+.brain-link-meta {
+  margin-left: auto;
+  flex: none;
+  font-size: var(--tv-t-micro);
+  color: var(--tv-text-muted);
+}
+
+.brain-proof {
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.625rem;
+  border: 1px solid var(--tv-border);
+  border-radius: var(--radius-md);
+  background: var(--tv-plate-2);
+  font-size: var(--tv-t-caption);
+  line-height: 1.55;
+  color: var(--tv-text-secondary);
+}
+
+.brain-shot {
+  display: block;
+  width: 100%;
+  max-height: 10rem;
+  object-fit: cover;
+  border: 1px solid var(--tv-border);
+  border-radius: var(--radius-md);
+}
+
+/* ==========================================================================
+   Neural Brain v2 — l'environnement immersif (plein écran au-dessus de l'app).
+   Navigation (barre, rail, panneaux) = verre `tv-glass-solid` ; contenu
+   (cartes, graphiques) = plaques opaques. Seul le canevas porte de la lumière.
+   ========================================================================== */
+
+.brain-xp {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: var(--tv-bg);
+  color: var(--tv-text-primary);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .brain-xp {
+    animation: fade-in var(--tv-dur-3) var(--tv-ease) both;
+  }
+  .brain-xp[data-leaving="true"] {
+    opacity: 0;
+    transform: scale(0.985);
+    transition-property: opacity, transform;
+    transition-duration: var(--tv-dur-2);
+    transition-timing-function: var(--tv-ease-out);
+  }
+}
+
+.brain-hud {
+  position: absolute;
+  inset: 0.75rem 0.75rem auto 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 3rem;
+  padding: 0.375rem 0.5rem;
+  border-radius: var(--radius-2xl);
+}
+.brain-hud-title {
+  font-size: var(--tv-t-body);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+.brain-hud-grow {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  justify-content: center;
+}
+.brain-hud .brain-search {
+  width: min(24rem, 100%);
+}
+
+.brain-rail {
+  position: absolute;
+  left: 0.75rem;
+  top: 4.75rem;
+  width: 13.5rem;
+  max-height: calc(100% - 9.5rem);
+  overflow-y: auto;
+  padding: 0.375rem;
+  border-radius: var(--radius-2xl);
+}
+.brain-dim {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.25rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-lg);
+  font-size: var(--tv-t-body-sm);
+  color: var(--tv-text-secondary);
+  text-align: left;
+  transition-property: background-color, color;
+  transition-duration: var(--tv-dur-1);
+}
+.brain-dim:hover {
+  background: var(--tv-surface-hover);
+  color: var(--tv-text-primary);
+}
+.brain-dim[aria-pressed="true"] {
+  background: var(--tv-plate-3);
+  color: var(--tv-text-primary);
+}
+.brain-dim svg {
+  width: 10px;
+  height: 10px;
+  flex: none;
+}
+
+.brain-sheet {
+  position: absolute;
+  right: 0.75rem;
+  top: 4.75rem;
+  bottom: 3.75rem;
+  width: min(27rem, calc(100% - 1.5rem));
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius-2xl);
+  overflow: hidden;
+}
+.brain-sheet-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0.75rem;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .brain-sheet {
+    animation: fade-in-up var(--tv-dur-3) var(--tv-ease) both;
+  }
+}
+
+/* Le plateau central des modes Simuler et Évolution : du contenu, donc opaque. */
+.brain-stagechart {
+  position: absolute;
+  left: 0.75rem;
+  right: 28.5rem;
+  top: 4.75rem;
+  bottom: 3.75rem;
+  overflow-y: auto;
+  padding: 1rem;
+  border: 1px solid var(--tv-border);
+  border-radius: var(--radius-2xl);
+  background: var(--tv-plate-1);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .brain-stagechart {
+    animation: fade-in-up var(--tv-dur-3) var(--tv-ease) both;
+  }
+}
+
+.brain-xp .brain-timeline,
+.brain-xp .brain-status {
+  z-index: 1;
+}
+.brain-xp .brain-timeline {
+  left: 15rem;
+  right: 0.75rem;
+}
+.brain-xp .brain-tools {
+  right: 0.75rem;
+}
+.brain-xp[data-sheet="true"] .brain-timeline,
+.brain-xp[data-sheet="true"] .brain-tools {
+  right: 28.5rem;
+}
+
+.brain-intro {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.375rem;
+  text-align: center;
+  pointer-events: none;
+}
+.brain-intro p {
+  font-size: var(--tv-t-body-sm);
+  color: var(--tv-text-secondary);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .brain-intro p {
+    animation: fade-in-up var(--tv-dur-3) var(--tv-ease) both;
+  }
+  .brain-intro p:nth-child(2) {
+    animation-delay: 240ms;
+  }
+  .brain-intro p:nth-child(3) {
+    animation-delay: 480ms;
+  }
+  .brain-intro p:nth-child(4) {
+    animation-delay: 720ms;
+  }
+}
+
+.brain-tip {
+  position: absolute;
+  z-index: 2;
+  max-width: 18rem;
+  padding: 0.5rem 0.625rem;
+  border-radius: var(--radius-lg);
+  font-size: var(--tv-t-caption);
+  line-height: 1.5;
+  color: var(--tv-text-secondary);
+  pointer-events: none;
+}
+
+.brain-chart text {
+  font-size: 11px;
+  fill: var(--tv-text-muted);
+}
+.brain-legend-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  font-size: var(--tv-t-caption);
+  color: var(--tv-text-secondary);
+}
+.brain-legend-inline i {
+  display: inline-block;
+  width: 14px;
+  height: 2px;
+  margin-right: 6px;
+  vertical-align: middle;
+  border-radius: 1px;
+}
+
+.brain-x {
+  display: grid;
+  gap: 0.75rem;
+}
+.brain-x > section > h4 {
+  margin-bottom: 0.25rem;
+}
+
+@media (max-width: 1023px) {
+  .brain-rail {
+    display: none;
+  }
+  .brain-xp .brain-legend {
+    display: none;
+  }
+  .brain-hud {
+    flex-wrap: wrap;
+  }
+  .brain-hud-grow {
+    order: 3;
+    flex-basis: 100%;
+  }
+  .brain-sheet {
+    top: auto;
+    left: 0.5rem;
+    right: 0.5rem;
+    bottom: 0.5rem;
+    width: auto;
+    max-height: 55svh;
+  }
+  .brain-stagechart {
+    left: 0.5rem;
+    right: 0.5rem;
+    top: 7.5rem;
+    bottom: 0.5rem;
+  }
+  .brain-xp .brain-timeline {
+    display: none;
+  }
+  .brain-xp .brain-tools {
+    right: 0.75rem;
+    bottom: 1rem;
+  }
+}

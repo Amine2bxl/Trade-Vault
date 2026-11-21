@@ -27,6 +27,13 @@ export const MIN_SESSIONS = 20;
 /** Minimum de trades dans CHACUN des deux groupes d'une comparaison. */
 export const MIN_GROUP = 10;
 
+/**
+ * Minimum de séances dans CHACUN des deux groupes d'une comparaison par
+ * bootstrap de séances (découvertes du Neural Brain). Dix trades pris en deux
+ * matinées ne sont que deux blocs : l'intervalle n'aurait rien à rééchantillonner.
+ */
+export const MIN_GROUP_SESSIONS = 5;
+
 /** Un motif écarté ne revient pas avant ce délai. */
 export const DISMISS_DAYS = 30;
 

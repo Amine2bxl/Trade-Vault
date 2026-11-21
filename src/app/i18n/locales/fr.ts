@@ -3045,6 +3045,557 @@ const fr: Dict = {
     "Tu as atteint la limite de {n} setups. Trop de setups disperse l'attention. Maîtrise ces {n} avant d'en changer.",
   "upgrade.opening": "Ouverture…",
   "upgrade.goTier": "Passer à {tier}",
+  // ── Neural Brain (graphe de connaissance, découvertes) ──
+  "nav.brain": "Neural Brain",
+  "brain.account": "Compte",
+  "brain.kind.account": "Compte",
+  "brain.kind.month": "Mois",
+  "brain.kind.day": "Jour",
+  "brain.kind.trade": "Trade",
+  "brain.kind.session": "Séance",
+  "brain.kind.strategy": "Setup",
+  "brain.kind.confluence": "Confluence",
+  "brain.kind.missed": "Setup manqué",
+  "brain.kind.symbol": "Instrument",
+  "brain.kind.economic_event": "Annonce économique",
+  "brain.kind.mistake": "Erreur",
+  "brain.kind.mistake_cluster": "Famille d'erreurs",
+  "brain.kind.risk_band": "Bande de risque",
+  "brain.kind.screenshot": "Capture",
+  "brain.kind.report": "Rapport mensuel",
+  "brain.kind.simulation": "Simulation",
+  "brain.kind.conversation": "Conversation avec Jarvis",
+  "brain.kind.research_note": "Note de recherche",
+  "brain.kind.experiment": "Expérience",
+  "brain.kind.proposal": "Proposition de Jarvis",
+  "brain.kind.discovery": "Découverte",
+  "brain.cat.trading": "Trading",
+  "brain.cat.performance": "Découvertes",
+  "brain.cat.behavior": "Comportement",
+  "brain.cat.risk": "Risque",
+  "brain.cat.simulation": "Simulations",
+  "brain.cat.ai": "Jarvis et recherche",
+  "brain.cat.documents": "Documents",
+  "brain.cat.market": "Marché",
+  "brain.rel.occurred_on": "Jour",
+  "brain.rel.part_of": "Calendrier",
+  "brain.rel.belongs_to": "Compte",
+  "brain.rel.uses_setup": "Setup",
+  "brain.rel.on_symbol": "Instrument",
+  "brain.rel.in_session": "Séance",
+  "brain.rel.has_mistake": "Erreur",
+  "brain.rel.has_confluence": "Confluence",
+  "brain.rel.classified_as": "Famille d'erreurs",
+  "brain.rel.in_risk_band": "Bande de risque",
+  "brain.rel.has_screenshot": "Capture",
+  "brain.rel.followed_by": "Enchaînement (ordre prouvé)",
+  "brain.rel.during_event": "Annonce pendant la position",
+  "brain.rel.same_day_as": "Manqué et pris le même jour",
+  "brain.rel.mentions": "Mention",
+  "brain.rel.co_occurs_with": "Cochées ensemble",
+  "brain.rel.studies": "Recherche",
+  "brain.rel.simulates": "Simulation",
+  "brain.rel.covers": "Rapport",
+  "brain.rel.derived_from": "Issue de",
+  "brain.rel.supported_by": "Preuve",
+  "brain.rel.shares_trades": "Trades en commun",
+  "brain.val.fact": "fait",
+  "brain.val.observed_association": "mesuré",
+  "brain.val.hypothesis": "hypothèse",
+  "brain.risk.below": "Sous ton risque médian",
+  "brain.risk.typical": "Autour de ton risque médian",
+  "brain.risk.elevated": "1,25 à 2× ton risque médian",
+  "brain.risk.oversized": "Plus de 2× ton risque médian",
+  "brain.prev.win": "après un gain",
+  "brain.prev.loss": "après une perte",
+  "brain.prev.be": "après un break-even",
+  "brain.weekday.0": "Dimanche",
+  "brain.weekday.1": "Lundi",
+  "brain.weekday.2": "Mardi",
+  "brain.weekday.3": "Mercredi",
+  "brain.weekday.4": "Jeudi",
+  "brain.weekday.5": "Vendredi",
+  "brain.weekday.6": "Samedi",
+  "brain.dcat.hidden_pattern": "Motif caché",
+  "brain.dcat.psychological_contradiction": "Contradiction",
+  "brain.dcat.execution_weakness": "Faiblesse d'exécution",
+  "brain.dcat.risk_anomaly": "Anomalie de risque",
+  "brain.dcat.strategy_inefficiency": "Condition faible",
+  "brain.dcat.unexpected_strength": "Point fort",
+  "brain.dcat.knowledge_gap": "Angle mort des données",
+  "brain.alt.regime": "Le régime de marché peut différer entre les deux groupes ou périodes.",
+  "brain.alt.selection":
+    "Les deux groupes peuvent différer sur autre chose (instrument, séance, setup) que la comparaison ne fixe pas.",
+  "brain.alt.labeling":
+    "Une erreur cochée après coup se coche plus volontiers sur un trade perdant (biais de résultat dans le journal).",
+  "brain.alt.single_outlier":
+    "Quelques gros trades peuvent porter l'écart : relis les trades un par un.",
+  "brain.alt.costs": "Des frais et du slippage absents du journal peuvent déplacer le résultat.",
+  "brain.alt.hindsight":
+    "Une estimation écrite après le mouvement ignore le spread, le slippage et si l'entrée était réellement exécutable.",
+  "brain.alt.day_context":
+    "Les trades tardifs ont lieu des jours déjà orientés : la journée, plus que le nombre de trades, peut porter l'écart.",
+  "brain.alt.sizing_rule":
+    "Une règle de taille volontaire (selon le capital ou la confiance) produit le même motif.",
+  "brain.alt.missing_data":
+    "Les trades sans ce champ sont écartés, et ils peuvent ne pas ressembler aux autres.",
+  "brain.exp.focus_condition":
+    "Pendant 20 séances, marque chaque trade pris dans cette condition, puis relis l'écart sur ces seuls nouveaux trades.",
+  "brain.exp.reduce_condition":
+    "Pendant 20 séances, divise ta taille par deux dans cette condition et compare les nouveaux trades aux anciens.",
+  "brain.exp.pair_check":
+    "Ajoute une vérification avant entrée pour la première erreur de la paire ; après 20 séances, compare la fréquence de la paire.",
+  "brain.exp.fixed_risk":
+    "Fixe un seul montant de risque par trade pendant 20 séances, quel que soit le trade précédent, puis compare la dispersion de ton risque.",
+  "brain.exp.cap_trades":
+    "Plafonne chaque séance à deux trades pendant 20 séances et compare le résultat par trade à la période précédente.",
+  "brain.exp.grade_before_entry":
+    "Note le setup AVANT l'entrée pendant 20 séances : une note écrite après le résultat ne se teste pas.",
+  "brain.exp.log_missed_live":
+    "Note chaque setup manqué au moment où il se forme (entrée, stop, objectif), pas après le mouvement.",
+  "brain.exp.align_simulation":
+    "Relance le Monte Carlo avec le risque que tu prends vraiment, ou ramène ton risque à celui simulé.",
+  "brain.exp.complete_field":
+    "Renseigne ce champ sur les nouveaux trades : les analyses qui en ont besoin couvriront plus de ton journal.",
+  "brain.disc.edge_condition.higher.title": "{key} : espérance nette positive",
+  "brain.disc.edge_condition.higher.body":
+    "{n} trades sur {sessions} séances font en moyenne {value} net par trade (intervalle à 95 % : {low} à {high}).",
+  "brain.disc.edge_condition.lower.title": "{key} : espérance nette négative",
+  "brain.disc.edge_condition.lower.body":
+    "{n} trades sur {sessions} séances font en moyenne {value} net par trade (intervalle à 95 % : {low} à {high}).",
+  "brain.disc.mistake_pair.lower.title": "{a} + {b} : pire ensemble que séparément",
+  "brain.disc.mistake_pair.lower.body":
+    "Les trades marqués des deux font en moyenne {value} ({n} trades, {sessions} séances), contre {baseline} quand une seule des deux est cochée ({nCompare} trades). Écart {diff} (intervalle à 95 % : {low} à {high}).",
+  "brain.disc.mistake_pair.higher.title": "{a} + {b} : meilleur ensemble que séparément",
+  "brain.disc.mistake_pair.higher.body":
+    "Les trades marqués des deux font en moyenne {value} ({n} trades, {sessions} séances), contre {baseline} quand une seule des deux est cochée ({nCompare} trades). Écart {diff} (intervalle à 95 % : {low} à {high}).",
+  "brain.disc.risk_after_loss.higher.title": "Ton risque est plus élevé juste après une perte",
+  "brain.disc.risk_after_loss.higher.body":
+    "Juste après une perte vérifiée, ton risque vaut en moyenne {value} ta médiane ({median}) sur {n} trades ; juste après un gain, {baseline} sur {nCompare} trades. Écart {diff} (intervalle à 95 % : {low} à {high}).",
+  "brain.disc.risk_after_loss.lower.title": "Ton risque est plus faible juste après une perte",
+  "brain.disc.risk_after_loss.lower.body":
+    "Juste après une perte vérifiée, ton risque vaut en moyenne {value} ta médiane ({median}) sur {n} trades ; juste après un gain, {baseline} sur {nCompare} trades. Écart {diff} (intervalle à 95 % : {low} à {high}).",
+  "brain.disc.day_rank.lower.title": "À partir du 3e trade d'une séance, les résultats baissent",
+  "brain.disc.day_rank.lower.body":
+    "Les trades de rang 3 ou plus dans leur séance font en moyenne {value} ({n} trades), contre {baseline} pour les deux premiers ({nCompare} trades). Écart {diff} (intervalle à 95 % : {low} à {high}).",
+  "brain.disc.day_rank.higher.title": "À partir du 3e trade d'une séance, les résultats montent",
+  "brain.disc.day_rank.higher.body":
+    "Les trades de rang 3 ou plus dans leur séance font en moyenne {value} ({n} trades), contre {baseline} pour les deux premiers ({nCompare} trades). Écart {diff} (intervalle à 95 % : {low} à {high}).",
+  "brain.disc.setup_grade.higher.title": "Tes notes de setup vont dans le sens de tes résultats",
+  "brain.disc.setup_grade.higher.body":
+    "Les setups notés 4–5 font en moyenne {value} ({n} trades), ceux notés 1–2 {baseline} ({nCompare} trades). Écart {diff} (intervalle à 95 % : {low} à {high}).",
+  "brain.disc.setup_grade.lower.title":
+    "Tes setups les mieux notés font moins bien que les plus faibles",
+  "brain.disc.setup_grade.lower.body":
+    "Les setups notés 4–5 font en moyenne {value} ({n} trades), ceux notés 1–2 {baseline} ({nCompare} trades). Écart {diff} (intervalle à 95 % : {low} à {high}).",
+  "brain.disc.confidence.higher.title": "Ta confiance va dans le sens de tes résultats",
+  "brain.disc.confidence.higher.body":
+    "Les trades à 75 de confiance ou plus font en moyenne {value} ({n} trades), ceux sous 50 {baseline} ({nCompare} trades). Écart {diff} (intervalle à 95 % : {low} à {high}).",
+  "brain.disc.confidence.lower.title": "Tes trades les plus confiants font moins bien",
+  "brain.disc.confidence.lower.body":
+    "Les trades à 75 de confiance ou plus font en moyenne {value} ({n} trades), ceux sous 50 {baseline} ({nCompare} trades). Écart {diff} (intervalle à 95 % : {low} à {high}).",
+  "brain.disc.missed_vs_taken.higher.title":
+    "Les setups que tu manques paraissent plus gros que ceux que tu prends",
+  "brain.disc.missed_vs_taken.higher.body":
+    "Tu as estimé {value} en moyenne pour {n} setups manqués (après coup : hypothétique), contre {baseline} réalisé sur {nCompare} trades sur les mêmes instruments ({symbols}).",
+  "brain.disc.missed_vs_taken.lower.title":
+    "Les setups que tu manques paraissent plus petits que ceux que tu prends",
+  "brain.disc.missed_vs_taken.lower.body":
+    "Tu as estimé {value} en moyenne pour {n} setups manqués (après coup : hypothétique), contre {baseline} réalisé sur {nCompare} trades sur les mêmes instruments ({symbols}).",
+  "brain.disc.simulation_risk.higher.title":
+    "« {name} » suppose moins de risque que tu n'en prends",
+  "brain.disc.simulation_risk.higher.body":
+    "La simulation suppose {baseline} par trade ; ton risque mesuré médian est de {value} ({n} trades). {share} de tes trades dépassent l'hypothèse de plus de 25 %.",
+  "brain.disc.simulation_risk.lower.title": "« {name} » suppose plus de risque que tu n'en prends",
+  "brain.disc.simulation_risk.lower.body":
+    "La simulation suppose {baseline} par trade ; ton risque mesuré médian est de {value} ({n} trades). {share} de tes trades dépassent l'hypothèse de plus de 25 %.",
+  "brain.disc.data_gap.risk.title": "La plupart des trades n'ont pas de risque mesuré",
+  "brain.disc.data_gap.risk.body":
+    "{n} trades sur {nCompare} ont un risque mesuré ({value}). Les analyses en R et les bandes de risque ne couvrent que cette part.",
+  "brain.disc.data_gap.time.title": "La plupart des trades n'ont pas d'heure d'entrée prouvée",
+  "brain.disc.data_gap.time.body":
+    "{n} trades sur {nCompare} ont une heure d'entrée prouvée ({value}). Séances, enchaînements et timing ne couvrent que cette part.",
+  "brain.disc.data_gap.setup.title": "La plupart des trades n'ont pas de setup confirmé",
+  "brain.disc.data_gap.setup.body":
+    "{n} trades sur {nCompare} ont un setup confirmé ({value}). Les analyses par setup ne couvrent que cette part.",
+  "brain.disc.emptyTitle": "Pas encore de découverte",
+  "brain.disc.emptyFew":
+    "Une découverte demande au moins {n} trades et {s} séances dans chaque groupe comparé. Continue d'encoder : elles apparaîtront ici dès que les données le permettront.",
+  "brain.disc.emptyNone":
+    "{tests} comparaisons testées ; aucune ne passe les seuils de preuve (intervalle à 95 % excluant zéro, correction des tests multiples). C'est aussi un résultat.",
+  "brain.disc.summary":
+    "{n} découvertes · {tests} comparaisons testées · taux de fausses découvertes {alpha}",
+  "brain.searchPlaceholder": "Chercher un trade, un setup, une erreur, une annonce…",
+  "brain.trail": "Chemin",
+  "brain.exitFocus": "Quitter le focus",
+  "brain.zoomIn": "Zoomer",
+  "brain.zoomOut": "Dézoomer",
+  "brain.fit": "Recadrer la vue",
+  "brain.askSelection": "Demander à Jarvis à propos de la sélection",
+  "brain.legend": "Légende",
+  "brain.timeline": "Frise : clique un mois, Maj+clic pour étendre",
+  "brain.side": "Détails",
+  "brain.tab.inspect": "Inspecteur",
+  "brain.tab.discoveries": "Découvertes",
+  "brain.canvasLabel":
+    "Graphe de connaissance en 3D : {nodes} nœuds, {edges} liens. Glisse pour tourner, molette pour zoomer, Maj+glisser pour déplacer, flèches pour tourner, Échap pour désélectionner. La recherche et l'inspecteur permettent de passer d'un nœud à l'autre.",
+  "brain.status.shown": "{nodes} nœuds · {edges} liens",
+  "brain.status.truncated": "{n} masqués (les moins reliés)",
+  "brain.status.failed": "{n} source(s) indisponible(s)",
+  "brain.status.arranging": "mise en place…",
+  "brain.status.trades": "{n} trades",
+  "brain.open": "Ouvrir l'original",
+  "brain.expand": "Afficher {n} liés",
+  "brain.collapse": "Masquer {n} liés",
+  "brain.focus": "Focus",
+  "brain.askJarvis": "Demander à Jarvis",
+  "brain.showAll": "Tout afficher ({n})",
+  "brain.showLeaves": "Afficher chaque trade, jour et annonce",
+  "brain.families": "Familles",
+  "brain.relations": "Relations",
+  "brain.filtersActive": "{n} actifs",
+  "brain.metric.trades": "Trades",
+  "brain.metric.pnl": "P&L net",
+  "brain.metric.winRate": "Taux de réussite",
+  "brain.metric.avgR": "R moyen",
+  "brain.metric.tooFew": "moins de 5 trades",
+  "brain.metric.tooFewR": "n {n}, trop peu",
+  "brain.fact.pnl": "P&L",
+  "brain.fact.r": "R réalisé",
+  "brain.fact.unknown": "inconnu",
+  "brain.fact.confidence": "Confiance",
+  "brain.fact.estimatedR": "R estimé",
+  "brain.fact.actual": "Publié",
+  "brain.fact.timing": "Horaire",
+  "brain.fact.approximate": "approximatif (calendrier intégré)",
+  "brain.fact.assumedRisk": "Risque supposé par trade",
+  "brain.fact.seed": "Graine",
+  "brain.fact.verdict": "Verdict",
+  "brain.fact.pending": "pas encore évalué",
+  "brain.fact.status": "Statut",
+  "brain.fact.sessions": "Séances visées",
+  "brain.hypotheticalMissed":
+    "Le R estimé d'un setup manqué est écrit après coup : une hypothèse, jamais un résultat.",
+  "brain.provenance": "Provenance",
+  "brain.provenance.record": "Lu dans {table} · {id}",
+  "brain.provenance.derived": "Dérivé des enregistrements reliés ci-dessus : aucune ligne propre.",
+  "brain.ev.n": "n {n}",
+  "brain.ev.sessions": "{n} séances",
+  "brain.ev.compare": "contre {n}",
+  "brain.ev.ci": "95 % : {low} à {high}",
+  "brain.ev.together": "{n} ensemble",
+  "brain.ev.median": "médiane",
+  "brain.inspectEmptyTitle": "Choisis un nœud",
+  "brain.inspectEmptyBody":
+    "Clique un nœud du graphe, ou cherche-le en haut. Un double-clic le met au centre et montre ce qui s'y relie.",
+  "brain.emptyTitle": "Ton graphe de connaissance commence avec ton premier trade",
+  "brain.emptyBody":
+    "Chaque trade, erreur, setup manqué et conversation devient un nœud, relié par ce que les enregistrements prouvent.",
+  "brain.emptyAction": "Ouvrir le journal",
+  "brain.experimentLabel": "Expérience · pause après {n} pertes",
+  "brain.hypothetical": "Hypothétique",
+  "brain.fragile": "Fragile : tient à un trade",
+  "brain.alternatives": "Autres explications",
+  "brain.experiment": "Expérience pour trancher",
+  "brain.details": "Preuve, explications, revue",
+  "brain.method": "Méthode {method} · graine {seed} · v{version}",
+  "brain.review.label": "Ta revue",
+  "brain.review.confirmed": "Confirmée",
+  "brain.review.rejected": "Rejetée",
+  "brain.review.inconclusive": "Non concluante",
+  "brain.review.saved": "Gardée",
+  "brain.review.note": "Une note pour plus tard (facultatif)",
+  "brain.review.clear": "Effacer ma revue",
+  "brain.review.changed":
+    "La preuve a changé depuis ta revue : {before} (n {nBefore}) alors, {after} (n {nAfter}) aujourd'hui.",
+  "brain.showInGraph": "Dans le graphe",
+  "brain.openTrades": "{n} trades",
+  "brain.investigate": "Demander à Jarvis",
+  "brain.brief.headOne":
+    "Neural Brain : examine ce nœud de mon journal. Les chiffres ci-dessous viennent des moteurs de TradeVault ; les liens marqués hypothèse ne sont pas vérifiés.",
+  "brain.brief.headMany":
+    "Neural Brain : examine cette sélection de mon journal comme un seul ensemble. Les chiffres ci-dessous viennent des moteurs de TradeVault ; les liens marqués hypothèse ne sont pas vérifiés.",
+  "brain.brief.trades": "{n} trades",
+  "brain.brief.pnl": "net {v}",
+  "brain.brief.winRate": "taux de réussite {v}",
+  "brain.brief.avgR": "R moyen {v} (n {n})",
+  "brain.brief.more": "… et {n} nœuds de plus",
+  "brain.brief.ask":
+    "Lis mon journal pour ces éléments : que montrent les enregistrements, qu'est-ce qui n'est qu'une association, et que vérifierais-tu ensuite ? Sépare les faits des hypothèses.",
+  "brain.brief.discovery": "Neural Brain : examine cette découverte de mon journal.",
+  "brain.brief.discoveryAsk":
+    "Confronte-la à mes trades : tient-elle, quelle autre explication colle le mieux aux enregistrements, et qu'est-ce qui permettrait de trancher ?",
+  "brain.kind.error_pattern": "Signature d'erreur",
+  "brain.rel.exhibits": "Signature observée",
+  "brain.rel.declared_as": "Déclarée comme",
+  "brain.alt.tagging_habit":
+    "Ta façon de cocher a pu changer avec le temps, plus que le comportement lui-même.",
+  "brain.alt.luck":
+    "Sur une courte série, la chance peut récompenser un mauvais processus ou punir un bon.",
+  "brain.alt.multiple_conditions":
+    "Beaucoup de combinaisons ont été examinées ; même après correction et contrôle sur la période récente, une peut rester du hasard.",
+  "brain.exp.pause_after_loss":
+    "Après une perte, attends un délai fixe (par exemple 20 minutes) avant l'entrée suivante pendant 20 séances, puis compare le trade suivant.",
+  "brain.exp.review_segment":
+    "Ouvre ces trades et relis-les un par un : qu'ont-ils en commun au-delà de cette étiquette ?",
+  "brain.exp.rr_target":
+    "Pendant 20 séances, ne prends ces trades qu'avec un rapport gain/risque minimum, puis compare le résultat par trade.",
+  "brain.exp.process_checklist":
+    "Note chaque entrée selon ta checklist AVANT le résultat pendant 20 séances, puis compare entrées propres et signalées.",
+  "brain.exp.plan_review":
+    "Écris le plan avant la séance et note les écarts sur le moment, pas après le résultat, pendant 20 séances.",
+  "brain.exp.keep_tracking":
+    "Continue de cocher honnêtement : la tendance sera revérifiée avec les nouvelles séances.",
+  "brain.exp.planned_risk_rule":
+    "Fixe la taille depuis le risque prévu avant l'entrée et interdis toute hausse ensuite pendant 20 séances.",
+  "brain.exp.tag_honestly":
+    "Relis ces trades et coche ce qui s'applique : la comparaison reposera alors sur ce que tu déclares.",
+  "brain.seg.after_loss": "Les trades pris juste après une perte",
+  "brain.conf.strong": "Forte",
+  "brain.conf.moderate": "Moyenne",
+  "brain.conf.tentative": "Fragile",
+  "brain.conf.descriptive": "Descriptif (sans test)",
+  "brain.valid.confirmed": "confirmé sur les séances récentes",
+  "brain.valid.not_confirmed": "non confirmé sur les séances récentes",
+  "brain.valid.insufficient": "trop peu de séances récentes pour vérifier",
+  "brain.x.what": "Ce qui a été détecté",
+  "brain.x.why": "Comment",
+  "brain.x.data": "Les données",
+  "brain.x.n": "Observations",
+  "brain.x.confidence": "Confiance",
+  "brain.x.alternatives": "Autres explications",
+  "brain.x.impact": "Impact potentiel",
+  "brain.x.verify": "Vérifier ou corriger",
+  "brain.x.impactText":
+    "{impact} cumulés sur les {n} trades étudiés (écart par trade × n) : une lecture arithmétique, pas un gain promis.",
+  "brain.x.impactNone": "Non exprimé en argent pour cette découverte.",
+  "brain.x.obs": "{n} trades sur {sessions} séances, comparés à {nCompare}.",
+  "brain.why.edge_condition":
+    "EdgeLab : espérance nette par trade pour chaque valeur de la condition, bootstrap par séances, correction de Benjamini-Hochberg.",
+  "brain.why.mistake_pair":
+    "Trades marqués des deux erreurs comparés aux trades marqués d'une seule, bootstrap par séances.",
+  "brain.why.risk_after_loss":
+    "Risque (en multiple de ta médiane) juste après une perte vérifiée contre juste après un gain, même séance, ordre de clôture prouvé.",
+  "brain.why.day_rank":
+    "Trades de rang 3 ou plus dans une séance comparés aux deux premiers, séances aux heures prouvées seulement.",
+  "brain.why.setup_grade":
+    "Trades notés 4–5 comparés aux trades notés 1–2, imports non relus écartés.",
+  "brain.why.confidence": "Trades à 75 de confiance ou plus comparés aux trades sous 50.",
+  "brain.why.missed_vs_taken":
+    "Le R estimé des setups manqués comparé au R mesuré des trades pris sur les mêmes instruments. Sans test : une estimation n'est pas un tirage.",
+  "brain.why.simulation_risk":
+    "Le risque supposé par la simulation comparé à ton risque mesuré médian.",
+  "brain.why.data_gap": "Part des trades qui portent le champ dont les analyses ont besoin.",
+  "brain.why.after_loss_outcome":
+    "Chaque trade est classé selon le résultat du trade PRÉCÉDENT de la même séance (ordre de clôture prouvé), jamais selon son propre résultat.",
+  "brain.why.loss_concentration":
+    "Part des pertes totales portée par un segment comparée à sa part des trades. Des totaux, vrais à toute taille ; un segment sous le minimum n'est pas examiné.",
+  "brain.why.winrate_trap":
+    "Une condition dont le taux de réussite dépasse le reste d'au moins 10 points, mais dont le résultat net par trade est plus faible, intervalle excluant zéro.",
+  "brain.why.combo":
+    "À l'intérieur d'une condition, une seconde est comparée au reste ; chaque combinaison testée compte dans la correction des tests multiples, et seul un écart qui garde son sens sur les 30 % de séances les plus récentes est affiché.",
+  "brain.why.risk_vs_quality":
+    "Corrélation de Spearman entre ta note de setup et ton risque (multiple de ta médiane), bootstrap par séances.",
+  "brain.why.process_outcome":
+    "Processus propre (aucune erreur, note 4–5, plan tenu) comparé à un processus signalé, quel que soit le résultat.",
+  "brain.why.plan_adherence":
+    "Trades dont le bilan dit le plan renié comparés aux trades où il a été tenu.",
+  "brain.why.mistake_trend":
+    "Fréquence de l'erreur sur tes 40 % de séances les plus récentes comparée à avant, bootstrap par séances.",
+  "brain.why.planned_risk":
+    "Risque mesuré comparé au risque prévu à l'entrée (intention du trade).",
+  "brain.why.untagged_signature":
+    "Une séquence observable de la bibliothèque d'erreurs comparée à la fréquence où tu coches l'erreur correspondante.",
+  "brain.why.missed_avoided":
+    "Les setups manqués que tu as notés après coup comme perdants. Hypothétique : notés après coup.",
+  "brain.disc.after_loss_outcome.lower.title": "Après une perte, ton trade suivant fait moins bien",
+  "brain.disc.after_loss_outcome.lower.body":
+    "Juste après une perte vérifiée dans la même séance, ton trade suivant fait en moyenne {value} ({n} trades, {sessions} séances), contre {baseline} juste après un gain ({nCompare} trades). Écart {diff} (intervalle à 95 % : {low} à {high}).",
+  "brain.disc.after_loss_outcome.higher.title": "Après une perte, ton trade suivant fait mieux",
+  "brain.disc.after_loss_outcome.higher.body":
+    "Juste après une perte vérifiée dans la même séance, ton trade suivant fait en moyenne {value} ({n} trades, {sessions} séances), contre {baseline} juste après un gain ({nCompare} trades). Écart {diff} (intervalle à 95 % : {low} à {high}).",
+  "brain.disc.loss_concentration.higher.title": "{segment} porte {value} de tes pertes",
+  "brain.disc.loss_concentration.higher.body":
+    "{segment} : {n} trades, {baseline} de tes trades, mais {value} de toutes tes pertes ({impact}).",
+  "brain.disc.winrate_trap.lower.title":
+    "{key} : un taux de réussite plus haut qui cache un résultat plus faible",
+  "brain.disc.winrate_trap.lower.body":
+    "{key} gagne {winRate} % des trades décidés contre {winRateRest} % ailleurs, mais fait en moyenne {value} par trade contre {baseline} ({n} contre {nCompare} trades). Écart {diff} (intervalle à 95 % : {low} à {high}).",
+  "brain.disc.combo.lower.title": "{v1} fait moins bien en {v2}",
+  "brain.disc.combo.lower.body":
+    "Dans {v1}, les trades en {v2} font en moyenne {value} ({n} trades, {sessions} séances), contre {baseline} pour le reste de {v1} ({nCompare} trades). Écart {diff} (intervalle à 95 % : {low} à {high}).",
+  "brain.disc.combo.higher.title": "{v1} fait mieux en {v2}",
+  "brain.disc.combo.higher.body":
+    "Dans {v1}, les trades en {v2} font en moyenne {value} ({n} trades, {sessions} séances), contre {baseline} pour le reste de {v1} ({nCompare} trades). Écart {diff} (intervalle à 95 % : {low} à {high}).",
+  "brain.disc.risk_vs_quality.lower.title":
+    "Ton risque monte quand la qualité de tes setups baisse",
+  "brain.disc.risk_vs_quality.lower.body":
+    "Sur {n} trades et {sessions} séances, note de setup et risque (multiple de ta médiane, {median}) évoluent en sens inverse : {value} (intervalle à 95 % : {low} à {high}).",
+  "brain.disc.risk_vs_quality.higher.title": "Ton risque monte avec la qualité de tes setups",
+  "brain.disc.risk_vs_quality.higher.body":
+    "Sur {n} trades et {sessions} séances, note de setup et risque (multiple de ta médiane, {median}) évoluent ensemble : {value} (intervalle à 95 % : {low} à {high}).",
+  "brain.disc.process_outcome.higher.title":
+    "Tes entrées propres font mieux que tes entrées signalées",
+  "brain.disc.process_outcome.higher.body":
+    "Les trades au processus propre font en moyenne {value} ({n} trades), les signalés {baseline} ({nCompare} trades). {luckyWinsShare} de tes gains viennent d'un processus signalé ; {cleanLosses} pertes ont suivi un processus propre. Écart {diff} (intervalle à 95 % : {low} à {high}).",
+  "brain.disc.process_outcome.lower.title":
+    "Tes entrées signalées font mieux que tes entrées propres",
+  "brain.disc.process_outcome.lower.body":
+    "Les trades au processus propre font en moyenne {value} ({n} trades), les signalés {baseline} ({nCompare} trades). {luckyWinsShare} de tes gains viennent d'un processus signalé ; {cleanLosses} pertes ont suivi un processus propre. Écart {diff} (intervalle à 95 % : {low} à {high}).",
+  "brain.disc.plan_adherence.lower.title": "Quand tu quittes ton plan, les résultats baissent",
+  "brain.disc.plan_adherence.lower.body":
+    "Les trades notés hors plan font en moyenne {value} ({n} trades), ceux dans le plan {baseline} ({nCompare} trades). Écart {diff} (intervalle à 95 % : {low} à {high}).",
+  "brain.disc.plan_adherence.higher.title": "Tes trades hors plan font mieux que ceux dans le plan",
+  "brain.disc.plan_adherence.higher.body":
+    "Les trades notés hors plan font en moyenne {value} ({n} trades), ceux dans le plan {baseline} ({nCompare} trades). Écart {diff} (intervalle à 95 % : {low} à {high}).",
+  "brain.disc.mistake_trend.lower.title": "{mistake} recule",
+  "brain.disc.mistake_trend.lower.body":
+    "Cochée sur {value} des trades depuis le {since} ({n} trades), contre {baseline} avant ({nCompare} trades). Écart {diff} (intervalle à 95 % : {low} à {high}).",
+  "brain.disc.mistake_trend.higher.title": "{mistake} progresse",
+  "brain.disc.mistake_trend.higher.body":
+    "Cochée sur {value} des trades depuis le {since} ({n} trades), contre {baseline} avant ({nCompare} trades). Écart {diff} (intervalle à 95 % : {low} à {high}).",
+  "brain.disc.planned_risk.higher.title": "Tu prends plus de risque que tu n'en prévois",
+  "brain.disc.planned_risk.higher.body":
+    "Sur {n} trades au risque prévu, le risque mesuré vaut {value} le plan en médiane ; {share} le dépassent de plus de 10 %.",
+  "brain.disc.untagged_signature.lower.title":
+    "{error} : observé {n} fois, déclaré {nCompare} fois",
+  "brain.disc.untagged_signature.lower.body":
+    "{n} trades montrent la séquence de cette erreur, mais seuls {value} d'entre eux portent l'étiquette « {tag} ». Ensemble, ils ont rendu {impact}.",
+  "brain.disc.missed_avoided.lower.title":
+    "Certaines de tes meilleures décisions ont été de ne pas trader",
+  "brain.disc.missed_avoided.lower.body":
+    "{n} des setups que tu as laissés passer ont été notés après coup comme perdants ({share} des setups manqués notés), pour {value} au total. Hypothétique : noté après coup.",
+  "brain.err.revenge": "Revenge trading",
+  "brain.err.post_win_escalation": "Escalade après des gains",
+  "brain.err.oversize": "Position surdimensionnée",
+  "brain.err.overtrading": "Overtrading",
+  "brain.err.premature_exit": "Sortie prématurée",
+  "brain.err.low_quality_entry": "Entrée de faible qualité",
+  "brain.err.plan_deviation": "Trade hors plan",
+  "brain.err.risk_above_plan": "Risque au-dessus du plan",
+  "brain.err.fomo": "FOMO",
+  "brain.err.chasing": "Entrée poursuivie",
+  "brain.err.no_stop": "Sans stop-loss",
+  "brain.err.holding": "Position tenue trop longtemps",
+  "brain.err.averaging": "Moyenne à la baisse",
+  "brain.err.context_ignored": "Contexte de marché ignoré",
+  "brain.err.htf_misread": "Contexte HTF mal lu",
+  "brain.err.dol_misread": "Draw on Liquidity mal identifié",
+  "brain.err.stop_placement": "Placement du stop",
+  "brain.err.target_placement": "Placement de l'objectif",
+  "brain.err.no_confirmation": "Entrée sans confirmation",
+  "brain.err.news_misread": "Annonce macro mal interprétée",
+  "brain.err.bias_flip": "Biais changé en cours de séance",
+  "brain.lib.title": "Bibliothèque d'erreurs",
+  "brain.lib.observed": "{n} observées",
+  "brain.lib.declared": "{n} déclarées",
+  "brain.lib.mode.signature": "Observable dans tes données",
+  "brain.lib.mode.declared": "Déclarée seulement",
+  "brain.lib.mode.needs_data": "Demande une donnée que le journal ne porte pas encore",
+  "brain.need.htf": "le contexte HTF de chaque trade",
+  "brain.need.dol": "la liquidité visée par trade",
+  "brain.need.stop_price": "le prix du stop",
+  "brain.need.target_price": "le prix de l'objectif",
+  "brain.need.confirmation": "la confirmation d'entrée",
+  "brain.need.news_thesis": "ta thèse autour de l'annonce",
+  "brain.need.session_bias": "le biais de séance et ses changements",
+  "brain.lib.family.psychology": "Psychologie",
+  "brain.lib.family.risk": "Risque",
+  "brain.lib.family.entry": "Entrée",
+  "brain.lib.family.exit": "Sortie",
+  "brain.lib.family.discipline": "Discipline",
+  "brain.lib.family.context": "Contexte",
+  "brain.mode.explore": "Explorer",
+  "brain.mode.discoveries": "Découvertes",
+  "brain.mode.simulate": "Simuler",
+  "brain.mode.evolution": "Évolution",
+  "brain.modes": "Vues",
+  "brain.exit": "Retour à TradeVault",
+  "brain.sound.on": "Son activé",
+  "brain.sound.off": "Son coupé",
+  "brain.fullscreen": "Plein écran",
+  "brain.dimensions": "Dimensions",
+  "brain.globalView": "Vue globale",
+  "brain.dim.setups": "Setups",
+  "brain.dim.instruments": "Instruments",
+  "brain.dim.sessions": "Séances",
+  "brain.dim.mistakes": "Erreurs",
+  "brain.dim.signatures": "Erreurs observées",
+  "brain.dim.risk": "Risque",
+  "brain.dim.market": "Annonces",
+  "brain.dim.jarvis": "Jarvis et recherche",
+  "brain.dim.discoveries": "Découvertes",
+  "brain.dim.time": "Temps",
+  "brain.links": "Liens",
+  "brain.linkFact": "Fait lu dans un enregistrement",
+  "brain.linkMeasured": "Association mesurée",
+  "brain.linkHypothesis": "Hypothèse (pointillés)",
+  "brain.intro.title": "Neural Brain",
+  "brain.intro.trades": "Lecture de {n} trades",
+  "brain.intro.links": "{n} liens, chacun avec sa preuve",
+  "brain.intro.tests": "{n} comparaisons testées",
+  "brain.intro.analyzing": "Comparaisons en cours…",
+  "brain.disc.back": "Toutes les découvertes",
+  "brain.sim.intro":
+    "Rejoue ton propre historique avec un autre comportement. Les trades restent les tiens ; seule la règle change.",
+  "brain.sim.risk": "Risque par trade ×{v}",
+  "brain.sim.off": "Non",
+  "brain.sim.cap": "Trades maximum par séance",
+  "brain.sim.stop": "Arrêter la séance après N pertes d'affilée",
+  "brain.sim.excludeMistakes": "Sans les trades marqués",
+  "brain.sim.none": "Aucun",
+  "brain.sim.setup": "Setup",
+  "brain.sim.allSetups": "Tous",
+  "brain.sim.only": "Seulement celui-ci",
+  "brain.sim.without": "Sans lui",
+  "brain.sim.plan": "Seulement les trades dans le plan",
+  "brain.sim.horizon": "Horizon de projection",
+  "brain.sim.sessions": "{n} séances",
+  "brain.sim.computing": "Calcul…",
+  "brain.sim.historyTitle": "Ton historique, rejoué",
+  "brain.sim.hypotheticalBadge": "Hypothétique",
+  "brain.sim.statisticalBadge": "Simulation statistique",
+  "brain.sim.disclaimer":
+    "Jamais un résultat obtenu : ce que ces trades ont rendu une fois la règle appliquée. Un trader qui s'arrête plus tôt ne vit pas la même séance.",
+  "brain.sim.observed": "Observé",
+  "brain.sim.scenarioCurve": "Scénario",
+  "brain.sim.delta": "Écart",
+  "brain.sim.net": "P&L net",
+  "brain.sim.maxDd": "Drawdown max",
+  "brain.sim.trades": "Trades",
+  "brain.sim.winRate": "Taux de réussite",
+  "brain.sim.expectancy": "Net par trade",
+  "brain.sim.removed": "{n} trades retirés par les règles.",
+  "brain.sim.scaled": "{n} trades remis à l'échelle ; {u} laissés tels quels (risque non mesuré).",
+  "brain.sim.unproven": "{n} séances laissées telles quelles (ordre des trades non prouvé).",
+  "brain.sim.fanTitle": "Où pourraient aller les prochaines séances",
+  "brain.sim.statistical":
+    "Rééchantillonne des séances passées entières ; suppose que l'avenir leur ressemble. Les mêmes tirages servent aux deux comportements.",
+  "brain.sim.median": "Médiane du scénario",
+  "brain.sim.actualMedian": "Médiane du comportement actuel",
+  "brain.sim.band": "Bandes : 25–75 % et 5–95 % des trajectoires",
+  "brain.sim.probLoss":
+    "Trajectoires qui finissent sous zéro : {a} aujourd'hui, {b} avec le scénario ({n} séances rééchantillonnées, {paths} trajectoires).",
+  "brain.sim.tooFew": "Moins de 10 séances : pas encore d'éventail statistique.",
+  "brain.evo.title": "Toi face à toi-même",
+  "brain.evo.empty": "Pas encore assez de séances pour te comparer à toi-même (il en faut {n}).",
+  "brain.evo.since": "Séances récentes depuis le {d}, comparées à avant.",
+  "brain.evo.sig": "observée",
+  "brain.evo.tag": "déclarée",
+  "brain.evo.status.resolved": "Résolue",
+  "brain.evo.status.improving": "En recul",
+  "brain.evo.status.new": "Nouvelle",
+  "brain.evo.status.worsening": "En hausse",
+  "brain.evo.status.persistent": "Persistante",
+  "brain.evo.status.stable": "Pas de changement net",
+  "brain.evo.status.insufficient": "Trop peu",
+  "brain.evo.chartTitle": "Net par trade, mois par mois",
+  "brain.evo.chartHint":
+    "Barre grise : moins de 5 trades ce mois-là, aucune moyenne affichée. Choisis un comportement à droite pour tracer sa fréquence.",
+  "brain.evo.expectancy": "Net par trade",
+  "brain.evo.detail":
+    "{name} : {a} des trades avant (n {na}), {b} récemment (n {nb}). Intervalle à 95 % de l'écart : {ci}.",
+  "brain.evo.noCi": "non calculé (trop peu)",
 };
 
 export default fr;

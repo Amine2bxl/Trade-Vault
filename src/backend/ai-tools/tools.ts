@@ -25,6 +25,7 @@ import {
   type EdgeDimension,
 } from "@/modules/research";
 import { MIN_SESSIONS, MIN_TRADES } from "@/modules/patterns/thresholds";
+import { runDiscoveries } from "@/modules/knowledge";
 
 /**
  * LES OUTILS DE JARVIS — ce qui le sépare d'un texte pré-rempli.
@@ -976,6 +977,79 @@ export const getBehaviorScenario: ToolDefinition = {
   },
 };
 
+// ── get_discoveries ──────────────────────────────────────────────────────────
+
+/**
+ * Les découvertes du Neural Brain (`modules/knowledge`) : comparaisons entre
+ * deux groupes de trades du trader, publiées seulement au-dessus des seuils
+ * (n par groupe, intervalle bootstrap par séances excluant zéro, q de
+ * Benjamini-Hochberg sur TOUS les tests). Lecture seule, même calcul que
+ * l'écran : Jarvis ne fait que formuler ce que le moteur a établi.
+ */
+export const getDiscoveries: ToolDefinition = {
+  name: "get_discoveries",
+  description:
+    "Findings from the trader's Neural Brain: tested comparisons between two groups of their " +
+    "own trades (two mistakes tagged together vs either alone, risk right after a loss vs " +
+    "after a win, 3rd+ trade of a session vs the first two, setup grade 4-5 vs 1-2, " +
+    "confidence 75+ vs under 50, EdgeLab conditions) plus data gaps. A finding is returned " +
+    "only when each group reaches the minimum sample, the 95% session-bootstrap interval " +
+    "excludes zero and the Benjamini-Hochberg q stays under alpha across ALL tests. Quote " +
+    "each with its n, sessions, interval and q; it is an ASSOCIATION, never a cause; name " +
+    "the listed alternative explanations and the experiment that would settle it. An empty " +
+    "list is a result: nothing passed the thresholds. Args: days (default 365).",
+  inputSchema: {
+    type: "object",
+    properties: {
+      days: { type: "number", description: "Window in calendar days (max 1825)." },
+    },
+    additionalProperties: false,
+  },
+  sideEffect: false,
+  source: "local",
+  async execute(input, ctx) {
+    const args = (input ?? {}) as Record<string, unknown>;
+    const trades = await tradesDe(ctx, { jours: entier(args.days, 365, LIMITES.joursMax) });
+    const run = runDiscoveries({ trades, accountKey: ctx.accountId ?? "main" });
+    return {
+      method: "two-group session-block bootstrap, Benjamini-Hochberg across all tests",
+      tradesRead: trades.length,
+      comparisonsTested: run.tests,
+      alpha: run.alpha,
+      version: run.version,
+      findings: run.discoveries.slice(0, 12).map((d) => ({
+        id: d.id,
+        detector: d.detector,
+        category: d.category,
+        direction: d.direction,
+        params: d.params,
+        unit: d.evidence.unit,
+        n: d.evidence.n,
+        sessions: d.evidence.sessions,
+        nCompare: d.evidence.nCompare,
+        sessionsCompare: d.evidence.sessionsCompare,
+        value: d.evidence.value,
+        baseline: d.evidence.baseline,
+        diff: d.evidence.diff,
+        interval95: d.evidence.low === null ? null : [d.evidence.low, d.evidence.high],
+        q: d.evidence.q,
+        fragile: d.fragile,
+        confidence: d.confidence,
+        recentPeriodCheck: d.validation,
+        impact: d.impact,
+        hypothetical: d.hypothetical,
+        alternatives: d.alternatives,
+        experiment: d.experiment,
+      })),
+      truncated: (trades as { truncated?: boolean }).truncated ?? false,
+      limits: [
+        "Associations observed in the trader's own journal, never causes.",
+        "Comparisons below the minimum sample are not run, not reported as zero.",
+      ],
+    };
+  },
+};
+
 /** Les outils, dans l'ordre où ils servent. */
 export const JARVIS_TOOL_DEFS: readonly ToolDefinition[] = [
   getProfile,
@@ -986,6 +1060,7 @@ export const JARVIS_TOOL_DEFS: readonly ToolDefinition[] = [
   getEdgeScore,
   getEdgeConditions,
   getBehaviorScenario,
+  getDiscoveries,
   searchMemory,
   // Marché (`market.ts`) : arithmétique des contrats et calendrier économique.
   getContractMath,

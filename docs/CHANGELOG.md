@@ -3,6 +3,33 @@
 Journal des changements **structurels** (pas des features ni des correctifs,
 qui vivent dans l'historique git et les PR).
 
+## 2026-11-21 — Neural Brain v2 (environnement immersif)
+
+- `modules/knowledge` : `behavior.ts` (séquences prouvées, bibliothèque
+  d'erreurs et signatures observables), onze détecteurs de plus
+  (`DISCOVERY_VERSION` 2 : impact, validation chronologique, confiance),
+  `simulate.ts` (scénarios hypothétiques, éventail statistique),
+  `evolution.ts` (le trader face à lui-même), Spearman par séances.
+- `features/brain` : plein écran au-dessus de l'app, rendu WebGL2 maison
+  (`gl/`), quatre modes, Worker de calcul, sons Web Audio ; `GraphCanvas`
+  remplacé par `BrainScene`.
+- Sources : bilans (`trade_reflection`) et intentions (`trade_intent`).
+- Exception de lumière du canevas : `DESIGN_SYSTEM.md` §1.
+
+## 2026-11-21 — Neural Brain (lot 1)
+
+- **Nouveau moteur pur `modules/knowledge`** : graphe de connaissance DÉRIVÉ
+  à l'affichage des sources existantes (aucune table, aucune copie), chaque
+  lien avec sa provenance ; découvertes testées (bootstrap par séances,
+  Benjamini-Hochberg global) ; disposition 3D seedée ; niveau de détail.
+- **Nouvelle section et page `brain`** (`PAGES`, `SECTIONS`, `pageModules`,
+  `navigation`) : `features/brain/`, banc `/dev/ui?screen=brain`.
+- **Liens profonds** : `?open=<id>` ouvre la fiche d'un trade (Journal) ou
+  d'un setup manqué ; `tv:open-jarvis` accepte `conversationId`.
+- **Jarvis** : outil en lecture seule `get_discoveries` (douze outils).
+- **Seuil** : `MIN_GROUP_SESSIONS` (5) dans `modules/patterns/thresholds`.
+- Le test du langage causal surveille aussi les clés `brain.`.
+
 ## 2026-11-15 — Pages en un temps, pleine largeur, onboarding épuré
 
 - **Chargement en un temps** : plus de squelettes de page (`PageLoader` :

@@ -34,6 +34,7 @@ Ce qui ne se prouve pas dans le code — validation humaine requise.
 | Notifications jamais émises | `goal_completed`, `goal_milestone`, `trade_analyzed`, `daily_brief` : déclarées, sans émetteur (Daily Brief automatique non livré) |
 | Simulateur de probabilités | `features/simulator/Simulator.tsx` non monté |
 | Moteur d'insights | `features/jarvis/insights/` testé mais non branché (les suggestions ont été retirées le 2026-11-15) |
+| Neural Brain | Lot 1 livré (graphe dérivé, 3D, découvertes testées, outil Jarvis) ; phases restantes (multimodal, recherche externe, multi-agents, Trader DNA, automatisation) : [`NEURAL_BRAIN.md`](NEURAL_BRAIN.md) §6 |
 | Fondations IA | Routeur d'intentions (`modules/ai/router`), RAG (`ai_embeddings`), `ai_jobs`, catalogue `backend/ai.functions.ts` : sans consommateur — brancher ou retirer |
 | Scale | Statistiques calculées côté client ; agrégats SQL/RPC + pagination à prévoir avant que le volume ne pèse |
 | Traductions | `fr` et `en` complets (~1 750 clés) ; les dix autres langues ~300 clés (repli anglais) |

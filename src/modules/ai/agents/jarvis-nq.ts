@@ -217,6 +217,7 @@ export const AUTONOMOUS_TOOLS: readonly string[] = [
   "get_edge_score",
   "get_edge_conditions",
   "get_behavior_scenario",
+  "get_discoveries",
   "get_contract_math",
   "get_economic_calendar",
 ];
