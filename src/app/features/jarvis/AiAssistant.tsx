@@ -195,7 +195,11 @@ export default function AiAssistant({ trades, page }: AiAssistantProps) {
   // La page Jarvis (nav) ouvre le MÊME overlay — conversation et historique
   // partagés partout. Un seul Jarvis, deux points d'entrée.
   useEffect(() => {
-    const onOpen = () => {
+    const onOpen = (e: Event) => {
+      // Le Neural Brain ouvre une conversation PRÉCISE (son nœud d'origine) ;
+      // sans identifiant, la fenêtre reprend la conversation courante.
+      const id = (e as CustomEvent<{ conversationId?: string } | null>).detail?.conversationId;
+      if (typeof id === "string" && id) setConversationId(id);
       setActiveWorkspace("conversation");
       setOpen(true);
     };

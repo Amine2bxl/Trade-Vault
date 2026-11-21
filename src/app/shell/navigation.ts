@@ -20,6 +20,7 @@ import {
   User,
   Shuffle,
   Cable,
+  Network,
 } from "@/shared/ui/icons";
 import { HIDDEN_PAGES, PAGES, SECTIONS, type Page, type SectionId } from "../types";
 import type { TKey } from "../i18n/translations";
@@ -76,6 +77,7 @@ export const PAGE_META: Record<Page, { labelKey: TKey; icon: typeof LayoutDashbo
   // tirage aléatoire de trajectoires se lit mieux en brassage.
   montecarlo: { labelKey: "nav.montecarlo", icon: Shuffle },
   brokers: { labelKey: "nav.brokers", icon: Cable },
+  brain: { labelKey: "nav.brain", icon: Network },
 };
 
 /** Libellé + icône de chaque section. */
@@ -84,6 +86,7 @@ export const SECTION_META: Record<SectionId, { labelKey: TKey; icon: typeof Layo
   preparation: { labelKey: "nav.groupPreparation", icon: ClipboardCheck },
   journal: { labelKey: "nav.groupJournal", icon: BookOpen },
   analysis: { labelKey: "nav.groupAnalysis", icon: BarChart3 },
+  brain: { labelKey: "nav.brain", icon: Network },
   coach: { labelKey: "nav.jarvis", icon: Bot },
   strategy: { labelKey: "nav.groupStrategy", icon: Map },
   settings: { labelKey: "nav.settings", icon: SettingsIcon },

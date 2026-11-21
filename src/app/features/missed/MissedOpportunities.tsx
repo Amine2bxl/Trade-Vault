@@ -82,6 +82,11 @@ export default function MissedOpportunities() {
   const [items, setItems] = useState<MissedOpportunity[]>([]);
   const [editing, setEditing] = useState<MissedOpportunity | null>(null);
   const [viewing, setViewing] = useState<MissedOpportunity | null>(null);
+  // Lien profond `?open=<id>` (Neural Brain) : la fiche s'ouvre dès que le
+  // setup est chargé, puis le paramètre quitte l'adresse.
+  const openId = useRef<string | null>(
+    typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("open"),
+  );
   const [loading, setLoading] = useState(true);
   const [openIds, setOpenIds] = useState<Set<string>>(new Set());
 
@@ -168,6 +173,18 @@ export default function MissedOpportunities() {
       active = false;
     };
   }, [user?.id, activeId, preview, lang]);
+
+  useEffect(() => {
+    const id = openId.current;
+    if (!id) return;
+    const found = items.find((m) => m.id === id);
+    if (!found) return;
+    openId.current = null;
+    setViewing(found);
+    const url = new URL(window.location.href);
+    url.searchParams.delete("open");
+    window.history.replaceState(window.history.state, "", url.pathname + url.search);
+  }, [items]);
 
   // Live entre appareils : un setup manqué ajouté sur le téléphone apparaît
   // ici sans rafraîchir.

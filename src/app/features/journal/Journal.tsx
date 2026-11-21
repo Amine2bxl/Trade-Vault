@@ -238,6 +238,33 @@ export default function Journal({
   const hasMore = filtered.length > visibleCount;
   const viewing = viewingIdx !== null ? (filtered[viewingIdx] ?? null) : null;
 
+  // Lien profond `?open=<id>` (Neural Brain) : la fiche du trade s'ouvre dès
+  // qu'il est chargé. Masqué par un filtre local (période, setup…), il
+  // s'ouvre quand même, seul : un lien vers un trade mène à CE trade.
+  const [direct, setDirect] = useState<Trade | null>(null);
+  const [openId, setOpenId] = useState<string | null>(() =>
+    typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("open"),
+  );
+  useEffect(() => {
+    const sync = () => setOpenId(new URLSearchParams(window.location.search).get("open"));
+    window.addEventListener("tv:filter", sync);
+    return () => window.removeEventListener("tv:filter", sync);
+  }, []);
+  useEffect(() => {
+    if (!openId) return;
+    const idx = filtered.findIndex((t) => t.id === openId);
+    const found = idx < 0 ? trades.find((t) => t.id === openId) : undefined;
+    if (idx < 0 && !found) return;
+    if (idx >= 0) {
+      if (idx >= visibleCount) setVisibleCount(idx + 1);
+      setViewingIdx(idx);
+    } else setDirect(found!);
+    setOpenId(null);
+    const url = new URL(window.location.href);
+    url.searchParams.delete("open");
+    window.history.replaceState(window.history.state, "", url.pathname + url.search);
+  }, [openId, filtered, trades, visibleCount]);
+
   const handleSort = (key: SortKey) => {
     if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     else {
@@ -911,6 +938,21 @@ export default function Journal({
           hasPrev={viewingIdx > 0}
           hasNext={viewingIdx < filtered.length - 1}
           positionLabel={`${viewingIdx + 1}/${filtered.length}`}
+        />
+      )}
+      {direct && viewingIdx === null && (
+        <TradeDetailModal
+          trades={[direct]}
+          date={direct.date}
+          onClose={() => setDirect(null)}
+          onDelete={(id) => {
+            onDelete(id);
+            setDirect(null);
+          }}
+          onNavigate={() => {}}
+          hasPrev={false}
+          hasNext={false}
+          positionLabel="1/1"
         />
       )}
     </PageContainer>

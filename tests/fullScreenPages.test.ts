@@ -39,6 +39,7 @@ const PAGES = [
   { nom: "Objectifs", chemin: "../src/app/features/goals/Goals.tsx" },
   { nom: "Apparence", chemin: "../src/app/features/settings/Appearance.tsx" },
   { nom: "Brokers", chemin: "../src/app/features/brokers/Brokers.tsx" },
+  { nom: "Neural Brain", chemin: "../src/app/features/brain/NeuralBrain.tsx" },
 ] as const;
 
 describe("les pages ajustées à l'écran", () => {

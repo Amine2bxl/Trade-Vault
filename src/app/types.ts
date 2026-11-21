@@ -29,6 +29,7 @@ export const PAGES = [
   "subscription",
   "montecarlo",
   "brokers",
+  "brain",
 ] as const;
 
 export type Page = (typeof PAGES)[number];
@@ -56,6 +57,8 @@ export const SECTIONS = [
   },
   { id: "journal", pages: ["journal", "calendar", "mistakes", "missed"] },
   { id: "analysis", pages: ["analytics", "seasonality", "reports", "montecarlo"] },
+  // Le graphe de connaissance relie toutes les autres sections : il a la sienne.
+  { id: "brain", pages: ["brain"] },
   { id: "coach", pages: ["insights"] },
   { id: "strategy", pages: ["tradingplan", "goals"] },
   { id: "settings", pages: ["settings", "profile", "appearance", "subscription"] },

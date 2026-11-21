@@ -68,6 +68,7 @@ const Brokers = lazy(() => import("@/app/features/brokers/Brokers"));
 const Jarvis = lazy(() => import("@/app/features/jarvis/Jarvis"));
 
 const MonteCarlo = lazy(() => import("@/app/features/monte-carlo/MonteCarlo"));
+const NeuralBrain = lazy(() => import("@/app/features/brain/NeuralBrain"));
 const Analytics = lazy(() => import("@/app/features/analytics/Analytics"));
 const Mistakes = lazy(() => import("@/app/features/mistakes/Mistakes"));
 const Goals = lazy(() => import("@/app/features/goals/Goals"));
@@ -101,6 +102,7 @@ const IDS = [
   "brokers",
   "jarvis",
   "montecarlo",
+  "brain",
   "analytics",
   "mistakes",
   "goals",
@@ -270,6 +272,7 @@ function DevUiBody({
             {ecran === "brokers" && <Brokers />}
             {ecran === "jarvis" && <Jarvis />}
             {ecran === "montecarlo" && <MonteCarlo trades={trades} />}
+            {ecran === "brain" && <NeuralBrain trades={trades} />}
             {ecran === "analytics" && <Analytics trades={trades} />}
             {ecran === "mistakes" && <Mistakes trades={trades} />}
             {ecran === "goals" && <Goals trades={trades} />}
