@@ -7,6 +7,7 @@ import { intlLocale } from "@/app/i18n/locale";
 import type { TKey } from "@/app/i18n/translations";
 import { measuredR, type Trade } from "@/domain/trade";
 import { BREACH_KEYS, DIRECTION_KEYS, useRFormat } from "./checklistLabels";
+import type { SessionState } from "./sessionState";
 import {
   tradeBreaches,
   type DayFacts,
@@ -345,5 +346,40 @@ export function GatePreview({
       )}
       {children}
     </section>
+  );
+}
+
+const STATE_KEYS: Record<SessionState, TKey> = {
+  preparation: "chk.state.preparation",
+  ready: "chk.state.ready",
+  active: "chk.state.active",
+  paused: "chk.state.paused",
+  completed: "chk.state.completed",
+  locked: "chk.state.locked",
+};
+
+const STATE_TONES: Record<SessionState, string> = {
+  preparation: "border-[var(--tv-border)] text-slate-400",
+  ready: "border-amber-500/30 text-amber-300",
+  active:
+    "border-[var(--tv-border-accent)] bg-[rgb(var(--tv-accent-rgb)/0.10)] text-[var(--tv-highlight)]",
+  paused: "border-amber-500/30 bg-amber-500/10 text-amber-300",
+  completed: "border-[var(--tv-border)] text-slate-400",
+  locked: "border-red-500/30 bg-red-500/10 text-red-300",
+};
+
+/** L'état de la séance en une pastille : PRÉPARATION … VERROUILLÉE. */
+export function SessionStateChip({ state }: { state: SessionState }) {
+  const { t } = useT();
+  return (
+    <span
+      role="status"
+      className={cn(
+        "tv-label inline-flex items-center rounded-lg border px-2 py-0.5",
+        STATE_TONES[state],
+      )}
+    >
+      {t(STATE_KEYS[state])}
+    </span>
   );
 }

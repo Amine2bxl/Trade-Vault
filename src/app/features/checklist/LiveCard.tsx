@@ -3,7 +3,7 @@ import { Button, Card, Textarea } from "@/shared/ui";
 import { cn } from "@/shared/ui/cn";
 import { useT } from "@/app/i18n/LanguageContext";
 import { RRBadge, TradeLines } from "./checklistParts";
-import { biasTone, END_KEYS, useBiasWord } from "./checklistLabels";
+import { biasTone, END_KEYS, LIMIT_KEYS, useBiasWord } from "./checklistLabels";
 import EntryGate from "./EntryGate";
 import PlanLadder from "./PlanLadder";
 import { planLadder } from "./ladderGeometry";
@@ -19,6 +19,13 @@ import {
   type GateQuestion,
   type SessionDay,
 } from "./sessionPlan";
+import {
+  PAUSE_MINUTES,
+  type BehaviorSignal,
+  type LimitSplit,
+  type SessionState,
+} from "./sessionState";
+import { SessionStateChip } from "./checklistParts";
 
 /**
  * SÉANCE — l'écran qu'on garde ouvert à côté du graphique.
@@ -32,27 +39,39 @@ import {
 interface Props {
   day: SessionDay;
   facts: DayFacts;
-  blockers: Blocker[];
+  /** Limites atteintes, séparées en bloquantes / averties / franchies par dérogation. */
+  limits: LimitSplit;
   blockerText: (b: Blocker) => string;
+  state: SessionState;
+  /** Heure locale de fin de pause (`HH:MM`), quand la séance est en pause. */
+  pauseEnds: string | null;
+  signals: BehaviorSignal[];
   questions: GateQuestion[];
   minRR: number | null;
   onLogTrade: () => void;
   onSwitchB: () => void;
   onEnd: (reason: EndReason) => void;
   onChangePlan: (reason: string) => void;
+  onOverride: (limit: Blocker, reason: string) => void;
+  onPause: () => void;
 }
 
 export default function LiveCard({
   day,
   facts,
-  blockers,
+  limits,
   blockerText,
+  state,
+  pauseEnds,
+  signals,
   questions,
   minRR,
   onLogTrade,
   onSwitchB,
   onEnd,
   onChangePlan,
+  onOverride,
+  onPause,
 }: Props) {
   const { t } = useT();
   const biasWord = useBiasWord();
@@ -66,7 +85,13 @@ export default function LiveCard({
   );
   const ladder =
     drawn && (drawn.levels.find((l) => l.kind === "target")?.r ?? 0) > 0 ? drawn : null;
-  const first = blockers[0];
+  const first = limits.blocking[0];
+  const paused = state === "paused";
+  const blockedText = first
+    ? blockerText(first)
+    : paused
+      ? t("chk.blockPaused").replace("{time}", pauseEnds ?? "")
+      : null;
 
   // Les niveaux : la carte quand les prix se lisent, sinon les niveaux tels
   // qu'écrits — on n'invente pas une carte. Rendus dans la carte sur
@@ -161,14 +186,17 @@ export default function LiveCard({
               {day.scenarioAt && ` · ${t("chk.altActive").replace("{time}", day.scenarioAt)}`}
             </p>
           </div>
-          {!observation && (
-            <div className="text-right">
-              <div className="tv-figure text-xl text-white">
-                {facts.count}/{plan.maxTrades}
+          <div className="flex flex-col items-end gap-1.5 text-right">
+            <SessionStateChip state={state} />
+            {!observation && (
+              <div>
+                <span className="tv-figure text-xl text-white">
+                  {facts.count}/{plan.maxTrades}
+                </span>{" "}
+                <span className="tv-label text-slate-500">{t("chk.trades")}</span>
               </div>
-              <span className="tv-label text-slate-500">{t("chk.trades")}</span>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         {plan.narrative.trim() && (
@@ -183,28 +211,63 @@ export default function LiveCard({
         <p
           className={cn(
             "text-sm font-semibold",
-            !first
+            !blockedText
               ? "text-[var(--tv-highlight)]"
               : // Ne pas trader était le plan : un choix tenu, pas une alerte.
                 first === "observation"
                 ? "text-slate-300"
-                : first === "window"
+                : first === "window" || !first
                   ? "text-amber-300"
                   : "text-red-400",
           )}
         >
-          {first ? blockerText(first) : t("chk.readyLine")}
+          {blockedText ?? t("chk.readyLine")}
         </p>
+
+        {/* Averties : affichées, rien ne se ferme. Franchies : la trace reste. */}
+        {limits.warnings.map((w) => (
+          <p key={w} className="text-xs font-semibold text-amber-300">
+            {blockerText(w)}
+          </p>
+        ))}
+        {limits.overridden.length > 0 && (
+          <p className="text-xs text-slate-400">
+            {t("chk.overridden").replace(
+              "{list}",
+              limits.overridden.map((o) => t(LIMIT_KEYS[o])).join(", "),
+            )}
+          </p>
+        )}
+
+        {/* Une invitation, pas un diagnostic : la pause se choisit. */}
+        {!paused && signals.length > 0 && !observation && (
+          <div className="flex flex-col gap-2 rounded-xl border border-amber-500/25 bg-amber-500/10 px-3 py-2.5 sm:flex-row sm:items-center">
+            <p className="min-w-0 flex-1 text-sm text-amber-200">
+              {t(
+                signals.includes("reentryUrge") ? "chk.signalReentry" : "chk.signalLossStreak",
+              ).replace("{n}", String(PAUSE_MINUTES))}
+            </p>
+            <Button variant="subtle" size="sm" className="shrink-0" onClick={onPause}>
+              {t("chk.pause").replace("{n}", String(PAUSE_MINUTES))}
+            </Button>
+          </div>
+        )}
 
         <TradeLines facts={facts} plan={day.plan} scenario={day.scenario} onlyOff />
 
         {!observation && (
           <div className="space-y-2">
-            <EntryGate
-              questions={questions}
-              blocked={first ? blockerText(first) : null}
-              onGo={onLogTrade}
-            />
+            <EntryGate questions={questions} blocked={blockedText} onGo={onLogTrade} />
+            {/* Une limite bloquante se franchit — jamais en silence. */}
+            {first && first !== "observation" && (
+              <ReasonPanel
+                trigger={t("chk.override")}
+                title={t("chk.overrideTitle").replace("{limit}", t(LIMIT_KEYS[first]))}
+                hint={t("chk.overrideHint")}
+                placeholder={t("chk.overrideReasonPh")}
+                onConfirm={(reason) => onOverride(first, reason)}
+              />
+            )}
             {/* Encoder un trade ne demande jamais de repasser par la porte : le
               trade est pris, il doit entrer au journal sans détour. */}
             <Button variant="subtle" size="sm" className="w-full" onClick={onLogTrade}>
@@ -244,7 +307,13 @@ export default function LiveCard({
           </div>
         </div>
 
-        <ChangePlanPanel onConfirm={onChangePlan} />
+        <ReasonPanel
+          trigger={t("chk.changePlan")}
+          title={t("chk.changeTitle")}
+          hint={t("chk.changeHint")}
+          placeholder={t("chk.changeReasonPh")}
+          onConfirm={onChangePlan}
+        />
       </Card>
 
       <aside className="hidden space-y-4 lg:sticky lg:top-24 lg:block">
@@ -266,15 +335,29 @@ export default function LiveCard({
 }
 
 /**
- * Changer de plan en séance — le seul geste lent de l'écran, et c'est voulu.
+ * Les deux gestes lents de l'écran, et c'est voulu : changer de plan en
+ * séance, et franchir une limite bloquante.
  *
  * Les journaux le montrent : la perte typique commence par un biais retourné
- * EN SÉANCE (« ah non, finalement… »). Le geste reste possible, mais il coûte :
- * un motif écrit d'au moins `MIN_CHANGE_REASON` caractères, puis une attente de
- * `CHANGE_COOLDOWN_S` secondes avant de pouvoir confirmer. Le motif est gardé
- * et relu au bilan. Le compte à rebours est un texte, pas une animation.
+ * EN SÉANCE (« ah non, finalement… »), ou une limite « juste une fois ». Le
+ * geste reste possible, mais il coûte : un motif écrit d'au moins
+ * `MIN_CHANGE_REASON` caractères, puis une attente de `CHANGE_COOLDOWN_S`
+ * secondes avant de pouvoir confirmer. Le motif est gardé et relu au bilan.
+ * Le compte à rebours est un texte, pas une animation.
  */
-function ChangePlanPanel({ onConfirm }: { onConfirm: (reason: string) => void }) {
+function ReasonPanel({
+  trigger,
+  title,
+  hint,
+  placeholder,
+  onConfirm,
+}: {
+  trigger: string;
+  title: string;
+  hint: string;
+  placeholder: string;
+  onConfirm: (reason: string) => void;
+}) {
   const { t } = useT();
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState("");
@@ -299,7 +382,7 @@ function ChangePlanPanel({ onConfirm }: { onConfirm: (reason: string) => void })
         onClick={() => setOpen(true)}
         className="-my-2 inline-flex min-h-[36px] items-center text-xs font-semibold text-slate-500 underline decoration-dotted underline-offset-2 hover:text-slate-300"
       >
-        {t("chk.changePlan")}
+        {trigger}
       </button>
     );
   }
@@ -308,14 +391,14 @@ function ChangePlanPanel({ onConfirm }: { onConfirm: (reason: string) => void })
   const ready = short <= 0 && left <= 0;
   return (
     <div className="space-y-2.5 rounded-xl border border-amber-500/25 bg-amber-500/10 p-3">
-      <p className="text-sm font-bold text-amber-300">{t("chk.changeTitle")}</p>
-      <p className="tv-prose text-slate-300">{t("chk.changeHint")}</p>
+      <p className="text-sm font-bold text-amber-300">{title}</p>
+      <p className="tv-prose text-slate-300">{hint}</p>
       <Textarea
         rows={2}
         value={reason}
         autoFocus
-        aria-label={t("chk.changeReasonPh")}
-        placeholder={t("chk.changeReasonPh")}
+        aria-label={placeholder}
+        placeholder={placeholder}
         onChange={(e) => setReason(e.target.value)}
       />
       <div className="flex flex-wrap items-center gap-2">

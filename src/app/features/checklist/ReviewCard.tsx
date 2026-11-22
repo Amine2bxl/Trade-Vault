@@ -8,7 +8,7 @@ import type { TKey } from "@/app/i18n/translations";
 import type { SessionVerdict } from "@/modules/discipline";
 import { VERDICT_KEYS, verdictTone } from "@/app/features/journal/TradeExecution";
 import { GatePreview, HistoryLine, SectionLabel, TradeLines } from "./checklistParts";
-import { BREACH_KEYS, END_KEYS } from "./checklistLabels";
+import { BREACH_KEYS, END_KEYS, LIMIT_KEYS } from "./checklistLabels";
 import EntryGate from "./EntryGate";
 import {
   BREACHES,
@@ -101,6 +101,21 @@ export function ReviewCard({ day, facts, verdict, act, observed, onClose }: Revi
               <li key={i} className="text-xs text-slate-300">
                 <span className="tv-figure tv-figure-secondary mr-2 text-slate-500">{c.at}</span>
                 {c.reason ? t("chk.quoted").replace("{text}", c.reason) : "—"}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {day.overrides.length > 0 && (
+        <div className="space-y-1">
+          <span className="tv-label text-red-300">{t("chk.overridesTitle")}</span>
+          <ul className="space-y-0.5">
+            {day.overrides.map((o, i) => (
+              <li key={i} className="text-xs text-slate-300">
+                <span className="tv-figure tv-figure-secondary mr-2 text-slate-500">{o.at}</span>
+                <span className="mr-2 font-semibold text-slate-200">{t(LIMIT_KEYS[o.limit])}</span>
+                {t("chk.quoted").replace("{text}", o.reason)}
               </li>
             ))}
           </ul>

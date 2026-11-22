@@ -7,6 +7,7 @@ import {
   Field,
   Input,
   Modal,
+  ChoiceGroup,
   SelectPicker,
   TimeField,
   Toggle,
@@ -24,6 +25,8 @@ import {
 } from "./checklistDefaults";
 import { getTimeZoneOptions } from "./helpers";
 import { GATE_TOKENS } from "./sessionPlan";
+import { CONFIGURABLE_LIMITS, enforcementOf, type Enforcement } from "./sessionState";
+import { LIMIT_KEYS } from "./checklistLabels";
 
 /**
  * Les réglages de la checklist — hors de l'écran de séance.
@@ -155,6 +158,31 @@ export default function ChecklistSettings({
               </div>
             </Field>
           </div>
+        </section>
+
+        {/* Limite par limite : fermer la porte d'entrée, ou seulement prévenir. */}
+        <section className="space-y-2">
+          <h3 className="tv-label text-slate-500">{t("chk.limitsTitle")}</h3>
+          <p className="text-xs text-slate-500">{t("chk.limitsHint")}</p>
+          <ul className="space-y-1.5">
+            {CONFIGURABLE_LIMITS.map((limit) => (
+              <li key={limit} className="flex items-center gap-3">
+                <span className="min-w-0 flex-1 text-sm text-slate-200">
+                  {t(LIMIT_KEYS[limit])}
+                </span>
+                <ChoiceGroup<Enforcement>
+                  label={t(LIMIT_KEYS[limit])}
+                  value={enforcementOf(limit, config.enforcement)}
+                  options={[
+                    { value: "block", label: t("chk.enforceBlock") },
+                    { value: "warn", label: t("chk.enforceWarn") },
+                  ]}
+                  onChange={(v) => onPatch({ enforcement: { ...config.enforcement, [limit]: v } })}
+                  className="shrink-0"
+                />
+              </li>
+            ))}
+          </ul>
         </section>
 
         <section className="space-y-2.5">

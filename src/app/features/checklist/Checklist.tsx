@@ -40,6 +40,7 @@ import { PhaseSteps } from "./checklistParts";
 import { BREACH_KEYS, END_KEYS, useBiasWord } from "./checklistLabels";
 import { lastTrade, missedPrefill, tradePrefill, tradeReviewPrefill } from "./sessionHandoff";
 import { assessTrade } from "./executionReview";
+import { behaviorSignals, PAUSE_MINUTES, sessionState, splitLimits } from "./sessionState";
 import { assessSession } from "@/modules/discipline";
 import {
   loadTradeIntents,
@@ -111,10 +112,11 @@ interface ChecklistProps {
  * verrou, sa fin de séance et l'heure de son trade doivent parler la même
  * heure, sinon la frise mélange 15:20 et 09:49.
  */
-const hhmmIn = (timeZone: string) => {
-  const p = getTimeInZone(new Date(), timeZone);
+const hhmmOf = (date: Date, timeZone: string) => {
+  const p = getTimeInZone(date, timeZone);
   return `${pad(p.hour)}:${pad(p.minute)}`;
 };
+const hhmmIn = (timeZone: string) => hhmmOf(new Date(), timeZone);
 
 /** « 2,2 », « 2.2 » ou « 1:2.2 » → 2.2 ; `null` sans règle exploitable. */
 function parseMinRR(raw: string): number | null {
@@ -253,7 +255,12 @@ export default function Checklist({ setPage, onAddTrade, onEditTrade, trades }: 
   const readDefaults = useCallback((): DayDefaults => {
     try {
       const p = JSON.parse(localStorage.getItem(LAST_KEY) || "null") as Partial<DayDefaults>;
-      if (p && typeof p.risk === "string") return { risk: p.risk, maxTrades: Number(p.maxTrades) };
+      if (p && typeof p.risk === "string")
+        return {
+          risk: p.risk,
+          maxTrades: Number(p.maxTrades),
+          maxLoss: typeof p.maxLoss === "string" ? p.maxLoss : "",
+        };
     } catch {
       /* défauts vierges */
     }
@@ -398,6 +405,8 @@ export default function Checklist({ setPage, onAddTrade, onEditTrade, trades }: 
      Lue au bilan seulement : intentions (prévu figé) et réflexions des trades
      du jour, en une requête chacune. */
   const reviewing = day.phase === "review" || day.phase === "closed";
+  // En séance aussi : l'envie de reprendre déclarée sur le dernier trade compte.
+  const needsIntel = reviewing || day.phase === "live";
   const [intel, setIntel] = useState<{
     intents: Record<string, TradeIntent>;
     reflections: Record<string, TradeReflection>;
@@ -406,7 +415,7 @@ export default function Checklist({ setPage, onAddTrade, onEditTrade, trades }: 
   useLiveTable("trade_reflection", () => setIntelRev((n) => n + 1));
   const dayIds = facts.trades.map((tr) => tr.id).join(",");
   useEffect(() => {
-    if (!userId || !reviewing || !dayIds) return;
+    if (!userId || !needsIntel || !dayIds) return;
     let active = true;
     const ids = dayIds.split(",");
     void Promise.all([loadTradeIntents(userId, ids), loadTradeReflections(userId, ids)]).then(
@@ -417,7 +426,7 @@ export default function Checklist({ setPage, onAddTrade, onEditTrade, trades }: 
     return () => {
       active = false;
     };
-  }, [userId, reviewing, dayIds, intelRev]);
+  }, [userId, needsIntel, dayIds, intelRev]);
   const sessionVerdict = useMemo(() => {
     if (!reviewing) return null;
     const session = { plan: day.plan, scenario: day.scenario };
@@ -520,7 +529,11 @@ export default function Checklist({ setPage, onAddTrade, onEditTrade, trades }: 
     try {
       localStorage.setItem(
         LAST_KEY,
-        JSON.stringify({ risk: next.plan.risk, maxTrades: next.plan.maxTrades }),
+        JSON.stringify({
+          risk: next.plan.risk,
+          maxTrades: next.plan.maxTrades,
+          maxLoss: next.plan.maxLoss,
+        }),
       );
     } catch {
       /* noop */
@@ -533,6 +546,15 @@ export default function Checklist({ setPage, onAddTrade, onEditTrade, trades }: 
     void pushSession(act({ type: "switchScenario", at: hhmmIn(config.timeZone) }));
   const end = (reason: EndReason) =>
     void pushSession(act({ type: "end", reason, at: hhmmIn(config.timeZone) }));
+  const override = (limit: Blocker, reason: string) =>
+    void pushSession(act({ type: "override", limit, reason, at: hhmmIn(config.timeZone) }));
+  const pause = () =>
+    void pushSession(
+      act({
+        type: "pause",
+        until: new Date(Date.now() + PAUSE_MINUTES * 60_000).toISOString(),
+      }),
+    );
   const closeDay = () => {
     const next = act({ type: "close" });
     if (next.phase === "closed") void pushSession(next, true);
@@ -604,9 +626,32 @@ export default function Checklist({ setPage, onAddTrade, onEditTrade, trades }: 
         return t("chk.blockWindow").replace("{time}", config.startTime);
       case "windowEnded":
         return t("chk.blockWindowEnded").replace("{time}", config.endTime ?? "");
+      case "dailyLoss":
+        return t("chk.blockDailyLoss").replace("{amount}", day.plan.maxLoss.trim());
+      case "riskBreach":
+        return t("chk.blockRisk").replace("{amount}", day.plan.risk.trim());
     }
   };
   const blockers = entryBlockers({ plan: day.plan, facts, window: win.phase, stopAfterLosses });
+  const limits = splitLimits(blockers, config.enforcement, day.overrides);
+  const state = sessionState({
+    phase: day.phase,
+    window: win.phase,
+    blocking: limits.blocking,
+    pausedUntil: day.pausedUntil,
+    nowMs: now,
+  });
+  const lastTradeToday = facts.trades[facts.trades.length - 1];
+  const signals = behaviorSignals({
+    trades: facts.trades,
+    lastReentryUrge: lastTradeToday
+      ? (intel.reflections[lastTradeToday.id]?.reentryUrge ?? null)
+      : null,
+  });
+  const pauseEnds =
+    state === "paused" && day.pausedUntil
+      ? hhmmOf(new Date(day.pausedUntil), config.timeZone)
+      : null;
 
   // Les questions d'entrée, remplies avec le plan EN VIGUEUR (A ou B).
   const questions = useMemo(() => {
@@ -719,8 +764,13 @@ export default function Checklist({ setPage, onAddTrade, onEditTrade, trades }: 
         <LiveCard
           day={day}
           facts={facts}
-          blockers={blockers}
+          limits={limits}
           blockerText={blockerText}
+          state={state}
+          pauseEnds={pauseEnds}
+          signals={signals}
+          onOverride={override}
+          onPause={pause}
           questions={questions}
           minRR={minRR}
           onLogTrade={() => encodeTrade(false)}

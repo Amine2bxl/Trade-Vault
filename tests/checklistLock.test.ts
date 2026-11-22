@@ -88,8 +88,10 @@ describe("la porte de sortie explicite", () => {
   test("elle est atteignable depuis l'écran de séance, et branchée sur le réducteur", () => {
     expect(PAGE).toContain('act({ type: "reopenPlan"');
     expect(PAGE).toContain("onChangePlan={changePlan}");
-    expect(LIVE).toContain("<ChangePlanPanel");
-    expect(LIVE).toContain("chk.changePlan");
+    // Le panneau à motif (partagé avec la dérogation) porte le changement de plan.
+    expect(LIVE).toMatch(
+      /<ReasonPanel\s+trigger=\{t\("chk\.changePlan"\)\}[^>]*?onConfirm=\{onChangePlan\}/,
+    );
   });
 
   test("le bouton de confirmation attend le motif ET la fin du délai", () => {

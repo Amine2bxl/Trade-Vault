@@ -331,9 +331,10 @@ describe("faits du jour", () => {
 
   test("les blocages se lisent dans les faits", () => {
     const facts = dayFacts([mkTrade({ pnl: -500 })], DATE);
+    // Le trade d'exemple risque 500 pour un plan à 250 : le risque est franchi.
     expect(
       entryBlockers({ plan: SHORT_PLAN, facts, window: "before", stopAfterLosses: 1 }),
-    ).toEqual(["maxTrades", "stopAfterLosses", "window"]);
+    ).toEqual(["maxTrades", "stopAfterLosses", "riskBreach", "window"]);
     const none = dayFacts([], DATE);
     expect(
       entryBlockers({ plan: SHORT_PLAN, facts: none, window: "open", stopAfterLosses: 0 }),

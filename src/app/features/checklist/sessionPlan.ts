@@ -65,6 +65,11 @@ export interface SessionPlan {
   risk: string;
   /** Nombre maximal de trades pour la séance. */
   maxTrades: number;
+  /**
+   * Perte maximale du jour, en devise du compte, saisie telle quelle. Vide =
+   * pas de limite écrite. Atteinte, la séance se verrouille (selon le réglage).
+   */
+  maxLoss: string;
   alt: AltScenario;
 }
 
@@ -101,6 +106,17 @@ export interface PlanChange {
   reason: string;
 }
 
+/**
+ * Une limite franchie en connaissance de cause : laquelle, quand, pourquoi.
+ * Le motif est obligatoire (même longueur que pour changer de plan) : la
+ * dérogation est permise, jamais silencieuse.
+ */
+export interface Override {
+  at: string;
+  limit: Blocker;
+  reason: string;
+}
+
 export interface SessionDay {
   v: 2;
   phase: Phase;
@@ -116,6 +132,10 @@ export interface SessionDay {
   lockLead: number | null;
   /** Les réouvertures du plan EN SÉANCE — la trace des changements de biais. */
   planChanges: PlanChange[];
+  /** Les limites franchies en séance, avec leur motif. */
+  overrides: Override[];
+  /** Fin d'une pause choisie par le trader (instant ISO) ; `null` sans pause. */
+  pausedUntil: string | null;
   /** Scénario actif ; B ne s'active qu'en séance, et seulement s'il était écrit. */
   scenario: Scenario;
   scenarioAt: string | null;
@@ -147,6 +167,8 @@ export type PlanField =
 export interface DayDefaults {
   risk: string;
   maxTrades: number;
+  /** Perte max du jour écrite la dernière fois (`""` = aucune). */
+  maxLoss?: string;
 }
 
 export const MAX_TRADES_CHOICES = [1, 2, 3] as const;
@@ -177,6 +199,7 @@ export function emptyPlan(defaults: DayDefaults): SessionPlan {
     invalidation: "",
     risk: defaults.risk,
     maxTrades: clampTrades(defaults.maxTrades),
+    maxLoss: defaults.maxLoss ?? "",
     alt: emptyAlt(),
   };
 }
@@ -191,6 +214,8 @@ export function emptyDay(defaults: DayDefaults): SessionDay {
     lockedAt: null,
     lockLead: null,
     planChanges: [],
+    overrides: [],
+    pausedUntil: null,
     scenario: "A",
     scenarioAt: null,
     endReason: null,
@@ -358,6 +383,8 @@ export type DayAction =
   | { type: "setReview"; patch: Partial<SessionReview> }
   | { type: "close" }
   | { type: "reopenReview" }
+  | { type: "override"; limit: Blocker; reason: string; at: string }
+  | { type: "pause"; until: string }
   | { type: "reset"; defaults: DayDefaults };
 
 const withSteps = (d: SessionDay): SessionDay => ({ ...d, checked: planSteps(d.plan, d.mood) });
@@ -430,6 +457,24 @@ export function reduceDay(day: SessionDay, action: DayAction): SessionDay {
     case "reopenReview":
       if (day.phase !== "closed") return day;
       return { ...day, phase: "review" };
+    case "override":
+      // Seulement en séance, avec un motif écrit, et une fois par limite.
+      if (
+        day.phase !== "live" ||
+        action.reason.trim().length < MIN_CHANGE_REASON ||
+        day.overrides.some((o) => o.limit === action.limit)
+      )
+        return day;
+      return {
+        ...day,
+        overrides: [
+          ...day.overrides,
+          { at: action.at, limit: action.limit, reason: action.reason.trim() },
+        ],
+      };
+    case "pause":
+      if (day.phase !== "live") return day;
+      return { ...day, pausedUntil: action.until };
     case "reset":
       return emptyDay(action.defaults);
   }
@@ -458,6 +503,7 @@ function readPlan(raw: unknown, defaults: DayDefaults): SessionPlan {
     invalidation: str(p.invalidation),
     risk: typeof p.risk === "string" ? p.risk : defaults.risk,
     maxTrades: clampTrades(p.maxTrades ?? defaults.maxTrades),
+    maxLoss: typeof p.maxLoss === "string" ? p.maxLoss : (defaults.maxLoss ?? ""),
     alt: {
       condition: str(a.condition),
       bias: isDirection(a.bias) ? a.bias : null,
@@ -474,6 +520,26 @@ function readChanges(raw: unknown): PlanChange[] {
     if (typeof x === "string") return [{ at: x, reason: "" }];
     const o = obj(x);
     return typeof o.at === "string" ? [{ at: o.at, reason: str(o.reason) }] : [];
+  });
+}
+
+const BLOCKERS: readonly Blocker[] = [
+  "observation",
+  "maxTrades",
+  "stopAfterLosses",
+  "dailyLoss",
+  "riskBreach",
+  "window",
+  "windowEnded",
+];
+
+function readOverrides(raw: unknown): Override[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.flatMap((x): Override[] => {
+    const o = obj(x);
+    return typeof o.at === "string" && (BLOCKERS as readonly unknown[]).includes(o.limit)
+      ? [{ at: o.at, limit: o.limit as Blocker, reason: str(o.reason) }]
+      : [];
   });
 }
 
@@ -511,6 +577,8 @@ export function normalizeDay(raw: unknown, defaults: DayDefaults): SessionDay {
     lockedAt: typeof r.lockedAt === "string" ? r.lockedAt : null,
     lockLead: typeof r.lockLead === "number" && Number.isFinite(r.lockLead) ? r.lockLead : null,
     planChanges: readChanges(r.planChanges),
+    overrides: phase === "plan" ? [] : readOverrides(r.overrides),
+    pausedUntil: phase === "live" && typeof r.pausedUntil === "string" ? r.pausedUntil : null,
     scenario,
     scenarioAt: scenario === "B" && typeof r.scenarioAt === "string" ? r.scenarioAt : null,
     endReason: isEndReason(r.endReason) ? r.endReason : null,
@@ -531,6 +599,8 @@ export function toSnapshot(day: SessionDay): Record<string, unknown> {
     lockedAt: day.lockedAt,
     lockLead: day.lockLead,
     planChanges: day.planChanges,
+    overrides: day.overrides,
+    pausedUntil: day.pausedUntil,
     scenario: day.scenario,
     scenarioAt: day.scenarioAt,
     endReason: day.endReason,
@@ -578,6 +648,10 @@ export interface DayFacts {
   losses: number;
   /** Somme des R mesurés ; `null` dès qu'un trade n'a pas de risque connu. */
   r: number | null;
+  /** P&L net du jour (total : vrai à toute taille d'échantillon). */
+  pnl: number;
+  /** Risque le plus élevé pris aujourd'hui (0 sans trade). */
+  maxRisk: number;
 }
 
 const byEntry = (a: Trade, b: Trade) =>
@@ -590,11 +664,28 @@ export function dayFacts(trades: readonly Trade[], date: string): DayFacts {
     const m = measuredR(t);
     r = r === null || m === null ? null : r + m;
   }
-  return { trades: day, count: day.length, losses: day.filter((t) => t.pnl < 0).length, r };
+  return {
+    trades: day,
+    count: day.length,
+    losses: day.filter((t) => t.pnl < 0).length,
+    r,
+    pnl: day.reduce((s, t) => s + t.pnl, 0),
+    maxRisk: day.reduce((m, t) => Math.max(m, t.riskAmount > 0 ? t.riskAmount : 0), 0),
+  };
 }
 
 /** Ce qui interdit une nouvelle entrée, du plus fort au plus faible. */
-export type Blocker = "observation" | "maxTrades" | "stopAfterLosses" | "window" | "windowEnded";
+export type Blocker =
+  | "observation"
+  | "maxTrades"
+  | "stopAfterLosses"
+  | "dailyLoss"
+  | "riskBreach"
+  | "window"
+  | "windowEnded";
+
+/** 5 % au-dessus du risque écrit : au-delà, le risque du plan est franchi. */
+export const RISK_TOLERANCE = 0.05;
 
 /** Où en est la fenêtre de séance : pas encore ouverte, ouverte, terminée. */
 export type WindowPhase = "before" | "open" | "after";
@@ -612,6 +703,10 @@ export function entryBlockers(input: {
   if (input.stopAfterLosses > 0 && input.facts.losses >= input.stopAfterLosses) {
     out.push("stopAfterLosses");
   }
+  const maxLoss = parseAmount(input.plan.maxLoss);
+  if (maxLoss !== null && -input.facts.pnl >= maxLoss) out.push("dailyLoss");
+  const risk = parseAmount(input.plan.risk);
+  if (risk !== null && input.facts.maxRisk > risk * (1 + RISK_TOLERANCE)) out.push("riskBreach");
   if (input.window === "before") out.push("window");
   // Fenêtre terminée : le setup du plan, s'il vient maintenant, n'est plus
   // celui du plan. C'est l'heure des entrées tardives et forcées.
