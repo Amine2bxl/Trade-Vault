@@ -1,6 +1,7 @@
 import type { EmotionalState } from "@/app/trading/readiness";
 import type { PlanRespected, ReflectionReason } from "@/app/store/tradeIntel";
 import type { MissedOpportunity } from "@/app/types";
+import type { PlannedLevels } from "@/domain/executionPlan";
 
 /**
  * Le passage de relais entre deux écrans — UNE valeur, lue UNE fois.
@@ -32,6 +33,8 @@ export interface TradePrefill {
   reflectionPlan?: PlanRespected | null;
   reflectionReason?: ReflectionReason | null;
   reflectionNote?: string;
+  /** Les niveaux du plan de séance en prix : figés dans l'intention du trade. */
+  planned?: PlannedLevels;
 }
 
 export type MissedPrefill = Partial<Omit<MissedOpportunity, "id" | "screenshots">>;

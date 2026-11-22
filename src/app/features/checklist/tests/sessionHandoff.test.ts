@@ -107,8 +107,23 @@ describe("du bilan au formulaire de trade", () => {
       intentEmotion: "focused",
       intentPlan: "SHORT → 21 450",
       intentReasoning: "Au-dessus des opens",
+      planned: { direction: "short", entry: 21520, stop: 21580, target: 21450, scenario: "A" },
     });
     expect(p.reflectionPlan).toBeUndefined();
+  });
+
+  test("une journée d'observation ne fige aucun niveau", () => {
+    let d = emptyDay(DEF);
+    d = reduceDay(d, { type: "setPlan", patch: { ...emptyPlan(DEF), bias: "none" } });
+    const p = tradePrefill({
+      day: d,
+      date: "2026-10-30",
+      now: "10:12",
+      last: null,
+      planLine: "",
+      withReview: false,
+    });
+    expect(p.planned).toBeUndefined();
   });
 
   test("depuis le bilan, la réflexion et les erreurs suivent", () => {

@@ -3107,6 +3107,22 @@ const en = {
     "You've reached the {n} setup limit. Too many setups scatter focus. Master these {n} before switching.",
   "upgrade.opening": "Opening…",
   "upgrade.goTier": "Go {tier}",
+  "trade.prices": "Prices and plan",
+  "trade.initialStop": "Initial stop",
+  "trade.initialTarget": "Target",
+  "trade.planLine": "Plan · scenario {s}",
+  "trade.planEntry": "entry",
+  "trade.planStop": "invalidation",
+  "trade.planTarget": "target",
+  "trade.rPlanned": "planned R",
+  "trade.usePlanLevels": "Use the plan's stop and target",
+  "trade.stopSize": "Stop",
+  "trade.rAimed": "Aimed R",
+  "trade.rFromPrices": "R from prices",
+  "trade.riskFromPrices": "Implied risk",
+  "trade.useValue": "Use",
+  "trade.pricesHint":
+    "Optional. With an entry and a stop, R and risk are calculated — nothing replaces your input without a click.",
 };
 
 // The English dict above is the source of truth and the runtime fallback —

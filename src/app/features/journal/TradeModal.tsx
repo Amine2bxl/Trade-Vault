@@ -87,6 +87,8 @@ import { useLiveTable } from "@/app/hooks/useLiveTable";
 import { SymbolLogo } from "@/app/trading/SymbolLogo";
 import { symbolChoices } from "@/app/trading/symbolCatalog";
 import { draftOnlyScreenshots, restoreDraftScreenshots } from "./tradeDraft";
+import { TradePricesSection } from "./TradePricesSection";
+import type { PlannedLevels } from "@/domain/executionPlan";
 
 interface TradeModalProps {
   trade: Trade | null;
@@ -128,6 +130,10 @@ const defaultForm = {
   intentEmotion: null as EmotionalState | null,
   intentReasoning: "",
   intentPlan: "",
+  // Stop et cible réellement posés, en prix ; le plan de séance, figé (lecture seule).
+  initialStop: "",
+  initialTarget: "",
+  planned: null as PlannedLevels | null,
   reflectionPlan: null as PlanRespected | null,
   reflectionReason: null as ReflectionReason | null,
   reflectionNote: "",
@@ -279,6 +285,8 @@ export default function TradeModal({ trade, usedSymbols, onClose, onSave }: Trad
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showIntent, setShowIntent] = useState(false);
   const [showReflection, setShowReflection] = useState(false);
+  // Ouvert d'office quand le trade porte déjà un plan ou des prix : on les voit.
+  const [showPrices, setShowPrices] = useState<boolean | null>(null);
   const [stopPoints, setStopPoints] = useState(() => restoredUiRef.current?.stopPoints ?? "");
   const [pointValue, setPointValue] = useState(() => restoredUiRef.current?.pointValue ?? "20");
 
@@ -304,6 +312,10 @@ export default function TradeModal({ trade, usedSymbols, onClose, onSave }: Trad
           intentEmotion: intent?.emotion ?? f.intentEmotion,
           intentReasoning: intent?.reasoning ?? f.intentReasoning,
           intentPlan: intent?.plan ?? f.intentPlan,
+          initialStop: intent?.initialStop != null ? String(intent.initialStop) : f.initialStop,
+          initialTarget:
+            intent?.initialTarget != null ? String(intent.initialTarget) : f.initialTarget,
+          planned: intent?.planned ?? f.planned,
           reflectionPlan: reflection?.planRespected ?? f.reflectionPlan,
           reflectionReason: reflection?.reason ?? f.reflectionReason,
           reflectionNote: reflection?.note ?? f.reflectionNote,
@@ -409,6 +421,13 @@ export default function TradeModal({ trade, usedSymbols, onClose, onSave }: Trad
     const n = parseFloat(v);
     return Number.isFinite(n) ? n : null;
   };
+
+  const pricesOpen =
+    showPrices ??
+    (form.planned != null ||
+      form.initialStop !== "" ||
+      form.initialTarget !== "" ||
+      (!trade?.broker && (form.entryPrice !== "" || form.exitPrice !== "")));
 
   const calculatedPnl = useMemo(() => {
     if (pnlLocked) return brokerPnl as number;
@@ -627,6 +646,9 @@ export default function TradeModal({ trade, usedSymbols, onClose, onSave }: Trad
       emotion: form.intentEmotion,
       reasoning: form.intentReasoning.trim() ? form.intentReasoning : null,
       plan: form.intentPlan.trim() ? form.intentPlan : null,
+      planned: form.planned,
+      initialStop: optionalNumber(form.initialStop),
+      initialTarget: optionalNumber(form.initialTarget),
     };
     const reflection: TradeReflectionInput = {
       planRespected: form.reflectionPlan,
@@ -665,11 +687,12 @@ export default function TradeModal({ trade, usedSymbols, onClose, onSave }: Trad
           // ne doit pas non plus le perdre (sans `accountId`, un trade modifié
           // depuis un autre compte actif y était réaffecté — voir `tradeToRow`).
           accountId: trade?.accountId,
-          // L'exécution d'un trade importé est éditable ; celle d'un trade saisi
-          // à la main (souvent absente) est conservée telle quelle.
-          quantity: pnlLocked ? optionalNumber(form.quantity) : trade?.quantity,
-          entryPrice: pnlLocked ? optionalNumber(form.entryPrice) : trade?.entryPrice,
-          exitPrice: pnlLocked ? optionalNumber(form.exitPrice) : trade?.exitPrice,
+          // L'exécution est éditable pour tous les trades (le formulaire part
+          // des valeurs enregistrées) ; les frais d'un trade manuel restent ceux
+          // déjà connus.
+          quantity: optionalNumber(form.quantity),
+          entryPrice: optionalNumber(form.entryPrice),
+          exitPrice: optionalNumber(form.exitPrice),
           fees: pnlLocked ? optionalNumber(form.fees) : trade?.fees,
           broker: trade?.broker,
           externalId: trade?.externalId,
@@ -1117,6 +1140,23 @@ export default function TradeModal({ trade, usedSymbols, onClose, onSave }: Trad
                     t("trade.calcHint")
                   )}
                 </p>
+              </Disclosure>
+              <Disclosure title={t("trade.prices")} open={pricesOpen} onChange={setShowPrices}>
+                <TradePricesSection
+                  symbol={form.symbol}
+                  direction={form.direction}
+                  values={form}
+                  onChange={(key, value) => setForm((f) => ({ ...f, [key]: value }))}
+                  planned={form.planned}
+                  executionShownAbove={!!trade?.broker}
+                  riskDollar={riskDollar}
+                  rMultiple={form.rMultiple}
+                  rLocked={pnlLocked}
+                  onUseR={(r) => setForm((f) => ({ ...f, rMultiple: String(r) }))}
+                  onUseRisk={(risk) =>
+                    setForm((f) => ({ ...f, riskAmount: String(risk), riskType: "dollar" }))
+                  }
+                />
               </Disclosure>
             </FormSection>
 

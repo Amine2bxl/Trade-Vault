@@ -21,6 +21,7 @@ import { ToastProvider } from "@/app/contexts/ToastContext";
 import { ConfirmProvider } from "@/app/contexts/ConfirmContext";
 import { PageActionsProvider } from "@/app/contexts/PageActionsContext";
 import { previewTrades } from "@/app/utils/previewTrades";
+import { handOff } from "@/app/utils/handoff";
 import { computeStats } from "@/domain/tradeCalcs";
 import { computeQuantStats } from "@/domain/quantStats";
 import { isPage, type Page, type Trade } from "@/app/types";
@@ -386,9 +387,21 @@ function DashboardHarness({ trades }: { trades: Trade[] }) {
 }
 
 function TradeHarness() {
-  const [open, setOpen] = useState(true);
-  const [saved, setSaved] = useState<unknown>(null);
   const params = new URLSearchParams(location.search);
+  // `?plan` : le formulaire s'ouvre comme depuis la checklist, avec le plan figé.
+  const [open, setOpen] = useState(() => {
+    if (params.has("plan")) {
+      handOff("trade", {
+        symbol: "NQ",
+        direction: "short",
+        riskAmount: "250",
+        intentPlan: "SHORT → 21 450 EQL · FVG 21 520",
+        planned: { direction: "short", entry: 21520, stop: 21560, target: 21450, scenario: "A" },
+      });
+    }
+    return true;
+  });
+  const [saved, setSaved] = useState<unknown>(null);
   const imported = params.has("broker");
   const existing = params.has("edit") || imported;
   const trade = existing

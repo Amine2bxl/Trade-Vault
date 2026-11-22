@@ -8,8 +8,10 @@ import type { Trade } from "@/domain/trade";
 import type { Mistake } from "@/app/trading/mistakeClusters";
 import type { ReflectionReason } from "@/app/store/tradeIntel";
 import type { MissedPrefill, TradePrefill, TradeReviewPrefill } from "@/app/utils/handoff";
+import { hasPlannedLevels, type PlannedLevels } from "@/domain/executionPlan";
 import {
   activePlan,
+  levelPrice,
   parseAmount,
   planRR,
   tradeBreaches,
@@ -63,6 +65,21 @@ export function lastTrade(trades: readonly Trade[]): Trade | null {
   return best;
 }
 
+/**
+ * Le plan EN VIGUEUR (scénario B s'il est actif), lu en prix : zone d'entrée,
+ * invalidation, cible. Un niveau écrit sans prix reste inconnu.
+ */
+export function plannedLevels(day: Pick<SessionDay, "plan" | "scenario">): PlannedLevels {
+  const plan = activePlan(day);
+  return {
+    direction: plan.bias === "long" || plan.bias === "short" ? plan.bias : null,
+    entry: levelPrice(plan.entry),
+    stop: levelPrice(plan.invalidation),
+    target: levelPrice(plan.target),
+    scenario: day.scenario,
+  };
+}
+
 export function tradePrefill(input: {
   day: SessionDay;
   date: string;
@@ -88,6 +105,8 @@ export function tradePrefill(input: {
     intentReasoning: plan.narrative.trim(),
     intentPlan: input.planLine,
   };
+  const planned = plannedLevels(day);
+  if (hasPlannedLevels(planned)) out.planned = planned;
   if (input.withReview && day.review.respected !== null) {
     const { respected, breaches, note } = day.review;
     out.reflectionPlan = respected ? "yes" : "no";

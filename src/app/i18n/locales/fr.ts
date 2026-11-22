@@ -3045,6 +3045,22 @@ const fr: Dict = {
     "Tu as atteint la limite de {n} setups. Trop de setups disperse l'attention. Maîtrise ces {n} avant d'en changer.",
   "upgrade.opening": "Ouverture…",
   "upgrade.goTier": "Passer à {tier}",
+  "trade.prices": "Prix et plan",
+  "trade.initialStop": "Stop initial",
+  "trade.initialTarget": "Cible",
+  "trade.planLine": "Plan · scénario {s}",
+  "trade.planEntry": "entrée",
+  "trade.planStop": "invalidation",
+  "trade.planTarget": "cible",
+  "trade.rPlanned": "R prévu",
+  "trade.usePlanLevels": "Reprendre le stop et la cible du plan",
+  "trade.stopSize": "Stop",
+  "trade.rAimed": "R visé",
+  "trade.rFromPrices": "R par les prix",
+  "trade.riskFromPrices": "Risque implicite",
+  "trade.useValue": "Utiliser",
+  "trade.pricesHint":
+    "Facultatif. Avec une entrée et un stop, le R et le risque se calculent — rien ne remplace ta saisie sans un clic.",
 };
 
 export default fr;
