@@ -30,6 +30,11 @@ import { Modal } from "@/shared/ui";
 import { useLiveTable } from "@/app/hooks/useLiveTable";
 import { useIsNarrowNow } from "@/app/hooks/useIsNarrow";
 import TradeDetailSheet from "./TradeDetailSheet";
+import { TradeExecution } from "./TradeExecution";
+import { loadTodaySession } from "@/app/store/sessions";
+import { sessionFromSnapshot } from "@/app/features/checklist/sessionPlan";
+import { assessTrade, type SessionContext } from "@/app/features/checklist/executionReview";
+import type { ExecutionAssessment } from "@/modules/discipline";
 import {
   TradeConfidence,
   TradeConfluences,
@@ -113,6 +118,33 @@ export default function TradeDetailModal({
       active = false;
     };
   }, [userId, trades, liveRev]);
+  // Le plan verrouillé ce jour-là : la référence du verdict d'exécution.
+  // `undefined` pendant le chargement — aucun verdict ne s'affiche avant.
+  const [session, setSession] = useState<SessionContext | null | undefined>(undefined);
+  useEffect(() => {
+    if (!userId) return;
+    let active = true;
+    void loadTodaySession(userId, date).then((s) => {
+      if (active) setSession(s ? sessionFromSnapshot(date, s.checklistSnapshot) : null);
+    });
+    return () => {
+      active = false;
+    };
+  }, [userId, date]);
+  const assessments = useMemo(() => {
+    const out: Record<string, ExecutionAssessment> = {};
+    if (session === undefined) return out;
+    for (const trade of trades) {
+      out[trade.id] = assessTrade({
+        trade,
+        dayTrades: trades,
+        session,
+        intent: intents[trade.id],
+        reflection: reflections[trade.id],
+      });
+    }
+    return out;
+  }, [trades, session, intents, reflections]);
   // Screenshots are stored as storage paths (or legacy data: URLs) — resolve
   // them all in one batched signed-URL request.
   const screenshotUrls = useScreenshotUrls(trades.flatMap((tr) => tr.screenshots));
@@ -176,6 +208,7 @@ export default function TradeDetailModal({
         onDelete={onDelete}
         intents={intents}
         reflections={reflections}
+        assessments={assessments}
         screenshotUrls={screenshotUrls}
         onOpenShot={(paths, index) => setLightbox({ paths, index })}
       >
@@ -371,6 +404,8 @@ export default function TradeDetailModal({
                 <TradeConfluences trade={trade} />
 
                 <TradeMistakes trade={trade} />
+
+                <TradeExecution tradeId={trade.id} assessment={assessments[trade.id] ?? null} />
 
                 <TradeIntentFlow trade={trade} intent={intent} reflection={reflection} />
 

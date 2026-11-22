@@ -4,6 +4,9 @@ import { Button, Card, Chip, CHIP_ROW, ChoiceGroup, Field, Textarea } from "@/sh
 import { cn } from "@/shared/ui/cn";
 import type { Trade } from "@/domain/trade";
 import { useT } from "@/app/i18n/LanguageContext";
+import type { TKey } from "@/app/i18n/translations";
+import type { SessionVerdict } from "@/modules/discipline";
+import { VERDICT_KEYS, verdictTone } from "@/app/features/journal/TradeExecution";
 import { GatePreview, HistoryLine, SectionLabel, TradeLines } from "./checklistParts";
 import { BREACH_KEYS, END_KEYS } from "./checklistLabels";
 import EntryGate from "./EntryGate";
@@ -27,16 +30,46 @@ import {
  * se faire.
  */
 
+const SESSION_VERDICT_KEYS: Record<SessionVerdict, TKey> = {
+  good_discipline: "exec.goodDiscipline",
+  ...VERDICT_KEYS,
+};
+
+/**
+ * La séance jugée sur son exécution : ne pas trader, ou laisser passer un
+ * setup sans revanche, est une bonne discipline — le P&L ne le montre jamais.
+ */
+function SessionVerdictLine({ verdict }: { verdict: SessionVerdict | null }) {
+  const { t } = useT();
+  if (!verdict) return null;
+  return (
+    <p className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+      <span className="tv-label">{t("exec.session")}</span>
+      <span
+        className={cn(
+          "rounded-lg border px-2.5 py-1 text-[11px] font-semibold",
+          verdictTone(verdict),
+        )}
+      >
+        {t(SESSION_VERDICT_KEYS[verdict])}
+      </span>
+      <span>{t("exec.notPnl")}</span>
+    </p>
+  );
+}
+
 interface ReviewProps {
   day: SessionDay;
   facts: DayFacts;
+  /** Verdict d'exécution de la séance — séparé du P&L ; `null` hors bilan. */
+  verdict: SessionVerdict | null;
   act: (a: DayAction) => SessionDay;
   /** Écarts que les données montrent déjà, proposés au « non ». */
   observed: Breach[];
   onClose: () => void;
 }
 
-export function ReviewCard({ day, facts, act, observed, onClose }: ReviewProps) {
+export function ReviewCard({ day, facts, verdict, act, observed, onClose }: ReviewProps) {
   const { t } = useT();
   const { review } = day;
   const setReview = (patch: Partial<SessionDay["review"]>) => act({ type: "setReview", patch });
@@ -51,6 +84,8 @@ export function ReviewCard({ day, facts, act, observed, onClose }: ReviewProps) 
           </p>
         )}
       </div>
+
+      <SessionVerdictLine verdict={verdict} />
 
       {facts.count > 0 ? (
         <TradeLines facts={facts} plan={day.plan} scenario={day.scenario} />
@@ -141,6 +176,7 @@ export function ReviewCard({ day, facts, act, observed, onClose }: ReviewProps) 
 interface ClosedProps {
   day: SessionDay;
   facts: DayFacts;
+  verdict: SessionVerdict | null;
   history: PlanHistory;
   onReopen: () => void;
   onJournal: () => void;
@@ -156,6 +192,7 @@ interface ClosedProps {
 export function ClosedCard({
   day,
   facts,
+  verdict,
   history,
   onReopen,
   onJournal,
@@ -199,6 +236,7 @@ export function ClosedCard({
           </p>
         </div>
       </div>
+      <SessionVerdictLine verdict={verdict} />
       {review.note.trim() && (
         <p className="text-sm text-slate-200">
           {t("chk.quoted").replace("{text}", review.note.trim())}

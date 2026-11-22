@@ -137,6 +137,9 @@ const defaultForm = {
   reflectionPlan: null as PlanRespected | null,
   reflectionReason: null as ReflectionReason | null,
   reflectionNote: "",
+  // Après le trade, DÉCLARÉ : intensité 1-5 et envie de reprendre tout de suite.
+  intensity: null as number | null,
+  reentryUrge: null as boolean | null,
 };
 
 // L'émotion reprend `EMOTIONAL_STATES` de readiness.ts — un seul vocabulaire.
@@ -319,6 +322,8 @@ export default function TradeModal({ trade, usedSymbols, onClose, onSave }: Trad
           reflectionPlan: reflection?.planRespected ?? f.reflectionPlan,
           reflectionReason: reflection?.reason ?? f.reflectionReason,
           reflectionNote: reflection?.note ?? f.reflectionNote,
+          intensity: reflection?.intensity ?? f.intensity,
+          reentryUrge: reflection?.reentryUrge ?? f.reentryUrge,
         }));
       }
       if (intent) setShowIntent(true);
@@ -654,6 +659,8 @@ export default function TradeModal({ trade, usedSymbols, onClose, onSave }: Trad
       planRespected: form.reflectionPlan,
       reason: form.reflectionReason,
       note: form.reflectionNote.trim() ? form.reflectionNote : null,
+      intensity: form.intensity,
+      reentryUrge: form.reentryUrge,
     };
     try {
       const result = await onSave(
@@ -1461,6 +1468,39 @@ export default function TradeModal({ trade, usedSymbols, onClose, onSave }: Trad
                     rows={2}
                   />
                 </Field>
+                <div className="grid gap-2.5 sm:grid-cols-2">
+                  <Field label={t("trade.intensity")}>
+                    <div className={CHIP_ROW} role="group" aria-label={t("trade.intensity")}>
+                      {[1, 2, 3, 4, 5].map((n) => (
+                        <Chip
+                          key={n}
+                          selected={form.intensity === n}
+                          onClick={() =>
+                            setForm((f) => ({ ...f, intensity: f.intensity === n ? null : n }))
+                          }
+                        >
+                          <span className="tv-figure">{n}</span>
+                        </Chip>
+                      ))}
+                    </div>
+                  </Field>
+                  <Field label={t("trade.reentryUrge")}>
+                    <ChoiceGroup<"yes" | "no">
+                      label={t("trade.reentryUrge")}
+                      value={form.reentryUrge === null ? null : form.reentryUrge ? "yes" : "no"}
+                      options={[
+                        { value: "no", label: t("chk.no") },
+                        { value: "yes", label: t("chk.yes"), tone: "negative" },
+                      ]}
+                      onChange={(v) =>
+                        setForm((f) => {
+                          const next = v === "yes";
+                          return { ...f, reentryUrge: f.reentryUrge === next ? null : next };
+                        })
+                      }
+                    />
+                  </Field>
+                </div>
               </Disclosure>
             </FormSection>
 

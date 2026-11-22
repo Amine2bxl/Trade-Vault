@@ -45,10 +45,16 @@ export interface TradeIntentInput {
   initialTarget?: number | null;
 }
 
+export type ExecutionOverride = "good_execution" | "bad_execution";
+
 export interface TradeReflectionInput {
   planRespected: PlanRespected | null;
   reason: ReflectionReason | null;
   note: string | null;
+  /** Intensité émotionnelle après le trade, 1 à 5 — DÉCLARÉE. Absent = non touché. */
+  intensity?: number | null;
+  /** Envie de reprendre un trade tout de suite — DÉCLARÉE. Absent = non touché. */
+  reentryUrge?: boolean | null;
 }
 
 /** Ce que le formulaire de trade transmet en plus du trade lui-même. */
@@ -77,7 +83,13 @@ export function isIntentEmpty(i: TradeIntentInput | null | undefined): boolean {
 
 export function isReflectionEmpty(r: TradeReflectionInput | null | undefined): boolean {
   if (!r) return true;
-  return !r.planRespected && !r.reason && clean(r.note) == null;
+  return (
+    !r.planRespected &&
+    !r.reason &&
+    clean(r.note) == null &&
+    r.intensity == null &&
+    r.reentryUrge == null
+  );
 }
 
 interface IntentRow {
@@ -104,6 +116,10 @@ interface ReflectionRow {
   plan_respected: string | null;
   reason: string | null;
   note: string | null;
+  execution_override?: string | null;
+  override_note?: string | null;
+  intensity?: number | null;
+  reentry_urge?: boolean | null;
 }
 
 export interface TradeIntent {
@@ -125,6 +141,11 @@ export interface TradeReflection {
   planRespected: PlanRespected | null;
   reason: ReflectionReason | null;
   note: string | null;
+  /** Correction MANUELLE du verdict d'exécution ; le verdict calculé, lui, n'est pas stocké. */
+  executionOverride?: ExecutionOverride | null;
+  overrideNote?: string | null;
+  intensity?: number | null;
+  reentryUrge?: boolean | null;
 }
 
 function fromIntentRow(r: IntentRow): TradeIntent {
@@ -210,6 +231,14 @@ function fromReflectionRow(r: ReflectionRow): TradeReflection {
       ? (r.reason as ReflectionReason)
       : null,
     note: r.note,
+    executionOverride:
+      r.execution_override === "good_execution" || r.execution_override === "bad_execution"
+        ? r.execution_override
+        : null,
+    overrideNote: r.override_note ?? null,
+    intensity:
+      typeof r.intensity === "number" && r.intensity >= 1 && r.intensity <= 5 ? r.intensity : null,
+    reentryUrge: typeof r.reentry_urge === "boolean" ? r.reentry_urge : null,
   };
 }
 
@@ -287,18 +316,51 @@ export async function saveTradeReflection(
   tradeId: string,
   input: TradeReflectionInput,
 ): Promise<boolean> {
+  // Les champs déclarés absents (`undefined`) ne sont PAS nommés : un upsert
+  // PostgREST ne touche que les colonnes envoyées, la correction du verdict
+  // saisie ailleurs survit donc à un enregistrement du formulaire.
+  const row = {
+    user_id: userId,
+    trade_id: tradeId,
+    plan_respected: input.planRespected ?? null,
+    reason: input.reason ?? null,
+    note: clean(input.note),
+    ...(input.intensity !== undefined ? { intensity: input.intensity } : {}),
+    ...(input.reentryUrge !== undefined ? { reentry_urge: input.reentryUrge } : {}),
+  };
+  const { error } = await writeWithPlanFallback(row, (r) =>
+    supabase.from("trade_reflection").upsert(r as never, { onConflict: "trade_id" }),
+  );
+  if (error) {
+    console.error("saveTradeReflection failed", error);
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Corrige À LA MAIN le verdict d'exécution d'un trade (ou retire la
+ * correction avec `null`). Seules ces deux colonnes partent : la réflexion
+ * déjà saisie reste intacte. `false` tant que la migration manque — une
+ * correction ne doit pas sembler enregistrée quand elle ne l'est pas.
+ */
+export async function saveExecutionOverride(
+  userId: string,
+  tradeId: string,
+  override: ExecutionOverride | null,
+  note: string | null,
+): Promise<boolean> {
   const { error } = await supabase.from("trade_reflection").upsert(
     {
       user_id: userId,
       trade_id: tradeId,
-      plan_respected: input.planRespected ?? null,
-      reason: input.reason ?? null,
-      note: clean(input.note),
-    },
+      execution_override: override,
+      override_note: override ? clean(note) : null,
+    } as never,
     { onConflict: "trade_id" },
   );
   if (error) {
-    console.error("saveTradeReflection failed", error);
+    console.error("saveExecutionOverride failed", error);
     return false;
   }
   return true;

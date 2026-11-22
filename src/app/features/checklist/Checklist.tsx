@@ -39,6 +39,14 @@ import { ClosedCard, ReviewCard } from "./ReviewCard";
 import { PhaseSteps } from "./checklistParts";
 import { BREACH_KEYS, END_KEYS, useBiasWord } from "./checklistLabels";
 import { lastTrade, missedPrefill, tradePrefill, tradeReviewPrefill } from "./sessionHandoff";
+import { assessTrade } from "./executionReview";
+import { assessSession } from "@/modules/discipline";
+import {
+  loadTradeIntents,
+  loadTradeReflections,
+  type TradeIntent,
+  type TradeReflection,
+} from "@/app/store/tradeIntel";
 import {
   activePlan,
   BREACHES,
@@ -385,6 +393,48 @@ export default function Checklist({ setPage, onAddTrade, onEditTrade, trades }: 
   }, [userId]);
 
   const facts = useMemo(() => dayFacts(trades, today), [trades, today]);
+
+  /* ══ L'exécution du jour — jugée sur le plan, jamais sur le P&L ══
+     Lue au bilan seulement : intentions (prévu figé) et réflexions des trades
+     du jour, en une requête chacune. */
+  const reviewing = day.phase === "review" || day.phase === "closed";
+  const [intel, setIntel] = useState<{
+    intents: Record<string, TradeIntent>;
+    reflections: Record<string, TradeReflection>;
+  }>({ intents: {}, reflections: {} });
+  const [intelRev, setIntelRev] = useState(0);
+  useLiveTable("trade_reflection", () => setIntelRev((n) => n + 1));
+  const dayIds = facts.trades.map((tr) => tr.id).join(",");
+  useEffect(() => {
+    if (!userId || !reviewing || !dayIds) return;
+    let active = true;
+    const ids = dayIds.split(",");
+    void Promise.all([loadTradeIntents(userId, ids), loadTradeReflections(userId, ids)]).then(
+      ([intents, reflections]) => {
+        if (active) setIntel({ intents, reflections });
+      },
+    );
+    return () => {
+      active = false;
+    };
+  }, [userId, reviewing, dayIds, intelRev]);
+  const sessionVerdict = useMemo(() => {
+    if (!reviewing) return null;
+    const session = { plan: day.plan, scenario: day.scenario };
+    return assessSession({
+      planned: day.locked,
+      tradeVerdicts: facts.trades.map(
+        (tr) =>
+          assessTrade({
+            trade: tr,
+            dayTrades: facts.trades,
+            session,
+            intent: intel.intents[tr.id],
+            reflection: intel.reflections[tr.id],
+          }).verdict,
+      ),
+    });
+  }, [reviewing, day.plan, day.scenario, day.locked, facts.trades, intel]);
   const nowDate = new Date(now);
   const win = windowState(config, nowDate);
   const winOpen = win.phase === "open";
@@ -686,6 +736,7 @@ export default function Checklist({ setPage, onAddTrade, onEditTrade, trades }: 
           facts={facts}
           act={act}
           observed={observedBreaches}
+          verdict={sessionVerdict}
           onClose={closeDay}
         />
       )}
@@ -695,6 +746,7 @@ export default function Checklist({ setPage, onAddTrade, onEditTrade, trades }: 
           day={day}
           facts={facts}
           history={history}
+          verdict={sessionVerdict}
           onReopen={() => act({ type: "reopenReview" })}
           onJournal={() => setPage("journal")}
           onEncodeTrade={() => encodeTrade(true)}

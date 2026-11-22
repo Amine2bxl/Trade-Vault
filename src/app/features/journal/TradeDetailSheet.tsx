@@ -9,6 +9,8 @@ import { cn } from "@/shared/ui/cn";
 import { Button, Disclosure, Modal } from "@/shared/ui";
 import { useT } from "@/app/i18n/LanguageContext";
 import type { TradeIntent, TradeReflection } from "@/app/store/tradeIntel";
+import type { ExecutionAssessment } from "@/modules/discipline";
+import { TradeExecution } from "./TradeExecution";
 import { ScreenshotImage } from "@/app/components/ScreenshotImage";
 import {
   TradeConfidence,
@@ -62,6 +64,8 @@ export interface TradeDetailSheetProps {
   onDelete?: (id: string) => void;
   intents: Record<string, TradeIntent>;
   reflections: Record<string, TradeReflection>;
+  /** Verdict d'exécution par trade (absent tant que le plan du jour se charge). */
+  assessments: Record<string, ExecutionAssessment>;
   screenshotUrls: Record<string, string>;
   onOpenShot: (paths: string[], index: number) => void;
   /** La visionneuse plein écran, montée dans la même couche. */
@@ -83,6 +87,7 @@ export default function TradeDetailSheet({
   onDelete,
   intents,
   reflections,
+  assessments,
   screenshotUrls,
   onOpenShot,
   children,
@@ -312,6 +317,7 @@ export default function TradeDetailSheet({
               trade={trade}
               intent={intents[trade.id] ?? null}
               reflection={reflections[trade.id] ?? null}
+              assessment={assessments[trade.id] ?? null}
               screenshotUrls={screenshotUrls}
               onOpenShot={onOpenShot}
             />
@@ -334,12 +340,14 @@ function SheetTrade({
   trade,
   intent,
   reflection,
+  assessment,
   screenshotUrls,
   onOpenShot,
 }: {
   trade: Trade;
   intent: TradeIntent | null;
   reflection: TradeReflection | null;
+  assessment: ExecutionAssessment | null;
   screenshotUrls: Record<string, string>;
   onOpenShot: (paths: string[], index: number) => void;
 }) {
@@ -415,6 +423,8 @@ function SheetTrade({
       )}
 
       <TradeNotes trade={trade} />
+
+      <TradeExecution tradeId={trade.id} assessment={assessment} />
 
       {(intent || reflection) && (
         <Disclosure title={t("tradeDetail.intentFlow")} open={open.flow} onChange={toggle("flow")}>

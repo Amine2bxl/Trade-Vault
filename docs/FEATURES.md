@@ -72,6 +72,7 @@ TAUX ou un CLASSEMENT ne l'est pas. `MIN_BUCKET_SAMPLE` (5 trades décisifs,
 | `ruleAdherence` | `trading/ruleAdherence` (via `domain/ruleCheck`) | La discipline réelle constatée — pas déclarative |
 | `cleanJournalScore` | `domain/behavioral` | Charge d'erreurs auto-cochées, **pas** la discipline |
 | `executionScore` | `modules/trading/analysis` | Efficacité de sortie (MAE/MFE), rien à voir avec les règles |
+| Qualité d'exécution | `modules/discipline/execution` (`assessExecution`, `assessSession`) via `checklist/executionReview` ; affichée par `journal/TradeExecution` et au bilan | Jugée sur le plan, **jamais** sur le P&L (le P&L n'est pas une entrée). Écarts `observed` / `declared` / `to_confirm` ; sans plan ni déclaration : `unknown`, jamais « bonne » par défaut ; séance sans trade = bonne discipline ; correction manuelle stockée (`trade_reflection.execution_override`), le calcul jamais |
 | Edge Score | `domain/edgeScore` + `useEdgeScore` | v2 : deux dimensions NOTÉES (`EDGE_SCORE_WEIGHTS` : trades propres 65 %, risque 35 %) ; jours propres et routine affichés, jamais notés ; score `null` sans preuve complète ; consommé par Dashboard et Jarvis (description d'outil dérivée des poids) |
 | Progression des objectifs | `features/goals/useGoalProgress` | Point d'accès unique (Goals, Mistakes, Jarvis) |
 | « Violer une règle » | `domain/ruleCheck.checkTradeAgainstRules` | Même vérificateur en temps réel et en bilan 30 j |
