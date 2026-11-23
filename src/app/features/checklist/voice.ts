@@ -1,7 +1,11 @@
-/* Voice lines (JARVIS) — extrait de Checklist.tsx (Phase D).
-   Enriched catalogue: many variants per situation so Jarvis never repeats
-   himself, each written for a composed, dry, confident coach persona.
-   Spoken lines are always English (`en`); `fr` mirrors them for parity. */
+/* Voice lines (JARVIS) — le catalogue de la checklist d'origine (juillet 2026),
+   rendu au Mode Terminal (`TerminalMode.tsx`) le 2026-11-22.
+   Plusieurs variantes par situation pour que Jarvis ne se répète pas, écrites
+   pour un coach posé, sec et sûr de lui. Les répliques anglaises sont
+   pré-rendues avec la voix clonée (`scripts/voices/generate.ts` lit CE
+   fichier) ; les françaises passent par la voix hébergée multilingue, ou la
+   voix française de l'appareil. Une réplique ajoutée ici sans relancer le
+   générateur est dite par ces voix de secours — jamais en silence. */
 
 export type Tone = "calm" | "firm" | "alert";
 // Deeper, more measured delivery = a more premium, composed JARVIS.
@@ -197,6 +201,43 @@ export const LINES: Record<string, { tone: Tone; fr: string[]; en: string[] }> =
       "That urge to jump in now — it's the trap.",
       "Missing out is safer than getting trapped.",
       "Hold the line. FOMO has never closed a winning trade.",
+    ],
+  },
+  // ── Ajouts du Mode Terminal (2026-11-22) ──
+  limitLocked: {
+    tone: "alert",
+    fr: [
+      "Limite atteinte. La séance est verrouillée.",
+      "C'est la limite. On s'arrête là aujourd'hui.",
+      "Séance verrouillée. Les règles ont décidé, pas le marché.",
+    ],
+    en: [
+      "Limit reached. The session is locked.",
+      "That's the limit. We stop here today.",
+      "Session locked. The rules decided, not the market.",
+    ],
+  },
+  // « Dix minutes » : la durée de `PAUSE_MINUTES` (sessionState.ts).
+  pause: {
+    tone: "calm",
+    fr: [
+      "Pause engagée. Dix minutes loin du graphique.",
+      "Recule d'un pas. Dix minutes, puis on réévalue.",
+    ],
+    en: [
+      "Pause engaged. Ten minutes away from the chart.",
+      "Step back. Ten minutes, then we reassess.",
+    ],
+  },
+  sessionEnd: {
+    tone: "calm",
+    fr: [
+      "Séance close. Place au bilan.",
+      "C'est fini pour aujourd'hui. On juge l'exécution, pas le P&L.",
+    ],
+    en: [
+      "Session closed. Time for the review.",
+      "That's the session. We judge the execution, not the P&L.",
     ],
   },
   win: {

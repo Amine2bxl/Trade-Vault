@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Clock, Flame, SlidersHorizontal } from "@/shared/ui/icons";
+import { Clock, Flame, SlidersHorizontal, TerminalSquare } from "@/shared/ui/icons";
 import { Button, PageContainer, PageToolbar } from "@/shared/ui";
 import { cn } from "@/shared/ui/cn";
 import { useAuth } from "@/app/contexts/AuthContext";
@@ -33,6 +33,7 @@ import {
 } from "./checklistDefaults";
 import { getTimeInZone, hydrateConfig, pad, windowState } from "./helpers";
 import ChecklistSettings from "./ChecklistSettings";
+import TerminalMode from "./TerminalMode";
 import PlanCard from "./PlanCard";
 import LiveCard from "./LiveCard";
 import { ClosedCard, ReviewCard } from "./ReviewCard";
@@ -670,6 +671,18 @@ export default function Checklist({ setPage, onAddTrade, onEditTrade, trades }: 
     }));
   }, [config.items, day, biasWord]);
 
+  const windowLine =
+    win.phase === "before"
+      ? t("chk.winIn").replace("{time}", config.startTime).replace("{left}", fmtLeft(win.toStart))
+      : win.phase === "after"
+        ? t("chk.winEnded").replace("{time}", config.endTime ?? "")
+        : win.toEnd !== null
+          ? t("chk.winLeft")
+              .replace("{left}", fmtLeft(win.toEnd))
+              .replace("{time}", config.endTime ?? "")
+          : t("chk.winOpen").replace("{time}", config.startTime);
+  const [terminal, setTerminal] = useState(false);
+
   const dateStr = nowDate.toLocaleDateString(intlLocale(lang), {
     weekday: "short",
     day: "numeric",
@@ -693,17 +706,7 @@ export default function Checklist({ setPage, onAddTrade, onEditTrade, trades }: 
           )}
         >
           <Clock className="h-3 w-3" />
-          {win.phase === "before"
-            ? t("chk.winIn")
-                .replace("{time}", config.startTime)
-                .replace("{left}", fmtLeft(win.toStart))
-            : win.phase === "after"
-              ? t("chk.winEnded").replace("{time}", config.endTime ?? "")
-              : win.toEnd !== null
-                ? t("chk.winLeft")
-                    .replace("{left}", fmtLeft(win.toEnd))
-                    .replace("{time}", config.endTime ?? "")
-                : t("chk.winOpen").replace("{time}", config.startTime)}
+          {windowLine}
         </span>
         {streak > 0 && (
           <>
@@ -722,16 +725,28 @@ export default function Checklist({ setPage, onAddTrade, onEditTrade, trades }: 
         actions={
           // Une icône seule ne disait pas qu'ici se règlent la fenêtre et les
           // questions d'entrée : le mot accompagne l'icône dès qu'il y a la place.
-          <Button
-            variant="subtle"
-            size="sm"
-            onClick={() => setShowSettings(true)}
-            aria-label={t("chk.settings")}
-            title={t("chk.settings")}
-          >
-            <SlidersHorizontal className="h-4 w-4" />
-            <span className="hidden sm:inline">{t("chk.settingsShort")}</span>
-          </Button>
+          <>
+            <Button
+              variant="accent"
+              size="sm"
+              onClick={() => setTerminal(true)}
+              aria-label={t("term.open")}
+              title={t("term.open")}
+            >
+              <TerminalSquare className="h-4 w-4" />
+              <span className="hidden sm:inline">{t("term.openShort")}</span>
+            </Button>
+            <Button
+              variant="subtle"
+              size="sm"
+              onClick={() => setShowSettings(true)}
+              aria-label={t("chk.settings")}
+              title={t("chk.settings")}
+            >
+              <SlidersHorizontal className="h-4 w-4" />
+              <span className="hidden sm:inline">{t("chk.settingsShort")}</span>
+            </Button>
+          </>
         }
       >
         <PhaseSteps
@@ -804,6 +819,29 @@ export default function Checklist({ setPage, onAddTrade, onEditTrade, trades }: 
           onReviewTrade={reviewTrade}
           questions={questions}
           onCustomize={() => setShowSettings(true)}
+        />
+      )}
+
+      {terminal && (
+        <TerminalMode
+          open
+          onClose={() => setTerminal(false)}
+          day={day}
+          facts={facts}
+          limits={limits}
+          blockerText={blockerText}
+          state={state}
+          pauseEnds={pauseEnds}
+          signals={signals}
+          questions={questions}
+          verdict={sessionVerdict}
+          windowLine={windowLine}
+          clock={hhmmOf(nowDate, config.timeZone)}
+          hour={getTimeInZone(nowDate, config.timeZone).hour}
+          onLock={lock}
+          onLogTrade={() => encodeTrade(false)}
+          onEnd={end}
+          onPause={pause}
         />
       )}
 

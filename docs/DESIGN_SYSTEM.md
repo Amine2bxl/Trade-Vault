@@ -223,6 +223,18 @@ l'écran « apparence » s'applique à chaud à la séquence elle-même.
 Sa sortie est une **métamorphose**, pas une coupure : la carte finale se vide
 (`.onb-morphing`), puis le shell s'ouvre depuis son rectangle jusqu'au plein
 écran (`.tv-morph-in`, `clip-path`, 760 ms en entrée-sortie, coupée sous mouvement réduit).
+**Exception : le Mode Terminal de la checklist** (`features/checklist/TerminalMode.tsx`,
+2026-11-22). La checklist d'origine (juillet 2026 : HUD « Pre-Trade OS », voix,
+sons) rendue en vue plein écran du MÊME moteur de séance. Ce qu'elle a de plus
+que l'app : une surface plein écran OPAQUE (aucun verre, aucune ombre) au papier
+peint fixe — la grille du terminal à 3,5 % de l'accent sur `--tv-sky` ; des
+étiquettes en capitales dans la pile mono du système (aucune police
+téléchargée) ; le cœur `JarvisNeural` qui suit l'état de séance (Jarvis y
+parle) ; le son Web Audio de l'onboarding, avec deux sons de la checklist
+d'origine (`chime`, `alarm`) et le même interrupteur. Ce qu'elle garde de la
+loi : aucune keyframe ajoutée, rien ne rayonne, couleurs du thème actif, tout
+lisible sans son (sous-titres), au clavier, et sous mouvement réduit.
+
 Son cadre est **épuré** depuis le 2026-11-15 (« trop slop AI ») : une colonne
 centrée, la question en grand, une progression continue, et en bas le
 **portrait** du trader qui se compose en pastilles — plus de codes de module,

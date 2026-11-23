@@ -22,7 +22,11 @@ Rôle produit et persona : [`PRODUCT.md`](PRODUCT.md#jarvis).
 6. Réponse **écrite** dans la langue de l'UI. **Voix** : les répliques fixes
    (salutations, onboarding) sont en anglais ; une réponse de conversation est
    dite dans la langue où elle est écrite (voix hébergée multilingue, même
-   timbre ; en secours, voix locale de cette langue).
+   timbre ; en secours, voix locale de cette langue). Exception : le **Mode
+   Terminal** de la checklist parle la langue choisie dans ses réglages
+   (« App », FR ou EN) ; ses répliques anglaises jouent d'abord leur clip
+   pré-rendu (`clipFirst`, zéro coût), les françaises passent par la voix
+   hébergée puis la voix locale. Tout ce qui est dit s'affiche en sous-titre.
 
 ## 2. La chaîne en production — question posée à Jarvis
 
