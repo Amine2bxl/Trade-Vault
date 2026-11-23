@@ -150,7 +150,7 @@ describe("du bilan au formulaire de trade", () => {
 });
 
 describe("du bilan au setup manqué", () => {
-  test("le R estimé est celui que promettaient les niveaux", () => {
+  test("les niveaux du plan suivent ; le R attend l'issue", () => {
     const p = missedPrefill({
       day: closedDay(false),
       date: "2026-10-30",
@@ -158,11 +158,16 @@ describe("du bilan au setup manqué", () => {
       planLine: "SHORT → 21 450",
       reasonText: "Entrée chassée",
     });
-    // Entrée 21 520, invalidation 21 580 (60), cible 21 450 (70) : 1,2R.
     expect(p).toMatchObject({
       date: "2026-10-30",
       symbol: "MNQ",
-      estimatedR: 1.2,
+      direction: "short",
+      entryPrice: 21520,
+      stopPrice: 21580,
+      targetPrice: 21450,
+      // Rien n'est compté tant que l'issue n'est pas dite.
+      outcome: "unknown",
+      estimatedR: 0,
       reasonNotTaken: "Entrée chassée",
       whatHappened: "SHORT → 21 450",
       lessonLearned: "Garder la DoL",

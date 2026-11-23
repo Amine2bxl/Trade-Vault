@@ -147,6 +147,14 @@ export interface MissedOpportunity {
   nextTimePlan: string;
   estimatedR: number;
   screenshots: string[];
+  /* Le modèle du 2026-11-22 (absent sur les anciennes lignes = inconnu). */
+  direction?: "long" | "short" | null;
+  entryPrice?: number | null;
+  stopPrice?: number | null;
+  targetPrice?: number | null;
+  reasonCode?: MissedReason | null;
+  classification?: MissedClass | null;
+  outcome?: MissedOutcome | null;
 }
 
 export const LANGUAGES = [
@@ -169,3 +177,4 @@ export const SUPPORT_EMAIL = "tradevault@outlook.fr";
 // Public review page. The domain must match the one verified via the
 // trustpilot-one-time-domain-verification-id meta tag in __root.tsx.
 export const TRUSTPILOT_REVIEW_URL = "https://www.trustpilot.com/evaluate/tradevaultt.vercel.app";
+import type { MissedClass, MissedOutcome, MissedReason } from "@/domain/missedSetup";

@@ -13,7 +13,6 @@ import {
   activePlan,
   levelPrice,
   parseAmount,
-  planRR,
   tradeBreaches,
   type Breach,
   type SessionDay,
@@ -125,13 +124,19 @@ export function missedPrefill(input: {
   /** Pourquoi il n'a pas été pris — écarts ou raison de fin, déjà formulés. */
   reasonText: string;
 }): MissedPrefill {
-  const rr = planRR(activePlan(input.day));
+  const levels = plannedLevels(input.day);
   return {
     date: input.date,
     ...(input.last ? { symbol: input.last.symbol } : {}),
-    // Le R que le plan promettait : c'est l'estimation la plus honnête dont on
-    // dispose sans connaître la sortie réelle.
-    estimatedR: rr !== null ? Math.round(rr * 10) / 10 : 0,
+    // Les niveaux du plan, en prix. Le R ne COMPTE qu'une fois l'issue connue
+    // (cible ou stop touché) : un setup non pris n'est pas d'office un gain
+    // manqué — l'issue reste à dire, et le R se calcule alors tout seul.
+    direction: levels.direction,
+    entryPrice: levels.entry,
+    stopPrice: levels.stop,
+    targetPrice: levels.target,
+    outcome: "unknown",
+    estimatedR: 0,
     reasonNotTaken: input.reasonText,
     whatHappened: input.planLine,
     lessonLearned: input.day.review.note.trim(),
