@@ -88,6 +88,9 @@ import { SymbolLogo } from "@/app/trading/SymbolLogo";
 import { symbolChoices } from "@/app/trading/symbolCatalog";
 import { draftOnlyScreenshots, restoreDraftScreenshots } from "./tradeDraft";
 import { TradePricesSection } from "./TradePricesSection";
+import { applyDefaults, loadTradeDefaults, rememberTradeDefaults } from "./tradeDefaults";
+import { useAccounts } from "@/app/contexts/AccountContext";
+import { loadTradingPlan } from "@/app/trading/tradingPlan";
 import type { PlannedLevels } from "@/domain/executionPlan";
 
 interface TradeModalProps {
@@ -372,6 +375,43 @@ export default function TradeModal({ trade, usedSymbols, onClose, onSave }: Trad
     setShowReflection(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  /* LES DÉFAUTS DU COMPTE ACTIF — un nouveau trade part du symbole, du setup
+     et du risque du dernier trade encodé sur CE compte. Seulement dans un
+     formulaire vierge (ni brouillon, ni trade existant), seulement les
+     champs vides : le relais de la séance garde le dernier mot. */
+  const { activeId, activeAccount } = useAccounts();
+  useEffect(() => {
+    if (trade || !userId || hadDraftOnOpenRef.current) return;
+    let active = true;
+    void loadTradeDefaults(userId, activeId)
+      .then((d) => {
+        if (active && d && !hasInteractedRef.current) {
+          setForm((f) => applyDefaults(f, d, defaultForm.strategy));
+        }
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, activeId]);
+
+  // Les setups du plan de trading passent en tête des stratégies : le
+  // vocabulaire du trader, pas une liste générique.
+  const [planSetups, setPlanSetups] = useState<string[]>([]);
+  useEffect(() => {
+    if (!userId) return;
+    let active = true;
+    void loadTradingPlan(userId)
+      .then((p) => {
+        if (active) setPlanSetups(p.setups.map((s) => s.name.trim()).filter(Boolean));
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [userId]);
 
   const [showAllMistakes, setShowAllMistakes] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -723,6 +763,14 @@ export default function TradeModal({ trade, usedSymbols, onClose, onSave }: Trad
       );
       if (result !== false) {
         savedRef.current = true;
+        if (!trade && userId) {
+          void rememberTradeDefaults(userId, activeId, {
+            symbol: form.symbol.toUpperCase(),
+            strategy: form.strategy,
+            riskAmount: form.riskAmount,
+            riskType: form.riskType,
+          }).catch(() => {});
+        }
         // Avoid deleting a newer draft created while the server was saving.
         const saved = readJSON<TradeDraft | null>(draftKey, null);
         if (saved && JSON.stringify(saved) === JSON.stringify(draftState)) removeKey(draftKey);
@@ -824,6 +872,7 @@ export default function TradeModal({ trade, usedSymbols, onClose, onSave }: Trad
               {trade ? t("trade.editTitle") : t("trade.newTitle")}
             </h2>
             <p className="tv-row-label truncate">
+              {!trade && activeAccount ? `${activeAccount.name} · ` : ""}
               {form.symbol ? `${form.symbol.toUpperCase()} · ` : ""}
               {form.direction === "long"
                 ? t("common.long")
@@ -1204,7 +1253,7 @@ export default function TradeModal({ trade, usedSymbols, onClose, onSave }: Trad
                     value={form.strategy}
                     onChange={(strategy) => setForm((f) => ({ ...f, strategy }))}
                     searchLabel={t("picker.search")}
-                    options={Array.from(new Set([...STRATEGIES, form.strategy]))
+                    options={Array.from(new Set([...planSetups, ...STRATEGIES, form.strategy]))
                       .filter(Boolean)
                       .map((value) => ({ value, label: value }))}
                   />
