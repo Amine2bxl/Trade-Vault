@@ -202,3 +202,57 @@ export function assessSession(input: {
   if (input.tradeVerdicts.every((v) => v === "good_execution")) return "good_execution";
   return "unknown";
 }
+
+/* ══ Exécution × résultat ══ */
+
+export interface MatrixCell {
+  /** Nombre de trades (un total : vrai à toute taille d'échantillon). */
+  n: number;
+  /** P&L net cumulé de la case. */
+  pnl: number;
+}
+
+export interface ExecutionMatrix {
+  goodWin: MatrixCell;
+  goodLoss: MatrixCell;
+  badWin: MatrixCell;
+  badLoss: MatrixCell;
+  /** Trades sans verdict (rien pour comparer), ou à P&L nul. */
+  unassessed: number;
+}
+
+/**
+ * Les deux systèmes côte à côte, jamais fusionnés : la qualité d'exécution en
+ * lignes, le résultat en colonnes. Un gain mal exécuté et une perte bien
+ * exécutée deviennent visibles — c'est tout l'objet. Aucun taux ici : des
+ * comptes et des sommes, vrais quel que soit l'échantillon.
+ */
+export function executionMatrix(
+  rows: readonly { verdict: ExecutionVerdict; pnl: number }[],
+): ExecutionMatrix {
+  const cell = (): MatrixCell => ({ n: 0, pnl: 0 });
+  const m: ExecutionMatrix = {
+    goodWin: cell(),
+    goodLoss: cell(),
+    badWin: cell(),
+    badLoss: cell(),
+    unassessed: 0,
+  };
+  for (const { verdict, pnl } of rows) {
+    if (verdict === "unknown" || pnl === 0) {
+      m.unassessed += 1;
+      continue;
+    }
+    const key =
+      verdict === "good_execution"
+        ? pnl > 0
+          ? "goodWin"
+          : "goodLoss"
+        : pnl > 0
+          ? "badWin"
+          : "badLoss";
+    m[key].n += 1;
+    m[key].pnl += pnl;
+  }
+  return m;
+}

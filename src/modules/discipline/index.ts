@@ -6,7 +6,13 @@ export type {
   DisciplineEventKind,
   TradingRule,
 } from "./types";
-export { assessExecution, assessSession, CHASE_FRACTION, OVER_RISK_TOLERANCE } from "./execution";
+export {
+  assessExecution,
+  assessSession,
+  executionMatrix,
+  CHASE_FRACTION,
+  OVER_RISK_TOLERANCE,
+} from "./execution";
 export type {
   Certainty,
   Deviation,
@@ -14,5 +20,7 @@ export type {
   ExecutionAssessment,
   ExecutionInput,
   ExecutionVerdict,
+  ExecutionMatrix,
+  MatrixCell,
   SessionVerdict,
 } from "./execution";

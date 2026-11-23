@@ -40,6 +40,7 @@ import { NewsDaysCard } from "./NewsDaysCard";
 import { NextTradesPanel } from "./AnalyticsPanels";
 import { analyticsInsights, type InsightBucket } from "@/domain/analyticsInsights";
 import { EdgeLabCard } from "./EdgeLabCard";
+import { ExecutionMatrixCard } from "./ExecutionMatrixCard";
 import {
   EmptyState,
   PageContainer,
@@ -1139,6 +1140,7 @@ export default function Analytics({ trades }: AnalyticsProps) {
                   </table>
                 </div>
               </Card>
+              <ExecutionMatrixCard trades={cutoffTrades} />
               <EdgeLabCard
                 trades={cutoffTrades}
                 allTrades={trades}

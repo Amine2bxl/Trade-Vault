@@ -3228,6 +3228,13 @@ const en = {
   "missed.outcome.target": "Target hit",
   "missed.outcome.stop": "Stop hit",
   "missed.outcome.unknown": "Unknown",
+  "execMatrix.title": "Execution × result",
+  "execMatrix.win": "Winner",
+  "execMatrix.loss": "Loser",
+  "execMatrix.goodLossHint": "the plan was right to take",
+  "execMatrix.badWinHint": "won despite the plan",
+  "execMatrix.unassessed":
+    "{n} trades not assessed (no written plan, no answer) or flat — never counted as good.",
 };
 
 // The English dict above is the source of truth and the runtime fallback —

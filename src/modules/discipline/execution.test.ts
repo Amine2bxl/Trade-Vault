@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { assessExecution, assessSession, type ExecutionInput } from "./execution";
+import { assessExecution, assessSession, executionMatrix, type ExecutionInput } from "./execution";
 
 const base: ExecutionInput = {
   direction: "short",
@@ -112,5 +112,22 @@ describe("qualité d'exécution — preuves", () => {
     expect(assessSession({ planned: true, tradeVerdicts: ["good_execution", "unknown"] })).toBe(
       "unknown",
     );
+  });
+});
+
+describe("exécution × résultat", () => {
+  test("les deux systèmes restent séparés", () => {
+    const m = executionMatrix([
+      { verdict: "good_execution", pnl: -250 },
+      { verdict: "bad_execution", pnl: 400 },
+      { verdict: "good_execution", pnl: 500 },
+      { verdict: "unknown", pnl: 100 },
+      { verdict: "bad_execution", pnl: 0 },
+    ]);
+    expect(m.goodLoss).toEqual({ n: 1, pnl: -250 });
+    expect(m.badWin).toEqual({ n: 1, pnl: 400 });
+    expect(m.goodWin).toEqual({ n: 1, pnl: 500 });
+    expect(m.badLoss).toEqual({ n: 0, pnl: 0 });
+    expect(m.unassessed).toBe(2);
   });
 });

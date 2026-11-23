@@ -3167,6 +3167,13 @@ const fr: Dict = {
   "missed.outcome.target": "Cible touchée",
   "missed.outcome.stop": "Stop touché",
   "missed.outcome.unknown": "Inconnue",
+  "execMatrix.title": "Exécution × résultat",
+  "execMatrix.win": "Gagnant",
+  "execMatrix.loss": "Perdant",
+  "execMatrix.goodLossHint": "le plan avait raison de le prendre",
+  "execMatrix.badWinHint": "gagné malgré le plan",
+  "execMatrix.unassessed":
+    "{n} trades non évalués (sans plan écrit ni réponse) ou nuls — jamais comptés comme bons.",
 };
 
 export default fr;
