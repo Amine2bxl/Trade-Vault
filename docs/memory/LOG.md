@@ -15,3 +15,16 @@ Ajout seulement, entrées datées.
   enregistrement (`store/tradeIntel.ts:146-153`) — à corriger au lot A.
 - Défaut trouvé : `ctx.violations` écrit, jamais lu (`modules/automation/engine.ts:116`).
 - Leçon : `six_month_goals` n'a plus de lecteur ; la table vivante est `goal_plans`.
+
+## 2026-11-22/23 — Lots A à G livrés sur la branche
+
+- Lots livrés : A (prévu figé), B (exécution), C (séance), D (Mode Terminal),
+  E (défauts par compte), F (setups manqués), G partiel (Analytics).
+- Erreur : `vite dev` refuse `:::8080` dans le conteneur cloud
+  (`EAFNOSUPPORT`) — lancer `bunx vite dev --host 127.0.0.1 --port 8080`.
+- Banc visuel sans compte : `/dev/ui?screen=trade&plan` (formulaire depuis la
+  séance), `?screen=checklist` avec une journée semée dans `tv-chk-anon-<date>`.
+- Erreur : `JarvisNeural` sans taille dans un conteneur → boucle
+  `ResizeObserver` ; lui donner `className="h-full w-full"`.
+- Leçon : les types générés refusent les colonnes non migrées → `as never`
+  sur l'écriture + repli `PGRST204`/`42703`, comme le lot 1.

@@ -3,6 +3,29 @@
 Journal des changements **structurels** (pas des features ni des correctifs,
 qui vivent dans l'historique git et les PR).
 
+## 2026-11-22 — Plan contre exécution, Mode Terminal, setups manqués honnêtes
+
+- **Prévu figé** : `trade_intent` porte les niveaux du plan de séance
+  (`planned_*`) et le stop/cible posés (`initial_*`) ; le prévu ne s'écrit
+  plus qu'à la création (corrige un `planned_risk` réécrit à chaque
+  enregistrement). Migration `20261122120000_plan_vs_execution`.
+- **Qualité d'exécution** : `modules/discipline/execution` juge chaque trade
+  et chaque séance sur le plan, jamais sur le P&L ; correction manuelle
+  stockée, calcul jamais. Détail d'un trade, bilan, Analytics (exécution ×
+  résultat).
+- **États de séance** : `checklist/sessionState` (PRÉPARATION → VERROUILLÉE),
+  limites « bloque / avertit », perte max du jour, dérogation à motif
+  journalisée, pause proposée. Le verrou ne bloque jamais l'enregistrement
+  d'un trade réel.
+- **Mode Terminal** : la checklist d'origine (juillet 2026) rendue en vue
+  plein écran du même moteur — voix FR/EN réglable (`clipFirst` pour les
+  clips pré-rendus), sons d'origine, sous-titres. Exception de design
+  documentée (§4).
+- **Setups manqués** : raisons fermées, classes, R hypothétique ; seuls les
+  setups valides à issue connue comptent. Migration
+  `20261122130000_missed_setup_model`.
+- **Défauts par compte** du formulaire de trade (`user_preferences`).
+
 ## 2026-11-15 — Pages en un temps, pleine largeur, onboarding épuré
 
 - **Chargement en un temps** : plus de squelettes de page (`PageLoader` :

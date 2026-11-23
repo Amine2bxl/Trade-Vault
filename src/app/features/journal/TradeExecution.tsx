@@ -5,6 +5,7 @@ import type { TKey } from "@/app/i18n/translations";
 import { saveExecutionOverride, type ExecutionOverride } from "@/app/store/tradeIntel";
 import type { Deviation, ExecutionAssessment, ExecutionVerdict } from "@/modules/discipline";
 import { cn } from "@/shared/ui/cn";
+import { VERDICT_KEYS, verdictTone } from "./executionLabels";
 import { formatMoney } from "@/shared/currency";
 
 /**
@@ -15,12 +16,6 @@ import { formatMoney } from "@/shared/currency";
  * le verdict : la correction est enregistrée comme telle, le calcul reste
  * visible dans les écarts.
  */
-
-export const VERDICT_KEYS: Record<ExecutionVerdict, TKey> = {
-  good_execution: "exec.good",
-  bad_execution: "exec.bad",
-  unknown: "exec.unknown",
-};
 
 const DEVIATION_KEYS: Record<Deviation["kind"], TKey> = {
   direction: "exec.dev.direction",
@@ -40,14 +35,6 @@ const CERTAINTY_KEYS: Record<Deviation["certainty"], TKey> = {
   declared: "exec.declared",
   to_confirm: "exec.toConfirm",
 };
-
-export function verdictTone(v: ExecutionVerdict | "good_discipline"): string {
-  return v === "bad_execution"
-    ? "border-red-500/30 bg-red-500/10 text-red-300"
-    : v === "unknown"
-      ? "border-[var(--tv-border)] text-slate-400"
-      : "border-[var(--tv-border-accent)] bg-[rgb(var(--tv-accent-rgb)/0.10)] text-[var(--tv-highlight)]";
-}
 
 export function TradeExecution({
   tradeId,

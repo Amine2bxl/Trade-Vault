@@ -6,7 +6,7 @@ import type { Trade } from "@/domain/trade";
 import { useT } from "@/app/i18n/LanguageContext";
 import type { TKey } from "@/app/i18n/translations";
 import type { SessionVerdict } from "@/modules/discipline";
-import { VERDICT_KEYS, verdictTone } from "@/app/features/journal/TradeExecution";
+import { VERDICT_KEYS, verdictTone } from "@/app/features/journal/executionLabels";
 import { GatePreview, HistoryLine, SectionLabel, TradeLines } from "./checklistParts";
 import { BREACH_KEYS, END_KEYS, LIMIT_KEYS } from "./checklistLabels";
 import EntryGate from "./EntryGate";

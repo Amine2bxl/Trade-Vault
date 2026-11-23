@@ -42,3 +42,30 @@ Ajout seulement. Une décision remplacée est marquée, jamais effacée.
   réellement pris reste possible ; aucun ordre broker, jamais.
 - Alternatives écartées : bloquer le formulaire de trade (le journal mentirait).
 - Conséquences : chaque règle reçoit `enforcement: "block" | "warn"`.
+
+## D-004 — La voix du Mode Terminal, sans nouvel achat
+
+- Date : 2026-11-22
+- Statut : appliquée (le propriétaire a demandé de coder sans trancher les questions)
+- Contexte : 71 clips anglais pré-rendus (voix clonée) ne servaient plus ;
+  la voix hébergée (« Daniel ») existe déjà, payée à l'usage ; aucun clip
+  français.
+- Décision : répliques fixes anglaises jouées depuis leur clip d'abord
+  (`clipFirst`), puis voix hébergée existante, puis voix du navigateur ;
+  français via voix hébergée multilingue ou voix française de l'appareil.
+  Langue, vitesse, volume et coupure réglables.
+- Alternatives écartées : pré-rendre des clips FR avec ElevenLabs (achat non
+  autorisé) ; voix du navigateur seule (identité perdue).
+- Conséquences : régénérer les clips quand le catalogue change.
+
+## D-005 — Seuls les setups manqués valides à issue connue coûtent
+
+- Date : 2026-11-22
+- Statut : appliquée
+- Contexte : « R laissé sur la table » sommait tout R saisi, et la séance
+  pré-remplissait le R promis par les niveaux comme s'il était acquis.
+- Décision : classe (valide, hésité, écarté, invalide) + issue (cible, stop,
+  inconnue) ; seuls valide/hésité à issue connue comptent ; stop = −1R.
+  Anciennes lignes : R déclaré conservé.
+- Alternatives écartées : recalculer l'historique (réécriture silencieuse).
+- Conséquences : `estimated_r` stocke désormais le R qui compte.

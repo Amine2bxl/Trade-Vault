@@ -1,7 +1,7 @@
 # Plan — TradeVault, espace de travail intelligent
 
-Date : 2026-11-22 · Statut : **proposé, en attente de validation** · Rien n'est
-implémenté. Base : `main` @ `58164db` (historique complet, 1 051 commits, relu).
+Date : 2026-11-22 · Statut : **lots A à F livrés, G partiel** (2026-11-23) ; H, I, J
+et le reste de G à faire. Base : `main` @ `58164db` (historique complet, 1 051 commits, relu).
 
 Principe directeur : le trader décide, TradeVault administre. Chaque lot doit
 retirer des gestes ou fiabiliser une donnée ; sinon il ne se fait pas.
