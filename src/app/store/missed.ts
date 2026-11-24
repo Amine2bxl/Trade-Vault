@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import type { TablesInsert } from "@/integrations/supabase/types";
 import { MissedOpportunity } from "../types";
 import { priceOrNull } from "@/domain/executionPlan";
 import {
@@ -78,7 +79,9 @@ function rowToMissed(r: MissedRow): MissedOpportunity {
   };
 }
 
-function missedToRow(m: MissedOpportunity, userId: string): MissedRow {
+type MissedInsert = TablesInsert<"missed_opportunities">;
+
+function missedToRow(m: MissedOpportunity, userId: string): MissedInsert {
   return {
     id: m.id,
     user_id: userId,
@@ -101,10 +104,10 @@ function missedToRow(m: MissedOpportunity, userId: string): MissedRow {
   };
 }
 
-function withoutModelColumns(row: MissedRow): MissedRow {
-  const out = { ...row } as Record<string, unknown>;
+function withoutModelColumns(row: MissedInsert): MissedInsert {
+  const out = { ...row };
   for (const c of MODEL_COLUMNS) delete out[c];
-  return out as unknown as MissedRow;
+  return out;
 }
 
 export async function loadMissedOpportunities(userId: string): Promise<MissedOpportunity[]> {
@@ -122,12 +125,9 @@ export async function loadMissedOpportunities(userId: string): Promise<MissedOpp
 
 export async function upsertMissedOpportunity(userId: string, m: MissedOpportunity): Promise<void> {
   const row = missedToRow(m, userId);
-  // `as never` : les types générés ne connaissent pas encore les colonnes du modèle.
-  let { error } = await supabase.from("missed_opportunities").upsert(row as never);
+  let { error } = await supabase.from("missed_opportunities").upsert(row);
   if (error && isMissingModelColumn(error)) {
-    ({ error } = await supabase
-      .from("missed_opportunities")
-      .upsert(withoutModelColumns(row) as never));
+    ({ error } = await supabase.from("missed_opportunities").upsert(withoutModelColumns(row)));
   }
   if (error) throw error;
 }

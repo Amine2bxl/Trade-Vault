@@ -202,18 +202,19 @@ export function isMissingPlanColumn(error: unknown): boolean {
   return /PGRST204|42703|column/i.test(text) && PLAN_COLUMNS.some((c) => text.includes(c));
 }
 
-function withoutPlanColumns<T extends Record<string, unknown>>(row: T): Partial<T> {
+// Les colonnes du plan sont toutes facultatives : la ligne sans elles reste une ligne valide.
+function withoutPlanColumns<T extends Record<string, unknown>>(row: T): T {
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(row)) {
     if (!(PLAN_COLUMNS as readonly string[]).includes(k)) out[k] = v;
   }
-  return out as Partial<T>;
+  return out as T;
 }
 
 /** Écrit, puis réécrit sans les colonnes du plan si la base ne les a pas encore. */
 async function writeWithPlanFallback<R extends Record<string, unknown>>(
   row: R,
-  write: (row: Partial<R>) => PromiseLike<{ error: unknown }>,
+  write: (row: R) => PromiseLike<{ error: unknown }>,
 ): Promise<{ error: unknown }> {
   const first = await write(row);
   if (first.error && isMissingPlanColumn(first.error)) return write(withoutPlanColumns(row));
@@ -287,22 +288,15 @@ export async function saveTradeIntent(
   input: TradeIntentInput,
 ): Promise<boolean> {
   const mutable = mutableIntent(input);
-  // `as never` : les types générés ne connaissent pas encore les colonnes du plan.
   const created = await writeWithPlanFallback(
     { user_id: userId, trade_id: trade.id, ...frozenIntent(trade, input), ...mutable },
     (row) =>
-      supabase
-        .from("trade_intent")
-        .upsert(row as never, { onConflict: "trade_id", ignoreDuplicates: true }),
+      supabase.from("trade_intent").upsert(row, { onConflict: "trade_id", ignoreDuplicates: true }),
   );
   const { error } = created.error
     ? created
     : await writeWithPlanFallback(mutable, (row) =>
-        supabase
-          .from("trade_intent")
-          .update(row as never)
-          .eq("user_id", userId)
-          .eq("trade_id", trade.id),
+        supabase.from("trade_intent").update(row).eq("user_id", userId).eq("trade_id", trade.id),
       );
   if (error) {
     console.error("saveTradeIntent failed", error);
@@ -329,7 +323,7 @@ export async function saveTradeReflection(
     ...(input.reentryUrge !== undefined ? { reentry_urge: input.reentryUrge } : {}),
   };
   const { error } = await writeWithPlanFallback(row, (r) =>
-    supabase.from("trade_reflection").upsert(r as never, { onConflict: "trade_id" }),
+    supabase.from("trade_reflection").upsert(r, { onConflict: "trade_id" }),
   );
   if (error) {
     console.error("saveTradeReflection failed", error);
@@ -356,7 +350,7 @@ export async function saveExecutionOverride(
       trade_id: tradeId,
       execution_override: override,
       override_note: override ? clean(note) : null,
-    } as never,
+    },
     { onConflict: "trade_id" },
   );
   if (error) {
