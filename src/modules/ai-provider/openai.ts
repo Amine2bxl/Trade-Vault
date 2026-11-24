@@ -35,6 +35,8 @@ interface OpenAIProviderConfig {
    * pas de découverte.
    */
   pickModels?: (models: ListedModel[], needsTools: boolean) => string[];
+  /** Le modèle par défaut lit les images (seul OpenAI ici : Groq et OpenRouter gratuits, non garanti). */
+  vision?: boolean;
 }
 
 /** Une entrée de `GET /models` (format OpenAI, champs OpenRouter en plus). */
@@ -191,6 +193,19 @@ export function toOpenAIMessages(messages: AIMessage[], providerId: string): unk
       continue;
     }
     lastNative = false;
+    if (m.images?.length && m.role === "user") {
+      out.push({
+        role: m.role,
+        content: [
+          { type: "text", text: m.content },
+          ...m.images.map((i) => ({
+            type: "image_url",
+            image_url: { url: `data:${i.mimeType};base64,${i.data}` },
+          })),
+        ],
+      });
+      continue;
+    }
     out.push({ role: m.role, content: m.content });
   }
   return out;
@@ -258,6 +273,7 @@ function createOpenAICompatibleProvider(cfg: OpenAIProviderConfig): AIProvider {
   return {
     id: cfg.id,
     supportsTools: true,
+    supportsVision: cfg.vision === true,
 
     isConfigured() {
       return Boolean(process.env[cfg.apiKeyEnv]);
@@ -442,6 +458,7 @@ export const OpenAIProvider = createOpenAICompatibleProvider({
   modelEnv: "OPENAI_MODEL",
   defaultModel: "gpt-4o-mini",
   defaultBaseUrl: "https://api.openai.com/v1",
+  vision: true,
 });
 
 /** Groq — modèles libres ultra-rapides (Llama, Mixtral…), OpenAI-compatible. */

@@ -30,6 +30,17 @@ export interface AIMessage {
   providerTurn?: ProviderTurn;
   /** Message qui rend les résultats d'outils — un par appel, dans l'ordre. */
   toolResults?: ProviderToolResult[];
+  /**
+   * Images jointes à un tour `user` (captures de graphique). Seul un
+   * fournisseur `supportsVision` les lit ; les autres ne reçoivent que `content`.
+   */
+  images?: AIImage[];
+}
+
+/** Une image en ligne : type MIME + octets en base64 (sans préfixe `data:`). */
+export interface AIImage {
+  mimeType: "image/png" | "image/jpeg" | "image/webp";
+  data: string;
 }
 
 /** Un tour natif opaque : seul le fournisseur `provider` sait le relire. */
@@ -154,6 +165,8 @@ export interface AIProvider {
    * Optional for back-compat: treated as `false` when absent.
    */
   readonly supportsTools?: boolean;
+  /** Lit les `images` d'un message (vision). Absent = texte seul. */
+  readonly supportsVision?: boolean;
 }
 
 /**

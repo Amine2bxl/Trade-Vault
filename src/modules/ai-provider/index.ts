@@ -3,6 +3,7 @@ export {
   resolveProviders,
   resolveToolCapableProvider,
   resolveToolCapableProviders,
+  resolveVisionProviders,
   providerIds,
   isProviderConfigured,
 } from "./registry";
@@ -12,6 +13,7 @@ export type {
   AIRequest,
   AIResponse,
   AIMessage,
+  AIImage,
   AIRole,
   ProviderTool,
   ProviderToolCall,
