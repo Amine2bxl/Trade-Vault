@@ -1,4 +1,5 @@
 import { Clock, Star, BarChart3 } from "@/shared/ui/icons";
+import { openTrades } from "@/app/utils/navigate";
 import { Trade, isBreakEven } from "@/app/types";
 import { measuredR } from "@/domain/trade";
 import { formatPnl, getDuration } from "@/domain/tradeCalcs";
@@ -181,12 +182,15 @@ export function TradeConfluences({ trade, label = true }: LabeledProps) {
       )}
       <div className="flex flex-wrap gap-2">
         {trade.confluences.map((c) => (
-          <span
+          <button
+            type="button"
             key={c}
-            className="px-3 py-1.5 rounded-xl bg-cyan-500/10 border border-cyan-500/15 text-cyan-400 text-xs font-medium"
+            onClick={() => openTrades({ confluence: c })}
+            title={t("links.tradesWith").replace("{v}", c)}
+            className="px-3 py-1.5 rounded-xl bg-cyan-500/10 border border-cyan-500/15 text-cyan-400 text-xs font-medium transition-colors hover:border-cyan-400/40"
           >
             {c}
-          </span>
+          </button>
         ))}
       </div>
     </div>
@@ -203,12 +207,15 @@ export function TradeMistakes({ trade, label = true }: LabeledProps) {
       )}
       <div className="flex flex-wrap gap-1.5">
         {trade.mistakes.map((m) => (
-          <span
+          <button
+            type="button"
             key={m}
-            className="px-2 py-1 rounded-lg bg-red-500/10 text-red-400 text-[10px] font-medium"
+            onClick={() => openTrades({ mistake: m })}
+            title={t("links.tradesWith").replace("{v}", m)}
+            className="px-2 py-1 rounded-lg border border-transparent bg-red-500/10 text-red-400 text-[10px] font-medium transition-colors hover:border-red-400/40"
           >
             {m}
-          </span>
+          </button>
         ))}
       </div>
     </div>

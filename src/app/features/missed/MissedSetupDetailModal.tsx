@@ -1,4 +1,5 @@
 import type { ElementType } from "react";
+import { navigateTo, openTrades } from "@/app/utils/navigate";
 import {
   X,
   Target,
@@ -160,6 +161,31 @@ export default function MissedSetupDetailModal({ missed, onClose }: MissedSetupD
 
       {/* Body */}
       <div className="overflow-y-auto flex-1 p-4 space-y-3 pb-[calc(env(safe-area-inset-bottom,0px)+16px)]">
+        {/* D'où vient ce setup, et à quoi il se compare : le plan et les trades pris ce jour-là. */}
+        <nav className="flex flex-wrap gap-x-4 gap-y-1 text-[12px]" aria-label={t("links.related")}>
+          <button
+            type="button"
+            onClick={() => {
+              onClose();
+              navigateTo({ page: "tradingplan" });
+            }}
+            className="inline-flex min-h-[32px] items-center font-semibold text-[var(--tv-highlight)] underline-offset-2 hover:underline"
+          >
+            {t("links.plan")}
+          </button>
+          {missed.symbol && (
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                openTrades({ symbol: missed.symbol });
+              }}
+              className="inline-flex min-h-[32px] items-center font-semibold text-[var(--tv-highlight)] underline-offset-2 hover:underline"
+            >
+              {t("links.tradesWith").replace("{v}", missed.symbol)}
+            </button>
+          )}
+        </nav>
         <Section
           tone="red"
           icon={Quote}

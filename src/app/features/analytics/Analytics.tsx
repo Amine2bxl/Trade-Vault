@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useMemo, useReducer, useState } from "react";
+import { openTrades } from "@/app/utils/navigate";
 import { InfoTip } from "@/shared/ui/InfoTip";
 import { TrendingUp, TrendingDown, CalendarDays, Clock, Sparkles } from "@/shared/ui/icons";
 import { Trade, isBreakEven } from "@/app/types";
@@ -1073,12 +1074,24 @@ export default function Analytics({ trades }: AnalyticsProps) {
                           >
                             {/* `max-width` n'est pas tenu sur une cellule de tableau :
                           la borne vit sur un bloc intérieur. */}
-                            <span className="block max-w-[9.5rem] truncate sm:max-w-none">
+                            <button
+                              type="button"
+                              onClick={() => openTrades({ strategy: row.strategy })}
+                              title={t("links.tradesWith").replace("{v}", row.strategy)}
+                              className="block max-w-[9.5rem] truncate text-left underline-offset-2 hover:underline sm:max-w-none"
+                            >
                               {row.strategy}
-                            </span>
+                            </button>
                           </td>
                           <td className="tv-figure tv-figure-secondary px-4 py-2.5 text-xs text-slate-400 text-right">
-                            {row.count}
+                            <button
+                              type="button"
+                              onClick={() => openTrades({ strategy: row.strategy })}
+                              aria-label={t("links.tradesWith").replace("{v}", row.strategy)}
+                              className="underline-offset-2 hover:text-white hover:underline"
+                            >
+                              {row.count}
+                            </button>
                           </td>
                           <td className="tv-figure tv-figure-secondary px-4 py-2.5 text-xs text-right">
                             <span

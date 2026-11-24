@@ -3285,6 +3285,12 @@ const fr: Dict = {
   "queue.open": "Ouvrir",
   "queue.full": "Ce trade a déjà 3 captures.",
   "queue.nothing": "Rien de lisible",
+  "links.tradesWith": "Trades avec {v}",
+  "links.seeTrades": "Voir les trades",
+  "links.session": "Séance du jour",
+  "links.plan": "Plan de trading",
+  "links.capture": "Capture d'origine",
+  "links.related": "Liens associés",
 };
 
 export default fr;

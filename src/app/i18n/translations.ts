@@ -3344,6 +3344,12 @@ const en = {
   "queue.open": "Open",
   "queue.full": "This trade already has 3 screenshots.",
   "queue.nothing": "Nothing readable",
+  "links.tradesWith": "Trades with {v}",
+  "links.seeTrades": "See the trades",
+  "links.session": "Session of the day",
+  "links.plan": "Trading plan",
+  "links.capture": "Original capture",
+  "links.related": "Related",
 };
 
 // The English dict above is the source of truth and the runtime fallback —

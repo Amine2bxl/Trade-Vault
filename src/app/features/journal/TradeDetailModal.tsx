@@ -1,4 +1,5 @@
 import { SymbolLogo } from "@/app/trading/SymbolLogo";
+import { openTrades } from "@/app/utils/navigate";
 import {
   X,
   Trash2,
@@ -392,7 +393,16 @@ export default function TradeDetailModal({
                         </span>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <span className="text-xs text-slate-500">{trade.strategy}</span>
+                        {trade.strategy && (
+                          <button
+                            type="button"
+                            onClick={() => openTrades({ strategy: trade.strategy })}
+                            title={t("links.tradesWith").replace("{v}", trade.strategy)}
+                            className="text-xs text-slate-500 underline-offset-2 hover:text-white hover:underline"
+                          >
+                            {trade.strategy}
+                          </button>
+                        )}
                         {getSessionForTrade(trade) && (
                           <span className="tv-label px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400">
                             {t(`session.${getSessionForTrade(trade)}` as never)}

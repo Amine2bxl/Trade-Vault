@@ -161,8 +161,18 @@ export default function Journal({
   const [focusId, setFocusId] = useState<string | null>(() => readFocus("trade"));
   useEffect(() => {
     const sync = () => setFocusId(readFocus("trade"));
+    // Un nouveau filtre change la liste : le détail ouvert n'y correspond plus.
+    const closeDetail = () => {
+      setViewingIdx(null);
+      setFocusId(null);
+      clearFocus("trade");
+    };
     window.addEventListener(FOCUS_EVENT, sync);
-    return () => window.removeEventListener(FOCUS_EVENT, sync);
+    window.addEventListener("tv:filter", closeDetail);
+    return () => {
+      window.removeEventListener(FOCUS_EVENT, sync);
+      window.removeEventListener("tv:filter", closeDetail);
+    };
   }, []);
   const focused = focusId ? (trades.find((tr) => tr.id === focusId) ?? null) : null;
   const closeFocus = () => {

@@ -1,4 +1,5 @@
 import type { Page } from "@/app/types";
+import { encodeFilter, type UnifiedFilter } from "@/app/trading/tradeFilter";
 
 /**
  * LA NAVIGATION CONTEXTUELLE — un seul canal pour passer d'une donnée à sa
@@ -48,4 +49,9 @@ export function clearFocus(kind: FocusKind): void {
   if (!url.searchParams.has(kind)) return;
   url.searchParams.delete(kind);
   window.history.replaceState(window.history.state, "", url.pathname + url.search);
+}
+
+/** Les trades qui composent une donnée (un setup, une erreur, une confluence, un jour…). */
+export function openTrades(filter: UnifiedFilter): void {
+  navigateTo({ page: "journal", filter: encodeFilter(filter) || undefined });
 }

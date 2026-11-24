@@ -74,6 +74,7 @@ import {
   type Proposal,
 } from "../capture/capturePrefill";
 import { markCaptureApplied } from "@/app/store/captures";
+import { clearFocus, FOCUS_EVENT, readFocus } from "@/app/utils/navigate";
 import type { CaptureRun } from "../capture/useCaptureAnalysis";
 import { enrichCapture } from "@/domain/captureEnrich";
 import {
@@ -157,6 +158,13 @@ export default function MissedOpportunities() {
   const [editing, setEditing] = useState<MissedOpportunity | null>(null);
   const [viewing, setViewing] = useState<MissedOpportunity | null>(null);
   const [loading, setLoading] = useState(true);
+  // Un setup ouvert par lien (`?missed=`) : depuis l'Inbox, Jarvis…
+  const [focusId, setFocusId] = useState<string | null>(() => readFocus("missed"));
+  useEffect(() => {
+    const sync = () => setFocusId(readFocus("missed"));
+    window.addEventListener(FOCUS_EVENT, sync);
+    return () => window.removeEventListener(FOCUS_EVENT, sync);
+  }, []);
   const [openIds, setOpenIds] = useState<Set<string>>(new Set());
 
   const toggleOpen = useCallback((id: string) => {
@@ -634,6 +642,15 @@ export default function MissedOpportunities() {
       )}
 
       {viewing && <MissedSetupDetailModal missed={viewing} onClose={() => setViewing(null)} />}
+      {!viewing && focusId && items.some((x) => x.id === focusId) && (
+        <MissedSetupDetailModal
+          missed={items.find((x) => x.id === focusId)!}
+          onClose={() => {
+            setFocusId(null);
+            clearFocus("missed");
+          }}
+        />
+      )}
 
       {editing && (
         <MissedEditor
