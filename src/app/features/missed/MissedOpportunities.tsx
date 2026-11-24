@@ -74,6 +74,8 @@ import {
   type Proposal,
 } from "../capture/capturePrefill";
 import { markCaptureApplied } from "@/app/store/captures";
+import type { CaptureRun } from "../capture/useCaptureAnalysis";
+import { enrichCapture } from "@/domain/captureEnrich";
 import {
   hypotheticalR,
   MISSED_CLASSES,
@@ -251,7 +253,19 @@ export default function MissedOpportunities() {
     if (preview) return;
     const prefill = takeHandoff("missed");
     if (prefill) setEditing({ ...emptyMissed(), ...prefill });
+    // Une capture analysée dans l'Inbox devient un setup manqué.
+    const cap = takeHandoff("missedCapture");
+    if (cap) {
+      setEditing({ ...emptyMissed(), screenshots: cap.screenshots.slice(0, 3) });
+      setCapturePreview({
+        itemId: cap.itemId,
+        extraction: cap.extraction,
+        derived: enrichCapture(cap.extraction),
+        cached: true,
+      });
+    }
   }, [preview]);
+  const [capturePreview, setCapturePreview] = useState<CaptureRun | null>(null);
 
   const handleSave = useCallback(
     async (m: MissedOpportunity) => {
@@ -622,7 +636,15 @@ export default function MissedOpportunities() {
       {viewing && <MissedSetupDetailModal missed={viewing} onClose={() => setViewing(null)} />}
 
       {editing && (
-        <MissedEditor value={editing} onClose={() => setEditing(null)} onSave={handleSave} />
+        <MissedEditor
+          value={editing}
+          capturePreview={capturePreview ?? undefined}
+          onClose={() => {
+            setEditing(null);
+            setCapturePreview(null);
+          }}
+          onSave={handleSave}
+        />
       )}
     </PageContainer>
   );
@@ -799,8 +821,11 @@ export function MissedEditor({
   value,
   onClose,
   onSave,
+  capturePreview,
 }: {
   value: MissedOpportunity;
+  /** Une capture déjà analysée (Inbox), appliquée aux champs vides à l'ouverture. */
+  capturePreview?: CaptureRun;
   onClose: () => void;
   onSave: (m: MissedOpportunity) => void | Promise<boolean | void>;
 }) {
@@ -1015,6 +1040,7 @@ export function MissedEditor({
           essential={ESSENTIAL_MISSED_FIELDS}
           propose={missedProposals}
           apply={applyCapture}
+          previewRun={capturePreview}
           onResult={(run) => {
             captureSession.current.itemId = run.itemId;
           }}

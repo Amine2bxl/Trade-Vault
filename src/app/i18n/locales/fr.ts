@@ -3263,6 +3263,28 @@ const fr: Dict = {
   "compliance.explain":
     "Enfreint sans un mot de votre part : ajoutez une courte raison dans le bilan du trade.",
   "compliance.undeterminedHint": "Pas assez de données pour juger. Rien n'est supposé.",
+  "queue.title": "Captures à traiter",
+  "queue.add": "Ajouter des captures",
+  "queue.drop":
+    "Déposez ou collez vos captures ici. Chacune est lue, rapprochée de votre journal et préparée ; rien n'est enregistré avant votre validation.",
+  "queue.sameTrade": "Même trade (entrée et sortie)",
+  "queue.analyzeN": "Analyser ({n})",
+  "queue.processing": "Lecture…",
+  "queue.failed": "Analyse échouée",
+  "queue.retry": "Réessayer",
+  "queue.match": "Correspond à {desc}",
+  "queue.attach": "Joindre à ce trade",
+  "queue.attachAll": "Joindre les {n} correspondances sûres",
+  "queue.createTrade": "Créer le trade",
+  "queue.missed": "Setup manqué",
+  "queue.dismiss": "Écarter",
+  "queue.history": "Historique",
+  "queue.applied": "Ajoutée à un trade",
+  "queue.appliedMissed": "Devenue un setup manqué",
+  "queue.dismissed": "Écartée",
+  "queue.open": "Ouvrir",
+  "queue.full": "Ce trade a déjà 3 captures.",
+  "queue.nothing": "Rien de lisible",
 };
 
 export default fr;

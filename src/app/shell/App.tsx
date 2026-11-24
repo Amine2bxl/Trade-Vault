@@ -1023,6 +1023,13 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
     setEditingTrade(null);
     setModalOpen(true);
   }, []);
+  // Le formulaire de trade s'ouvre depuis n'importe quelle page (Inbox, capture…) ;
+  // ce qu'il doit savoir passe par un relais (`handOff`).
+  useEffect(() => {
+    window.addEventListener("tv:new-trade", handleAdd);
+    return () => window.removeEventListener("tv:new-trade", handleAdd);
+  }, [handleAdd]);
+
   const handleCloseModal = useCallback(() => {
     setModalOpen(false);
     setEditingTrade(null);

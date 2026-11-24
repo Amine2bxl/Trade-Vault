@@ -4,6 +4,7 @@ import { useTrades } from "@/app/trading/useTrades";
 import { loadRecentCorrections } from "@/app/store/captures";
 import { findTradeMatches, type TradeMatch } from "@/domain/captureMatch";
 import { CaptureAssist, type ApplyOutcome } from "./CaptureAssist";
+import type { CaptureRun } from "./useCaptureAnalysis";
 import {
   applyLearning,
   applyProposals,
@@ -39,6 +40,8 @@ interface Props<S extends FormLike> {
   plannedRiskDollars: number | null;
   /** Ouvre un trade existant (doublon probable) — le formulaire garde son brouillon. */
   onOpenTrade: (id: string) => void;
+  /** Une analyse déjà faite (capture venue de l'Inbox) : appliquée dès l'ouverture. */
+  previewRun?: CaptureRun;
 }
 
 const PRICE_FIELDS = new Set<TradeFormField>([
@@ -113,6 +116,7 @@ export function TradeCaptureAssist<S extends FormLike>(p: Props<S>) {
       essential={ESSENTIAL_TRADE_FIELDS}
       propose={(x, d) => applyLearning(tradeProposals(x, d, ctx), remaps)}
       apply={apply}
+      previewRun={p.previewRun}
       onResult={(run) => {
         session.current = { itemId: run.itemId, applied: session.current?.applied ?? [] };
         if (!p.isNew) return;

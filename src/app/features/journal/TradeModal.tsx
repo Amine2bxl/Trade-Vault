@@ -94,6 +94,8 @@ import { loadTradingPlan } from "@/app/trading/tradingPlan";
 import { TradeCaptureAssist } from "../capture/TradeCaptureAssist";
 import { settleTradeCapture, type CaptureSession } from "../capture/settleCapture";
 import { navigateTo } from "@/app/utils/navigate";
+import type { CaptureRun } from "../capture/useCaptureAnalysis";
+import { enrichCapture } from "@/domain/captureEnrich";
 import type { PlannedLevels } from "@/domain/executionPlan";
 
 interface TradeModalProps {
@@ -340,6 +342,26 @@ export default function TradeModal({ trade, usedSymbols, onClose, onSave }: Trad
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, trade?.id]);
+
+  // NOUVEAU TRADE DEPUIS UNE CAPTURE DÉJÀ ANALYSÉE (Inbox) : ses captures
+  // rejoignent le formulaire, et l'analyse s'applique aux champs vides.
+  const [capturePreview, setCapturePreview] = useState<CaptureRun | null>(null);
+  useEffect(() => {
+    if (trade) return;
+    const cap = takeHandoff("tradeCapture");
+    if (!cap) return;
+    setForm((f) => ({
+      ...f,
+      screenshots: Array.from(new Set([...f.screenshots, ...cap.screenshots])).slice(0, 3),
+    }));
+    setCapturePreview({
+      itemId: cap.itemId,
+      extraction: cap.extraction,
+      derived: enrichCapture(cap.extraction),
+      cached: true,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // NOUVEAU TRADE OUVERT DEPUIS LA CHECKLIST : le plan de séance a déposé ce
   // qu'il sait déjà (sens, risque, état, plan, réflexion du bilan). Pris dans
@@ -969,6 +991,8 @@ export default function TradeModal({ trade, usedSymbols, onClose, onSave }: Trad
 
           {(!trade || form.screenshots.length > 0) && (
             <TradeCaptureAssist
+              key={capturePreview?.itemId ?? "capture"}
+              previewRun={capturePreview ?? undefined}
               userId={userId}
               accountId={trade?.accountId ?? activeId ?? null}
               isNew={!trade}

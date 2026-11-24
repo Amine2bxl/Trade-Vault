@@ -45,7 +45,7 @@ export interface CaptureAssistProps<F extends string> {
   onResult?: (run: CaptureRun, outcome: ApplyOutcome<F>) => void;
   /** Ce que le parent veut montrer sous le résumé (doublon probable…). */
   children?: ReactNode;
-  /** Banc visuel (`/dev/ui?screen=capture`) : un résultat déjà là, sans appel serveur. */
+  /** Une analyse déjà faite (capture venue de l'Inbox, banc visuel) : appliquée au montage, sans appel serveur. */
   previewRun?: CaptureRun;
 }
 

@@ -2,6 +2,7 @@ import type { EmotionalState } from "@/app/trading/readiness";
 import type { PlanRespected, ReflectionReason } from "@/app/store/tradeIntel";
 import type { MissedOpportunity } from "@/app/types";
 import type { PlannedLevels } from "@/domain/executionPlan";
+import type { CaptureExtraction } from "@/domain/capture";
 
 /**
  * Le passage de relais entre deux écrans — UNE valeur, lue UNE fois.
@@ -56,10 +57,19 @@ export type TradeReviewPrefill = Pick<
   | "reflectionNote"
 > & { tradeId: string };
 
+/** Une capture déjà analysée (Inbox) qui devient un trade ou un setup manqué. */
+export interface CapturePrefill {
+  itemId: string;
+  extraction: CaptureExtraction;
+  screenshots: string[];
+}
+
 interface Payloads {
   trade: TradePrefill;
   missed: MissedPrefill;
   tradeReview: TradeReviewPrefill;
+  tradeCapture: CapturePrefill;
+  missedCapture: CapturePrefill;
 }
 
 const slots = new Map<keyof Payloads, unknown>();

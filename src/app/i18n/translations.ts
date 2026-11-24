@@ -3322,6 +3322,28 @@ const en = {
   "compliance.suggest": "suggested: {v}",
   "compliance.explain": "Broken without a word from you: add a short reason in the trade's review.",
   "compliance.undeterminedHint": "Not enough data to judge. Nothing is assumed.",
+  "queue.title": "Captures to process",
+  "queue.add": "Add captures",
+  "queue.drop":
+    "Drop or paste your screenshots here. Each one is read, matched to your journal and prepared; nothing is recorded until you validate.",
+  "queue.sameTrade": "Same trade (entry and exit)",
+  "queue.analyzeN": "Analyze ({n})",
+  "queue.processing": "Reading…",
+  "queue.failed": "Analysis failed",
+  "queue.retry": "Retry",
+  "queue.match": "Matches {desc}",
+  "queue.attach": "Attach to this trade",
+  "queue.attachAll": "Attach the {n} sure matches",
+  "queue.createTrade": "Create the trade",
+  "queue.missed": "Missed setup",
+  "queue.dismiss": "Dismiss",
+  "queue.history": "History",
+  "queue.applied": "Added to a trade",
+  "queue.appliedMissed": "Became a missed setup",
+  "queue.dismissed": "Dismissed",
+  "queue.open": "Open",
+  "queue.full": "This trade already has 3 screenshots.",
+  "queue.nothing": "Nothing readable",
 };
 
 // The English dict above is the source of truth and the runtime fallback —
