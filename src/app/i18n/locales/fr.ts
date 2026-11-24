@@ -3241,6 +3241,28 @@ const fr: Dict = {
   "capture.field.strategy": "Setup",
   "capture.field.confluences": "Confluences",
   "capture.field.outcome": "Issue",
+  "compliance.title": "Respect du plan",
+  "compliance.verdict.respected": "Plan respecté",
+  "compliance.verdict.partial": "Partiellement respecté",
+  "compliance.verdict.violated": "Non respecté",
+  "compliance.verdict.undetermined": "Indéterminé",
+  "compliance.state.respected": "respectée",
+  "compliance.state.violated": "non respectée",
+  "compliance.state.unverifiable": "non vérifiable",
+  "compliance.state.to_confirm": "à confirmer",
+  "compliance.rule.direction": "Sens",
+  "compliance.rule.entry_zone": "Zone d'entrée",
+  "compliance.rule.stop": "Invalidation",
+  "compliance.rule.risk": "Risque par trade",
+  "compliance.rule.trade_count": "Nombre de trades",
+  "compliance.rule.observation": "Fenêtre d'observation",
+  "compliance.rule.exit": "Sortie au stop ou à la cible",
+  "compliance.rule.confluence": "Confluence",
+  "compliance.rule.declared": "Votre bilan",
+  "compliance.suggest": "proposé : {v}",
+  "compliance.explain":
+    "Enfreint sans un mot de votre part : ajoutez une courte raison dans le bilan du trade.",
+  "compliance.undeterminedHint": "Pas assez de données pour juger. Rien n'est supposé.",
 };
 
 export default fr;

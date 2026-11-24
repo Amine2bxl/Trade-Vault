@@ -3,7 +3,14 @@ import { useAuth } from "@/app/contexts/AuthContext";
 import { useT } from "@/app/i18n/LanguageContext";
 import type { TKey } from "@/app/i18n/translations";
 import { saveExecutionOverride, type ExecutionOverride } from "@/app/store/tradeIntel";
-import type { Deviation, ExecutionAssessment, ExecutionVerdict } from "@/modules/discipline";
+import type {
+  ComplianceAssessment,
+  ComplianceVerdict,
+  Deviation,
+  ExecutionAssessment,
+  ExecutionVerdict,
+  RuleCheck,
+} from "@/modules/discipline";
 import { cn } from "@/shared/ui/cn";
 import { VERDICT_KEYS, verdictTone } from "./executionLabels";
 import { formatMoney } from "@/shared/currency";
@@ -43,7 +50,7 @@ export function TradeExecution({
 }: {
   tradeId: string;
   /** `null` pendant le chargement du plan du jour. */
-  assessment: ExecutionAssessment | null;
+  assessment: (ExecutionAssessment & { compliance?: ComplianceAssessment }) | null;
   label?: boolean;
 }) {
   const { t } = useT();
@@ -129,6 +136,77 @@ export function TradeExecution({
         <p className="text-xs text-slate-500">{t("exec.unknownHint")}</p>
       ) : null}
       {failed && <p className="text-xs text-red-400">{t("exec.overrideFailed")}</p>}
+      {assessment.compliance && <TradeCompliance compliance={assessment.compliance} />}
+    </div>
+  );
+}
+
+const COMPLIANCE_TONE: Record<ComplianceVerdict, string> = {
+  respected: "border-emerald-500/25 bg-emerald-500/10 text-emerald-300",
+  partial: "border-amber-500/25 bg-amber-500/10 text-amber-300",
+  violated: "border-red-500/25 bg-red-500/10 text-red-300",
+  undetermined: "border-[var(--tv-border)] text-slate-400",
+};
+
+/**
+ * Le plan, règle par règle : seules les règles que le plan pose sont listées.
+ * Une règle enfreinte propose sa catégorie d'erreur ; une règle sans donnée
+ * est « non vérifiable », jamais devinée.
+ */
+function TradeCompliance({ compliance }: { compliance: ComplianceAssessment }) {
+  const { t } = useT();
+  const checks = compliance.checks.filter((c) => c.state !== "not_applicable");
+  const stateLabel = (c: RuleCheck) =>
+    t(`compliance.state.${c.certainty === "to_confirm" ? "to_confirm" : c.state}` as TKey);
+  return (
+    <div className="space-y-1.5 border-t border-[var(--tv-border)] pt-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="tv-label text-slate-500">{t("compliance.title")}</span>
+        <span
+          className={cn(
+            "rounded-lg border px-2.5 py-1 text-[11px] font-semibold",
+            COMPLIANCE_TONE[compliance.verdict],
+          )}
+        >
+          {t(`compliance.verdict.${compliance.verdict}` as TKey)}
+        </span>
+        {compliance.source === "manual" && (
+          <span className="text-[11px] text-slate-500">{t("exec.manual")}</span>
+        )}
+      </div>
+      {checks.length > 0 ? (
+        <ul className="grid gap-x-4 gap-y-0.5 sm:grid-cols-2">
+          {checks.map((c, i) => (
+            <li key={`${c.rule}-${i}`} className="flex min-w-0 items-baseline gap-2 text-xs">
+              <span className="min-w-0 truncate text-slate-300">
+                {t(`compliance.rule.${c.rule}` as TKey)}
+                {c.rule === "confluence" && c.detail ? ` · ${c.detail}` : ""}
+              </span>
+              <span
+                className={cn(
+                  "ml-auto shrink-0",
+                  c.state === "respected" && "text-emerald-400",
+                  c.state === "violated" && "text-red-400",
+                  c.state === "unverifiable" && "text-slate-500",
+                  c.certainty === "to_confirm" && "text-amber-300",
+                )}
+              >
+                {stateLabel(c)}
+              </span>
+              {c.state === "violated" && c.mistake && (
+                <span className="shrink-0 text-[11px] text-slate-500">
+                  {t("compliance.suggest").replace("{v}", c.mistake)}
+                </span>
+              )}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-xs text-slate-500">{t("compliance.undeterminedHint")}</p>
+      )}
+      {compliance.needsExplanation && (
+        <p className="text-xs text-amber-300">{t("compliance.explain")}</p>
+      )}
     </div>
   );
 }

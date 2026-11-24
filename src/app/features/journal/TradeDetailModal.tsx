@@ -33,8 +33,12 @@ import TradeDetailSheet from "./TradeDetailSheet";
 import { TradeExecution } from "./TradeExecution";
 import { loadTodaySession } from "@/app/store/sessions";
 import { sessionFromSnapshot } from "@/app/features/checklist/sessionPlan";
-import { assessTrade, type SessionContext } from "@/app/features/checklist/executionReview";
-import type { ExecutionAssessment } from "@/modules/discipline";
+import {
+  assessTrade,
+  type SessionContext,
+  type TradeAssessment,
+} from "@/app/features/checklist/executionReview";
+import { loadTradingPlan } from "@/app/trading/tradingPlan";
 import {
   TradeConfidence,
   TradeConfluences,
@@ -131,8 +135,25 @@ export default function TradeDetailModal({
       active = false;
     };
   }, [userId, date]);
+  // Les règles écrites de chaque setup du plan : les confluences qu'il exige.
+  const [setupRules, setSetupRules] = useState<Record<string, string>>({});
+  useEffect(() => {
+    if (!userId) return;
+    let active = true;
+    void loadTradingPlan(userId)
+      .then((p) => {
+        if (active)
+          setSetupRules(
+            Object.fromEntries(p.setups.map((s) => [s.name.trim().toLowerCase(), s.rules])),
+          );
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [userId]);
   const assessments = useMemo(() => {
-    const out: Record<string, ExecutionAssessment> = {};
+    const out: Record<string, TradeAssessment> = {};
     if (session === undefined) return out;
     for (const trade of trades) {
       out[trade.id] = assessTrade({
@@ -141,10 +162,11 @@ export default function TradeDetailModal({
         session,
         intent: intents[trade.id],
         reflection: reflections[trade.id],
+        setupRules: setupRules[trade.strategy.trim().toLowerCase()] ?? null,
       });
     }
     return out;
-  }, [trades, session, intents, reflections]);
+  }, [trades, session, intents, reflections, setupRules]);
   // Screenshots are stored as storage paths (or legacy data: URLs) — resolve
   // them all in one batched signed-URL request.
   const screenshotUrls = useScreenshotUrls(trades.flatMap((tr) => tr.screenshots));

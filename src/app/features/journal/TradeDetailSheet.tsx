@@ -9,7 +9,7 @@ import { cn } from "@/shared/ui/cn";
 import { Button, Disclosure, Modal } from "@/shared/ui";
 import { useT } from "@/app/i18n/LanguageContext";
 import type { TradeIntent, TradeReflection } from "@/app/store/tradeIntel";
-import type { ExecutionAssessment } from "@/modules/discipline";
+import type { TradeAssessment } from "@/app/features/checklist/executionReview";
 import { TradeExecution } from "./TradeExecution";
 import { ScreenshotImage } from "@/app/components/ScreenshotImage";
 import {
@@ -65,7 +65,7 @@ export interface TradeDetailSheetProps {
   intents: Record<string, TradeIntent>;
   reflections: Record<string, TradeReflection>;
   /** Verdict d'exécution par trade (absent tant que le plan du jour se charge). */
-  assessments: Record<string, ExecutionAssessment>;
+  assessments: Record<string, TradeAssessment>;
   screenshotUrls: Record<string, string>;
   onOpenShot: (paths: string[], index: number) => void;
   /** La visionneuse plein écran, montée dans la même couche. */
@@ -347,7 +347,7 @@ function SheetTrade({
   trade: Trade;
   intent: TradeIntent | null;
   reflection: TradeReflection | null;
-  assessment: ExecutionAssessment | null;
+  assessment: TradeAssessment | null;
   screenshotUrls: Record<string, string>;
   onOpenShot: (paths: string[], index: number) => void;
 }) {

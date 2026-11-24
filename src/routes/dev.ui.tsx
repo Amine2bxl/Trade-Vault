@@ -1,3 +1,5 @@
+import { TradeExecution } from "@/app/features/journal/TradeExecution";
+import { assessCompliance, assessExecution } from "@/modules/discipline";
 import { CaptureAssist } from "@/app/features/capture/CaptureAssist";
 import {
   applyProposals,
@@ -102,6 +104,7 @@ const noop = () => {};
 const IDS = [
   "trade",
   "capture",
+  "compliance",
   "missedform",
   "controls",
   "icons",
@@ -250,6 +253,7 @@ function DevUiBody({
           <Suspense fallback={<div className="p-6 text-sm text-slate-500">…</div>}>
             {ecran === "trade" && <TradeHarness />}
             {ecran === "capture" && <CaptureHarness />}
+            {ecran === "compliance" && <ComplianceHarness />}
             {ecran === "missedform" && <MissedHarness />}
             {ecran === "controls" && <ControlHarness />}
             {ecran === "icons" && <IconHarness />}
@@ -403,6 +407,45 @@ function DashboardHarness({ trades }: { trades: Trade[] }) {
         <TradeModal trade={null} onClose={() => setOpen(false)} onSave={() => setOpen(false)} />
       )}
     </>
+  );
+}
+
+/** Exécution et respect du plan d'un trade gagnant pris en poursuivant l'entrée. */
+function ComplianceHarness() {
+  const facts = {
+    direction: "long" as const,
+    entryPrice: 21004,
+    exitPrice: 21012,
+    riskAmount: 250,
+    mistakes: [],
+    planned: {
+      direction: "long" as const,
+      entry: 21000,
+      stop: 20990,
+      target: 21030,
+      scenario: "A" as const,
+    },
+    initialStop: 20990,
+    initialTarget: 21030,
+    plannedRisk: 250,
+    sessionBreaches: [] as ("direction" | "extra" | "observation")[],
+    planRespected: null,
+    reflectionReason: null,
+    override: null,
+  };
+  const assessment = {
+    ...assessExecution(facts),
+    compliance: assessCompliance(facts, {
+      setupRules: "Liquidity sweep, MSS, entry on the FVG",
+      confluences: ["Liquidity Sweep", "FVG"],
+    }),
+  };
+  return (
+    <div className="mx-auto max-w-xl p-4">
+      <div className="rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)] p-3">
+        <TradeExecution tradeId="demo" assessment={assessment} />
+      </div>
+    </div>
   );
 }
 

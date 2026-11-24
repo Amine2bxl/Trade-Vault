@@ -5,7 +5,13 @@
  */
 
 import type { Trade } from "@/domain/trade";
-import { assessExecution, type ExecutionAssessment } from "@/modules/discipline";
+import {
+  assessCompliance,
+  assessExecution,
+  type ComplianceAssessment,
+  type ExecutionAssessment,
+  type ExecutionInput,
+} from "@/modules/discipline";
 import type { TradeIntent, TradeReflection } from "@/app/store/tradeIntel";
 import {
   dayFacts,
@@ -21,6 +27,9 @@ export interface SessionContext {
   scenario: Scenario;
 }
 
+/** L'exécution et la conformité au plan, calculées sur les MÊMES faits. */
+export type TradeAssessment = ExecutionAssessment & { compliance: ComplianceAssessment };
+
 export function assessTrade(input: {
   trade: Trade;
   /** Tous les trades du jour : le rang du trade fait le « trade en trop ». */
@@ -28,10 +37,12 @@ export function assessTrade(input: {
   session: SessionContext | null;
   intent?: TradeIntent | null;
   reflection?: TradeReflection | null;
-}): ExecutionAssessment {
+  /** Les règles écrites du setup du trade dans le plan de trading (confluences exigées). */
+  setupRules?: string | null;
+}): TradeAssessment {
   const { trade, session, intent, reflection } = input;
   const index = dayFacts(input.dayTrades, trade.date).trades.findIndex((t) => t.id === trade.id);
-  return assessExecution({
+  const facts: ExecutionInput = {
     direction: trade.direction,
     entryPrice: trade.entryPrice ?? null,
     exitPrice: trade.exitPrice ?? null,
@@ -46,5 +57,12 @@ export function assessTrade(input: {
     planRespected: reflection?.planRespected ?? null,
     reflectionReason: reflection?.reason ?? null,
     override: reflection?.executionOverride ?? null,
-  });
+  };
+  return {
+    ...assessExecution(facts),
+    compliance: assessCompliance(facts, {
+      setupRules: input.setupRules,
+      confluences: trade.confluences,
+    }),
+  };
 }

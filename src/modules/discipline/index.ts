@@ -24,3 +24,12 @@ export type {
   MatrixCell,
   SessionVerdict,
 } from "./execution";
+export { assessCompliance, requiredConfluences } from "./compliance";
+export type {
+  ComplianceAssessment,
+  ComplianceExtras,
+  ComplianceRule,
+  ComplianceVerdict,
+  RuleCheck,
+  RuleState,
+} from "./compliance";
