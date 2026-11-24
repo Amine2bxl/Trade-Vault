@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { clearFocus, FOCUS_EVENT, readFocus } from "@/app/utils/navigate";
 import {
   Plus,
   ArrowUpDown,
@@ -156,6 +157,18 @@ export default function Journal({
   const [sortDir, setSortDir] = useState<SortDir>(stored.sortDir ?? "desc");
   const [days, setDays] = useState<string[]>(stored.days ?? []);
   const [viewingIdx, setViewingIdx] = useState<number | null>(null);
+  // Un trade ouvert par lien (`?trade=`) : depuis une capture, Jarvis, l'Inbox…
+  const [focusId, setFocusId] = useState<string | null>(() => readFocus("trade"));
+  useEffect(() => {
+    const sync = () => setFocusId(readFocus("trade"));
+    window.addEventListener(FOCUS_EVENT, sync);
+    return () => window.removeEventListener(FOCUS_EVENT, sync);
+  }, []);
+  const focused = focusId ? (trades.find((tr) => tr.id === focusId) ?? null) : null;
+  const closeFocus = () => {
+    setFocusId(null);
+    clearFocus("trade");
+  };
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   useEffect(() => {
@@ -892,6 +905,18 @@ export default function Journal({
           </div>
         </Card>
       </div>
+
+      {focused && (
+        <TradeDetailModal
+          trades={[focused]}
+          date={focused.date}
+          onClose={closeFocus}
+          onDelete={(id) => {
+            onDelete(id);
+            closeFocus();
+          }}
+        />
+      )}
 
       {viewing && viewingIdx !== null && (
         <TradeDetailModal

@@ -63,6 +63,17 @@ import { usePageActions } from "@/app/contexts/PageActionsContext";
 import { todayLocalDate } from "@/shared/calendar-date";
 import { takeHandoff } from "@/app/utils/handoff";
 import { missedR } from "./missedModel";
+import { CaptureAssist } from "../capture/CaptureAssist";
+import {
+  applyProposals,
+  coerceMissed,
+  correctionsOf,
+  ESSENTIAL_MISSED_FIELDS,
+  missedProposals,
+  type MissedFormField,
+  type Proposal,
+} from "../capture/capturePrefill";
+import { markCaptureApplied } from "@/app/store/captures";
 import {
   hypotheticalR,
   MISSED_CLASSES,
@@ -244,7 +255,7 @@ export default function MissedOpportunities() {
 
   const handleSave = useCallback(
     async (m: MissedOpportunity) => {
-      if (!user) return;
+      if (!user) return false;
       try {
         const clean: MissedOpportunity = { ...m, screenshots: m.screenshots ?? [] };
         await upsertMissedOpportunity(user.id, clean);
@@ -253,9 +264,11 @@ export default function MissedOpportunities() {
           return exists ? prev.map((x) => (x.id === clean.id ? clean : x)) : [clean, ...prev];
         });
         setEditing(null);
+        return true;
       } catch (e) {
         console.error(e);
         toast(t("missed.saveFailed"), "error");
+        return false;
       }
     },
     [user, t, toast],
@@ -789,7 +802,7 @@ export function MissedEditor({
 }: {
   value: MissedOpportunity;
   onClose: () => void;
-  onSave: (m: MissedOpportunity) => void;
+  onSave: (m: MissedOpportunity) => void | Promise<boolean | void>;
 }) {
   const { user } = useAuth();
   const { t, lang } = useT();
@@ -830,6 +843,40 @@ export function MissedEditor({
   const fileRef = useRef<HTMLInputElement>(null);
   const set = <K extends keyof MissedOpportunity>(k: K, v: MissedOpportunity[K]) =>
     setM((p) => ({ ...p, [k]: v }));
+
+  // LE MOTEUR DE CAPTURE — le même que pour un trade : il ne remplit que les
+  // champs vides ; la classe et la raison restent au trader (l'image ne dit
+  // pas s'il a hésité).
+  const { activeId } = useAccounts();
+  const mRef = useRef(m);
+  mRef.current = m;
+  const captureSession = useRef<{ itemId: string | null; applied: Proposal<MissedFormField>[] }>({
+    itemId: null,
+    applied: [],
+  });
+  const applyCapture = useCallback(
+    (
+      proposals: Proposal<MissedFormField>[],
+      opts: { includeReview?: boolean; force?: boolean },
+    ) => {
+      const r = applyProposals(mRef.current, { date: todayLocalDate() }, proposals, {
+        ...opts,
+        coerce: coerceMissed,
+      });
+      if (r.applied.length) {
+        mRef.current = r.next;
+        setM(r.next);
+        captureSession.current.applied = [
+          ...captureSession.current.applied.filter(
+            (a) => !r.applied.some((x) => x.field === a.field),
+          ),
+          ...r.applied,
+        ];
+      }
+      return { applied: r.applied, conflicts: r.conflicts };
+    },
+    [],
+  );
 
   const handleFiles = useCallback(
     async (files: FileList | File[] | null) => {
@@ -958,6 +1005,20 @@ export function MissedEditor({
         </button>
       </header>
       <div className="tv-trade-form min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain px-4 py-3 sm:px-5">
+        <CaptureAssist<MissedFormField>
+          target="missed"
+          paths={shots}
+          uploading={uploading}
+          canAddMore={shots.length < 3}
+          onAddFiles={(files) => void handleFiles(files)}
+          accountId={activeId ?? null}
+          essential={ESSENTIAL_MISSED_FIELDS}
+          propose={missedProposals}
+          apply={applyCapture}
+          onResult={(run) => {
+            captureSession.current.itemId = run.itemId;
+          }}
+        />
         {/* 1 — LE SETUP */}
         <FormSection n={1} title={t("missed.secSetup")} done={setupDone}>
           <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
@@ -1196,7 +1257,16 @@ export function MissedEditor({
             removeKey(draftKey);
             // Ce qui part en base est le R qui COMPTE : 0 pour un setup écarté
             // ou invalide, le R calculé quand les niveaux et l'issue le permettent.
-            onSave({ ...m, estimatedR: r });
+            const saved = { ...m, estimatedR: r };
+            const session = captureSession.current;
+            void Promise.resolve(onSave(saved)).then((ok) => {
+              if (ok === false || !session.itemId) return;
+              void markCaptureApplied(
+                session.itemId,
+                { missedId: saved.id },
+                correctionsOf(session.applied, saved),
+              );
+            });
           }}
           disabled={uploading || !setupDone}
           className="shrink-0"

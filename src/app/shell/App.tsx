@@ -1,4 +1,5 @@
 import { lazyPage } from "@/shared/lazy-page";
+import { applyFocus, type NavigateDetail } from "@/app/utils/navigate";
 import { CursorOrb } from "@/shared/ui/CursorOrb";
 import {
   useState,
@@ -508,7 +509,9 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
   // vers une page sans coupler les modales au composant racine.
   useEffect(() => {
     const onNavigate = (e: Event) => {
-      const detail = (e as CustomEvent<{ page?: string; filter?: string }>).detail;
+      const detail = (
+        e as CustomEvent<{ page?: string; filter?: string; focus?: NavigateDetail["focus"] }>
+      ).detail;
       // Même garde que la restauration de session : la cible vient d'un
       // événement externe, elle doit être validée avant d'être appliquée.
       if (!isPage(detail?.page)) return;
@@ -522,6 +525,9 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
         window.history.replaceState(window.history.state, "", url.pathname + url.search);
         window.dispatchEvent(new CustomEvent("tv:filter"));
       }
+      // Ouvrir un élément précis (`?trade=` / `?missed=`) : la page le lit au montage.
+      if (detail.focus?.kind === "trade" || detail.focus?.kind === "missed")
+        applyFocus(detail.focus);
     };
     window.addEventListener("tv:navigate", onNavigate);
     return () => window.removeEventListener("tv:navigate", onNavigate);

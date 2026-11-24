@@ -91,6 +91,9 @@ import { TradePricesSection } from "./TradePricesSection";
 import { applyDefaults, loadTradeDefaults, rememberTradeDefaults } from "./tradeDefaults";
 import { useAccounts } from "@/app/contexts/AccountContext";
 import { loadTradingPlan } from "@/app/trading/tradingPlan";
+import { TradeCaptureAssist } from "../capture/TradeCaptureAssist";
+import { settleTradeCapture, type CaptureSession } from "../capture/settleCapture";
+import { navigateTo } from "@/app/utils/navigate";
 import type { PlannedLevels } from "@/domain/executionPlan";
 
 interface TradeModalProps {
@@ -413,6 +416,14 @@ export default function TradeModal({ trade, usedSymbols, onClose, onSave }: Trad
     };
   }, [userId]);
 
+  const strategyOptions = useMemo(
+    () => Array.from(new Set([...planSetups, ...STRATEGIES])),
+    [planSetups],
+  );
+  // La dernière analyse de capture : soldée (lien + corrections) à l'enregistrement.
+  const captureSession = useRef<CaptureSession | null>(null);
+  const openPrices = useCallback(() => setShowPrices(true), []);
+
   const [showAllMistakes, setShowAllMistakes] = useState(false);
   const [uploading, setUploading] = useState(false);
   // Notes mises en forme : gras / italique / souligné (voir `shared/richText`).
@@ -702,10 +713,11 @@ export default function TradeModal({ trade, usedSymbols, onClose, onSave }: Trad
       intensity: form.intensity,
       reentryUrge: form.reentryUrge,
     };
+    const tradeId = trade?.id || generateId();
     try {
       const result = await onSave(
         {
-          id: trade?.id || generateId(),
+          id: tradeId,
           date: form.date,
           symbol: form.symbol.toUpperCase(),
           direction: form.direction,
@@ -763,6 +775,7 @@ export default function TradeModal({ trade, usedSymbols, onClose, onSave }: Trad
       );
       if (result !== false) {
         savedRef.current = true;
+        settleTradeCapture(captureSession.current, tradeId, form);
         if (!trade && userId) {
           void rememberTradeDefaults(userId, activeId, {
             symbol: form.symbol.toUpperCase(),
@@ -952,6 +965,30 @@ export default function TradeModal({ trade, usedSymbols, onClose, onSave }: Trad
                 </p>
               )}
             </div>
+          )}
+
+          {(!trade || form.screenshots.length > 0) && (
+            <TradeCaptureAssist
+              userId={userId}
+              accountId={trade?.accountId ?? activeId ?? null}
+              isNew={!trade}
+              formRef={latestFormRef}
+              pristine={defaultForm}
+              setForm={setForm}
+              onPricesApplied={openPrices}
+              session={captureSession}
+              paths={form.screenshots}
+              uploading={uploading}
+              canAddMore={form.screenshots.length < 3}
+              onAddFiles={(files) => void handleScreenshotUpload(files)}
+              strategies={strategyOptions}
+              confluences={userConfluences}
+              plannedRiskDollars={riskDollar > 0 ? riskDollar : null}
+              onOpenTrade={(id) => {
+                onClose();
+                navigateTo({ page: "journal", focus: { kind: "trade", id } });
+              }}
+            />
           )}
 
           <div className="space-y-3">
