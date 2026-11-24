@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useT } from "@/app/i18n/LanguageContext";
 import type { TKey } from "@/app/i18n/translations";
 import { Badge, Button, Textarea, cn } from "@/shared/ui";
@@ -45,6 +45,8 @@ export interface CaptureAssistProps<F extends string> {
   onResult?: (run: CaptureRun, outcome: ApplyOutcome<F>) => void;
   /** Ce que le parent veut montrer sous le résumé (doublon probable…). */
   children?: ReactNode;
+  /** Banc visuel (`/dev/ui?screen=capture`) : un résultat déjà là, sans appel serveur. */
+  previewRun?: CaptureRun;
 }
 
 const KIND_BADGE: Record<ProposalKind, "accent" | "neutral" | "warning"> = {
@@ -59,7 +61,9 @@ const fill = (s: string, vars: Record<string, string | number>) =>
 
 export function CaptureAssist<F extends string>(props: CaptureAssistProps<F>) {
   const { t, lang } = useT();
-  const { busy, error, run, analyze } = useCaptureAnalysis();
+  const analysis = useCaptureAnalysis();
+  const { busy, error, analyze } = analysis;
+  const run = analysis.run ?? props.previewRun ?? null;
   const dictation = useDictation(lang);
   const [note, setNote] = useState("");
   const [showNote, setShowNote] = useState(false);
@@ -70,18 +74,7 @@ export function CaptureAssist<F extends string>(props: CaptureAssistProps<F>) {
 
   const label = (f: string) => t(`capture.field.${f}` as TKey) || f;
 
-  const start = async (force = false) => {
-    const res = await analyze({
-      paths: props.paths,
-      note,
-      source: props.paths.length ? "image" : fromVoice ? "voice" : "note",
-      target: props.target,
-      accountId: props.accountId,
-      hints: props.hints,
-      plannedRiskDollars: props.plannedRiskDollars,
-      force,
-    });
-    if (!res) return;
+  const settle = (res: CaptureRun) => {
     const proposals = props.propose(res.extraction, res.derived);
     const out = props.apply(proposals, {});
     setOutcome(out);
@@ -94,6 +87,27 @@ export function CaptureAssist<F extends string>(props: CaptureAssistProps<F>) {
       ),
     );
     props.onResult?.(res, out);
+  };
+  const previewed = useRef(false);
+  useEffect(() => {
+    if (!props.previewRun || previewed.current) return;
+    previewed.current = true;
+    settle(props.previewRun);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const start = async (force = false) => {
+    const res = await analyze({
+      paths: props.paths,
+      note,
+      source: props.paths.length ? "image" : fromVoice ? "voice" : "note",
+      target: props.target,
+      accountId: props.accountId,
+      hints: props.hints,
+      plannedRiskDollars: props.plannedRiskDollars,
+      force,
+    });
+    if (res) settle(res);
   };
 
   const applyOne = (p: Proposal<F>, force: boolean) => {
@@ -161,19 +175,21 @@ export function CaptureAssist<F extends string>(props: CaptureAssistProps<F>) {
             </span>
           </Button>
         )}
-        <Button
-          variant={run ? "subtle" : "accent"}
-          size="sm"
-          disabled={!hasInput || busy || props.uploading}
-          onClick={() => void start(!!run)}
-        >
-          {busy ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
-          ) : run ? (
-            <RotateCcw className="h-3.5 w-3.5" aria-hidden />
-          ) : null}
-          {run ? t("capture.reanalyze") : t("capture.analyze")}
-        </Button>
+        {(hasInput || run) && (
+          <Button
+            variant={run ? "subtle" : "accent"}
+            size="sm"
+            disabled={!hasInput || busy || props.uploading}
+            onClick={() => void start(!!run)}
+          >
+            {busy ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+            ) : run ? (
+              <RotateCcw className="h-3.5 w-3.5" aria-hidden />
+            ) : null}
+            {run ? t("capture.reanalyze") : t("capture.analyze")}
+          </Button>
+        )}
         <input
           ref={fileInput}
           type="file"

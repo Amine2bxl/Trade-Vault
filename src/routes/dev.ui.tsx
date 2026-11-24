@@ -1,3 +1,12 @@
+import { CaptureAssist } from "@/app/features/capture/CaptureAssist";
+import {
+  applyProposals,
+  ESSENTIAL_TRADE_FIELDS,
+  tradeProposals,
+  type TradeFormField,
+} from "@/app/features/capture/capturePrefill";
+import { normalizeExtraction } from "@/domain/capture";
+import { enrichCapture } from "@/domain/captureEnrich";
 import {
   PageContainer,
   Button,
@@ -11,7 +20,16 @@ import {
   type RangeValue,
 } from "@/shared/ui";
 import { PAGE_META } from "@/app/shell/navigation";
-import { lazy, Suspense, useState, useEffect, useMemo, useCallback, type ReactNode } from "react";
+import {
+  lazy,
+  Suspense,
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  useRef,
+  type ReactNode,
+} from "react";
 import { createFileRoute, ClientOnly } from "@tanstack/react-router";
 import { ThemeProvider } from "@/app/contexts/ThemeContext";
 import { AuthProvider } from "@/app/contexts/AuthContext";
@@ -83,6 +101,7 @@ const noop = () => {};
 
 const IDS = [
   "trade",
+  "capture",
   "missedform",
   "controls",
   "icons",
@@ -230,6 +249,7 @@ function DevUiBody({
         >
           <Suspense fallback={<div className="p-6 text-sm text-slate-500">…</div>}>
             {ecran === "trade" && <TradeHarness />}
+            {ecran === "capture" && <CaptureHarness />}
             {ecran === "missedform" && <MissedHarness />}
             {ecran === "controls" && <ControlHarness />}
             {ecran === "icons" && <IconHarness />}
@@ -383,6 +403,78 @@ function DashboardHarness({ trades }: { trades: Trade[] }) {
         <TradeModal trade={null} onClose={() => setOpen(false)} onSave={() => setOpen(false)} />
       )}
     </>
+  );
+}
+
+/** Le moteur de capture après une analyse : long NQ lu sur un graphique 5m. */
+function CaptureHarness() {
+  const x = normalizeExtraction(
+    {
+      date: { value: "2026-11-20", confidence: "high" },
+      symbol: { value: "CME_MINI:NQ1!", confidence: "high", evidence: "NQ1! · 5 · CME" },
+      direction: { value: "long", confidence: "high" },
+      timeframe: { value: "5", confidence: "high" },
+      chartTimezone: { value: "UTC-5", confidence: "medium" },
+      entryPrice: { value: 21000, confidence: "high" },
+      stopPrice: { value: 20990, confidence: "low" },
+      targetPrice: { value: 21030, confidence: "high" },
+      exitPrice: { value: 21030, confidence: "high" },
+      quantity: { value: 2, confidence: "high" },
+      entryTime: { value: "09:47", confidence: "medium" },
+      exitTime: { value: "10:12", confidence: "medium" },
+      setup: { value: "Silver Bullet", confidence: "medium" },
+      confluences: [
+        { key: "liquidity_sweep", state: "visual_confirmed" },
+        { key: "fvg", state: "visual_confirmed" },
+        { key: "mss", state: "probable" },
+      ],
+      summary: "Long position tool on NQ 5m after a sweep of the 9:30 low; target reached.",
+    },
+    { target: "trade", note: null, today: "2026-11-24" },
+  );
+  const run = {
+    itemId: null,
+    extraction: x,
+    derived: enrichCapture(x, { plannedRiskDollars: 250 }),
+    cached: false,
+  };
+  const pristine = {
+    date: "2026-11-24",
+    symbol: "",
+    direction: "long" as const,
+    entryTime: "09:30",
+    exitTime: "10:00",
+    entryPrice: "",
+    exitPrice: "",
+    initialStop: "",
+    initialTarget: "",
+    quantity: "",
+    riskAmount: "",
+    rMultiple: "",
+    strategy: "Scalping",
+    confluences: [] as string[],
+  };
+  const form = useRef({ ...pristine, symbol: "ES" });
+  return (
+    <div className="mx-auto max-w-2xl p-4">
+      <CaptureAssist<TradeFormField>
+        target="trade"
+        paths={["demo/shot.png"]}
+        canAddMore
+        onAddFiles={noop}
+        accountId={null}
+        essential={ESSENTIAL_TRADE_FIELDS}
+        propose={(ex, d) =>
+          tradeProposals(ex, d, { strategies: ["Silver Bullet"], confluences: [] })
+        }
+        apply={(proposals, opts) => {
+          const r = applyProposals(form.current, pristine, proposals, opts);
+          form.current = r.next;
+          return { applied: r.applied, conflicts: r.conflicts };
+        }}
+        previewRun={run}
+      />
+    </div>
   );
 }
 
