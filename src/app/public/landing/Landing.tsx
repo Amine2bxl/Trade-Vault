@@ -37,7 +37,17 @@ import { faqPageJsonLd } from "@/shared/seo";
 import { RESEAUX_ACTIFS } from "@/shared/socials";
 import { lireLePassage, positionDeReprise } from "./langSwap";
 import { eur } from "@/app/utils/pricing";
-import { LIFETIME_EUR, MONTHLY_EUR, breakEvenCopy } from "@/domain/plans";
+import {
+  LIFETIME_COPY,
+  LIFETIME_EUR,
+  LIFETIME_PLAN,
+  MONTHLY_COPY,
+  MONTHLY_EUR,
+  MONTHLY_PLAN,
+  breakEvenCopy,
+  type SalePlan,
+} from "@/domain/plans";
+import { rememberCheckoutIntent } from "@/app/features/billing/checkoutIntent";
 import { LandingLangProvider, useLandingT, type LandingKey, type LandingLang } from "./i18n";
 import { oauthErrorFromUrl } from "@/app/utils/authErrors";
 import "./landing.css";
@@ -281,6 +291,8 @@ function TuilePrix({
   phrase,
   note,
   vedette = false,
+  cta,
+  onChoose,
 }: {
   titre: string;
   montant: string;
@@ -288,6 +300,9 @@ function TuilePrix({
   phrase: string;
   note?: string;
   vedette?: boolean;
+  /** Le bouton de l'offre : il mène au paiement Stripe de CETTE offre. */
+  cta?: string;
+  onChoose?: () => void;
 }) {
   return (
     <div className={`lq-price-tile${vedette ? " lq-price-tile--featured" : ""}`}>
@@ -298,6 +313,21 @@ function TuilePrix({
       </p>
       <p className="mt-3 text-[13px] leading-6 text-slate-300">{phrase}</p>
       {note && <p className="mt-1 text-[12.5px] leading-5 text-slate-500">{note}</p>}
+      {cta && onChoose && (
+        <div className="mt-auto pt-6">
+          <button
+            type="button"
+            onClick={onChoose}
+            className={
+              vedette
+                ? "btn-primary w-full justify-center"
+                : "btn-secondaire min-h-[44px] w-full justify-center px-5 text-sm"
+            }
+          >
+            {cta} <Icon n="arrow" cls="h-4 w-4" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -413,6 +443,17 @@ function LandingPage() {
   ];
   const mensuel = eur(MONTHLY_EUR, lang);
   const licence = eur(LIFETIME_EUR, lang);
+  const lgOffre = lang === "fr" ? "fr" : "en";
+  /* CHOISIR UNE OFFRE MÈNE À SON PAIEMENT. L'offre est retenue sur
+     l'appareil (`checkoutIntent`), le compte se crée, puis l'application
+     part directement vers le paiement Stripe de cette offre. */
+  const choisirOffre = (plan: SalePlan) => {
+    rememberCheckoutIntent(plan);
+    open(
+      "signup",
+      `TradeVault · ${(plan === LIFETIME_PLAN ? LIFETIME_COPY : MONTHLY_COPY).title[lgOffre]}`,
+    );
+  };
   const telephone = shot("dashboard-m");
 
   /**
@@ -770,6 +811,8 @@ function LandingPage() {
                   montant={mensuel}
                   rythme={t("lq.perMonth")}
                   phrase={t("lq.price.monthly.d")}
+                  cta={MONTHLY_COPY.cta[lgOffre]}
+                  onChoose={() => choisirOffre(MONTHLY_PLAN)}
                 />
                 <TuilePrix
                   vedette
@@ -778,6 +821,8 @@ function LandingPage() {
                   rythme={t("lq.price.once")}
                   phrase={t("lq.price.lifetime.d")}
                   note={breakEvenCopy(lang)}
+                  cta={LIFETIME_COPY.cta[lgOffre]}
+                  onChoose={() => choisirOffre(LIFETIME_PLAN)}
                 />
                 <p className="text-center text-[12.5px] text-slate-500 sm:col-span-2">
                   {t("lq.price.same")}

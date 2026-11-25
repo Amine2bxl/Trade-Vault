@@ -15,7 +15,8 @@ import { PublicHeader } from "./landing/PublicHeader";
 import { LangMenuPied } from "./landing/LangMenu";
 import { usePublicSubscription } from "./landing/usePublicSubscription";
 import { LandingLangProvider, useLandingT, type LandingKey } from "./landing/i18n";
-import { LIFETIME_COPY, LIFETIME_PLAN, MONTHLY_COPY, TIER_BY_ID } from "@/domain/plans";
+import { LIFETIME_COPY, LIFETIME_PLAN, MONTHLY_COPY, TIER_BY_ID, isSalePlan } from "@/domain/plans";
+import { rememberCheckoutIntent } from "../features/billing/checkoutIntent";
 import { pathForPage } from "../utils/pageUrl";
 import { breadcrumbJsonLd } from "@/shared/seo";
 import "./landing/landing.css";
@@ -150,12 +151,21 @@ function Contenu() {
           <PricingPlans
             lang={lang}
             currentPlan={abo.charge ? undefined : abo.plan}
-            onChoose={(plan) =>
+            onChoose={(plan) => {
+              /* L'offre choisie mène à SON paiement : retenue sur l'appareil,
+                 puis l'application part vers Stripe dès qu'une session
+                 existe — tout de suite si le trader est déjà connecté. */
+              if (!isSalePlan(plan)) return;
+              rememberCheckoutIntent(plan);
+              if (abo.connecte) {
+                window.location.href = pathForPage("subscription");
+                return;
+              }
               setAuth({
                 mode: "signup",
                 plan: `TradeVault · ${(plan === LIFETIME_PLAN ? LIFETIME_COPY : MONTHLY_COPY).title[lang]}`,
-              })
-            }
+              });
+            }}
             onFree={() => setAuth({ mode: "signup", plan: "Free" })}
           />
         </div>

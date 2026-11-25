@@ -134,6 +134,8 @@ import { buildDemoTrades } from "./demoTrades";
 import { todayLocalDate } from "@/shared/calendar-date";
 import { previewTrades } from "../utils/previewTrades";
 import { prefetchInbox } from "../features/inbox/inboxCache";
+import { takeCheckoutIntent } from "../features/billing/checkoutIntent";
+import { checkoutErrorKey } from "../features/billing/subscriptionState";
 import { canLogTrade, isPlanLimitError } from "../utils/planLimits";
 import { computeBehavioral } from "@/domain/behavioral";
 import { useEconomicCalendar } from "../features/news/useEconomicCalendar";
@@ -237,7 +239,7 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
   // sans rafraîchissement (voir `useRealtimeTrades`).
   useLiveSync(user?.id);
   useRealtimeTrades(user?.id, activeId);
-  const { tier, can: canUse, loading: subLoading } = useSubscription();
+  const { tier, can: canUse, loading: subLoading, checkout } = useSubscription();
   // Synchro broker : le journal se remplit seul pendant que l'app est ouverte.
   // Palier Pro uniquement — hors Pro, aucun appel ne part.
   useBrokerSync({
@@ -414,6 +416,24 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
     window.addEventListener("tv:upgrade", onUpgrade);
     return () => window.removeEventListener("tv:upgrade", onUpgrade);
   }, []);
+
+  /* L'OFFRE CHOISIE SUR LA VITRINE OU `/pricing` MÈNE À SON PAIEMENT.
+     Retenue avant l'inscription (`checkoutIntent`), elle est consommée UNE
+     fois dès qu'une session existe — avant l'onboarding, qui reprend au
+     retour de Stripe. En cas d'échec, l'erreur traduite et la fenêtre
+     d'achat : le trader n'est jamais laissé sans suite. */
+  const intentionTraitee = useRef(false);
+  useEffect(() => {
+    if (!user || intentionTraitee.current) return;
+    intentionTraitee.current = true;
+    const plan = takeCheckoutIntent();
+    if (!plan) return;
+    void checkout(plan).then((err) => {
+      if (!err) return; // le navigateur part chez Stripe
+      toast(t(checkoutErrorKey(err)), "error");
+      setUpgradeOpen(true);
+    });
+  }, [user, checkout, toast, t]);
 
   // Confirmation visuelle d'abonnement : le checkout Stripe (et l'octroi d'un
   // code 100 %) redirigent vers `/?billing=success`. À l'arrivée on montre
