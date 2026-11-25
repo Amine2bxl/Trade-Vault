@@ -29,6 +29,8 @@ sans rechercher.
 
 ## Décisions clés
 
+- ENV-001 à ENV-004 : environnement cloud figé, `graphify-out/` hors git, skills
+  du dépôt prioritaires sur le design global, mémoire dans `docs/memory/`.
 - D-001 à D-005 : voir `DECISIONS.md` (#255).
 - D-006 : un seul moteur de capture, la table `capture_items` sert de cache,
   de file et d'historique — appliquée.
@@ -48,5 +50,7 @@ sans rechercher.
 
 ## Questions ouvertes
 
+- Langue des commits et commentaires : AGENTS.md dit français, la consigne
+  globale dit anglais (commits actuels : français).
 - Clips français du Mode Terminal : ElevenLabs (payant) ou F5-TTS local ?
 - Bougies OHLC réelles / MAE-MFE : fournisseur intraday payant (Databento) ?
