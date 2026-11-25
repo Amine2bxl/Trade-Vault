@@ -96,7 +96,7 @@ export function tradeProposals(
   push("entryTime", { ...d.entryTimeEt, origin: x.entryTime.origin }, str);
   push("exitTime", { ...d.exitTimeEt, origin: x.exitTime.origin }, str);
   push("entryPrice", x.entryPrice, num);
-  push("exitPrice", x.exitPrice, num);
+  push("exitPrice", x.exitPrice.value !== null ? x.exitPrice : d.impliedExit, num);
   push("initialStop", x.stopPrice, num);
   push("initialTarget", x.targetPrice, num);
   push("quantity", x.quantity, num);

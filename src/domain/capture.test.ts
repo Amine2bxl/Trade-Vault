@@ -295,3 +295,28 @@ describe("findTradeMatches", () => {
     expect(findTradeMatches({ ...probe, date: null }, trades)).toEqual([]);
   });
 });
+
+describe("sortie déduite du résultat", () => {
+  test("cible touchée sans prix de sortie : sortie = cible, estimée, R réalisé calculé", () => {
+    const x = normalizeExtraction(
+      { ...clean, exitPrice: undefined, outcome: f("target") },
+      { target: "trade", note: null, today: "2026-11-24" },
+    );
+    const d = enrichCapture(x);
+    expect(d.impliedExit).toMatchObject({ value: 21030, confidence: "estimated" });
+    expect(d.realizedR).toMatchObject({ value: 3, confidence: "estimated" });
+  });
+  test("prix de sortie lu : rien n'est déduit", () => {
+    const d = enrichCapture(
+      normalizeExtraction(clean, { target: "trade", note: null, today: "2026-11-24" }),
+    );
+    expect(d.impliedExit.value).toBeNull();
+  });
+  test("issue inconnue : pas de sortie inventée", () => {
+    const x = normalizeExtraction(
+      { ...clean, exitPrice: undefined, outcome: undefined },
+      { target: "trade", note: null, today: "2026-11-24" },
+    );
+    expect(enrichCapture(x).realizedR.value).toBeNull();
+  });
+});

@@ -160,6 +160,11 @@ export interface CaptureDerived {
   /** Contrats que le risque prévu autorise, quand la quantité n'est pas visible. */
   contractsForPlannedRisk: CapturedField<number>;
   plannedR: CapturedField<number>;
+  /**
+   * La sortie quand seul le RÉSULTAT est visible (« cible touchée » sans prix
+   * de sortie imprimé) : la cible ou le stop, jamais mieux qu'estimée.
+   */
+  impliedExit: CapturedField<number>;
   realizedR: CapturedField<number>;
   rewardDollars: CapturedField<number>;
   /** P&L brut (sans frais) qu'impliquent les prix — une estimation, pas le P&L du broker. */
@@ -176,7 +181,17 @@ export function enrichCapture(x: CaptureExtraction, ctx: CaptureContext = {}): C
   const entry = x.entryPrice.value;
   const stop = x.stopPrice.value;
   const target = x.targetPrice.value;
-  const exit = x.exitPrice.value;
+  const outcomeLevel =
+    x.outcome.value === "target" ? x.targetPrice : x.outcome.value === "stop" ? x.stopPrice : null;
+  const impliedExit = calc(
+    x.exitPrice.value === null && outcomeLevel?.value != null ? outcomeLevel.value : null,
+    x.outcome.confidence,
+    outcomeLevel?.confidence ?? "unknown",
+    "estimated",
+  );
+  const exit = x.exitPrice.value ?? impliedExit.value;
+  const exitConfidence =
+    x.exitPrice.value !== null ? x.exitPrice.confidence : impliedExit.confidence;
   const qty = x.quantity.value;
   const sc = x.symbol.confidence;
 
@@ -247,7 +262,7 @@ export function enrichCapture(x: CaptureExtraction, ctx: CaptureContext = {}): C
   const pr = side ? plannedR(side, entry, stop, target) : null;
   const rr = side ? rFromPrices(side, entry, stop, exit) : null;
   const plannedRField = calc(pr, lc, x.targetPrice.confidence);
-  const realizedR = calc(rr, lc, x.exitPrice.confidence);
+  const realizedR = calc(rr, lc, exitConfidence);
   const reward =
     side && spec && qty && entry != null && target != null && pr != null
       ? round2(Math.abs(target - entry) * spec.pointValue * qty)
@@ -259,7 +274,7 @@ export function enrichCapture(x: CaptureExtraction, ctx: CaptureContext = {}): C
     move != null && spec && qty ? round2(move * spec.pointValue * qty) : null,
     x.direction.confidence,
     x.entryPrice.confidence,
-    x.exitPrice.confidence,
+    exitConfidence,
     sc,
     x.quantity.confidence,
     "estimated",
@@ -300,6 +315,7 @@ export function enrichCapture(x: CaptureExtraction, ctx: CaptureContext = {}): C
     plannedRiskDollars,
     contractsForPlannedRisk,
     plannedR: plannedRField,
+    impliedExit,
     realizedR,
     rewardDollars,
     grossPnl,
