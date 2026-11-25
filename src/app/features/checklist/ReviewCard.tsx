@@ -53,7 +53,6 @@ function SessionVerdictLine({ verdict }: { verdict: SessionVerdict | null }) {
       >
         {t(SESSION_VERDICT_KEYS[verdict])}
       </span>
-      <span>{t("exec.notPnl")}</span>
     </p>
   );
 }

@@ -175,7 +175,6 @@ const ja: Dict = {
   "analytics.subtitle": "トレードパターンの詳細分析",
   "analytics.noTrades": "トレードを追加すると分析が表示されます",
   "analytics.profitFactor": "プロフィットファクター",
-  "analytics.profitsOverLosses": "総利益 ÷ 総損失",
   "analytics.profits": "利益",
   "analytics.losses": "損失",
   "analytics.factor": "ファクター",

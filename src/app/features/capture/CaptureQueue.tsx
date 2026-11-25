@@ -145,7 +145,7 @@ export function CaptureQueue() {
         const detail = [
           d.realizedR.value !== null ? `${d.realizedR.value}R` : null,
           d.plannedR.value !== null
-            ? t("capture.derived.plannedR").replace("{r}", String(d.plannedR.value))
+            ? t("queue.rAimed").replace("{r}", String(d.plannedR.value))
             : null,
           x.timeframe.value,
         ]

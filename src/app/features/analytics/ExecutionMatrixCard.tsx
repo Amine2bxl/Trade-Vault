@@ -115,7 +115,6 @@ export function ExecutionMatrixCard({ trades }: { trades: Trade[] }) {
     <Card className="p-3 md:p-4 animate-fade-in-up">
       <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
         <h3 className="tv-title">{t("execMatrix.title")}</h3>
-        <span className="text-xs text-slate-500">{t("exec.notPnl")}</span>
       </div>
       {!matrix ? (
         <div className="h-[118px] rounded-xl bg-[var(--tv-plate-2)]" aria-hidden />

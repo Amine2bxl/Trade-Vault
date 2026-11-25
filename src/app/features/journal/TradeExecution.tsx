@@ -37,12 +37,6 @@ const DEVIATION_KEYS: Record<Deviation["kind"], TKey> = {
   early_exit: "exec.dev.earlyExit",
 };
 
-const CERTAINTY_KEYS: Record<Deviation["certainty"], TKey> = {
-  observed: "exec.observed",
-  declared: "exec.declared",
-  to_confirm: "exec.toConfirm",
-};
-
 export function TradeExecution({
   tradeId,
   assessment,
@@ -85,11 +79,7 @@ export function TradeExecution({
 
   return (
     <div className="space-y-2">
-      {label && (
-        <span className="tv-label block text-slate-500">
-          {t("exec.title")} <span className="normal-case text-slate-600">· {t("exec.notPnl")}</span>
-        </span>
-      )}
+      {label && <span className="tv-label block text-slate-500">{t("exec.title")}</span>}
       <div className="flex flex-wrap items-center gap-2">
         <span
           className={cn(
@@ -117,18 +107,14 @@ export function TradeExecution({
       {assessment.deviations.length > 0 ? (
         <ul className="space-y-1">
           {assessment.deviations.map((d, i) => (
-            <li key={i} className="flex items-baseline gap-2 text-xs">
-              <span
-                className={cn(
-                  "tv-label shrink-0",
-                  d.certainty === "to_confirm" ? "text-amber-300" : "text-slate-500",
-                )}
-              >
-                {t(CERTAINTY_KEYS[d.certainty])}
-              </span>
-              <span className="text-slate-300">
-                {t(DEVIATION_KEYS[d.kind]).replace("{v}", detailText(d))}
-              </span>
+            <li
+              key={i}
+              className={cn(
+                "text-xs",
+                d.certainty === "to_confirm" ? "text-amber-300" : "text-slate-300",
+              )}
+            >
+              {t(DEVIATION_KEYS[d.kind]).replace("{v}", detailText(d))}
             </li>
           ))}
         </ul>

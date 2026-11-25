@@ -173,7 +173,6 @@ const es: Dict = {
   "analytics.subtitle": "Análisis profundo de tus patrones de trading",
   "analytics.noTrades": "Añade trades para ver los análisis",
   "analytics.profitFactor": "Factor de beneficio",
-  "analytics.profitsOverLosses": "Beneficios totales ÷ Pérdidas totales",
   "analytics.profits": "Beneficios",
   "analytics.losses": "Pérdidas",
   "analytics.factor": "Factor",

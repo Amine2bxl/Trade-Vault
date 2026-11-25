@@ -174,7 +174,6 @@ const ru: Dict = {
   "analytics.subtitle": "Глубокий анализ ваших торговых паттернов",
   "analytics.noTrades": "Добавьте сделки, чтобы увидеть аналитику",
   "analytics.profitFactor": "Фактор прибыли",
-  "analytics.profitsOverLosses": "Общая прибыль ÷ Общий убыток",
   "analytics.profits": "Прибыль",
   "analytics.losses": "Убытки",
   "analytics.factor": "Фактор",

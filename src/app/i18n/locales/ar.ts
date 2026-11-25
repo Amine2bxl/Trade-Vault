@@ -174,7 +174,6 @@ const ar: Dict = {
   "analytics.subtitle": "تحليل معمّق لأنماط تداولك",
   "analytics.noTrades": "أضف صفقات لعرض التحليلات",
   "analytics.profitFactor": "عامل الربح",
-  "analytics.profitsOverLosses": "إجمالي الأرباح ÷ إجمالي الخسائر",
   "analytics.profits": "الأرباح",
   "analytics.losses": "الخسائر",
   "analytics.factor": "العامل",

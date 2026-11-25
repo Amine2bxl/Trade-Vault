@@ -482,7 +482,7 @@ export default function TerminalMode(props: Props) {
               {props.verdict && (
                 <p className="text-sm text-slate-300">
                   <span className="tv-terminal-label mr-2 text-slate-500">{t("exec.session")}</span>
-                  {t(VERDICT_KEYS[props.verdict])} · {t("exec.notPnl")}
+                  {t(VERDICT_KEYS[props.verdict])}
                 </p>
               )}
               <Button className="w-full" onClick={close}>

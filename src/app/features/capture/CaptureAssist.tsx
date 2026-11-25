@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useT } from "@/app/i18n/LanguageContext";
 import type { TKey } from "@/app/i18n/translations";
-import { Badge, Button, Textarea, cn } from "@/shared/ui";
+import { Button, Textarea, cn } from "@/shared/ui";
 import { ImagePlus, Loader2, Mic, RotateCcw, ScanLine, Square } from "@/shared/ui/icons";
-import { CONFLUENCE_LABELS, TIMEFRAME_MINUTES, type CaptureExtraction } from "@/domain/capture";
+import type { CaptureExtraction } from "@/domain/capture";
 import type { CaptureDerived } from "@/domain/captureEnrich";
-import { missingFields, type Proposal, type ProposalKind } from "./capturePrefill";
+import { missingFields, type Proposal } from "./capturePrefill";
 import { useCaptureAnalysis, type CaptureRequest, type CaptureRun } from "./useCaptureAnalysis";
 import { useDictation } from "./useDictation";
 
@@ -14,10 +14,10 @@ import { useDictation } from "./useDictation";
  * trade et celui de setup manqué.
  *
  * Il ne possède pas le formulaire : il lance l'analyse, demande au parent
- * d'appliquer les propositions (champs vides seulement) et montre, en une
- * liste compacte, ce qui a été DÉTECTÉ, CALCULÉ, ESTIMÉ, ce qui est À REVOIR
- * et ce qui MANQUE. Le trader corrige directement dans le formulaire ; une
- * proposition douteuse ou en conflit ne s'applique que d'un geste.
+ * d'appliquer les propositions (champs vides seulement) et montre le RÉSULTAT :
+ * combien de champs sont remplis, ce qui est « à vérifier » (valeur douteuse ou
+ * en conflit, appliquée d'un geste) et ce qui manque. Jamais le processus
+ * (origine d'une valeur, calculs, IA) : règle « le résultat, jamais le processus ».
  */
 
 export interface ApplyOutcome<F extends string> {
@@ -48,13 +48,6 @@ export interface CaptureAssistProps<F extends string> {
   /** Une analyse déjà faite (capture venue de l'Inbox, banc visuel) : appliquée au montage, sans appel serveur. */
   previewRun?: CaptureRun;
 }
-
-const KIND_BADGE: Record<ProposalKind, "accent" | "neutral" | "warning"> = {
-  detected: "accent",
-  calculated: "neutral",
-  estimated: "neutral",
-  needs_review: "warning",
-};
 
 const fill = (s: string, vars: Record<string, string | number>) =>
   Object.entries(vars).reduce((acc, [k, v]) => acc.split(`{${k}}`).join(String(v)), s);
@@ -126,9 +119,6 @@ export function CaptureAssist<F extends string>(props: CaptureAssistProps<F>) {
   const hasInput = props.paths.length > 0 || note.trim().length > 0;
   const proposals = run ? props.propose(run.extraction, run.derived) : [];
   const missing = run ? missingFields(proposals, props.essential) : [];
-  const d = run?.derived;
-  const x = run?.extraction;
-  const tf = x?.timeframe.value;
 
   return (
     <section
@@ -246,7 +236,6 @@ export function CaptureAssist<F extends string>(props: CaptureAssistProps<F>) {
       )}
 
       <div aria-live="polite">
-        {busy && <p className="mt-2 text-[12px] text-slate-400">{t("capture.analyzing")}</p>}
         {error && !busy && (
           <p
             className={cn(
@@ -262,57 +251,39 @@ export function CaptureAssist<F extends string>(props: CaptureAssistProps<F>) {
       {run && outcome && !busy && (
         <div className="mt-2 space-y-2">
           <p className="tv-figure text-[12px] text-slate-300">
-            {fill(t("capture.summary"), {
-              applied: outcome.applied.length,
-              review: pendingReview.length + outcome.conflicts.length,
-              missing: missing.length,
-            })}
-            {run.cached && <span className="text-slate-500"> · {t("capture.cached")}</span>}
+            {fill(t("capture.summary"), { applied: outcome.applied.length })}
           </p>
 
-          {(outcome.applied.length > 0 ||
-            pendingReview.length > 0 ||
-            outcome.conflicts.length > 0) && (
-            <ul className="grid gap-1 sm:grid-cols-2">
-              {outcome.applied.map((p) => (
-                <ProposalRow
-                  key={`a-${p.field}`}
-                  label={label(p.field)}
-                  proposal={p}
-                  kindLabel={t(
-                    p.evidence?.startsWith("learned:")
-                      ? "capture.kind.learned"
-                      : (`capture.kind.${p.kind}` as TKey),
-                  )}
-                />
-              ))}
-              {pendingReview.map((p) => (
-                <ProposalRow
-                  key={`r-${p.field}`}
-                  label={label(p.field)}
-                  proposal={p}
-                  kindLabel={t("capture.kind.needs_review")}
-                  action={
-                    <Button variant="subtle" size="sm" onClick={() => applyOne(p, false)}>
-                      {t("capture.apply")}
-                    </Button>
-                  }
-                />
-              ))}
-              {outcome.conflicts.map((p) => (
-                <ProposalRow
-                  key={`c-${p.field}`}
-                  label={label(p.field)}
-                  proposal={p}
-                  kindLabel={t(`capture.kind.${p.kind}` as TKey)}
-                  action={
-                    <Button variant="subtle" size="sm" onClick={() => applyOne(p, true)}>
-                      {t("capture.replace")}
-                    </Button>
-                  }
-                />
-              ))}
-            </ul>
+          {(pendingReview.length > 0 || outcome.conflicts.length > 0) && (
+            <div>
+              <p className="tv-label mb-1 text-amber-300">{t("capture.toCheck")}</p>
+              <ul className="grid gap-1 sm:grid-cols-2">
+                {pendingReview.map((p) => (
+                  <ProposalRow
+                    key={`r-${p.field}`}
+                    label={label(p.field)}
+                    proposal={p}
+                    action={
+                      <Button variant="subtle" size="sm" onClick={() => applyOne(p, false)}>
+                        {t("capture.apply")}
+                      </Button>
+                    }
+                  />
+                ))}
+                {outcome.conflicts.map((p) => (
+                  <ProposalRow
+                    key={`c-${p.field}`}
+                    label={label(p.field)}
+                    proposal={p}
+                    action={
+                      <Button variant="subtle" size="sm" onClick={() => applyOne(p, true)}>
+                        {t("capture.replace")}
+                      </Button>
+                    }
+                  />
+                ))}
+              </ul>
+            </div>
           )}
 
           {missing.length > 0 && (
@@ -320,73 +291,6 @@ export function CaptureAssist<F extends string>(props: CaptureAssistProps<F>) {
               {t("capture.missingLabel")} {missing.map(label).join(" · ")}
             </p>
           )}
-
-          {d && (
-            <p className="tv-figure text-[12px] leading-relaxed text-slate-400">
-              {[
-                d.contract &&
-                  fill(t("capture.derived.contract"), {
-                    symbol: d.contract.symbol,
-                    tick: d.contract.tickSize,
-                    value: d.contract.tickValue,
-                  }),
-                d.riskDollars.value !== null &&
-                  [
-                    fill(t("capture.derived.risk"), { risk: d.riskDollars.value }),
-                    d.plannedRiskDollars.value !== null
-                      ? fill(t("capture.derived.plannedRisk"), {
-                          planned: d.plannedRiskDollars.value,
-                        })
-                      : null,
-                  ]
-                    .filter(Boolean)
-                    .join(" · "),
-                d.contractsForPlannedRisk.value !== null &&
-                  fill(t("capture.derived.contracts"), { n: d.contractsForPlannedRisk.value }),
-                d.plannedR.value !== null &&
-                  fill(t("capture.derived.plannedR"), { r: d.plannedR.value }),
-                d.elapsedMinutes.value !== null &&
-                  fill(t("capture.derived.duration"), { minutes: d.elapsedMinutes.value }),
-                d.theoreticalCandles.value !== null &&
-                  tf &&
-                  TIMEFRAME_MINUTES[tf] &&
-                  `${fill(t("capture.derived.candles"), { n: d.theoreticalCandles.value, tf })}, ${t("capture.derived.candlesActual")}`,
-              ]
-                .filter(Boolean)
-                .join(" · ")}
-            </p>
-          )}
-
-          {x &&
-            x.confluences.some((c) => c.state === "visual_confirmed" || c.state === "probable") && (
-              <div className="flex flex-wrap gap-1">
-                {x.confluences
-                  .filter((c) => c.state === "visual_confirmed" || c.state === "probable")
-                  .map((c) => (
-                    <Badge
-                      key={c.key}
-                      variant={c.state === "visual_confirmed" ? "accent" : "neutral"}
-                    >
-                      {CONFLUENCE_LABELS[c.key]}
-                      <span className="font-medium opacity-70">
-                        {t(`capture.conf.${c.state}` as TKey)}
-                      </span>
-                    </Badge>
-                  ))}
-              </div>
-            )}
-
-          {x?.warnings.length ? (
-            <ul className="space-y-0.5">
-              {x.warnings.map((w) => (
-                <li key={w} className="text-[12px] text-amber-400">
-                  {t(`capture.warn.${w}` as TKey)}
-                </li>
-              ))}
-            </ul>
-          ) : null}
-
-          {x?.summary && <p className="text-[12px] italic text-slate-500">{x.summary}</p>}
 
           {props.children}
         </div>
@@ -398,31 +302,17 @@ export function CaptureAssist<F extends string>(props: CaptureAssistProps<F>) {
 function ProposalRow({
   label,
   proposal,
-  kindLabel,
   action,
 }: {
   label: string;
   proposal: Proposal<string>;
-  kindLabel: string;
   action?: ReactNode;
 }) {
   const value = Array.isArray(proposal.value) ? proposal.value.join(", ") : proposal.value;
   return (
     <li className="flex min-h-[36px] items-center gap-2 rounded-lg border border-[var(--tv-border)] bg-[var(--tv-plate-1)] px-2 py-1">
       <span className="tv-row-label w-20 shrink-0 truncate">{label}</span>
-      <span
-        className="tv-figure min-w-0 flex-1 truncate text-[13px] text-white"
-        title={
-          proposal.evidence && !proposal.evidence.startsWith("learned:")
-            ? proposal.evidence
-            : undefined
-        }
-      >
-        {value}
-      </span>
-      <Badge variant={KIND_BADGE[proposal.kind]} className="shrink-0 px-2 py-0.5">
-        {kindLabel}
-      </Badge>
+      <span className="tv-figure min-w-0 flex-1 truncate text-[13px] text-white">{value}</span>
       {action}
     </li>
   );

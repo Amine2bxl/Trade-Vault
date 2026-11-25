@@ -178,7 +178,6 @@ const de: Dict = {
   "analytics.subtitle": "Tiefer Einblick in Ihre Trading-Muster",
   "analytics.noTrades": "Fügen Sie Trades hinzu, um Analysen zu sehen",
   "analytics.profitFactor": "Profitfaktor",
-  "analytics.profitsOverLosses": "Gesamtgewinne ÷ Gesamtverluste",
   "analytics.profits": "Gewinne",
   "analytics.losses": "Verluste",
   "analytics.factor": "Faktor",

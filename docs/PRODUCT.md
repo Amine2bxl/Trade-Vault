@@ -163,6 +163,24 @@ mensuel résilié → proposition de licence.
 - Avant de promettre une fonctionnalité, vérifier qu'elle existe dans le code
   ([`FEATURES.md`](FEATURES.md)).
 
+## Le résultat, jamais le processus (règle universelle)
+
+Décidée le 2026-11-25 par le propriétaire, valable sur tout le site.
+
+- Le trader voit le **résultat** : la valeur, son unité, son `n`, ce qu'il doit
+  faire. Le travail qui l'a produit reste invisible.
+- Jamais à l'écran : nom de modèle ou de fournisseur IA, « appel IA », cache,
+  étapes de réflexion de Jarvis, outils consultés, méthode ou formule de calcul,
+  nombre de simulations, niveau de confiance, origine d'une valeur (lue sur une
+  capture, calculée, estimée, apprise).
+- Une valeur incertaine porte **une seule** marque d'action : « à vérifier ».
+  C'est un résultat (il y a quelque chose à regarder), pas une explication.
+- Une attente est neutre : un indicateur, sans décrire ce qui se calcule.
+- L'honnêteté ne recule pas : rien d'inventé, le `n` reste affiché, une
+  donnée absente reste « manquante ».
+- Les diagnostics (provenance, modèle, coûts) vivent dans `/dev/*` et en base,
+  jamais dans l'app du trader.
+
 ## Jarvis
 
 - **Une seule IA, partout** : page, widget, voix. Jamais « AI Coach »,

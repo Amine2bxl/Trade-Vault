@@ -173,7 +173,6 @@ const it: Dict = {
   "analytics.subtitle": "Analisi approfondita dei tuoi pattern di trading",
   "analytics.noTrades": "Aggiungi trade per vedere le analisi",
   "analytics.profitFactor": "Fattore di profitto",
-  "analytics.profitsOverLosses": "Profitti totali ÷ Perdite totali",
   "analytics.profits": "Profitti",
   "analytics.losses": "Perdite",
   "analytics.factor": "Fattore",
