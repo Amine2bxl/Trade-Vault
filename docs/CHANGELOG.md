@@ -3,6 +3,24 @@
 Journal des changements **structurels** (pas des features ni des correctifs,
 qui vivent dans l'historique git et les PR).
 
+## 2026-11-25 — Moteur de capture, respect du plan, liens entre pages
+
+- **Moteur de capture** : un seul chemin pour screenshots, notes et dictée.
+  Fournisseurs IA : images jointes (`AIMessage.images`, `supportsVision` —
+  Gemini, Anthropic, OpenAI). `backend/capture.functions.analyzeCapture` (relit
+  les captures avec le client du trader, empreinte sha256 = cache, plafond
+  horaire, coupe-circuit `AI_CAPTURE=off`) ; `domain/capture` (provenance par
+  champ, « vérifié » interdit à l'IA, citation exigée pour une note),
+  `domain/captureEnrich` (contrat, risque, R, heure de New York, bougies
+  théoriques), `domain/captureMatch` (doublons, rattachement). Table
+  `capture_items`, migration `20261124120000_capture_items`.
+- **Respect du plan** : `modules/discipline/compliance`, règle par règle, sans
+  P&L, verdict qui ne s'invente pas.
+- **Navigation contextuelle** : `utils/navigate` (`navigateTo` avec `focus`
+  `?trade=` / `?missed=`, `openTrades(filtre)`) sur le canal `tv:navigate`.
+- **Production** : migrations du 2026-11-22 et `lifetime_license` appliquées ;
+  types Supabase régénérés.
+
 ## 2026-11-22 — Plan contre exécution, Mode Terminal, setups manqués honnêtes
 
 - **Prévu figé** : `trade_intent` porte les niveaux du plan de séance

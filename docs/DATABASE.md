@@ -24,7 +24,7 @@ Postgres via Supabase (projet `tjikygsipblatubyzbrt`, constante
 
 | Famille | Tables |
 | --- | --- |
-| Cœur trading | `profiles` (profil, langue, devise, plan et règles JSON, `checklist_config`, compte actif), `trades`, `accounts` (sous-comptes, calibrage), `missed_opportunities` |
+| Cœur trading | `profiles` (profil, langue, devise, plan et règles JSON, `checklist_config`, compte actif), `trades`, `accounts` (sous-comptes, calibrage), `missed_opportunities`, `capture_items` (moteur de capture : cache par empreinte `content_hash` unique par utilisateur, file pending → processing → completed / failed → applied / dismissed, `original_extraction` figée par déclencheur, `corrections` à part, liens `trade_id` / `missed_id` vérifiés par la RLS) |
 | Séances et réflexion | `trading_sessions` (+ `trades.session_id`), `trade_intent` (prévu FIGÉ à la création : `planned_risk`, niveaux `planned_*` du plan de séance ; stop et cible posés `initial_*`, corrigeables), `trade_reflection` (+ correction manuelle du verdict d'exécution, intensité et envie de reprendre, déclarées) — migration `20261122120000_plan_vs_execution` |
 | Discipline, objectifs, rapports | `goal_plans` (par compte), `six_month_goals`, `habits`, `monthly_reports`, `notifications`, `user_preferences` |
 | Motifs et Jarvis | `mistake_clusters`, `mistake_taxonomy`, `detected_patterns`, `agent_proposals`, `ai_memory`, `ai_agent_runs` (télémétrie, 90 j — niveau, outils, tokens de réflexion/cache, coût estimé, validation : migration `20261002090000_ai_agent_runs_observability`), `ai_reports`, `ai_rate_limits`, `simulation_scenarios` |

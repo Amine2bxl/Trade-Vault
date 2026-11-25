@@ -1,47 +1,52 @@
 # État du projet — mémoire de session
 
-Mis à jour : 2026-11-23 (session `claude/charming-bohr-q2pmq1`, PR #255 en brouillon).
+Mis à jour : 2026-11-25 (session `claude/great-meitner-lnjgls`, PR #256 en
+brouillon, empilé sur #255 `claude/charming-bohr-q2pmq1`).
 
 ## Objectif
 
-Faire de TradeVault un espace de travail qui administre à la place du trader :
-séance préparée une fois, trade enregistré en quelques gestes, enrichi et
-comparé au plan, exécution jugée indépendamment du P&L, checklist rendue à
-son identité de terminal (voix, sons).
+Un trader qui capture une image plutôt que remplir quinze champs, parle plutôt
+que rédige, valide plutôt que ressaisit, et passe d'une donnée à sa source
+sans rechercher.
 
 ## État actuel
 
-- Plan : `docs/superpowers/plans/2026-11-22-espace-de-travail-intelligent.md`.
-- **Livrés sur la branche** (un commit par lot, portes vertes) : A (prévu figé,
-  prix et plan dans le formulaire), B (qualité d'exécution), C (états de séance,
-  limites bloque/avertit, dérogation, pause), D (Mode Terminal, voix, sons),
-  E (défauts par compte, setups du plan), F (setups manqués), G partiel
-  (carte exécution × résultat dans Analytics).
-- **Deux migrations NON appliquées en production** :
-  `20261122120000_plan_vs_execution`, `20261122130000_missed_setup_model`.
-  Le code a un repli tant qu'elles manquent (le nouveau n'est pas enregistré).
-- Restent : G (panneau comportemental du Dashboard, calendrier, objectifs),
-  H (note → champs par IA + dictée), I (revues générées, Jarvis enrichi),
-  J (modèles d'import).
+- **#255** (lots A→G du plan `docs/superpowers/plans/2026-11-22-…`) : livré,
+  non fusionné. Ses migrations sont **appliquées en production** (2026-11-24),
+  ainsi que `lifetime_license`, qui manquait. Types régénérés, `as never` retirés.
+- **#256** (cette session) :
+  - Moteur de capture : `domain/capture*`, `modules/ai-provider` (images),
+    `modules/ai/agents/capture.agent`, `backend/capture.functions`, table
+    `capture_items` (appliquée en prod, RLS vérifiée).
+  - Formulaire de trade et de setup manqué : Analyser / Dicter / note → champs
+    vides remplis, détecté / calculé / estimé / à revoir / manquant, doublons.
+  - Respect du plan règle par règle : `modules/discipline/compliance`.
+  - Inbox : « Captures à traiter » (`features/capture/CaptureQueue`).
+  - Liens : `utils/navigate` (`navigateTo`, `openTrades`, `?trade=`, `?missed=`).
+- Vérifié de bout en bout sur la preview (Gemini 2.5 Flash, base réelle) :
+  capture d'un long NQ 5m → 9 champs remplis, risque calculé, confluences vues.
+- Portes : typecheck, lint (0 erreur), build, 2 256 tests (TZ New York et Auckland).
 
 ## Décisions clés
 
-- D-001 : un cerveau (`sessionPlan`), deux peaux (page + Mode Terminal) — appliquée.
-- D-002 : le calculé ne se stocke pas ; seules saisies, corrections et
-  suggestions IA le sont — appliquée.
-- D-003 : le verrou ne bloque jamais l'enregistrement d'un trade réel — appliquée.
-- D-004 : voix du terminal — clips d'abord, voix hébergée existante ensuite,
-  navigateur en secours ; aucun nouvel achat — appliquée.
+- D-001 à D-005 : voir `DECISIONS.md` (#255).
+- D-006 : un seul moteur de capture, la table `capture_items` sert de cache,
+  de file et d'historique — appliquée.
+- D-007 : l'IA lit, le domaine calcule et tranche ; « vérifié » interdit à l'IA — appliquée.
+- D-008 : la capture n'écrit jamais dans le journal ; seul le formulaire validé écrit — appliquée.
 
 ## Prochaines étapes
 
-1. Appliquer les deux migrations (accord du propriétaire), puis régénérer
-   `integrations/supabase/types.ts` et retirer les `as never` ajoutés.
-2. Lot G restant, puis I (revues), H (extraction), J (import).
-3. Régénérer les clips (`scripts/voices/generate.ts`) pour les répliques
-   ajoutées (verrou de limite, pause, fin de séance) et, au choix, en français.
+1. Supprimer le compte de test `tv-capture-e2e@test.dev` (id `340d8271-…`) et
+   son fichier `trade-screenshots/340d8271-…/` : la suppression SQL attendait
+   une confirmation dans l'outil Supabase.
+2. Jarvis : outil de recherche (trades, setups manqués, captures) qui rend des
+   liens `navigateTo` ; journal vocal qui passe par `analyzeCapture` (note).
+3. Rattachement automatique trade ↔ séance (`trades.session_id` existe, jamais posé).
+4. Revue de séance générée (lot I de #255) et panneau comportemental (lot G).
+5. Fusionner #255 puis #256 après relecture.
 
 ## Questions ouvertes
 
-- Clips français : ElevenLabs « Daniel » (payant) ou F5-TTS local (gratuit) ?
-- MAE/MFE automatiques : fournisseur intraday payant (clé Databento non lue) ?
+- Clips français du Mode Terminal : ElevenLabs (payant) ou F5-TTS local ?
+- Bougies OHLC réelles / MAE-MFE : fournisseur intraday payant (Databento) ?

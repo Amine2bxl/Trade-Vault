@@ -28,3 +28,20 @@ Ajout seulement, entrées datées.
   `ResizeObserver` ; lui donner `className="h-full w-full"`.
 - Leçon : les types générés refusent les colonnes non migrées → `as never`
   sur l'écriture + repli `PGRST204`/`42703`, comme le lot 1.
+
+## 2026-11-24/25 — Moteur de capture, respect du plan, Inbox, liens (PR #256)
+
+- Prod : appliquées `plan_vs_execution`, `missed_setup_model`,
+  `lifetime_license` (manquait : `subscriptions_plan_check` refusait
+  `lifetime`), puis `capture_items`.
+- Erreur : `trades.id` est `text` en prod (pas `uuid`) — `capture_items.trade_id`
+  corrigé en `text` avant application.
+- Erreur : clés i18n `comp.*` déjà prises (accès offerts) — conformité en `compliance.*`.
+- Erreur : insérer un import avant la première ligne `import {` multi-ligne
+  casse le fichier ; viser la fin du bloc d'import.
+- Test réel : preview protégée par SSO Vercel → lien `_vercel_share` (23 h) ;
+  compte `tv-capture-e2e@test.dev` créé en SQL (auth.users + identities,
+  profil `onboarded_at`). Script : `scratchpad/e2e/run.cjs`.
+- Leçon : Gemini ne lit pas toujours un prix de sortie sur l'outil de position ;
+  l'issue « cible touchée » suffit à estimer la sortie.
+- Banc visuel : `/dev/ui?screen=capture`, `?screen=compliance`.

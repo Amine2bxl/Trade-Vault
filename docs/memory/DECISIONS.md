@@ -69,3 +69,38 @@ Ajout seulement. Une décision remplacée est marquée, jamais effacée.
   Anciennes lignes : R déclaré conservé.
 - Alternatives écartées : recalculer l'historique (réécriture silencieuse).
 - Conséquences : `estimated_r` stocke désormais le R qui compte.
+
+## D-006 — Un seul moteur de capture, une seule table
+
+- Date : 2026-11-24
+- Statut : appliquée
+- Contexte : captures, notes, dictée, Inbox, setups manqués demandaient chacun
+  une analyse ; le brief interdit un second moteur, un second système de
+  captures ou des appels IA répétés.
+- Décision : une fonction serveur (`analyzeCapture`), un agent, un crible
+  (`domain/capture`), une table `capture_items` qui est à la fois cache
+  (empreinte unique), file « À traiter » et historique. Les fichiers restent
+  dans `trade-screenshots` ; le trade devient propriétaire de ses chemins.
+- Alternatives écartées : cache local au navigateur (perdu d'un appareil à
+  l'autre) ; une table par usage (trades, setups manqués).
+- Conséquences : migration `20261124120000_capture_items` (appliquée en prod).
+
+## D-007 — L'IA lit, le domaine calcule et tranche
+
+- Date : 2026-11-24
+- Statut : appliquée
+- Décision : le modèle ne rend que ce qui est visible ou écrit, avec sa
+  confiance et sa preuve ; `normalizeExtraction` refuse les formats faux, les
+  dates futures, les champs de note sans citation exacte, et rétrograde les
+  niveaux incohérents. « Vérifié » n'est jamais accordé à l'IA. Contrat,
+  risque, R, heure de New York, bougies : `domain/captureEnrich`.
+- Conséquences : les bougies OHLC réelles restent inconnues sans données intraday.
+
+## D-008 — La capture n'écrit jamais dans le journal
+
+- Date : 2026-11-24
+- Statut : appliquée
+- Décision : la capture remplit seulement les champs vides du formulaire ; un
+  champ déjà saisi devient un conflit à trancher ; « à revoir » ne s'applique
+  que d'un geste. Les corrections du trader sont gardées à part et n'ajustent
+  que les propositions suivantes (estimées), jamais les données passées.
