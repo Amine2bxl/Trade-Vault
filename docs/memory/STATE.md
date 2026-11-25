@@ -1,7 +1,8 @@
 # État du projet — mémoire de session
 
-Mis à jour : 2026-11-25 (session `claude/great-meitner-lnjgls`, PR #256 en
-brouillon, empilé sur #255 `claude/charming-bohr-q2pmq1`).
+Mis à jour : 2026-11-25 (session `claude/great-meitner-lnjgls`). **PR unique
+#256 vers `main`** : il contient #250, #251, #252, #253 et #255 (fermés) ;
+#254 (Neural Brain) exclu à la demande du propriétaire.
 
 ## Objectif
 
@@ -36,6 +37,8 @@ sans rechercher.
   de file et d'historique — appliquée.
 - D-007 : l'IA lit, le domaine calcule et tranche ; « vérifié » interdit à l'IA — appliquée.
 - D-008 : la capture n'écrit jamais dans le journal ; seul le formulaire validé écrit — appliquée.
+- D-009 : le résultat, jamais le processus (règle universelle, AGENTS.md) —
+  appliquée, garde-fou `tests/outputNotProcess.test.ts`.
 
 ## Prochaines étapes
 
@@ -46,7 +49,7 @@ sans rechercher.
    liens `navigateTo` ; journal vocal qui passe par `analyzeCapture` (note).
 3. Rattachement automatique trade ↔ séance (`trades.session_id` existe, jamais posé).
 4. Revue de séance générée (lot I de #255) et panneau comportemental (lot G).
-5. Fusionner #255 puis #256 après relecture.
+5. Relire puis fusionner #256 (PR unique).
 
 ## Questions ouvertes
 

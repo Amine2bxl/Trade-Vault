@@ -158,3 +158,17 @@ jamais effacée. `ENV-…` : environnement de travail ; `D-…` : produit.
   champ déjà saisi devient un conflit à trancher ; « à revoir » ne s'applique
   que d'un geste. Les corrections du trader sont gardées à part et n'ajustent
   que les propositions suivantes (estimées), jamais les données passées.
+
+## D-009 — Le résultat, jamais le processus
+
+- Date : 2026-11-25
+- Statut : appliquée (consigne du propriétaire, valable sur tout le site)
+- Décision : l'interface montre la valeur, son unité, son `n` et l'action à
+  faire ; jamais l'IA, son modèle, une méthode ou formule de calcul, une
+  confiance ni l'origine d'une valeur. Une valeur incertaine porte une seule
+  marque : « à vérifier ». Les diagnostics restent dans `/dev/*`.
+- Remplace en partie : l'affichage détecté / calculé / estimé du panneau de
+  capture et les étiquettes observé / déclaré / à confirmer (D-002 et le plan
+  du 2026-11-22 les montraient) ; la provenance reste stockée, plus affichée.
+- Conséquences : garde-fou `tests/outputNotProcess.test.ts` (textes en et fr,
+  imports IA dans `src/app`, champs de provenance dans `features/capture`).
