@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Clock, Flame, SlidersHorizontal } from "@/shared/ui/icons";
+import { Clock, Flame, SlidersHorizontal, TerminalSquare } from "@/shared/ui/icons";
 import { Button, PageContainer, PageToolbar } from "@/shared/ui";
 import { cn } from "@/shared/ui/cn";
 import { useAuth } from "@/app/contexts/AuthContext";
@@ -33,12 +33,22 @@ import {
 } from "./checklistDefaults";
 import { getTimeInZone, hydrateConfig, pad, windowState } from "./helpers";
 import ChecklistSettings from "./ChecklistSettings";
+import TerminalMode from "./TerminalMode";
 import PlanCard from "./PlanCard";
 import LiveCard from "./LiveCard";
 import { ClosedCard, ReviewCard } from "./ReviewCard";
 import { PhaseSteps } from "./checklistParts";
 import { BREACH_KEYS, END_KEYS, useBiasWord } from "./checklistLabels";
 import { lastTrade, missedPrefill, tradePrefill, tradeReviewPrefill } from "./sessionHandoff";
+import { assessTrade } from "./executionReview";
+import { behaviorSignals, PAUSE_MINUTES, sessionState, splitLimits } from "./sessionState";
+import { assessSession } from "@/modules/discipline";
+import {
+  loadTradeIntents,
+  loadTradeReflections,
+  type TradeIntent,
+  type TradeReflection,
+} from "@/app/store/tradeIntel";
 import {
   activePlan,
   BREACHES,
@@ -103,10 +113,11 @@ interface ChecklistProps {
  * verrou, sa fin de séance et l'heure de son trade doivent parler la même
  * heure, sinon la frise mélange 15:20 et 09:49.
  */
-const hhmmIn = (timeZone: string) => {
-  const p = getTimeInZone(new Date(), timeZone);
+const hhmmOf = (date: Date, timeZone: string) => {
+  const p = getTimeInZone(date, timeZone);
   return `${pad(p.hour)}:${pad(p.minute)}`;
 };
+const hhmmIn = (timeZone: string) => hhmmOf(new Date(), timeZone);
 
 /** « 2,2 », « 2.2 » ou « 1:2.2 » → 2.2 ; `null` sans règle exploitable. */
 function parseMinRR(raw: string): number | null {
@@ -245,7 +256,12 @@ export default function Checklist({ setPage, onAddTrade, onEditTrade, trades }: 
   const readDefaults = useCallback((): DayDefaults => {
     try {
       const p = JSON.parse(localStorage.getItem(LAST_KEY) || "null") as Partial<DayDefaults>;
-      if (p && typeof p.risk === "string") return { risk: p.risk, maxTrades: Number(p.maxTrades) };
+      if (p && typeof p.risk === "string")
+        return {
+          risk: p.risk,
+          maxTrades: Number(p.maxTrades),
+          maxLoss: typeof p.maxLoss === "string" ? p.maxLoss : "",
+        };
     } catch {
       /* défauts vierges */
     }
@@ -385,6 +401,50 @@ export default function Checklist({ setPage, onAddTrade, onEditTrade, trades }: 
   }, [userId]);
 
   const facts = useMemo(() => dayFacts(trades, today), [trades, today]);
+
+  /* ══ L'exécution du jour — jugée sur le plan, jamais sur le P&L ══
+     Lue au bilan seulement : intentions (prévu figé) et réflexions des trades
+     du jour, en une requête chacune. */
+  const reviewing = day.phase === "review" || day.phase === "closed";
+  // En séance aussi : l'envie de reprendre déclarée sur le dernier trade compte.
+  const needsIntel = reviewing || day.phase === "live";
+  const [intel, setIntel] = useState<{
+    intents: Record<string, TradeIntent>;
+    reflections: Record<string, TradeReflection>;
+  }>({ intents: {}, reflections: {} });
+  const [intelRev, setIntelRev] = useState(0);
+  useLiveTable("trade_reflection", () => setIntelRev((n) => n + 1));
+  const dayIds = facts.trades.map((tr) => tr.id).join(",");
+  useEffect(() => {
+    if (!userId || !needsIntel || !dayIds) return;
+    let active = true;
+    const ids = dayIds.split(",");
+    void Promise.all([loadTradeIntents(userId, ids), loadTradeReflections(userId, ids)]).then(
+      ([intents, reflections]) => {
+        if (active) setIntel({ intents, reflections });
+      },
+    );
+    return () => {
+      active = false;
+    };
+  }, [userId, needsIntel, dayIds, intelRev]);
+  const sessionVerdict = useMemo(() => {
+    if (!reviewing) return null;
+    const session = { plan: day.plan, scenario: day.scenario };
+    return assessSession({
+      planned: day.locked,
+      tradeVerdicts: facts.trades.map(
+        (tr) =>
+          assessTrade({
+            trade: tr,
+            dayTrades: facts.trades,
+            session,
+            intent: intel.intents[tr.id],
+            reflection: intel.reflections[tr.id],
+          }).verdict,
+      ),
+    });
+  }, [reviewing, day.plan, day.scenario, day.locked, facts.trades, intel]);
   const nowDate = new Date(now);
   const win = windowState(config, nowDate);
   const winOpen = win.phase === "open";
@@ -470,7 +530,11 @@ export default function Checklist({ setPage, onAddTrade, onEditTrade, trades }: 
     try {
       localStorage.setItem(
         LAST_KEY,
-        JSON.stringify({ risk: next.plan.risk, maxTrades: next.plan.maxTrades }),
+        JSON.stringify({
+          risk: next.plan.risk,
+          maxTrades: next.plan.maxTrades,
+          maxLoss: next.plan.maxLoss,
+        }),
       );
     } catch {
       /* noop */
@@ -483,6 +547,15 @@ export default function Checklist({ setPage, onAddTrade, onEditTrade, trades }: 
     void pushSession(act({ type: "switchScenario", at: hhmmIn(config.timeZone) }));
   const end = (reason: EndReason) =>
     void pushSession(act({ type: "end", reason, at: hhmmIn(config.timeZone) }));
+  const override = (limit: Blocker, reason: string) =>
+    void pushSession(act({ type: "override", limit, reason, at: hhmmIn(config.timeZone) }));
+  const pause = () =>
+    void pushSession(
+      act({
+        type: "pause",
+        until: new Date(Date.now() + PAUSE_MINUTES * 60_000).toISOString(),
+      }),
+    );
   const closeDay = () => {
     const next = act({ type: "close" });
     if (next.phase === "closed") void pushSession(next, true);
@@ -554,9 +627,32 @@ export default function Checklist({ setPage, onAddTrade, onEditTrade, trades }: 
         return t("chk.blockWindow").replace("{time}", config.startTime);
       case "windowEnded":
         return t("chk.blockWindowEnded").replace("{time}", config.endTime ?? "");
+      case "dailyLoss":
+        return t("chk.blockDailyLoss").replace("{amount}", day.plan.maxLoss.trim());
+      case "riskBreach":
+        return t("chk.blockRisk").replace("{amount}", day.plan.risk.trim());
     }
   };
   const blockers = entryBlockers({ plan: day.plan, facts, window: win.phase, stopAfterLosses });
+  const limits = splitLimits(blockers, config.enforcement, day.overrides);
+  const state = sessionState({
+    phase: day.phase,
+    window: win.phase,
+    blocking: limits.blocking,
+    pausedUntil: day.pausedUntil,
+    nowMs: now,
+  });
+  const lastTradeToday = facts.trades[facts.trades.length - 1];
+  const signals = behaviorSignals({
+    trades: facts.trades,
+    lastReentryUrge: lastTradeToday
+      ? (intel.reflections[lastTradeToday.id]?.reentryUrge ?? null)
+      : null,
+  });
+  const pauseEnds =
+    state === "paused" && day.pausedUntil
+      ? hhmmOf(new Date(day.pausedUntil), config.timeZone)
+      : null;
 
   // Les questions d'entrée, remplies avec le plan EN VIGUEUR (A ou B).
   const questions = useMemo(() => {
@@ -574,6 +670,18 @@ export default function Checklist({ setPage, onAddTrade, onEditTrade, trades }: 
       text: fillGate(q.text, values),
     }));
   }, [config.items, day, biasWord]);
+
+  const windowLine =
+    win.phase === "before"
+      ? t("chk.winIn").replace("{time}", config.startTime).replace("{left}", fmtLeft(win.toStart))
+      : win.phase === "after"
+        ? t("chk.winEnded").replace("{time}", config.endTime ?? "")
+        : win.toEnd !== null
+          ? t("chk.winLeft")
+              .replace("{left}", fmtLeft(win.toEnd))
+              .replace("{time}", config.endTime ?? "")
+          : t("chk.winOpen").replace("{time}", config.startTime);
+  const [terminal, setTerminal] = useState(false);
 
   const dateStr = nowDate.toLocaleDateString(intlLocale(lang), {
     weekday: "short",
@@ -598,17 +706,7 @@ export default function Checklist({ setPage, onAddTrade, onEditTrade, trades }: 
           )}
         >
           <Clock className="h-3 w-3" />
-          {win.phase === "before"
-            ? t("chk.winIn")
-                .replace("{time}", config.startTime)
-                .replace("{left}", fmtLeft(win.toStart))
-            : win.phase === "after"
-              ? t("chk.winEnded").replace("{time}", config.endTime ?? "")
-              : win.toEnd !== null
-                ? t("chk.winLeft")
-                    .replace("{left}", fmtLeft(win.toEnd))
-                    .replace("{time}", config.endTime ?? "")
-                : t("chk.winOpen").replace("{time}", config.startTime)}
+          {windowLine}
         </span>
         {streak > 0 && (
           <>
@@ -627,16 +725,28 @@ export default function Checklist({ setPage, onAddTrade, onEditTrade, trades }: 
         actions={
           // Une icône seule ne disait pas qu'ici se règlent la fenêtre et les
           // questions d'entrée : le mot accompagne l'icône dès qu'il y a la place.
-          <Button
-            variant="subtle"
-            size="sm"
-            onClick={() => setShowSettings(true)}
-            aria-label={t("chk.settings")}
-            title={t("chk.settings")}
-          >
-            <SlidersHorizontal className="h-4 w-4" />
-            <span className="hidden sm:inline">{t("chk.settingsShort")}</span>
-          </Button>
+          <>
+            <Button
+              variant="accent"
+              size="sm"
+              onClick={() => setTerminal(true)}
+              aria-label={t("term.open")}
+              title={t("term.open")}
+            >
+              <TerminalSquare className="h-4 w-4" />
+              <span className="hidden sm:inline">{t("term.openShort")}</span>
+            </Button>
+            <Button
+              variant="subtle"
+              size="sm"
+              onClick={() => setShowSettings(true)}
+              aria-label={t("chk.settings")}
+              title={t("chk.settings")}
+            >
+              <SlidersHorizontal className="h-4 w-4" />
+              <span className="hidden sm:inline">{t("chk.settingsShort")}</span>
+            </Button>
+          </>
         }
       >
         <PhaseSteps
@@ -669,8 +779,13 @@ export default function Checklist({ setPage, onAddTrade, onEditTrade, trades }: 
         <LiveCard
           day={day}
           facts={facts}
-          blockers={blockers}
+          limits={limits}
           blockerText={blockerText}
+          state={state}
+          pauseEnds={pauseEnds}
+          signals={signals}
+          onOverride={override}
+          onPause={pause}
           questions={questions}
           minRR={minRR}
           onLogTrade={() => encodeTrade(false)}
@@ -686,6 +801,7 @@ export default function Checklist({ setPage, onAddTrade, onEditTrade, trades }: 
           facts={facts}
           act={act}
           observed={observedBreaches}
+          verdict={sessionVerdict}
           onClose={closeDay}
         />
       )}
@@ -695,6 +811,7 @@ export default function Checklist({ setPage, onAddTrade, onEditTrade, trades }: 
           day={day}
           facts={facts}
           history={history}
+          verdict={sessionVerdict}
           onReopen={() => act({ type: "reopenReview" })}
           onJournal={() => setPage("journal")}
           onEncodeTrade={() => encodeTrade(true)}
@@ -702,6 +819,29 @@ export default function Checklist({ setPage, onAddTrade, onEditTrade, trades }: 
           onReviewTrade={reviewTrade}
           questions={questions}
           onCustomize={() => setShowSettings(true)}
+        />
+      )}
+
+      {terminal && (
+        <TerminalMode
+          open
+          onClose={() => setTerminal(false)}
+          day={day}
+          facts={facts}
+          limits={limits}
+          blockerText={blockerText}
+          state={state}
+          pauseEnds={pauseEnds}
+          signals={signals}
+          questions={questions}
+          verdict={sessionVerdict}
+          windowLine={windowLine}
+          clock={hhmmOf(nowDate, config.timeZone)}
+          hour={getTimeInZone(nowDate, config.timeZone).hour}
+          onLock={lock}
+          onLogTrade={() => encodeTrade(false)}
+          onEnd={end}
+          onPause={pause}
         />
       )}
 

@@ -1,4 +1,5 @@
 import { lazyPage } from "@/shared/lazy-page";
+import { applyFocus, type NavigateDetail } from "@/app/utils/navigate";
 import { CursorOrb } from "@/shared/ui/CursorOrb";
 import {
   useState,
@@ -133,6 +134,8 @@ import { buildDemoTrades } from "./demoTrades";
 import { todayLocalDate } from "@/shared/calendar-date";
 import { previewTrades } from "../utils/previewTrades";
 import { prefetchInbox } from "../features/inbox/inboxCache";
+import { takeCheckoutIntent } from "../features/billing/checkoutIntent";
+import { checkoutErrorKey } from "../features/billing/subscriptionState";
 import { canLogTrade, isPlanLimitError } from "../utils/planLimits";
 import { computeBehavioral } from "@/domain/behavioral";
 import { useEconomicCalendar } from "../features/news/useEconomicCalendar";
@@ -236,7 +239,7 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
   // sans rafraîchissement (voir `useRealtimeTrades`).
   useLiveSync(user?.id);
   useRealtimeTrades(user?.id, activeId);
-  const { tier, can: canUse, loading: subLoading } = useSubscription();
+  const { tier, can: canUse, loading: subLoading, checkout } = useSubscription();
   // Synchro broker : le journal se remplit seul pendant que l'app est ouverte.
   // Palier Pro uniquement — hors Pro, aucun appel ne part.
   useBrokerSync({
@@ -414,6 +417,24 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
     return () => window.removeEventListener("tv:upgrade", onUpgrade);
   }, []);
 
+  /* L'OFFRE CHOISIE SUR LA VITRINE OU `/pricing` MÈNE À SON PAIEMENT.
+     Retenue avant l'inscription (`checkoutIntent`), elle est consommée UNE
+     fois dès qu'une session existe — avant l'onboarding, qui reprend au
+     retour de Stripe. En cas d'échec, l'erreur traduite et la fenêtre
+     d'achat : le trader n'est jamais laissé sans suite. */
+  const intentionTraitee = useRef(false);
+  useEffect(() => {
+    if (!user || intentionTraitee.current) return;
+    intentionTraitee.current = true;
+    const plan = takeCheckoutIntent();
+    if (!plan) return;
+    void checkout(plan).then((err) => {
+      if (!err) return; // le navigateur part chez Stripe
+      toast(t(checkoutErrorKey(err)), "error");
+      setUpgradeOpen(true);
+    });
+  }, [user, checkout, toast, t]);
+
   // Confirmation visuelle d'abonnement : le checkout Stripe (et l'octroi d'un
   // code 100 %) redirigent vers `/?billing=success`. À l'arrivée on montre
   // les confettis + la carte, puis on nettoie l'URL pour ne pas rejouer.
@@ -508,7 +529,9 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
   // vers une page sans coupler les modales au composant racine.
   useEffect(() => {
     const onNavigate = (e: Event) => {
-      const detail = (e as CustomEvent<{ page?: string; filter?: string }>).detail;
+      const detail = (
+        e as CustomEvent<{ page?: string; filter?: string; focus?: NavigateDetail["focus"] }>
+      ).detail;
       // Même garde que la restauration de session : la cible vient d'un
       // événement externe, elle doit être validée avant d'être appliquée.
       if (!isPage(detail?.page)) return;
@@ -522,6 +545,9 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
         window.history.replaceState(window.history.state, "", url.pathname + url.search);
         window.dispatchEvent(new CustomEvent("tv:filter"));
       }
+      // Ouvrir un élément précis (`?trade=` / `?missed=`) : la page le lit au montage.
+      if (detail.focus?.kind === "trade" || detail.focus?.kind === "missed")
+        applyFocus(detail.focus);
     };
     window.addEventListener("tv:navigate", onNavigate);
     return () => window.removeEventListener("tv:navigate", onNavigate);
@@ -1017,6 +1043,13 @@ function AppContent({ publicPage, publicFallback }: PublicSlots) {
     setEditingTrade(null);
     setModalOpen(true);
   }, []);
+  // Le formulaire de trade s'ouvre depuis n'importe quelle page (Inbox, capture…) ;
+  // ce qu'il doit savoir passe par un relais (`handOff`).
+  useEffect(() => {
+    window.addEventListener("tv:new-trade", handleAdd);
+    return () => window.removeEventListener("tv:new-trade", handleAdd);
+  }, [handleAdd]);
+
   const handleCloseModal = useCallback(() => {
     setModalOpen(false);
     setEditingTrade(null);

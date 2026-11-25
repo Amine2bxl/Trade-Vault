@@ -176,7 +176,6 @@ const hi: Dict = {
   "analytics.subtitle": "आपके ट्रेडिंग पैटर्न का गहन विश्लेषण",
   "analytics.noTrades": "विश्लेषण देखने के लिए ट्रेड जोड़ें",
   "analytics.profitFactor": "प्रॉफिट फैक्टर",
-  "analytics.profitsOverLosses": "कुल लाभ ÷ कुल हानि",
   "analytics.profits": "लाभ",
   "analytics.losses": "हानि",
   "analytics.factor": "फैक्टर",

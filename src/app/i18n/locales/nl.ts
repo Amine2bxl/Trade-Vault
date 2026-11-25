@@ -176,7 +176,6 @@ const nl: Dict = {
   "analytics.subtitle": "Diepgaande analyse van uw tradingpatronen",
   "analytics.noTrades": "Voeg trades toe om analyses te zien",
   "analytics.profitFactor": "Winstfactor",
-  "analytics.profitsOverLosses": "Totale winst ÷ Totaal verlies",
   "analytics.profits": "Winst",
   "analytics.losses": "Verlies",
   "analytics.factor": "Factor",

@@ -1,6 +1,8 @@
 import type { EmotionalState } from "@/app/trading/readiness";
 import type { PlanRespected, ReflectionReason } from "@/app/store/tradeIntel";
 import type { MissedOpportunity } from "@/app/types";
+import type { PlannedLevels } from "@/domain/executionPlan";
+import type { CaptureExtraction } from "@/domain/capture";
 
 /**
  * Le passage de relais entre deux écrans — UNE valeur, lue UNE fois.
@@ -32,6 +34,8 @@ export interface TradePrefill {
   reflectionPlan?: PlanRespected | null;
   reflectionReason?: ReflectionReason | null;
   reflectionNote?: string;
+  /** Les niveaux du plan de séance en prix : figés dans l'intention du trade. */
+  planned?: PlannedLevels;
 }
 
 export type MissedPrefill = Partial<Omit<MissedOpportunity, "id" | "screenshots">>;
@@ -53,10 +57,19 @@ export type TradeReviewPrefill = Pick<
   | "reflectionNote"
 > & { tradeId: string };
 
+/** Une capture déjà analysée (Inbox) qui devient un trade ou un setup manqué. */
+export interface CapturePrefill {
+  itemId: string;
+  extraction: CaptureExtraction;
+  screenshots: string[];
+}
+
 interface Payloads {
   trade: TradePrefill;
   missed: MissedPrefill;
   tradeReview: TradeReviewPrefill;
+  tradeCapture: CapturePrefill;
+  missedCapture: CapturePrefill;
 }
 
 const slots = new Map<keyof Payloads, unknown>();

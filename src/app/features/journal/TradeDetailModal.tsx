@@ -1,4 +1,5 @@
 import { SymbolLogo } from "@/app/trading/SymbolLogo";
+import { openTrades } from "@/app/utils/navigate";
 import {
   X,
   Trash2,
@@ -30,6 +31,15 @@ import { Modal } from "@/shared/ui";
 import { useLiveTable } from "@/app/hooks/useLiveTable";
 import { useIsNarrowNow } from "@/app/hooks/useIsNarrow";
 import TradeDetailSheet from "./TradeDetailSheet";
+import { TradeExecution } from "./TradeExecution";
+import { loadTodaySession } from "@/app/store/sessions";
+import { sessionFromSnapshot } from "@/app/features/checklist/sessionPlan";
+import {
+  assessTrade,
+  type SessionContext,
+  type TradeAssessment,
+} from "@/app/features/checklist/executionReview";
+import { loadTradingPlan } from "@/app/trading/tradingPlan";
 import {
   TradeConfidence,
   TradeConfluences,
@@ -113,6 +123,51 @@ export default function TradeDetailModal({
       active = false;
     };
   }, [userId, trades, liveRev]);
+  // Le plan verrouillé ce jour-là : la référence du verdict d'exécution.
+  // `undefined` pendant le chargement — aucun verdict ne s'affiche avant.
+  const [session, setSession] = useState<SessionContext | null | undefined>(undefined);
+  useEffect(() => {
+    if (!userId) return;
+    let active = true;
+    void loadTodaySession(userId, date).then((s) => {
+      if (active) setSession(s ? sessionFromSnapshot(date, s.checklistSnapshot) : null);
+    });
+    return () => {
+      active = false;
+    };
+  }, [userId, date]);
+  // Les règles écrites de chaque setup du plan : les confluences qu'il exige.
+  const [setupRules, setSetupRules] = useState<Record<string, string>>({});
+  useEffect(() => {
+    if (!userId) return;
+    let active = true;
+    void loadTradingPlan(userId)
+      .then((p) => {
+        if (active)
+          setSetupRules(
+            Object.fromEntries(p.setups.map((s) => [s.name.trim().toLowerCase(), s.rules])),
+          );
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [userId]);
+  const assessments = useMemo(() => {
+    const out: Record<string, TradeAssessment> = {};
+    if (session === undefined) return out;
+    for (const trade of trades) {
+      out[trade.id] = assessTrade({
+        trade,
+        dayTrades: trades,
+        session,
+        intent: intents[trade.id],
+        reflection: reflections[trade.id],
+        setupRules: setupRules[trade.strategy.trim().toLowerCase()] ?? null,
+      });
+    }
+    return out;
+  }, [trades, session, intents, reflections, setupRules]);
   // Screenshots are stored as storage paths (or legacy data: URLs) — resolve
   // them all in one batched signed-URL request.
   const screenshotUrls = useScreenshotUrls(trades.flatMap((tr) => tr.screenshots));
@@ -176,6 +231,7 @@ export default function TradeDetailModal({
         onDelete={onDelete}
         intents={intents}
         reflections={reflections}
+        assessments={assessments}
         screenshotUrls={screenshotUrls}
         onOpenShot={(paths, index) => setLightbox({ paths, index })}
       >
@@ -337,7 +393,16 @@ export default function TradeDetailModal({
                         </span>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <span className="text-xs text-slate-500">{trade.strategy}</span>
+                        {trade.strategy && (
+                          <button
+                            type="button"
+                            onClick={() => openTrades({ strategy: trade.strategy })}
+                            title={t("links.tradesWith").replace("{v}", trade.strategy)}
+                            className="text-xs text-slate-500 underline-offset-2 hover:text-white hover:underline"
+                          >
+                            {trade.strategy}
+                          </button>
+                        )}
                         {getSessionForTrade(trade) && (
                           <span className="tv-label px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400">
                             {t(`session.${getSessionForTrade(trade)}` as never)}
@@ -371,6 +436,8 @@ export default function TradeDetailModal({
                 <TradeConfluences trade={trade} />
 
                 <TradeMistakes trade={trade} />
+
+                <TradeExecution tradeId={trade.id} assessment={assessments[trade.id] ?? null} />
 
                 <TradeIntentFlow trade={trade} intent={intent} reflection={reflection} />
 

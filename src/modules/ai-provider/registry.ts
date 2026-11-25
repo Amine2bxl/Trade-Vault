@@ -87,6 +87,11 @@ export function resolveToolCapableProviders(): AIProvider[] {
   return preferred ? [preferred, ...capable.filter((p) => p !== preferred)] : capable;
 }
 
+/** Les providers configurées qui lisent les images, la préférée d'abord. Vide = pas de vision. */
+export function resolveVisionProviders(): AIProvider[] {
+  return resolveProviders().filter((p) => p.supportsVision);
+}
+
 /** Ids de toutes les providers connues (même non configurées). */
 export function providerIds(): string[] {
   return PROVIDERS.map((p) => p.id);

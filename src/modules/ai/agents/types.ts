@@ -19,6 +19,8 @@ export type AgentId =
   | "coach"
   /** Extraction de mémoire — ne parle jamais au trader, écrit ce qu'il retient. */
   | "memory-extract"
+  /** Lecture d'une capture ou d'une note — rend des champs, ne parle jamais au trader. */
+  | "capture-extract"
   | "performance-analyst"
   | "psychologist"
   | "risk-manager"

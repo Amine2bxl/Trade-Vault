@@ -1,4 +1,5 @@
 import { numericText } from "@/shared/ui/NumericText";
+import { CaptureQueue } from "../capture/CaptureQueue";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useLiveTable } from "@/app/hooks/useLiveTable";
 import {
@@ -360,6 +361,7 @@ export default function Inbox() {
       className="tv-inbox flex h-full flex-col overflow-hidden"
     >
       <div className="min-h-0 flex-1 overflow-y-auto">
+        <CaptureQueue />
         {loading ? (
           <div className="tv-inbox-list" aria-busy="true" aria-label={t("common.loading")} />
         ) : failed ? (

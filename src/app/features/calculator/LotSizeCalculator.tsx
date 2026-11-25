@@ -113,7 +113,6 @@ export default function LotSizeCalculator({ onAddTrade }: LotSizeCalculatorProps
     return () => {
       alive = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
   /* Réglé sur un autre appareil : appliqué ici aussi. Ce qui attend encore son
      envoi depuis CET appareil est protégé par le cache (`userPrefs.ts`) : la

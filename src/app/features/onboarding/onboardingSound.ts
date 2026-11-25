@@ -27,7 +27,10 @@ export type Sfx =
   | "type"
   | "data"
   | "launch"
-  | "error";
+  | "error"
+  // Repris de la checklist d'origine (juillet 2026) pour le Mode Terminal :
+  | "chime"
+  | "alarm";
 
 const SOUND_KEY = "tv.onboarding.sound";
 
@@ -255,6 +258,20 @@ export function play(s: Sfx): void {
       case "error":
         tone(c, out, { freq: 440, decay: 0.12, gain: 0.12 });
         tone(c, out, { freq: 330, start: 0.12, decay: 0.18, gain: 0.12 });
+        break;
+      case "chime":
+        // L'accord de validation d'origine : do-mi-sol-do, puis une note haute.
+        for (const [i, f] of [523.25, 659.25, 783.99, 1046.5].entries()) {
+          tone(c, out, { freq: f, start: i * 0.095, decay: 0.2, gain: 0.1 });
+        }
+        tone(c, out, { freq: 1568, start: 0.42, decay: 0.32, gain: 0.07 });
+        break;
+      case "alarm":
+        // L'alerte d'origine : deux pulsations graves, jamais stridentes.
+        tone(c, out, { freq: 165, type: "sawtooth", decay: 0.3, gain: 0.06 });
+        tone(c, out, { freq: 82, decay: 0.32, gain: 0.12 });
+        tone(c, out, { freq: 140, type: "sawtooth", start: 0.3, decay: 0.36, gain: 0.06 });
+        tone(c, out, { freq: 70, start: 0.3, decay: 0.38, gain: 0.12 });
         break;
     }
   } catch {

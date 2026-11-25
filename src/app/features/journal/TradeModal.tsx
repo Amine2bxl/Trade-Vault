@@ -87,6 +87,16 @@ import { useLiveTable } from "@/app/hooks/useLiveTable";
 import { SymbolLogo } from "@/app/trading/SymbolLogo";
 import { symbolChoices } from "@/app/trading/symbolCatalog";
 import { draftOnlyScreenshots, restoreDraftScreenshots } from "./tradeDraft";
+import { TradePricesSection } from "./TradePricesSection";
+import { applyDefaults, loadTradeDefaults, rememberTradeDefaults } from "./tradeDefaults";
+import { useAccounts } from "@/app/contexts/AccountContext";
+import { loadTradingPlan } from "@/app/trading/tradingPlan";
+import { TradeCaptureAssist } from "../capture/TradeCaptureAssist";
+import { settleTradeCapture, type CaptureSession } from "../capture/settleCapture";
+import { navigateTo } from "@/app/utils/navigate";
+import type { CaptureRun } from "../capture/useCaptureAnalysis";
+import { enrichCapture } from "@/domain/captureEnrich";
+import type { PlannedLevels } from "@/domain/executionPlan";
 
 interface TradeModalProps {
   trade: Trade | null;
@@ -128,9 +138,16 @@ const defaultForm = {
   intentEmotion: null as EmotionalState | null,
   intentReasoning: "",
   intentPlan: "",
+  // Stop et cible réellement posés, en prix ; le plan de séance, figé (lecture seule).
+  initialStop: "",
+  initialTarget: "",
+  planned: null as PlannedLevels | null,
   reflectionPlan: null as PlanRespected | null,
   reflectionReason: null as ReflectionReason | null,
   reflectionNote: "",
+  // Après le trade, DÉCLARÉ : intensité 1-5 et envie de reprendre tout de suite.
+  intensity: null as number | null,
+  reentryUrge: null as boolean | null,
 };
 
 // L'émotion reprend `EMOTIONAL_STATES` de readiness.ts — un seul vocabulaire.
@@ -279,6 +296,8 @@ export default function TradeModal({ trade, usedSymbols, onClose, onSave }: Trad
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showIntent, setShowIntent] = useState(false);
   const [showReflection, setShowReflection] = useState(false);
+  // Ouvert d'office quand le trade porte déjà un plan ou des prix : on les voit.
+  const [showPrices, setShowPrices] = useState<boolean | null>(null);
   const [stopPoints, setStopPoints] = useState(() => restoredUiRef.current?.stopPoints ?? "");
   const [pointValue, setPointValue] = useState(() => restoredUiRef.current?.pointValue ?? "20");
 
@@ -304,9 +323,15 @@ export default function TradeModal({ trade, usedSymbols, onClose, onSave }: Trad
           intentEmotion: intent?.emotion ?? f.intentEmotion,
           intentReasoning: intent?.reasoning ?? f.intentReasoning,
           intentPlan: intent?.plan ?? f.intentPlan,
+          initialStop: intent?.initialStop != null ? String(intent.initialStop) : f.initialStop,
+          initialTarget:
+            intent?.initialTarget != null ? String(intent.initialTarget) : f.initialTarget,
+          planned: intent?.planned ?? f.planned,
           reflectionPlan: reflection?.planRespected ?? f.reflectionPlan,
           reflectionReason: reflection?.reason ?? f.reflectionReason,
           reflectionNote: reflection?.note ?? f.reflectionNote,
+          intensity: reflection?.intensity ?? f.intensity,
+          reentryUrge: reflection?.reentryUrge ?? f.reentryUrge,
         }));
       }
       if (intent) setShowIntent(true);
@@ -317,6 +342,26 @@ export default function TradeModal({ trade, usedSymbols, onClose, onSave }: Trad
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, trade?.id]);
+
+  // NOUVEAU TRADE DEPUIS UNE CAPTURE DÉJÀ ANALYSÉE (Inbox) : ses captures
+  // rejoignent le formulaire, et l'analyse s'applique aux champs vides.
+  const [capturePreview, setCapturePreview] = useState<CaptureRun | null>(null);
+  useEffect(() => {
+    if (trade) return;
+    const cap = takeHandoff("tradeCapture");
+    if (!cap) return;
+    setForm((f) => ({
+      ...f,
+      screenshots: Array.from(new Set([...f.screenshots, ...cap.screenshots])).slice(0, 3),
+    }));
+    setCapturePreview({
+      itemId: cap.itemId,
+      extraction: cap.extraction,
+      derived: enrichCapture(cap.extraction),
+      cached: true,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // NOUVEAU TRADE OUVERT DEPUIS LA CHECKLIST : le plan de séance a déposé ce
   // qu'il sait déjà (sens, risque, état, plan, réflexion du bilan). Pris dans
@@ -355,6 +400,51 @@ export default function TradeModal({ trade, usedSymbols, onClose, onSave }: Trad
     setShowReflection(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  /* LES DÉFAUTS DU COMPTE ACTIF — un nouveau trade part du symbole, du setup
+     et du risque du dernier trade encodé sur CE compte. Seulement dans un
+     formulaire vierge (ni brouillon, ni trade existant), seulement les
+     champs vides : le relais de la séance garde le dernier mot. */
+  const { activeId, activeAccount } = useAccounts();
+  useEffect(() => {
+    if (trade || !userId || hadDraftOnOpenRef.current) return;
+    let active = true;
+    void loadTradeDefaults(userId, activeId)
+      .then((d) => {
+        if (active && d && !hasInteractedRef.current) {
+          setForm((f) => applyDefaults(f, d, defaultForm.strategy));
+        }
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, activeId]);
+
+  // Les setups du plan de trading passent en tête des stratégies : le
+  // vocabulaire du trader, pas une liste générique.
+  const [planSetups, setPlanSetups] = useState<string[]>([]);
+  useEffect(() => {
+    if (!userId) return;
+    let active = true;
+    void loadTradingPlan(userId)
+      .then((p) => {
+        if (active) setPlanSetups(p.setups.map((s) => s.name.trim()).filter(Boolean));
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [userId]);
+
+  const strategyOptions = useMemo(
+    () => Array.from(new Set([...planSetups, ...STRATEGIES])),
+    [planSetups],
+  );
+  // La dernière analyse de capture : soldée (lien + corrections) à l'enregistrement.
+  const captureSession = useRef<CaptureSession | null>(null);
+  const openPrices = useCallback(() => setShowPrices(true), []);
 
   const [showAllMistakes, setShowAllMistakes] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -409,6 +499,13 @@ export default function TradeModal({ trade, usedSymbols, onClose, onSave }: Trad
     const n = parseFloat(v);
     return Number.isFinite(n) ? n : null;
   };
+
+  const pricesOpen =
+    showPrices ??
+    (form.planned != null ||
+      form.initialStop !== "" ||
+      form.initialTarget !== "" ||
+      (!trade?.broker && (form.entryPrice !== "" || form.exitPrice !== "")));
 
   const calculatedPnl = useMemo(() => {
     if (pnlLocked) return brokerPnl as number;
@@ -627,16 +724,22 @@ export default function TradeModal({ trade, usedSymbols, onClose, onSave }: Trad
       emotion: form.intentEmotion,
       reasoning: form.intentReasoning.trim() ? form.intentReasoning : null,
       plan: form.intentPlan.trim() ? form.intentPlan : null,
+      planned: form.planned,
+      initialStop: optionalNumber(form.initialStop),
+      initialTarget: optionalNumber(form.initialTarget),
     };
     const reflection: TradeReflectionInput = {
       planRespected: form.reflectionPlan,
       reason: form.reflectionReason,
       note: form.reflectionNote.trim() ? form.reflectionNote : null,
+      intensity: form.intensity,
+      reentryUrge: form.reentryUrge,
     };
+    const tradeId = trade?.id || generateId();
     try {
       const result = await onSave(
         {
-          id: trade?.id || generateId(),
+          id: tradeId,
           date: form.date,
           symbol: form.symbol.toUpperCase(),
           direction: form.direction,
@@ -665,11 +768,12 @@ export default function TradeModal({ trade, usedSymbols, onClose, onSave }: Trad
           // ne doit pas non plus le perdre (sans `accountId`, un trade modifié
           // depuis un autre compte actif y était réaffecté — voir `tradeToRow`).
           accountId: trade?.accountId,
-          // L'exécution d'un trade importé est éditable ; celle d'un trade saisi
-          // à la main (souvent absente) est conservée telle quelle.
-          quantity: pnlLocked ? optionalNumber(form.quantity) : trade?.quantity,
-          entryPrice: pnlLocked ? optionalNumber(form.entryPrice) : trade?.entryPrice,
-          exitPrice: pnlLocked ? optionalNumber(form.exitPrice) : trade?.exitPrice,
+          // L'exécution est éditable pour tous les trades (le formulaire part
+          // des valeurs enregistrées) ; les frais d'un trade manuel restent ceux
+          // déjà connus.
+          quantity: optionalNumber(form.quantity),
+          entryPrice: optionalNumber(form.entryPrice),
+          exitPrice: optionalNumber(form.exitPrice),
           fees: pnlLocked ? optionalNumber(form.fees) : trade?.fees,
           broker: trade?.broker,
           externalId: trade?.externalId,
@@ -693,6 +797,15 @@ export default function TradeModal({ trade, usedSymbols, onClose, onSave }: Trad
       );
       if (result !== false) {
         savedRef.current = true;
+        settleTradeCapture(captureSession.current, tradeId, form);
+        if (!trade && userId) {
+          void rememberTradeDefaults(userId, activeId, {
+            symbol: form.symbol.toUpperCase(),
+            strategy: form.strategy,
+            riskAmount: form.riskAmount,
+            riskType: form.riskType,
+          }).catch(() => {});
+        }
         // Avoid deleting a newer draft created while the server was saving.
         const saved = readJSON<TradeDraft | null>(draftKey, null);
         if (saved && JSON.stringify(saved) === JSON.stringify(draftState)) removeKey(draftKey);
@@ -794,6 +907,7 @@ export default function TradeModal({ trade, usedSymbols, onClose, onSave }: Trad
               {trade ? t("trade.editTitle") : t("trade.newTitle")}
             </h2>
             <p className="tv-row-label truncate">
+              {!trade && activeAccount ? `${activeAccount.name} · ` : ""}
               {form.symbol ? `${form.symbol.toUpperCase()} · ` : ""}
               {form.direction === "long"
                 ? t("common.long")
@@ -873,6 +987,32 @@ export default function TradeModal({ trade, usedSymbols, onClose, onSave }: Trad
                 </p>
               )}
             </div>
+          )}
+
+          {(!trade || form.screenshots.length > 0) && (
+            <TradeCaptureAssist
+              key={capturePreview?.itemId ?? "capture"}
+              previewRun={capturePreview ?? undefined}
+              userId={userId}
+              accountId={trade?.accountId ?? activeId ?? null}
+              isNew={!trade}
+              formRef={latestFormRef}
+              pristine={defaultForm}
+              setForm={setForm}
+              onPricesApplied={openPrices}
+              session={captureSession}
+              paths={form.screenshots}
+              uploading={uploading}
+              canAddMore={form.screenshots.length < 3}
+              onAddFiles={(files) => void handleScreenshotUpload(files)}
+              strategies={strategyOptions}
+              confluences={userConfluences}
+              plannedRiskDollars={riskDollar > 0 ? riskDollar : null}
+              onOpenTrade={(id) => {
+                onClose();
+                navigateTo({ page: "journal", focus: { kind: "trade", id } });
+              }}
+            />
           )}
 
           <div className="space-y-3">
@@ -1118,6 +1258,23 @@ export default function TradeModal({ trade, usedSymbols, onClose, onSave }: Trad
                   )}
                 </p>
               </Disclosure>
+              <Disclosure title={t("trade.prices")} open={pricesOpen} onChange={setShowPrices}>
+                <TradePricesSection
+                  symbol={form.symbol}
+                  direction={form.direction}
+                  values={form}
+                  onChange={(key, value) => setForm((f) => ({ ...f, [key]: value }))}
+                  planned={form.planned}
+                  executionShownAbove={!!trade?.broker}
+                  riskDollar={riskDollar}
+                  rMultiple={form.rMultiple}
+                  rLocked={pnlLocked}
+                  onUseR={(r) => setForm((f) => ({ ...f, rMultiple: String(r) }))}
+                  onUseRisk={(risk) =>
+                    setForm((f) => ({ ...f, riskAmount: String(risk), riskType: "dollar" }))
+                  }
+                />
+              </Disclosure>
             </FormSection>
 
             {/* 3 — HORAIRES ET SETUP */}
@@ -1157,7 +1314,7 @@ export default function TradeModal({ trade, usedSymbols, onClose, onSave }: Trad
                     value={form.strategy}
                     onChange={(strategy) => setForm((f) => ({ ...f, strategy }))}
                     searchLabel={t("picker.search")}
-                    options={Array.from(new Set([...STRATEGIES, form.strategy]))
+                    options={Array.from(new Set([...planSetups, ...STRATEGIES, form.strategy]))
                       .filter(Boolean)
                       .map((value) => ({ value, label: value }))}
                   />
@@ -1421,6 +1578,39 @@ export default function TradeModal({ trade, usedSymbols, onClose, onSave }: Trad
                     rows={2}
                   />
                 </Field>
+                <div className="grid gap-2.5 sm:grid-cols-2">
+                  <Field label={t("trade.intensity")}>
+                    <div className={CHIP_ROW} role="group" aria-label={t("trade.intensity")}>
+                      {[1, 2, 3, 4, 5].map((n) => (
+                        <Chip
+                          key={n}
+                          selected={form.intensity === n}
+                          onClick={() =>
+                            setForm((f) => ({ ...f, intensity: f.intensity === n ? null : n }))
+                          }
+                        >
+                          <span className="tv-figure">{n}</span>
+                        </Chip>
+                      ))}
+                    </div>
+                  </Field>
+                  <Field label={t("trade.reentryUrge")}>
+                    <ChoiceGroup<"yes" | "no">
+                      label={t("trade.reentryUrge")}
+                      value={form.reentryUrge === null ? null : form.reentryUrge ? "yes" : "no"}
+                      options={[
+                        { value: "no", label: t("chk.no") },
+                        { value: "yes", label: t("chk.yes"), tone: "negative" },
+                      ]}
+                      onChange={(v) =>
+                        setForm((f) => {
+                          const next = v === "yes";
+                          return { ...f, reentryUrge: f.reentryUrge === next ? null : next };
+                        })
+                      }
+                    />
+                  </Field>
+                </div>
               </Disclosure>
             </FormSection>
 

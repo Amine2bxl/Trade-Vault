@@ -59,7 +59,9 @@ describe("les deux pastilles tiennent une colonne", () => {
     // C'est le point qui casse le plus facilement : rendre la case seulement
     // `{cond && <case>}` ferait remonter la pastille suivante, donc romprait la
     // colonne pile sur les lignes sans donnée.
-    for (const garde of ["m.estimatedR > 0 &&", "m.screenshots.length > 0 &&"]) {
+    // La pastille du R est rendue par `<MissedRCell>` (qui rend `null` sans R
+    // à compter) : elle reste, elle aussi, DANS sa case.
+    for (const garde of ["<MissedRCell m={m} />", "m.screenshots.length > 0 &&"]) {
       const i = LIGNE.indexOf(garde);
       expect(i, garde).toBeGreaterThan(-1);
       // La garde est DANS la case, jamais autour : la balise ouvrante de la

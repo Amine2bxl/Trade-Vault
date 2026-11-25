@@ -1,5 +1,15 @@
 import { supabase } from "@/integrations/supabase/client";
+import type { TablesInsert } from "@/integrations/supabase/types";
 import { MissedOpportunity } from "../types";
+import { priceOrNull } from "@/domain/executionPlan";
+import {
+  MISSED_CLASSES,
+  MISSED_OUTCOMES,
+  MISSED_REASONS,
+  type MissedClass,
+  type MissedOutcome,
+  type MissedReason,
+} from "@/domain/missedSetup";
 import { getActiveAccountId } from "./accounts";
 import { storagePathsOf, removeScreenshotFiles } from "./storage";
 
@@ -16,7 +26,37 @@ interface MissedRow {
   next_time_plan: string;
   estimated_r: number;
   screenshots?: string[];
+  direction?: string | null;
+  entry_price?: number | string | null;
+  stop_price?: number | string | null;
+  target_price?: number | string | null;
+  reason_code?: string | null;
+  classification?: string | null;
+  outcome?: string | null;
 }
+
+/* Colonnes de `20261122130000_missed_setup_model` : l'app est déployée avant
+   ses migrations ; sans elles, on lit et on écrit sans ces colonnes. */
+const MODEL_COLUMNS = [
+  "direction",
+  "entry_price",
+  "stop_price",
+  "target_price",
+  "reason_code",
+  "classification",
+  "outcome",
+] as const;
+const BASE_SELECT =
+  "id,user_id,account_id,opportunity_date,symbol,reason_not_taken,what_happened,lesson_learned,next_time_plan,estimated_r,screenshots";
+
+function isMissingModelColumn(error: unknown): boolean {
+  const e = error as { code?: string; message?: string } | null;
+  const text = `${e?.code ?? ""} ${e?.message ?? ""}`;
+  return /PGRST204|42703|column/i.test(text) && MODEL_COLUMNS.some((c) => text.includes(c));
+}
+
+const oneOf = <T extends string>(list: readonly T[], v: unknown): T | null =>
+  (list as readonly unknown[]).includes(v) ? (v as T) : null;
 
 function rowToMissed(r: MissedRow): MissedOpportunity {
   return {
@@ -29,10 +69,19 @@ function rowToMissed(r: MissedRow): MissedOpportunity {
     nextTimePlan: r.next_time_plan ?? "",
     estimatedR: Number(r.estimated_r) || 0,
     screenshots: r.screenshots ?? [],
+    direction: r.direction === "long" || r.direction === "short" ? r.direction : null,
+    entryPrice: priceOrNull(r.entry_price),
+    stopPrice: priceOrNull(r.stop_price),
+    targetPrice: priceOrNull(r.target_price),
+    reasonCode: oneOf<MissedReason>(MISSED_REASONS, r.reason_code),
+    classification: oneOf<MissedClass>(MISSED_CLASSES, r.classification),
+    outcome: oneOf<MissedOutcome>(MISSED_OUTCOMES, r.outcome),
   };
 }
 
-function missedToRow(m: MissedOpportunity, userId: string): MissedRow {
+type MissedInsert = TablesInsert<"missed_opportunities">;
+
+function missedToRow(m: MissedOpportunity, userId: string): MissedInsert {
   return {
     id: m.id,
     user_id: userId,
@@ -45,25 +94,41 @@ function missedToRow(m: MissedOpportunity, userId: string): MissedRow {
     next_time_plan: m.nextTimePlan,
     estimated_r: m.estimatedR,
     screenshots: m.screenshots ?? [],
+    direction: m.direction ?? null,
+    entry_price: priceOrNull(m.entryPrice),
+    stop_price: priceOrNull(m.stopPrice),
+    target_price: priceOrNull(m.targetPrice),
+    reason_code: m.reasonCode ?? null,
+    classification: m.classification ?? null,
+    outcome: m.outcome ?? null,
   };
 }
 
+function withoutModelColumns(row: MissedInsert): MissedInsert {
+  const out = { ...row };
+  for (const c of MODEL_COLUMNS) delete out[c];
+  return out;
+}
+
 export async function loadMissedOpportunities(userId: string): Promise<MissedOpportunity[]> {
-  let q = supabase
-    .from("missed_opportunities")
-    .select(
-      "id,user_id,account_id,opportunity_date,symbol,reason_not_taken,what_happened,lesson_learned,next_time_plan,estimated_r,screenshots",
-    )
-    .eq("user_id", userId);
-  const activeId = getActiveAccountId();
-  if (activeId) q = q.eq("account_id", activeId);
-  const { data, error } = await q.order("opportunity_date", { ascending: false });
-  if (error) throw error;
-  return (data ?? []).map((r: MissedRow) => rowToMissed(r));
+  const run = (columns: string) => {
+    let q = supabase.from("missed_opportunities").select(columns).eq("user_id", userId);
+    const activeId = getActiveAccountId();
+    if (activeId) q = q.eq("account_id", activeId);
+    return q.order("opportunity_date", { ascending: false });
+  };
+  let res = await run(`${BASE_SELECT},${MODEL_COLUMNS.join(",")}`);
+  if (res.error && isMissingModelColumn(res.error)) res = await run(BASE_SELECT);
+  if (res.error) throw res.error;
+  return ((res.data ?? []) as unknown as MissedRow[]).map((r) => rowToMissed(r));
 }
 
 export async function upsertMissedOpportunity(userId: string, m: MissedOpportunity): Promise<void> {
-  const { error } = await supabase.from("missed_opportunities").upsert(missedToRow(m, userId));
+  const row = missedToRow(m, userId);
+  let { error } = await supabase.from("missed_opportunities").upsert(row);
+  if (error && isMissingModelColumn(error)) {
+    ({ error } = await supabase.from("missed_opportunities").upsert(withoutModelColumns(row)));
+  }
   if (error) throw error;
 }
 

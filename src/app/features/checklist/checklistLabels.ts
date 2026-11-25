@@ -4,7 +4,7 @@ import { intlLocale } from "@/app/i18n/locale";
 import type { TKey } from "@/app/i18n/translations";
 import type { Trade } from "@/app/types";
 import type { EmotionalState } from "@/app/trading/readiness";
-import type { Bias, Breach, EndReason, PlanField } from "./sessionPlan";
+import type { Bias, Blocker, Breach, EndReason, PlanField } from "./sessionPlan";
 
 /* ══ Libellés et formats partagés par les écrans de la checklist ══
    À part des composants : un fichier de composants n'exporte que des
@@ -80,3 +80,14 @@ export function useRFormat() {
     [lang],
   );
 }
+
+/** Nom court de chaque limite, pour la dérogation, sa trace et les réglages. */
+export const LIMIT_KEYS: Record<Blocker, TKey> = {
+  observation: "chk.limit.observation",
+  maxTrades: "chk.limit.maxTrades",
+  stopAfterLosses: "chk.limit.stopAfterLosses",
+  dailyLoss: "chk.limit.dailyLoss",
+  riskBreach: "chk.limit.riskBreach",
+  window: "chk.limit.window",
+  windowEnded: "chk.limit.windowEnded",
+};

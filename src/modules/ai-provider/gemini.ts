@@ -142,6 +142,7 @@ interface GeminiPart {
   thoughtSignature?: string;
   functionCall?: { id?: string; name?: string; args?: Record<string, unknown> };
   functionResponse?: { id?: string; name: string; response: Record<string, unknown> };
+  inlineData?: { mimeType: string; data: string };
 }
 
 interface GeminiContent {
@@ -201,6 +202,17 @@ export function toGeminiContents(messages: AIMessage[], model: string): GeminiCo
       continue;
     }
     const role = m.role === "assistant" ? "model" : "user";
+    if (m.images?.length) {
+      // Images d'abord, consigne ensuite : jamais fusionné avec un tour voisin.
+      out.push({
+        role,
+        parts: [
+          ...m.images.map((i) => ({ inlineData: { mimeType: i.mimeType, data: i.data } })),
+          { text: m.content },
+        ],
+      });
+      continue;
+    }
     const prev = out[out.length - 1];
     // Deux tours texte du même rôle à la suite (une conversation qui finit sur
     // une question) sont fusionnés : jamais une part de texte dans un contenu
@@ -294,6 +306,7 @@ export const GeminiProvider: AIProvider = {
   // d'outils de Jarvis l'écartait et partait sur Groq/OpenRouter — dont les
   // modèles configurés étaient morts : Jarvis ne pouvait plus lire le journal.
   supportsTools: true,
+  supportsVision: true,
 
   isConfigured() {
     return Boolean(process.env.GEMINI_API_KEY);

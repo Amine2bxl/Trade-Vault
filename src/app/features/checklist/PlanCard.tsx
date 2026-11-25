@@ -279,7 +279,7 @@ export default function PlanCard({
             {/* ══ Risque ══ */}
             <section className="space-y-3">
               <SectionLabel>{t("chk.secRisk")}</SectionLabel>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 <Field label={t("chk.risk")} htmlFor="chk-risk">
                   <Input
                     id="chk-risk"
@@ -295,6 +295,15 @@ export default function PlanCard({
                     value={plan.maxTrades}
                     options={MAX_TRADES_CHOICES.map((n) => ({ value: n, label: String(n) }))}
                     onChange={(maxTrades) => set({ maxTrades })}
+                  />
+                </Field>
+                <Field label={t("chk.maxLoss")} htmlFor="chk-max-loss">
+                  <Input
+                    id="chk-max-loss"
+                    inputMode="decimal"
+                    value={plan.maxLoss}
+                    placeholder={t("chk.maxLossPh")}
+                    onChange={(e) => set({ maxLoss: e.target.value })}
                   />
                 </Field>
               </div>

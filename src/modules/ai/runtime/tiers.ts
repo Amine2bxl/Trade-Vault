@@ -197,6 +197,7 @@ export function pinToSlot(candidate: SlotCandidate, slot: ModelSlot): AIProvider
   return {
     id: base.id,
     supportsTools: base.supportsTools,
+    supportsVision: base.supportsVision,
     isConfigured: () => base.isConfigured(),
     complete: (req: AIRequest) =>
       base.complete({

@@ -22,7 +22,11 @@ Rôle produit et persona : [`PRODUCT.md`](PRODUCT.md#jarvis).
 6. Réponse **écrite** dans la langue de l'UI. **Voix** : les répliques fixes
    (salutations, onboarding) sont en anglais ; une réponse de conversation est
    dite dans la langue où elle est écrite (voix hébergée multilingue, même
-   timbre ; en secours, voix locale de cette langue).
+   timbre ; en secours, voix locale de cette langue). Exception : le **Mode
+   Terminal** de la checklist parle la langue choisie dans ses réglages
+   (« App », FR ou EN) ; ses répliques anglaises jouent d'abord leur clip
+   pré-rendu (`clipFirst`, zéro coût), les françaises passent par la voix
+   hébergée puis la voix locale. Tout ce qui est dit s'affiche en sous-titre.
 
 ## 2. La chaîne en production — question posée à Jarvis
 
@@ -139,6 +143,7 @@ encore de source — le Context Engine le DIT au modèle (`UNAVAILABLE_NOTICE`).
 | Contrat de contexte + blocs ancrés | `modules/ai/context.ts`, `context-builder.ts` (bornes partagées : `domain/ai-limits.ts`) |
 | Prompt, formatage | `modules/ai/prompt-builder.ts`, `response-formatter.ts` |
 | Agent coach (persona, `ANTI_HALLUCINATION`, `EVIDENCE_RULES`) | `modules/ai/agents/coach.agent.ts` |
+| Agent de capture (lit captures et notes, rend des champs ; ne calcule rien, ne parle pas au trader) — images via `AIMessage.images`, seuls les fournisseurs `supportsVision` (`resolveVisionProviders`), emplacement `balanced` (texte seul : `fast`) | `modules/ai/agents/capture.agent.ts` + `backend/capture.functions.ts` (garde `requireJarvisSideAccess`, jeton horaire pris seulement si un appel part, cache `capture_items`, `AI_CAPTURE=off`) ; crible déterministe `domain/capture.normalizeExtraction` |
 | Orchestration (route → plan → lectures → modèle → validation → trace) | `modules/ai/agents/coach.orchestrator.ts` |
 | Routeur unifié (domaines, niveau, entités ; source de `intent.ts` et de l'intention mémoire) | `modules/ai/router/route.ts` |
 | Context Engine (recettes par domaine, préchargement parallèle, sources branchables) | `modules/ai/context-engine.ts` |

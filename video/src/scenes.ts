@@ -117,17 +117,18 @@ export const SCENES: Scene[] = [
     copy: [{ at: 0.25, text: "Numbers, not *feelings.*" }],
   },
   {
-    id: "montecarlo",
+    // Le calendrier remplace le Monte Carlo, dont la capture a été retirée.
+    id: "calendar",
     beat: 24,
     len: 4,
-    shot: "montecarlo",
+    shot: "calendar",
     enter: "wipe",
     cam: [
-      { fx: 0.37, fy: 0.56, z: 1.32, ax: 0.56, ay: 0.42 },
-      { fx: 0.35, fy: 0.52, z: 1.24, ax: 0.56, ay: 0.42 },
+      { fx: 0.5, fy: 0.42, z: 1.2, ax: 0.56, ay: 0.44 },
+      { fx: 0.5, fy: 0.48, z: 1.3, ax: 0.56, ay: 0.44 },
     ],
-    label: "Monte Carlo",
-    copy: [{ at: 0.5, text: "Stress-test your *edge.*" }],
+    label: "Calendar",
+    copy: [{ at: 0.5, text: "Spot your *red days.*" }],
   },
   {
     id: "jarvis",
@@ -158,7 +159,7 @@ export const MONTAGE = {
     { shot: "checklist", cam: { fx: 0.2, fy: 0.3, z: 1.9 } },
     { shot: "mistakes", cam: { fx: 0.16, fy: 0.2, z: 2 } },
     { shot: "analytics", cam: { fx: 0.45, fy: 0.22, z: 1.7 } },
-    { shot: "montecarlo", cam: { fx: 0.1, fy: 0.14, z: 2 } },
+    { shot: "calendar", cam: { fx: 0.3, fy: 0.42, z: 1.9 } },
     { shot: "jarvis", cam: { fx: 0.7, fy: 0.53, z: 1.9 } },
   ] satisfies Flash[],
 };

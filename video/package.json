@@ -7,6 +7,7 @@
     "studio": "bun run audio && remotion studio src/index.ts",
     "render": "bun run audio && remotion render src/index.ts TradeVault out/tradevault-20s.mp4",
     "render:web": "remotion render src/index.ts TradeVault out/tradevault-20s.webm --codec vp9 --crf 34 --muted",
+    "render:vertical": "bun run audio && for v in FR-A FR-B EN-A EN-B; do remotion render src/index.ts Vertical-$v out/tradevault-9x16-$(echo $v | tr A-Z a-z).mp4 --crf 16; done",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

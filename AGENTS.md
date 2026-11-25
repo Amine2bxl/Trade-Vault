@@ -43,6 +43,16 @@ suite ; ne jamais affaiblir une assertion pour passer.
 - **Chiffres** : calculés par les moteurs déterministes (`domain/`, `modules/`) ;
   Jarvis ne fait que les formuler. Toute statistique affiche son `n` ; aucune
   formulation causale ; aucun chiffre sous l'échantillon minimum.
+- **Le résultat, jamais le processus** (règle universelle, 2026-11-25) :
+  l'écran montre ce que le trader doit savoir ou faire, jamais comment le
+  produit l'a obtenu. Jamais affichés : modèle ou fournisseur IA, appel IA,
+  cache, étapes de raisonnement, traces d'outils, méthode ou formule de calcul
+  (« jugé sur… », « P&L ÷ risque », « 10 000 trajectoires »), niveau de
+  confiance, origine d'une valeur (détectée / calculée / estimée). Permis : la
+  valeur, son unité, son `n`, une attente neutre (indicateur, sans décrire le
+  travail) et une seule marque d'action « à vérifier » sur une valeur
+  incertaine. Les diagnostics restent dans `/dev/*`. Garde-fou :
+  `tests/outputNotProcess.test.ts`. Voir [`docs/PRODUCT.md`](docs/PRODUCT.md).
 - **Jarvis n'écrit rien directement** : outils en lecture seule ; seule voie
   d'écriture = une proposition acceptée par le trader. Voir [`docs/AI.md`](docs/AI.md).
 - **Données** : RLS owner-only, secrets uniquement côté serveur, migrations

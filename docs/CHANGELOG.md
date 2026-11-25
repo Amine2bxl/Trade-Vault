@@ -3,6 +3,61 @@
 Journal des changements **structurels** (pas des features ni des correctifs,
 qui vivent dans l'historique git et les PR).
 
+## 2026-11-25 — Moteur de capture, respect du plan, liens entre pages
+
+- **Moteur de capture** : un seul chemin pour screenshots, notes et dictée.
+  Fournisseurs IA : images jointes (`AIMessage.images`, `supportsVision` —
+  Gemini, Anthropic, OpenAI). `backend/capture.functions.analyzeCapture` (relit
+  les captures avec le client du trader, empreinte sha256 = cache, plafond
+  horaire, coupe-circuit `AI_CAPTURE=off`) ; `domain/capture` (provenance par
+  champ, « vérifié » interdit à l'IA, citation exigée pour une note),
+  `domain/captureEnrich` (contrat, risque, R, heure de New York, bougies
+  théoriques), `domain/captureMatch` (doublons, rattachement). Table
+  `capture_items`, migration `20261124120000_capture_items`.
+- **Respect du plan** : `modules/discipline/compliance`, règle par règle, sans
+  P&L, verdict qui ne s'invente pas.
+- **Navigation contextuelle** : `utils/navigate` (`navigateTo` avec `focus`
+  `?trade=` / `?missed=`, `openTrades(filtre)`) sur le canal `tv:navigate`.
+- **Production** : migrations du 2026-11-22 et `lifetime_license` appliquées ;
+  types Supabase régénérés.
+
+## 2026-11-22 — Plan contre exécution, Mode Terminal, setups manqués honnêtes
+
+- **Prévu figé** : `trade_intent` porte les niveaux du plan de séance
+  (`planned_*`) et le stop/cible posés (`initial_*`) ; le prévu ne s'écrit
+  plus qu'à la création (corrige un `planned_risk` réécrit à chaque
+  enregistrement). Migration `20261122120000_plan_vs_execution`.
+- **Qualité d'exécution** : `modules/discipline/execution` juge chaque trade
+  et chaque séance sur le plan, jamais sur le P&L ; correction manuelle
+  stockée, calcul jamais. Détail d'un trade, bilan, Analytics (exécution ×
+  résultat).
+- **États de séance** : `checklist/sessionState` (PRÉPARATION → VERROUILLÉE),
+  limites « bloque / avertit », perte max du jour, dérogation à motif
+  journalisée, pause proposée. Le verrou ne bloque jamais l'enregistrement
+  d'un trade réel.
+- **Mode Terminal** : la checklist d'origine (juillet 2026) rendue en vue
+  plein écran du même moteur — voix FR/EN réglable (`clipFirst` pour les
+  clips pré-rendus), sons d'origine, sous-titres. Exception de design
+  documentée (§4).
+- **Setups manqués** : raisons fermées, classes, R hypothétique ; seuls les
+  setups valides à issue connue comptent. Migration
+  `20261122130000_missed_setup_model`.
+- **Défauts par compte** du formulaire de trade (`user_preferences`).
+
+## 2026-11-15 — Chaque bouton d'offre mène à son paiement
+
+- Page de paiement Stripe aux couleurs de TradeVault, réglée par session
+  (`checkoutBranding`, `backend/billing.server.ts`) : fond `#050607`, bouton
+  menthe `#31d68a`, angles adoucis, Inter, nouveau logo menthe
+  (`/icon-512.png` servi par la production). Si Stripe refuse un paramètre
+  d'apparence, la session repart sans habillage : jamais un achat perdu.
+
+- `features/billing/checkoutIntent.ts` : l'offre cliquée sur la vitrine (tuiles
+  mensuel / licence) ou `/pricing` est retenue avant l'inscription ; `App` la
+  consomme dès qu'une session existe et part vers le paiement Stripe de cette
+  offre (avant l'onboarding, qui reprend au retour). Dans l'app, tous les
+  verrous passaient déjà par la même fenêtre d'achat.
+
 ## 2026-11-15 — Pages en un temps, pleine largeur, onboarding épuré
 
 - **Chargement en un temps** : plus de squelettes de page (`PageLoader` :

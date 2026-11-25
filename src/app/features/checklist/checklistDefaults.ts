@@ -4,6 +4,8 @@
    user's app language; everything stays fully editable afterwards.
    ════════════════════════════════════════════════════════════════ */
 
+import type { ConfigurableLimit, Enforcement } from "./sessionState";
+
 export interface ChkItem {
   title: string;
   desc: string;
@@ -60,6 +62,8 @@ export interface ChkConfig {
    * date d'avant le plan de séance et passe par `migrateConfig`.
    */
   gateV?: number;
+  /** Limite par limite : bloque ou avertit (absent = `DEFAULT_ENFORCEMENT`). */
+  enforcement?: Partial<Record<ConfigurableLimit, Enforcement>>;
 }
 
 export function localTimeZone(): string {

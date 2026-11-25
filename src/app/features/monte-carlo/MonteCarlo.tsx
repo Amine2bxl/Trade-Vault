@@ -375,7 +375,6 @@ function StrategyLab({
             {model && model.estimated > 0 && (
               <span className="strategy-estimate">
                 {t("lab.estimatedR").replace("{n}", String(model.estimated))}
-                <InfoTip text={t("lab.estimatedHelp")} />
               </span>
             )}
             {source === "journal" && (
@@ -627,7 +626,6 @@ function StrategyLab({
                   ) : (
                     <div className="strategy-chart-loading" role="status">
                       <Loader2 className="h-5 w-5 animate-spin" />
-                      {t("lab.calculating")}
                     </div>
                   )}
                 </Card>
@@ -738,28 +736,6 @@ function StrategyLab({
                     {detailsOpen && <StrategyDetails result={result} />}
                   </details>
                 )}
-                <details className="strategy-disclosure">
-                  <summary>
-                    {t("lab.method")}
-                    <span>{t("lab.assumptions")}</span>
-                  </summary>
-                  <div className="strategy-method">
-                    <p>{t("lab.methodBody")}</p>
-                    <p>{t("lab.modelLimits")}</p>
-                    <p>{t("lab.percentileHelp")}</p>
-                    {model && model.estimated > 0 && <p>{t("lab.estimatedHelp")}</p>}
-                    <p>
-                      {numericText(
-                        t("lab.calculationInfo")
-                          .replace("{n}", String(model?.sampleSize ?? 0))
-                          .replace("{seed}", String(config.seed)),
-                      )}
-                    </p>
-                    {model && model.excluded > 0 && (
-                      <p>{t("lab.excluded").replace("{n}", String(model.excluded))}</p>
-                    )}
-                  </div>
-                </details>
               </>
             )}
           </section>

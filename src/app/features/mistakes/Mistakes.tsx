@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
+import { openTrades } from "@/app/utils/navigate";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useTradingRules } from "@/app/trading/useTradingRules";
 import { useGoalProgress } from "../goals/useGoalProgress";
@@ -878,9 +879,16 @@ function ItemPlan({
         <div className="px-2 py-1.5">{corps}</div>
       )}
       {cliquable && ouvert && (
-        <p className="tv-prose animate-fade-in mt-1 border-l-2 border-[rgb(var(--tv-accent-rgb)/0.5)] py-0.5 pl-3 text-slate-400">
-          {tip}
-        </p>
+        <div className="animate-fade-in mt-1 border-l-2 border-[rgb(var(--tv-accent-rgb)/0.5)] py-0.5 pl-3">
+          <p className="tv-prose text-slate-400">{tip}</p>
+          <button
+            type="button"
+            onClick={() => openTrades({ mistake: item.mistake })}
+            className="mt-1 inline-flex min-h-[32px] items-center text-[12px] font-semibold text-[var(--tv-highlight)] underline-offset-2 hover:underline"
+          >
+            {t("links.seeTrades")}
+          </button>
+        </div>
       )}
     </article>
   );

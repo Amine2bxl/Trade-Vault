@@ -8,10 +8,11 @@ import type { Trade } from "@/domain/trade";
 import type { Mistake } from "@/app/trading/mistakeClusters";
 import type { ReflectionReason } from "@/app/store/tradeIntel";
 import type { MissedPrefill, TradePrefill, TradeReviewPrefill } from "@/app/utils/handoff";
+import { hasPlannedLevels, type PlannedLevels } from "@/domain/executionPlan";
 import {
   activePlan,
+  levelPrice,
   parseAmount,
-  planRR,
   tradeBreaches,
   type Breach,
   type SessionDay,
@@ -63,6 +64,21 @@ export function lastTrade(trades: readonly Trade[]): Trade | null {
   return best;
 }
 
+/**
+ * Le plan EN VIGUEUR (scénario B s'il est actif), lu en prix : zone d'entrée,
+ * invalidation, cible. Un niveau écrit sans prix reste inconnu.
+ */
+export function plannedLevels(day: Pick<SessionDay, "plan" | "scenario">): PlannedLevels {
+  const plan = activePlan(day);
+  return {
+    direction: plan.bias === "long" || plan.bias === "short" ? plan.bias : null,
+    entry: levelPrice(plan.entry),
+    stop: levelPrice(plan.invalidation),
+    target: levelPrice(plan.target),
+    scenario: day.scenario,
+  };
+}
+
 export function tradePrefill(input: {
   day: SessionDay;
   date: string;
@@ -88,6 +104,8 @@ export function tradePrefill(input: {
     intentReasoning: plan.narrative.trim(),
     intentPlan: input.planLine,
   };
+  const planned = plannedLevels(day);
+  if (hasPlannedLevels(planned)) out.planned = planned;
   if (input.withReview && day.review.respected !== null) {
     const { respected, breaches, note } = day.review;
     out.reflectionPlan = respected ? "yes" : "no";
@@ -106,13 +124,19 @@ export function missedPrefill(input: {
   /** Pourquoi il n'a pas été pris — écarts ou raison de fin, déjà formulés. */
   reasonText: string;
 }): MissedPrefill {
-  const rr = planRR(activePlan(input.day));
+  const levels = plannedLevels(input.day);
   return {
     date: input.date,
     ...(input.last ? { symbol: input.last.symbol } : {}),
-    // Le R que le plan promettait : c'est l'estimation la plus honnête dont on
-    // dispose sans connaître la sortie réelle.
-    estimatedR: rr !== null ? Math.round(rr * 10) / 10 : 0,
+    // Les niveaux du plan, en prix. Le R ne COMPTE qu'une fois l'issue connue
+    // (cible ou stop touché) : un setup non pris n'est pas d'office un gain
+    // manqué — l'issue reste à dire, et le R se calcule alors tout seul.
+    direction: levels.direction,
+    entryPrice: levels.entry,
+    stopPrice: levels.stop,
+    targetPrice: levels.target,
+    outcome: "unknown",
+    estimatedR: 0,
     reasonNotTaken: input.reasonText,
     whatHappened: input.planLine,
     lessonLearned: input.day.review.note.trim(),

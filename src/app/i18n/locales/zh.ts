@@ -173,7 +173,6 @@ const zh: Dict = {
   "analytics.subtitle": "深入分析您的交易模式",
   "analytics.noTrades": "添加交易以查看分析",
   "analytics.profitFactor": "盈利因子",
-  "analytics.profitsOverLosses": "总盈利 ÷ 总亏损",
   "analytics.profits": "总盈利",
   "analytics.losses": "总亏损",
   "analytics.factor": "因子",

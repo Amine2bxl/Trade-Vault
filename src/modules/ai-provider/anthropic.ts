@@ -153,6 +153,19 @@ export function toAnthropicMessages(messages: AIMessage[]): WireMessage[] {
     }
     lastNative = false;
     const role = m.role === "assistant" ? "assistant" : "user";
+    if (m.images?.length) {
+      out.push({
+        role,
+        content: [
+          ...m.images.map((i) => ({
+            type: "image",
+            source: { type: "base64", media_type: i.mimeType, data: i.data },
+          })),
+          { type: "text", text: m.content },
+        ],
+      });
+      continue;
+    }
     const prev = out[out.length - 1];
     if (prev && prev.role === role && typeof prev.content === "string") {
       prev.content = `${prev.content}\n\n${m.content}`;
@@ -166,6 +179,7 @@ export function toAnthropicMessages(messages: AIMessage[]): WireMessage[] {
 export const AnthropicProvider: AIProvider = {
   id: "anthropic",
   supportsTools: true,
+  supportsVision: true,
 
   isConfigured() {
     return Boolean(process.env.ANTHROPIC_API_KEY);

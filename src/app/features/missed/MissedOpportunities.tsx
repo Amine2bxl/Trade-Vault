@@ -32,6 +32,7 @@ import { formatShortDate } from "@/domain/tradeCalcs";
 import { compressImageToFile } from "@/app/utils/image";
 import { cn } from "@/shared/ui/cn";
 import { useT } from "@/app/i18n/LanguageContext";
+import type { TKey } from "@/app/i18n/translations";
 import { useToast } from "@/app/contexts/ToastContext";
 import { useConfirm } from "@/app/contexts/ConfirmContext";
 import Lightbox from "@/app/components/Lightbox";
@@ -51,6 +52,9 @@ import {
   KpiGrid,
   FormSection,
   FormLabel,
+  Chip,
+  CHIP_ROW,
+  ChoiceGroup,
 } from "@/shared/ui";
 import { intlLocale } from "@/app/i18n/locale";
 import { useDraftAutosave } from "@/app/hooks/useDraftAutosave";
@@ -58,6 +62,77 @@ import { nsKey, readJSON, removeKey } from "@/app/utils/persistence";
 import { usePageActions } from "@/app/contexts/PageActionsContext";
 import { todayLocalDate } from "@/shared/calendar-date";
 import { takeHandoff } from "@/app/utils/handoff";
+import { missedR } from "./missedModel";
+import { CaptureAssist } from "../capture/CaptureAssist";
+import {
+  applyProposals,
+  coerceMissed,
+  correctionsOf,
+  ESSENTIAL_MISSED_FIELDS,
+  missedProposals,
+  type MissedFormField,
+  type Proposal,
+} from "../capture/capturePrefill";
+import { markCaptureApplied } from "@/app/store/captures";
+import { clearFocus, FOCUS_EVENT, readFocus } from "@/app/utils/navigate";
+import type { CaptureRun } from "../capture/useCaptureAnalysis";
+import { enrichCapture } from "@/domain/captureEnrich";
+import {
+  hypotheticalR,
+  MISSED_CLASSES,
+  MISSED_OUTCOMES,
+  MISSED_REASONS,
+  suggestedClass,
+  type MissedClass,
+} from "@/domain/missedSetup";
+import { priceOrNull } from "@/domain/executionPlan";
+
+const REASON_KEYS: Record<(typeof MISSED_REASONS)[number], TKey> = {
+  hesitation: "missed.reason.hesitation",
+  fear: "missed.reason.fear",
+  not_recognized: "missed.reason.notRecognized",
+  no_confirmation: "missed.reason.noConfirmation",
+  outside_window: "missed.reason.outsideWindow",
+  risk_constraint: "missed.reason.riskConstraint",
+  daily_limit: "missed.reason.dailyLimit",
+  deliberate: "missed.reason.deliberate",
+};
+const CLASS_KEYS: Record<MissedClass, TKey> = {
+  valid: "missed.class.valid",
+  hesitation: "missed.class.hesitation",
+  skipped: "missed.class.skipped",
+  invalid: "missed.class.invalid",
+};
+const OUTCOME_KEYS: Record<(typeof MISSED_OUTCOMES)[number], TKey> = {
+  target: "missed.outcome.target",
+  stop: "missed.outcome.stop",
+  unknown: "missed.outcome.unknown",
+};
+
+/** Le R qui compte, ou pourquoi il ne compte pas (écarté, invalide, issue inconnue). */
+function MissedRCell({ m }: { m: MissedOpportunity }) {
+  const { t } = useT();
+  const r = missedR(m);
+  if (r !== null && r !== 0) {
+    return (
+      <span className="tv-missed-r">
+        {r > 0 ? "+" : ""}
+        {r.toFixed(1)}
+        <span className="tv-missed-r-unit">R</span>
+      </span>
+    );
+  }
+  if (r === null && m.classification) {
+    return (
+      <span className="truncate text-xs text-slate-500">
+        {m.classification === "skipped" || m.classification === "invalid"
+          ? t(CLASS_KEYS[m.classification])
+          : t("missed.outcome.unknown")}
+      </span>
+    );
+  }
+  return null;
+}
 
 function emptyMissed(): MissedOpportunity {
   return {
@@ -83,6 +158,13 @@ export default function MissedOpportunities() {
   const [editing, setEditing] = useState<MissedOpportunity | null>(null);
   const [viewing, setViewing] = useState<MissedOpportunity | null>(null);
   const [loading, setLoading] = useState(true);
+  // Un setup ouvert par lien (`?missed=`) : depuis l'Inbox, Jarvis…
+  const [focusId, setFocusId] = useState<string | null>(() => readFocus("missed"));
+  useEffect(() => {
+    const sync = () => setFocusId(readFocus("missed"));
+    window.addEventListener(FOCUS_EVENT, sync);
+    return () => window.removeEventListener(FOCUS_EVENT, sync);
+  }, []);
   const [openIds, setOpenIds] = useState<Set<string>>(new Set());
 
   const toggleOpen = useCallback((id: string) => {
@@ -179,11 +261,23 @@ export default function MissedOpportunities() {
     if (preview) return;
     const prefill = takeHandoff("missed");
     if (prefill) setEditing({ ...emptyMissed(), ...prefill });
+    // Une capture analysée dans l'Inbox devient un setup manqué.
+    const cap = takeHandoff("missedCapture");
+    if (cap) {
+      setEditing({ ...emptyMissed(), screenshots: cap.screenshots.slice(0, 3) });
+      setCapturePreview({
+        itemId: cap.itemId,
+        extraction: cap.extraction,
+        derived: enrichCapture(cap.extraction),
+        cached: true,
+      });
+    }
   }, [preview]);
+  const [capturePreview, setCapturePreview] = useState<CaptureRun | null>(null);
 
   const handleSave = useCallback(
     async (m: MissedOpportunity) => {
-      if (!user) return;
+      if (!user) return false;
       try {
         const clean: MissedOpportunity = { ...m, screenshots: m.screenshots ?? [] };
         await upsertMissedOpportunity(user.id, clean);
@@ -192,9 +286,11 @@ export default function MissedOpportunities() {
           return exists ? prev.map((x) => (x.id === clean.id ? clean : x)) : [clean, ...prev];
         });
         setEditing(null);
+        return true;
       } catch (e) {
         console.error(e);
         toast(t("missed.saveFailed"), "error");
+        return false;
       }
     },
     [user, t, toast],
@@ -217,9 +313,17 @@ export default function MissedOpportunities() {
 
   // The whole point of the page in three numbers: how much edge was skipped.
   // Derived from the loaded rows — no extra query, no extra state.
+  // Seuls comptent les setups valides (ou manqués par hésitation) à issue
+  // connue : tout mouvement raté n'est pas de l'argent perdu (`missedR`).
   const summary = useMemo(() => {
-    const totalR = items.reduce((sum, m) => sum + (m.estimatedR || 0), 0);
-    return { totalR, count: items.length, avgR: items.length ? totalR / items.length : 0 };
+    const counted = items.map(missedR).filter((r): r is number => r !== null);
+    const totalR = counted.reduce((sum, r) => sum + r, 0);
+    return {
+      totalR,
+      count: items.length,
+      counted: counted.length,
+      avgR: counted.length ? totalR / counted.length : 0,
+    };
   }, [items]);
 
   const headerActions = useMemo(
@@ -267,7 +371,7 @@ export default function MissedOpportunities() {
         out.push(g);
       }
       g.items.push(m);
-      g.totalR += m.estimatedR || 0;
+      g.totalR += missedR(m) ?? 0;
     }
     return out;
   }, [items, lang]);
@@ -286,8 +390,9 @@ export default function MissedOpportunities() {
     }
     for (const m of items) {
       const slot = out.find((x) => x.key === (m.date || "").slice(0, 7));
-      if (slot) {
-        slot.r += m.estimatedR || 0;
+      const r = missedR(m);
+      if (slot && r !== null) {
+        slot.r += r;
         slot.n += 1;
       }
     }
@@ -324,9 +429,15 @@ export default function MissedOpportunities() {
             <section className="tv-missed-hero">
               <p className="tv-set-hero-eyebrow">{t("missed.totalMissed")}</p>
               <div className="tv-missed-hero-figure">
-                +{summary.totalR.toFixed(1)}
+                {summary.totalR > 0 ? "+" : ""}
+                {summary.totalR.toFixed(1)}
                 <span>R</span>
               </div>
+              <p className="text-xs text-slate-500">
+                {t("missed.countedOf")
+                  .replace("{n}", String(summary.counted))
+                  .replace("{total}", String(summary.count))}
+              </p>
               <div className="tv-missed-bars" role="list" aria-label={t("missed.byMonth")}>
                 {months.map((mo, i) => (
                   <div
@@ -407,7 +518,11 @@ export default function MissedOpportunities() {
                               </span>
                               <span className="tv-missed-sub truncate">
                                 {formatShortDate(m.date)}
-                                {m.reasonNotTaken ? ` · ${m.reasonNotTaken}` : ""}
+                                {m.reasonCode
+                                  ? ` · ${t(REASON_KEYS[m.reasonCode])}`
+                                  : m.reasonNotTaken
+                                    ? ` · ${m.reasonNotTaken}`
+                                    : ""}
                               </span>
                             </div>
                           </div>
@@ -419,12 +534,7 @@ export default function MissedOpportunities() {
                               réservée même quand la valeur est absente. */}
                           <div className="flex shrink-0 items-center gap-2">
                             <span className="flex w-[64px] justify-end sm:w-[80px]">
-                              {m.estimatedR > 0 && (
-                                <span className="tv-missed-r">
-                                  +{m.estimatedR.toFixed(1)}
-                                  <span className="tv-missed-r-unit">R</span>
-                                </span>
-                              )}
+                              <MissedRCell m={m} />
                             </span>
                             <span className="flex w-[36px] justify-end">
                               {m.screenshots && m.screenshots.length > 0 && (
@@ -532,9 +642,26 @@ export default function MissedOpportunities() {
       )}
 
       {viewing && <MissedSetupDetailModal missed={viewing} onClose={() => setViewing(null)} />}
+      {!viewing && focusId && items.some((x) => x.id === focusId) && (
+        <MissedSetupDetailModal
+          missed={items.find((x) => x.id === focusId)!}
+          onClose={() => {
+            setFocusId(null);
+            clearFocus("missed");
+          }}
+        />
+      )}
 
       {editing && (
-        <MissedEditor value={editing} onClose={() => setEditing(null)} onSave={handleSave} />
+        <MissedEditor
+          value={editing}
+          capturePreview={capturePreview ?? undefined}
+          onClose={() => {
+            setEditing(null);
+            setCapturePreview(null);
+          }}
+          onSave={handleSave}
+        />
       )}
     </PageContainer>
   );
@@ -711,10 +838,13 @@ export function MissedEditor({
   value,
   onClose,
   onSave,
+  capturePreview,
 }: {
   value: MissedOpportunity;
+  /** Une capture déjà analysée (Inbox), appliquée aux champs vides à l'ouverture. */
+  capturePreview?: CaptureRun;
   onClose: () => void;
-  onSave: (m: MissedOpportunity) => void;
+  onSave: (m: MissedOpportunity) => void | Promise<boolean | void>;
 }) {
   const { user } = useAuth();
   const { t, lang } = useT();
@@ -755,6 +885,40 @@ export function MissedEditor({
   const fileRef = useRef<HTMLInputElement>(null);
   const set = <K extends keyof MissedOpportunity>(k: K, v: MissedOpportunity[K]) =>
     setM((p) => ({ ...p, [k]: v }));
+
+  // LE MOTEUR DE CAPTURE — le même que pour un trade : il ne remplit que les
+  // champs vides ; la classe et la raison restent au trader (l'image ne dit
+  // pas s'il a hésité).
+  const { activeId } = useAccounts();
+  const mRef = useRef(m);
+  mRef.current = m;
+  const captureSession = useRef<{ itemId: string | null; applied: Proposal<MissedFormField>[] }>({
+    itemId: null,
+    applied: [],
+  });
+  const applyCapture = useCallback(
+    (
+      proposals: Proposal<MissedFormField>[],
+      opts: { includeReview?: boolean; force?: boolean },
+    ) => {
+      const r = applyProposals(mRef.current, { date: todayLocalDate() }, proposals, {
+        ...opts,
+        coerce: coerceMissed,
+      });
+      if (r.applied.length) {
+        mRef.current = r.next;
+        setM(r.next);
+        captureSession.current.applied = [
+          ...captureSession.current.applied.filter(
+            (a) => !r.applied.some((x) => x.field === a.field),
+          ),
+          ...r.applied,
+        ];
+      }
+      return { applied: r.applied, conflicts: r.conflicts };
+    },
+    [],
+  );
 
   const handleFiles = useCallback(
     async (files: FileList | File[] | null) => {
@@ -816,10 +980,37 @@ export function MissedEditor({
      cochent, pastilles de couleur reprises de la fiche (rouge « pourquoi »,
      ambre « ce qui s'est passé », menthe « leçon », vert « la prochaine
      fois »), chiffres dans la police du calendrier. */
-  const r = Number(m.estimatedR) || 0;
+  // Le R se CALCULE dès que les niveaux et l'issue sont connus ; sinon le
+  // trader peut le déclarer. Ce qui part en base est le R qui compte.
+  const levels = {
+    direction: m.direction ?? null,
+    entry: m.entryPrice ?? null,
+    stop: m.stopPrice ?? null,
+    target: m.targetPrice ?? null,
+  };
+  const computedR = hypotheticalR(levels, m.outcome ?? null);
+  const counts = m.classification !== "skipped" && m.classification !== "invalid";
+  const r = counts ? (computedR ?? (Number(m.estimatedR) || 0)) : 0;
   const tone = r > 0 ? "up" : r < 0 ? "down" : "flat";
   const setupDone = m.symbol.trim() !== "" && !!m.date;
-  const storyDone = m.reasonNotTaken.trim() !== "" && m.whatHappened.trim() !== "";
+  const storyDone = !!m.reasonCode || m.reasonNotTaken.trim() !== "";
+  // La classe suit la raison tant que le trader ne l'a pas choisie lui-même.
+  const [classTouched, setClassTouched] = useState(() => !!value.classification);
+  const priceInput = (key: "entryPrice" | "stopPrice" | "targetPrice", label: TKey) => (
+    <label className="block min-w-0">
+      <FormLabel>{t(label)}</FormLabel>
+      <Input
+        type="number"
+        step="any"
+        min="0"
+        inputMode="decimal"
+        value={m[key] ?? ""}
+        onChange={(e) => set(key, priceOrNull(e.target.value))}
+        placeholder="—"
+        className="tv-figure"
+      />
+    </label>
+  );
   const lessonDone = m.lessonLearned.trim() !== "" && m.nextTimePlan.trim() !== "";
   const shots = m.screenshots ?? [];
 
@@ -856,6 +1047,21 @@ export function MissedEditor({
         </button>
       </header>
       <div className="tv-trade-form min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain px-4 py-3 sm:px-5">
+        <CaptureAssist<MissedFormField>
+          target="missed"
+          paths={shots}
+          uploading={uploading}
+          canAddMore={shots.length < 3}
+          onAddFiles={(files) => void handleFiles(files)}
+          accountId={activeId ?? null}
+          essential={ESSENTIAL_MISSED_FIELDS}
+          propose={missedProposals}
+          apply={applyCapture}
+          previewRun={capturePreview}
+          onResult={(run) => {
+            captureSession.current.itemId = run.itemId;
+          }}
+        />
         {/* 1 — LE SETUP */}
         <FormSection n={1} title={t("missed.secSetup")} done={setupDone}>
           <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
@@ -878,23 +1084,106 @@ export function MissedEditor({
                 className="tv-figure"
               />
             </label>
-            <label className="block min-w-0">
-              <FormLabel>{t("missed.field.estR")}</FormLabel>
-              <Input
-                type="number"
-                step="0.1"
-                inputMode="decimal"
-                value={String(m.estimatedR)}
-                onChange={(e) => set("estimatedR", Number(e.target.value) || 0)}
-                className="tv-figure tv-trade-pnl-input"
-                data-tone={tone}
+            <div className="min-w-0">
+              <FormLabel>{t("missed.field.direction")}</FormLabel>
+              <ChoiceGroup<"long" | "short">
+                label={t("missed.field.direction")}
+                value={m.direction ?? null}
+                options={[
+                  { value: "long", label: t("common.long") },
+                  { value: "short", label: t("common.short") },
+                ]}
+                onChange={(v) => set("direction", m.direction === v ? null : v)}
               />
-            </label>
+            </div>
+          </div>
+          <div className="mt-2.5 grid grid-cols-3 gap-2.5">
+            {priceInput("entryPrice", "missed.field.entry")}
+            {priceInput("stopPrice", "missed.field.stop")}
+            {priceInput("targetPrice", "missed.field.target")}
           </div>
         </FormSection>
 
-        {/* 2 — CE QUI S'EST PASSÉ */}
-        <FormSection n={2} title={t("missed.secStory")} done={storyDone}>
+        {/* POURQUOI PAS PRIS — en un geste, puis ce que ça vaut */}
+        <FormSection n={2} title={t("missed.secWhy")} done={storyDone}>
+          <div className={CHIP_ROW}>
+            {MISSED_REASONS.map((reason) => (
+              <Chip
+                key={reason}
+                selected={m.reasonCode === reason}
+                onClick={() =>
+                  setM((p) => {
+                    const next = p.reasonCode === reason ? null : reason;
+                    return {
+                      ...p,
+                      reasonCode: next,
+                      classification:
+                        classTouched || !next ? p.classification : suggestedClass(next),
+                    };
+                  })
+                }
+              >
+                {t(REASON_KEYS[reason])}
+              </Chip>
+            ))}
+          </div>
+          <div className="mt-2.5 grid gap-2.5 sm:grid-cols-2">
+            <div className="min-w-0">
+              <FormLabel>{t("missed.field.class")}</FormLabel>
+              <ChoiceGroup<MissedClass>
+                label={t("missed.field.class")}
+                value={m.classification ?? null}
+                options={MISSED_CLASSES.map((c) => ({ value: c, label: t(CLASS_KEYS[c]) }))}
+                onChange={(c) => {
+                  setClassTouched(true);
+                  set("classification", c);
+                }}
+              />
+            </div>
+            <div className="min-w-0">
+              <FormLabel>{t("missed.field.outcome")}</FormLabel>
+              <ChoiceGroup<(typeof MISSED_OUTCOMES)[number]>
+                label={t("missed.field.outcome")}
+                value={m.outcome ?? null}
+                options={MISSED_OUTCOMES.map((o) => ({ value: o, label: t(OUTCOME_KEYS[o]) }))}
+                onChange={(o) => set("outcome", o)}
+              />
+            </div>
+          </div>
+          <div className="tv-trade-strip mt-2.5 flex-wrap gap-x-3 text-[12px] text-slate-400">
+            {!counts ? (
+              <span>{t("missed.notCounted")}</span>
+            ) : computedR !== null ? (
+              <span>
+                {t("missed.computedR")}{" "}
+                <span className="tv-figure text-slate-100">
+                  {computedR > 0 ? "+" : ""}
+                  {computedR.toFixed(2)}R
+                </span>
+              </span>
+            ) : (
+              <label className="flex min-w-0 flex-1 items-center gap-2">
+                <span className="shrink-0">{t("missed.field.estR")}</span>
+                <Input
+                  type="number"
+                  step="0.1"
+                  inputMode="decimal"
+                  value={String(m.estimatedR)}
+                  onChange={(e) => set("estimatedR", Number(e.target.value) || 0)}
+                  className="tv-figure tv-trade-pnl-input max-w-[8rem]"
+                  data-tone={tone}
+                />
+              </label>
+            )}
+          </div>
+        </FormSection>
+
+        {/* 3 — CE QUI S'EST PASSÉ */}
+        <FormSection
+          n={3}
+          title={t("missed.secStory")}
+          done={m.reasonNotTaken.trim() !== "" || m.whatHappened.trim() !== ""}
+        >
           <div className="grid gap-2.5 sm:grid-cols-2">
             <label className="block min-w-0">
               <FormLabel dot="var(--tv-chart-red)">{t("missed.field.why")}</FormLabel>
@@ -917,8 +1206,8 @@ export function MissedEditor({
           </div>
         </FormSection>
 
-        {/* 3 — LA LEÇON */}
-        <FormSection n={3} title={t("missed.secLesson")} done={lessonDone}>
+        {/* 4 — LA LEÇON */}
+        <FormSection n={4} title={t("missed.secLesson")} done={lessonDone}>
           <div className="grid gap-2.5 sm:grid-cols-2">
             <label className="block min-w-0">
               <FormLabel dot="var(--tv-highlight)">{t("missed.field.lesson")}</FormLabel>
@@ -941,8 +1230,8 @@ export function MissedEditor({
           </div>
         </FormSection>
 
-        {/* 4 — CAPTURES */}
-        <FormSection n={4} title={t("missed.field.screenshots")} done={shots.length > 0}>
+        {/* 5 — CAPTURES */}
+        <FormSection n={5} title={t("missed.field.screenshots")} done={shots.length > 0}>
           <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
             <span className="tv-figure text-[11px] text-slate-500">{shots.length}/3</span>
             <span className="text-[11px] text-slate-500">
@@ -1009,7 +1298,18 @@ export function MissedEditor({
             // Enregistré : le brouillon a fait son office.
             savedRef.current = true;
             removeKey(draftKey);
-            onSave(m);
+            // Ce qui part en base est le R qui COMPTE : 0 pour un setup écarté
+            // ou invalide, le R calculé quand les niveaux et l'issue le permettent.
+            const saved = { ...m, estimatedR: r };
+            const session = captureSession.current;
+            void Promise.resolve(onSave(saved)).then((ok) => {
+              if (ok === false || !session.itemId) return;
+              void markCaptureApplied(
+                session.itemId,
+                { missedId: saved.id },
+                correctionsOf(session.applied, saved),
+              );
+            });
           }}
           disabled={uploading || !setupDone}
           className="shrink-0"

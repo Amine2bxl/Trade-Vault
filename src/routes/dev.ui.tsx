@@ -1,3 +1,14 @@
+import { TradeExecution } from "@/app/features/journal/TradeExecution";
+import { assessCompliance, assessExecution } from "@/modules/discipline";
+import { CaptureAssist } from "@/app/features/capture/CaptureAssist";
+import {
+  applyProposals,
+  ESSENTIAL_TRADE_FIELDS,
+  tradeProposals,
+  type TradeFormField,
+} from "@/app/features/capture/capturePrefill";
+import { normalizeExtraction } from "@/domain/capture";
+import { enrichCapture } from "@/domain/captureEnrich";
 import {
   PageContainer,
   Button,
@@ -11,7 +22,16 @@ import {
   type RangeValue,
 } from "@/shared/ui";
 import { PAGE_META } from "@/app/shell/navigation";
-import { lazy, Suspense, useState, useEffect, useMemo, useCallback, type ReactNode } from "react";
+import {
+  lazy,
+  Suspense,
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  useRef,
+  type ReactNode,
+} from "react";
 import { createFileRoute, ClientOnly } from "@tanstack/react-router";
 import { ThemeProvider } from "@/app/contexts/ThemeContext";
 import { AuthProvider } from "@/app/contexts/AuthContext";
@@ -21,6 +41,7 @@ import { ToastProvider } from "@/app/contexts/ToastContext";
 import { ConfirmProvider } from "@/app/contexts/ConfirmContext";
 import { PageActionsProvider } from "@/app/contexts/PageActionsContext";
 import { previewTrades } from "@/app/utils/previewTrades";
+import { handOff } from "@/app/utils/handoff";
 import { computeStats } from "@/domain/tradeCalcs";
 import { computeQuantStats } from "@/domain/quantStats";
 import { isPage, type Page, type Trade } from "@/app/types";
@@ -82,6 +103,8 @@ const noop = () => {};
 
 const IDS = [
   "trade",
+  "capture",
+  "compliance",
   "missedform",
   "controls",
   "icons",
@@ -229,6 +252,8 @@ function DevUiBody({
         >
           <Suspense fallback={<div className="p-6 text-sm text-slate-500">…</div>}>
             {ecran === "trade" && <TradeHarness />}
+            {ecran === "capture" && <CaptureHarness />}
+            {ecran === "compliance" && <ComplianceHarness />}
             {ecran === "missedform" && <MissedHarness />}
             {ecran === "controls" && <ControlHarness />}
             {ecran === "icons" && <IconHarness />}
@@ -385,10 +410,133 @@ function DashboardHarness({ trades }: { trades: Trade[] }) {
   );
 }
 
+/** Exécution et respect du plan d'un trade gagnant pris en poursuivant l'entrée. */
+function ComplianceHarness() {
+  const facts = {
+    direction: "long" as const,
+    entryPrice: 21004,
+    exitPrice: 21012,
+    riskAmount: 250,
+    mistakes: [],
+    planned: {
+      direction: "long" as const,
+      entry: 21000,
+      stop: 20990,
+      target: 21030,
+      scenario: "A" as const,
+    },
+    initialStop: 20990,
+    initialTarget: 21030,
+    plannedRisk: 250,
+    sessionBreaches: [] as ("direction" | "extra" | "observation")[],
+    planRespected: null,
+    reflectionReason: null,
+    override: null,
+  };
+  const assessment = {
+    ...assessExecution(facts),
+    compliance: assessCompliance(facts, {
+      setupRules: "Liquidity sweep, MSS, entry on the FVG",
+      confluences: ["Liquidity Sweep", "FVG"],
+    }),
+  };
+  return (
+    <div className="mx-auto max-w-xl p-4">
+      <div className="rounded-xl border border-[var(--tv-border)] bg-[var(--tv-plate-1)] p-3">
+        <TradeExecution tradeId="demo" assessment={assessment} />
+      </div>
+    </div>
+  );
+}
+
+/** Le moteur de capture après une analyse : long NQ lu sur un graphique 5m. */
+function CaptureHarness() {
+  const x = normalizeExtraction(
+    {
+      date: { value: "2026-11-20", confidence: "high" },
+      symbol: { value: "CME_MINI:NQ1!", confidence: "high", evidence: "NQ1! · 5 · CME" },
+      direction: { value: "long", confidence: "high" },
+      timeframe: { value: "5", confidence: "high" },
+      chartTimezone: { value: "UTC-5", confidence: "medium" },
+      entryPrice: { value: 21000, confidence: "high" },
+      stopPrice: { value: 20990, confidence: "low" },
+      targetPrice: { value: 21030, confidence: "high" },
+      exitPrice: { value: 21030, confidence: "high" },
+      quantity: { value: 2, confidence: "high" },
+      entryTime: { value: "09:47", confidence: "medium" },
+      exitTime: { value: "10:12", confidence: "medium" },
+      setup: { value: "Silver Bullet", confidence: "medium" },
+      confluences: [
+        { key: "liquidity_sweep", state: "visual_confirmed" },
+        { key: "fvg", state: "visual_confirmed" },
+        { key: "mss", state: "probable" },
+      ],
+      summary: "Long position tool on NQ 5m after a sweep of the 9:30 low; target reached.",
+    },
+    { target: "trade", note: null, today: "2026-11-24" },
+  );
+  const run = {
+    itemId: null,
+    extraction: x,
+    derived: enrichCapture(x, { plannedRiskDollars: 250 }),
+    cached: false,
+  };
+  const pristine = {
+    date: "2026-11-24",
+    symbol: "",
+    direction: "long" as const,
+    entryTime: "09:30",
+    exitTime: "10:00",
+    entryPrice: "",
+    exitPrice: "",
+    initialStop: "",
+    initialTarget: "",
+    quantity: "",
+    riskAmount: "",
+    rMultiple: "",
+    strategy: "Scalping",
+    confluences: [] as string[],
+  };
+  const form = useRef({ ...pristine, symbol: "ES" });
+  return (
+    <div className="mx-auto max-w-2xl p-4">
+      <CaptureAssist<TradeFormField>
+        target="trade"
+        paths={["demo/shot.png"]}
+        canAddMore
+        onAddFiles={noop}
+        accountId={null}
+        essential={ESSENTIAL_TRADE_FIELDS}
+        propose={(ex, d) =>
+          tradeProposals(ex, d, { strategies: ["Silver Bullet"], confluences: [] })
+        }
+        apply={(proposals, opts) => {
+          const r = applyProposals(form.current, pristine, proposals, opts);
+          form.current = r.next;
+          return { applied: r.applied, conflicts: r.conflicts };
+        }}
+        previewRun={run}
+      />
+    </div>
+  );
+}
+
 function TradeHarness() {
-  const [open, setOpen] = useState(true);
-  const [saved, setSaved] = useState<unknown>(null);
   const params = new URLSearchParams(location.search);
+  // `?plan` : le formulaire s'ouvre comme depuis la checklist, avec le plan figé.
+  const [open, setOpen] = useState(() => {
+    if (params.has("plan")) {
+      handOff("trade", {
+        symbol: "NQ",
+        direction: "short",
+        riskAmount: "250",
+        intentPlan: "SHORT → 21 450 EQL · FVG 21 520",
+        planned: { direction: "short", entry: 21520, stop: 21560, target: 21450, scenario: "A" },
+      });
+    }
+    return true;
+  });
+  const [saved, setSaved] = useState<unknown>(null);
   const imported = params.has("broker");
   const existing = params.has("edit") || imported;
   const trade = existing
